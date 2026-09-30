@@ -22,10 +22,13 @@ pub mod reference;
 pub mod replay;
 pub mod rule_field;
 pub mod schedule;
+pub mod scheduled_change;
 pub mod simple_frequency;
 pub mod state;
 pub mod time;
+pub mod transfer_consequence;
 pub mod timezone_artifact;
+mod timezone_builtin;
 pub mod value;
 
 pub use ast::{
@@ -137,6 +140,7 @@ pub use timezone_artifact::{
     MAX_TZDB_SEGMENTS_PER_ZONE, TZDB_ARTIFACT_HASH_DOMAIN, TimeZoneArtifact,
     TimeZoneArtifactSchema, TimeZoneDefinition, UtcOffsetSegment,
 };
+pub use timezone_builtin::BundledTimeZoneProvider;
 pub use value::{
     CandidateRoute, DecimalValue, LiteralValue, PortContract, RoundedDecimal, Rounding,
     Sensitivity, ValueType,

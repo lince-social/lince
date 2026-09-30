@@ -18,18 +18,17 @@ const RETIRED: &[&str] = &[
     "mobile-smoke-arm64.apk",
 ];
 
-pub fn run(args: &[OsString]) -> Result<()> {
+pub fn run(root: &Path, args: &[OsString]) -> Result<()> {
     let mut apply = false;
     let mut builds = false;
-    let mut cache =
-        std::env::var_os("HOME").map(|home| PathBuf::from(home).join("git/.cache-lince-android"));
+    let mut cache = root.join(".cache-lince-android");
     let mut args = args.iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--apply") => apply = true,
             Some("--builds") => builds = true,
             Some("--cache") => {
-                cache = Some(PathBuf::from(args.next().ok_or("--cache needs a path")?));
+                cache = PathBuf::from(args.next().ok_or("--cache needs a path")?);
             }
             _ => {
                 return Err(
@@ -38,7 +37,6 @@ pub fn run(args: &[OsString]) -> Result<()> {
             }
         }
     }
-    let cache = cache.ok_or("Set HOME or pass --cache PATH")?;
     let candidates = candidates(&cache, builds)?;
     for path in candidates {
         println!(
@@ -61,12 +59,17 @@ fn candidates(cache: &Path, builds: bool) -> Result<Vec<PathBuf>> {
     if cache
         .file_name()
         .is_none_or(|name| name != ".cache-lince-android")
-        || fs::symlink_metadata(cache)
-            .map_err(|e| e.to_string())?
-            .file_type()
-            .is_symlink()
-        || !cache.join("sdk/platform-tools").is_dir()
     {
+        return Err(
+            "Choose the .cache-lince-android directory containing sdk/platform-tools".into(),
+        );
+    }
+    let metadata = match fs::symlink_metadata(cache) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => return Err(error.to_string()),
+    };
+    if metadata.file_type().is_symlink() || !cache.join("sdk/platform-tools").is_dir() {
         return Err(
             "Choose the .cache-lince-android directory containing sdk/platform-tools".into(),
         );

@@ -37,8 +37,8 @@ pub async fn insert(tx: &mut Transaction<'_, Sqlite>, f: &Fact) -> Result<(), St
     let (mantissa, scale) = decimal_columns(f.delta);
     sqlx::query(
         "INSERT INTO fact (uid, record_uid, delta_mantissa, delta_scale, at, actor_uid,
-                           cause_kind, cause_uid, payload, prev_hash, hash, signature)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           cause_kind, cause_uid, payload, prev_hash, hash, signature, commit_sequence)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT value FROM commit_sequence WHERE id = 1))",
     )
     .bind(&f.uid)
     .bind(&f.record_uid)
@@ -93,13 +93,62 @@ pub async fn after_position(pool: &SqlitePool, after: i64, limit: i64) -> Result
         .map(|row| { let position = row.get("position"); map_fact(row).map(|fact| (position, fact)) }).collect()
 }
 
+pub async fn after_position_with_commits(pool: &SqlitePool, after: i64, limit: i64) -> Result<Vec<(i64, Option<i64>, Fact)>, StoreError> {
+    sqlx::query("SELECT rowid AS position, * FROM fact WHERE rowid > ? ORDER BY rowid LIMIT ?")
+        .bind(after).bind(limit).fetch_all(pool).await?.into_iter()
+        .map(|row| {
+            let position = row.get("position");
+            let commit = row.get("commit_sequence");
+            map_fact(row).map(|fact| (position, commit, fact))
+        }).collect()
+}
+
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreError> {
+    if let Some(payload) = sqlx::query_scalar::<_, String>(
+        "SELECT payload FROM fact_origin WHERE fact_uid = ?",
+    )
+    .bind(uid)
+    .fetch_optional(pool)
+    .await?
+    {
+        return serde_json::from_str(&payload)
+            .map(Some)
+            .map_err(|error| StoreError::Protocol(error.to_string()));
+    }
     sqlx::query("SELECT * FROM fact WHERE uid = ?")
         .bind(uid)
         .fetch_optional(pool)
         .await?
         .map(map_fact)
         .transpose()
+}
+
+pub async fn retain_origin(
+    tx: &mut Transaction<'_, Sqlite>,
+    fact: &Fact,
+    organ: &str,
+    cell: &str,
+) -> Result<(), StoreError> {
+    let payload = serde_json::to_string(fact)
+        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let saved: Option<(String, String, String)> =
+        sqlx::query_as("SELECT payload, organ_uid, cell_uid FROM fact_origin WHERE fact_uid = ?")
+            .bind(&fact.uid)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if saved.as_ref().is_some_and(|saved| saved.0 != payload || saved.1 != organ || saved.2 != cell) {
+        return Err(StoreError::Protocol(
+            "Fact identity was reused with different original evidence".into(),
+        ));
+    }
+    sqlx::query("INSERT OR IGNORE INTO fact_origin (fact_uid, payload, organ_uid, cell_uid) VALUES (?, ?, ?, ?)")
+        .bind(&fact.uid)
+        .bind(payload)
+        .bind(organ)
+        .bind(cell)
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
 }
 
 pub async fn get_in_transaction(

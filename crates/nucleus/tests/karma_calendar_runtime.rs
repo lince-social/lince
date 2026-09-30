@@ -145,6 +145,56 @@ fn skip_pause_on_lag_and_discontinuity_pause_remain_distinct() {
 }
 
 #[test]
+fn a_bounded_calendar_emits_its_last_occurrence_and_retires_without_a_pause() {
+    let provider = provider();
+    let mut schedule = schedule(MissedPolicy::Replay { max: nonzero(4) });
+    schedule.cadence = Cadence::once();
+    let CalendarCursorResolution::Armed(cursor) =
+        resolve_calendar_cursor(&schedule, &provider, None).unwrap()
+    else {
+        panic!("expected the first occurrence");
+    };
+    let catch_up = advance_calendar_cursor(
+        &schedule,
+        &provider,
+        &cursor,
+        instant("2026-01-04T11:00:00.000Z"),
+        nonzero(4),
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!(catch_up.due, vec![cursor.next()]);
+    assert!(
+        matches!(catch_up.emission, Some(CalendarEmission::Individual(ref due)) if due == &vec![cursor.next()])
+    );
+    assert!(catch_up.next_cursor.is_none());
+    assert!(catch_up.pause.is_none());
+    assert!(matches!(
+        resolve_calendar_cursor(&schedule, &provider, Some(cursor.next())).unwrap(),
+        CalendarCursorResolution::Retired { previous: Some(value), .. } if value == cursor.next()
+    ));
+    let mut bounded = schedule.clone();
+    bounded.cadence = Cadence::every_days(1).taking(2);
+    let CalendarCursorResolution::Armed(cursor) =
+        resolve_calendar_cursor(&bounded, &provider, None).unwrap()
+    else {
+        panic!("expected bounded occurrences");
+    };
+    let catch_up = advance_calendar_cursor(
+        &bounded,
+        &provider,
+        &cursor,
+        instant("2026-01-04T11:00:00.000Z"),
+        nonzero(4),
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!(catch_up.due.len(), 2);
+    assert!(catch_up.next_cursor.is_none());
+    assert!(catch_up.pause.is_none());
+}
+
+#[test]
 fn calendar_runtime_fixture_has_a_stable_canonical_hash() {
     let provider = provider();
     let schedule = schedule(MissedPolicy::Coalesce);

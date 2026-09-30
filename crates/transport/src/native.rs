@@ -2,7 +2,7 @@ mod catalog;
 mod messages;
 mod text;
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, sync::{Arc, atomic::{AtomicBool, Ordering}}};
 
 use engine::{Engine, actions::Action};
 use fiote::{
@@ -38,6 +38,7 @@ struct State {
     reads: BTreeMap<String, Read>,
     receipts: BTreeMap<String, ([u8; 32], Result<Value, String>)>,
     receipt_bytes: usize,
+    previews: BTreeMap<String, [u8; 32]>,
     messages: BTreeMap<String, messages::Stream>,
     closed: bool,
 }
@@ -48,6 +49,7 @@ pub struct NativeTools {
     state: Arc<Mutex<State>>,
     context: Context,
     instructions: Option<Arc<String>>,
+    closed: Arc<AtomicBool>,
 }
 
 impl NativeTools {
@@ -59,11 +61,13 @@ impl NativeTools {
                 reads: BTreeMap::new(),
                 receipts: BTreeMap::new(),
                 receipt_bytes: 0,
+                previews: BTreeMap::new(),
                 messages: BTreeMap::new(),
                 closed: false,
             })),
             context,
             instructions: None,
+            closed: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -92,6 +96,7 @@ impl NativeTools {
     }
 
     pub async fn close(&self) {
+        self.closed.store(true, Ordering::Release);
         let result = engine::operation_origin::fiote(
             &self.context.agent,
             &self.context.thread,
@@ -114,7 +119,7 @@ impl NativeTools {
         self.engine
             .access_scope(true, async {
                 let mut state = self.state.lock().await;
-                if state.closed {
+                if state.closed || self.closed.load(Ordering::Acquire) {
                     return Err(engine::EngineError::Forbidden(
                         "This agent connection is closed.".into(),
                     ));
@@ -145,6 +150,33 @@ enum Kind {
 struct NativeTool {
     native: NativeTools,
     kind: Kind,
+}
+
+struct PreviewPermit {
+    state: std::sync::Weak<Mutex<State>>,
+    request: String,
+    fingerprint: [u8; 32],
+    finished: bool,
+}
+
+impl Drop for PreviewPermit {
+    fn drop(&mut self) {
+        if self.finished {
+            return;
+        }
+        let Some(state) = self.state.upgrade() else { return };
+        let Ok(runtime) = tokio::runtime::Handle::try_current() else { return };
+        let request = self.request.clone();
+        let fingerprint = self.fingerprint;
+        runtime.spawn(async move {
+            let mut state = state.lock().await;
+            if state.previews.get(&request) == Some(&fingerprint) {
+                state.previews.remove(&request);
+                state.receipt_bytes += request.len() + 160;
+                state.receipts.insert(request, (fingerprint, Err("This preview was interrupted. Request a fresh preview.".into())));
+            }
+        });
+    }
 }
 
 #[async_trait::async_trait]
@@ -212,13 +244,23 @@ impl Tool for NativeTool {
         if serde_json::to_vec(&arguments).map_err(error)?.len() > MAX_RESULT_BYTES {
             return Err("Tool arguments exceed 128 KiB.".into());
         }
+        if matches!(self.kind, Kind::Action)
+            && let Ok(args) = serde_json::from_value::<ActionArguments>(arguments.clone())
+            && matches!(args.action, Action::PreviewKarmaProposal { .. }) {
+            let result = engine::operation_origin::fiote(
+                &self.native.context.agent,
+                &self.native.context.thread,
+                self.run_preview(args, arguments),
+            ).await?;
+            return bounded(result);
+        }
         let write = matches!(self.kind, Kind::Action | Kind::Edit | Kind::Message);
         let result = engine::operation_origin::fiote(
             &self.native.context.agent,
             &self.native.context.thread,
             self.native.engine.access_scope(write, async {
                 let mut state = self.native.state.lock().await;
-                if state.closed {
+                if state.closed || self.native.closed.load(Ordering::Acquire) {
                     return Err(engine::EngineError::Forbidden(
                         "This agent connection is closed.".into(),
                     ));
@@ -266,6 +308,44 @@ impl Tool for NativeTool {
         .await
         .map_err(error)?;
         bounded(result)
+    }
+}
+
+impl NativeTool {
+    async fn run_preview(&self, args: ActionArguments, arguments: Value) -> Result<Value, String> {
+        let mut session = {
+            let mut state = self.native.state.lock().await;
+            if state.closed || self.native.closed.load(Ordering::Acquire) || !state.session.subject_may_act().await {
+                return Err("This agent connection is closed or its access was removed.".into());
+            }
+            if !args.read_ids.is_empty() {
+                return Err("A proposal preview does not change live data. Use an empty read_ids list.".into());
+            }
+            if let Some(previous) = state.previous(&args.request_id, &arguments)? {
+                if let Some(source) = previous["data"]["source"].as_str()
+                    && self.native.engine.store.state_hash().await.map_err(error)?.as_str() != source {
+                    return Err("Source data changed. Request a fresh preview to check current access.".into());
+                }
+                return Ok(previous);
+            }
+            if state.previews.len() >= 4 || state.receipts.len() + state.previews.len() >= 4096 {
+                return Err("This connection's preview budget is occupied. Retry after a preview finishes.".into());
+            }
+            state.previews.insert(args.request_id.clone(), fingerprint(&arguments));
+            state.session.fork_call()
+        };
+        let mut permit = PreviewPermit { state: Arc::downgrade(&self.native.state), request: args.request_id.clone(), fingerprint: fingerprint(&arguments), finished: false };
+        let result = response(session.handle(ClientMessage::Act { id: args.request_id.clone(), action: args.action }).await).and_then(bounded);
+        let mut state = self.native.state.lock().await;
+        state.previews.remove(&args.request_id);
+        let result = if state.closed || self.native.closed.load(Ordering::Acquire) || !state.session.subject_may_act().await {
+            Err("This agent connection is closed or its access was removed.".into())
+        } else {
+            result
+        };
+        state.remember(args.request_id, &arguments, result.clone());
+        permit.finished = true;
+        result
     }
 }
 
@@ -518,13 +598,20 @@ impl State {
                 "Use a request_id of 1–128 letters, digits, hyphens or underscores.".into(),
             );
         }
+        if let Some(original) = self.previews.get(id) {
+            return Err(if *original == fingerprint(args) {
+                "This preview is still running. Retry the same request after it finishes."
+            } else {
+                "This request_id was already used for a different operation."
+            }.into());
+        }
         if let Some((original, result)) = self.receipts.get(id) {
             if *original != fingerprint(args) {
                 return Err("This request_id was already used for a different operation.".into());
             }
             return result.clone().map(Some);
         }
-        if self.receipts.len() >= 4096 || self.receipt_bytes >= 16 * 1024 * 1024 {
+        if self.receipts.len() + self.previews.len() >= 4096 || self.receipt_bytes >= 16 * 1024 * 1024 {
             return Err("This connection has reached its operation budget. Close it and open a new connection. Inspect uncertain effects before retrying.".into());
         }
         Ok(None)

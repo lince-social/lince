@@ -58,6 +58,12 @@ pub enum StoredScheduleCursor {
     Calendar {
         cursor: CalendarCursor,
     },
+    CalendarRetired {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        previous: Option<CalendarBoundary>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<CalendarDiscontinuity>,
+    },
     CalendarPaused {
         #[serde(skip_serializing_if = "Option::is_none")]
         previous: Option<CalendarBoundary>,
@@ -71,7 +77,9 @@ impl StoredScheduleCursor {
     fn elapsed(&self) -> Option<&ScheduleCursor> {
         match self {
             Self::Elapsed { cursor } => Some(cursor),
-            Self::Calendar { .. } | Self::CalendarPaused { .. } => None,
+            Self::Calendar { .. } | Self::CalendarPaused { .. } | Self::CalendarRetired { .. } => {
+                None
+            }
         }
     }
 
@@ -79,7 +87,9 @@ impl StoredScheduleCursor {
         match self {
             Self::Elapsed { cursor } => cursor.last_intended_at(),
             Self::Calendar { cursor } => cursor.previous().map(|value| value.intended_at),
-            Self::CalendarPaused { previous, .. } => previous.map(|value| value.intended_at),
+            Self::CalendarPaused { previous, .. } | Self::CalendarRetired { previous, .. } => {
+                previous.map(|value| value.intended_at)
+            }
         }
     }
 
@@ -87,7 +97,7 @@ impl StoredScheduleCursor {
         match self {
             Self::Elapsed { cursor } => Some(cursor.next_intended_at()),
             Self::Calendar { cursor } => Some(cursor.next().intended_at),
-            Self::CalendarPaused { .. } => None,
+            Self::CalendarPaused { .. } | Self::CalendarRetired { .. } => None,
         }
     }
 }
@@ -488,7 +498,8 @@ fn prepare_activation_cursor(
                     cursor.validate_for(schedule, provider).map_err(boundary)?;
                     CalendarCursorResolution::Armed(cursor)
                 }
-                Some(StoredScheduleCursor::CalendarPaused { previous, .. }) => {
+                Some(StoredScheduleCursor::CalendarPaused { previous, .. })
+                | Some(StoredScheduleCursor::CalendarRetired { previous, .. }) => {
                     resolve_calendar_cursor(schedule, provider, previous).map_err(boundary)?
                 }
                 None => resolve_calendar_cursor(schedule, provider, None).map_err(boundary)?,
@@ -525,6 +536,12 @@ fn prepare_activation_cursor(
                         skipped,
                     },
                     ScheduleCursorLifecycle::Paused,
+                    previous.map(|value| value.intended_at),
+                    None,
+                ),
+                CalendarCursorResolution::Retired { previous, skipped } => (
+                    StoredScheduleCursor::CalendarRetired { previous, skipped },
+                    ScheduleCursorLifecycle::Retired,
                     previous.map(|value| value.intended_at),
                     None,
                 ),
@@ -801,6 +818,12 @@ pub async fn materialize_calendar_cursor(
             previous.map(|value| value.intended_at),
             None,
         ),
+        CalendarCursorResolution::Retired { previous, skipped } => (
+            StoredScheduleCursor::CalendarRetired { previous, skipped },
+            ScheduleCursorLifecycle::Retired,
+            previous.map(|value| value.intended_at),
+            None,
+        ),
     };
     let at = canonical_timestamp(now)?;
     let mut tx = crate::write_tx(pool).await?;
@@ -958,6 +981,15 @@ pub async fn list_armed_demanded_calendar_deadlines(
     let mut deadlines = Vec::with_capacity(hashes.len());
     for encoded in hashes {
         let activation_hash = CanonicalHash::parse(encoded).map_err(boundary)?;
+        let activation = frequencies::get_activation(pool, &activation_hash)
+            .await?
+            .ok_or_else(|| protocol("active Karma Frequency activation is missing"))?;
+        let CompiledSchedule::Calendar { schedule } = &activation.epoch.compiled().schedule else {
+            continue;
+        };
+        if &schedule.tzdb != provider.revision() {
+            continue;
+        }
         let Some(cursor) = get_calendar_cursor(pool, &activation_hash, provider).await? else {
             continue;
         };
@@ -1442,6 +1474,18 @@ pub async fn complete_calendar(
         })
         .transpose()?;
     let (stored_cursor, lifecycle) = match (&catch_up.pause, &catch_up.next_cursor) {
+        (None, None) => {
+            let previous = catch_up.due.last().copied();
+            let CalendarCursorResolution::Retired { skipped, .. } =
+                resolve_calendar_cursor(schedule, provider, previous).map_err(boundary)?
+            else {
+                return Err(protocol("Karma calendar retirement no longer reproduces"));
+            };
+            (
+                StoredScheduleCursor::CalendarRetired { previous, skipped },
+                ScheduleCursorLifecycle::Retired,
+            )
+        }
         (None, Some(cursor)) => (
             StoredScheduleCursor::Calendar {
                 cursor: cursor.clone(),
@@ -1766,6 +1810,7 @@ fn map_cursor(row: sqlx::sqlite::SqliteRow) -> Result<ScheduleCursorRow, StoreEr
         ("elapsed", StoredScheduleCursor::Elapsed { .. })
             | ("calendar", StoredScheduleCursor::Calendar { .. })
             | ("calendar", StoredScheduleCursor::CalendarPaused { .. })
+            | ("calendar", StoredScheduleCursor::CalendarRetired { .. })
     );
     if !valid_cadence {
         return Err(protocol(
@@ -2090,6 +2135,29 @@ fn validate_cursor_for_calendar(
             {
                 return Err(protocol(
                     "stored Karma calendar pause disagrees with its provider",
+                ));
+            }
+        }
+        StoredScheduleCursor::CalendarRetired { previous, skipped } => {
+            if !matches!(
+                row.lifecycle,
+                ScheduleCursorLifecycle::Retired | ScheduleCursorLifecycle::Superseded
+            ) || row.deadline.is_some()
+            {
+                return Err(protocol(
+                    "retired Karma calendar cursor has an active deadline",
+                ));
+            }
+            let expected =
+                resolve_calendar_cursor(schedule, provider, *previous).map_err(boundary)?;
+            if expected
+                != (CalendarCursorResolution::Retired {
+                    previous: *previous,
+                    skipped: skipped.clone(),
+                })
+            {
+                return Err(protocol(
+                    "stored Karma calendar retirement disagrees with its provider",
                 ));
             }
         }

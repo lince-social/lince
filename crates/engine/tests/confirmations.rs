@@ -43,6 +43,7 @@ fn role_specific_claims_gate_an_idempotent_settlement() {
                     canonical_quantity: 5.0,
                     expected_remaining_quantity: 5.0,
                     expected_local_delta: -5.0,
+                    expected_effects_hash: None,
                     expected_application_formula_hash:
                         nucleus::transfer::occurrence_application_formula_hash("-incoming()"),
                     expected_application_formula_version: 0,
@@ -175,6 +176,7 @@ fn legacy_confirmation_flag_cannot_bypass_occurrence_evidence() {
                     canonical_quantity: 2.0,
                     expected_remaining_quantity: 2.0,
                     expected_local_delta: -2.0,
+                    expected_effects_hash: None,
                     expected_application_formula_hash:
                         nucleus::transfer::occurrence_application_formula_hash("-incoming()"),
                     expected_application_formula_version: 0,
@@ -277,6 +279,7 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
                         .as_f64()
                         .unwrap(),
                     expected_local_delta: first_preview["expected_local_delta"].as_f64().unwrap(),
+                    expected_effects_hash: first_preview["expected_effects_hash"].as_str().map(str::to_owned),
                     expected_application_formula_hash:
                         first_preview["expected_application_formula_hash"]
                             .as_str()

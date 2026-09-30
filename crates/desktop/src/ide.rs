@@ -4,13 +4,16 @@ mod closing;
 pub(crate) mod credits;
 mod editing;
 mod file_changes;
+mod highlight;
 mod persistence;
 mod project;
 mod recovery;
 mod runtime;
+mod save_as;
 mod search;
 mod settings;
 mod tabs;
+mod tools;
 pub use settings::Settings;
 #[cfg(test)]
 mod tests;
@@ -18,7 +21,7 @@ mod tests;
 use bevy::{math::DVec2, prelude::*, text::EditableText};
 pub(crate) use file_changes::{finish_change, reserve_change};
 use lince_editor::{
-    Buffer, SavePoint, TextWindow,
+    Buffer, TextWindow,
     files::{FileBinding, Scope, Snapshot},
 };
 pub(crate) use persistence::{SavedIde, snapshot};
@@ -39,12 +42,19 @@ pub struct Ide {
     pub active: Option<PathBuf>,
     #[serde(default)]
     pub settings: Settings,
+    #[serde(default)]
+    pub language_tools: BTreeMap<String, lince_editor::language::Tools>,
 }
 
 impl Ide {
     pub fn valid(&self) -> bool {
         self.explorer.valid()
             && self.settings.valid()
+            && self.language_tools.len() <= 32
+            && self
+                .language_tools
+                .iter()
+                .all(|(language, tools)| language.len() <= 64 && tools.valid())
             && self.paths.len() <= 16
             && self
                 .paths
@@ -63,14 +73,14 @@ struct Document {
     file: Option<Arc<FileBinding>>,
     disk: Snapshot,
     reading: bool,
-    saving: Option<SavePoint>,
+    saving: Option<u64>,
     refresh: bool,
     moving: bool,
     error: Option<String>,
 }
 
 #[derive(Resource, Default)]
-struct Documents(BTreeMap<PathBuf, Document>);
+struct Documents(BTreeMap<PathBuf, Document>, BTreeSet<PathBuf>);
 
 #[derive(Resource)]
 struct EditorFont(Handle<Font>);
@@ -92,6 +102,8 @@ struct View {
     navigation: Entity,
     settings_panel: Entity,
     close_panel: Entity,
+    replace_panel: Entity,
+    replacement: Option<save_as::Pending>,
     closing: Option<PathBuf>,
     close_waiting: bool,
     settings_labels: [Entity; 4],
@@ -140,6 +152,7 @@ pub struct IdePlugin;
 
 impl Plugin for IdePlugin {
     fn build(&self, app: &mut App) {
+        highlight::install(app);
         app.init_resource::<Documents>()
             .init_resource::<autosave::Autosave>()
             .init_resource::<recovery::Recovery>()
@@ -192,13 +205,25 @@ pub fn spawn(
         ("Recover drafts", actions::Control::Recover),
         ("Find", actions::Control::SearchPanel),
         ("Settings", actions::Control::Settings),
+        ("Language tools", actions::Control::Tools),
+        ("Complete", actions::Control::Complete),
+        ("Format", actions::Control::Format),
     ] {
         crate::sand_panel::button(world, controls, owner, caption, control);
     }
     crate::sand_panel::credits(world, controls, owner, credits::CREDITS);
     let (settings_panel, settings_labels) = settings::panel(world, owner);
     let close_panel = closing::panel(world, owner);
+    let replace_panel = crate::sand_panel::row(world, owner);
+    world.get_mut::<Node>(replace_panel).unwrap().display = Display::None;
+    for (caption, control) in [
+        ("Replace file", actions::Control::ReplaceFile),
+        ("Cancel replacement", actions::Control::CancelReplacement),
+    ] {
+        crate::sand_panel::button(world, replace_panel, owner, caption, control);
+    }
     let tabs = crate::sand_panel::row(world, owner);
+    tools::panel(world, owner);
     let body = world
         .spawn((
             ChildOf(owner),
@@ -310,6 +335,7 @@ pub fn spawn(
     world.entity_mut(editor).observe(editing::keyboard);
     let font = world.resource::<EditorFont>().0.clone();
     world.entity_mut(editor).insert((
+        highlight::Syntax::default(),
         TextFont {
             font: font.into(),
             font_size: bevy::text::FontSize::Px(16.0),
@@ -382,6 +408,8 @@ pub fn spawn(
             navigation,
             settings_panel,
             close_panel,
+            replace_panel,
+            replacement: None,
             closing: None,
             close_waiting: false,
             settings_labels,
@@ -456,6 +484,14 @@ fn open_with_activation(
         status(world, owner, "At most 16 tabs can be open");
         return;
     }
+    if world.resource::<Documents>().1.contains(&path) {
+        status(
+            world,
+            owner,
+            "Wait for Save As to finish before opening this destination",
+        );
+        return;
+    }
     if world.resource::<Documents>().0.contains_key(&path) {
         let mut ide = world.get_mut::<Ide>(owner).unwrap();
         if !ide.paths.contains(&path) {
@@ -514,6 +550,14 @@ fn open_with_activation(
                         return;
                     }
                     let mut documents = world.resource_mut::<Documents>();
+                    if documents.1.contains(&path) {
+                        status(
+                            world,
+                            owner,
+                            "Wait for Save As to finish before opening this destination",
+                        );
+                        return;
+                    }
                     if !documents.0.contains_key(&path)
                         && (documents.0.len() >= 32
                             || documents

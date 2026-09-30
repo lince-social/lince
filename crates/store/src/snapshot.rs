@@ -1,6 +1,11 @@
+mod cache;
+mod hashing;
+
+pub use cache::StateHasher;
+
+use std::io::Write;
 use std::path::Path;
 
-use nucleus::karma::{CanonicalHash, canonical_hash};
 use serde::{Deserialize, Serialize};
 use sqlx::{Column, Row, TypeInfo, ValueRef};
 
@@ -39,17 +44,27 @@ impl Store {
         let path = path
             .to_str()
             .ok_or_else(|| StoreError::Protocol("snapshot path is not UTF-8".into()))?;
+        let mut connection = self.pool.acquire().await?;
+        let filename: String =
+            sqlx::query_scalar("SELECT file FROM pragma_database_list WHERE name = 'main'")
+                .fetch_one(&mut *connection)
+                .await?;
+        if filename.is_empty() {
+            let bytes = connection.serialize(None).await?;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+                .map_err(StoreError::Io)?;
+            file.write_all(&bytes).map_err(StoreError::Io)?;
+            file.sync_all().map_err(StoreError::Io)?;
+            return Ok(());
+        }
         sqlx::query("VACUUM main INTO ?")
             .bind(path)
-            .execute(&self.pool)
+            .execute(&mut *connection)
             .await?;
         Ok(())
-    }
-
-    pub async fn state_hash(&self) -> Result<CanonicalHash, StoreError> {
-        let tables = self.logical_snapshot().await?;
-        canonical_hash("lince.store.state.v1", &tables)
-            .map_err(|error| StoreError::Protocol(error.to_string()))
     }
 
     pub async fn logical_snapshot(&self) -> Result<Vec<Table>, StoreError> {

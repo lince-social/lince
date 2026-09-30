@@ -11,8 +11,9 @@ pub(super) const FILTERS: [(&str, &str); 7] = [
     ("cancelled_or_broken", "Cancelled / broken"),
     ("discoverable_open", "Discoverable OPEN"),
 ];
-pub(super) const PRESETS: [&str; 9] = [
+pub(super) const PRESETS: [&str; 10] = [
     "Donation",
+    "Trade",
     "Sale",
     "Assignment",
     "Group coordination",
@@ -45,7 +46,11 @@ pub(super) fn capability(value: &Value, key: &str) -> bool {
 }
 
 pub(super) fn title(value: &Value) -> String {
+    if value.pointer("/disclosed/title") == Some(&Value::Bool(false)) {
+        return "Title unavailable".into();
+    }
     [
+        "title",
         "head",
         "record_head",
         "actor_head",
@@ -136,6 +141,8 @@ pub struct Form {
     pub request_id: String,
     pub actor: Option<String>,
     pub preset: String,
+    #[serde(default)]
+    pub review: Value,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -162,6 +169,7 @@ impl Form {
         let request_id = nucleus::new_uid("transfer-ui");
         data["request_id"] = json!(request_id);
         Self {
+            review: Value::Null,
             title: title.into(),
             data,
             fields: Vec::new(),
@@ -176,6 +184,35 @@ impl Form {
     }
 
     pub(super) fn field(&mut self, path: &str, label: &str, kind: FieldKind) {
+        if self.mode == "counteroffer-transfer"
+            && (["/creator", "/invitees", "/source", "/parent"].contains(&path)
+                || (path.starts_with("/dependencies/") && self.data["dependencies"].is_null()))
+        {
+            return;
+        }
+        if let Some(suffix) = path.strip_prefix("/promises/")
+            && let Some((index, field)) = suffix.split_once('/')
+        {
+            let promise = self.data.pointer(&format!("/promises/{index}"));
+            let disclosure = match field {
+                "item/title" => Some("title"),
+                "item/description" => Some("description"),
+                "record" | "condition" => Some("source"),
+                "party" | "open" | "item/exchange/giver" | "item/exchange/receiver" => {
+                    Some("parties")
+                }
+                "delta" | "amount" | "unit" => Some("quantity"),
+                _ if field.starts_with("place/") => Some("location"),
+                _ => None,
+            };
+            if disclosure.is_some_and(|key| promise.is_some_and(|p| p["disclosed"][key] == false))
+                || (self.mode == "counteroffer-transfer"
+                    && promise.is_some_and(|p| !p["uid"].is_null())
+                    && (field.starts_with("item/disclosure/") || field == "record"))
+            {
+                return;
+            }
+        }
         let value = self.data.pointer(path).unwrap_or(&Value::Null);
         let value = if matches!(kind, FieldKind::People) {
             value
@@ -243,13 +280,57 @@ impl Form {
 
     pub(super) fn payload(&self) -> Result<Value, String> {
         if self.step.is_none() {
-            return Ok(self.data.clone());
+            let mut data = self.data.clone();
+            if data["action"] == "set-transfer-private-application-policy" {
+                let effects = data["effects"]
+                    .as_array_mut()
+                    .ok_or("Choose the Records this outcome changes")?;
+                if effects.is_empty() || effects.len() > 32 {
+                    return Err("Choose between one and 32 effects".into());
+                }
+                for effect in effects {
+                    let ratio = effect
+                        .as_object_mut()
+                        .and_then(|object| object.remove("private_ratio"));
+                    if let Some(ratio) = ratio
+                        .as_ref()
+                        .and_then(Value::as_str)
+                        .filter(|value| !value.trim().is_empty())
+                    {
+                        let ratio = nucleus::DecimalValue::parse_inferred(ratio.trim())
+                            .map_err(|_| "The ratio must be a decimal with at most 18 places")?;
+                        effect["formula"] = json!(format!("incoming() * {ratio}"));
+                    }
+                    nucleus::transfer::application::validate(
+                        effect["formula"].as_str().unwrap_or_default(),
+                    )
+                    .map_err(|error| error.to_string())?;
+                }
+            }
+            return Ok(data);
         }
-        if self.transfer.is_none() && array(&self.data, "promises").is_empty() {
-            return Err("Add at least one promise".into());
-        }
-        validate_draft(&self.data)?;
         let mut data = self.data.clone();
+        for promise in data["promises"].as_array_mut().into_iter().flatten() {
+            if promise["open"] == true {
+                if promise["item"].is_object() {
+                    promise["item"]["exchange"] = Value::Null;
+                }
+            } else if promise
+                .pointer("/item/exchange")
+                .is_some_and(Value::is_object)
+            {
+                let delta = promise["delta"].as_f64().unwrap_or(-1.0);
+                let amount = promise["amount"].as_f64().unwrap_or(delta.abs());
+                if !amount.is_finite() || amount <= 0.0 {
+                    return Err("Exchange amount must be positive".into());
+                }
+                promise["delta"] = json!(if delta < 0.0 { -amount } else { amount });
+                promise["party"] = promise["item"]["exchange"]
+                    [if delta < 0.0 { "giver" } else { "receiver" }]
+                .clone();
+            }
+        }
+        validate_draft(&data, self.mode == "counteroffer-transfer")?;
         if data["agreement"] != "percentage" {
             data["agreement_pct"] = Value::Null;
         }
@@ -257,6 +338,14 @@ impl Form {
             data["max_proximity"] = Value::Null;
         }
         for promise in data["promises"].as_array_mut().into_iter().flatten() {
+            if let Some(object) = promise.as_object_mut() {
+                object.remove("disclosed");
+                object.remove("amount");
+                object.remove("temporary");
+            }
+            if promise["record"].is_null() {
+                promise["record"] = json!("");
+            }
             if promise["open"] == true {
                 promise["party"] = Value::Null;
             }
@@ -323,7 +412,8 @@ fn clean_place(value: &mut Value) -> Result<(), String> {
 }
 
 pub(super) fn promise(person: &str) -> Value {
-    json!({"uid": nucleus::new_uid("p"), "record": null, "party": person,
+    json!({"uid": nucleus::new_uid("p"), "record": "", "party": person,
+        "item": nucleus::transfer::disclosure::TransferItem { title: "Item".into(), ..Default::default() },
         "open": person.is_empty(), "delta": -1, "unit": null, "window_start": null,
         "window_end": null, "place": place(), "condition": null,
         "reserve_from": "inherit", "reuse_policy": "duplicate"})
@@ -333,13 +423,72 @@ pub(super) fn place() -> Value {
     json!({"lat": null, "lon": null, "address": null})
 }
 
+pub(super) fn disclosure_preview(data: &Value, viewer: Option<&str>, draft: bool) -> Value {
+    let mut row = data.clone();
+    if draft {
+        row["kind"] = json!("transfer");
+        row["parties"] = json!(
+            std::iter::once(data["creator"].clone())
+                .chain(array(data, "invitees").iter().cloned())
+                .map(|person| json!({"actor":person}))
+                .collect::<Vec<_>>()
+        );
+    }
+    let creator = if draft {
+        data["creator"].as_str()
+    } else {
+        data.pointer("/revision_evidence/current/terms/parties")
+            .and_then(Value::as_array)
+            .and_then(|parties| parties.iter().find(|party| party["kind"] == "creator"))
+            .and_then(|party| party["person_uid"].as_str())
+    };
+    nucleus::transfer::disclosure::project_transfer(
+        &mut row,
+        viewer,
+        viewer.is_some() && viewer == creator,
+    );
+    if let Some(object) = row.as_object_mut() {
+        object.retain(|key, _| {
+            ["head", "visibility", "promises", "parties", "default_place"].contains(&key.as_str())
+        });
+    }
+    row
+}
+
+pub(super) fn review_draft(form: &Form) -> Value {
+    let mut data = form.data.clone();
+    for promise in data["promises"].as_array_mut().into_iter().flatten() {
+        for (group, fields) in [
+            ("title", &["/item/title"][..]),
+            ("description", &["/item/description"][..]),
+            ("source", &["/record", "/condition"][..]),
+            ("parties", &["/party", "/open"][..]),
+            ("quantity", &["/delta", "/amount", "/unit"][..]),
+            ("location", &["/place"][..]),
+        ] {
+            if promise["disclosed"][group] == false {
+                for field in fields {
+                    if let Some(value) = promise.pointer_mut(field) {
+                        *value = json!("Unavailable; unchanged");
+                    }
+                }
+            }
+        }
+        if form.mode == "counteroffer-transfer" && !promise["uid"].is_null() {
+            promise["record"] = json!("Private binding unchanged");
+            promise["item"]["disclosure"] = json!("Private settings unchanged");
+        }
+    }
+    data
+}
+
 pub(super) fn dependency() -> Value {
     json!({"uid": null, "scope": "transfer", "promise": null,
         "upstream_kind": "transfer", "upstream": "", "required_state": "kept"})
 }
 
 pub(super) fn composer(person: &str, preset: &str) -> Form {
-    let open = matches!(preset, "Donation" | "Service" | "Information");
+    let open = matches!(preset, "Service" | "Information");
     let mut first = promise(if open { "" } else { person });
     first["open"] = json!(open);
     if matches!(preset, "Dependency plan" | "Ride" | "Delivery") {
@@ -349,10 +498,10 @@ pub(super) fn composer(person: &str, preset: &str) -> Form {
         first["party"] = Value::Null;
     }
     let mut promises = vec![first];
-    if matches!(preset, "Sale" | "Group coordination") {
+    if matches!(preset, "Trade" | "Sale" | "Group coordination") {
         let mut second = promise(person);
-        if preset == "Sale" {
-            second["delta"] = json!(1);
+        if matches!(preset, "Trade" | "Sale") {
+            second["party"] = Value::Null;
         } else {
             second["party"] = Value::Null;
         }
@@ -399,9 +548,8 @@ pub(super) fn edit(row: &Value, counteroffer: bool, person: &str) -> Form {
     let creator = array(row, "parties")
         .iter()
         .find(|p| p["role"] == "creator")
-        .or_else(|| array(row, "parties").first())
         .map(|p| p["actor"].clone())
-        .unwrap_or(json!(person));
+        .unwrap_or_else(|| json!(if counteroffer { "" } else { person }));
     form.data["creator"] = creator;
     form.data["invitees"] = json!(
         array(row, "invitations")
@@ -418,6 +566,7 @@ pub(super) fn edit(row: &Value, counteroffer: bool, person: &str) -> Form {
                 let mut terms = promise("");
                 for key in [
                     "uid",
+                    "disclosed",
                     "record",
                     "party",
                     "open",
@@ -432,6 +581,23 @@ pub(super) fn edit(row: &Value, counteroffer: bool, person: &str) -> Form {
                 ] {
                     if !p[key].is_null() {
                         terms[key] = p[key].clone();
+                    }
+                }
+                if !p["item"].is_null() {
+                    terms["item"] = p["item"].clone();
+                } else {
+                    for key in ["title", "description"] {
+                        if let Some(value) = p[key].as_str() {
+                            terms["item"][key] = json!(value);
+                        }
+                    }
+                    if let (Some(exchange), Some(giver), Some(receiver)) = (
+                        p["exchange"].as_str(),
+                        p["giver"].as_str(),
+                        p["receiver"].as_str(),
+                    ) {
+                        terms["item"]["exchange"] =
+                            json!({"uid":exchange,"giver":giver,"receiver":receiver});
                     }
                 }
                 terms
@@ -480,6 +646,7 @@ pub(super) fn edit(row: &Value, counteroffer: bool, person: &str) -> Form {
                     let mut terms = promise("");
                     for key in [
                         "uid",
+                        "item",
                         "delta",
                         "window_start",
                         "window_end",
@@ -529,6 +696,16 @@ pub(super) fn edit(row: &Value, counteroffer: bool, person: &str) -> Form {
     form
 }
 
+pub(super) fn observer(person: &str, upstream: &Value) -> Form {
+    let mut form = composer(person, "Dependency plan");
+    form.title = "Use this outcome privately".into();
+    form.data["head"] = json!(format!("After {}", title(upstream)));
+    form.data["visibility"] = json!("hidden");
+    form.data["dependencies"][0]["upstream"] = upstream["uid"].clone();
+    form.data["dependencies"][0]["required_state"] = json!("kept");
+    form
+}
+
 pub(super) fn bind_preset(form: &mut Form) {
     let creator = form.data["creator"].clone();
     let invitee = array(&form.data, "invitees")
@@ -546,22 +723,39 @@ pub(super) fn bind_preset(form: &mut Form) {
         }
         if text(promise, "party").is_empty() {
             promise["party"] = if form.preset == "Assignment"
-                || (form.preset == "Group coordination" && index == 1)
+                || (matches!(
+                    form.preset.as_str(),
+                    "Trade" | "Sale" | "Group coordination"
+                ) && index == 1)
             {
                 invitee.clone()
             } else {
                 creator.clone()
             };
         }
+        if matches!(form.preset.as_str(), "Donation" | "Trade" | "Sale")
+            && !invitee.is_null()
+            && promise["item"]["exchange"].is_null()
+        {
+            let (giver, receiver) = if index == 0 {
+                (&creator, &invitee)
+            } else {
+                (&invitee, &creator)
+            };
+            promise["delta"] = json!(-promise["delta"].as_f64().unwrap_or(1.0).abs());
+            promise["party"] = giver.clone();
+            promise["item"]["exchange"] =
+                json!({"uid":nucleus::new_uid("exchange"),"giver":giver,"receiver":receiver});
+        }
     }
 }
 
-pub(super) fn validate_draft(data: &Value) -> Result<(), String> {
+pub(super) fn validate_draft(data: &Value, counteroffer: bool) -> Result<(), String> {
     if text(data, "head").trim().is_empty() {
         return Err("Enter a transfer title".into());
     }
     let creator = text(data, "creator");
-    if creator.is_empty() {
+    if creator.is_empty() && !counteroffer {
         return Err("Choose the Person creating this transfer".into());
     }
     let mut people = HashSet::from([creator]);
@@ -586,7 +780,7 @@ pub(super) fn validate_draft(data: &Value) -> Result<(), String> {
         return Err("Choose a shared source for first-sibling completion".into());
     }
     for (index, promise) in array(data, "promises").iter().enumerate() {
-        if text(promise, "record").is_empty()
+        if (text(promise, "record").is_empty() && promise["item"].is_null())
             || !promise["delta"]
                 .as_f64()
                 .is_some_and(|v| v.is_finite() && v != 0.0)
@@ -596,7 +790,16 @@ pub(super) fn validate_draft(data: &Value) -> Result<(), String> {
                 index + 1
             ));
         }
-        if promise["open"] != true && text(promise, "party").is_empty() {
+        if !promise["item"].is_null() {
+            let item: nucleus::transfer::disclosure::TransferItem =
+                serde_json::from_value(promise["item"].clone())
+                    .map_err(|error| error.to_string())?;
+            item.validate().map_err(str::to_string)?;
+        }
+        if promise["open"] != true
+            && text(promise, "party").is_empty()
+            && promise.pointer("/disclosed/parties") != Some(&Value::Bool(false))
+        {
             return Err(format!("Choose a Person or OPEN for promise {}", index + 1));
         }
         let dates: Vec<_> = ["window_start", "window_end"].into_iter().map(|key| {
@@ -611,7 +814,8 @@ pub(super) fn validate_draft(data: &Value) -> Result<(), String> {
             return Err("The start must come before the deadline".into());
         }
     }
-    if data["agreement"] == "dependency" && array(data, "dependencies").is_empty() {
+    if !counteroffer && data["agreement"] == "dependency" && array(data, "dependencies").is_empty()
+    {
         return Err("Add a dependency for this agreement".into());
     }
     for dependency in array(data, "dependencies") {
@@ -620,4 +824,47 @@ pub(super) fn validate_draft(data: &Value) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+pub(super) fn loan_proposal(transfer: &Value, item: &Value, person: &str, future: bool) -> Form {
+    let mut form = composer(person, if future { "Future Need" } else { "Return" });
+    let borrower = text(item, "receiver");
+    let lender = text(item, "giver");
+    let reference = json!({"origin":item["accepted_loan"]["origin"],"transfer":transfer["uid"],"exchange":item["exchange"]});
+    let promise = &mut form.data["promises"][0];
+    promise["item"] = json!(nucleus::transfer::disclosure::TransferItem {
+        title: title(item),
+        ..Default::default()
+    });
+    promise["record"] = json!("");
+    promise["delta"] = json!(if future {
+        item["delta"].as_f64().unwrap_or(1.0).abs()
+    } else {
+        -item["delta"].as_f64().unwrap_or(1.0).abs()
+    });
+    promise["unit"] = item["unit"].clone();
+    if future {
+        promise["open"] = json!(true);
+        promise["party"] = Value::Null;
+        promise["item"]["future_need_for"] = reference;
+        promise["window_start"] = json!(
+            item["accepted_loan"]["until_ms"]
+                .as_i64()
+                .and_then(chrono::DateTime::from_timestamp_millis)
+                .map(|time| time.to_rfc3339())
+        );
+        form.data["visibility"] = json!("public");
+    } else {
+        promise["party"] = json!(borrower);
+        promise["item"]["exchange"] =
+            json!({"uid":nucleus::new_uid("exchange"),"giver":borrower,"receiver":lender});
+        promise["item"]["return_of"] = reference;
+        form.data["invitees"] = json!([if person == borrower { lender } else { borrower }]);
+    }
+    form.data["head"] = json!(format!(
+        "{} · {}",
+        if future { "Future Need" } else { "Return" },
+        title(item)
+    ));
+    form
 }

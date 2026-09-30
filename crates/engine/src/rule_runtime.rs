@@ -7,6 +7,7 @@ use nucleus::karma::{
     TriggerSource,
 };
 use nucleus::{Cause, Fact, NewFact};
+use store::sqlx::Row;
 use store::karma::frequencies::{
     self, ActivateFrequencyInput, CreateFrequencyInput, FrequencyMutationCommit,
 };
@@ -15,6 +16,14 @@ use crate::karma_runtime::KarmaDeadlineDirectorConfig;
 use crate::{Engine, EngineError};
 
 const VALUE_DEPENDENCY_LIMIT: usize = 4;
+
+pub(crate) async fn execution_checkpoint(evaluation: bool) -> Result<(), EngineError> {
+    if let Some(control) = nucleus::execution::current().and_then(|execution| execution.control()) {
+        control.wait_running().await;
+        control.checkpoint(evaluation).map_err(EngineError::ExecutionLimit)?;
+    }
+    Ok(())
+}
 
 #[derive(Clone, Default)]
 pub struct RuleIndex {
@@ -32,10 +41,13 @@ pub struct RuleEvent {
     pub id: String,
     pub frequency: Option<String>,
     pub at: DateTime<Utc>,
+    pub attempt: i64,
 }
 
 tokio::task_local! {
     pub(crate) static RULE_EVENT: RuleEvent;
+    pub(crate) static EFFECT_OCCURRENCE: nucleus::simulation::RuleOccurrence;
+    pub(crate) static RECEIVED_PARENT: String;
 }
 
 pub fn frequency_pulse(uid: &str) -> bool {
@@ -52,6 +64,24 @@ fn invalid(message: impl Into<String>) -> EngineError {
 }
 
 impl Engine {
+    pub(crate) async fn check_control_quantities(&self, cell: &str, control: &nucleus::execution::control::Control, uid: &str, now: DateTime<Utc>) -> Result<(), EngineError> {
+        let Some(record) = store::records::get(&self.store.pool, uid).await? else { return Ok(()) };
+        let unit = record.unit_uid.map(|uid| nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Unit, uid))
+            .transpose().map_err(|error| invalid(error.to_string()))?;
+        let mut quantity = nucleus::simulation::Quantity { value: record.quantity, unit };
+        control.check_quantity(cell, uid, &quantity).map_err(EngineError::ExecutionLimit)?;
+        if control.checks_available(cell, uid) {
+            for adjustment in store::transfer_loans::adjustments(&self.store.pool, now.timestamp_millis()).await? {
+                if adjustment.record == uid {
+                    if adjustment.unit_changed { return Ok(()) }
+                    quantity.value = store::exact::sum_exact([quantity.value, adjustment.delta])?;
+                }
+            }
+            control.check_available_quantity(cell, uid, &quantity).map_err(EngineError::ExecutionLimit)?;
+        }
+        Ok(())
+    }
+
     pub(crate) async fn apply_rule_occurrence(
         &self,
         rule: &store::recurrence::Recurrence,
@@ -82,6 +112,7 @@ impl Engine {
             return Err(invalid("this date is not a boundary of the rule Frequency"));
         }
         let event = RuleEvent {
+            attempt: 0,
             id: format!(
                 "frequency:{}:{}",
                 frequency.as_deref().unwrap_or(&rule.uid),
@@ -90,18 +121,25 @@ impl Engine {
             frequency,
             at: due,
         };
-        let mut facts = Box::pin(self.execute_rule_event(rule, &event, now)).await?;
+        let mut facts = match Box::pin(self.execute_rule_event(rule, &event, now)).await {
+            Ok(facts) => facts,
+            Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+            Err(error) => {
+                if store::karma_schedules::for_rule(&self.store.pool, &rule.uid).await?.is_some() {
+                    self.record_rule_failure(rule, &event, &error, now).await?;
+                    store::karma_schedules::refresh(&self.store.pool, now).await?;
+                }
+                return Err(error);
+            }
+        };
         for fact in &facts {
             let _ = self.bus.send(fact.clone());
         }
-        facts.extend(
-            self.run_rule_reactions(
-                facts.iter().map(|fact| fact.record_uid.clone()).collect(),
-                event.id,
-                now,
-            )
-            .await?,
-        );
+        let roots: BTreeMap<_, _> = facts.iter().map(|fact| (fact.record_uid.clone(), fact.uid.clone())).collect();
+        for (record, parent) in roots {
+            facts.extend(self.run_rule_reactions(vec![record], parent, now).await?);
+        }
+        if store::karma_schedules::refresh(&self.store.pool, now).await? { self.notify_karma_deadline_change(); }
         Ok(facts)
     }
 
@@ -174,7 +212,9 @@ impl Engine {
         condition: Option<&store::recurrence::RuleCondition>,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
-        self.require_permission(actor, "record:update").await?;
+        if self.transfer_rule_anchor(consequences, actor).await?.is_none() {
+            self.require_permission(actor, "record:update").await?;
+        }
         if consequences.iter().any(|effect| {
             matches!(
                 effect,
@@ -185,32 +225,7 @@ impl Engine {
             self.require_permission(actor, "organ:update").await?;
         }
         if let Some(condition) = condition {
-            let mut reads = Vec::new();
-            for token in condition
-                .parsed()
-                .map_err(|error| invalid(error.to_string()))?
-                .reads()
-            {
-                if token.func == "freq" {
-                    reads.push(self.resolve_frequency_uid(&token.slug).await?);
-                } else if token.func == nucleus::expr::ASSERTION {
-                    let concept = store::concepts::resolve(&self.store.pool, &token.slug)
-                        .await?
-                        .ok_or_else(|| invalid("condition concept is missing"))?;
-                    reads.extend(
-                        store::ledger::records_with_concept(&self.store.pool, &concept).await?,
-                    );
-                } else {
-                    for name in token.slug.split('|') {
-                        if let Some(record) =
-                            store::records::resolve(&self.store.pool, name).await?
-                        {
-                            reads.push(record.uid);
-                        }
-                    }
-                }
-            }
-            self.refuse_unreadable(actor, &reads).await?;
+            self.karma_condition_records(condition.parsed().map_err(|error| invalid(error.to_string()))?, actor).await?;
         }
         Ok(())
     }
@@ -239,6 +254,7 @@ impl Engine {
         let mut result = Vec::new();
         let mut steps = 0;
         while let Some((changed, event_id)) = queue.pop_front() {
+            execution_checkpoint(false).await?;
             let mut readers = BTreeSet::new();
             for uid in changed {
                 readers.extend(index.records.get(&uid).into_iter().flatten().cloned());
@@ -261,7 +277,7 @@ impl Engine {
             }
             for uid in readers {
                 steps += 1;
-                if steps > 256 {
+                if steps > 256 && nucleus::execution::current().and_then(|execution| execution.control()).is_none() {
                     return Err(EngineError::Conflict {
                         code: "karma_reaction_limit",
                         message: "Rule reactions exceeded 256 evaluations; inspect the rule cycle."
@@ -270,12 +286,14 @@ impl Engine {
                 }
                 let rule = &index.rules[&uid];
                 let event = RuleEvent {
+                    attempt: 0,
                     id: event_id.clone(),
                     frequency: None,
                     at: now,
                 };
                 let facts = match Box::pin(self.execute_rule_event(rule, &event, now)).await {
                     Ok(facts) => facts,
+                    Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
                     Err(error) => {
                         self.record_rule_failure(rule, &event, &error, now).await?;
                         tracing::warn!(rule = rule.uid, %error, "Karma rule refused a Record change");
@@ -309,9 +327,11 @@ impl Engine {
         &self,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
+        let mut result = Box::pin(self.recover_schedule_retries(now)).await?;
+        store::karma_schedules::refresh(&self.store.pool, now).await?;
         let index = Box::pin(self.rule_dependencies()).await?;
-        let mut result = Vec::new();
         for _ in 0..64 {
+            execution_checkpoint(false).await?;
             let sequence: i64 = store::sqlx::query_scalar(
                 "SELECT next_sequence FROM karma_rule_progress WHERE singleton = 1",
             )
@@ -359,6 +379,7 @@ impl Engine {
                 });
             if active {
                 let event = RuleEvent {
+                    attempt: 0,
                     id: format!("frequency:{uid}:{}", occurrence.logical_at.as_millis()),
                     frequency: Some(uid.to_string()),
                     at: DateTime::from_timestamp_millis(occurrence.logical_at.as_millis())
@@ -375,18 +396,13 @@ impl Engine {
                             for fact in &facts {
                                 let _ = self.bus.send(fact.clone());
                             }
-                            let changed =
-                                facts.iter().map(|fact| fact.record_uid.clone()).collect();
+                            let roots: BTreeMap<_, _> = facts.iter().map(|fact| (fact.record_uid.clone(), fact.uid.clone())).collect();
                             result.extend(facts);
-                            result.extend(
-                                self.run_rule_reactions(
-                                    changed,
-                                    format!("reaction:{}:{rule_uid}", event.id),
-                                    now,
-                                )
-                                .await?,
-                            );
+                            for (record, parent) in roots {
+                                result.extend(self.run_rule_reactions(vec![record], parent, now).await?);
+                            }
                         }
+                        Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
                         Err(error) => {
                             self.record_rule_failure(rule, &event, &error, now).await?;
                             tracing::warn!(rule = rule.uid, %error, "Karma rule refused its occurrence");
@@ -410,10 +426,34 @@ impl Engine {
             store::sqlx::query("UPDATE karma_rule_progress SET next_sequence = ? WHERE singleton = 1 AND next_sequence = ?")
                 .bind(sequence + 1).bind(sequence).execute(&self.store.pool).await?;
         }
+        if store::karma_schedules::refresh(&self.store.pool, now).await? { self.notify_karma_deadline_change(); }
         Ok(result)
     }
 
-    async fn record_rule_failure(
+    pub(crate) async fn recover_schedule_retries(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
+        let values = store::sqlx::query("SELECT * FROM karma_schedule_boundary WHERE current = 1 AND status = 'pending' AND attempt > 0 ORDER BY intended_at_ms, uid")
+            .fetch_all(&self.store.pool).await?;
+        let mut facts = Vec::new();
+        for value in values {
+            let uid: String = value.get("rule_uid");
+            let Some(rule) = store::recurrence::get(&self.store.pool, &uid).await? else { continue };
+            if Some(rule.revision) != value.get::<Option<i64>, _>("rule_revision") || rule.is_paused() { continue }
+            let event = RuleEvent { id: value.get("event_id"), frequency: value.get("frequency_uid"), at: DateTime::from_timestamp_millis(value.get("intended_at_ms")).ok_or_else(|| invalid("Invalid scheduled occurrence date"))?, attempt: value.get("attempt") };
+            match Box::pin(self.execute_rule_event(&rule, &event, now)).await {
+                Ok(applied) => {
+                    for fact in &applied { let _ = self.bus.send(fact.clone()); }
+                    let roots: BTreeMap<_, _> = applied.iter().map(|fact| (fact.record_uid.clone(), fact.uid.clone())).collect();
+                    facts.extend(applied);
+                    for (record, parent) in roots { facts.extend(self.run_rule_reactions(vec![record], parent, now).await?); }
+                }
+                Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+                Err(error) => self.record_rule_failure(&rule, &event, &error, now).await?,
+            }
+        }
+        Ok(facts)
+    }
+
+    pub(crate) async fn record_rule_failure(
         &self,
         rule: &store::recurrence::Recurrence,
         event: &RuleEvent,
@@ -421,7 +461,7 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<(), EngineError> {
         store::sqlx::query(
-            "INSERT OR IGNORE INTO karma_rule_application VALUES (?, ?, ?, 'failed', ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO karma_rule_application(event_id, rule_uid, rule_revision, status, reason, at, intended_at, frequency_uid, attempt) VALUES (?, ?, ?, 'failed', ?, ?, ?, ?, ?)",
         )
         .bind(&event.id)
         .bind(&rule.uid)
@@ -430,6 +470,7 @@ impl Engine {
         .bind(now.to_rfc3339())
         .bind(event.at.to_rfc3339())
         .bind(&event.frequency)
+        .bind(event.attempt)
         .execute(&self.store.pool)
         .await?;
         Ok(())
@@ -441,12 +482,44 @@ impl Engine {
         event: &RuleEvent,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
+        crate::karma_transfers::scope(rule.actor_uid.as_deref(), self.execute_rule_event_with_reads(rule, event, now)).await
+    }
+
+    async fn execute_rule_event_with_reads(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        event: &RuleEvent,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Fact>, EngineError> {
+        let mut evidence = self.capture_rule_evidence(rule).await;
+        if let Some(inputs) = &mut evidence.inputs
+            && let Some(frequency) = &event.frequency
+            && !inputs.contains(frequency) {
+            inputs.push(frequency.clone());
+        }
+        crate::karma_history::CAPTURE.scope(std::cell::RefCell::new(evidence), async {
+            let result = Box::pin(self.execute_rule_event_inner(rule, event, now)).await;
+            if result.as_ref().err().is_some_and(|error| !matches!(error, EngineError::ExecutionLimit(_))) {
+                let mut connection = self.store.pool.acquire().await?;
+                crate::karma_history::persist(&mut connection, rule, event).await?;
+            }
+            result
+        }).await
+    }
+
+    async fn execute_rule_event_inner(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        event: &RuleEvent,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Fact>, EngineError> {
         let current = store::recurrence::get(&self.store.pool, &rule.uid).await?;
         if current.is_none_or(|current| current.is_paused() || current.revision != rule.revision) {
             return Ok(Vec::new());
         }
-        let consumed: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_application WHERE event_id = ? AND rule_uid = ? AND rule_revision = ?)")
-            .bind(&event.id).bind(&rule.uid).bind(rule.revision).fetch_one(&self.store.pool).await?;
+        if !store::karma_schedules::admit(&self.store.pool, &rule.uid, event.frequency.as_deref(), event.at.timestamp_millis(), now).await? { return Ok(Vec::new()) }
+        let consumed: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_application WHERE event_id = ? AND rule_uid = ? AND rule_revision = ? AND (attempt = ? OR status = 'applied'))")
+            .bind(&event.id).bind(&rule.uid).bind(rule.revision).bind(event.attempt).fetch_one(&self.store.pool).await?;
         if consumed {
             return Ok(Vec::new());
         }
@@ -457,22 +530,21 @@ impl Engine {
                 return Ok(Vec::new());
             }
         }
+        let stage = self.transfer_stage_evaluation(rule, now).await?;
+        if stage.is_some() && let Some(execution) = nucleus::execution::current()
+            && let Some(control) = execution.control()
+            && let Some(cell) = execution.cell()
+            && let Some(origin) = store::karma_stages::for_rule(&self.store.pool, &rule.uid).await? {
+            control.link_effect(cell, &event.id, &origin.occurrence);
+        }
+        execution_checkpoint(true).await?;
         Box::pin(self.validate_automatic_rule(
             &rule.consequences,
             rule.condition.as_ref(),
             rule.actor_uid.as_deref(),
         ))
         .await?;
-        self.reject_direct_transfer_record_mutation(&rule.record_uid)
-            .await?;
-        self.authorize_action(
-            &crate::actions::Action::SetQuantityExact {
-                target: rule.record_uid.clone(),
-                amount: "0".into(),
-            },
-            rule.actor_uid.as_deref(),
-        )
-        .await?;
+        self.authorize_karma_rule(rule, rule.actor_uid.as_deref()).await?;
         let carried = match &rule.condition {
             None => None,
             Some(condition) => match RULE_EVENT
@@ -484,24 +556,49 @@ impl Engine {
             {
                 Some(value) => Some(value),
                 None => {
-                    store::sqlx::query("INSERT OR IGNORE INTO karma_rule_application VALUES (?, ?, ?, 'blocked', NULL, ?, ?, ?)")
-                        .bind(&event.id).bind(&rule.uid).bind(rule.revision).bind(now.to_rfc3339()).bind(event.at.to_rfc3339()).bind(&event.frequency).execute(&self.store.pool).await?;
+                    let mut tx = store::write_tx(&self.store.pool).await?;
+                    store::sqlx::query("INSERT OR IGNORE INTO karma_rule_application(event_id, rule_uid, rule_revision, status, reason, at, intended_at, frequency_uid, attempt) VALUES (?, ?, ?, 'blocked', NULL, ?, ?, ?, ?)")
+                        .bind(&event.id).bind(&rule.uid).bind(rule.revision).bind(now.to_rfc3339()).bind(event.at.to_rfc3339()).bind(&event.frequency).bind(event.attempt).execute(&mut *tx).await?;
+                    crate::karma_history::persist(&mut tx, rule, event).await?;
+                    tx.commit().await?;
                     return Ok(Vec::new());
                 }
             },
         };
+        let mut transfer_effects = Vec::with_capacity(rule.consequences.len());
+        for consequence in &rule.consequences {
+            let mut prepared = self.prepare_transfer_effect(consequence, carried, rule.actor_uid.as_deref()).await?;
+            if let Some(original) = &stage && let Some(prepared) = &mut prepared {
+                if prepared.transfer != original.transfer || prepared.person != original.person {
+                    return Err(invalid("A guarded stage must retain its Transfer and acting Person"));
+                }
+                let level = prepared.level;
+                *prepared = original.clone();
+                prepared.level = level;
+            }
+            transfer_effects.push(prepared);
+        }
         let signer = self.signer.lock().await.clone();
         let mut tx = store::write_tx(&self.store.pool).await?;
-        let inserted = store::sqlx::query("INSERT OR IGNORE INTO karma_rule_application VALUES (?, ?, ?, 'applied', NULL, ?, ?, ?)")
-            .bind(&event.id).bind(&rule.uid).bind(rule.revision).bind(now.to_rfc3339()).bind(event.at.to_rfc3339()).bind(&event.frequency).execute(&mut *tx).await?;
+        let inserted = store::sqlx::query("INSERT OR IGNORE INTO karma_rule_application(event_id, rule_uid, rule_revision, status, reason, at, intended_at, frequency_uid, attempt) VALUES (?, ?, ?, 'applied', NULL, ?, ?, ?, ?)")
+            .bind(&event.id).bind(&rule.uid).bind(rule.revision).bind(now.to_rfc3339()).bind(event.at.to_rfc3339()).bind(&event.frequency).bind(event.attempt).execute(&mut *tx).await?;
         if inserted.rows_affected() == 0 {
             return Ok(Vec::new());
         }
         let mut facts = Vec::new();
+        let mut changes = Vec::new();
+        let occurrence = nucleus::simulation::RuleOccurrence {
+            rule_uid: rule.uid.clone(), revision: rule.revision.try_into().map_err(|_| invalid("negative Rule revision"))?, event_id: event.id.clone(),
+            frequency: event.frequency.as_ref().map(|uid| nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Frequency, uid)).transpose().map_err(|error| invalid(error.to_string()))?,
+            intended_at_ms: Some(event.at.timestamp_millis()),
+        };
+        let execution = nucleus::execution::current();
+        let control = execution.as_ref().and_then(|execution| execution.control());
         for (position, consequence) in rule.consequences.iter().enumerate() {
             use nucleus::karma::Consequence;
-            let current = store::sqlx::query("SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ? AND deleted_at IS NULL")
+            let current = store::sqlx::query("SELECT quantity_mantissa, quantity_scale, unit_uid FROM record WHERE uid = ? AND deleted_at IS NULL")
                 .bind(&rule.record_uid).fetch_optional(&mut *tx).await?.ok_or_else(|| invalid("rule target is missing"))?;
+            let unit: Option<String> = current.try_get("unit_uid")?;
             let current = store::exact::read_decimal(&current, "quantity")?;
             let delta = match consequence {
                 Consequence::SetQuantity { value } => Some(store::exact::difference(
@@ -527,11 +624,11 @@ impl Engine {
                             event.id, rule.uid, rule.revision
                         )),
                     };
-                    queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "action", serde_json::json!({"action": action, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision}), &rule.record_uid, now).await?;
+                    queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "action", serde_json::json!({"action": action, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision, "occurrence": occurrence}), &rule.record_uid, now).await?;
                     None
                 }
                 Consequence::RunCommand { command } => {
-                    queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "command", serde_json::json!({"command": command, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision}), &rule.record_uid, now).await?;
+                    queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "command", serde_json::json!({"command": command, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision, "occurrence": occurrence}), &rule.record_uid, now).await?;
                     None
                 }
                 Consequence::Notify { message } => {
@@ -539,7 +636,7 @@ impl Engine {
                         &mut tx,
                         &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision),
                         "notify",
-                        serde_json::json!({"message": message, "carried": carried}),
+                        serde_json::json!({"message": message, "carried": carried, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision, "occurrence": occurrence}),
                         &rule.record_uid,
                         now,
                     )
@@ -547,7 +644,8 @@ impl Engine {
                     None
                 }
                 _ => {
-                    queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "consequence", serde_json::json!({"consequence": consequence, "carried": carried, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision}), &rule.record_uid, now).await?;
+                    let request_id = format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision);
+                    queue_effect_tx(&mut tx, &request_id, "consequence", serde_json::json!({"consequence": consequence, "carried": carried, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision, "occurrence": occurrence, "transfer_evaluation": transfer_effects[position], "request_id": request_id}), &rule.record_uid, now).await?;
                     None
                 }
             };
@@ -566,11 +664,31 @@ impl Engine {
                     crate::append::append_one_in_transaction(&mut tx, new, now, signer.as_ref())
                         .await?
                 {
+                    if control.is_some() {
+                        let unit = unit.map(|uid| nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Unit, uid)).transpose().map_err(|error| invalid(error.to_string()))?;
+                        changes.push(nucleus::simulation::RuleChange {
+                            record: nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Record, rule.record_uid.clone()).map_err(|error| invalid(error.to_string()))?,
+                            fact: fact.uid.clone().try_into().map_err(invalid)?,
+                            before: nucleus::simulation::Quantity { value: current, unit: unit.clone() },
+                            after: nucleus::simulation::Quantity { value: store::exact::sum_exact([current, delta])?, unit },
+                        });
+                    }
                     facts.push(fact);
                 }
             }
         }
+        crate::karma_history::persist(&mut tx, rule, event).await?;
         tx.commit().await?;
+        if let Some(control) = control && let Some(cell) = execution.as_ref().and_then(|execution| execution.cell()) {
+            let consequences = rule.consequences.iter().map(|consequence| serde_json::to_value(consequence).map(|value| value["kind"].as_str().unwrap_or("consequence").to_owned())).collect::<Result<Vec<_>, _>>().map_err(EngineError::Json)?;
+            control.record(nucleus::simulation::RuleStep { cell: cell.to_owned(), occurrence, changes, transfer_changes: Vec::new(), consequences, at_ms: now.timestamp_millis(), virtual_ms: control.now_ms() }).map_err(EngineError::ExecutionLimit)?;
+            let changed: BTreeSet<_> = facts.iter().map(|fact| fact.record_uid.as_str()).collect();
+            for uid in changed {
+                if control.checks_available(cell, uid) {
+                    self.check_control_quantities(cell, &control, uid, now).await?;
+                }
+            }
+        }
         self.effects_changed
             .send_modify(|revision| *revision = revision.wrapping_add(1));
         self.query_changed
@@ -609,6 +727,14 @@ impl Engine {
                             .or_default()
                             .insert(rule.uid.clone());
                         index.used.insert(uid);
+                    } else if nucleus::transfer::karma::is_reading(&token.func) {
+                        for name in token.slug.split('|') {
+                            let uid = match store::records::resolve(&self.store.pool, name).await? {
+                                Some(record) => record.uid,
+                                None => name.to_string(),
+                            };
+                            index.records.entry(uid).or_default().insert(rule.uid.clone());
+                        }
                     } else if token.func == nucleus::expr::ASSERTION {
                         index
                             .concepts

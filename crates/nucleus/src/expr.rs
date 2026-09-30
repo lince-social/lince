@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub enum Expr {
     Num(String),
     Dur(i64),
+    Text(String),
     Ref(String),
     Fn(String, Vec<Expr>),
     Unary(UnOp, Box<Expr>),
@@ -40,6 +41,7 @@ pub enum Value {
     Num(f64),
     Dur(i64),
     Ref(String),
+    Text(String),
 }
 
 impl Value {
@@ -50,6 +52,9 @@ impl Value {
             Value::Ref(r) => Err(NucleusError::Eval(format!(
                 "reference @{r} used where a number was expected"
             ))),
+            Value::Text(_) => Err(NucleusError::Eval(
+                "text used where a number was expected".into(),
+            )),
         }
     }
 }
@@ -59,6 +64,54 @@ pub trait Resolver {
 }
 
 pub const ASSERTION: &str = "assertion";
+
+pub fn extension_reading(namespace: &str, property: &str) -> String {
+    format!(
+        "extension:{}",
+        serde_json::to_string(&(namespace, property)).unwrap()
+    )
+}
+
+pub fn extension_parts(reading: &str) -> Option<(String, String)> {
+    serde_json::from_str(reading.strip_prefix("extension:")?).ok()
+}
+
+pub fn binding_reading(reading: &str) -> &str {
+    if reading.starts_with("extension:") {
+        "extension"
+    } else {
+        reading
+    }
+}
+
+pub fn extension_token(args: &[Expr]) -> Result<TokenKey, NucleusError> {
+    let [
+        Expr::Ref(record),
+        Expr::Text(namespace),
+        Expr::Text(property),
+    ] = args
+    else {
+        return Err(NucleusError::Parse(
+            "Use extension(@record, \"namespace\", \"property\")".into(),
+        ));
+    };
+    if [namespace, property].iter().any(|name| {
+        name.is_empty()
+            || name.trim() != name.as_str()
+            || name.len() > 200
+            || name.chars().any(char::is_control)
+    }) || property.contains('.')
+    {
+        return Err(NucleusError::Parse(
+            "Choose a valid extension namespace and property".into(),
+        ));
+    }
+    Ok(TokenKey {
+        func: extension_reading(namespace, property),
+        slug: record.clone(),
+        dur_secs: None,
+    })
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TokenKey {
@@ -95,6 +148,12 @@ impl Expr {
                 dur_secs: None,
             }),
             Expr::Fn(name, args) => {
+                if name == "extension" {
+                    if let Ok(token) = extension_token(args) {
+                        out.push(token);
+                    }
+                    return;
+                }
                 let dur = args.iter().find_map(|a| match a {
                     Expr::Dur(s) => Some(*s),
                     _ => None,
@@ -128,7 +187,7 @@ impl Expr {
                 a.collect_tokens(out);
                 b.collect_tokens(out);
             }
-            Expr::Num(_) | Expr::Dur(_) => {}
+            Expr::Num(_) | Expr::Dur(_) | Expr::Text(_) => {}
         }
     }
 
@@ -140,6 +199,7 @@ impl Expr {
         Ok(match self {
             Expr::Num(text) => Value::Num(text.parse().unwrap_or(0.0)),
             Expr::Dur(s) => Value::Dur(*s),
+            Expr::Text(text) => Value::Text(text.clone()),
             Expr::Ref(slug) => r.call("quantity", &[Value::Ref(slug.clone())])?,
             Expr::Fn(name, args) => {
                 let mut vals = Vec::with_capacity(args.len());
@@ -211,6 +271,16 @@ impl MapResolver {
 
 impl Resolver for MapResolver {
     fn call(&mut self, name: &str, args: &[Value]) -> Result<Value, NucleusError> {
+        let reading = if name == "extension" {
+            match args {
+                [Value::Ref(_), Value::Text(namespace), Value::Text(property)] => {
+                    extension_reading(namespace, property)
+                }
+                _ => return Err(NucleusError::Eval("Invalid extension reading".into())),
+            }
+        } else {
+            name.into()
+        };
         let refs: Vec<&str> = args
             .iter()
             .filter_map(|a| match a {
@@ -229,7 +299,7 @@ impl Resolver for MapResolver {
             _ => None,
         });
         let key = TokenKey {
-            func: name.into(),
+            func: reading,
             slug: slug.clone(),
             dur_secs: dur,
         };
@@ -245,6 +315,7 @@ impl Resolver for MapResolver {
 enum Tok {
     Num(String),
     Dur(i64),
+    Text(String),
     Ref(String),
     Assert(String),
     Ident(String),
@@ -357,6 +428,24 @@ fn lex(src: &str) -> Result<Vec<Tok>, NucleusError> {
                 } else {
                     return Err(NucleusError::Parse("single '|' (use '||')".into()));
                 }
+            }
+            '"' => {
+                let start = i;
+                i += 1;
+                let mut escaped = false;
+                while i < chars.len() {
+                    let character = chars[i];
+                    i += 1;
+                    if character == '"' && !escaped {
+                        break;
+                    }
+                    escaped = character == '\\' && !escaped;
+                }
+                let literal: String = chars[start..i].iter().collect();
+                let text = serde_json::from_str(&literal).map_err(|error| {
+                    NucleusError::Parse(format!("Invalid text argument: {error}"))
+                })?;
+                out.push(Tok::Text(text));
             }
             '@' => {
                 let start = i + 1;
@@ -552,6 +641,7 @@ impl Parser {
         match self.bump() {
             Some(Tok::Num(text)) => Ok(Expr::Num(text)),
             Some(Tok::Dur(s)) => Ok(Expr::Dur(s)),
+            Some(Tok::Text(text)) => Ok(Expr::Text(text)),
             Some(Tok::Ref(r)) => Ok(Expr::Ref(r)),
             Some(Tok::Assert(name)) => Ok(Expr::Fn(ASSERTION.into(), vec![Expr::Ref(name)])),
             Some(Tok::LParen) => {

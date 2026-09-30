@@ -437,17 +437,50 @@ async fn a_recipients_quota_bounds_what_a_stranger_can_leave() {
             },
             "c-sender",
             &recipient_organ,
-            &[sealing],
+            &[sealing.clone()],
             &signing,
         )
         .expect("seals"),
     )
     .expect("serializes");
 
-    assert!(carrier.accept_bundle(&body, "node-sender").await.is_ok());
+    store::mailbox::register(
+        &carrier.store.pool,
+        &recipient_organ,
+        &root.public_key_b64(),
+        "",
+        body.len() as i64,
+    )
+    .await
+    .expect("exact quota");
+    let accepted = carrier
+        .accept_bundle(&body, "node-sender")
+        .await
+        .expect("first deposit");
     assert_eq!(
         carrier
             .accept_bundle(&body, "node-sender")
+            .await
+            .expect("idempotent retry"),
+        accepted
+    );
+    let different = serde_json::to_string(
+        &engine::seal::seal(
+            &engine::seal::MailedBatch {
+                root: None,
+                batch: batch("organ-sender", "c-sender"),
+            },
+            "c-sender",
+            &recipient_organ,
+            &[sealing],
+            &signing,
+        )
+        .expect("different envelope"),
+    )
+    .expect("serializes");
+    assert_eq!(
+        carrier
+            .accept_bundle(&different, "node-sender")
             .await
             .unwrap_err(),
         engine::mailbox::Refusal::QuotaFull
@@ -603,6 +636,13 @@ async fn mailable(
         .set_organ_signer(organ_signer.clone())
         .await
         .expect("organ signer");
+    store::cells::set_config(
+        &engine.store.pool,
+        "lince.social",
+        &serde_json::json!({"mailbox_copies":1}),
+    )
+    .await
+    .expect("single-carrier policy");
     engine.set_sealing_keyring_path(keyring_dir.join("keyring.json"));
     let sealing = engine
         .published_sealing_key()

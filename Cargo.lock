@@ -7583,6 +7583,7 @@ dependencies = [
  "sensei",
  "serde",
  "serde_json",
+ "store",
  "tempfile",
  "tokio",
  "toml",
@@ -7617,6 +7618,7 @@ name = "lince-editor"
 version = "0.7.0"
 dependencies = [
  "cap-std",
+ "icu_segmenter",
  "ignore",
  "libc",
  "loro",
@@ -7626,9 +7628,12 @@ dependencies = [
  "rustix 1.1.4",
  "sensei",
  "serde",
+ "serde_json",
  "sha2 0.11.0",
  "similar",
  "tempfile",
+ "tokio",
+ "url",
 ]
 
 [[package]]
@@ -7752,9 +7757,11 @@ dependencies = [
 name = "lince-simulation"
 version = "0.7.0"
 dependencies = [
+ "base64 0.23.1",
  "chrono",
  "engine",
  "lince-cell",
+ "lince-fiote",
  "nucleus",
  "protein",
  "schemars 1.2.2",
@@ -12954,7 +12961,9 @@ dependencies = [
  "sensei",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "sqlx",
+ "tempfile",
  "tokio",
 ]
 

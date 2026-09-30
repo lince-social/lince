@@ -91,6 +91,7 @@ async fn record(engine: &Engine, slug: &str) -> String {
 
 fn promise(uid: &str, record: &str, party: &Person, delta: f64) -> TransferPromiseInput {
     TransferPromiseInput {
+        item: None,
         uid: Some(uid.into()),
         record: record.into(),
         party: Some(party.uid.clone()),

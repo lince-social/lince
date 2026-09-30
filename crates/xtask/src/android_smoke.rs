@@ -2,10 +2,9 @@ use crate::Result;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
 use std::{
-    env,
     ffi::OsString,
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
     thread,
     time::{Duration, Instant},
@@ -203,7 +202,7 @@ fn head_key(value: &Value) -> Option<&str> {
         .find(|key| key.ends_with("/head"))
 }
 
-pub(crate) fn run(args: &[OsString]) -> Result<()> {
+pub(crate) fn run(root: &Path, args: &[OsString]) -> Result<()> {
     let mut device = None;
     let mut apk = None;
     let mut directory = PathBuf::from("target/android-smoke");
@@ -239,10 +238,7 @@ pub(crate) fn run(args: &[OsString]) -> Result<()> {
         .ok_or("--apk is required")?
         .canonicalize()
         .map_err(|e| e.to_string())?;
-    let sdk = env::var_os("ANDROID_HOME")
-        .or_else(|| env::var_os("ANDROID_SDK_ROOT"))
-        .map(PathBuf::from)
-        .ok_or("Set ANDROID_HOME to the Android SDK directory")?;
+    let sdk = crate::android::sdk_path(root, None)?;
     let badging = Command::new(sdk.join("build-tools/35.0.0/aapt2"))
         .args(["dump", "badging"])
         .arg(&apk)

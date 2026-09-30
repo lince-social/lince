@@ -86,6 +86,13 @@ pub enum Action {
         #[serde(default)]
         quantity: Option<f64>,
     },
+    AddQuantityExact {
+        target: String,
+        delta: nucleus::DecimalValue,
+    },
+    AddQuantityGroupExact {
+        changes: std::collections::BTreeMap<String, nucleus::DecimalValue>,
+    },
     AddQuantity {
         target: String,
         delta: f64,
@@ -137,6 +144,53 @@ pub enum Action {
     },
     PreviewKarmaReading {
         source: String,
+    },
+    PreviewKarmaProposal {
+        request: crate::karma_preview::Request,
+    },
+    InspectKarmaRuleHistory {
+        rule: String,
+        limit: u32,
+    },
+    InspectTransferKarma {
+        transfer: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    PreviewKarmaHabit {
+        input: crate::karma_habits::Input,
+    },
+    ImportKarmaHabit {
+        input: crate::karma_habits::Input,
+        expected_preview: String,
+        request_id: String,
+    },
+    SaveKarmaSchedule {
+        schedule: Option<String>,
+        expected_revision: Option<i64>,
+        name: String,
+        boundaries: Vec<nucleus::karma::scheduled_change::BoundaryInput>,
+        request_id: String,
+    },
+    InspectKarmaSchedules {
+        schedule: Option<String>,
+    },
+    PreviewKarmaScheduleDates {
+        date: nucleus::karma::CivilDateTime,
+        timezone: nucleus::karma::TimeZoneId,
+        gap: nucleus::karma::GapPolicy,
+        fold: nucleus::karma::FoldPolicy,
+    },
+    CancelKarmaSchedule {
+        schedule: String,
+        expected_revision: i64,
+        request_id: String,
+    },
+    RetryKarmaSchedule {
+        schedule: String,
+        expected_revision: i64,
+        boundary: String,
+        request_id: String,
     },
     SaveKarmaRule {
         #[serde(default)]
@@ -339,6 +393,9 @@ pub enum Action {
     RosterStatus,
     SyncNow,
     MailboxStatus,
+    MailboxSavedStatus,
+    MailboxRetrySaved { uid: String },
+    MailboxSetCopies { copies: u8 },
     MailboxCarryFor {
         organ_uid: String,
         #[serde(default)]
@@ -422,6 +479,51 @@ pub enum Action {
     },
     Compensate {
         fact: String,
+    },
+    SetTransferChildRequirement {
+        transfer: String,
+        child: String,
+        required: bool,
+        expected_revision: u64,
+        request_id: String,
+        person: Option<String>,
+    },
+    ProposeTransferCancellation {
+        transfer: String,
+        occurrence: String,
+        expected_revision: u64,
+        expected_remaining_quantity: nucleus::DecimalValue,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    ProposeTransferLoanExtension {
+        transfer: String,
+        exchange: String,
+        until: String,
+        expected_revision: u64,
+        request_id: String,
+        person: String,
+    },
+    ApplyTransferCancellation {
+        transfer: String,
+        cancellation: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    SetRecordStockLimit {
+        record: String,
+        person: String,
+        minimum: Option<nucleus::DecimalValue>,
+        expected_version: u64,
+        request_id: String,
+    },
+    CompensateTransferApplication {
+        application: String,
+        request_id: String,
+        person: String,
     },
     CompensateTransferOccurrenceSettlement {
         settlement: String,
@@ -754,6 +856,42 @@ pub enum Action {
         person: Option<String>,
         level: u8,
     },
+    AssignTransferAgreementLevel {
+        transfer: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+        level: u8,
+        #[serde(default)]
+        expected: Option<nucleus::transfer::AgreementGuard>,
+        #[serde(default)]
+        expected_state: Option<nucleus::transfer::karma::Guard>,
+    },
+    PublishTransfer {
+        transfer: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+        #[serde(default)]
+        expected: Option<nucleus::transfer::AgreementGuard>,
+        #[serde(default)]
+        expected_state: Option<nucleus::transfer::karma::Guard>,
+    },
+    ActivateTransferFulfillment {
+        transfer: String,
+        promise: String,
+        fulfillment: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+        #[serde(default)]
+        expected: Option<nucleus::transfer::AgreementGuard>,
+        #[serde(default)]
+        expected_state: Option<nucleus::transfer::karma::Guard>,
+    },
     ActivateTransferOccurrence {
         transfer: String,
         promise: String,
@@ -784,6 +922,14 @@ pub enum Action {
         person: Option<String>,
         disputed: bool,
     },
+    SetTransferPrivateApplicationPolicy {
+        transfer: String,
+        exchange: String,
+        effects: Vec<nucleus::transfer::application::PrivateEffect>,
+        expected_version: u64,
+        request_id: String,
+        person: String,
+    },
     SetTransferOccurrenceApplicationFormula {
         occurrence: String,
         request_id: String,
@@ -792,6 +938,8 @@ pub enum Action {
         formula: String,
     },
     SettleTransferOccurrence {
+        #[serde(default)]
+        expected_effects_hash: Option<String>,
         occurrence: String,
         request_id: String,
         #[serde(default)]
@@ -851,7 +999,7 @@ pub enum Action {
         person: Option<String>,
         request_id: String,
     },
-    BeginRemoteTransferSettlement {
+    BeginTransferSettlement {
         transfer: String,
         occurrence: String,
         expected_revision: u64,
@@ -860,12 +1008,16 @@ pub enum Action {
         request_id: String,
         person: String,
     },
-    ApplyRemoteTransferApplication {
+    ApplyTransferApplication {
+        #[serde(default)]
+        expected_effects_hash: Option<String>,
         transfer: String,
         handoff: String,
         local_record: String,
         expected_formula_hash: String,
         expected_formula_version: u64,
+        expected_local_delta: f64,
+        expected_local_cumulative_before: f64,
         request_id: String,
         person: String,
     },
@@ -1193,6 +1345,9 @@ impl TransferReservePoint {
 pub struct TransferPromiseInput {
     #[serde(default)]
     pub uid: Option<String>,
+    #[serde(default)]
+    pub item: Option<nucleus::transfer::disclosure::TransferItem>,
+    #[serde(default)]
     pub record: String,
     #[serde(default)]
     pub party: Option<String>,
@@ -1334,86 +1489,14 @@ fn transfer_phase_locked() -> bool {
     true
 }
 
-struct TransferApplicationFormulaResolver {
-    incoming: f64,
-}
-
-impl nucleus::expr::Resolver for TransferApplicationFormulaResolver {
-    fn call(
-        &mut self,
-        name: &str,
-        args: &[nucleus::expr::Value],
-    ) -> Result<nucleus::expr::Value, nucleus::error::NucleusError> {
-        if name == "incoming" && args.is_empty() {
-            return Ok(nucleus::expr::Value::Num(self.incoming));
-        }
-        Err(nucleus::error::NucleusError::Eval(format!(
-            "application formula supports only incoming(), not {name}()"
-        )))
-    }
-}
-
 fn validate_transfer_application_formula(formula: &str) -> Result<String, EngineError> {
-    let formula = formula.trim();
-    if formula.is_empty() || formula.chars().count() > 2_000 {
-        return Err(EngineError::Consequence(
-            "application formula must contain 1 to 2000 characters".into(),
-        ));
-    }
-    let expr = nucleus::expr::Expr::parse(formula).map_err(|error| {
-        EngineError::Consequence(format!("invalid application formula: {error}"))
-    })?;
-    fn validate_node(expr: &nucleus::expr::Expr) -> Result<(), EngineError> {
-        use nucleus::expr::{BinOp, Expr, UnOp};
-        match expr {
-            Expr::Num(text) if text.parse::<f64>().is_ok_and(f64::is_finite) => Ok(()),
-            Expr::Fn(name, args) if name == "incoming" && args.is_empty() => Ok(()),
-            Expr::Unary(UnOp::Neg, value) => validate_node(value),
-            Expr::Bin(
-                BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem,
-                left,
-                right,
-            ) => {
-                validate_node(left)?;
-                validate_node(right)
-            }
-            _ => Err(EngineError::Consequence(
-                "application formula permits only finite numbers, incoming(), and arithmetic"
-                    .into(),
-            )),
-        }
-    }
-    validate_node(&expr)?;
-    for incoming in [-1.0, 0.0, 1.0] {
-        let value = expr
-            .eval(&mut TransferApplicationFormulaResolver { incoming })
-            .map_err(|error| {
-                EngineError::Consequence(format!("invalid application formula: {error}"))
-            })?;
-        if !value.is_finite() {
-            return Err(EngineError::Consequence(
-                "application formula must produce a finite number".into(),
-            ));
-        }
-    }
-    Ok(formula.to_string())
+    nucleus::transfer::application::validate(formula)
+        .map_err(|error| EngineError::Consequence(format!("invalid application formula: {error}")))
 }
 
 fn evaluate_transfer_application_formula(formula: &str, incoming: f64) -> Result<f64, EngineError> {
-    let expr = nucleus::expr::Expr::parse(formula).map_err(|error| {
-        EngineError::Consequence(format!("invalid application formula: {error}"))
-    })?;
-    let value = expr
-        .eval(&mut TransferApplicationFormulaResolver { incoming })
-        .map_err(|error| {
-            EngineError::Consequence(format!("invalid application formula: {error}"))
-        })?;
-    if !value.is_finite() {
-        return Err(EngineError::Consequence(
-            "application formula must produce a finite local delta for this occurrence".into(),
-        ));
-    }
-    Ok(value)
+    nucleus::transfer::application::evaluate(formula, incoming)
+        .map_err(|error| EngineError::Consequence(format!("invalid application formula: {error}")))
 }
 
 fn normalize_transfer_place(
@@ -1567,6 +1650,19 @@ pub(crate) fn concept_tokens_in(source: &str) -> Vec<(usize, usize, String)> {
     let mut found = Vec::new();
     let mut at = 0usize;
     while at < bytes.len() {
+        if bytes[at] == b'"' {
+            at += 1;
+            let mut escaped = false;
+            while at < bytes.len() {
+                let character = bytes[at];
+                at += 1;
+                if character == b'"' && !escaped {
+                    break;
+                }
+                escaped = character == b'\\' && !escaped;
+            }
+            continue;
+        }
         if bytes[at] != b'#' {
             at += 1;
             continue;
@@ -1639,8 +1735,7 @@ fn transfer_settlement_conflict(code: &'static str, message: impl Into<String>) 
 }
 
 fn transfer_settlement_values_match(left: f64, right: f64) -> bool {
-    let scale = left.abs().max(right.abs()).max(1.0);
-    (left - right).abs() <= scale * 1e-9
+    left.is_finite() && right.is_finite() && left == right
 }
 
 async fn reject_existing_transfer_revision_request(
@@ -1793,18 +1888,19 @@ fn stale_karma_handle(current_handle_revision: u64) -> EngineError {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct VerifiedActionAuthorship {
     pub person_uid: String,
     pub intent_uid: String,
 }
 
 impl Engine {
-    pub async fn act(
+    pub fn act(
         &self,
         action: Action,
         actor: Option<String>,
-    ) -> Result<ActionOutcome, EngineError> {
-        self.act_at(action, actor, nucleus::execution::now()).await
+    ) -> impl std::future::Future<Output = Result<ActionOutcome, EngineError>> + Send + '_ {
+        async move { self.act_at(action, actor, nucleus::execution::now()).await }
     }
 
     pub async fn expire_due_transfer_invitations(
@@ -1854,6 +1950,10 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
+        if let Action::PreviewKarmaProposal { request } = action {
+            let report = self.preview_karma_proposal(request, actor, now).await?;
+            return Ok(ActionOutcome { data: Some(serde_json::to_value(report).map_err(EngineError::Json)?), ..Default::default() });
+        }
         self.access_scope(
             true,
             Box::pin(self.act_authorized(action, actor, now, verified_authorship)),
@@ -1868,6 +1968,7 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
+        crate::rule_runtime::execution_checkpoint(false).await?;
         let changes_rules = matches!(&action,
             Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateFrequency { .. } | Action::DeleteFrequency { .. }
@@ -1875,13 +1976,14 @@ impl Engine {
             | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
             | Action::CreateSignal { .. } | Action::DeleteRecord { .. }
             | Action::SetSlug { .. } | Action::CreateRecord { .. }
-            | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. }
+            | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. } | Action::ImportKarmaHabit { .. }
         );
-        let preview = matches!(&action, Action::PreviewKarmaReading { .. });
+        let preview = matches!(&action, Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. });
         let _rule_guard = if matches!(&action,
             Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
             | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
+            | Action::SaveKarmaSchedule { .. } | Action::CancelKarmaSchedule { .. } | Action::RetryKarmaSchedule { .. }
         ) { Some(self.rule_execution.lock().await) } else { None };
         let outcome = if matches!(action, Action::ApplyRecurrenceOccurrence { .. })
             && !crate::already_firing()
@@ -1918,6 +2020,9 @@ impl Engine {
                 .await?;
         }
         self.authorize_action(&action, actor.as_deref()).await?;
+        let reacts_to_transfer = matches!(&action,
+            Action::AssignTransferAgreementLevel { .. } | Action::SetTransferAgreementLevel { .. }
+            | Action::CounterofferTransfer { .. } | Action::PublishTransfer { .. } | Action::ActivateTransferOccurrence { .. });
         let mut outcome = ActionOutcome::default();
         match action {
             Action::ChangeRecord { request } => {
@@ -2208,6 +2313,41 @@ impl Engine {
             Action::PreviewKarmaReading { source } => {
                 outcome.data = Some(Box::pin(self.preview_karma_reading(&source, actor.as_deref(), now)).await?);
             }
+            Action::PreviewKarmaProposal { .. } => {
+                return Err(crate::karma_preview::invalid("Preview must use the isolated Simulation service"));
+            }
+            Action::InspectKarmaRuleHistory { rule, limit } => {
+                outcome.data = Some(self.inspect_karma_history(&rule, limit, actor.as_deref()).await?);
+            }
+            Action::InspectTransferKarma { transfer, person } => {
+                outcome.data = Some(Box::pin(self.inspect_transfer_karma(&transfer, person.as_deref(), actor.as_deref(), now)).await?);
+            }
+            Action::PreviewKarmaHabit { input } => {
+                outcome.data = Some(serde_json::to_value(self.preview_karma_habit(input, actor.as_deref(), now).await?).map_err(EngineError::Json)?);
+            }
+            Action::ImportKarmaHabit { input, expected_preview, request_id } => {
+                let imported = Box::pin(self.import_karma_habit(input, expected_preview, request_id, actor.as_deref(), now)).await?;
+                outcome.created = imported.objects.iter().find(|object| object.kind == crate::karma_habits::Kind::Record).map(|object| object.uid.clone());
+                outcome.data = Some(serde_json::to_value(imported).map_err(EngineError::Json)?);
+            }
+            Action::SaveKarmaSchedule { schedule, expected_revision, name, boundaries, request_id } => {
+                outcome = Box::pin(self.save_karma_schedule(schedule, expected_revision, name, boundaries, request_id, actor.as_deref(), now)).await?;
+                self.notify_karma_deadline_change();
+            }
+            Action::InspectKarmaSchedules { schedule } => {
+                outcome.data = Some(self.inspect_karma_schedules(schedule.as_deref(), actor.as_deref()).await?);
+            }
+            Action::PreviewKarmaScheduleDates { date, timezone, gap, fold } => {
+                outcome.data = Some(self.preview_schedule_dates(date, timezone, gap, fold, actor.as_deref()).await?);
+            }
+            Action::CancelKarmaSchedule { schedule, expected_revision, request_id } => {
+                outcome = Box::pin(self.cancel_karma_schedule(schedule, expected_revision, request_id, actor.as_deref(), now)).await?;
+                self.notify_karma_deadline_change();
+            }
+            Action::RetryKarmaSchedule { schedule, expected_revision, boundary, request_id } => {
+                outcome = Box::pin(self.retry_karma_schedule(schedule, expected_revision, boundary, request_id, actor.as_deref(), now)).await?;
+                self.notify_karma_deadline_change();
+            }
             Action::SaveKarmaRule { identity, rule, expected_revision, fields, request_id } => {
                 outcome = Box::pin(self.save_karma_rule(rule, expected_revision, fields, identity, request_id, actor.as_deref(), now)).await?;
             }
@@ -2229,13 +2369,28 @@ impl Engine {
                     .map(|id| id.trim().to_string())
                     .filter(|id| !id.is_empty())
                     .unwrap_or_else(|| nucleus::new_uid("req"));
-                let uid = self.resolve(&target).await?;
                 let declared = self.resolve_consequences(consequences).await?;
+                let uid = match self.transfer_rule_anchor(&declared, actor.as_deref()).await? {
+                    Some(anchor) => {
+                        if self.resolve_karma_transfer(&target).await?.as_str() != declared.iter().find_map(nucleus::karma::Consequence::transfer_target).unwrap_or("") {
+                            return Err(EngineError::Consequence("Rule target differs from its Transfer consequence".into()));
+                        }
+                        anchor
+                    }
+                    None => {
+                        let uid = self.resolve(&target).await?;
+                        self.authorize_rule_target(&uid, actor.as_deref()).await?;
+                        uid
+                    }
+                };
                 let condition = self.canonical_condition(condition).await?;
                 let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
                 if let Some(condition) = &mut declared_condition {
                     condition.bindings = store::karma_bindings::resolve(&self.store.pool, &condition.source, &[]).await?;
                 }
+                let mut effect_bindings = declared_condition.as_ref().map_or_else(Vec::new, |condition| condition.bindings.clone());
+                let declared = self.bind_transfer_effects(declared.as_slice().to_vec(), &mut effect_bindings, &[]).await?;
+                if let Some(condition) = &mut declared_condition { condition.bindings = effect_bindings; }
                 Box::pin(self.validate_automatic_rule(&declared, declared_condition.as_ref(), actor.as_deref())).await?;
                 let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
                 let commit = store::recurrence::create(
@@ -2275,12 +2430,20 @@ impl Engine {
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
                 let declared = self.resolve_consequences(consequences).await?;
+                self.authorize_karma_rule(&current, actor.as_deref()).await?;
+                if let Some(anchor) = self.transfer_rule_anchor(&declared, actor.as_deref()).await?
+                    && anchor != current.record_uid {
+                    return Err(EngineError::Consequence("Use the Rule editor to select another Transfer target".into()));
+                }
                 let condition = self.canonical_condition(condition).await?;
                 let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
                 if let Some(condition) = &mut declared_condition {
                     condition.bindings = store::karma_bindings::resolve(&self.store.pool, &condition.source,
                         current.condition.as_ref().map_or(&[], |old| old.bindings.as_slice())).await?;
                 }
+                let mut effect_bindings = declared_condition.as_ref().map_or_else(Vec::new, |condition| condition.bindings.clone());
+                let declared = self.bind_transfer_effects(declared.as_slice().to_vec(), &mut effect_bindings, current.condition.as_ref().map_or(&[], |condition| condition.bindings.as_slice())).await?;
+                if let Some(condition) = &mut declared_condition { condition.bindings = effect_bindings; }
                 Box::pin(self.validate_automatic_rule(&declared, declared_condition.as_ref(), actor.as_deref())).await?;
                 let anchor = match parse_optional_instant(anchor_at.as_deref())? {
                     Some(value) => value,
@@ -2311,7 +2474,13 @@ impl Engine {
                 let rule = store::recurrence::get(&self.store.pool, &recurrence)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
-                self.refuse_unreadable(actor.as_deref(), &[rule.record_uid]).await?;
+                self.refuse_unreadable_karma_inputs(actor.as_deref(), &[crate::karma_transfer_effects::target(&rule).into()]).await?;
+                if store::karma_schedules::for_rule(&self.store.pool, &rule.uid).await?.is_some() {
+                    return Err(EngineError::Conflict {
+                        code: "karma_schedule_retained_rule",
+                        message: "Cancel the scheduled change to stop its remaining work. Its Rule and outcomes are kept in history.".into(),
+                    });
+                }
                 store::recurrence::delete(&self.store.pool, &rule.uid).await?;
             }
             Action::SetRecurrencePaused {
@@ -2603,6 +2772,34 @@ impl Engine {
                     note.as_deref(),
                 )
                 .await?;
+            }
+            Action::AddQuantityGroupExact { changes } => {
+                if changes.is_empty() || changes.len() > 32 {
+                    return Err(EngineError::Consequence("choose between one and 32 Record changes".into()));
+                }
+                let mut records = std::collections::BTreeSet::new();
+                let mut facts = Vec::new();
+                for (target, delta) in changes {
+                    let uid = self.resolve(&target).await?;
+                    self.reject_direct_transfer_record_mutation(&uid).await?;
+                    if !records.insert(uid.clone()) {
+                        return Err(EngineError::Consequence("a Record may appear only once in a group".into()));
+                    }
+                    facts.push(NewFact { uid:None, record_uid:uid, delta, at:None, actor_uid:actor.clone(), cause:Cause::user_edit(), payload:None });
+                }
+                let signer = self.signer.lock().await.clone();
+                let facts = crate::append::append_all(&self.store, facts, now, signer.as_ref()).await?;
+                for fact in facts { outcome.facts.extend(self.observe_committed_fact(fact, now).await?); }
+            }
+            Action::AddQuantityExact { target, delta } => {
+                let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
+                if delta.mantissa() != 0 {
+                    outcome.facts = self.append(NewFact {
+                        uid: None, record_uid: uid, delta, at: None, actor_uid: actor,
+                        cause: Cause::user_edit(), payload: None,
+                    }, now).await?;
+                }
             }
             Action::AddQuantity { target, delta } => {
                 let uid = self.resolve(&target).await?;
@@ -3292,6 +3489,26 @@ impl Engine {
                     }
                 }
             }
+            Action::MailboxSavedStatus => {
+                outcome.data = Some(serde_json::json!({"saved_mail":store::mailbox::delivery::inbox_status(&self.store.pool).await?}));
+            }
+            Action::MailboxSetCopies { copies } => {
+                if !(1..=2).contains(&copies) {
+                    return Err(EngineError::Consequence("Choose one or two mailbox copies".into()));
+                }
+                let mut config = store::cells::config(&self.store.pool, "lince.social").await?
+                    .filter(serde_json::Value::is_object).unwrap_or_else(|| serde_json::json!({}));
+                config["mailbox_copies"] = copies.into();
+                store::cells::set_config(&self.store.pool, "lince.social", &config).await?;
+                outcome.data = Some(serde_json::json!({"mailbox_copies":copies,"applies_to":"new outgoing envelopes"}));
+            }
+            Action::MailboxRetrySaved { uid } => {
+                if !store::mailbox::delivery::retry(&self.store.pool, &uid).await? {
+                    return Err(EngineError::Consequence("There is no pending saved message to recover".into()));
+                }
+                let imported = self.process_recovered_mail().await?;
+                outcome.data = Some(serde_json::json!({"imported":imported,"saved_mail":store::mailbox::delivery::inbox_status(&self.store.pool).await?}));
+            }
             Action::MailboxStatus => {
                 let swept = self.sweep_mailbox().await?;
                 let mut carrying = Vec::new();
@@ -3761,6 +3978,9 @@ impl Engine {
                     "window_minutes": crate::wire::Wire::MAIL_AFTER.num_minutes(),
                     "never_picked_up": never_picked_up,
                     "outstanding_deposits": store::mail_left::outstanding(pool).await?,
+                    "saved_outgoing": store::mailbox::outbox::status(pool).await?,
+                    "mailbox_copies": store::cells::config(pool, "lince.social").await?
+                        .and_then(|value| value["mailbox_copies"].as_i64()).unwrap_or(2),
                     "mail_key_published": mail_key_published,
                 }));
             }
@@ -3775,6 +3995,7 @@ impl Engine {
                 store::organs::backdate_unreachable(&self.store.pool, organ_uid.as_str(), &past)
                     .await?;
                 store::organs::mark_mailed_clear(&self.store.pool, organ_uid.as_str()).await?;
+                store::mailbox::outbox::retry_recipient(&self.store.pool, organ_uid.as_str()).await?;
                 let moved = self.sync_now().await?;
                 let after = store::organs::contact(&self.store.pool, organ_uid.as_str()).await?;
                 outcome.data = Some(serde_json::json!({
@@ -4007,7 +4228,8 @@ impl Engine {
                 let original = store::facts::get(&self.store.pool, &fact)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(fact.clone()))?;
-                if store::transfers::occurrence_settlement_for_application_fact(
+                if store::transfer_effects::protected(&self.store.pool, &original.uid).await?
+                    || store::transfers::occurrence_settlement_for_application_fact(
                     &self.store.pool,
                     &original.uid,
                 )
@@ -5437,9 +5659,9 @@ impl Engine {
                         "a transfer draft supports at most 63 invited people".into(),
                     ));
                 }
-                if promises.is_empty() || promises.len() > 256 {
+                if promises.len() > 256 {
                     return Err(EngineError::Consequence(
-                        "a transfer draft requires 1 to 256 promises".into(),
+                        "a transfer draft supports at most 256 promises".into(),
                     ));
                 }
                 let cell_reserve_default = self.transfer_reservation_cell_default().await?;
@@ -5447,7 +5669,9 @@ impl Engine {
 
                 let parent_uid = match parent.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
                     Some(token) => {
-                        let uid = self.resolve(token).await?;
+                        let uid = self
+                            .resolve_transfer_visible_record(token, actor.as_deref())
+                            .await?;
                         let row = store::records::get(&self.store.pool, &uid)
                             .await?
                             .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
@@ -5456,12 +5680,16 @@ impl Engine {
                                 "a transfer parent must be another transfer".into(),
                             ));
                         }
+                        self.require_permission(actor.as_deref(), "transfer:update").await?;
                         Some(uid)
                     }
                     None => None,
                 };
                 let source_uid = match source.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
-                    Some(token) => Some(self.resolve(token).await?),
+                    Some(token) => Some(
+                        self.resolve_transfer_visible_record(token, actor.as_deref())
+                            .await?,
+                    ),
                     None => None,
                 };
                 if matches!(satiation, TransferSatiation::FirstCompletes) && source_uid.is_none() {
@@ -5514,11 +5742,14 @@ impl Engine {
                             message: "a new Transfer promise uid is already in use".into(),
                         });
                     }
-                    let record_uid = self.resolve(input.record.trim()).await?;
-                    let concept_uid = store::records::get(&self.store.pool, &record_uid)
-                        .await?
-                        .ok_or_else(|| EngineError::UnknownRecord(record_uid.clone()))?
-                        .identity_predicate_uid;
+                    let item = self.resolve_transfer_item(input.item, &creator_person).await?;
+                    let (record_uid, concept_uid) = self
+                        .resolve_transfer_item_source(
+                            &input.record,
+                            item.is_some(),
+                            actor.as_deref(),
+                        )
+                        .await?;
                     let person_uid = if input.open {
                         if let Some(token) = input.party.as_deref() {
                             let submitted = self.resolve(token.trim()).await?;
@@ -5567,7 +5798,8 @@ impl Engine {
                     }
                     draft_promises.push(store::transfers::DraftPromise {
                         uid: Some(input.uid.unwrap_or_else(|| nucleus::new_uid("p"))),
-                        record_uid: Some(record_uid),
+                        item,
+                        record_uid,
                         concept_uid,
                         unit_uid,
                         person_uid,
@@ -5591,7 +5823,7 @@ impl Engine {
                     .filter_map(|promise| promise.uid.clone())
                     .collect::<HashSet<_>>();
                 let dependencies = self
-                    .resolve_transfer_dependencies(None, dependencies, &promise_uids)
+                    .resolve_transfer_dependencies(None, dependencies, &promise_uids, actor.as_deref())
                     .await?;
                 if matches!(agreement, nucleus::transfer::AgreementType::Dependency)
                     && dependencies.is_empty()
@@ -5642,7 +5874,7 @@ impl Engine {
                 .await?;
                 if !created.replayed {
                     outcome.facts = self.publish_committed_fact(created.fact);
-                    for fact in created.invitation_event_facts {
+                    for fact in created.invitation_event_facts.into_iter().chain(created.parent_facts) {
                         outcome.facts.extend(self.publish_committed_fact(fact));
                     }
                 }
@@ -5681,6 +5913,11 @@ impl Engine {
                     ));
                 }
                 let record_uid = self.resolve(terms.record.trim()).await?;
+                if !self.may_read_record(actor.as_deref(), &record_uid).await? {
+                    return Err(EngineError::Forbidden(
+                        "Transfer source is unavailable".into(),
+                    ));
+                }
                 let person_token = terms.party.as_deref().ok_or_else(|| {
                     EngineError::Consequence(
                         "a single-promise edit cannot turn a promise OPEN; use revise-transfer-draft"
@@ -5743,6 +5980,7 @@ impl Engine {
                     &self.store.pool,
                     store::transfers::PromiseRevisionInput {
                         transfer_uid: transfer,
+                        item: self.resolve_transfer_item(terms.item, fact_actor.as_deref().unwrap_or_default()).await?,
                         promise_uid: promise,
                         expected_revision,
                         idempotency_key: request_id,
@@ -5826,6 +6064,7 @@ impl Engine {
                         creator_person.clone(),
                         now,
                         false,
+                        actor.as_deref(),
                     )
                     .await?;
                 input.authorization_intent_uid = verified_authorship
@@ -5903,6 +6142,7 @@ impl Engine {
                         creator_person.clone(),
                         now,
                         false,
+                        actor.as_deref(),
                     )
                     .await?;
                 input.authorization_intent_uid = verified_authorship
@@ -6281,7 +6521,11 @@ impl Engine {
                     return Err(transfer_request_id_conflict());
                 }
                 let creator = self.transfer_creator_person(&transfer).await?;
-                let submitted_creator = self.resolve(draft.creator.trim()).await?;
+                let submitted_creator = if draft.creator.trim().is_empty() {
+                    creator.clone()
+                } else {
+                    self.resolve(draft.creator.trim()).await?
+                };
                 if submitted_creator != creator {
                     return Err(EngineError::Conflict {
                         code: "transfer_creator_immutable",
@@ -6298,6 +6542,11 @@ impl Engine {
                         acting.clone(),
                         now,
                         true,
+                        actor.as_deref().or_else(|| {
+                            verified_authorship
+                                .as_ref()
+                                .map(|authorship| authorship.person_uid.as_str())
+                        }),
                     )
                     .await?;
                 input.authorization_intent_uid = verified_authorship
@@ -6461,12 +6710,11 @@ impl Engine {
                             .into(),
                     });
                 }
-                let resolved_record_uid = self.resolve(terms.record.trim()).await?;
-                let concept_uid = store::records::get(&self.store.pool, &resolved_record_uid)
-                    .await?
-                    .ok_or_else(|| EngineError::UnknownRecord(resolved_record_uid.clone()))?
-                    .identity_predicate_uid;
-                let record_uid = Some(resolved_record_uid);
+                let (record_uid, concept_uid) = self.resolve_transfer_item_source(
+                    &terms.record, store::transfers::item_of(&self.store.pool, &source.uid).await?.is_some(),
+                    actor.as_deref().or_else(|| verified_authorship.as_ref().map(|value| value.person_uid.as_str())),
+                ).await?;
+                let concept_uid = concept_uid.or_else(|| source.concept_uid.clone());
                 let unit_uid = self.resolve_concept_opt(terms.unit).await?;
                 let replay_window_end = terms.window_end.clone();
                 let (window_start, window_end) = normalize_transfer_window(
@@ -6614,6 +6862,43 @@ impl Engine {
                     }
                 }
             }
+            Action::AssignTransferAgreementLevel { transfer, expected_revision, request_id, person, level, expected, expected_state } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_permission(actor.as_deref(), "transfer:update").await?;
+                let acting = self.transfer_action_person(actor.as_deref(), person.as_deref(), None).await?;
+                self.require_verified_transfer_revision(&transfer, expected_revision).await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?;
+                let result = store::transfers::assign_agreement(&self.store.pool,
+                    store::transfers::AgreementTargetInput {
+                        transition: store::transfers::AgreementTransitionInput {
+                            transfer_uid: transfer.clone(), expected_revision, idempotency_key: request_id,
+                            person_uid: acting.clone(), to_level: level,
+                            authorization_intent_uid: verified_authorship.as_ref().map(|value| value.intent_uid.clone()),
+                        }, expected, expected_state,
+                    }, now, |hash| signer.as_ref().map(|value| value.sign_hash(hash))).await.map_err(|error| match error {
+                        store::StoreError::Protocol(ref message) if matches!(message.as_str(), "transfer_agreement_source_changed" | "transfer_state_source_changed") => crate::karma_transfer_actions::guard_error(error),
+                        store::StoreError::Protocol(ref message) if matches!(message.as_str(), "transfer_revision_stale" | "transfer_agreement_target_request_conflict") => EngineError::Conflict {
+                            code: match message.as_str() {
+                                "transfer_agreement_source_changed" => "transfer_agreement_source_changed",
+                                "transfer_revision_stale" => "transfer_revision_stale",
+                                _ => "transfer_request_id_conflict",
+                            }, message: message.clone(),
+                        },
+                        other => EngineError::Store(other),
+                    })?;
+                outcome.created = result.changes.last().map(|change| change.uid.clone());
+                outcome.data = Some(serde_json::json!({"transfer":transfer,"person":acting,"before":result.before,"level":result.level,"changes":result.changes}));
+                if !result.replayed {
+                    for fact in result.facts { outcome.facts.extend(self.publish_committed_fact(fact)); }
+                }
+            }
+            Action::PublishTransfer { transfer, expected_revision, request_id, person, expected, expected_state } => {
+                outcome = self.publish_transfer_action(transfer, expected_revision, request_id, person, expected, expected_state, actor.as_deref(), now, verified_authorship.as_ref()).await?;
+            }
+            Action::ActivateTransferFulfillment { transfer, promise, fulfillment, expected_revision, request_id, person, expected, expected_state } => {
+                if request_id.trim().is_empty() || request_id.len() > 200 { return Err(EngineError::Consequence("Use a request identity of 1–200 bytes".into())); }
+                outcome = self.activate_transfer_fulfillment_action(transfer, promise, fulfillment, expected_revision, person, expected, expected_state, actor.as_deref(), now, verified_authorship.as_ref()).await?;
+            }
             Action::ActivateTransferOccurrence {
                 transfer,
                 promise,
@@ -6705,7 +6990,8 @@ impl Engine {
                 let signer = self
                     .transfer_person_signer(&acting, verified_authorship.as_ref())
                     .await?;
-                let commit = store::transfers::activate_occurrences(
+                let (expected, expected_state) = crate::karma_transfer_actions::ACTIVATION_GUARD.try_with(Clone::clone).unwrap_or_default();
+                let commit = store::transfers::activate_occurrences_guarded(
                     &self.store.pool,
                     store::transfers::ActivateOccurrencesInput {
                         transfer_uid: transfer,
@@ -6722,10 +7008,12 @@ impl Engine {
                             .as_ref()
                             .map(|value| value.intent_uid.clone()),
                     },
+                    expected.as_ref(),
+                    expected_state.as_ref(),
                     now,
                     |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
                 )
-                .await?;
+                .await.map_err(crate::karma_transfer_actions::guard_error)?;
                 match commit {
                     store::transfers::OccurrenceActivationCommit::Committed(committed) => {
                         outcome.created = committed
@@ -6983,6 +7271,107 @@ impl Engine {
                     }
                 }
             }
+            Action::SetTransferChildRequirement {transfer, child, required, expected_revision, request_id, person} => {
+                let transfer = self.resolve(&transfer).await?;
+                let child = self.resolve_transfer_visible_record(&child, actor.as_deref()).await?;
+                let acting = self.transfer_action_person(actor.as_deref(), person.as_deref(), None).await?;
+                self.require_verified_transfer_revision(&transfer, expected_revision).await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?;
+                let fact = store::transfer_children::set(&self.store.pool, store::transfer_children::Input {
+                    transfer, child, required, expected_revision, person: acting, request_id,
+                    authorization_intent_uid: verified_authorship.as_ref().map(|value| value.intent_uid.clone()),
+                }, now, |hash| signer.as_ref().map(|value| value.sign_hash(hash))).await?;
+                if let Some(fact) = fact { outcome.facts = self.publish_committed_fact(fact); }
+            }
+            Action::ProposeTransferLoanExtension {transfer, exchange, until, expected_revision, request_id, person} => {
+                let acting = self.transfer_action_person(actor.as_deref(), Some(&person), Some(&person)).await?;
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_origin_authority(&transfer).await?;
+                self.require_verified_transfer_revision(&transfer, expected_revision).await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?;
+                let result = store::transfer_loans::extend(&self.store.pool, store::transfer_loans::Extension {
+                    transfer,exchange,until,expected_revision,request_id,person:acting,
+                    authorization_intent_uid:verified_authorship.as_ref().map(|value|value.intent_uid.clone()),
+                },now,|hash|signer.as_ref().map(|signer|signer.sign_hash(hash))).await?;
+                outcome.created = Some(result.uid);
+                if let Some(fact) = result.fact { outcome.facts = self.publish_committed_fact(fact); }
+            }
+            Action::ProposeTransferCancellation {transfer, occurrence, expected_revision, expected_remaining_quantity, request_id, person} => {
+                let transfer = self.resolve(&transfer).await?;
+                let acting = self.transfer_action_person(actor.as_deref(), person.as_deref(), None).await?;
+                self.require_verified_transfer_revision(&transfer, expected_revision).await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?;
+                let result = store::transfer_cancellations::propose(&self.store.pool, store::transfer_cancellations::Proposal {
+                    transfer, occurrence, expected_revision, quantity:expected_remaining_quantity, person:acting, request_id,
+                    authorization_intent_uid:verified_authorship.as_ref().map(|value|value.intent_uid.clone()),
+                },now,|hash|signer.as_ref().map(|value|value.sign_hash(hash))).await?;
+                outcome.created = Some(result.uid);
+                if let Some(fact) = result.fact { outcome.facts = self.publish_committed_fact(fact); }
+            }
+            Action::ApplyTransferCancellation {transfer, cancellation, expected_revision, request_id, person} => {
+                let transfer = self.resolve(&transfer).await?;
+                let acting = self.transfer_action_person(actor.as_deref(), person.as_deref(), None).await?;
+                self.require_verified_transfer_revision(&transfer, expected_revision).await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?;
+                let result = store::transfer_cancellations::apply(&self.store.pool, store::transfer_cancellations::Application {
+                    transfer, cancellation, expected_revision, person:acting, request_id,
+                    authorization_intent_uid:verified_authorship.as_ref().map(|value|value.intent_uid.clone()),
+                },now,|hash|signer.as_ref().map(|value|value.sign_hash(hash))).await?;
+                outcome.created = Some(result.uid);
+                if let Some(fact) = result.fact { outcome.facts = self.publish_committed_fact(fact); }
+            }
+            Action::SetRecordStockLimit { record, person, minimum, expected_version, request_id } => {
+                let acting = self.transfer_action_person(actor.as_deref(), Some(&person), Some(&person)).await?;
+                let record = self.resolve(&record).await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?
+                    .ok_or_else(|| EngineError::Forbidden("stock limits require the owner's signing key".into()))?;
+                outcome.created = Some(store::transfer_stock::set(&self.store.pool,
+                    store::transfer_stock::Input {record,person:acting,minimum,expected_version,request_id},
+                    now, &signer.key_id, &signer.public_key_b64(), |hash| Some(signer.sign_hash(hash))).await?);
+            }
+            Action::CompensateTransferApplication { application, request_id, person } => {
+                let acting = self.transfer_action_person(actor.as_deref(), Some(&person), Some(&person)).await?;
+                self.require_permission(actor.as_deref(), "record:update").await?;
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?
+                    .ok_or_else(|| EngineError::Forbidden("private corrections require the owner's signing key".into()))?;
+                let (fact, replayed) = store::transfer_accounting::compensate(&self.store.pool, &application, &acting, &request_id, now, |hash| Some(signer.sign_hash(hash))).await?;
+                outcome.created = Some(fact.uid.clone());
+                if !replayed {
+                    let effects = store::transfer_effects::correction_facts(&self.store.pool, fact.cause.uid.as_deref().unwrap_or_default()).await?;
+                    outcome.facts = self.publish_committed_fact(fact);
+                    for effect in effects { outcome.facts.extend(self.publish_committed_fact(effect)); }
+                }
+            }
+            Action::SetTransferPrivateApplicationPolicy {
+                transfer, exchange, mut effects, expected_version, request_id, person,
+            } => {
+                let acting = self.transfer_action_person(actor.as_deref(), Some(&person), Some(&person)).await?;
+                let transfer = match self.readable_remote_transfer(&transfer, Some(&acting)).await? {
+                    Some(uid) => uid,
+                    None => self.resolve(&transfer).await?,
+                };
+                let rows = protein::execute_for_with_signer(&self.store, &protein::Protein {
+                    source: protein::Source::Transfer,
+                    filter: vec![protein::Predicate::UidEq(transfer.clone())],
+                    fields: None, include: Default::default(), aggregate: None, order: Vec::new(), limit: None,
+                }, actor.as_deref(), Some(&acting)).await?;
+                let owns_route = rows.iter().any(|row| row["promises"].as_array().is_some_and(|promises| promises.iter().any(|promise| {
+                    promise["exchange"] == exchange && (promise["giver"] == acting || promise["receiver"] == acting)
+                })));
+                if !owns_route {
+                    return Err(EngineError::Forbidden("private policies require an available exchange involving this Person".into()));
+                }
+                for effect in &mut effects {
+                    effect.record = self.resolve(&effect.record).await?;
+                    self.reject_direct_transfer_record_mutation(&effect.record).await?;
+                }
+                let signer = self.transfer_person_signer(&acting, verified_authorship.as_ref()).await?
+                    .ok_or_else(|| EngineError::Forbidden("private policies require the owner's signing key".into()))?;
+                let policy = store::transfer_accounting::set_policy(&self.store.pool,
+                    store::transfer_accounting::PolicyInput { transfer, exchange, person: acting, effects, expected_version, request_id },
+                    now, &signer.key_id, &signer.public_key_b64(), |hash| Some(signer.sign_hash(hash))).await?;
+                outcome.created = Some(policy.uid);
+            }
             Action::SetTransferOccurrenceApplicationFormula {
                 occurrence,
                 request_id,
@@ -7058,6 +7447,7 @@ impl Engine {
                 }
             }
             Action::SettleTransferOccurrence {
+                expected_effects_hash,
                 occurrence,
                 request_id,
                 person,
@@ -7093,7 +7483,7 @@ impl Engine {
                 .await?
                 {
                     let slice = &replayed.slice;
-                    let replay_remaining_before = slice.remaining_after + slice.canonical_quantity;
+                    let replay_remaining_before = store::exact::sum_exact([store::transfer_accounting::amount(slice.remaining_after)?, store::transfer_accounting::amount(slice.canonical_quantity)?])?.to_f64();
                     if slice.occurrence_uid != occurrence
                         || slice.owner_person_uid != acting
                         || !transfer_settlement_values_match(
@@ -7111,9 +7501,11 @@ impl Engine {
                         || slice.application_formula_hash != expected_application_formula_hash
                         || slice.application_formula_version != expected_application_formula_version
                         || slice.remainder_policy != expected_remainder_policy
+                        || store::transfer_effects::reviewed_hash(&self.store.pool, &slice.application_fact_uid).await? != expected_effects_hash
                     {
                         return Err(transfer_request_id_conflict());
                     }
+                    self.prepare_counterparty_applications(&slice.transfer_uid, now).await?;
                     outcome.created = Some(slice.uid.clone());
                     return Ok(outcome);
                 }
@@ -7156,6 +7548,11 @@ impl Engine {
                         "the occurrence no longer matches its signed source promise",
                     ));
                 }
+                let policy_record = store::transfer_accounting::bound_record(&self.store.pool, &occurrence_row.transfer_uid,
+                    occurrence_row.exchange_uid.as_deref().unwrap_or(&occurrence_row.promise_uid), &acting, Some(local_record_uid)).await?;
+                let local_record_uid = policy_record.as_deref().ok_or_else(|| EngineError::UnknownRecord(occurrence.clone()))?;
+                self.reject_direct_transfer_record_mutation(local_record_uid).await?;
+                self.require_permission(actor.as_deref(), "record:update").await?;
                 let local_record = store::records::get(&self.store.pool, local_record_uid)
                     .await?
                     .ok_or_else(|| {
@@ -7236,48 +7633,14 @@ impl Engine {
                     ));
                 }
 
-                let (application_formula, application_formula_version) = if source.delta < 0.0 {
-                    if occurrence_row.giver_person_uid != acting {
-                        return Err(transfer_settlement_conflict(
-                            "transfer_settlement_direction_mismatch",
-                            "the giving source promise does not match the occurrence giver",
-                        ));
-                    }
-                    ("-incoming()".to_string(), 0)
-                } else {
-                    if occurrence_row.receiver_person_uid != acting {
-                        return Err(transfer_settlement_conflict(
-                            "transfer_settlement_direction_mismatch",
-                            "the receiving source promise does not match the occurrence receiver",
-                        ));
-                    }
-                    match store::transfers::occurrence_application_policy(
-                        &self.store.pool,
-                        &occurrence,
-                        &acting,
-                    )
-                    .await?
-                    {
-                        Some(policy) => (policy.formula, policy.version),
-                        None => {
-                            let configured =
-                                store::config::transfer_application_formula(&self.store.pool)
-                                    .await?;
-                            let inherited = validate_transfer_application_formula(&configured)
-                                .unwrap_or_else(|_| "incoming()".into());
-                            (inherited, 0)
-                        }
-                    }
-                };
-                let application_formula =
-                    validate_transfer_application_formula(&application_formula).map_err(|_| {
-                        transfer_settlement_conflict(
-                            "transfer_settlement_formula_invalid",
-                            "the effective private application formula is invalid",
-                        )
-                    })?;
-                let application_formula_hash =
-                    nucleus::transfer::occurrence_application_formula_hash(&application_formula);
+                let application = store::transfer_accounting::effective(&self.store.pool, &store::transfer_accounting::Binding {
+                    transfer: &occurrence_row.transfer_uid, exchange: occurrence_row.exchange_uid.as_deref().unwrap_or(&occurrence_row.promise_uid),
+                    occurrence: Some(&occurrence), person: &acting, record: Some(local_record_uid),
+                    unit: occurrence_row.unit_uid.as_deref(), outgoing: source.delta < 0.0,
+                }).await?;
+                let application_formula = application.formula;
+                let application_formula_version = application.version;
+                let application_formula_hash = application.formula_hash;
                 if application_formula_hash != expected_application_formula_hash
                     || application_formula_version != expected_application_formula_version
                 {
@@ -7299,27 +7662,18 @@ impl Engine {
                     ));
                 }
 
-                let canonical_cumulative_after = progress.settled_quantity + canonical_quantity;
-                let local_cumulative_before = progress
-                    .slices
-                    .iter()
-                    .map(|slice| slice.local_delta)
-                    .sum::<f64>();
-                let local_cumulative_after = if source.delta < 0.0 {
-                    -canonical_cumulative_after
-                } else {
-                    evaluate_transfer_application_formula(
-                        &application_formula,
-                        canonical_cumulative_after,
-                    )
-                    .map_err(|_| {
-                        transfer_settlement_conflict(
-                            "transfer_settlement_formula_evaluation_failed",
-                            "the private application formula cannot evaluate this cumulative quantity",
-                        )
-                    })?
-                };
-                let local_delta = local_cumulative_after - local_cumulative_before;
+                let applied = store::transfer_accounting::applied(&self.store.pool, &occurrence, &acting).await?;
+                let canonical_after = store::exact::sum_exact([applied.canonical, nucleus::transfer::application::amount(canonical_quantity)?])?;
+                let group = store::transfer_effects::quote(&self.store.pool, &store::transfer_accounting::Binding {
+                    transfer:&occurrence_row.transfer_uid, exchange:occurrence_row.exchange_uid.as_deref().unwrap_or(&occurrence_row.promise_uid),
+                    occurrence:Some(&occurrence), person:&acting, record:Some(local_record_uid), unit:occurrence_row.unit_uid.as_deref(), outgoing:source.delta < 0.0,
+                }, canonical_after).await?;
+                store::transfer_effects::require_review(group.as_ref(), expected_effects_hash.as_deref())?;
+                let (exact_delta, exact_after) = if let Some(group) = &group {
+                    (group.effects[0].delta, group.effects[0].cumulative_after)
+                } else { store::transfer_accounting::calculate(&application_formula, canonical_after, applied.local)? };
+                let local_delta = exact_delta.to_f64();
+                let local_cumulative_after = exact_after.to_f64();
                 if !local_delta.is_finite()
                     || !transfer_settlement_values_match(local_delta, expected_local_delta)
                 {
@@ -7337,6 +7691,7 @@ impl Engine {
                 let commit = store::transfers::settle_occurrence(
                     &self.store.pool,
                     store::transfers::OccurrenceSettlementInput {
+                        expected_effects_hash,
                         occurrence_uid: occurrence,
                         idempotency_key: request_id,
                         actor_person_uid: acting,
@@ -7344,6 +7699,7 @@ impl Engine {
                         local_record_uid: local_record_uid.to_string(),
                         local_delta,
                         local_cumulative_after,
+                        application_formula_hash,
                         application_formula,
                         application_formula_version,
                         remainder_policy,
@@ -7357,6 +7713,7 @@ impl Engine {
                 .await?;
                 match commit {
                     store::transfers::OccurrenceSettlementCommit::Committed(committed) => {
+                        let effects = store::transfer_effects::facts(&self.store.pool, &committed.application_fact.uid).await?;
                         outcome.created = Some(committed.slice.uid);
                         outcome.facts = self.publish_committed_fact(committed.evidence_fact);
                         outcome
@@ -7365,11 +7722,13 @@ impl Engine {
                         for fact in committed.satiation_facts {
                             outcome.facts.extend(self.publish_committed_fact(fact));
                         }
+                        for fact in effects { outcome.facts.extend(self.publish_committed_fact(fact)); }
                     }
                     store::transfers::OccurrenceSettlementCommit::Replayed(replayed) => {
                         outcome.created = Some(replayed.slice.uid);
                     }
                 }
+                self.prepare_counterparty_applications(&occurrence_row.transfer_uid, now).await?;
             }
             Action::ConfigureTransferDelivery {
                 transfer,
@@ -7620,7 +7979,7 @@ impl Engine {
                     .uid,
                 );
             }
-            Action::BeginRemoteTransferSettlement {
+            Action::BeginTransferSettlement {
                 transfer,
                 occurrence,
                 expected_revision,
@@ -7634,7 +7993,7 @@ impl Engine {
                     .transfer_action_person(actor.as_deref(), Some(&person), Some(&person))
                     .await?;
                 let handoff = self
-                    .begin_remote_transfer_settlement(
+                    .begin_transfer_settlement(
                         &transfer,
                         &occurrence,
                         &acting,
@@ -7647,27 +8006,39 @@ impl Engine {
                     .await?;
                 outcome.created = Some(handoff.uid);
             }
-            Action::ApplyRemoteTransferApplication {
+            Action::ApplyTransferApplication {
+                expected_effects_hash,
                 transfer,
                 handoff,
                 local_record,
                 expected_formula_hash,
                 expected_formula_version,
+                expected_local_delta,
+                expected_local_cumulative_before,
                 request_id,
                 person,
             } => {
                 let acting = self
                     .transfer_action_person(actor.as_deref(), Some(&person), Some(&person))
                     .await?;
-                let remote = store::transfer_delivery::remote_application_handoff(
+                let remote = store::transfer_delivery::application_effect_handoff(
                     &self.store.pool,
                     &handoff,
                 )
                 .await?
                 .ok_or_else(|| EngineError::UnknownRecord(handoff.clone()))?;
+                if remote.reference_uid.is_empty() {
+                    self.require_transfer_origin_authority(&remote.transfer_uid)
+                        .await?;
+                }
+                let previous = store::transfer_delivery::local_application_for_request(
+                    &self.store.pool,
+                    &request_id,
+                )
+                .await?;
                 if remote.transfer_uid != transfer
                     || remote.participant_person_uid != acting
-                    || remote.state != "pending"
+                    || (remote.state != "pending" && previous.is_none())
                 {
                     return Err(EngineError::Conflict {
                         code: "transfer_remote_application_not_pending",
@@ -7675,38 +8046,53 @@ impl Engine {
                     });
                 }
                 let local_record = self.resolve(&local_record).await?;
-                let formula = if remote.application_direction < 0 {
-                    "-incoming()".to_string()
+                self.reject_direct_transfer_record_mutation(&local_record).await?;
+                self.require_permission(actor.as_deref(), "record:update").await?;
+                let exchange = self.application_handoff_exchange(&remote, previous.is_some()).await?;
+                let (formula, formula_version, formula_hash, local_before, local_after, local_delta) = if let Some(previous) = &previous {
+                    if store::transfer_effects::reviewed_hash(&self.store.pool, &previous.application_fact_uid).await? != expected_effects_hash {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    (previous.application_formula.clone(), previous.application_formula_version,
+                     previous.application_formula_hash.clone(), previous.local_cumulative_before,
+                     previous.local_cumulative_after, previous.local_delta)
                 } else {
-                    validate_transfer_application_formula(
-                        &store::config::transfer_application_formula(&self.store.pool).await?,
-                    )?
+                    let applied = store::transfer_accounting::applied(&self.store.pool, &remote.occurrence_uid, &acting).await?;
+                    if !applied.canonical.exact_numeric_cmp(nucleus::transfer::application::amount(remote.canonical_cumulative_before)?).is_eq() {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_remote_application_out_of_order",
+                            message: "apply the earlier slice before this receipt".into(),
+                        });
+                    }
+                    let application = store::transfer_accounting::effective(&self.store.pool, &store::transfer_accounting::Binding {
+                        transfer: &transfer, exchange: &exchange, occurrence: Some(&remote.occurrence_uid),
+                        person: &acting, record: Some(&local_record), unit: remote.canonical_unit_uid.as_deref(),
+                        outgoing: remote.application_direction < 0,
+                    }).await?;
+                    let canonical_after = store::exact::sum_exact([applied.canonical, nucleus::transfer::application::amount(remote.canonical_quantity)?])?;
+                    let group = store::transfer_effects::quote(&self.store.pool, &store::transfer_accounting::Binding {
+                        transfer:&transfer, exchange:&exchange, occurrence:Some(&remote.occurrence_uid), person:&acting,
+                        record:Some(&local_record), unit:remote.canonical_unit_uid.as_deref(), outgoing:remote.application_direction < 0,
+                    }, canonical_after).await?;
+                    store::transfer_effects::require_review(group.as_ref(), expected_effects_hash.as_deref())?;
+                    let (delta, after) = if let Some(group) = &group {
+                        (group.effects[0].delta, group.effects[0].cumulative_after)
+                    } else { store::transfer_accounting::calculate(&application.formula, canonical_after, applied.local)? };
+                    (application.formula, application.version, application.formula_hash,
+                     applied.local.to_f64(), after.to_f64(), delta.to_f64())
                 };
-                let formula_version = 0_u64;
-                let formula_hash = nucleus::transfer::occurrence_application_formula_hash(&formula);
-                if formula_hash != expected_formula_hash
-                    || formula_version != expected_formula_version
-                {
+                if formula_hash != expected_formula_hash || formula_version != expected_formula_version {
                     return Err(EngineError::Conflict {
                         code: "transfer_remote_application_formula_stale",
-                        message: "private application formula changed after review".into(),
+                        message: "private application policy or units changed after review".into(),
                     });
                 }
-                let local_before: f64 = store::sqlx::query_scalar(
-                    "SELECT COALESCE(SUM(a.local_delta), 0.0)
-                     FROM transfer_local_application a
-                     JOIN transfer_remote_application_handoff h ON h.uid = a.handoff_uid
-                     WHERE h.occurrence_uid = ? AND h.participant_person_uid = ?",
-                )
-                .bind(&remote.occurrence_uid)
-                .bind(&acting)
-                .fetch_one(&self.store.pool)
-                .await?;
-                let local_after = evaluate_transfer_application_formula(
-                    &formula,
-                    remote.canonical_cumulative_after,
-                )?;
-                let local_delta = local_after - local_before;
+                if local_delta != expected_local_delta || local_before != expected_local_cumulative_before {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_remote_application_preview_stale",
+                        message: "private changes changed after review".into(),
+                    });
+                }
                 let signer = self
                     .transfer_person_signer(&acting, verified_authorship.as_ref())
                     .await?
@@ -7716,9 +8102,11 @@ impl Engine {
                             "application attestation requires the participant Person signing key"
                                 .into(),
                     })?;
-                let commit = store::transfer_delivery::apply_remote_transfer_locally(
+                let commit = store::transfer_delivery::apply_transfer_locally(
                     &self.store.pool,
                     store::transfer_delivery::NewLocalTransferApplication {
+                        expected_effects_hash,
+                        exchange_uid: exchange,
                         handoff_uid: handoff.clone(),
                         participant_person_uid: acting.clone(),
                         local_record_uid: local_record,
@@ -7736,41 +8124,51 @@ impl Engine {
                     now,
                     |hash| Some(signer.sign_hash(hash)),
                 )
-                .await?;
-                let mut attestation =
-                    nucleus::transfer_delivery::TransferApplicationAttestationV1 {
-                        version: nucleus::transfer_delivery::TRANSFER_ENVELOPE_VERSION,
-                        attestation_uid: format!("taa:{}", commit.application.uid),
-                        origin_organ_uid: remote.origin_organ_uid.clone(),
-                        participant_organ_uid: remote.participant_organ_uid.clone(),
-                        participant_person_uid: acting,
-                        transfer_uid: remote.transfer_uid,
-                        occurrence_uid: remote.occurrence_uid,
-                        settlement_slice_uid: remote.settlement_slice_uid,
-                        origin_revision: remote.origin_revision,
-                        canonical_slice_hash: remote.canonical_slice_hash,
-                        formula_commitment: formula_hash,
-                        formula_version: formula_version.to_string(),
-                        application_fact_uid: commit.fact.uid.clone(),
-                        applied_at: now.to_rfc3339(),
-                        key_id: signer.key_id.clone(),
-                        signature: String::new(),
-                    };
-                attestation.signature = signer.sign_bytes(&attestation.signing_bytes());
-                attestation
-                    .validate_shape()
-                    .map_err(EngineError::Consequence)?;
-                store::transfer_delivery::enqueue_application_attestation(
-                    &self.store.pool,
-                    &handoff,
-                    &remote.reference_uid,
-                    &remote.origin_organ_uid,
-                    &attestation,
-                    now,
-                )
-                .await?;
+                .await
+                .map_err(crate::transfer_counterparty::application_error)?;
+                if !remote.reference_uid.is_empty() {
+                    let mut attestation =
+                        nucleus::transfer_delivery::TransferApplicationAttestationV1 {
+                            version: nucleus::transfer_delivery::TRANSFER_ENVELOPE_VERSION,
+                            attestation_uid: format!("taa:{}", commit.application.uid),
+                            origin_organ_uid: remote.origin_organ_uid.clone(),
+                            participant_organ_uid: remote.participant_organ_uid.clone(),
+                            participant_person_uid: acting,
+                            transfer_uid: remote.transfer_uid,
+                            occurrence_uid: remote.occurrence_uid,
+                            settlement_slice_uid: remote.settlement_slice_uid,
+                            origin_revision: remote.origin_revision,
+                            canonical_slice_hash: remote.canonical_slice_hash,
+                            formula_commitment: formula_hash,
+                            formula_version: formula_version.to_string(),
+                            application_fact_uid: commit.fact.uid.clone(),
+                            applied_at: commit.application.created_at.clone(),
+                            key_id: signer.key_id.clone(),
+                            signature: String::new(),
+                        };
+                    attestation.signature = signer.sign_bytes(&attestation.signing_bytes());
+                    attestation
+                        .validate_shape()
+                        .map_err(EngineError::Consequence)?;
+                    store::transfer_delivery::enqueue_application_attestation(
+                        &self.store.pool,
+                        &handoff,
+                        &remote.reference_uid,
+                        &remote.origin_organ_uid,
+                        &attestation,
+                        now,
+                    )
+                    .await?;
+                }
+                if remote.reference_uid.is_empty() {
+                    self.prepare_counterparty_applications(&transfer, now).await?;
+                }
                 outcome.created = Some(commit.application.uid);
-                outcome.facts = self.publish_committed_fact(commit.fact);
+                if !commit.replayed {
+                    let effects = store::transfer_effects::facts(&self.store.pool, &commit.fact.uid).await?;
+                    outcome.facts = self.publish_committed_fact(commit.fact);
+                    for fact in effects { outcome.facts.extend(self.publish_committed_fact(fact)); }
+                }
             }
             Action::ConfirmTransfer {
                 transfer,
@@ -8181,15 +8579,14 @@ impl Engine {
                 cell_uid,
             } => {
                 let transfer = self.resolve(&transfer_uid).await?;
-                self.require_transfer_editor(&transfer, actor.as_deref())
-                    .await?;
-                store::executor::designate(&self.store.pool, &transfer, cell_uid.as_deref())
-                    .await?;
-                outcome.warnings.push(match cell_uid {
-                    Some(_) => "Only that Cell will deliver this Transfer. If it is off, deliveries wait until you move it."
-                        .into(),
-                    None => "Every Cell holding this Transfer will deliver it again.".into(),
-                });
+                self.require_transfer_editor(&transfer, actor.as_deref()).await?;
+                self.require_transfer_state_writer("transfer", &[&transfer]).await?;
+                let local = store::cells::local(&self.store.pool).await?.ok_or_else(|| EngineError::Consequence("Transfer delivery requires a writing Cell".into()))?;
+                if cell_uid.as_ref().is_some_and(|cell| cell != &local.uid) {
+                    return Err(EngineError::Conflict { code: "transfer_origin_cell_required", message: "Transfer delivery and its queue stay on the Transfer's writing Cell".into() });
+                }
+                store::executor::designate(&self.store.pool, &transfer, Some(&local.uid)).await?;
+                outcome.warnings.push("This Transfer's writing Cell delivers it. Deliveries wait while that Cell is offline.".into());
             }
             Action::RespondKarmaCandidate {
                 request_id,
@@ -8696,6 +9093,16 @@ impl Engine {
                 let signer = self
                     .transfer_person_signer(&acting, verified_authorship.as_ref())
                     .await?;
+                let mut correction_item = store::transfers::item_of(&self.store.pool, &occurrence_row.promise_uid).await?;
+                let mut correction_invitees = Vec::new();
+                if let Some(exchange) = correction_item.as_mut().and_then(|item| item.exchange.as_mut()) {
+                    exchange.uid = nucleus::new_uid("exchange");
+                    if reversing {
+                        std::mem::swap(&mut exchange.giver, &mut exchange.receiver);
+                    }
+                    let other = if exchange.giver == acting { &exchange.receiver } else { &exchange.giver };
+                    correction_invitees.push(other.clone());
+                }
                 let created = store::transfers::create_draft(
                     &self.store.pool,
                     store::transfers::NewTransferDraft {
@@ -8717,9 +9124,10 @@ impl Engine {
                         require_confirmation: source_transfer.require_confirmation,
                         default_place: occurrence_row.location.clone(),
                         creator_person: acting.clone(),
-                        invitees: Vec::new(),
+                        invitees: correction_invitees,
                         promises: vec![store::transfers::DraftPromise {
                             uid: None,
+                            item: correction_item,
                             record_uid: correction_record_uid,
                             concept_uid: correction_concept_uid,
                             unit_uid: occurrence_row.unit_uid.clone(),
@@ -8756,7 +9164,7 @@ impl Engine {
                 outcome.created = Some(created.transfer_uid);
                 if !created.replayed {
                     outcome.facts = self.publish_committed_fact(created.fact);
-                    for fact in created.invitation_event_facts {
+                    for fact in created.invitation_event_facts.into_iter().chain(created.parent_facts) {
                         outcome.facts.extend(self.publish_committed_fact(fact));
                     }
                 }
@@ -8918,6 +9326,7 @@ impl Engine {
                         let signed = signed_by_uid.get(promise.uid.as_str()).copied();
                         store::transfers::DraftPromiseRevisionInput {
                             uid: Some(promise.uid.clone()),
+                            item: signed.and_then(|promise| promise.item.clone()),
                             source_promise_uid: signed
                                 .and_then(|promise| promise.source_promise_uid.clone()),
                             record_uid: promise.record_uid.clone(),
@@ -8936,8 +9345,13 @@ impl Engine {
                     })
                     .collect::<Vec<_>>();
                 let successor_uid = nucleus::new_uid("p");
+                let mut successor_item = signed_by_uid.get(predecessor.uid.as_str()).and_then(|promise| promise.item.clone());
+                if let Some(exchange) = successor_item.as_mut().and_then(|item| item.exchange.as_mut()) {
+                    exchange.uid = nucleus::new_uid("exchange");
+                }
                 promises.push(store::transfers::DraftPromiseRevisionInput {
                     uid: Some(successor_uid.clone()),
+                    item: successor_item,
                     source_promise_uid: Some(promise.clone()),
                     record_uid: predecessor.record_uid.clone(),
                     concept_uid: predecessor.concept_uid.clone(),
@@ -9040,6 +9454,7 @@ impl Engine {
                 let acting = self
                     .transfer_action_person(actor.as_deref(), person.as_deref(), None)
                     .await?;
+                self.require_permission(actor.as_deref(), "record:update").await?;
                 self.require_permission(actor.as_deref(), "transfer:update")
                     .await?;
                 if let Some(replayed) =
@@ -9117,7 +9532,9 @@ impl Engine {
                         committed,
                     ) => {
                         outcome.created = Some(committed.correction.uid);
+                        let effects = store::transfer_effects::correction_facts(&self.store.pool, &committed.correction.original_application_fact_uid).await?;
                         outcome.facts = self.publish_committed_fact(committed.fact);
+                        for effect in effects { outcome.facts.extend(self.publish_committed_fact(effect)); }
                     }
                     store::transfers::OccurrenceSettlementCompensationCommit::Replayed(
                         replayed,
@@ -9383,6 +9800,16 @@ impl Engine {
                 let permission_id =
                     store::auth::ensure_permission(&self.store.pool, subject, action_name).await?;
                 store::auth::revoke(&self.store.pool, role_id, permission_id).await?;
+            }
+        }
+        if reacts_to_transfer {
+            let mut roots = std::collections::BTreeMap::new();
+            for fact in &outcome.facts {
+                self.observe_fact_state(fact, now).await?;
+                roots.insert(fact.record_uid.clone(), fact.uid.clone());
+            }
+            for (record, fact) in roots {
+                outcome.facts.extend(Box::pin(self.react_to_event(vec![record], fact, now)).await?);
             }
         }
         Ok(outcome)
@@ -9651,6 +10078,13 @@ impl Engine {
             | Action::CounterofferTransfer { transfer, .. }
             | Action::ClaimOpenTransferPromise { transfer, .. }
             | Action::SetTransferAgreementLevel { transfer, .. }
+            | Action::AssignTransferAgreementLevel { transfer, .. }
+            | Action::PublishTransfer { transfer, .. }
+            | Action::ActivateTransferFulfillment { transfer, .. }
+            | Action::SetTransferChildRequirement { transfer, .. }
+            | Action::ProposeTransferCancellation { transfer, .. }
+            | Action::ProposeTransferLoanExtension { transfer, .. }
+            | Action::ApplyTransferCancellation { transfer, .. }
             | Action::ActivateTransferOccurrence { transfer, .. }
             | Action::ConfigureTransferDelivery { transfer, .. }
             | Action::SetTransferDeliveryMode { transfer, .. }
@@ -9659,7 +10093,7 @@ impl Engine {
             | Action::RevokeTransferDelivery { transfer, .. }
             | Action::CreateTransferThread { transfer, .. }
             | Action::CreateTransferMessage { transfer, .. }
-            | Action::BeginRemoteTransferSettlement { transfer, .. }
+            | Action::BeginTransferSettlement { transfer, .. }
             | Action::ConfirmTransfer { transfer, .. }
             | Action::AddParty { transfer, .. }
             | Action::AddPromiseToTransfer { transfer, .. }
@@ -9774,7 +10208,7 @@ impl Engine {
             })
     }
 
-    async fn transfer_action_person(
+    pub(crate) async fn transfer_action_person(
         &self,
         actor: Option<&str>,
         explicit: Option<&str>,
@@ -10029,7 +10463,7 @@ impl Engine {
         Ok(resolved)
     }
 
-    async fn require_verified_transfer_revision(
+    pub(crate) async fn require_verified_transfer_revision(
         &self,
         transfer_uid: &str,
         revision: u64,
@@ -10052,7 +10486,7 @@ impl Engine {
         Ok(())
     }
 
-    async fn transfer_person_signer(
+    pub(crate) async fn transfer_person_signer(
         &self,
         person_uid: &str,
         verified_authorship: Option<&VerifiedActionAuthorship>,
@@ -10143,11 +10577,101 @@ impl Engine {
         ))
     }
 
+    async fn resolve_transfer_item(
+        &self,
+        item: Option<nucleus::transfer::disclosure::TransferItem>,
+        person: &str,
+    ) -> Result<Option<nucleus::transfer::disclosure::TransferItem>, EngineError> {
+        let Some(mut item) = item else {
+            return Ok(None);
+        };
+        item.title = item.title.trim().to_string();
+        item.validate()
+            .map_err(|error| EngineError::Consequence(error.into()))?;
+        if let Some(exchange) = &mut item.exchange {
+            for person in [&mut exchange.giver, &mut exchange.receiver] {
+                let uid = self.resolve(person.trim()).await?;
+                let record = store::records::get(&self.store.pool, &uid).await?
+                    .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+                if record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence("exchange endpoints must be People".into()));
+                }
+                *person = uid;
+            }
+            exchange.validate().map_err(|message| EngineError::Consequence(message.into()))?;
+        }
+        for field in item.disclosure.fields_mut() {
+            for person in &mut field.people {
+                let uid = self.resolve(person.trim()).await?;
+                let record = store::records::get(&self.store.pool, &uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+                if record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "a disclosure recipient must be a Person".into(),
+                    ));
+                }
+                *person = uid;
+            }
+            field.people.sort();
+            field.people.dedup();
+        }
+        if let Some(link) = item.return_of.as_ref().or(item.future_need_for.as_ref()) {
+            if store::records::get(&self.store.pool, &link.transfer).await?.is_some()
+                && self.readable_by(person).await?.is_some_and(|visible| !visible.contains(&link.transfer)) {
+                return Err(EngineError::Consequence("the linked loan is unavailable to this Person".into()));
+            }
+            store::transfer_loans::validate_link(&self.store.pool, &item, person).await?;
+        }
+        Ok(Some(item))
+    }
+
+    async fn resolve_transfer_item_source(
+        &self,
+        token: &str,
+        has_item: bool,
+        actor: Option<&str>,
+    ) -> Result<(Option<String>, Option<String>), EngineError> {
+        if token.trim().is_empty() && has_item {
+            return Ok((None, None));
+        }
+        let uid = self.resolve_transfer_visible_record(token, actor).await?;
+        let record = store::records::get(&self.store.pool, &uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+        Ok((Some(uid), record.identity_predicate_uid))
+    }
+
+    async fn resolve_transfer_visible_record(
+        &self,
+        token: &str,
+        actor: Option<&str>,
+    ) -> Result<String, EngineError> {
+        let uid = self.resolve(token.trim()).await?;
+        if !self.may_read_record(actor, &uid).await? {
+            return Err(EngineError::Forbidden(
+                "Transfer source is unavailable".into(),
+            ));
+        }
+        Ok(uid)
+    }
+
+    pub(crate) async fn readable_remote_transfer(&self, target: &str, actor: Option<&str>) -> Result<Option<String>, EngineError> {
+        Ok(store::sqlx::query_scalar(
+            "SELECT r.transfer_uid FROM transfer_remote_reference r
+             WHERE (r.uid = ? OR r.transfer_uid = ?) AND r.state = 'active' AND r.projection IS NOT NULL
+               AND (? IS NULL OR r.recipient_person_uid = ?)
+               AND r.recipient_organ_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ' AND deleted_at IS NULL)
+             ORDER BY r.last_transfer_revision DESC LIMIT 1",
+        ).bind(target).bind(target).bind(actor).bind(actor).fetch_optional(&self.store.pool).await?)
+    }
+
     async fn resolve_transfer_dependencies(
         &self,
         transfer_uid: Option<&str>,
         inputs: Vec<TransferDependencyInput>,
         promise_uids: &HashSet<String>,
+        actor: Option<&str>,
     ) -> Result<Vec<store::transfers::TransferDependencyInput>, EngineError> {
         let mut dependency_uids = HashSet::new();
         let mut resolved = Vec::with_capacity(inputs.len());
@@ -10195,15 +10719,15 @@ impl Engine {
             }
             let (upstream_kind, upstream_uid, upstream_transfer) = match input.upstream_kind {
                 TransferDependencyUpstreamKindInput::Transfer => {
-                    let uid = self.resolve(upstream_token).await?;
-                    if store::transfers::get(&self.store.pool, &uid)
-                        .await?
-                        .is_none()
-                    {
-                        return Err(EngineError::Consequence(
-                            "a Transfer dependency upstream must be a Transfer record".into(),
-                        ));
-                    }
+                    let uid = if let Some(record) = store::records::resolve(&self.store.pool, upstream_token).await? {
+                        if store::transfers::get(&self.store.pool, &record.uid).await?.is_none() {
+                            return Err(EngineError::Consequence("a Transfer dependency upstream must be a Transfer record".into()));
+                        }
+                        record.uid
+                    } else {
+                        self.readable_remote_transfer(upstream_token, actor).await?
+                            .ok_or_else(|| EngineError::Forbidden("The upstream outcome is unavailable".into()))?
+                    };
                     (
                         nucleus::transfer::TransferDependencyUpstreamKind::Transfer,
                         uid.clone(),
@@ -10231,6 +10755,21 @@ impl Engine {
                     }
                 }
             };
+            if let Some(actor) = actor {
+                let target = if let Some(transfer) = &upstream_transfer {
+                    Some(transfer.clone())
+                } else {
+                    store::misc::get_promise(&self.store.pool, &upstream_uid).await?.and_then(|promise| promise.record_uid)
+                };
+                if let Some(target) = target {
+                    if !self.may_read_record(Some(actor), &target).await?
+                        && self.readable_remote_transfer(&target, Some(actor)).await?.is_none() {
+                        return Err(EngineError::Forbidden("The upstream outcome is unavailable".into()));
+                    }
+                } else {
+                    return Err(EngineError::Forbidden("The upstream outcome is unavailable".into()));
+                }
+            }
             if promise_uid.as_deref() == Some(upstream_uid.as_str()) {
                 return Err(EngineError::Consequence(
                     "a promise cannot depend on itself".into(),
@@ -10254,6 +10793,10 @@ impl Engine {
                 });
             }
             let required_state = input.required_state.trim().to_ascii_lowercase();
+            let required_state = if required_state == "settled" { "kept".to_string() } else { required_state };
+            if upstream_kind == nucleus::transfer::TransferDependencyUpstreamKind::Transfer && !matches!(required_state.as_str(), "agreed" | "kept") {
+                return Err(EngineError::Consequence("Transfer dependencies require an agreed or settled outcome".into()));
+            }
             if !matches!(
                 required_state.as_str(),
                 "open" | "proposed" | "agreed" | "active" | "kept" | "broken" | "withdrawn"
@@ -10381,12 +10924,50 @@ impl Engine {
         transfer_uid: String,
         expected_revision: u64,
         request_id: String,
-        draft: TransferDraftRevisionInput,
+        mut draft: TransferDraftRevisionInput,
         creator_person_uid: String,
         proposal_author_person_uid: String,
         now: DateTime<Utc>,
         preserve_invitation_lifecycle: bool,
+        actor: Option<&str>,
     ) -> Result<store::transfers::WholeDraftRevisionInput, EngineError> {
+        let transfer = store::transfers::get(&self.store.pool, &transfer_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.clone()))?;
+        let existing_promises =
+            store::transfers::promises_of(&self.store.pool, &transfer_uid).await?;
+        let mut preserve_private_terms = false;
+        if proposal_author_person_uid != creator_person_uid {
+            for promise in &existing_promises {
+                if let Some(item) =
+                    store::transfers::item_of(&self.store.pool, &promise.uid).await?
+                {
+                    let access = nucleus::transfer::disclosure::ItemAccess::for_item(
+                        Some(&item),
+                        Some(&proposal_author_person_uid),
+                        promise.party_uid.as_deref(),
+                        true,
+                        false,
+                    );
+                    preserve_private_terms = true;
+                    if !access.location {
+                        draft.default_place =
+                            transfer
+                                .default_place
+                                .as_ref()
+                                .map(|place| TransferPlaceInput {
+                                    lat: place.lat,
+                                    lon: place.lon,
+                                    address: place.address.clone(),
+                                });
+                    }
+                }
+            }
+            if preserve_private_terms {
+                draft.source = transfer.source_uid.clone();
+                draft.parent = transfer.parent_uid.clone();
+            }
+        }
         let dependency_inputs = draft.dependencies;
         let request_id = request_id.trim().to_string();
         if request_id.is_empty() || request_id.chars().count() > 200 {
@@ -10451,7 +11032,11 @@ impl Engine {
             .filter(|value| !value.is_empty())
         {
             Some(token) => {
-                let uid = self.resolve(token).await?;
+                let uid = if preserve_private_terms {
+                    token.to_string()
+                } else {
+                    self.resolve_transfer_visible_record(token, actor).await?
+                };
                 if uid == transfer_uid {
                     return Err(EngineError::Consequence(
                         "a transfer cannot be its own parent".into(),
@@ -10475,7 +11060,11 @@ impl Engine {
             .map(str::trim)
             .filter(|value| !value.is_empty())
         {
-            Some(token) => Some(self.resolve(token).await?),
+            Some(token) => Some(if preserve_private_terms {
+                token.to_string()
+            } else {
+                self.resolve_transfer_visible_record(token, actor).await?
+            }),
             None => None,
         };
         if matches!(draft.satiation, TransferSatiation::FirstCompletes) && source_uid.is_none() {
@@ -10486,6 +11075,15 @@ impl Engine {
 
         let invitations =
             store::transfers::invitations_for_transfer(&self.store.pool, &transfer_uid).await?;
+        if preserve_private_terms && draft.invitees.is_empty() {
+            draft.invitees = invitations
+                .iter()
+                .filter(|invitation| {
+                    invitation.status == store::transfers::TransferInvitationStatus::Pending
+                })
+                .map(|invitation| invitation.uid.clone())
+                .collect();
+        }
         let mut retained_invitation_uids = Vec::with_capacity(draft.invitees.len());
         let mut retained_people = std::collections::HashSet::new();
         for token in draft.invitees {
@@ -10529,16 +11127,11 @@ impl Engine {
             }
         }
 
-        let transfer = store::transfers::get(&self.store.pool, &transfer_uid)
-            .await?
-            .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.clone()))?;
         let effective_reserve_default = draft
             .reserve_default
             .resolve(self.transfer_reservation_cell_default().await?);
-        let existing_promises =
-            store::transfers::promises_of(&self.store.pool, &transfer_uid).await?;
         let mut promises = Vec::with_capacity(draft.promises.len());
-        for input in draft.promises {
+        for mut input in draft.promises {
             if input.withdrawn {
                 if input.uid.is_none() {
                     return Err(EngineError::Consequence(
@@ -10547,21 +11140,68 @@ impl Engine {
                 }
                 continue;
             }
+            let existing_promise = input
+                .uid
+                .as_deref()
+                .and_then(|uid| existing_promises.iter().find(|promise| promise.uid == uid));
+            let private_source = if proposal_author_person_uid != creator_person_uid
+                && let Some(existing) = existing_promise
+                && let Some(previous) =
+                    store::transfers::item_of(&self.store.pool, &existing.uid).await?
+            {
+                let access = nucleus::transfer::disclosure::ItemAccess::for_item(
+                    Some(&previous),
+                    Some(&proposal_author_person_uid),
+                    existing.party_uid.as_deref(),
+                    true,
+                    false,
+                );
+                let mut revised = input.item.unwrap_or_else(|| previous.clone());
+                revised.disclosure = previous.disclosure.clone();
+                if !access.title {
+                    revised.title = previous.title;
+                }
+                if !access.description {
+                    revised.description = previous.description;
+                }
+                input.item = Some(revised);
+                if !access.quantity {
+                    input.delta = existing.delta;
+                    input.unit = existing.unit_uid.clone();
+                    input.party = input.item.as_ref().and_then(|item| item.exchange.as_ref())
+                        .map(|exchange| exchange.owner(existing.delta).to_string())
+                        .or_else(|| existing.party_uid.clone());
+                }
+                if !access.parties {
+                    input.item.as_mut().unwrap().exchange = previous.exchange;
+                    input.party = existing.party_uid.clone();
+                    input.open = existing.state == PromiseState::Open;
+                }
+                if !access.location {
+                    input.place = existing.location.as_ref().map(|place| TransferPlaceInput {
+                        lat: place.lat,
+                        lon: place.lon,
+                        address: place.address.clone(),
+                    });
+                }
+                input.condition = existing.condition.clone();
+                Some((existing.record_uid.clone(), existing.concept_uid.clone()))
+            } else {
+                None
+            };
             if !input.delta.is_finite() || input.delta == 0.0 {
                 return Err(EngineError::Consequence(
                     "every promise delta must be finite and non-zero".into(),
                 ));
             }
-            let resolved_record_uid = self.resolve(input.record.trim()).await?;
-            let concept_uid = store::records::get(&self.store.pool, &resolved_record_uid)
-                .await?
-                .ok_or_else(|| EngineError::UnknownRecord(resolved_record_uid.clone()))?
-                .identity_predicate_uid;
-            let record_uid = Some(resolved_record_uid);
-            let existing_promise = input
-                .uid
-                .as_deref()
-                .and_then(|uid| existing_promises.iter().find(|promise| promise.uid == uid));
+            let item = self.resolve_transfer_item(input.item, &proposal_author_person_uid).await?;
+            let (record_uid, concept_uid) = match private_source {
+                Some(source) => source,
+                None => {
+                    self.resolve_transfer_item_source(&input.record, item.is_some(), actor)
+                        .await?
+                }
+            };
             if existing_promise.is_some_and(|promise| promise.state == PromiseState::Open)
                 && !input.open
             {
@@ -10648,6 +11288,7 @@ impl Engine {
             }
             promises.push(store::transfers::DraftPromiseRevisionInput {
                 uid: Some(input.uid.unwrap_or_else(|| nucleus::new_uid("p"))),
+                item,
                 source_promise_uid: None,
                 record_uid,
                 concept_uid,
@@ -10677,9 +11318,28 @@ impl Engine {
             .iter()
             .filter_map(|promise| promise.uid.clone())
             .collect::<HashSet<_>>();
-        let dependencies = self
-            .resolve_transfer_dependencies(Some(&transfer_uid), dependency_inputs, &promise_uids)
-            .await?;
+        let dependencies = if preserve_private_terms && dependency_inputs.is_empty() {
+            store::transfers::dependencies_of(&self.store.pool, &transfer_uid)
+                .await?
+                .into_iter()
+                .map(|dependency| store::transfers::TransferDependencyInput {
+                    uid: Some(dependency.uid),
+                    scope: dependency.scope,
+                    promise_uid: dependency.promise_uid,
+                    upstream_kind: dependency.upstream_kind,
+                    upstream_uid: dependency.upstream_uid,
+                    required_state: dependency.required_state,
+                })
+                .collect()
+        } else {
+            self.resolve_transfer_dependencies(
+                Some(&transfer_uid),
+                dependency_inputs,
+                &promise_uids,
+                actor,
+            )
+            .await?
+        };
         if !promises.is_empty()
             && matches!(
                 draft.agreement,
@@ -10774,7 +11434,7 @@ impl Engine {
         Ok(person_uid)
     }
 
-    async fn apply_transfer_revision_commit(
+    pub(crate) async fn apply_transfer_revision_commit(
         &self,
         commit: store::transfers::RevisionCommit,
         expected_revision: u64,
@@ -10782,8 +11442,9 @@ impl Engine {
         outcome: &mut ActionOutcome,
     ) -> Result<(), EngineError> {
         match commit {
-            store::transfers::RevisionCommit::Committed { fact, .. } => {
+            store::transfers::RevisionCommit::Committed { fact, parent_facts, .. } => {
                 outcome.facts = self.publish_committed_fact(fact);
+                for parent in parent_facts { outcome.facts.extend(self.publish_committed_fact(parent)); }
             }
             store::transfers::RevisionCommit::Replayed { .. } => {}
             store::transfers::RevisionCommit::Stale { current_revision } => {
@@ -11036,12 +11697,15 @@ impl Engine {
             | Action::CreateAgent { .. }
             | Action::CreateMessageDraft { .. }
             | Action::SendMessageDraft { .. }
-            | Action::ImportInstinct => "record:create",
+            | Action::ImportInstinct | Action::ImportKarmaHabit { .. } => "record:create",
             Action::SetQuantity { .. }
             | Action::PreviewAreaTransition { .. }
             | Action::ApplyAreaTransition { .. }
             | Action::SetQuantityExact { .. }
             | Action::TransitionRecord { .. }
+            | Action::AddQuantityExact { .. }
+            | Action::AddQuantityGroupExact { .. }
+            | Action::SetRecordStockLimit { .. }
             | Action::AddQuantity { .. }
             | Action::CaptureEntry { .. }
             | Action::ReviseEntry { .. }
@@ -11090,7 +11754,10 @@ impl Engine {
             Action::ProposeGroup { .. } => "record:create",
             Action::SetGroupPerson { .. } => "user:update",
             Action::RemoveGroupOrgan { .. } => "record:update",
-            Action::PreviewKarmaReading { .. } | Action::ReadMessageAttachment { .. } => "record:read",
+            Action::PreviewKarmaReading { .. } | Action::PreviewKarmaProposal { .. } | Action::InspectKarmaRuleHistory { .. } | Action::ReadMessageAttachment { .. } => "record:read",
+            Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. } => "frequency:read",
+            Action::SaveKarmaSchedule { schedule: None, .. } => "frequency:create",
+            Action::SaveKarmaSchedule { schedule: Some(_), .. } | Action::CancelKarmaSchedule { .. } | Action::RetryKarmaSchedule { .. } => "frequency:update",
             Action::SaveKarmaRule { rule: None, .. } | Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
             Action::SaveKarmaRule { rule: Some(_), .. } | Action::ReviseKarmaField { .. } => "frequency:update",
             Action::ReviseRecurrence { .. }
@@ -11104,11 +11771,13 @@ impl Engine {
             | Action::SyncNow
             | Action::RosterStatus
             | Action::MailboxStatus
+            | Action::MailboxSavedStatus
             | Action::MailboxPickupPoints
             | Action::MailboxOutbound
             | Action::MailboxRequests
             | Action::FileSyncStatus { .. } => "organ:read",
 
+            Action::MailboxRetrySaved { .. } | Action::MailboxSetCopies { .. } => "organ:update",
             Action::AddKnownOrgan { .. } => "organ:create",
             Action::RenameOrganContact { .. }
             | Action::SetSyncPolicy { .. }
@@ -11163,8 +11832,14 @@ impl Engine {
             | Action::RevokeTransferDelivery { .. }
             | Action::DesignateTransferExecutor { .. }
             | Action::RefreshTransferDelivery { .. }
-            | Action::BeginRemoteTransferSettlement { .. }
-            | Action::ApplyRemoteTransferApplication { .. }
+            | Action::BeginTransferSettlement { .. }
+            | Action::CompensateTransferApplication { .. }
+            | Action::SetTransferPrivateApplicationPolicy { .. }
+            | Action::SetTransferChildRequirement { .. }
+            | Action::ProposeTransferCancellation { .. }
+            | Action::ProposeTransferLoanExtension { .. }
+            | Action::ApplyTransferCancellation { .. }
+            | Action::ApplyTransferApplication { .. }
             | Action::ConfirmTransfer { .. }
             | Action::AddParty { .. }
             | Action::AddPromiseToTransfer { .. }
@@ -11204,6 +11879,9 @@ impl Engine {
             | Action::CounterofferTransfer { .. }
             | Action::ClaimOpenTransferPromise { .. }
             | Action::SetTransferAgreementLevel { .. }
+            | Action::AssignTransferAgreementLevel { .. }
+            | Action::PublishTransfer { .. }
+            | Action::ActivateTransferFulfillment { .. }
             | Action::ActivateTransferOccurrence { .. }
             | Action::SetTransferOccurrenceClaim { .. }
             | Action::CompleteTransferOccurrenceClaimsBulk { .. }
@@ -11279,6 +11957,13 @@ impl Engine {
                 Consequence::RemoveConcept { concept } => Consequence::RemoveConcept {
                     concept: self.resolve_concept(&concept).await?,
                 },
+                mut other if other.transfer_target().is_some() => {
+                    if let Some((transfer, person)) = other.transfer_references_mut() {
+                        *transfer = self.resolve_karma_transfer(transfer).await?;
+                        *person = self.resolve(person).await?;
+                    }
+                    other
+                }
                 other => other,
             });
         }
@@ -11322,17 +12007,26 @@ impl Engine {
                     now,
                     depth,
                 )
-                .await?;
-            values.insert(reading_key(&token.func, &token.slug, token.dur_secs), value);
+                .await;
+            crate::karma_history::reading(&token.func, &token.slug, token.dur_secs, depth, &value);
+            values.insert(reading_key(&token.func, &token.slug, token.dur_secs), value?);
         }
 
         let mut readings = GatheredReadings { values };
-        nucleus::karma::decide(&parsed, &condition.gate, &condition.carry, &mut readings).map_err(
-            |e| EngineError::Conflict {
-                code: "rule_condition_unreadable",
-                message: e.to_string(),
-            },
-        )
+        let unreadable = |e: nucleus::karma::ConditionError| EngineError::Conflict {
+            code: "rule_condition_unreadable",
+            message: e.to_string(),
+        };
+        let computed = parsed.evaluate(&mut readings).map_err(unreadable)?;
+        if depth == 0 {
+            crate::karma_history::computed(computed);
+        }
+        let passed = condition.gate.passes(computed).map_err(unreadable)?;
+        let carried = passed.then(|| condition.carry.apply(computed));
+        if depth == 0 {
+            crate::karma_history::decision(computed, passed, carried);
+        }
+        Ok(carried)
     }
 
     async fn read_for_condition(
@@ -11346,6 +12040,13 @@ impl Engine {
     ) -> Result<nucleus::DecimalValue, EngineError> {
         let zero =
             nucleus::DecimalValue::from_mantissa(0, 0).expect("scale zero is always constructible");
+        if let Some((namespace, property)) = nucleus::expr::extension_parts(func) {
+            let uid = self.resolve(slug).await?;
+            return Ok(store::records::extension_number(&self.store.pool, &uid, &namespace, &property).await?);
+        }
+        if nucleus::transfer::karma::is_reading(func) {
+            return self.transfer_condition_reading(func, slug, now.timestamp_millis()).await;
+        }
         match func {
             "quantity" | "signal" => {
                 let uid = self.resolve(slug).await?;
@@ -11580,7 +12281,18 @@ impl Engine {
         mut payload: serde_json::Value,
     ) -> Result<(), EngineError> {
         payload["actor"] = serde_json::json!(rule.actor_uid);
-        store::misc::queue_effect(&self.store.pool, kind, &payload, Some(&rule.uid)).await?;
+        payload["rule"] = serde_json::json!(rule.uid);
+        payload["revision"] = serde_json::json!(rule.revision);
+        if let Ok(occurrence) = crate::rule_runtime::EFFECT_OCCURRENCE.try_with(Clone::clone) {
+            payload["occurrence"] = serde_json::to_value(&occurrence).map_err(EngineError::Json)?;
+            let encoded = serde_json::to_string(&payload).map_err(EngineError::Json)?;
+            let hash = nucleus::karma::canonical_hash("lince.karma-nested-effect.v1", &encoded).map_err(|error| EngineError::Consequence(error.to_string()))?;
+            let mut tx = store::write_tx(&self.store.pool).await?;
+            crate::rule_runtime::queue_effect_tx(&mut tx, &format!("{}:{}:{}:{kind}:{}", occurrence.event_id, rule.uid, rule.revision, hash.as_str()), kind, payload, &rule.record_uid, nucleus::execution::now()).await?;
+            tx.commit().await?;
+        } else {
+            store::misc::queue_effect(&self.store.pool, kind, &payload, Some(&rule.record_uid)).await?;
+        }
         self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
         Ok(())
     }

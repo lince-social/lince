@@ -104,8 +104,6 @@ CREATE TABLE transfer_occurrence_settlement_slice (
     remainder_policy          TEXT NOT NULL CHECK (remainder_policy IN ('visible', 'local_draft')),
     idempotency_key           TEXT NOT NULL UNIQUE REFERENCES transfer_phase5_request(idempotency_key),
     created_at                TEXT NOT NULL,
-    CHECK (cumulative_after = cumulative_before + canonical_quantity),
-    CHECK (local_cumulative_after = local_cumulative_before + local_delta),
     CHECK (evidence_fact_uid != application_fact_uid)
 ) STRICT;
 
@@ -121,7 +119,6 @@ WHEN NOT EXISTS (
     WHERE occurrence.uid = NEW.occurrence_uid
       AND occurrence.transfer_uid = NEW.transfer_uid
       AND occurrence.promise_uid = NEW.promise_uid
-      AND occurrence.record_uid = NEW.local_record_uid
       AND occurrence.delivery_claimed = 1
       AND occurrence.receipt_claimed = 1
       AND occurrence.disputed = 0
@@ -139,12 +136,11 @@ WHEN NOT EXISTS (
     FROM transfer_occurrence occurrence
     WHERE occurrence.uid = NEW.occurrence_uid
       AND NEW.cumulative_before = COALESCE((
-          SELECT SUM(existing.canonical_quantity)
+          SELECT MAX(existing.cumulative_after)
           FROM transfer_occurrence_settlement_slice existing
           WHERE existing.occurrence_uid = NEW.occurrence_uid
       ), 0.0)
       AND NEW.cumulative_after <= occurrence.quantity
-      AND NEW.remaining_after = occurrence.quantity - NEW.cumulative_after
 )
 BEGIN
     SELECT RAISE(ABORT, 'settlement slice does not match current occurrence progress');

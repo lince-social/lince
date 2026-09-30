@@ -10,6 +10,10 @@ pub(super) enum Control {
     NewFile,
     Choose,
     Refresh,
+    Back,
+    Up,
+    OpenFolder,
+    SelectFolder,
     Search,
     Tree,
     Grid,
@@ -36,6 +40,23 @@ impl Action for Control {
         };
         let (input, search) = (view.input, view.search);
         match self {
+            Self::Back | Self::Up | Self::OpenFolder => {
+                navigation::navigate(world, owner, self);
+            }
+            Self::SelectFolder => {
+                let path = view
+                    .selected
+                    .as_ref()
+                    .filter(|row| row.entry.directory)
+                    .map(|row| row.entry.path.clone())
+                    .or_else(|| view.directory.clone());
+                let target = view.target.clone();
+                if let Some(path) = path {
+                    select(world, owner, &path, target);
+                } else {
+                    status(world, owner, "Choose a folder first");
+                }
+            }
             Self::Add => {
                 if let Ok(path) = crate::sand_panel::value(world, input) {
                     add(world, owner, PathBuf::from(path), true);
@@ -138,6 +159,7 @@ impl Action for Control {
             }
             Self::Entry(row) => {
                 let target = view.target.clone();
+                let viewport = view.viewport;
                 let label = view.selected_label;
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 if view
@@ -148,13 +170,14 @@ impl Action for Control {
                     view.confirmation = None;
                 }
                 view.selected = Some(row.clone());
+                view.shown = None;
                 crate::sand_panel::status(world, label, row.entry.path.display().to_string());
+                if let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>() {
+                    focus.set(viewport, bevy::input_focus::FocusCause::Navigated);
+                }
                 if row.entry.directory {
-                    if let Target::Input {
-                        directories: true, ..
-                    } = target
-                    {
-                        select(world, owner, &row.entry.path, target);
+                    if world.get::<FileExplorer>(owner).unwrap().grid {
+                        navigation::enter(world, owner, Some(row.entry.path.clone()), true);
                     } else {
                         let mut view = world.get_mut::<View>(owner).unwrap();
                         if !view.expanded.remove(&row.entry.path) {
@@ -167,7 +190,17 @@ impl Action for Control {
                         view.dirty = true;
                     }
                 } else {
-                    select(world, owner, &row.entry.path, target);
+                    if matches!(
+                        target,
+                        Target::Input {
+                            directories: true,
+                            ..
+                        }
+                    ) {
+                        status(world, owner, "Choose a folder, then press Select folder");
+                    } else {
+                        select(world, owner, &row.entry.path, target);
+                    }
                 }
             }
             Self::RemoveRoot(path) => {
@@ -184,6 +217,14 @@ impl Action for Control {
                 view.cache.retain(|p, _| !p.starts_with(path));
                 view.expanded.retain(|p| !p.starts_with(path));
                 view.search_rows = None;
+                if view
+                    .directory
+                    .as_ref()
+                    .is_some_and(|directory| directory.starts_with(path))
+                {
+                    view.directory = None;
+                }
+                view.history.clear();
                 view.dirty = true;
             }
             Self::Extract => {

@@ -359,6 +359,11 @@ pub(super) fn content(
     if let Some(sections) = sections {
         super::record_layout::arrange(world, row, &sections, data);
     }
+    if config.record_cards && let Some(binding) = binding.clone()
+        && matches!(binding.source, Source::Local) {
+        let button = world.spawn((Square, ActionButton::new(row, crate::actions![crate::full_record::Simulate(binding)]), ChildOf(row))).id();
+        crate::edit_mode::label(world, button, "Simulate", 14.0);
+    }
     if !config.record_cards
         && let Some(binding) = binding.clone()
     {

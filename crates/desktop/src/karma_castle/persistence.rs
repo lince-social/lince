@@ -15,7 +15,9 @@ impl SavedKarmaCastle {
         self.castle.edits.len() <= 1000
             && self.castle.edits.iter().all(Draft::valid)
             && self.castle.draft.as_ref().is_none_or(Draft::valid)
+            && self.castle.schedule.as_ref().is_none_or(model::schedules::Draft::valid)
             && self.castle.search.len() <= 256
+            && self.castle.preview.valid()
             && DVec2::from_array(self.position).is_finite()
             && Vec2::from_array(self.size).is_finite()
             && Vec2::from_array(self.size).min_element() > 0.0

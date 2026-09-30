@@ -70,6 +70,24 @@ pub enum Consequence {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         subject: Option<String>,
     },
+    SetTransferAgreement {
+        transfer: String,
+        person: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        level: Option<DecimalValue>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        after_ms: Option<super::DurationMs>,
+    },
+    PublishTransfer {
+        transfer: String,
+        person: String,
+    },
+    ActivateTransferFulfillment {
+        transfer: String,
+        person: String,
+        promise: String,
+        fulfillment: String,
+    },
 }
 
 fn public_subject() -> String {
@@ -93,6 +111,9 @@ impl Consequence {
             Self::RunQuery { .. } => "run-query",
             Self::RunAction { .. } => "run-action",
             Self::SetVisibility { .. } => "set-visibility",
+            Self::SetTransferAgreement { .. } => "set-transfer-agreement",
+            Self::PublishTransfer { .. } => "publish-transfer",
+            Self::ActivateTransferFulfillment { .. } => "activate-transfer-fulfillment",
         }
     }
 
@@ -116,6 +137,33 @@ impl Consequence {
         )
     }
 
+    pub fn transfer_target(&self) -> Option<&str> {
+        match self {
+            Self::SetTransferAgreement { transfer, .. }
+            | Self::PublishTransfer { transfer, .. }
+            | Self::ActivateTransferFulfillment { transfer, .. } => Some(transfer),
+            _ => None,
+        }
+    }
+
+    pub fn transfer_person(&self) -> Option<&str> {
+        match self {
+            Self::SetTransferAgreement { person, .. }
+            | Self::PublishTransfer { person, .. }
+            | Self::ActivateTransferFulfillment { person, .. } => Some(person),
+            _ => None,
+        }
+    }
+
+    pub fn transfer_references_mut(&mut self) -> Option<(&mut String, &mut String)> {
+        match self {
+            Self::SetTransferAgreement { transfer, person, .. }
+            | Self::PublishTransfer { transfer, person }
+            | Self::ActivateTransferFulfillment { transfer, person, .. } => Some((transfer, person)),
+            _ => None,
+        }
+    }
+
     pub fn delta(&self) -> Option<&DecimalValue> {
         match self {
             Self::CaptureEntry { amount, .. } => Some(amount),
@@ -132,6 +180,23 @@ impl Consequence {
     }
 
     fn validate(&self) -> Result<(), NucleusError> {
+        if let Some(target) = self.transfer_target() {
+            if target.trim().is_empty() || self.transfer_person().is_none_or(|person| person.trim().is_empty()) {
+                return Err(NucleusError::Parse("Choose a Transfer and acting Person".into()));
+            }
+            if let Self::SetTransferAgreement { level, after_ms, .. } = self {
+                if let Some(value) = level {
+                    super::transfer_consequence::level(*value).map_err(NucleusError::Parse)?;
+                }
+                if after_ms.is_some_and(|value| value.get() <= 0) {
+                    return Err(NucleusError::Parse("Agreement delay must be positive".into()));
+                }
+            }
+            if let Self::ActivateTransferFulfillment { promise, fulfillment, .. } = self
+                && (promise.trim().is_empty() || fulfillment.trim().is_empty() || fulfillment.len() > 200 || fulfillment.chars().any(char::is_control)) {
+                return Err(NucleusError::Parse("Choose a promise and fulfillment key of 1–200 bytes without control characters".into()));
+            }
+        }
         let concept = match self {
             Self::SetConcept { concept }
             | Self::AddConcept { concept }

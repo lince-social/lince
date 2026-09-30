@@ -253,12 +253,18 @@ async fn drive(
                             _ => None,
                         };
                         let write = matches!(message, ClientMessage::Act { .. } | ClientMessage::SignedAct { .. } | ClientMessage::CollabUpdate { .. } | ClientMessage::SessionAuthenticate { .. });
-                        login.run(&engine, write, async {
+                        let preview = message.runs_karma_preview();
+                        let operation = async {
                             for reply in session.handle(message).await {
                                 write_frame(&mut send, &reply).await.map_err(engine::EngineError::Consequence)?;
                             }
                             Ok(())
-                        }).await.map_err(|error| error.to_string())?;
+                        };
+                        if preview {
+                            login.run_unlocked(&engine, operation).await
+                        } else {
+                            login.run(&engine, write, operation).await
+                        }.map_err(|error| error.to_string())?;
                         if let Some(room) = joined
                             && session.joined_rooms().contains(&room) && relays.len() < 64 {
                             relays.spawn(lane_relay(hub.clone(), room, connection_id.clone(), out_tx.clone(), engine.clone(), login.clone()));

@@ -2,15 +2,15 @@
 
 ## Working agreement
 
-Planning update, 2026-09-29. This document specifies six social features: optional anonymous/identified publication, one shared public Organ profile, Record-based conversation sync, stranger introductions, directory/gossip discovery, and reliable server delivery. The wider work previously grouped under item 7 is excluded from the current implementation plan.
+Implementation update, 2026-09-30. This document specifies six social features: optional anonymous/identified publication, one shared public Organ profile, Record-based conversation sync, stranger introductions, directory/gossip discovery, and reliable server delivery. The wider work previously grouped under item 7 is excluded from the current implementation plan.
 
 The human has chosen: small Needs and Contributions that can be posted anonymously or under the Organ's public identity; connections between strangers; gossip; servers that remain online; reliable asynchronous conversations; questions and recommendations before implementation.
 
 Each decision below has a stable number, a simple explanation, a question, and a recommended answer. Recommendations are the document's working defaults. The human's comments amend those defaults; a comment does not remove the rest of a feature unless it explicitly says so. Unmentioned recommendations stay in the document, as requested. The human requested that items 1–6 be carried through into this plan. This document records agreed behavior and implementation requirements; editing it does not mean those features have been built.
 
-Status labels distinguish **existing code**, **partial foundation**, **remaining work**, and **design recommendation**. A checked box means code was found, not that a production deployment was verified. Source and existing tests were inspected; tests were not run. The working tree contains other agents' changes, so implementation must recheck the relevant code.
+Status labels distinguish **existing code**, **partial foundation**, **remaining work**, and **design recommendation**. A checked box means code was found, not that a production deployment was verified. The original inspection did not execute tests; section 16 records implementation and executed checks separately. The working tree contains other agents' changes, so implementation must recheck the relevant code.
 
-The planned work includes the social frontend/backend and correctness, security and performance checks. This refinement changes the Markdown. The owner continues to author .lingua.
+The planned work includes the social frontend/backend and correctness, security and performance checks. After approving items 1–6, the human authorized implementing what can be completed while another model works on Karma, preserving that model's work and reporting anything skipped. The owner continues to author .lingua.
 
 ### Confirmed identity and connection decisions
 
@@ -123,6 +123,8 @@ Correction to round 1: there is already one signature per sealed mailbox batch. 
 The Tasks record says GET /organ/open-promises exists. That route was not found in the active checkout. The export function is real; an active endpoint and its authorization still need to be demonstrated. Implementation should use the current transport boundaries rather than recreate an old web route by assumption.
 
 ## 4. Bugs and gaps to resolve before extending delivery
+
+The findings below describe the inspected baseline. See section 16 for corrections already implemented and the proof still required; the historical findings are retained so their IDs keep a clear meaning.
 
 These are source-inspection findings, not executed reproductions. “Observed” describes the code path; “risk to verify” marks a suspected failure requiring a regression test.
 
@@ -692,3 +694,58 @@ Comments can refer to decision numbers. Change only what the human changes, upda
 The next refinement group is profile publication and discovery, D11–D31 and D71–D74/D79–D80, using the confirmed identity model. Session-library integration and the server resource profile remain named technical selection gates. Recommendations remain working defaults unless the human alters them; do not treat a missing comment as a feature removal.
 
 Implementation progress and executed checks must be recorded against each of the six feature packages. This document update does not mark their implementation complete.
+
+## 16. Implementation ledger — 2026-09-30
+
+The first implementation pass addresses the existing mailbox foundations in sequence step 3. It does not complete any of the six social packages as a whole. Item 7 remains excluded.
+
+### What is implemented in this pass
+
+The receive path validates the signed envelope identity and recipient, saves its encrypted bytes in the local database, and only then acknowledges the carrier. Opening and importing happen from that saved inbox. Temporary failures back off; repeated failures enter quarantine and have a native recovery control. Recovery status uses bounded explanations instead of raw parser errors or private input. Locally saved encrypted envelopes have the existing three-day recovery allowance after the signed thirty-day expiry. Once that allowance ends, the ciphertext is removed and an expired status remains for bounded retention. Successful imports retain a small hash/identity entry so another server's copy does not create a second logical delivery.
+
+Normal file-backed application databases now use SQLite FULL synchronization while retaining their existing identity initialization. This supports the local durability promise; it is not evidence that every disk failure, backup restoration or power-loss boundary has been tested.
+
+The sending path saves an encrypted envelope before the network attempt. Retries of the same batch, recipient keys and copy policy reuse those exact saved bytes and delivery ID, including after restart. Server acceptance is recorded independently per authenticated server endpoint. Native Mail controls select one or two copies for new envelopes, with two as the default. A partial result does not clear the ordinary sync outbox as fully mailed. Retries back off, and “Send mail now” resets the retry delay. The outgoing view reports how many servers accepted the envelope. Acceptance is a server's statement that it took responsibility, not a recipient-delivery or read receipt, nor proof that two endpoints have independent operators or disks.
+
+The existing sync worker remains the retry driver. A complete independent worker for every saved outgoing intent, cancellation/reprojection when permissions change, sender signing-key rotation, deliberate renewal of expired mail, and chat-specific immediate fallback remain work. In particular, changing an exported batch can leave an earlier prepared intent in the local queue; do not claim that every such intent is independently drained. Define whether previously queued sender signatures remain authorized across an operational-key change and when a still-authorized message must be resealed, preserving its logical message identity.
+
+| Finding | Implemented correction | Remaining qualification |
+| --- | --- | --- |
+| B01 | Durable local inbox before acknowledgement; restart recovery, retry/quarantine and bounded expiry; native recovery action | Kill/power-loss campaign at every receive/import boundary; full-disk and restoration cases |
+| B02 | Recipient and global payload quota reservation plus insertion in one serialized transaction | Measured resource ceilings, physical disk/WAL/index overhead and separate control reserve |
+| B03 | Signed stable envelope ID, canonical storage, saved sender ciphertext, hash conflict checks and completed-delivery suppression until signed expiry | Campaign combining lost responses, host/client crashes and changes to exported batches |
+| B04 | Persisted monotonic signed-roster floor; reject rollback and same-version conflicting payloads; collect/acknowledge only with current recorded write capability | A server must learn a revocation before the floor protects against it. Prompt revocation distribution and a bounded freshness policy are still required |
+| B05 | Separate acknowledgements for addressed authorized devices; retain the server copy until those devices save it; reconcile saved acknowledgements when devices are revoked; filter by addressed keys before paging | New devices need retained own-device history and session/key provisioning; an old envelope cannot give them keys it never addressed |
+| B06 | Envelope self-signature/shape validation, replay identity, payload/global bounds and quarantine foundation | Recipient-issued sender admission, stranger/trusted partitions and persistent source/work/traffic budgets |
+| B07 | Existing identified sync format is kept separate from the planned anonymous contract | Pseudonymous envelope, private reply capability and session implementation are not built |
+| B08 | Restricted roster entries receive no wrapped private-mail key and cannot collect, acknowledge or author private mail through this path | Independent carrier roles and the audit of all private replica/blob paths |
+| B09 | Invitation claim and registration commit together; a failed root-key match leaves the invite usable | Crash injection and complete root succession/revocation policy |
+| B10 | Saved exact outgoing bytes, one/two-server policy, independent acceptance records and truthful partial status | Immediate chat fallback and complete independently resumed intent delivery |
+| B11 | Collection limits both count and conservative encoded response bytes; expired rows are excluded without waiting for a sweep | Full adversarial transport/resource campaign; new social handlers need their smaller dedicated bounds |
+| B12 | The implementation still states the actual encrypted-batch guarantee | Reviewed session-library integration, ratchet state and multiple-device protocol tests |
+
+Self-signed envelopes also validate routing lengths, encryption field sizes, recipient-key uniqueness and signed lifetime. Unsafe X25519 shared secrets are refused. Opening a bundle addressed to another local Organ is refused. These checks do not grant an unknown sender permission to use a trusted inbox.
+
+### Feature coverage and the next work
+
+| Item | Result of this pass | Work still to implement |
+| --- | --- | --- |
+| 1 — Anonymous/identified Needs and Contributions | No new publication feature | Typed public projection, posting keys/aliases, preview, publication/lifecycle controls and destinations |
+| 2 — One public Organ profile | No new public-profile feature | Scoped signing delegations, private edit state, native editor, own-device convergence, conflict resolution and signed host republication |
+| 3 — Conversation Records and history | Existing Record model preserved; mailbox recovery improved | Prove retained history on newly enrolled devices; synchronize private participant/reveal state; session provisioning and concurrent receive coverage |
+| 4 — Stranger connections | No new stranger-connection feature | Reviewed pseudonymous sessions, Requests, bounded reply permission, consent, block/reveal and mutual contact conversion |
+| 5 — Directories, gossip and delegated search | No new discovery feature | Public index and browsing, selected servers, signed cache, contact consent, forwarding ledger, expiry/withdrawal and total query budgets |
+| 6 — Always-online services and reliable delivery | Mailbox reliability corrections and native recovery/copy controls implemented as a partial foundation | Remaining qualifications above, isolated service roles, operator controls, server operations, backups/restoration and the full asynchronous conversation scenario |
+
+Continue with the remaining contracts and session integration gates, complete step 3's qualification and delivery-worker gaps, then follow steps 4–11. The profile/publication and stranger features remain requirements; this ledger does not remove them from the plan.
+
+### Executed checks
+
+- `cargo test -p store --test social_mail_delivery`: 15 tests passed, including durable restart recovery, concurrent quota enforcement, completed-delivery suppression, separate server receipts and filtering before pagination.
+- `nix develop .#interface -c cargo check -p lince-desktop --lib -j 2`: passed during the implementation pass.
+- `nix develop .#interface -c cargo test -p lince-desktop --lib organ_castle::tests -j 2`: all 7 selected native tests passed; other desktop test cases were not run.
+- `cargo test -p engine --test social_mail_delivery --test mailbox --test seal`: all 14 new delivery, 19 existing mailbox and 16 sealing tests passed in the final run.
+- These selected suites total 71 passing tests across storage, engine and native controls. The full workspace suite and the power-loss/resource/restore campaign were not run.
+- Final `cargo check -p engine -p lince-cell`: passed. Rust warnings are denied by the workspace configuration.
+
+No Karma-owned code was changed to work around another model's implementation. No source conflict from that work required skipping a selected test. Remaining social features are unfinished work, not removed requirements.

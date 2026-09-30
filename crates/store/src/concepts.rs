@@ -326,13 +326,20 @@ pub async fn ancestors_including(
     pool: &SqlitePool,
     concept_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
+    ancestors_including_on(&mut *pool.acquire().await?, concept_uid).await
+}
+
+async fn ancestors_including_on(
+    connection: &mut sqlx::SqliteConnection,
+    concept_uid: &str,
+) -> Result<Vec<String>, StoreError> {
     let mut seen: HashSet<String> = HashSet::from([concept_uid.to_string()]);
     let mut queue: VecDeque<String> = VecDeque::from([concept_uid.to_string()]);
     let mut out = vec![concept_uid.to_string()];
     while let Some(current) = queue.pop_front() {
         let parents = sqlx::query("SELECT parent_uid FROM concept_parent WHERE concept_uid = ?")
             .bind(&current)
-            .fetch_all(pool)
+            .fetch_all(&mut *connection)
             .await?;
         for parent in parents {
             let uid: String = parent.get("parent_uid");
@@ -456,20 +463,28 @@ async fn conversion_ratio(
     from_uid: &str,
     to_uid: &str,
 ) -> Result<Option<(i128, i128)>, StoreError> {
-    let direct = read_ratio(pool, from_uid, to_uid).await?;
+    conversion_ratio_on(&mut *pool.acquire().await?, from_uid, to_uid).await
+}
+
+pub(crate) async fn conversion_ratio_on(
+    connection: &mut sqlx::SqliteConnection,
+    from_uid: &str,
+    to_uid: &str,
+) -> Result<Option<(i128, i128)>, StoreError> {
+    let direct = read_ratio(connection, from_uid, to_uid).await?;
     let ratio = match direct {
         Some((numerator, denominator)) => (numerator, denominator),
-        None => match read_ratio(pool, to_uid, from_uid).await? {
+        None => match read_ratio(connection, to_uid, from_uid).await? {
             Some((numerator, denominator)) => (denominator, numerator),
             None => return Ok(None),
         },
     };
 
-    let from_dimension: HashSet<String> = ancestors_including(pool, from_uid)
+    let from_dimension: HashSet<String> = ancestors_including_on(connection, from_uid)
         .await?
         .into_iter()
         .collect();
-    let shares_dimension = ancestors_including(pool, to_uid)
+    let shares_dimension = ancestors_including_on(connection, to_uid)
         .await?
         .iter()
         .any(|ancestor| from_dimension.contains(ancestor));
@@ -480,7 +495,7 @@ async fn conversion_ratio(
 }
 
 async fn read_ratio(
-    pool: &SqlitePool,
+    connection: &mut sqlx::SqliteConnection,
     a_uid: &str,
     b_uid: &str,
 ) -> Result<Option<(i128, i128)>, StoreError> {
@@ -489,7 +504,7 @@ async fn read_ratio(
     )
     .bind(a_uid)
     .bind(b_uid)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *connection)
     .await?
     else {
         return Ok(None);

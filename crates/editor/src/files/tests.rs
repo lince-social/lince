@@ -162,3 +162,30 @@ fn oversized_files_have_a_bounded_preview_and_cannot_be_saved_as_that_preview() 
         (crate::MAX_FILE_BYTES + 100) as u64
     );
 }
+#[test]
+fn save_as_checks_the_destination_seen_before_confirmation() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("existing.txt");
+    std::fs::write(&path, "original").unwrap();
+    let destination = super::SaveDestination::inspect(&path).unwrap();
+    assert!(destination.exists());
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "original");
+    std::fs::write(&path, "changed while confirming").unwrap();
+    assert!(destination.save("replacement", false).is_err());
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        "changed while confirming"
+    );
+    let destination = super::SaveDestination::inspect(&path).unwrap();
+    destination.save("replacement", false).unwrap();
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "replacement");
+    let new_path = directory.path().join("new.txt");
+    let destination = super::SaveDestination::inspect(&new_path).unwrap();
+    assert!(!destination.exists());
+    std::fs::write(&new_path, "created meanwhile").unwrap();
+    assert!(destination.save("replacement", false).is_err());
+    assert_eq!(
+        std::fs::read_to_string(&new_path).unwrap(),
+        "created meanwhile"
+    );
+}

@@ -7,6 +7,46 @@ use nucleus::transfer::{AgreementType, OpenPromiseReusePolicy};
 
 use crate::scenario::{Cell, Check, Event, Input, Invocation, Scenario};
 
+mod reservations;
+pub use reservations::competing_reservations;
+mod recovery;
+pub use recovery::{declined_invitation, grouped_correction_after_restart, private_correction_after_restart};
+mod volume;
+pub use volume::volume;
+mod trade;
+pub use trade::{trade, counteroffer, open_offer, private_trade};
+mod parents;
+mod needs;
+mod loans;
+pub use loans::{extended_loan, temporary_loan};
+pub use needs::grouped_needs;
+pub use parents::nested_parents;
+mod dependencies;
+pub use dependencies::observer_outcomes;
+mod routes;
+pub use routes::three_parties;
+mod donation;
+pub use donation::{donation_with_lost_acknowledgements, donation_without_private_source, independent_donation, partial_cancellation};
+
+pub fn visibility() -> Scenario {
+    let mut case = sale();
+    case.name = "transfer-item-visibility".into();
+    for input in &mut case.inputs {
+        if let Event::Action { invocation } = &mut input.event
+            && let Action::CreateTransferDraft { promises, .. } = &mut invocation.action
+        {
+            for promise in promises {
+                promise.item = Some(nucleus::transfer::disclosure::TransferItem {
+                    title: "City bike".into(),
+                    description: "Blue frame".into(),
+                    ..Default::default()
+                });
+            }
+        }
+    }
+    case
+}
+
 pub fn sale() -> Scenario {
     let mut case = super::daily();
     case.name = "transfer-sale".into();
@@ -37,14 +77,17 @@ pub fn sale() -> Scenario {
     }
     case.checks = vec![
         Check {
+            options: Default::default(),
             id: "no-unexpected-refusals".into(),
             predicate: Predicate::NoUnexpectedRefusals {},
         },
         Check {
+            options: Default::default(),
             id: "fact-chain".into(),
             predicate: Predicate::FactChain {},
         },
         Check {
+            options: Default::default(),
             id: "duplicate-request-refused".into(),
             predicate: Predicate::ExpectedMessageRefusal {
                 input: "send".into(),
@@ -53,6 +96,7 @@ pub fn sale() -> Scenario {
             },
         },
         Check {
+            options: Default::default(),
             id: "bike-settled-once".into(),
             predicate: Predicate::QuantityEquals {
                 cell: "a".into(),
@@ -104,6 +148,7 @@ pub fn sale() -> Scenario {
         },
     );
     let promise = |uid: &str, person: &str, delta| TransferPromiseInput {
+        item: None,
         uid: Some(uid.into()),
         record: "$bike".into(),
         party: Some(person.into()),
@@ -160,6 +205,7 @@ pub fn sale() -> Scenario {
         Event::AcceptInvitation {
             transfer: "$sale".into(),
             person: "$carlos".into(),
+            peer: None,
         },
     );
     for person in ["ana", "carlos"] {

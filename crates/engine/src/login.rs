@@ -165,6 +165,17 @@ impl LoginSession {
                 .await
         }
     }
+
+    pub async fn run_unlocked<T>(
+        &self,
+        engine: &Engine,
+        operation: impl Future<Output = Result<T, EngineError>>,
+    ) -> Result<T, EngineError> {
+        engine.access_scope(false, self.require(engine)).await?;
+        let result = CURRENT_LOGIN.scope(self.clone(), operation).await;
+        engine.access_scope(false, self.require(engine)).await?;
+        result
+    }
 }
 
 fn refused() -> EngineError {

@@ -17,7 +17,7 @@ fn editor_schedule_runs_with_the_action_and_file_services() {
     app.update();
 }
 
-fn fixture(value: &str) -> (World, Entity, Entity, tempfile::TempDir, PathBuf) {
+pub(super) fn fixture(value: &str) -> (World, Entity, Entity, tempfile::TempDir, PathBuf) {
     fixture_in(World::new(), value)
 }
 

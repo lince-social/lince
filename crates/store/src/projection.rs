@@ -4,7 +4,7 @@ use sqlx::{Row, SqlitePool};
 use crate::StoreError;
 
 pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
-    let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM sqlite_schema WHERE type = 'table' AND substr(name, 1, 7) <> 'sqlite_' AND substr(name, 1, 5) <> '_sqlx' AND substr(name, 1, 11) <> 'projection_' ORDER BY name").fetch_all(pool).await?;
+    let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND substr(name, 1, 7) <> 'sqlite_' AND substr(name, 1, 5) <> '_sqlx' AND substr(name, 1, 11) <> 'projection_' ORDER BY name").fetch_all(pool).await?;
     let mut tx = crate::write_tx(pool).await?;
     for table in tables {
         if table.starts_with("interface_")

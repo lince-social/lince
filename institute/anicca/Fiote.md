@@ -6,21 +6,30 @@ Karma CRUD, reading/firing explanations, and unsaved Rule Simulation have now be
 
 The numbers retain the previous discussion's references. Point 8 is an idea outside the implementation plan. Backend and native UI work below form one feature; proposed operation names describe the design, not APIs already present.
 
+Implementation should proceed sequentially: define the shared composition contract and balloon isolation from points 1/5; connect canvas delivery and saving from points 2/5; finish proposal/report and call integration from points 1/2; then deliver activation, Transfer workflows, receipt entry, and context inspection in points 3/4/6/7. Apply point 9's accessibility controls as each UI is built, then verify the installed workflows in point 11. Point 10 stays deferred.
+
 ## 1. Temporary UI for proposals and interaction
 
 Fiote may compose a temporary interface from existing components to present information, ask questions, review proposed changes, or help with a task. Point 5 defines its composition format; point 2 defines how it reaches the canvas.
 
 - [ ] Show proposed Record, Karma, or Transfer changes with the relevant existing Sands/Castles. Include the targets, current values, proposed values, and source revisions. Offer edit, apply, and dismiss controls.
 - [ ] Let the person save the temporary composition as a named reusable component through the existing component library. Saving the UI and applying its proposed data changes are separate operations. Closing the UI removes its presentation and leaves already committed changes in place.
-- [ ] Support preview and interactive modes. The default mode for a Fiote-created temporary instance still needs the owner's decision. Actions enabled by a mode must use ordinary authorization and validation; placement inside an influence area needs the same treatment as event bindings.
+- [ ] Make every generated UI interactive immediately within ordinary authorization and validation. There is no extra enable-actions step. A particular task may still present proposed changes with Apply/Dismiss controls.
+- [ ] Mount every Fiote-generated UI inside the known Fiote conversation balloon component. Lince adds and owns this wrapper and its immunity automatically, without a model request, generated instructions, or additional model tokens. Fiote supplies only the content; it cannot remove or weaken the boundary.
+- [ ] Block influence effects across the balloon boundary in both directions: outside areas cannot affect its contents, and inside areas cannot affect outside components. Cover forces, sorting, scaling, area membership/entry/exit, property-change effects, and sound/event triggers. Components and areas inside the same balloon may interact normally. Use component ownership, not just overlapping screen coordinates, to decide which side an instance belongs to.
+- [ ] Establish that boundary before mounting content or evaluating effects, and preserve it during movement, resizing, closing, saving, and reopening. Bind generated layout/events to instances within their own balloon; ordinary data queries and authorized Record/Transfer Actions remain available.
 - [ ] Use the existing `PreviewKarmaProposal` Action for unsaved Rules. Attach its final values, broken checks, cycles, coverage, and stop reason to the corresponding proposal. Changing the proposal or its source data makes the result stale.
 - [ ] For Record or Transfer proposals outside that Action's supported inputs, extend the shared Simulation bridge only where needed. Simulated effects remain in copied state, with controlled external responses and authorized evidence.
 - [ ] Let Fiote try another option after a selected check fails and explain the rejected alternatives using the report's evidence. Simulation stays optional; applying a proposal uses a separate ordinary Action.
-- [ ] Reuse existing backend Simulation tests. Add coverage for temporary UI display/save/close, stale proposals, refused actions, and interactive versus preview behavior.
+- [ ] Reuse existing backend Simulation tests. Add coverage for immediate interaction, display/save/close, stale proposals, refused actions, and immunity in both directions, including overlapping areas, unlimited reach, repeated Record views, and independent balloon instances.
 
 The previous plan's claim that Fiote lacked access to Rule proposal Simulation is superseded. The remaining work is the composed UI, linking that UI to reports/actions, and supporting other proposal types where needed.
 
-References: [native tool guidance](../../crates/transport/src/native/catalog.rs), [Rule proposal contract](../../crates/engine/src/karma_preview.rs), [native component library](../../crates/desktop/src/custom_castle/library.rs).
+**Boundary meaning:** Immunity isolates canvas influence and component events. An intentional authorized edit still changes the shared Record/Transfer, updates other views of it, and may trigger its existing Karma. Isolating the data as well would require copied Records or staged proposals as a separate feature.
+
+**Existing mechanism to extend:** `External` blocks outside sources from affecting inside targets; `Internal` blocks inside sources from affecting inside targets; `All` blocks both kinds of source from affecting inside targets. `Containment` blocks outgoing forces but deliberately leaves Record transitions unblocked. None alone provides the requested two-way boundary while preserving internal interaction. Extend the shared area/effect mechanism and apply the balloon policy across its consumers; do not simply select `All` or rely on a model-authored area. The balloon presentation exists, but this mandatory host policy is remaining work.
+
+References: [native tool guidance](../../crates/transport/src/native/catalog.rs), [Rule proposal contract](../../crates/engine/src/karma_preview.rs), [native component library](../../crates/desktop/src/custom_castle/library.rs), [existing balloon](../../crates/desktop/src/fiote.rs), [immunity modes](../../crates/desktop/src/area_effects.rs), [area transition checks](../../crates/desktop/src/area_mutation.rs), [containment tests](../../crates/desktop/src/area_effects/tests.rs).
 
 ## 2. Shared commands from the backend to the canvas
 
@@ -29,7 +38,7 @@ Fiote and future Karma presentation consequences should use one mechanism for pu
 - [ ] Define ordinary authorized Actions for requesting component presentation and its supported updates/removal. Address the user, workspace, receiving interface session, destination area when relevant, composition, and instance explicitly.
 - [ ] Have the native interface consume those requests through its ordinary component loader and workspace operations. Send operations against identified instances instead of replacing the workspace file; preserve concurrent local edits.
 - [ ] Give each request an identity and report queued, applied, or refused status. Repeated delivery updates the intended instance without spawning extra copies. No available recipient means pending/unavailable presentation, not successful display.
-- [ ] Use the same path for Fiote's temporary compositions and saved components. Connect Karma's future show/place consequence to it when that work is ready. Broader device routing and offline presentation remain in point 10.
+- [ ] Use the same path for Fiote's temporary compositions and saved components. The native loader must enforce point 1's balloon host for every Fiote-generated UI, including replayed requests; neither the generated payload nor a requested destination may bypass it. Connect Karma's future show/place consequence to the shared path when that work is ready. Broader device routing and offline presentation remain in point 10.
 - [ ] Let Fiote open the existing Communication/call component through this mechanism. A real call must also use the ordinary call context/start/join/end operations; displaying the component alone does not mean a call started or someone answered.
 - [ ] Show the normal participant/call state and controls, and verify authorization, changed targets, cancellation, duplicate delivery, and preservation of local canvas edits.
 
@@ -81,9 +90,9 @@ References: [ordinary Actions](../../crates/engine/src/actions.rs), [Transfer Pr
 - [ ] Publish a discoverable catalog of supported parts, editable properties, data bindings, event slots, and area behavior. Include the exact typed composition schema.
 - [ ] Extend the current native composition format to represent the required existing components and named event/action bindings. The current format supports selected parts; it is not yet a universal catalog of all Sands, Castles, and events.
 - [ ] Validate the entire composition with one shared contract used by backend creation and native loading. Current backend checks are structural, while the native loader performs deeper validation; Fiote-created components need the full validation before success is reported.
-- [ ] Bind events to existing native behaviors and ordinary Actions with typed parameters. Keep the same access checks and area transition semantics used by hand-built UI.
+- [ ] Bind events to existing native behaviors and ordinary Actions with typed parameters. Keep the same access checks and area transition semantics used by hand-built UI, with point 1's mandatory boundary around the composition. Resolve local layout/event targets within that instance rather than accepting references to arbitrary outside canvas instances.
 - [ ] Render the result temporarily through point 2. Provide a name field and Save component control using the existing library, plus normal workspace placement/persistence for a kept instance.
-- [ ] Save the composition's layout, bindings, and configuration so it can be reopened as an independent instance. Keep licenses and credits available for its reused or embedded dependencies.
+- [ ] Save the composition's layout, bindings, configuration, and Fiote origin so it can be reopened as an independent instance. Every saved or copied Fiote-generated composition receives the same Lince-owned balloon and immunity on loading; saving does not remove the boundary. Keep licenses and credits available for its reused or embedded dependencies.
 - [ ] Check unsupported parts, malformed bindings, invalid area/layout references, interactive controls, refused actions, saving/reopening, and independent copies.
 
 New Rust behavior is a separate extension question, explained below. It is not needed to deliver this agreed composition scope.
@@ -119,7 +128,7 @@ References: [prompt sources](../../crates/cell/src/fiote/behavior.rs), [history 
 The first delivery is a conversation-driven route to existing operations, with keyboard controls and screen-reader output.
 
 - [ ] Make the message composer and Send, Stop, Attach, Dictate, Stop/transcribe, and Cancel dictation controls reachable in a predictable Tab/Shift+Tab order, with visible focus. Enter/Space activates a focused button; text inputs retain their normal multiline behavior.
-- [ ] Make Fiote questions and proposal fields operable from the keyboard. Use real labels for targets, current/proposed values, required fields, and errors. Provide Apply and Cancel/Dismiss without requiring a canvas drag.
+- [ ] Make Fiote questions, generated balloon controls, and proposal fields operable from the keyboard. Use real labels for targets, current/proposed values, required fields, and errors. Provide Save component, Apply, and Cancel/Dismiss without requiring a canvas drag.
 - [ ] Expose replies, questions, errors, run status, and proposal values in the platform accessibility tree. Announce a finished reply, new actionable question, or error once; avoid announcing every streamed token or stealing focus.
 - [ ] Use the person's screen reader for spoken read-back. Dictation continues to insert editable, unsent text; sending remains a separate control. A separate text-to-speech provider or live voice mode is not part of this delivery.
 - [ ] Keep these controls usable in a normal Fiote thread even when its generated UI is spatial or unavailable. Render the same candidate fields and invoke the same normal Actions.
@@ -129,7 +138,7 @@ References: [native text/button controls](../../crates/desktop/src/description.r
 
 ## 10. Board controls for later, after shared Karma work
 
-Temporary composition display uses point 2. Broader board editing waits for the shared presentation/area/Karma contract and further owner refinement.
+Temporary composition display uses point 2, and its mandatory immunity belongs to point 1's first delivery. Broader board editing waits for the shared presentation/area/Karma contract and further owner refinement.
 
 - [ ] Define Fiote's access to existing canvas structure and requests to move, resize, hide/show, or remove an instance. Decide what happens with pins, sorting, physics, and influence areas.
 - [ ] Define which events may be configured in a composition and which can be Karma consequences. Preserve the distinction between layout edits and transitions that change Record state.
@@ -143,18 +152,18 @@ References: [deferred Karma presentation](Lince.md), [workspace](../../crates/de
 ## 11. Installation and acceptance
 
 - [ ] Verify the installed executable/wrapper and the actual user-service environment. Exercise login, readiness checks, Stop, and resume outside the development shell.
-- [ ] Exercise temporary UI, saving/reopening, proposal reports, generic activation/coalescing, Transfer CRUD, receipt entry, context inspection, and keyboard/screen-reader interaction.
+- [ ] Exercise immediately interactive UI, immunity in both directions, saving/reopening with the same protection, proposal reports, generic activation/coalescing, Transfer CRUD, receipt entry, context inspection, and keyboard/screen-reader interaction.
 - [ ] Verify real microphone/device selection and a real receipt-image request with configured providers. Check selected audio/file paths where supported; readiness checks remain free of generation.
 - [ ] Keep shared messages/questions/attachments/dictation usable without Fiote where applicable.
 - [ ] During implementation, run focused correctness/security tests and relevant `cargo check` targets with warnings denied. Check bounded composition/context size, pending activations, and delivery work where those paths change.
 
 References: [Cell workflow tests](../../crates/cell/src/fiote/tests.rs), [native tool tests](../../crates/transport/tests/native.rs), [packaging](../../flake.nix).
 
-## Decision still open
+## Settled decisions and later refinement
 
-**Temporary UI's default behavior:** Should a Fiote-created composition be interactive immediately within normal permissions, or start as a preview until its actions are enabled? This also governs influence-area behavior during placement. Immediate interaction removes a step; preview mode makes consequential behavior explicit before the composition becomes active. The mode must be visible either way.
+Activation requests carry each Rule occurrence's nonzero value, and busy requests combine into one pending run. Generated UI is immediately interactive inside a mandatory, automatically supplied balloon with immunity in both directions. These decisions are recorded in points 1 and 3.
 
-Activation semantics and busy-run coalescing are decided in point 3. Board routing/lifetime decisions are explicitly deferred in point 10.
+Board routing, placement, and lifetime decisions remain deferred in point 10. A general runtime plugin host is an optional idea below; it is not required for saving compositions of existing components.
 
 ## Ideas outside the implementation plan
 

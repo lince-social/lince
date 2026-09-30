@@ -47,9 +47,11 @@ impl CalendarCursor {
             CalendarCursorResolution::Armed(_) => Err(KarmaBoundaryError::invalid_input(
                 "calendar cursor disagrees with pinned schedule/provider resolution",
             )),
-            CalendarCursorResolution::Paused { .. } => Err(KarmaBoundaryError::invalid_input(
-                "calendar cursor claims a boundary where the schedule pauses",
-            )),
+            CalendarCursorResolution::Paused { .. } | CalendarCursorResolution::Retired { .. } => {
+                Err(KarmaBoundaryError::invalid_input(
+                    "calendar cursor claims a boundary where the schedule is inactive",
+                ))
+            }
         }
     }
 }
@@ -58,6 +60,12 @@ impl CalendarCursor {
 #[serde(tag = "status", rename_all = "kebab-case")]
 pub enum CalendarCursorResolution {
     Armed(CalendarCursor),
+    Retired {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        previous: Option<CalendarBoundary>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<CalendarDiscontinuity>,
+    },
     Paused {
         #[serde(skip_serializing_if = "Option::is_none")]
         previous: Option<CalendarBoundary>,
@@ -82,6 +90,10 @@ pub fn resolve_calendar_cursor(
         (None, Some(reason)) => Ok(CalendarCursorResolution::Paused {
             previous,
             reason,
+            skipped: resolved.skipped,
+        }),
+        (None, None) => Ok(CalendarCursorResolution::Retired {
+            previous,
             skipped: resolved.skipped,
         }),
         _ => Err(KarmaBoundaryError::invalid_definition(
@@ -241,6 +253,10 @@ pub fn advance_calendar_cursor(
             } => {
                 discontinuities.extend(skipped);
                 break (None, Some(reason));
+            }
+            CalendarCursorResolution::Retired { skipped, .. } => {
+                discontinuities.extend(skipped);
+                break (None, None);
             }
         }
     };

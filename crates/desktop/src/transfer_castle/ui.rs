@@ -29,11 +29,17 @@ pub(super) enum Command {
     Remove(String, usize),
     Submit,
     Preview,
+    ViewAs(Option<String>),
     SelectOccurrence(String),
     Bulk,
     Record(String),
     AcceptReview,
     Find,
+    Simulate(String),
+    SimulateLoan(String),
+    SimulateBalance(Value),
+    SimulateChildren,
+    SimulateShared(String, usize),
 }
 
 impl Action for Command {
@@ -57,8 +63,94 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::SimulateChildren => {
+                let rows = world.get::<View>(owner).unwrap().rows.clone();
+                let root = world.get::<TransferCastle>(owner).unwrap().selected.clone();
+                let person = person(world, owner);
+                let result =
+                    crate::simulation_castle::transfer_entry::group_balance(&rows, &root, &person)
+                        .and_then(|balance| {
+                            crate::simulation_castle::transfer_entry::open_balance(
+                                world, owner, &balance,
+                            )
+                        });
+                if let Err(error) = result {
+                    status(world, owner, error.to_string());
+                }
+                return;
+            }
+            Self::SimulateBalance(balance) => {
+                if let Err(error) =
+                    crate::simulation_castle::transfer_entry::open_balance(world, owner, balance)
+                {
+                    status(world, owner, error.to_string());
+                }
+                return;
+            }
+            Self::Simulate(uid) | Self::SimulateLoan(uid) | Self::SimulateShared(uid, _) => {
+                let form = world.get::<TransferCastle>(owner).unwrap().form.clone();
+                let row = if let Some(mut form) = form.filter(|form| form.step.is_some()) {
+                    if let Err(error) = form.commit_fields() {
+                        status(world, owner, error);
+                        return;
+                    }
+                    Some(form.data)
+                } else {
+                    selected(world, owner)
+                };
+                let Some(transfer) = row else {
+                    return;
+                };
+                let shared = if matches!(self, Self::SimulateShared(_, _)) {
+                    nucleus::simulation::sharing::Shared::parse(uid)
+                } else {
+                    None
+                };
+                let index = if let Self::SimulateShared(_, index) = self {
+                    *index
+                } else {
+                    0
+                };
+                let promise_uid = shared
+                    .as_ref()
+                    .and_then(|shared| shared.assumptions.get(index))
+                    .map_or(uid.as_str(), |assumption| {
+                        assumption.source.promise.as_str()
+                    });
+                let Some(promise) = array(&transfer, "promises")
+                    .iter()
+                    .find(|promise| text(promise, "uid") == promise_uid)
+                else {
+                    status(
+                        world,
+                        owner,
+                        "The assumed item is unavailable in this proposal",
+                    );
+                    return;
+                };
+                let person = person(world, owner);
+                if let Err(error) = crate::simulation_castle::transfer_entry::open(
+                    world,
+                    owner,
+                    &transfer,
+                    promise,
+                    &person,
+                    shared.as_ref().map(|shared| (shared, index)),
+                    matches!(self, Self::SimulateLoan(_)),
+                ) {
+                    status(world, owner, error.to_string());
+                }
+                return;
+            }
             Self::Create => {}
             Self::Refresh => runtime::refresh(world, owner),
+            Self::ViewAs(person) => {
+                world.get_mut::<View>(owner).unwrap().disclosure_preview = Some(person.clone());
+                if world.get::<TransferCastle>(owner).unwrap().form.is_some() {
+                    forms::render(world, owner);
+                    return;
+                }
+            }
             Self::Select(uid) => {
                 world.get_mut::<TransferCastle>(owner).unwrap().selected = uid.clone();
                 world
@@ -166,6 +258,8 @@ impl Action for Command {
                 }
                 let new = if key == "promises" {
                     model::promise(&text(&form.data, "creator"))
+                } else if key == "effects" {
+                    json!({"record":"","formula":"incoming()","mode":"fulfilment"})
                 } else {
                     model::dependency()
                 };
@@ -180,6 +274,9 @@ impl Action for Command {
                 }
                 form.fields.clear();
                 form.request_id = nucleus::new_uid("transfer-ui");
+                if form.step.is_none() {
+                    form.data["request_id"] = json!(form.request_id);
+                }
                 world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
                 forms::render(world, owner);
                 return;

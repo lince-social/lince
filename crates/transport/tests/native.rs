@@ -78,6 +78,10 @@ async fn native_tools_discover_the_real_schemas_and_query_saved_proteins() {
         "change-record",
         "apply-area-transition",
         "create-karma-program",
+        "save-karma-rule",
+        "set-recurrence-paused",
+        "preview-karma-proposal",
+        "inspect-karma-rule-history",
     ] {
         let result = call(&tools, "lince_describe", json!({"action":name})).await;
         assert_eq!(result["schema"]["properties"]["action"]["const"], name);
@@ -112,6 +116,44 @@ async fn native_tools_discover_the_real_schemas_and_query_saved_proteins() {
     assert_eq!(result["rows"].as_array().unwrap().len(), 1);
     let status = call(&tools, "lince_sync_status", json!({})).await;
     assert_eq!(status["type"], "sync_status");
+}
+
+#[tokio::test]
+async fn karma_tools_share_native_rule_revisions_and_replay_live_edits() {
+    let (engine, tools, target, _) = fixture().await;
+    let frequency = call(&tools, "lince_action", json!({"request_id":"karma-frequency","action":Action::CreateFrequency { slug: "daily-example".into(), head: Some("Daily example".into()), every: nucleus::karma::CadenceStep { days: 1, ..Default::default() }, anchor_at: None, request_id: Some("daily-example".into()) },"read_ids":[]})).await;
+    let frequencies = call(&tools, "lince_query", json!({"protein":{"source":"frequency","limit":10}})).await;
+    assert_eq!(frequencies["rows"][0]["uid"], frequency["created"]);
+    call(&tools, "lince_action", json!({"request_id":"karma-frequency-delete","action":Action::DeleteFrequency { frequency: frequency["created"].as_str().unwrap().into() },"read_ids":[]})).await;
+    let source = engine.act(Action::CreateRecord {
+        slug: Some("source".into()), kind: nucleus::RecordKind::Plain,
+        head: "Source".into(), body: String::new(), quantity: 0.0,
+    }, None).await.unwrap().created.unwrap();
+    let fields = |source: &str| [
+        nucleus::karma::rule_field::RuleFieldInput::Text { source: source.into() },
+        nucleus::karma::rule_field::RuleFieldInput::Text { source: "always".into() },
+        nucleus::karma::rule_field::RuleFieldInput::Text { source: format!("@{target}") },
+    ];
+    let action = Action::SaveKarmaRule { rule: None, expected_revision: None, identity: None, fields: fields("@source"), request_id: "karma-live-create".into() };
+    let args = json!({"request_id":"karma-create","action":action,"read_ids":[]});
+    let first = call(&tools, "lince_action", args.clone()).await;
+    assert_eq!(call(&tools, "lince_action", args).await, first);
+    let uid = first["created"].as_str().unwrap();
+    assert_eq!(store::recurrence::all(&engine.store.pool).await.unwrap().len(), 1);
+    let current = store::recurrence::get(&engine.store.pool, uid).await.unwrap().unwrap();
+    engine.act(Action::SaveKarmaRule { rule: Some(uid.into()), expected_revision: Some(current.revision), identity: None, fields: fields("@source * 3"), request_id: "native-human-edit".into() }, None).await.unwrap();
+    let rules = call(&tools, "lince_query", json!({"protein":{"source":"karma_rule","limit":10}})).await;
+    assert_eq!(rules["rows"][0]["uid"], uid);
+    let current = store::recurrence::get(&engine.store.pool, uid).await.unwrap().unwrap();
+    call(&tools, "lince_action", json!({"request_id":"karma-pause","action":Action::SetRecurrencePaused { recurrence: uid.into(), expected_revision: current.revision, paused: true, request_id: "karma-pause".into() }, "read_ids":[]})).await;
+    let current = store::recurrence::get(&engine.store.pool, uid).await.unwrap().unwrap();
+    assert!(current.is_paused());
+    call(&tools, "lince_action", json!({"request_id":"karma-resume","action":Action::SetRecurrencePaused { recurrence: uid.into(), expected_revision: current.revision, paused: false, request_id: "karma-resume".into() }, "read_ids":[]})).await;
+    engine.act(Action::SetQuantityExact { target: source, amount: "2".into() }, None).await.unwrap();
+    let explained = call(&tools, "lince_action", json!({"request_id":"karma-history","action":Action::InspectKarmaRuleHistory { rule: uid.into(), limit: 10 }, "read_ids":[]})).await;
+    assert_eq!(explained["data"]["applications"][0]["evidence"]["source"], "@source * 3");
+    assert_eq!(explained["data"]["applications"][0]["evidence"]["evaluation"]["computed"]["value"], "6");
+    assert_eq!(store::facts::level(&engine.store.pool, &target).await.unwrap().to_string(), "6");
 }
 
 #[tokio::test]

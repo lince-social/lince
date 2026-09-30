@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn update(world: &mut World) {
     recovery::update(world);
     autosave::update(world, std::time::Instant::now());
+    tools::update(world);
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<View>>()
         .iter(world)
@@ -220,6 +221,9 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         tabs::switch(world, owner, ide.active.clone());
     }
     let Some(path) = ide.active else {
+        if let Some(mut syntax) = world.get_mut::<highlight::Syntax>(editor) {
+            syntax.language = None;
+        }
         let mut editor = world.get_mut::<EditableText>(editor).unwrap();
         if !editor.value().to_string().is_empty() {
             editor.editor.set_text("");
@@ -239,6 +243,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         crate::sand_panel::status(world, status_label, message);
         return;
     };
+    let language = lince_editor::language::detect(&path);
+    if let Some(mut syntax) = world.get_mut::<highlight::Syntax>(editor) {
+        if syntax.language != language {
+            syntax.language = language;
+        }
+    }
     let Some(doc) = world.resource::<Documents>().0.get(&path) else {
         let mut input = world.get_mut::<EditableText>(editor).unwrap();
         if !input.value().to_string().is_empty() {

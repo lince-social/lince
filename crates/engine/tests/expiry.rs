@@ -196,6 +196,7 @@ async fn reserve_from_inherits_the_transfer_default() {
                 default_place: None,
                 invitees: Vec::new(),
                 promises: vec![TransferPromiseInput {
+                    item: None,
                     uid: Some("expiry-bundled".into()),
                     record: apples.clone(),
                     party: Some(ana),

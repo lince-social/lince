@@ -187,7 +187,7 @@ pub fn revocation_signing_payload(organ_uid: &str, revoked_key: &str) -> Vec<u8>
     format!("{REVOCATION_DOMAIN}{organ_uid}\n{revoked_key}").into_bytes()
 }
 
-fn verify_with(public_key_b64: &str, payload: &[u8], signature_b64: &str) -> bool {
+pub(crate) fn verify_with(public_key_b64: &str, payload: &[u8], signature_b64: &str) -> bool {
     let Ok(key_bytes) = B64.decode(public_key_b64) else {
         return false;
     };
@@ -293,6 +293,19 @@ impl Engine {
     }
 
     async fn store_roster(&self, signed: &SignedRoster) -> Result<(), EngineError> {
+        store::roster::put(
+            &self.store.pool,
+            &store::roster::StoredRoster {
+                organ_uid: signed.roster.organ_uid.clone(),
+                root_key: signed.roster.root_key.clone(),
+                version: signed.roster.version,
+                not_after: signed.roster.not_after.clone(),
+                payload: serde_json::to_string(&signed.roster)
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?,
+                signature: signed.signature.clone(),
+            },
+        )
+        .await?;
         if let (Some(local_organ), Some(local_cell)) = (
             store::organs::local(&self.store.pool).await?,
             store::cells::local(&self.store.pool).await?,
@@ -308,19 +321,6 @@ impl Engine {
                 store::roster::project_local_capabilities(&self.store.pool, &capabilities).await?;
             }
         }
-        store::roster::put(
-            &self.store.pool,
-            &store::roster::StoredRoster {
-                organ_uid: signed.roster.organ_uid.clone(),
-                root_key: signed.roster.root_key.clone(),
-                version: signed.roster.version,
-                not_after: signed.roster.not_after.clone(),
-                payload: serde_json::to_string(&signed.roster)
-                    .map_err(|error| EngineError::Consequence(error.to_string()))?,
-                signature: signed.signature.clone(),
-            },
-        )
-        .await?;
         store::organs::clear_awaiting_roster(&self.store.pool, &signed.roster.organ_uid).await?;
         Ok(())
     }

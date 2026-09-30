@@ -31,8 +31,20 @@ pub mod instinct;
 pub mod karma_control;
 pub mod karma_grants;
 pub mod karma_runtime;
+pub mod karma_preview;
+pub mod karma_history;
+pub mod karma_habits;
+mod karma_read_access;
+mod karma_transfers;
+mod karma_transfer_effects;
+mod karma_transfer_actions;
+mod karma_transfer_stages;
+mod karma_transfer_commands;
+mod karma_transfer_inspection;
+mod karma_transfer_evidence;
 pub mod rule_runtime;
 mod karma_editor;
+mod karma_schedules;
 pub mod karma_timezone;
 pub mod lingua_file;
 pub mod login;
@@ -41,6 +53,7 @@ pub mod mailbox;
 pub mod pairing;
 pub mod peers;
 pub mod peer_sync;
+mod transfer_replication;
 pub mod private_admin_catalog;
 pub mod private_auth;
 pub mod private_files;
@@ -63,6 +76,7 @@ pub mod groups;
 pub mod calls;
 pub mod transfer;
 pub mod transfer_delivery;
+mod transfer_counterparty;
 pub mod trust;
 pub mod wire;
 
@@ -101,6 +115,7 @@ pub struct Engine {
     access_gate: tokio::sync::RwLock<()>,
     fiote_config_lock: Mutex<()>,
     thread_creation_lock: Mutex<()>,
+    mailbox_delivery_lock: Mutex<()>,
     calls: Mutex<calls::Calls>,
     login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
     pub sync_service: sync_service::SyncService,
@@ -113,6 +128,7 @@ pub struct Engine {
     notifications_changed: watch::Sender<u64>,
     config_changed: watch::Sender<u64>,
     karma_runtime_config: RwLock<Option<karma_runtime::KarmaDeadlineDirectorConfig>>,
+    karma_preview_runner: RwLock<Option<std::sync::Arc<dyn karma_preview::Runner>>>,
     pub(crate) rule_index: Mutex<Option<(u64, std::sync::Arc<rule_runtime::RuleIndex>)>>,
     pub(crate) rule_execution: Mutex<()>,
     pub(crate) effects_changed: watch::Sender<u64>,
@@ -162,6 +178,7 @@ impl Engine {
                 .map_err(|error| EngineError::Consequence(error.to_string()))?,
             fiote_config_lock: Mutex::new(()),
             thread_creation_lock: Mutex::new(()),
+            mailbox_delivery_lock: Mutex::new(()),
             calls: Mutex::new(calls::Calls::default()),
             access_gate: tokio::sync::RwLock::new(()),
             login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
@@ -175,6 +192,7 @@ impl Engine {
             notifications_changed,
             config_changed,
             karma_runtime_config: RwLock::new(None),
+            karma_preview_runner: RwLock::new(None),
             rule_index: Mutex::new(None),
             rule_execution: Mutex::new(()),
             effects_changed,
@@ -268,6 +286,10 @@ impl Engine {
             .send_modify(|revision| *revision = revision.wrapping_add(1));
     }
 
+    pub fn subscribe_karma_deadline_changes(&self) -> watch::Receiver<u64> {
+        self.karma_deadline_changed.subscribe()
+    }
+
     pub fn install_karma_runtime_config(
         &self,
         config: karma_runtime::KarmaDeadlineDirectorConfig,
@@ -313,12 +335,27 @@ impl Engine {
         fact: Fact,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
+        self.observe_fact_state(&fact, now).await?;
         let _ = self.bus.send(fact.clone());
         let changed = vec![fact.record_uid.clone()];
         let event_id = fact.uid.clone();
         let mut committed = vec![fact];
         committed.extend(Box::pin(self.react_to_event(changed, event_id, now)).await?);
         Ok(committed)
+    }
+    pub(crate) async fn observe_fact_state(&self, fact: &Fact, now: DateTime<Utc>) -> Result<(), EngineError> {
+        if let Some(execution) = nucleus::execution::current()
+            && let Some(control) = execution.control()
+            && let Some(cell) = execution.cell() {
+            if let Ok(occurrence) = rule_runtime::EFFECT_OCCURRENCE.try_with(Clone::clone) {
+                control.link_effect(cell, &fact.uid, &occurrence);
+            }
+            if let Ok(original) = rule_runtime::RECEIVED_PARENT.try_with(Clone::clone) {
+                control.link_received(cell, &fact.uid, &original);
+            }
+            self.check_control_quantities(cell, &control, &fact.record_uid, now).await?;
+        }
+        Ok(())
     }
     pub(crate) fn publish_committed_fact(&self, fact: Fact) -> Vec<Fact> {
         let _ = self.bus.send(fact.clone());

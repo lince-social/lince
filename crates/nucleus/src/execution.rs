@@ -6,6 +6,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+pub mod causal;
+pub mod control;
+
 thread_local! {
     static CURRENT: RefCell<Option<Execution>> = const { RefCell::new(None) };
 }
@@ -20,7 +23,7 @@ pub struct State {
 }
 
 #[derive(Debug, Clone)]
-pub struct Execution(Arc<Mutex<State>>);
+pub struct Execution(Arc<Mutex<State>>, Option<(control::Control, String)>);
 
 impl Execution {
     pub fn new(seed: [u8; 32], now_ms: i64) -> Result<Self, &'static str> {
@@ -34,7 +37,20 @@ impl Execution {
 
     pub fn restore(state: State) -> Result<Self, &'static str> {
         validate_time(state.now_ms)?;
-        Ok(Self(Arc::new(Mutex::new(state))))
+        Ok(Self(Arc::new(Mutex::new(state)), None))
+    }
+
+    pub fn controlled(mut self, control: control::Control, cell: String) -> Self {
+        self.1 = Some((control, cell));
+        self
+    }
+
+    pub fn control(&self) -> Option<control::Control> {
+        self.1.as_ref().map(|(control, _)| control.clone())
+    }
+
+    pub fn cell(&self) -> Option<&str> {
+        self.1.as_ref().map(|(_, cell)| cell.as_str())
     }
 
     pub fn snapshot(&self) -> State {

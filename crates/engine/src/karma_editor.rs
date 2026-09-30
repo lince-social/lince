@@ -24,73 +24,14 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<serde_json::Value, EngineError> {
         check_source(source)?;
-        let mut pending = vec![(source.to_owned(), 0)];
-        let mut budget = 128;
-        while let Some((source, depth)) = pending.pop() {
-            nucleus::karma::rule_field::check_condition_source(&source).map_err(invalid)?;
-            if depth >= 4 {
-                return Err(invalid("Reading nesting is too deep"));
-            }
-            for token in Condition::parse(&source).map_err(invalid)?.reads() {
-                budget -= 1;
-                if budget == 0 {
-                    return Err(invalid("Too many readings"));
-                }
-                if token.func == nucleus::expr::ASSERTION {
-                    let concept = store::concepts::resolve(&self.store.pool, &token.slug)
-                        .await?
-                        .ok_or_else(|| invalid("Unknown concept"))?;
-                    self.refuse_unreadable(
-                        actor,
-                        &store::ledger::records_with_concept(&self.store.pool, &concept).await?,
-                    )
-                    .await?;
-                    continue;
-                }
-                if actor.is_some()
-                    && !matches!(
-                        token.func.as_str(),
-                        "quantity"
-                            | "signal"
-                            | "value"
-                            | "sum"
-                            | "sum_pos"
-                            | "sum_neg"
-                            | "hours_since_fact"
-                            | "freq"
-                            | "distance"
-                            | "promise_state"
-                    )
-                {
-                    return Err(invalid(
-                        "This reading has no private-safe hover preview yet",
-                    ));
-                }
-                if token.func == "freq" {
-                    self.require_permission(actor, "frequency:read").await?;
-                }
-                for slug in token.slug.split('|') {
-                    let uid = self.resolve(slug).await?;
-                    self.refuse_unreadable(actor, std::slice::from_ref(&uid))
-                        .await?;
-                    if token.func == "value" {
-                        let rule = store::recurrence::for_record(&self.store.pool, &uid)
-                            .await?
-                            .into_iter()
-                            .find(|rule| rule.condition.is_some() && !rule.is_paused())
-                            .ok_or_else(|| invalid("Record has no value rule"))?;
-                        pending.push((rule.condition.unwrap().source, depth + 1));
-                    }
-                }
-            }
-        }
+        self.karma_condition_records(Condition::parse(source).map_err(invalid)?, actor).await?;
         let condition = RuleCondition {
             source: source.into(),
             bindings: Vec::new(),
             gate: Gate::Always,
             carry: Carry::Value,
         };
-        let value = Box::pin(self.evaluate_rule_condition(&condition, now, now)).await?;
+        let value = crate::karma_transfers::scope(actor, Box::pin(self.evaluate_rule_condition(&condition, now, now))).await?;
         Ok(
             serde_json::json!({"source":source,"value":value.map(|value| value.to_string()),"at":now.to_rfc3339()}),
         )
@@ -170,13 +111,13 @@ impl Engine {
                         let rule = store::recurrence::get(&self.store.pool, &reader)
                             .await?
                             .ok_or_else(|| invalid("Rule not found"))?;
-                        self.refuse_unreadable(actor, &[rule.record_uid.clone()])
+                        self.refuse_unreadable_karma_inputs(actor, &[crate::karma_transfer_effects::target(&rule).into()])
                             .await?;
                         match kind {
                             RuleFieldKind::Condition => {
                                 let bindings =
-                                    rule.condition
-                                        .map(|condition| condition.bindings)
+                                    rule.condition.clone()
+                                        .map(|condition| condition.bindings.into_iter().filter(|binding| !binding.reading.starts_with("consequence.")).collect::<Vec<_>>())
                                         .ok_or_else(|| invalid("Shared condition is missing"))?;
                                 if shared_bindings
                                     .as_ref()
@@ -189,15 +130,16 @@ impl Engine {
                                 shared_bindings = Some(bindings);
                             }
                             RuleFieldKind::Consequence => {
+                                let value = (crate::karma_transfer_effects::target(&rule).to_owned(), rule.condition.as_ref().map_or_else(Vec::new, |condition| condition.bindings.iter().filter(|binding| binding.reading.starts_with("consequence.")).cloned().collect::<Vec<_>>()));
                                 if shared_target
                                     .as_ref()
-                                    .is_some_and(|saved| saved != &rule.record_uid)
+                                    .is_some_and(|saved| saved != &value)
                                 {
                                     return Err(invalid(
                                         "Shared consequence has conflicting targets",
                                     ));
                                 }
-                                shared_target = Some(rule.record_uid);
+                                shared_target = Some(value);
                             }
                             RuleFieldKind::Threshold => {}
                         }
@@ -219,7 +161,7 @@ impl Engine {
                 if Some(rule.revision) != expected_revision {
                     return Err(invalid("Rule changed. Refresh before saving."));
                 }
-                self.authorize_rule_target(&rule.record_uid, actor).await?;
+                self.authorize_karma_rule(&rule, actor).await?;
                 Some(rule)
             }
             None => None,
@@ -287,7 +229,7 @@ impl Engine {
             let current = store::recurrence::get(&self.store.pool, &reader)
                 .await?
                 .ok_or_else(|| invalid("Rule not found"))?;
-            self.authorize_rule_target(&current.record_uid, actor)
+            self.authorize_karma_rule(&current, actor)
                 .await?;
             let fields = store::karma_fields::for_rule(&self.store.pool, &reader).await?;
             let sources: Vec<_> = RuleFieldKind::ALL
@@ -307,7 +249,7 @@ impl Engine {
             let rule = self
                 .prepare_editor_rule(Some(current), &sources, None, None, actor, now)
                 .await?;
-            self.authorize_rule_target(&rule.record_uid, rule.actor_uid.as_deref())
+            self.authorize_karma_rule(&rule, rule.actor_uid.as_deref())
                 .await?;
             Box::pin(self.validate_automatic_rule(
                 &rule.consequences,
@@ -322,7 +264,7 @@ impl Engine {
         Ok(ActionOutcome::default())
     }
 
-    async fn authorize_rule_target(
+    pub(crate) async fn authorize_rule_target(
         &self,
         target: &str,
         actor: Option<&str>,
@@ -343,7 +285,7 @@ impl Engine {
         previous: Option<Recurrence>,
         sources: &[String],
         shared_bindings: Option<Vec<nucleus::karma::ConditionBinding>>,
-        shared_target: Option<String>,
+        shared_target: Option<(String, Vec<nucleus::karma::ConditionBinding>)>,
         actor: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<Recurrence, EngineError> {
@@ -363,7 +305,7 @@ impl Engine {
             }),
         )
         .await?;
-        let condition = RuleCondition {
+        let mut condition = RuleCondition {
             source,
             bindings,
             gate: Gate::parse(&sources[1]).map_err(invalid)?,
@@ -384,12 +326,19 @@ impl Engine {
         } else {
             None
         };
-        let target = match shared_target.or(previous_target) {
+        let previous_effect_bindings = shared_target.as_ref().map(|(_, bindings)| bindings.as_slice()).unwrap_or_else(|| previous.as_ref().and_then(|rule| rule.condition.as_ref()).map_or(&[], |condition| condition.bindings.as_slice()));
+        let consequences = self.bind_transfer_effects(consequence.consequences, &mut condition.bindings, previous_effect_bindings).await?;
+        let target = match self.transfer_rule_anchor(&consequences, actor).await? {
             Some(target) => target,
-            None => self.resolve(&consequence.target).await?,
+            None => {
+                let target = match shared_target.map(|(target, _)| target).or(previous_target) {
+                    Some(target) => target,
+                    None => self.resolve(&consequence.target).await?,
+                };
+                self.authorize_rule_target(&target, actor).await?;
+                target
+            }
         };
-        self.authorize_rule_target(&target, actor).await?;
-        let consequences = self.resolve_consequences(consequence.consequences).await?;
         Box::pin(self.validate_automatic_rule(&consequences, Some(&condition), actor)).await?;
         let mut rule = previous.unwrap_or_else(|| Recurrence {
             uid: nucleus::new_uid("rec"),

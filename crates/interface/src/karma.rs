@@ -1,6 +1,7 @@
 use nucleus::karma::rule_field::{RuleFieldInput, RuleFieldKind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+pub mod transfers;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SharedField {
@@ -35,7 +36,7 @@ pub fn bound_reading(rule: &Rule, source: &str) -> String {
                 rule.bindings.iter().find(|binding| {
                     binding.authored == slug
                         && reads.iter().any(|read| {
-                            read.func == binding.reading
+                            nucleus::expr::binding_reading(&read.func) == binding.reading
                                 && read.slug.split('|').any(|name| name == slug)
                         })
                 })
@@ -113,6 +114,30 @@ pub enum Suggestion {
     Element(String),
 }
 
+pub fn element_label(element: &str, records: &[Value]) -> String {
+    let Ok(condition) = nucleus::karma::Condition::parse(element) else {
+        return element.into();
+    };
+    let readings = condition.reads();
+    let [reading] = readings.as_slice() else {
+        return element.into();
+    };
+    let Some((namespace, property)) = nucleus::expr::extension_parts(&reading.func) else {
+        return element.into();
+    };
+    let value = records
+        .iter()
+        .find(|record| record["slug"] == reading.slug || record["uid"] == reading.slug)
+        .and_then(|record| record["numeric_extensions"].as_array())
+        .and_then(|properties| {
+            properties
+                .iter()
+                .find(|value| value["namespace"] == namespace && value["property"] == property)
+        })
+        .and_then(|value| value["value"].as_str());
+    value.map_or_else(|| element.into(), |value| format!("{element} · {value}"))
+}
+
 pub fn suggestions(
     kind: RuleFieldKind,
     text: &str,
@@ -158,6 +183,7 @@ pub fn suggestions(
             "sum_neg(",
             "signal(",
             "freq(",
+            "extension(",
         ]
         .map(str::to_owned)
         .into(),
@@ -174,6 +200,21 @@ pub fn suggestions(
         );
     }
     if kind == RuleFieldKind::Condition {
+        elements.extend(records.iter().flat_map(|record| {
+            let slug = record["slug"]
+                .as_str()
+                .or_else(|| record["uid"].as_str())
+                .unwrap_or_default();
+            record["numeric_extensions"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(move |property| {
+                    let namespace = serde_json::to_string(property["namespace"].as_str()?).ok()?;
+                    let name = serde_json::to_string(property["property"].as_str()?).ok()?;
+                    Some(format!("extension(@{slug}, {namespace}, {name})"))
+                })
+        }));
         elements.extend(frequencies.iter().filter_map(|frequency| {
             frequency["slug"]
                 .as_str()
@@ -238,6 +279,13 @@ pub fn insert_at(
     if !selection.is_empty() {
         return format!("{before}{element}{after}");
     }
+    if element.starts_with("extension(")
+        && let Some((prefix, tail)) = before.rsplit_once("extension(")
+        && !tail.contains(')')
+    {
+        let after = after.strip_prefix(')').unwrap_or(after);
+        return format!("{prefix}{element}{after}");
+    }
     let mut element = element.to_owned();
     if element.starts_with("freq(")
         && before
@@ -259,7 +307,20 @@ pub fn insert_at(
 pub fn fragments(text: &str) -> Vec<(String, Option<String>)> {
     let mut parts = Vec::new();
     let mut from = 0;
+    let mut quoted = false;
+    let mut escaped = false;
     for (at, character) in text.char_indices() {
+        if quoted {
+            if character == '"' && !escaped {
+                quoted = false;
+            }
+            escaped = character == '\\' && !escaped;
+            continue;
+        }
+        if character == '"' {
+            quoted = true;
+            continue;
+        }
         if character != '@' || at < from {
             continue;
         }
@@ -289,8 +350,34 @@ pub fn reading_at(source: &str, start: usize, end: usize) -> String {
             .rfind(|character: char| !character.is_ascii_alphanumeric() && character != '_')
             .map_or(0, |at| at + 1);
         let name = &prefix[name_start..open];
+        let mut quoted = false;
+        let mut escaped = false;
+        let mut depth = 1;
+        let close = source[end..]
+            .char_indices()
+            .find_map(|(offset, character)| {
+                if quoted {
+                    if character == '"' && !escaped {
+                        quoted = false;
+                    }
+                    escaped = character == '\\' && !escaped;
+                    return None;
+                }
+                match character {
+                    '"' => quoted = true,
+                    '(' => depth += 1,
+                    ')' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            return Some(offset);
+                        }
+                    }
+                    _ => {}
+                }
+                None
+            });
         if !name.is_empty()
-            && let Some(close) = source[end..].find(')')
+            && let Some(close) = close
         {
             let reading = &source[name_start..end + close + 1];
             if nucleus::karma::rule_field::check_condition_source(reading).is_ok()
@@ -330,3 +417,56 @@ pub fn frequency_hint(frequency: &Value, now_ms: i64) -> String {
         )
     }
 }
+
+#[cfg(test)]
+mod extension_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn native_choices_insert_namespace_property_and_show_the_current_value() {
+        let records = vec![
+            json!({"slug":"apples.stock", "numeric_extensions":[{"namespace":"shop.inventory","property":"price","value":"1.25"}]}),
+        ];
+        let reading = r#"extension(@apples.stock, "shop.inventory", "price")"#;
+        let choices = suggestions(RuleFieldKind::Condition, "extension", &[], &records, &[]);
+        assert!(
+            choices
+                .iter()
+                .any(|choice| matches!(choice, Suggestion::Element(value) if value == reading))
+        );
+        assert_eq!(
+            element_label(reading, &records),
+            format!("{reading} · 1.25")
+        );
+        assert_eq!(
+            insert_at("", 0..0, reading, RuleFieldKind::Condition),
+            reading
+        );
+        let partial = "2 * extension(@apples.stock, \"shop";
+        assert_eq!(
+            insert_at(
+                partial,
+                partial.len()..partial.len(),
+                reading,
+                RuleFieldKind::Condition
+            ),
+            format!("2 * {reading}")
+        );
+        let start = reading.find('@').unwrap();
+        let end = start + "@apples.stock".len();
+        assert_eq!(reading_at(reading, start, end), reading);
+        let unusual = r#"extension(@record, "shop(wholesale)", "weight (kg)")"#;
+        let start = unusual.find('@').unwrap();
+        assert_eq!(reading_at(unusual, start, start + "@record".len()), unusual);
+        let literals = r##"extension(@record, "@namespace", "#property")"##;
+        assert_eq!(
+            fragments(literals)
+                .iter()
+                .filter(|(_, reference)| reference.is_some())
+                .count(),
+            1
+        );
+    }
+}
+pub mod schedules;

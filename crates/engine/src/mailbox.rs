@@ -52,37 +52,41 @@ impl crate::Engine {
             return Err(Refusal::Unreadable);
         }
 
-        let registration = store::mailbox::registration(&self.store.pool, &bundle.to_organ)
+        crate::seal::validate_envelope(&bundle, nucleus::execution::now().timestamp())
+            .map_err(|_| Refusal::Unreadable)?;
+        let body = serde_json::to_string(&bundle).map_err(|_| Refusal::Unreadable)?;
+        let uid = crate::seal::delivery_id(&bundle);
+        let now = nucleus::execution::now();
+        let global_limit = store::cells::config(&self.store.pool, "lince.social")
             .await
             .map_err(|_| Refusal::Unreadable)?
-            .ok_or(Refusal::NotRegistered)?;
-        let held = store::mailbox::held_bytes(&self.store.pool, &bundle.to_organ)
-            .await
-            .map_err(|_| Refusal::Unreadable)?;
-        let bytes = body.len() as i64;
-        if held + bytes > registration.quota_bytes {
-            return Err(Refusal::QuotaFull);
-        }
-
-        let now = nucleus::execution::now();
-        let uid = format!("mb-{}", nucleus::execution::uuid());
-        store::mailbox::deposit(
+            .and_then(|value| value["max_storage_bytes"].as_i64())
+            .unwrap_or(1024 * 1024 * 1024);
+        let expires_at =
+            chrono::DateTime::from_timestamp(bundle.expires_at, 0).ok_or(Refusal::Unreadable)?;
+        let stored = store::mailbox::delivery::deposit(
             &self.store.pool,
             &store::mailbox::HeldBundle {
                 uid: uid.clone(),
                 to_organ: bundle.to_organ.clone(),
                 from_organ: bundle.from_organ.clone(),
                 from_cell: bundle.from_cell.clone(),
-                from_node: from_node.to_string(),
-                body: body.to_string(),
-                bytes,
+                from_node: from_node.to_owned(),
+                bytes: body.len() as i64,
+                body,
                 received_at: now.to_rfc3339(),
-                expires_at: (now + chrono::Duration::days(crate::seal::RETENTION_DAYS))
-                    .to_rfc3339(),
+                expires_at: expires_at.to_rfc3339(),
             },
+            global_limit,
         )
         .await
         .map_err(|_| Refusal::Unreadable)?;
+        match stored {
+            store::mailbox::delivery::Deposit::Stored => {}
+            store::mailbox::delivery::Deposit::NotRegistered => return Err(Refusal::NotRegistered),
+            store::mailbox::delivery::Deposit::Full => return Err(Refusal::QuotaFull),
+            store::mailbox::delivery::Deposit::Conflict => return Err(Refusal::Unreadable),
+        }
         Ok(uid)
     }
 
@@ -109,11 +113,35 @@ impl crate::Engine {
         if !chains {
             return Ok(false);
         }
-        Ok(presented
-            .roster
-            .cells
-            .iter()
-            .any(|cell| cell.node_id == node_id))
+        if self
+            .roster_of(organ_uid)
+            .await?
+            .is_some_and(|known| known.roster.version > presented.roster.version)
+        {
+            return Ok(false);
+        }
+        if !store::mailbox::delivery::advance_roster(
+            &self.store.pool,
+            organ_uid,
+            presented.roster.version,
+            &serde_json::to_string(presented).map_err(EngineError::Json)?,
+        )
+        .await?
+        {
+            return Ok(false);
+        }
+        let authorized = presented.roster.cells.iter().any(|cell| {
+            cell.node_id == node_id
+                && cell
+                    .capabilities
+                    .iter()
+                    .any(|cap| cap == crate::roster::CAP_WRITE)
+        });
+        if authorized {
+            store::mailbox::delivery::acknowledge(&self.store.pool, organ_uid, node_id, &[])
+                .await?;
+        }
+        Ok(authorized)
     }
 
     pub async fn bundles_for(
@@ -124,12 +152,45 @@ impl crate::Engine {
         Ok(store::mailbox::for_recipient(&self.store.pool, organ_uid, limit).await?)
     }
 
+    pub async fn bundles_for_device(
+        &self,
+        organ: &str,
+        node: &str,
+        limit: i64,
+    ) -> Result<Vec<store::mailbox::HeldBundle>, EngineError> {
+        let rows =
+            store::mailbox::delivery::for_device(&self.store.pool, organ, node, limit).await?;
+        let mut bytes = 4096usize;
+        let mut selected = Vec::new();
+        for row in rows {
+            let encoded = serde_json::to_vec(&crate::wire::MailboxBundle {
+                uid: row.uid.clone(),
+                from_organ: row.from_organ.clone(),
+                from_cell: row.from_cell.clone(),
+                body: row.body.clone(),
+                received_at: row.received_at.clone(),
+                expires_at: row.expires_at.clone(),
+            })
+            .map_err(EngineError::Json)?;
+            if bytes.saturating_add(encoded.len() + 1) > crate::wire::MAX_FRAME_BYTES {
+                break;
+            }
+            bytes += encoded.len() + 1;
+            selected.push(row);
+        }
+        Ok(selected)
+    }
+
     pub async fn confirm_collected(
         &self,
         organ_uid: &str,
+        node_id: &str,
         uids: &[String],
     ) -> Result<u64, EngineError> {
-        Ok(store::mailbox::collected(&self.store.pool, organ_uid, uids).await?)
+        Ok(
+            store::mailbox::delivery::acknowledge(&self.store.pool, organ_uid, node_id, uids)
+                .await?,
+        )
     }
 
     pub async fn sweep_mailbox(&self) -> Result<u64, EngineError> {
@@ -187,6 +248,11 @@ impl crate::Engine {
             .roster
             .cells
             .iter()
+            .filter(|cell| {
+                cell.capabilities
+                    .iter()
+                    .any(|cap| cap == crate::roster::CAP_WRITE)
+            })
             .filter_map(|cell| cell.sealing_key.clone())
             .filter(|key| {
                 chrono::DateTime::parse_from_rfc3339(&key.not_after)
@@ -214,10 +280,76 @@ impl crate::Engine {
             .map_err(|why| EngineError::Consequence(why.to_string()))
     }
 
+    pub async fn prepare_outgoing_mail(
+        &self,
+        to_organ: &str,
+        root: Option<&str>,
+        batch: &crate::sync::OpBatch,
+    ) -> Result<store::mailbox::outbox::Envelope, EngineError> {
+        let roster = self.roster_of(to_organ).await?.ok_or_else(|| {
+            EngineError::Consequence("No recipient roster for outgoing mail".into())
+        })?;
+        if !crate::roster::roster_signature_is_valid(&roster) {
+            return Err(EngineError::Forbidden(
+                "The recipient roster has expired".into(),
+            ));
+        }
+        let requested_copies = store::cells::config(&self.store.pool, "lince.social")
+            .await?
+            .and_then(|value| value["mailbox_copies"].as_i64())
+            .unwrap_or(2)
+            .clamp(1, 2);
+        let bytes = serde_json::to_vec(&(
+            "lince.mailbox.intent.v1",
+            to_organ,
+            root,
+            batch,
+            &roster.roster.root_key,
+            &roster.roster.cells,
+            requested_copies,
+        ))
+        .map_err(EngineError::Json)?;
+        let intent = nucleus::fact::sha256_hex(&bytes);
+        if let Some(held) = store::mailbox::outbox::get(&self.store.pool, &intent).await? {
+            return Ok(held);
+        }
+        let bundle = self.seal_batch_for(to_organ, root, batch).await?;
+        let body = serde_json::to_string(&bundle).map_err(EngineError::Json)?;
+        if body.len() > MAX_BUNDLE_BYTES {
+            return Err(EngineError::Consequence(
+                "This batch exceeds the mailbox envelope limit".into(),
+            ));
+        }
+        let expires_at = chrono::DateTime::from_timestamp(bundle.expires_at, 0)
+            .ok_or_else(|| EngineError::Consequence("Invalid outgoing envelope expiry".into()))?
+            .to_rfc3339();
+        Ok(store::mailbox::outbox::prepare(
+            &self.store.pool,
+            &store::mailbox::outbox::Envelope {
+                intent,
+                uid: crate::seal::delivery_id(&bundle),
+                to_organ: to_organ.into(),
+                body,
+                expires_at,
+                requested_copies,
+                next_attempt: 0,
+            },
+        )
+        .await?)
+    }
+
     pub async fn open_mailed(
         &self,
         bundle: &crate::seal::SealedBundle,
     ) -> Result<crate::seal::OpenedBundle, EngineError> {
+        if !store::organs::local(&self.store.pool)
+            .await?
+            .is_some_and(|organ| organ.uid == bundle.to_organ)
+        {
+            return Err(EngineError::Forbidden(
+                "This mail is addressed to another Organ".into(),
+            ));
+        }
         let Some(sender) = self.roster_of(&bundle.from_organ).await? else {
             return Err(EngineError::Consequence(
                 "a bundle arrived from an Organ whose roster we do not hold".into(),
@@ -233,6 +365,15 @@ impl crate::Engine {
                 "a bundle claims a Cell that its Organ's roster does not name".into(),
             ));
         };
+        if !entry
+            .capabilities
+            .iter()
+            .any(|cap| cap == crate::roster::CAP_WRITE)
+        {
+            return Err(EngineError::Forbidden(
+                "A restricted carrier cannot author private mail".into(),
+            ));
+        }
         let verifying = crate::seal::verifying_key(&entry.operational_key).ok_or_else(|| {
             EngineError::Consequence("that Cell's published key is unusable".into())
         })?;
@@ -242,6 +383,36 @@ impl crate::Engine {
             .ok_or_else(|| EngineError::Consequence("this Cell has no mail keys".into()))?;
         crate::seal::open(bundle, &verifying, &keyring.open_keys())
             .map_err(|why| EngineError::Consequence(why.to_string()))
+    }
+
+    pub async fn process_recovered_mail(&self) -> Result<usize, EngineError> {
+        let _guard = self.mailbox_delivery_lock.lock().await;
+        let mut imported = 0;
+        for (uid, body) in store::mailbox::delivery::pending(&self.store.pool).await? {
+            let result = async {
+                let bundle: crate::seal::SealedBundle =
+                    serde_json::from_str(&body).map_err(EngineError::Json)?;
+                if crate::seal::delivery_id(&bundle) != uid {
+                    return Err(EngineError::Consequence(
+                        "The mailbox changed the envelope identity".into(),
+                    ));
+                }
+                let opened = self.open_mailed(&bundle).await?;
+                self.import_mailed_batch(&opened).await
+            }
+            .await;
+            let error = result.as_ref().err().map(|error| match error {
+                EngineError::Store(_) | EngineError::Io(_) => "Storage is temporarily unavailable. The encrypted envelope remains saved.",
+                EngineError::Forbidden(_) | EngineError::Conflict { .. } => "This saved message is not currently authorized. Check device and contact permissions before retrying.",
+                EngineError::ExecutionLimit(_) => "Message recovery reached its work limit. The encrypted envelope remains saved.",
+                _ => "This saved message could not be opened or imported. Sync the sender's roster and this device's mail keys, then retry.",
+            });
+            if let Ok(count) = result {
+                imported += count;
+            }
+            store::mailbox::delivery::processed(&self.store.pool, &uid, error).await?;
+        }
+        Ok(imported)
     }
 }
 
@@ -320,25 +491,18 @@ impl crate::Engine {
             ));
         }
         let organ_uid = presented.roster.organ_uid.clone();
-        let Some((label, quota)) = store::mailbox::redeem_invite(
+        if !store::mailbox::delivery::redeem_and_register(
             &self.store.pool,
             &crate::roster::hash_token(token),
             &organ_uid,
+            &presented.roster.root_key,
         )
         .await?
-        else {
+        {
             return Err(EngineError::Consequence(
                 "that invite cannot be used: it is unknown, expired, or already spent".into(),
             ));
-        };
-        store::mailbox::register(
-            &self.store.pool,
-            &organ_uid,
-            &presented.roster.root_key,
-            &label,
-            quota,
-        )
-        .await?;
+        }
         store::mailbox::registration(&self.store.pool, &organ_uid)
             .await?
             .ok_or_else(|| EngineError::Consequence("registration did not stick".into()))

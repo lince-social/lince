@@ -15,7 +15,20 @@ pub fn check_condition_source(source: &str) -> Result<(), String> {
     }
     let mut depth = 0u32;
     let mut operators = 0u32;
+    let mut quoted = false;
+    let mut escaped = false;
     for character in source.chars() {
+        if quoted {
+            if character == '"' && !escaped {
+                quoted = false;
+            }
+            escaped = character == '\\' && !escaped;
+            continue;
+        }
+        if character == '"' {
+            quoted = true;
+            continue;
+        }
         if character == '(' {
             depth += 1;
         } else if character == ')' {
@@ -89,6 +102,9 @@ impl RuleConsequence {
                     value: amount(value)?,
                 }]
             } else if let Some(command) = operation.strip_prefix(':').map(str::trim) {
+                if let Some(effect) = super::transfer_consequence::parse(target, command)? {
+                    vec![effect]
+                } else {
                 let command = command
                     .strip_prefix("command(")
                     .and_then(|v| v.strip_suffix(')'))
@@ -97,6 +113,7 @@ impl RuleConsequence {
                     command: serde_json::from_str(command)
                         .map_err(|error| format!("Quote the command: {error}"))?,
                 }]
+                }
             } else {
                 return Err(
                     "Use @record to save the calculated quantity, or @record: command(\"…\")"
@@ -111,11 +128,19 @@ impl RuleConsequence {
         if result.target.trim().is_empty() {
             return Err("Choose a target Record".into());
         }
+        if result.consequences.iter().any(|effect| effect.transfer_target().is_some())
+            && result.consequences.iter().any(|effect| effect.transfer_target() != Some(result.target.as_str())) {
+            return Err("Choose the same Transfer in the destination and each consequence".into());
+        }
         Consequences::new(result.consequences.clone()).map_err(|error| error.to_string())?;
         Ok(result)
     }
 
     pub fn as_text(&self) -> String {
+        if let [effect] = self.consequences.as_slice()
+            && let Some(source) = super::transfer_consequence::display(&self.target, effect) {
+            return source;
+        }
         match self.consequences.as_slice() {
             [Consequence::SetQuantity { value: None }] => format!("@{}", self.target),
             [Consequence::SetQuantity { value }] => {

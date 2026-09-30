@@ -20,6 +20,12 @@ use std::collections::HashSet;
 use crate::StoreError;
 use crate::records::{self, NewRecord};
 
+mod agreement_target;
+pub use agreement_target::{AgreementTargetInput, AgreementTargetOutcome, assign_agreement};
+pub mod karma_snapshot;
+mod publication;
+pub use publication::publication_input;
+
 #[derive(Debug, Clone)]
 pub struct TransferRow {
     pub record_uid: String,
@@ -52,6 +58,7 @@ pub struct NewTransfer<'a> {
 #[derive(Debug, Clone)]
 pub struct DraftPromise {
     pub uid: Option<String>,
+    pub item: Option<nucleus::transfer::disclosure::TransferItem>,
     pub record_uid: Option<String>,
     pub concept_uid: Option<String>,
     pub unit_uid: Option<String>,
@@ -145,6 +152,7 @@ pub struct TransferDraftTermsInput {
 #[derive(Debug, Clone)]
 pub struct DraftPromiseRevisionInput {
     pub uid: Option<String>,
+    pub item: Option<nucleus::transfer::disclosure::TransferItem>,
     pub source_promise_uid: Option<String>,
     pub record_uid: Option<String>,
     pub concept_uid: Option<String>,
@@ -204,11 +212,13 @@ pub struct CreatedTransferDraft {
     pub promise_uids: Vec<String>,
     pub fact: Fact,
     pub invitation_event_facts: Vec<Fact>,
+    pub parent_facts: Vec<Fact>,
 }
 
 #[derive(Debug, Clone)]
 pub struct PromiseRevisionInput {
     pub transfer_uid: String,
+    pub item: Option<nucleus::transfer::disclosure::TransferItem>,
     pub promise_uid: String,
     pub expected_revision: u64,
     pub idempotency_key: String,
@@ -222,7 +232,7 @@ pub struct PromiseRevisionInput {
 
 #[derive(Debug, Clone)]
 pub enum RevisionCommit {
-    Committed { revision: u64, fact: Fact },
+    Committed { revision: u64, fact: Fact, parent_facts: Vec<Fact> },
     Replayed { revision: u64, fact: Fact },
     Stale { current_revision: u64 },
 }
@@ -270,6 +280,7 @@ where
         "revise-transfer-draft",
         false,
         true,
+        None,
         sign,
     )
     .await
@@ -298,6 +309,7 @@ where
         "adopt-legacy-transfer-draft",
         true,
         true,
+        None,
         sign,
     )
     .await
@@ -321,9 +333,28 @@ where
         "counteroffer-transfer-draft",
         false,
         false,
+        None,
         sign,
     )
     .await
+}
+
+pub async fn publish_whole_draft<F>(
+    pool: &SqlitePool,
+    input: WholeDraftRevisionInput,
+    now: DateTime<Utc>,
+    fact_actor: Option<String>,
+    sign: F,
+) -> Result<RevisionCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    commit_whole_draft(pool, input, now, fact_actor, "publish-transfer", false, false, None, sign).await
+}
+
+pub async fn publish_whole_draft_guarded<F>(pool: &SqlitePool, input: WholeDraftRevisionInput, expected: Option<&nucleus::transfer::AgreementGuard>, expected_state: Option<&nucleus::transfer::karma::Guard>, now: DateTime<Utc>, fact_actor: Option<String>, sign: F) -> Result<RevisionCommit, StoreError>
+where F: Fn(&str) -> Option<String> + Send + Sync {
+    commit_whole_draft(pool, input, now, fact_actor, "publish-transfer", false, false, Some((expected, expected_state)), sign).await
 }
 
 pub async fn reopen_promise_revision<F>(
@@ -349,6 +380,7 @@ where
         "reopen-transfer-promise",
         false,
         false,
+        None,
         sign,
     )
     .await
@@ -362,6 +394,7 @@ async fn commit_whole_draft<F>(
     action: &'static str,
     allow_legacy: bool,
     mark_submitting_party_as_creator: bool,
+    source_guard: Option<(Option<&nucleus::transfer::AgreementGuard>, Option<&nucleus::transfer::karma::Guard>)>,
     sign: F,
 ) -> Result<RevisionCommit, StoreError>
 where
@@ -419,6 +452,10 @@ where
         return Ok(RevisionCommit::Replayed { revision, fact });
     }
 
+    if let Some((expected, expected_state)) = source_guard {
+        karma_snapshot::check_on(&mut tx, &input.transfer_uid, expected_state).await?;
+        karma_snapshot::check_participant_on(&mut tx, &input.transfer_uid, &input.proposal_author_person_uid, expected).await?;
+    }
     if let Some(successor) = &input.successor {
         let predecessor = sqlx::query(
             "SELECT transfer_uid, party_uid, state, window_end
@@ -471,6 +508,13 @@ where
     let revision = expected_revision
         .checked_add(1)
         .ok_or_else(|| sqlx::Error::Protocol("transfer revision overflow".into()))?;
+    let old_parent: Option<String> = sqlx::query_scalar("SELECT parent_uid FROM transfer WHERE record_uid = ?")
+        .bind(&input.transfer_uid).fetch_one(&mut *tx).await?;
+    if old_parent != input.terms.parent_uid {
+        for parent in old_parent.iter().chain(input.terms.parent_uid.iter()) {
+            crate::transfer_children::require_participant(&mut tx, parent, &input.proposal_author_person_uid).await?;
+        }
+    }
     validate_transfer_parent(
         &mut tx,
         &input.transfer_uid,
@@ -677,6 +721,7 @@ where
             PromiseState::Proposed
         };
         let location = promise.location.as_ref();
+        let item_json = encode_item(promise.item.as_ref())?;
         if let Some(uid) = promise
             .uid
             .as_deref()
@@ -687,7 +732,7 @@ where
                     party_uid = ?, delta = ?, window_start = ?, window_end = ?,
                     location_lat = ?, location_lon = ?, location_address = ?,
                     condition = ?, reserve_from = ?, open_reuse_policy = ?, state = ?,
-                    revision = ?, updated_at = ?
+                    revision = ?, updated_at = ?, item_json = COALESCE(?, item_json)
                  WHERE uid = ? AND transfer_uid = ?",
             )
             .bind(&promise.record_uid)
@@ -706,6 +751,7 @@ where
             .bind(state.as_str())
             .bind(revision)
             .bind(&at)
+            .bind(&item_json)
             .bind(uid)
             .bind(&input.transfer_uid)
             .execute(&mut *tx)
@@ -717,8 +763,8 @@ where
                     (uid, source_promise_uid, record_uid, concept_uid, unit_uid, party_uid, delta,
                      window_start, window_end, location_lat, location_lon,
                      location_address, condition, transfer_uid, reserve_from,
-                     open_reuse_policy, state, revision, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     open_reuse_policy, state, revision, created_at, updated_at, item_json)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             )
             .bind(uid)
             .bind(&promise.source_promise_uid)
@@ -740,6 +786,7 @@ where
             .bind(revision)
             .bind(&at)
             .bind(&at)
+            .bind(&item_json)
             .execute(&mut *tx)
             .await?;
         }
@@ -777,6 +824,8 @@ where
     }
 
     let snapshot = revision_snapshot(&mut tx, &input.transfer_uid).await?;
+    nucleus::transfer::exchange::validate_exchanges(&snapshot)
+        .map_err(|message| sqlx::Error::Protocol(message.into()))?;
     let evidence = TransferRevisionEvidence {
         action: action.into(),
         idempotency_key: Some(request_key.into()),
@@ -841,11 +890,25 @@ where
         .await?;
     }
     crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
+    cancel_stale_item_delivery(&mut tx, &input.transfer_uid, revision).await?;
+    let mut parent_facts = Vec::new();
+    if old_parent != input.terms.parent_uid {
+        if let Some(parent) = &old_parent {
+            sqlx::query("DELETE FROM transfer_child_requirement WHERE parent_uid = ? AND child_uid = ?")
+                .bind(parent).bind(&input.transfer_uid).execute(&mut *tx).await?;
+        }
+        for parent in old_parent.iter().chain(input.terms.parent_uid.iter()) {
+            let key = nucleus::fact::sha256_hex(format!("child-membership:{request_key}:{parent}").as_bytes());
+            parent_facts.push(crate::transfer_children::amend(&mut tx, parent,
+                &input.proposal_author_person_uid, &key, input.authorization_intent_uid.as_deref(), now, &sign).await?);
+        }
+    }
     tx.commit().await?;
 
     Ok(RevisionCommit::Committed {
         revision: revision as u64,
         fact,
+        parent_facts,
     })
 }
 
@@ -882,7 +945,7 @@ fn validate_revision_request(input: &WholeDraftRevisionInput) -> Result<(), Stor
         return Err(sqlx::Error::Protocol("draft repeats a promise uid".into()));
     }
     for promise in &input.promises {
-        if promise.record_uid.is_none() && promise.concept_uid.is_none() {
+        if promise.record_uid.is_none() && promise.concept_uid.is_none() && promise.item.is_none() {
             return Err(sqlx::Error::Protocol(
                 "draft promise requires a Record or concept".into(),
             ));
@@ -938,6 +1001,9 @@ fn validate_dependency_inputs(dependencies: &[TransferDependencyInput]) -> Resul
             ));
         }
         let required_state = normalized_dependency_state(&dependency.required_state)?;
+        if dependency.upstream_kind == TransferDependencyUpstreamKind::Transfer && !matches!(required_state, "agreed" | "kept") {
+            return Err(sqlx::Error::Protocol("Transfer dependencies require an agreed or settled outcome".into()));
+        }
         if !terms.insert((
             dependency.scope,
             dependency.promise_uid.as_deref(),
@@ -955,7 +1021,7 @@ fn validate_dependency_inputs(dependencies: &[TransferDependencyInput]) -> Resul
 
 fn normalized_dependency_state(value: &str) -> Result<&str, StoreError> {
     let value = value.trim();
-    let value = if value.is_empty() { "kept" } else { value };
+    let value = if value.is_empty() || value == "settled" { "kept" } else { value };
     PromiseState::parse(value)
         .map(|state| state.as_str())
         .ok_or_else(|| sqlx::Error::Protocol(format!("unknown dependency state `{value}`")))
@@ -1004,7 +1070,9 @@ async fn replace_dependencies(
                         "Transfer cannot depend directly on itself".into(),
                     ));
                 }
-                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer WHERE record_uid = ?)")
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer WHERE record_uid = ?)
+                    OR EXISTS(SELECT 1 FROM transfer_remote_reference WHERE transfer_uid = ? AND state = 'active' AND projection IS NOT NULL)")
+                    .bind(upstream_uid)
                     .bind(upstream_uid)
                     .fetch_one(&mut **tx)
                     .await?
@@ -1036,11 +1104,14 @@ async fn replace_dependencies(
         .execute(&mut **tx)
         .await?;
     for dependency in dependencies {
+        let (origin, reference) = if dependency.upstream_kind == TransferDependencyUpstreamKind::Transfer {
+            crate::transfer_outcomes::source_on(tx, transfer_uid, dependency.upstream_uid.trim()).await?
+        } else { (None, None) };
         sqlx::query(
             "INSERT INTO transfer_dependency
                 (uid, transfer_uid, revision, scope, promise_uid, upstream_kind,
-                 upstream_uid, required_state)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                 upstream_uid, required_state, upstream_origin_uid, upstream_reference_uid)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(
             dependency
@@ -1055,6 +1126,8 @@ async fn replace_dependencies(
         .bind(dependency.upstream_kind.as_str())
         .bind(dependency.upstream_uid.trim())
         .bind(normalized_dependency_state(&dependency.required_state)?)
+        .bind(origin)
+        .bind(reference)
         .execute(&mut **tx)
         .await?;
     }
@@ -1097,7 +1170,7 @@ async fn validate_transfer_parent(
     }
 }
 
-async fn validate_dependency_dag(
+pub(crate) async fn validate_dependency_dag(
     tx: &mut Transaction<'_, Sqlite>,
     transfer_uid: &str,
     replacement: &[TransferDependencyInput],
@@ -1154,19 +1227,7 @@ async fn validate_dependency_dag(
             downstream,
         });
     }
-    if let Err(nodes) = nucleus::transfer::transfer_dependency_order(&edges) {
-        let nodes = nodes
-            .into_iter()
-            .map(|node| match node {
-                TransferDependencyNode::Transfer(uid) => format!("transfer:{uid}"),
-                TransferDependencyNode::Promise(uid) => format!("promise:{uid}"),
-            })
-            .collect::<Vec<_>>()
-            .join(", ");
-        return Err(sqlx::Error::Protocol(format!(
-            "Transfer dependency cycle contains {nodes}"
-        )));
-    }
+    crate::transfer_agreement::validate_graph_on(tx, &mut edges).await?;
     Ok(())
 }
 
@@ -1328,7 +1389,7 @@ pub struct OpenPromiseClaimPairRow {
     pub uid: String,
     pub transfer_uid: String,
     pub source_promise_uid: String,
-    pub source_record_uid: String,
+    pub source_record_uid: Option<String>,
     pub proposer_promise_uid: String,
     pub claimant_promise_uid: String,
     pub proposer_person_uid: String,
@@ -1359,7 +1420,7 @@ pub struct AgreementTransitionInput {
     pub authorization_intent_uid: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AgreementTransitionEventRow {
     pub uid: String,
     pub transfer_uid: String,
@@ -1412,6 +1473,7 @@ pub struct AgreementPartyLevelRow {
 #[derive(Debug, Clone)]
 pub struct AgreementPromiseReadinessRow {
     pub uid: String,
+    pub exchange: Option<nucleus::transfer::exchange::ExchangeRoute>,
     pub record_uid: Option<String>,
     pub concept_uid: Option<String>,
     pub unit_uid: Option<String>,
@@ -1461,6 +1523,7 @@ pub struct TransferOccurrenceRow {
     pub revision: u64,
     pub promise_uid: String,
     pub exchange_path_uid: String,
+    pub exchange_uid: Option<String>,
     pub opposite_promise_uid: Option<String>,
     pub activation_event_uid: String,
     pub activation_fact_uid: String,
@@ -1630,6 +1693,7 @@ pub enum OccurrenceApplicationFormulaCommit {
 
 #[derive(Debug, Clone)]
 pub struct OccurrenceSettlementInput {
+    pub expected_effects_hash: Option<String>,
     pub occurrence_uid: String,
     pub idempotency_key: String,
     pub actor_person_uid: String,
@@ -1637,6 +1701,7 @@ pub struct OccurrenceSettlementInput {
     pub local_record_uid: String,
     pub local_delta: f64,
     pub local_cumulative_after: f64,
+    pub application_formula_hash: String,
     pub application_formula: String,
     pub application_formula_version: u64,
     pub remainder_policy: TransferRemainderPolicy,
@@ -1674,6 +1739,9 @@ pub struct OccurrenceSettlementProgress {
     pub occurrence_uid: String,
     pub canonical_quantity: f64,
     pub settled_quantity: f64,
+    pub cancelled_quantity: f64,
+    pub cancelled_exact: nucleus::DecimalValue,
+    pub remaining_exact: nucleus::DecimalValue,
     pub remaining_quantity: f64,
     pub partially_settled: bool,
     pub settled: bool,
@@ -1906,6 +1974,7 @@ where
             promise_uids,
             fact,
             invitation_event_facts,
+            parent_facts: Vec::new(),
         });
     }
     if let Some(slug) = draft.slug.as_deref()
@@ -1925,7 +1994,7 @@ where
         ));
     }
     for promise in &draft.promises {
-        if promise.record_uid.is_none() && promise.concept_uid.is_none() {
+        if promise.record_uid.is_none() && promise.concept_uid.is_none() && promise.item.is_none() {
             return Err(sqlx::Error::Protocol(
                 "transfer draft promise requires a Record or concept".into(),
             ));
@@ -2033,8 +2102,8 @@ where
                 (uid, record_uid, concept_uid, unit_uid, delta, window_start, window_end,
                  party_uid, state, condition, transfer_uid, reserve_from, revision,
                  location_lat, location_lon, location_address, open_reuse_policy,
-                 created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)",
+                 created_at, updated_at, item_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&promise_uid)
         .bind(&promise.record_uid)
@@ -2063,6 +2132,7 @@ where
         .bind(promise.open_reuse_policy.as_str())
         .bind(&now_string)
         .bind(&now_string)
+        .bind(encode_item(promise.item.as_ref())?)
         .execute(&mut *tx)
         .await?;
         promise_uids.push(promise_uid);
@@ -2095,6 +2165,8 @@ where
     }
 
     let snapshot = revision_snapshot(&mut tx, &transfer_uid).await?;
+    nucleus::transfer::exchange::validate_exchanges(&snapshot)
+        .map_err(|message| sqlx::Error::Protocol(message.into()))?;
     let evidence = TransferRevisionEvidence {
         action: draft.evidence_action.clone(),
         idempotency_key: Some(request_key.into()),
@@ -2193,6 +2265,12 @@ where
     }
     crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::one(), &now_string).await?;
 
+    let mut parent_facts = Vec::new();
+    if let Some(parent) = &draft.parent_uid {
+        let key = nucleus::fact::sha256_hex(format!("child-membership:{request_key}:{parent}").as_bytes());
+        parent_facts.push(crate::transfer_children::amend(&mut tx, parent, &draft.creator_person,
+            &key, draft.authorization_intent_uid.as_deref(), now, &sign).await?);
+    }
     tx.commit().await?;
     Ok(CreatedTransferDraft {
         transfer_uid,
@@ -2203,6 +2281,7 @@ where
         promise_uids,
         fact,
         invitation_event_facts,
+        parent_facts,
     })
 }
 
@@ -2315,7 +2394,7 @@ where
          SET record_uid = ?, concept_uid = NULL, party_uid = ?, delta = ?, window_end = ?,
              condition = ?, reserve_from = ?,
              state = CASE WHEN state = 'agreed' THEN 'proposed' ELSE state END,
-             revision = ?, updated_at = ?
+             revision = ?, updated_at = ?, item_json = COALESCE(?, item_json)
          WHERE uid = ? AND transfer_uid = ?",
     )
     .bind(&input.record_uid)
@@ -2326,6 +2405,7 @@ where
     .bind(&input.reserve_from)
     .bind(revision)
     .bind(&now_string)
+    .bind(encode_item(input.item.as_ref())?)
     .bind(&input.promise_uid)
     .bind(&input.transfer_uid)
     .execute(&mut *tx)
@@ -2333,6 +2413,8 @@ where
     reset_agreements_for_revision(&mut tx, &input.transfer_uid, revision, now).await?;
 
     let snapshot = revision_snapshot(&mut tx, &input.transfer_uid).await?;
+    nucleus::transfer::exchange::validate_exchanges(&snapshot)
+        .map_err(|message| sqlx::Error::Protocol(message.into()))?;
     let evidence = TransferRevisionEvidence {
         action: "revise-transfer-promise".into(),
         idempotency_key: Some(request_key.into()),
@@ -2376,12 +2458,55 @@ where
         &now_string,
     )
     .await?;
+    cancel_stale_item_delivery(&mut tx, &input.transfer_uid, revision).await?;
     tx.commit().await?;
 
     Ok(RevisionCommit::Committed {
         revision: revision as u64,
         fact,
+        parent_facts: Vec::new(),
     })
+}
+
+pub(crate) async fn cancel_stale_item_delivery(
+    tx: &mut Transaction<'_, Sqlite>,
+    transfer: &str,
+    revision: i64,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE transfer_delivery_outbox SET status = 'cancelled' WHERE status IN ('queued', 'failed') AND transfer_revision < ? AND delivery_uid IN (SELECT uid FROM transfer_delivery_policy WHERE transfer_uid = ?) AND EXISTS (SELECT 1 FROM promise WHERE transfer_uid = ? AND item_json IS NOT NULL)")
+        .bind(revision).bind(transfer).bind(transfer).execute(&mut **tx).await?;
+    Ok(())
+}
+
+fn encode_item(
+    item: Option<&nucleus::transfer::disclosure::TransferItem>,
+) -> Result<Option<String>, StoreError> {
+    item.map(|item| {
+        item.validate()
+            .map_err(|error| sqlx::Error::Protocol(error.into()))?;
+        serde_json::to_string(item).map_err(|error| sqlx::Error::Protocol(error.to_string()))
+    })
+    .transpose()
+}
+
+pub async fn item_of(
+    pool: &SqlitePool,
+    promise: &str,
+) -> Result<Option<nucleus::transfer::disclosure::TransferItem>, StoreError> {
+    let json: Option<String> = sqlx::query_scalar("SELECT item_json FROM promise WHERE uid = ?")
+        .bind(promise)
+        .fetch_one(pool)
+        .await?;
+    decode_item(json)
+}
+
+fn decode_item(
+    json: Option<String>,
+) -> Result<Option<nucleus::transfer::disclosure::TransferItem>, StoreError> {
+    json.map(|value| {
+        serde_json::from_str(&value).map_err(|error| sqlx::Error::Protocol(error.to_string()))
+    })
+    .transpose()
 }
 
 async fn revision_snapshot(
@@ -2431,15 +2556,16 @@ async fn revision_snapshot(
     let promises = sqlx::query(
         "SELECT uid, source_promise_uid, revision, record_uid, concept_uid, unit_uid, party_uid, delta,
                 window_start, window_end, location_lat, location_lon, location_address,
-                condition, reserve_from, state, open_reuse_policy
+                condition, reserve_from, state, open_reuse_policy, item_json
          FROM promise WHERE transfer_uid = ? ORDER BY uid",
     )
     .bind(transfer_uid)
     .fetch_all(&mut **tx)
     .await?
     .into_iter()
-        .map(|row| TransferRevisionPromise {
+        .map(|row| -> Result<TransferRevisionPromise, StoreError> { Ok(TransferRevisionPromise {
             uid: row.get("uid"),
+            item: decode_item(row.get("item_json"))?,
             source_promise_uid: row.get("source_promise_uid"),
         revision: row.get::<i64, _>("revision") as u64,
         record_uid: row.get("record_uid"),
@@ -2461,10 +2587,10 @@ async fn revision_snapshot(
             row.get::<String, _>("open_reuse_policy").as_str(),
         )
         .unwrap_or_default(),
-    })
-    .collect();
+    }) })
+    .collect::<Result<Vec<_>, _>>()?;
     let dependencies = sqlx::query(
-        "SELECT uid, scope, promise_uid, upstream_kind, upstream_uid, required_state
+        "SELECT uid, scope, promise_uid, upstream_kind, upstream_uid, required_state, upstream_origin_uid
          FROM transfer_dependency WHERE transfer_uid = ? ORDER BY uid",
     )
     .bind(transfer_uid)
@@ -2488,6 +2614,7 @@ async fn revision_snapshot(
                 },
             )?,
             upstream_uid: row.get("upstream_uid"),
+            origin_organ_uid: row.get("upstream_origin_uid"),
             required_state: row.get("required_state"),
         })
     })
@@ -2518,6 +2645,8 @@ async fn revision_snapshot(
         invitations,
         promises,
         dependencies,
+        cancellations: crate::transfer_cancellations::terms_on(tx, transfer_uid).await?,
+        children: crate::transfer_children::terms_on(tx, transfer_uid).await?,
     };
     snapshot.canonicalize();
     Ok(snapshot)
@@ -2957,7 +3086,7 @@ async fn invitation_commit_for_request(
     }))
 }
 
-async fn ensure_request_not_used_by_transfer_revision(
+pub(crate) async fn ensure_request_not_used_by_transfer_revision(
     pool: &SqlitePool,
     request_id: &str,
 ) -> Result<(), StoreError> {
@@ -2991,7 +3120,7 @@ async fn ensure_request_not_used_by_transfer_revision(
     Ok(())
 }
 
-async fn ensure_request_not_used_by_invitation_event(
+pub(crate) async fn ensure_request_not_used_by_invitation_event(
     pool: &SqlitePool,
     request_id: &str,
 ) -> Result<(), StoreError> {
@@ -3025,7 +3154,7 @@ async fn ensure_request_not_used_by_invitation_event(
     Ok(())
 }
 
-async fn advance_transfer_revision(
+pub(crate) async fn advance_transfer_revision(
     tx: &mut Transaction<'_, Sqlite>,
     transfer_uid: &str,
     expected_revision: u64,
@@ -3053,7 +3182,7 @@ async fn advance_transfer_revision(
     Ok(Err(current as u64))
 }
 
-async fn insert_revision_fact<F>(
+pub(crate) async fn insert_revision_fact<F>(
     tx: &mut Transaction<'_, Sqlite>,
     transfer_uid: &str,
     revision: i64,
@@ -3181,7 +3310,7 @@ where
     Ok(fact)
 }
 
-async fn reset_agreements_for_revision(
+pub(crate) async fn reset_agreements_for_revision(
     tx: &mut Transaction<'_, Sqlite>,
     transfer_uid: &str,
     revision: i64,
@@ -3932,7 +4061,7 @@ async fn open_claim_for_request(
         || claimant.location != input.location
         || claimant.condition != input.condition
         || claimant.reserve_from != input.reserve_from
-        || proposer.record_uid.as_deref() != Some(pair.source_record_uid.as_str())
+        || proposer.record_uid != pair.source_record_uid
         || proposer.concept_uid != input.concept_uid
         || proposer.unit_uid != input.unit_uid
         || proposer.person_uid.as_deref() != Some(pair.proposer_person_uid.as_str())
@@ -3981,11 +4110,6 @@ where
         return Ok(OpenPromiseClaimCommit::Replayed(outcome));
     }
     ensure_request_not_used_by_invitation_event(pool, request_id).await?;
-    if input.record_uid.is_none() && input.concept_uid.is_none() {
-        return Err(sqlx::Error::Protocol(
-            "claimed promise requires a Record or concept".into(),
-        ));
-    }
     if !input.delta.is_finite() || input.delta == 0.0 {
         return Err(sqlx::Error::Protocol(
             "claimed promise delta must be finite and non-zero".into(),
@@ -4017,7 +4141,7 @@ where
         )));
     }
     let source = sqlx::query(
-        "SELECT record_uid, party_uid, delta, open_reuse_policy FROM promise
+        "SELECT record_uid, party_uid, delta, open_reuse_policy, item_json FROM promise
          WHERE uid = ? AND transfer_uid = ? AND state = 'open'
            AND party_uid IS NOT NULL",
     )
@@ -4030,10 +4154,22 @@ where
         OpenPromiseReusePolicy::parse(source.get::<String, _>("open_reuse_policy").as_str())
             .ok_or_else(|| sqlx::Error::Protocol("OPEN promise has invalid reuse policy".into()))?;
     let proposer_person_uid: String = source.get("party_uid");
-    let proposer_record_uid: String = source
-        .get::<Option<String>, _>("record_uid")
-        .ok_or_else(|| sqlx::Error::Protocol("OPEN source requires a concrete Record".into()))?;
+    let proposer_record_uid: Option<String> = source.get("record_uid");
     let source_delta: f64 = source.get("delta");
+    let mut pair_item = decode_item(source.get("item_json"))?;
+    if pair_item.is_none() && (proposer_record_uid.is_none() || input.record_uid.is_none()) {
+        return Err(sqlx::Error::Protocol("an unbound OPEN claim requires a public item".into()));
+    }
+    if let Some(item) = &mut pair_item {
+        let (giver, receiver) = if source_delta < 0.0 {
+            (&proposer_person_uid, &input.claimant_person_uid)
+        } else {
+            (&input.claimant_person_uid, &proposer_person_uid)
+        };
+        item.exchange = Some(nucleus::transfer::exchange::ExchangeRoute {
+            uid: nucleus::new_uid("exchange"), giver: giver.clone(), receiver: receiver.clone(),
+        });
+    }
     if !source_delta.is_finite() || source_delta == 0.0 {
         return Err(sqlx::Error::Protocol(
             "OPEN source direction must be finite and non-zero".into(),
@@ -4154,9 +4290,9 @@ where
                     (uid, source_promise_uid, record_uid, concept_uid, unit_uid,
                      party_uid, delta, window_start, window_end, location_lat,
                      location_lon, location_address, condition, transfer_uid,
-                     reserve_from, open_reuse_policy, state, revision, created_at, updated_at)
+                     reserve_from, open_reuse_policy, state, revision, created_at, updated_at, item_json)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                         'proposed', ?, ?, ?)",
+                         'proposed', ?, ?, ?, ?)",
             )
             .bind(&uid)
             .bind(&input.source_promise_uid)
@@ -4177,6 +4313,7 @@ where
             .bind(revision)
             .bind(&at)
             .bind(&at)
+            .bind(encode_item(pair_item.as_ref())?)
             .execute(&mut *tx)
             .await?;
             (uid, false)
@@ -4188,9 +4325,9 @@ where
             (uid, source_promise_uid, record_uid, concept_uid, unit_uid,
              party_uid, delta, window_start, window_end, location_lat,
              location_lon, location_address, condition, transfer_uid,
-             reserve_from, open_reuse_policy, state, revision, created_at, updated_at)
+             reserve_from, open_reuse_policy, state, revision, created_at, updated_at, item_json)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                 'proposed', ?, ?, ?)",
+                 'proposed', ?, ?, ?, ?)",
     )
     .bind(&claimant_promise_uid)
     .bind(&input.source_promise_uid)
@@ -4211,8 +4348,14 @@ where
     .bind(revision)
     .bind(&at)
     .bind(&at)
+    .bind(encode_item(pair_item.as_ref())?)
     .execute(&mut *tx)
     .await?;
+    sqlx::query("UPDATE promise SET item_json = ? WHERE uid IN (?, ?)")
+        .bind(encode_item(pair_item.as_ref())?)
+        .bind(&proposer_promise_uid)
+        .bind(&claimant_promise_uid)
+        .execute(&mut *tx).await?;
     reset_agreements_for_revision(&mut tx, &input.transfer_uid, revision, now).await?;
     sqlx::query(
         "INSERT INTO transfer_agreement (uid, transfer_uid, party_uid, level, at, revision)
@@ -4511,6 +4654,15 @@ pub async fn agreement_coalition(
     transfer_uid: &str,
     revision: u64,
 ) -> Result<Option<AgreementCoalitionRow>, StoreError> {
+    let mut connection = pool.acquire().await?;
+    agreement_coalition_on(&mut connection, transfer_uid, revision).await
+}
+
+pub(crate) async fn agreement_coalition_on(
+    connection: &mut sqlx::SqliteConnection,
+    transfer_uid: &str,
+    revision: u64,
+) -> Result<Option<AgreementCoalitionRow>, StoreError> {
     let revision = i64::try_from(revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
     let Some(row) = sqlx::query(
@@ -4519,7 +4671,7 @@ pub async fn agreement_coalition(
     )
     .bind(transfer_uid)
     .bind(revision)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *connection)
     .await?
     else {
         return Ok(None);
@@ -4530,7 +4682,7 @@ pub async fn agreement_coalition(
     )
     .bind(transfer_uid)
     .bind(revision)
-    .fetch_all(pool)
+    .fetch_all(&mut *connection)
     .await?;
     Ok(Some(AgreementCoalitionRow {
         transfer_uid: row.get("transfer_uid"),
@@ -4599,19 +4751,36 @@ where
     ensure_request_not_used_by_transfer_revision(pool, request_id).await?;
     ensure_request_not_used_by_invitation_event(pool, request_id).await?;
 
+    let mut tx = crate::write_tx(pool).await?;
+    let outcome = transition_agreement_on(&mut tx, input, now, &sign).await?;
+    if matches!(&outcome, AgreementTransitionCommit::Stale { .. }) {
+        tx.rollback().await?;
+    } else {
+        tx.commit().await?;
+    }
+    Ok(outcome)
+}
+
+async fn transition_agreement_on<F>(
+    tx: &mut Transaction<'_, Sqlite>,
+    input: AgreementTransitionInput,
+    now: DateTime<Utc>,
+    sign: &F,
+) -> Result<AgreementTransitionCommit, StoreError>
+where F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    let request_id = validate_request_key(&input.idempotency_key)?;
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
-    let mut tx = crate::write_tx(pool).await?;
     let transfer = sqlx::query(
         "SELECT revision, agreement_type, agreement_pct FROM transfer WHERE record_uid = ?",
     )
     .bind(&input.transfer_uid)
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut **tx)
     .await?
     .ok_or(sqlx::Error::RowNotFound)?;
     let current_revision: i64 = transfer.get("revision");
     if current_revision != expected_revision {
-        tx.rollback().await?;
         return Ok(AgreementTransitionCommit::Stale {
             transfer_uid: input.transfer_uid,
             current_revision: current_revision as u64,
@@ -4631,7 +4800,7 @@ where
     )
     .bind(&input.transfer_uid)
     .bind(expected_revision)
-    .fetch_one(&mut *tx)
+    .fetch_one(&mut **tx)
     .await?;
     if !signed_revision_exists {
         return Err(sqlx::Error::Protocol(
@@ -4645,7 +4814,7 @@ where
     )
     .bind(&input.transfer_uid)
     .bind(&input.person_uid)
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut **tx)
     .await?
     .ok_or_else(|| {
         sqlx::Error::Protocol("only a Person party may change their own Transfer agreement".into())
@@ -4657,7 +4826,7 @@ where
     .bind(&input.transfer_uid)
     .bind(&party_uid)
     .bind(expected_revision)
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut **tx)
     .await?
     .unwrap_or(0);
     let to_level = i64::from(input.to_level);
@@ -4666,14 +4835,16 @@ where
             "agreement must move one adjacent level from {from_level}, not to {to_level}"
         )));
     }
-    if to_level > from_level {
+    let cancellation_pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_cancellation WHERE transfer_uid = ? AND revision = ? AND applied_fact_uid IS NULL)")
+        .bind(&input.transfer_uid).bind(expected_revision).fetch_one(&mut **tx).await?;
+    if to_level > from_level && !cancellation_pending {
         let coalition_frozen: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM transfer_agreement_coalition
              WHERE transfer_uid = ? AND revision = ?)",
         )
         .bind(&input.transfer_uid)
         .bind(expected_revision)
-        .fetch_one(&mut *tx)
+        .fetch_one(&mut **tx)
         .await?;
         if coalition_frozen {
             let member: bool = sqlx::query_scalar(
@@ -4683,7 +4854,7 @@ where
             .bind(&input.transfer_uid)
             .bind(expected_revision)
             .bind(&party_uid)
-            .fetch_one(&mut *tx)
+            .fetch_one(&mut **tx)
             .await?;
             if !member {
                 return Err(sqlx::Error::Protocol(
@@ -4692,12 +4863,14 @@ where
             }
         }
     }
+    let event_uid = nucleus::new_uid("tae");
     let at = now.to_rfc3339();
     sqlx::query(
-        "INSERT INTO transfer_agreement (uid, transfer_uid, party_uid, level, at, revision)
-         VALUES (?, ?, ?, ?, ?, ?)
+        "INSERT INTO transfer_agreement (uid, transfer_uid, party_uid, level, at, revision, last_event_uid)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(transfer_uid, party_uid) DO UPDATE SET
-             level = excluded.level, at = excluded.at, revision = excluded.revision",
+             level = excluded.level, at = excluded.at, revision = excluded.revision,
+             last_event_uid = excluded.last_event_uid",
     )
     .bind(nucleus::new_uid("g"))
     .bind(&input.transfer_uid)
@@ -4705,7 +4878,8 @@ where
     .bind(to_level)
     .bind(&at)
     .bind(expected_revision)
-    .execute(&mut *tx)
+    .bind(&event_uid)
+    .execute(&mut **tx)
     .await?;
     if from_level == 1 && to_level == 2 {
         sqlx::query(
@@ -4715,7 +4889,7 @@ where
         .bind(&at)
         .bind(&input.transfer_uid)
         .bind(&input.person_uid)
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
     } else if from_level == 2 && to_level == 1 {
         sqlx::query(
@@ -4725,7 +4899,7 @@ where
         .bind(&at)
         .bind(&input.transfer_uid)
         .bind(&input.person_uid)
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
     }
 
@@ -4741,7 +4915,7 @@ where
     };
     let payload = serde_json::to_string(&evidence)
         .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
-    let previous_hash = crate::facts::last_hash(&mut tx).await?;
+    let previous_hash = crate::facts::last_hash(tx).await?;
     let mut fact = nucleus::fact::seal(
         NewFact {
             uid: None,
@@ -4761,11 +4935,10 @@ where
             "agreement transition requires a signing key or verified Action intent".into(),
         ));
     }
-    crate::facts::insert(&mut tx, &fact).await?;
+    crate::facts::insert(tx, &fact).await?;
     if let Some(intent_uid) = input.authorization_intent_uid.as_deref() {
-        crate::action_intents::link_pending_fact(&mut tx, intent_uid, &fact).await?;
+        crate::action_intents::link_pending_fact(tx, intent_uid, &fact).await?;
     }
-    let event_uid = nucleus::new_uid("tae");
     sqlx::query(
         "INSERT INTO transfer_agreement_event
             (uid, transfer_uid, revision, party_uid, person_uid, from_level,
@@ -4782,7 +4955,7 @@ where
     .bind(&fact.uid)
     .bind(request_id)
     .bind(&at)
-    .execute(&mut *tx)
+    .execute(&mut **tx)
     .await?;
 
     if from_level == 2 && to_level == 1 {
@@ -4801,7 +4974,7 @@ where
         .bind(&input.transfer_uid)
         .bind(&input.person_uid)
         .bind(&input.person_uid)
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
     }
 
@@ -4821,13 +4994,13 @@ where
         )
         .bind(&input.transfer_uid)
         .bind(expected_revision)
-        .fetch_one(&mut *tx)
+        .fetch_one(&mut **tx)
         .await?;
         if !frozen {
             let eligible: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM transfer_party WHERE transfer_uid = ?")
                     .bind(&input.transfer_uid)
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&mut **tx)
                     .await?;
             let committed: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM transfer_agreement
@@ -4835,9 +5008,9 @@ where
             )
             .bind(&input.transfer_uid)
             .bind(expected_revision)
-            .fetch_one(&mut *tx)
+            .fetch_one(&mut **tx)
             .await?;
-            if eligible > 0 && committed * 100 >= eligible * pct {
+            if eligible > 0 && committed * 100 >= eligible * pct && (!cancellation_pending || committed == eligible) {
                 sqlx::query(
                     "INSERT INTO transfer_agreement_coalition
                         (transfer_uid, revision, threshold_pct, eligible_count,
@@ -4850,7 +5023,7 @@ where
                 .bind(eligible)
                 .bind(&event_uid)
                 .bind(&at)
-                .execute(&mut *tx)
+                .execute(&mut **tx)
                 .await?;
                 sqlx::query(
                     "INSERT INTO transfer_agreement_coalition_member
@@ -4861,18 +5034,28 @@ where
                 )
                 .bind(&input.transfer_uid)
                 .bind(expected_revision)
-                .execute(&mut *tx)
+                .execute(&mut **tx)
                 .await?;
             }
         }
     }
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
-    tx.commit().await?;
-
-    let outcome = agreement_outcome_for_request(pool, request_id)
-        .await?
-        .ok_or(sqlx::Error::RowNotFound)?;
-    Ok(AgreementTransitionCommit::Committed(outcome))
+    crate::records::bump_quantity(tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
+    crate::transfer_loans::accept_ready_on(tx, &input.transfer_uid, &fact, now).await?;
+    let event = AgreementTransitionEventRow {
+        uid: event_uid,
+        transfer_uid: input.transfer_uid,
+        revision: input.expected_revision,
+        party_uid,
+        person_uid: input.person_uid,
+        from_level: from_level as u8,
+        to_level: input.to_level,
+        fact_uid: fact.uid.clone(),
+        idempotency_key: request_id.into(),
+        created_at: at,
+    };
+    let coalition = agreement_coalition_on(&mut **tx, &event.transfer_uid, event.revision)
+        .await?.filter(|coalition| coalition.frozen_by_event_uid == event.uid);
+    Ok(AgreementTransitionCommit::Committed(AgreementTransitionOutcome { event, fact, coalition }))
 }
 
 fn map_dependency_row(row: SqliteRow) -> Result<TransferRevisionDependency, StoreError> {
@@ -4889,6 +5072,7 @@ fn map_dependency_row(row: SqliteRow) -> Result<TransferRevisionDependency, Stor
             ))
         })?,
         upstream_uid: row.get("upstream_uid"),
+        origin_organ_uid: row.get("upstream_origin_uid"),
         required_state: row.get("required_state"),
     })
 }
@@ -4897,112 +5081,43 @@ pub async fn dependencies_of(
     pool: &SqlitePool,
     transfer_uid: &str,
 ) -> Result<Vec<TransferRevisionDependency>, StoreError> {
+    let mut connection = pool.acquire().await?;
+    dependencies_of_on(&mut connection, transfer_uid).await
+}
+
+pub(crate) async fn dependencies_of_on(
+    connection: &mut sqlx::SqliteConnection,
+    transfer_uid: &str,
+) -> Result<Vec<TransferRevisionDependency>, StoreError> {
     sqlx::query(
-        "SELECT uid, scope, promise_uid, upstream_kind, upstream_uid, required_state
+        "SELECT uid, scope, promise_uid, upstream_kind, upstream_uid, required_state, upstream_origin_uid
          FROM transfer_dependency WHERE transfer_uid = ? ORDER BY uid",
     )
     .bind(transfer_uid)
-    .fetch_all(pool)
+    .fetch_all(&mut *connection)
     .await?
     .into_iter()
     .map(map_dependency_row)
     .collect()
 }
 
-pub async fn transfer_dependency_order(
-    pool: &SqlitePool,
-) -> Result<Vec<TransferDependencyNode>, StoreError> {
-    let rows = sqlx::query(
-        "SELECT transfer_uid, scope, promise_uid, upstream_kind, upstream_uid
-         FROM transfer_dependency",
-    )
-    .fetch_all(pool)
-    .await?;
-    let edges = rows
-        .into_iter()
-        .map(|row| {
-            let downstream = if row.get::<String, _>("scope") == "transfer" {
-                TransferDependencyNode::Transfer(row.get("transfer_uid"))
-            } else {
-                TransferDependencyNode::Promise(row.get("promise_uid"))
-            };
-            let upstream_uid: String = row.get("upstream_uid");
-            let upstream = if row.get::<String, _>("upstream_kind") == "transfer" {
-                TransferDependencyNode::Transfer(upstream_uid)
-            } else {
-                TransferDependencyNode::Promise(upstream_uid)
-            };
-            TransferDependencyEdge {
-                upstream,
-                downstream,
-            }
-        })
-        .collect::<Vec<_>>();
-    nucleus::transfer::transfer_dependency_order(&edges).map_err(|cycle| {
-        sqlx::Error::Protocol(format!(
-            "persisted Transfer dependency cycle contains {cycle:?}"
-        ))
-    })
-}
-
-pub async fn dependency_readiness(
-    pool: &SqlitePool,
-    transfer_uid: &str,
-) -> Result<Vec<nucleus::transfer::TransferDependencyReadiness>, StoreError> {
-    let dependencies = dependencies_of(pool, transfer_uid).await?;
-    let mut readiness = Vec::with_capacity(dependencies.len());
-    for dependency in dependencies {
-        let upstream = match dependency.upstream_kind {
-            TransferDependencyUpstreamKind::Promise => {
-                TransferDependencyNode::Promise(dependency.upstream_uid.clone())
-            }
-            TransferDependencyUpstreamKind::Transfer => {
-                TransferDependencyNode::Transfer(dependency.upstream_uid.clone())
-            }
-        };
-        let current_state = match dependency.upstream_kind {
-            TransferDependencyUpstreamKind::Promise => {
-                sqlx::query_scalar("SELECT state FROM promise WHERE uid = ?")
-                    .bind(&dependency.upstream_uid)
-                    .fetch_optional(pool)
-                    .await?
-            }
-            TransferDependencyUpstreamKind::Transfer => {
-                let states: Vec<String> = sqlx::query_scalar(
-                    "SELECT DISTINCT state FROM promise
-                     WHERE transfer_uid = ? AND state != 'withdrawn' ORDER BY state",
-                )
-                .bind(&dependency.upstream_uid)
-                .fetch_all(pool)
-                .await?;
-                match states.as_slice() {
-                    [] => None,
-                    [state] => Some(state.clone()),
-                    _ => Some(format!("mixed:{}", states.join(","))),
-                }
-            }
-        };
-        readiness.push(nucleus::transfer::TransferDependencyReadiness {
-            dependency_uid: dependency.uid,
-            upstream,
-            required_state: dependency.required_state,
-            current_state,
-        });
-    }
-    Ok(nucleus::transfer::ordered_transfer_dependency_readiness(
-        readiness,
-    ))
-}
-
 pub async fn agreement_readiness_input(
     pool: &SqlitePool,
+    transfer_uid: &str,
+) -> Result<TransferAgreementReadinessInput, StoreError> {
+    let mut connection = pool.acquire().await?;
+    agreement_readiness_input_on(&mut connection, transfer_uid).await
+}
+
+pub(crate) async fn agreement_readiness_input_on(
+    connection: &mut sqlx::SqliteConnection,
     transfer_uid: &str,
 ) -> Result<TransferAgreementReadinessInput, StoreError> {
     let transfer = sqlx::query(
         "SELECT revision, agreement_type, agreement_pct FROM transfer WHERE record_uid = ?",
     )
     .bind(transfer_uid)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *connection)
     .await?
     .ok_or(sqlx::Error::RowNotFound)?;
     let revision = transfer.get::<i64, _>("revision") as u64;
@@ -5018,7 +5133,7 @@ pub async fn agreement_readiness_input(
     .bind(revision as i64)
     .bind(revision as i64)
     .bind(transfer_uid)
-    .fetch_all(pool)
+    .fetch_all(&mut *connection)
     .await?
     .into_iter()
     .map(|row| AgreementPartyLevelRow {
@@ -5031,16 +5146,17 @@ pub async fn agreement_readiness_input(
     let promises = sqlx::query(
         "SELECT uid, record_uid, concept_uid, unit_uid, party_uid, delta,
                 window_start, window_end, location_lat, location_lon,
-                location_address, state, revision
+                location_address, state, revision, item_json
          FROM promise WHERE transfer_uid = ? AND state != 'withdrawn'
          ORDER BY uid",
     )
     .bind(transfer_uid)
-    .fetch_all(pool)
+    .fetch_all(&mut *connection)
     .await?
     .into_iter()
-    .map(|row| AgreementPromiseReadinessRow {
+    .map(|row| -> Result<_, StoreError> { Ok(AgreementPromiseReadinessRow {
         uid: row.get("uid"),
+        exchange: decode_item(row.get("item_json"))?.and_then(|item| item.exchange),
         record_uid: row.get("record_uid"),
         concept_uid: row.get("concept_uid"),
         unit_uid: row.get("unit_uid"),
@@ -5055,8 +5171,8 @@ pub async fn agreement_readiness_input(
         ),
         state: row.get("state"),
         revision: row.get::<i64, _>("revision") as u64,
-    })
-    .collect();
+    }) })
+    .collect::<Result<Vec<_>, _>>()?;
     let agreement_pct = transfer
         .get::<Option<i64>, _>("agreement_pct")
         .map(|value| {
@@ -5077,8 +5193,8 @@ pub async fn agreement_readiness_input(
         agreement_pct,
         parties,
         promises,
-        dependencies: dependencies_of(pool, transfer_uid).await?,
-        coalition: agreement_coalition(pool, transfer_uid, revision).await?,
+        dependencies: dependencies_of_on(connection, transfer_uid).await?,
+        coalition: agreement_coalition_on(connection, transfer_uid, revision).await?,
     })
 }
 
@@ -5089,6 +5205,7 @@ fn map_occurrence(row: SqliteRow) -> TransferOccurrenceRow {
         revision: row.get::<i64, _>("revision") as u64,
         promise_uid: row.get("promise_uid"),
         exchange_path_uid: row.get("exchange_path_uid"),
+        exchange_uid: row.get("public_exchange_uid"),
         opposite_promise_uid: row.get("opposite_promise_uid"),
         activation_event_uid: row.get("activation_event_uid"),
         activation_fact_uid: row.get("activation_fact_uid"),
@@ -5121,7 +5238,7 @@ const OCCURRENCE_SELECT: &str = "SELECT o.*,
             CASE WHEN path.primary_promise_uid = o.promise_uid
                  THEN path.opposite_promise_uid ELSE path.primary_promise_uid END
                  AS opposite_promise_uid,
-            activation.fact_uid AS activation_fact_uid
+            activation.fact_uid AS activation_fact_uid, path.public_exchange_uid
      FROM transfer_occurrence o
      JOIN transfer_exchange_path path ON path.uid = o.exchange_path_uid
      JOIN transfer_activation_event activation ON activation.uid = o.activation_event_uid";
@@ -5229,6 +5346,7 @@ pub async fn occurrences_for_activation_request(
 #[derive(Debug, Clone)]
 struct ActivationPromiseTerms {
     uid: String,
+    exchange: Option<nucleus::transfer::exchange::ExchangeRoute>,
     record_uid: Option<String>,
     concept_uid: Option<String>,
     unit_uid: Option<String>,
@@ -5240,9 +5358,10 @@ struct ActivationPromiseTerms {
     state: String,
 }
 
-fn map_activation_promise(row: SqliteRow) -> ActivationPromiseTerms {
-    ActivationPromiseTerms {
+fn map_activation_promise(row: SqliteRow) -> Result<ActivationPromiseTerms, StoreError> {
+    Ok(ActivationPromiseTerms {
         uid: row.get("uid"),
+        exchange: decode_item(row.get("item_json"))?.and_then(|item| item.exchange),
         record_uid: row.get("record_uid"),
         concept_uid: row.get("concept_uid"),
         unit_uid: row.get("unit_uid"),
@@ -5256,7 +5375,7 @@ fn map_activation_promise(row: SqliteRow) -> ActivationPromiseTerms {
             row.get("location_address"),
         ),
         state: row.get("state"),
-    }
+    })
 }
 
 async fn activation_promise(
@@ -5267,7 +5386,7 @@ async fn activation_promise(
     sqlx::query(
         "SELECT uid, record_uid, concept_uid, unit_uid, party_uid, delta,
                 window_start, window_end, location_lat, location_lon,
-                location_address, state
+                location_address, state, item_json
          FROM promise WHERE uid = ? AND transfer_uid = ?",
     )
     .bind(promise_uid)
@@ -5275,6 +5394,7 @@ async fn activation_promise(
     .fetch_optional(&mut **tx)
     .await?
     .map(map_activation_promise)
+    .transpose()?
     .ok_or(sqlx::Error::RowNotFound)
 }
 
@@ -5282,9 +5402,13 @@ fn promises_are_exact_opposites(
     promise: &ActivationPromiseTerms,
     opposite: &ActivationPromiseTerms,
 ) -> bool {
-    let same_subject = match (&promise.concept_uid, &opposite.concept_uid) {
+    let same_subject = match (&promise.exchange, &opposite.exchange) {
         (Some(left), Some(right)) => left == right,
-        _ => promise.record_uid.is_some() && promise.record_uid == opposite.record_uid,
+        (None, None) => match (&promise.concept_uid, &opposite.concept_uid) {
+            (Some(left), Some(right)) => left == right,
+            _ => promise.record_uid.is_some() && promise.record_uid == opposite.record_uid,
+        },
+        _ => false,
     };
     promise.uid != opposite.uid
         && same_subject
@@ -5344,6 +5468,11 @@ pub async fn activate_occurrences<F>(
 where
     F: Fn(&str) -> Option<String> + Send + Sync,
 {
+    activate_occurrences_guarded(pool, input, None, None, now, sign).await
+}
+
+pub async fn activate_occurrences_guarded<F>(pool: &SqlitePool, input: ActivateOccurrencesInput, expected: Option<&nucleus::transfer::AgreementGuard>, expected_state: Option<&nucleus::transfer::karma::Guard>, now: DateTime<Utc>, sign: F) -> Result<OccurrenceActivationCommit, StoreError>
+where F: Fn(&str) -> Option<String> + Send + Sync {
     let request_id = validate_request_key(&input.idempotency_key)?;
     if let Some(outcome) = activation_outcome_for_request(pool, request_id).await? {
         let requested = input
@@ -5396,6 +5525,8 @@ where
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
     let mut tx = crate::write_tx(pool).await?;
+    karma_snapshot::check_on(&mut tx, &input.transfer_uid, expected_state).await?;
+    karma_snapshot::check_participant_on(&mut tx, &input.transfer_uid, &input.actor_person_uid, expected).await?;
     let transfer =
         sqlx::query("SELECT revision, agreement_type FROM transfer WHERE record_uid = ?")
             .bind(&input.transfer_uid)
@@ -5474,7 +5605,7 @@ where
     .ok_or_else(|| {
         sqlx::Error::Protocol("occurrence activation requires an accepted Person party".into())
     })?;
-    if party.get::<i64, _>("level") != 2 {
+    if transfer.get::<String, _>("agreement_type") != "dependency" && party.get::<i64, _>("level") != 2 {
         return Err(sqlx::Error::Protocol(
             "occurrence activation requires the acting Person's current agreement".into(),
         ));
@@ -5496,6 +5627,10 @@ where
         }
     }
 
+    let readiness = crate::transfer_agreement::read_on(&mut tx, &input.transfer_uid).await?.0;
+    if input.occurrences.iter().any(|occurrence| !readiness.promises.get(&occurrence.promise_uid).is_some_and(|promise| promise.ready)) {
+        return Err(sqlx::Error::Protocol("current parent, party or dependency agreement is not ready".into()));
+    }
     let at = now.to_rfc3339();
     let activation_event_uid = nucleus::new_uid("tac");
     let mut snapshots = Vec::with_capacity(input.occurrences.len());
@@ -5513,7 +5648,8 @@ where
                 promise.uid
             )));
         }
-        if promise.state != PromiseState::Agreed.as_str()
+        if !(promise.state == PromiseState::Agreed.as_str()
+                || transfer.get::<String, _>("agreement_type") == "dependency" && promise.state == PromiseState::Proposed.as_str())
             || promise.person_uid != input.actor_person_uid
         {
             return Err(sqlx::Error::Protocol(format!(
@@ -5567,12 +5703,17 @@ where
         .bind(&requested.receiver_person_uid)
         .fetch_one(&mut *tx)
         .await?;
-        if agreed_roles != 2 {
+        if transfer.get::<String, _>("agreement_type") != "dependency" && agreed_roles != 2 {
             return Err(sqlx::Error::Protocol(
                 "occurrence path requires current agreement from giver and receiver".into(),
             ));
         }
 
+        if let Some(exchange) = &promise.exchange {
+            if exchange.giver != requested.giver_person_uid || exchange.receiver != requested.receiver_person_uid {
+                return Err(sqlx::Error::Protocol("activation must use the agreed exchange route".into()));
+            }
+        }
         let opposite = if let Some(uid) = requested.opposite_promise_uid.as_deref() {
             let opposite = activation_promise(&mut tx, &input.transfer_uid, uid).await?;
             if !revision_evidence
@@ -5587,10 +5728,8 @@ where
                 )));
             }
             if !promises_are_exact_opposites(&promise, &opposite)
-                || !matches!(
-                    PromiseState::parse(&opposite.state),
-                    Some(PromiseState::Agreed | PromiseState::Active)
-                )
+                || !(matches!(PromiseState::parse(&opposite.state), Some(PromiseState::Agreed | PromiseState::Active))
+                    || transfer.get::<String, _>("agreement_type") == "dependency" && opposite.state == "proposed")
                 || (promise.delta < 0.0 && opposite.person_uid != requested.receiver_person_uid)
                 || (promise.delta > 0.0 && opposite.person_uid != requested.giver_person_uid)
             {
@@ -5600,7 +5739,7 @@ where
             }
             Some(opposite)
         } else {
-            if party_count > 2 {
+            if party_count > 2 && promise.exchange.is_none() {
                 return Err(sqlx::Error::Protocol(
                     "unmatched promise is ambiguous in a multi-party Transfer".into(),
                 ));
@@ -5634,8 +5773,8 @@ where
             sqlx::query(
                 "INSERT INTO transfer_exchange_path
                     (uid, transfer_uid, revision, primary_promise_uid,
-                     opposite_promise_uid, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?)",
+                     opposite_promise_uid, created_at, public_exchange_uid)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
             )
             .bind(&uid)
             .bind(&input.transfer_uid)
@@ -5643,6 +5782,7 @@ where
             .bind(primary_uid)
             .bind(opposite_uid)
             .bind(&at)
+            .bind(promise.exchange.as_ref().map(|exchange| exchange.uid.as_str()))
             .execute(&mut *tx)
             .await?;
             uid
@@ -5651,6 +5791,7 @@ where
             uid: nucleus::new_uid("toc"),
             promise_uid: promise.uid,
             exchange_path_uid,
+            exchange_uid: promise.exchange.as_ref().map(|exchange| exchange.uid.clone()),
             opposite_promise_uid: opposite.map(|value| value.uid),
             record_uid: promise.record_uid,
             concept_uid: promise.concept_uid,
@@ -5756,10 +5897,12 @@ where
         .await?;
         sqlx::query(
             "UPDATE promise SET state = 'active', updated_at = ?
-             WHERE uid = ? AND transfer_uid = ? AND state = 'agreed'",
+             WHERE uid = ? AND transfer_uid = ? AND (state = 'agreed' OR
+               (state = 'proposed' AND EXISTS(SELECT 1 FROM transfer WHERE record_uid = ? AND agreement_type = 'dependency')))",
         )
         .bind(&at)
         .bind(&snapshot.promise_uid)
+        .bind(&input.transfer_uid)
         .bind(&input.transfer_uid)
         .execute(&mut *tx)
         .await?;
@@ -6673,25 +6816,22 @@ pub async fn occurrence_settlement_progress(
         return Ok(None);
     };
     let slices = occurrence_settlement_slices(pool, occurrence_uid).await?;
-    let local_settled = slices.last().map_or(0.0, |slice| slice.cumulative_after);
-    let remote_settled: f64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(d.canonical_quantity), 0.0)
-         FROM transfer_application_handoff h
-         JOIN transfer_application_handoff_detail d ON d.handoff_uid = h.uid
-         WHERE h.occurrence_uid = ? AND h.state = 'accepted'",
-    )
-    .bind(occurrence_uid)
-    .fetch_one(pool)
-    .await?;
-    let settled_quantity = local_settled + remote_settled;
-    let remaining_quantity = (canonical_quantity - settled_quantity).max(0.0);
+    let settled = crate::transfer_accounting::allocated(pool, occurrence_uid, false).await?;
+    let cancelled = crate::transfer_cancellations::cancelled(pool, occurrence_uid).await?;
+    let effective_total = crate::exact::difference(crate::transfer_accounting::amount(canonical_quantity)?, cancelled)?;
+    let remaining = crate::exact::difference(effective_total, settled)?;
+    let settled_quantity = settled.to_f64();
+    let remaining_quantity = remaining.to_f64().max(0.0);
     Ok(Some(OccurrenceSettlementProgress {
         occurrence_uid: occurrence_uid.into(),
         canonical_quantity,
         settled_quantity,
+        cancelled_quantity: cancelled.to_f64(),
+        cancelled_exact: cancelled,
+        remaining_exact: remaining,
         remaining_quantity,
         partially_settled: settled_quantity > 0.0 && remaining_quantity > 0.0,
-        settled: settled_quantity > 0.0 && remaining_quantity == 0.0,
+        settled: settled_quantity > 0.0 && remaining_quantity == 0.0 && cancelled.is_zero(),
         slices,
     }))
 }
@@ -6759,8 +6899,7 @@ pub async fn occurrence_settlement_for_request(
 }
 
 fn settlement_values_match(left: f64, right: f64) -> bool {
-    let scale = left.abs().max(right.abs()).max(1.0);
-    (left - right).abs() <= scale * 1e-9
+    left.is_finite() && right.is_finite() && left == right
 }
 
 pub async fn effective_occurrence_remainder_policy(
@@ -6781,11 +6920,7 @@ pub async fn effective_occurrence_remainder_policy(
             sqlx::Error::Protocol(format!("unknown Transfer remainder policy `{policy}`"))
         });
     }
-    crate::config::ensure_default(pool).await?;
-    let policy: String =
-        sqlx::query_scalar("SELECT transfer_remainder_policy FROM configuration WHERE id = 1")
-            .fetch_one(pool)
-            .await?;
+    let policy = crate::config::transfer_remainder_policy(pool).await?;
     TransferRemainderPolicy::parse(&policy).ok_or_else(|| {
         sqlx::Error::Protocol(format!("unknown Transfer remainder policy `{policy}`"))
     })
@@ -7043,7 +7178,7 @@ where
     let formula_version = i64::try_from(input.application_formula_version).map_err(|_| {
         sqlx::Error::Protocol("application formula version exceeds SQLite range".into())
     })?;
-    let formula_hash = nucleus::transfer::occurrence_application_formula_hash(formula);
+    let formula_hash = input.application_formula_hash.clone();
     if let Some(outcome) = occurrence_settlement_outcome_for_request(pool, request_id).await? {
         let slice = &outcome.slice;
         if slice.occurrence_uid != input.occurrence_uid
@@ -7056,6 +7191,7 @@ where
             || slice.application_formula != formula
             || slice.application_formula_version != input.application_formula_version
             || slice.remainder_policy != input.remainder_policy
+            || crate::transfer_effects::reviewed_hash(pool, &slice.application_fact_uid).await? != input.expected_effects_hash
         {
             return Err(sqlx::Error::Protocol(
                 "settlement request id was already used with different preview values".into(),
@@ -7079,13 +7215,15 @@ where
         "SELECT occurrence.transfer_uid, occurrence.promise_uid,
                 occurrence.quantity, occurrence.unit_uid, occurrence.record_uid,
                 occurrence.delivery_claimed, occurrence.receipt_claimed,
-                occurrence.disputed, source.party_uid, source.state,
+                occurrence.disputed, source.party_uid, source.state, source.delta, path.public_exchange_uid AS exchange_uid,
                 local_record.organ_uid, local_record.deleted_at
          FROM transfer_occurrence occurrence
          JOIN promise source ON source.uid = occurrence.promise_uid
-         LEFT JOIN record local_record ON local_record.uid = occurrence.record_uid
+         LEFT JOIN transfer_exchange_path path ON path.uid = occurrence.exchange_path_uid
+         LEFT JOIN record local_record ON local_record.uid = ?
          WHERE occurrence.uid = ?",
     )
+    .bind(&input.local_record_uid)
     .bind(&input.occurrence_uid)
     .fetch_optional(&mut *tx)
     .await?
@@ -7094,17 +7232,11 @@ where
     let promise_uid: String = occurrence.get("promise_uid");
     let canonical_total: f64 = occurrence.get("quantity");
     let canonical_unit_uid: Option<String> = occurrence.get("unit_uid");
-    let source_record_uid: Option<String> = occurrence.get("record_uid");
     let source_owner: String = occurrence.get("party_uid");
     let promise_state: String = occurrence.get("state");
     let record_organ_uid: Option<String> = occurrence.get("organ_uid");
     let record_deleted_at: Option<String> = occurrence.get("deleted_at");
 
-    if source_record_uid.as_deref() != Some(input.local_record_uid.as_str()) {
-        return Err(sqlx::Error::Protocol(
-            "settlement requires the concrete Record signed into the source promise".into(),
-        ));
-    }
     if source_owner != input.actor_person_uid {
         return Err(sqlx::Error::Protocol(
             "only the source-promise owner may settle this occurrence".into(),
@@ -7128,62 +7260,47 @@ where
         ));
     }
     if record_deleted_at.is_some()
-        || record_organ_uid
-            .as_deref()
-            .is_some_and(|origin| Some(origin) != local_organ_uid.as_deref())
+        || record_organ_uid.is_none()
+        || record_organ_uid != local_organ_uid
     {
         return Err(sqlx::Error::Protocol(
             "settlement may mutate only a live Record originating in this Cell".into(),
         ));
     }
 
-    if input.application_formula_version > 0 {
-        let policy = sqlx::query(
-            "SELECT formula, formula_hash, version
-             FROM transfer_occurrence_application_policy WHERE occurrence_uid = ?",
-        )
-        .bind(&input.occurrence_uid)
-        .fetch_optional(&mut *tx)
-        .await?
-        .ok_or_else(|| {
-            sqlx::Error::Protocol(
-                "versioned settlement formula has no occurrence application policy".into(),
-            )
-        })?;
-        if policy.get::<String, _>("formula") != formula
-            || policy.get::<String, _>("formula_hash") != formula_hash
-            || policy.get::<i64, _>("version") != formula_version
-        {
-            return Err(sqlx::Error::Protocol(
-                "settlement preview formula is no longer current".into(),
-            ));
-        }
+    let exchange: Option<String> = occurrence.get("exchange_uid");
+    let binding = crate::transfer_accounting::Binding {
+        transfer: &transfer_uid, exchange: exchange.as_deref().unwrap_or(&promise_uid),
+        occurrence: Some(&input.occurrence_uid), person: &input.actor_person_uid,
+        record: Some(&input.local_record_uid), unit: canonical_unit_uid.as_deref(),
+        outgoing: occurrence.get::<f64,_>("delta") < 0.0,
+    };
+    let application = crate::transfer_accounting::effective_on(&mut tx, &binding).await?;
+    if application.formula != formula || application.formula_hash != formula_hash || application.version != input.application_formula_version {
+        return Err(sqlx::Error::Protocol("settlement private policy or units changed after review".into()));
     }
-
-    let progress = sqlx::query(
-        "SELECT COALESCE(SUM(canonical_quantity), 0.0) AS canonical_sum,
-                COALESCE(SUM(local_delta), 0.0) AS local_sum
-         FROM transfer_occurrence_settlement_slice WHERE occurrence_uid = ?",
-    )
-    .bind(&input.occurrence_uid)
-    .fetch_one(&mut *tx)
-    .await?;
-    let cumulative_before: f64 = progress.get("canonical_sum");
-    let local_cumulative_before: f64 = progress.get("local_sum");
-    let remaining_before = canonical_total - cumulative_before;
-    if remaining_before <= 0.0 || input.canonical_quantity > remaining_before {
-        return Err(sqlx::Error::Protocol(
-            "settlement slice exceeds the occurrence's remaining quantity".into(),
-        ));
+    crate::transfer_accounting::require_same_record(&mut tx, &input.occurrence_uid, &input.actor_person_uid, &input.local_record_uid).await?;
+    let applied = crate::transfer_accounting::applied_on(&mut tx, &input.occurrence_uid, &input.actor_person_uid).await?;
+    let amount = nucleus::transfer::application::amount(input.canonical_quantity).map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let total = nucleus::transfer::application::amount(canonical_total).map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let total = crate::transfer_cancellations::effective_total_on(&mut tx, &input.occurrence_uid, total).await?;
+    let exact_after = crate::exact::sum_exact([applied.canonical, amount])?;
+    let exact_remaining = crate::exact::difference(total, exact_after)?;
+    if exact_remaining.mantissa() < 0 {
+        return Err(sqlx::Error::Protocol("settlement slice exceeds the occurrence's remaining quantity".into()));
     }
-    let cumulative_after = cumulative_before + input.canonical_quantity;
-    let remaining_after = canonical_total - cumulative_after;
-    let expected_local_after = local_cumulative_before + input.local_delta;
-    if !settlement_values_match(expected_local_after, input.local_cumulative_after) {
-        return Err(sqlx::Error::Protocol(
-            "settlement local delta does not match the reviewed cumulative formula result".into(),
-        ));
+    let group = crate::transfer_effects::quote_on(&mut tx, &binding, exact_after).await?;
+    crate::transfer_effects::require_review(group.as_ref(), input.expected_effects_hash.as_deref())?;
+    let (exact_delta, exact_local_after) = if let Some(group) = &group {
+        (group.effects[0].delta, group.effects[0].cumulative_after)
+    } else { crate::transfer_accounting::calculate(formula, exact_after, applied.local)? };
+    if exact_delta.to_f64() != input.local_delta || exact_local_after.to_f64() != input.local_cumulative_after {
+        return Err(sqlx::Error::Protocol("settlement local delta differs from the reviewed cumulative result".into()));
     }
+    let cumulative_before = applied.canonical.to_f64();
+    let cumulative_after = exact_after.to_f64();
+    let local_cumulative_before = applied.local.to_f64();
+    let remaining_after = exact_remaining.to_f64();
 
     let settlement_uid = nucleus::new_uid("tss");
     let public_evidence = TransferOccurrenceSettlementEvidence {
@@ -7243,13 +7360,16 @@ where
         local_cumulative_before,
         local_cumulative_after: input.local_cumulative_after,
     };
-    let application_payload = serde_json::to_string(&application_evidence)
+    let mut application_payload = serde_json::to_value(&application_evidence)
         .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    application_payload["local_unit_uid"] = serde_json::json!(application.unit);
+    application_payload["private_effects_hash"] = serde_json::json!(input.expected_effects_hash);
+    let application_payload = application_payload.to_string();
     let mut application_fact = nucleus::fact::seal(
         NewFact {
             uid: None,
             record_uid: input.local_record_uid.clone(),
-            delta: crate::exact::from_f64(input.local_delta),
+            delta: exact_delta,
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::settlement(settlement_uid.clone()),
@@ -7337,11 +7457,13 @@ where
     crate::records::bump_quantity(
         &mut tx,
         &input.local_record_uid,
-        crate::exact::from_f64(input.local_delta),
+        exact_delta,
         &at,
     )
     .await?;
     crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
+    crate::transfer_effects::apply_on(&mut tx, group.as_ref(), &application_fact,
+        &input.occurrence_uid, &input.actor_person_uid, input.authorization_intent_uid.as_deref(), now, &sign).await?;
     tx.commit().await?;
 
     let outcome = occurrence_settlement_outcome_for_request(pool, request_id)
@@ -7504,6 +7626,12 @@ where
             "settlement application was already compensated".into(),
         ));
     }
+    let original = sqlx::query("SELECT f.delta_mantissa, f.delta_scale, json_extract(f.payload, '$.local_unit_uid') AS original_unit, r.unit_uid AS current_unit FROM fact f JOIN record r ON r.uid = f.record_uid WHERE f.uid = ? AND f.record_uid = ?")
+        .bind(&slice.application_fact_uid).bind(&slice.local_record_uid).fetch_one(&mut *tx).await?;
+    if original.get::<Option<String>,_>("original_unit") != original.get::<Option<String>,_>("current_unit") {
+        return Err(sqlx::Error::Protocol("restore the original Record unit before correcting this application".into()));
+    }
+    let inverse_delta = crate::exact::negate(crate::exact::read_decimal(&original, "delta")?)?;
     let correction_uid = nucleus::new_uid("tsc");
     let evidence = TransferOccurrenceSettlementCompensationEvidence {
         action: "compensate-transfer-occurrence-settlement".into(),
@@ -7522,7 +7650,7 @@ where
         NewFact {
             uid: None,
             record_uid: slice.local_record_uid.clone(),
-            delta: crate::exact::from_f64(-slice.local_delta),
+            delta: inverse_delta,
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause {
@@ -7573,7 +7701,7 @@ where
     .bind(&slice.application_fact_uid)
     .bind(&fact.uid)
     .bind(&slice.local_record_uid)
-    .bind(-slice.local_delta)
+    .bind(inverse_delta.to_f64())
     .bind(request_id)
     .bind(&at)
     .execute(&mut *tx)
@@ -7581,10 +7709,12 @@ where
     crate::records::bump_quantity(
         &mut tx,
         &slice.local_record_uid,
-        crate::exact::from_f64(-slice.local_delta),
+        inverse_delta,
         &at,
     )
     .await?;
+    crate::transfer_effects::compensate_on(&mut tx, &slice.application_fact_uid, &input.actor_person_uid,
+        input.authorization_intent_uid.as_deref(), now, &sign).await?;
     tx.commit().await?;
 
     let outcome = occurrence_settlement_compensation_outcome_for_request(pool, request_id)

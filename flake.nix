@@ -1064,7 +1064,19 @@
             HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
             HOST_CXX = "${pkgs.stdenv.cc}/bin/c++";
             HOST_AR = "${pkgs.stdenv.cc.bintools}/bin/ar";
-            shellHook = lib.optionalString pkgs.stdenv.isLinux ''
+            shellHook = ''
+              if lince_android_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+                lince_android_cache="$lince_android_root/.cache-lince-android"
+                export ANDROID_HOME="''${ANDROID_HOME:-$lince_android_cache/sdk}"
+                export ANDROID_USER_HOME="''${ANDROID_USER_HOME:-$lince_android_cache/user}"
+                export ANDROID_AVD_HOME="''${ANDROID_AVD_HOME:-$lince_android_cache/avd}"
+                export GRADLE_USER_HOME="''${GRADLE_USER_HOME:-$lince_android_cache/gradle}"
+                export ANDROID_NDK_HOME="''${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/28.2.13676358}"
+                export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+                mkdir -p "$ANDROID_USER_HOME" "$ANDROID_AVD_HOME" "$GRADLE_USER_HOME"
+              fi
+            ''
+            + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
                   with pkgs;

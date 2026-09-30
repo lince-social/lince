@@ -125,6 +125,10 @@ impl Engine {
 
     pub async fn batch_is_saved(&self, batch: &OpBatch) -> Result<bool, EngineError> {
         for op in &batch.ops {
+            if op.tbl == "transfer_replication" {
+                if !self.transfer_transaction_saved(op).await? { return Ok(false); }
+                continue;
+            }
             let exists: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE actor_cell = ? AND hlc = ? AND tbl = ? AND uid = ? AND field = ? AND kind = ?)")
                 .bind(&op.actor_cell).bind(op.hlc).bind(&op.tbl).bind(&op.uid).bind(&op.field).bind(&op.kind)
                 .fetch_one(&self.store.pool).await?;
@@ -240,6 +244,11 @@ impl Engine {
                 if normalize(value.as_deref()) != normalize(op.value.as_deref()) {
                     return Ok(Some("operation identity has conflicting content"));
                 }
+            }
+        }
+        if op.tbl == "record" && matches!(op.field.as_str(), "quantity" | "unit_uid" | "organ_uid") {
+            if let Some(limit) = store::transfer_stock::get(&self.store.pool, &op.uid).await? {
+                if limit.writer != op.actor_cell { return Ok(Some("stock change comes from a Cell without stock authority")); }
             }
         }
         if op.tbl == "record_extension" && store::people::is_standing_field(&op.field) {
@@ -411,12 +420,23 @@ impl Engine {
             store::organs::clear_awaiting_roster(&self.store.pool, &batch.from_organ).await?;
         }
         let _import = self.import_lock.lock().await;
+        let signature_keys = if ours && replica_root.is_none() {
+            self.transfer_signature_keys(&batch.ops, &batch.from_organ).await?
+        } else {
+            std::collections::BTreeMap::new()
+        };
         let pool = &self.store.pool;
         let from = Some(batch.from_organ.as_str());
         let mut applied = 0usize;
         let mut touched: Vec<String> = Vec::new();
+        let mut received_parents = std::collections::BTreeMap::new();
         let mut karma_definitions: Vec<String> = Vec::new();
         for op in &batch.ops {
+            if op.tbl == "transfer_replication" {
+                if replica_root.is_some() { return Err(EngineError::Forbidden("private Transfer transactions cannot use an individual grant".into())); }
+                if self.import_transfer_transaction(op, &batch.from_organ).await? { applied += 1; }
+                continue;
+            }
             if !store::sync_ops::op_in_scope(&op.tbl, &op.kind, &op.field, accept.as_deref()) {
                 continue;
             }
@@ -459,12 +479,13 @@ impl Engine {
             match (op.tbl.as_str(), kind) {
                 ("fact", OpKind::Fact) => {
                     if self
-                        .import_fact_op(op, &batch.from_organ, replica_root)
+                        .import_fact_op(op, &batch.from_organ, replica_root, &signature_keys)
                         .await?
                     {
                         applied += 1;
                         if let Some(fact) = &op.fact {
                             touched.push(fact.record_uid.clone());
+                            received_parents.insert(fact.record_uid.clone(), fact.uid.clone());
                         }
                     }
                 }
@@ -684,8 +705,8 @@ impl Engine {
         let subjects = touched.iter().take(32).cloned().collect();
         for record_uid in touched {
             if store::records::get(pool, &record_uid).await?.is_some() {
-                let _ = self
-                    .append(
+                let parent = received_parents.get(&record_uid).cloned();
+                let append = self.append(
                         NewFact {
                             uid: None,
                             record_uid,
@@ -699,8 +720,15 @@ impl Engine {
                             payload: Some("{\"sync\":true}".to_string()),
                         },
                         nucleus::execution::now(),
-                    )
-                    .await;
+                    );
+                let result = if let Some(parent) = parent {
+                    crate::rule_runtime::RECEIVED_PARENT.scope(parent, append).await
+                } else {
+                    append.await
+                };
+                if let Err(error @ EngineError::ExecutionLimit(_)) = result {
+                    return Err(error);
+                }
             }
         }
         Ok((applied, subjects))
@@ -760,6 +788,7 @@ impl Engine {
         op: &WireOp,
         from_organ: &str,
         root: Option<&str>,
+        signature_keys: &std::collections::BTreeMap<String, std::collections::BTreeSet<String>>,
     ) -> Result<bool, EngineError> {
         let pool = &self.store.pool;
         let Some(fact) = &op.fact else {
@@ -791,6 +820,11 @@ impl Engine {
             && !crate::trust::verify_fact(&self.store, fact)
                 .await
                 .unwrap_or(false)
+            && !fact.signature.as_ref().is_some_and(|signature| {
+                fact.actor_uid.as_ref().and_then(|actor| signature_keys.get(actor)).is_some_and(|keys| {
+                    keys.iter().any(|key| crate::roster::verify_with(key, fact.hash.as_bytes(), signature))
+                })
+            })
         {
             store::organs::quarantine(
                 pool,
@@ -829,6 +863,18 @@ impl Engine {
         store::sqlx::query("INSERT OR IGNORE INTO sync_op (tbl, uid, field, kind, value, hlc, actor_cell, organ_uid, replica_root) VALUES ('fact', ?, '', 'fact', NULL, ?, ?, ?, ?)")
             .bind(&op.uid).bind(op.hlc).bind(&op.actor_cell).bind(&op.organ_uid).bind(root).execute(&mut *tx).await?;
         if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
+            let existing = store::facts::get_in_transaction(&mut tx, &fact.uid).await?;
+            if existing.is_some_and(|existing| existing.cause.kind != CauseKind::Sync && existing.hash != fact.hash) {
+                return Err(EngineError::Consequence(
+                    "Fact identity was reused with different original evidence".into(),
+                ));
+            }
+            let imported: bool = store::sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM fact_origin WHERE fact_uid = ?)",
+            ).bind(&fact.uid).fetch_one(&mut *tx).await?;
+            if imported {
+                store::facts::retain_origin(&mut tx, fact, &op.organ_uid, &op.actor_cell).await?;
+            }
             tx.commit().await?;
             return Ok(false);
         }
@@ -840,13 +886,15 @@ impl Engine {
         });
         let prev = store::facts::last_hash(&mut tx).await?;
         let mut sealed = nucleus::fact::seal(news, &prev, nucleus::execution::now());
-        sealed.signature = fact.signature.clone();
+        sealed.signature = None;
         store::facts::insert(&mut tx, &sealed).await?;
-        store::records::bump_quantity(
+        store::facts::retain_origin(&mut tx, fact, &op.organ_uid, &op.actor_cell).await?;
+        store::records::bump_imported_quantity(
             &mut tx,
             &sealed.record_uid,
             sealed.delta,
             &nucleus::execution::now().to_rfc3339(),
+            &op.actor_cell,
         )
         .await?;
         tx.commit().await?;

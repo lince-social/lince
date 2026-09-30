@@ -1,17 +1,17 @@
 use base64::Engine as _;
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{ChaCha20Poly1305, Key};
-use ed25519_dalek::{Signature, Signer as _, SigningKey, Verifier as _, VerifyingKey};
+use ed25519_dalek::{Signature, Signer as _, SigningKey, VerifyingKey};
 use hkdf::Hkdf;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 use x25519_dalek::{PublicKey, StaticSecret};
 
-pub const SEAL_VERSION: u8 = 1;
+pub const SEAL_VERSION: u8 = 2;
 
 const WRAP_INFO: &[u8] = b"lince.seal.v1 wrap";
 const CONTENT_AAD: &[u8] = b"lince.seal.v1 content";
-const TRANSCRIPT_TAG: &[u8] = b"lince.seal.v1 transcript";
+const TRANSCRIPT_TAG: &[u8] = b"lince.seal.v2 transcript";
 
 fn b64() -> base64::engine::general_purpose::GeneralPurpose {
     base64::engine::general_purpose::STANDARD
@@ -59,6 +59,10 @@ pub struct SealedTo {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealedBundle {
     pub v: u8,
+    pub uid: String,
+    pub created_at: i64,
+    pub expires_at: i64,
+    pub sender_key: String,
     pub to_organ: String,
     pub from_organ: String,
     pub from_cell: String,
@@ -106,6 +110,10 @@ pub fn transcript(bundle: &SealedBundle) -> Vec<u8> {
     };
     push(TRANSCRIPT_TAG);
     push(&[bundle.v]);
+    push(bundle.uid.as_bytes());
+    push(&bundle.created_at.to_be_bytes());
+    push(&bundle.expires_at.to_be_bytes());
+    push(bundle.sender_key.as_bytes());
     push(bundle.to_organ.as_bytes());
     push(bundle.from_organ.as_bytes());
     push(bundle.from_cell.as_bytes());
@@ -179,6 +187,11 @@ pub fn seal(
     for recipient in recipients {
         let point = decode_point(&recipient.public)?;
         let shared = ephemeral_secret.diffie_hellman(&PublicKey::from(point));
+        if !shared.was_contributory() {
+            return Err(SealError::BadRecipients(
+                "recipient key produces an unsafe shared secret".into(),
+            ));
+        }
         let key = wrap_key(
             shared.as_bytes(),
             ephemeral_public.as_bytes(),
@@ -203,8 +216,13 @@ pub fn seal(
     }
     drop(ephemeral_secret);
 
+    let created_at = nucleus::execution::now().timestamp();
     let mut bundle = SealedBundle {
         v: SEAL_VERSION,
+        uid: nucleus::new_uid("r"),
+        created_at,
+        expires_at: created_at + RETENTION_DAYS * 86_400,
+        sender_key: b64().encode(signing.verifying_key().as_bytes()),
         to_organ: to_organ.to_string(),
         from_organ: batch.from_organ.clone(),
         from_cell: from_cell.to_string(),
@@ -223,6 +241,88 @@ pub fn verifying_key(published: &str) -> Option<VerifyingKey> {
     VerifyingKey::from_bytes(&<[u8; 32]>::try_from(raw.as_slice()).ok()?).ok()
 }
 
+pub fn validate_envelope(bundle: &SealedBundle, now: i64) -> Result<(), SealError> {
+    if bundle.v != SEAL_VERSION {
+        return Err(SealError::UnknownVersion(bundle.v));
+    }
+    if !nucleus::valid_uid(&bundle.uid, "r")
+        || bundle.created_at > now.saturating_add(300)
+        || bundle.expires_at <= now
+        || bundle.expires_at <= bundle.created_at
+        || bundle.expires_at.saturating_sub(bundle.created_at) > RETENTION_DAYS * 86_400
+        || bundle.recipients.is_empty()
+        || bundle.recipients.len() > 256
+    {
+        return Err(SealError::Malformed(
+            "invalid identity, lifetime or recipient bounds".into(),
+        ));
+    }
+    let bounded_identity = |value: &str| {
+        !value.is_empty() && value.len() <= 128 && !value.chars().any(char::is_control)
+    };
+    let encoded_length =
+        |value: &str, bytes: usize| b64().decode(value).is_ok_and(|raw| raw.len() == bytes);
+    let mut keys = std::collections::HashSet::new();
+    if !bounded_identity(&bundle.to_organ)
+        || !bounded_identity(&bundle.from_organ)
+        || !bounded_identity(&bundle.from_cell)
+        || !encoded_length(&bundle.ephemeral, 32)
+        || !encoded_length(&bundle.nonce, 12)
+        || bundle.ciphertext.len() > crate::mailbox::MAX_BUNDLE_BYTES
+        || !b64()
+            .decode(&bundle.ciphertext)
+            .is_ok_and(|raw| raw.len() >= 16)
+        || bundle.recipients.iter().any(|recipient| {
+            recipient.key_id.is_empty()
+                || recipient.key_id.len() > 256
+                || !keys.insert(&recipient.key_id)
+                || !encoded_length(&recipient.nonce, 12)
+                || !encoded_length(&recipient.wrapped, 48)
+        })
+    {
+        return Err(SealError::Malformed(
+            "invalid routing or encryption fields".into(),
+        ));
+    }
+    let key = verifying_key(&bundle.sender_key).ok_or(SealError::Unauthenticated)?;
+    let signature = b64()
+        .decode(&bundle.signature)
+        .map_err(|_| SealError::Unauthenticated)?;
+    let signature = Signature::from_slice(&signature).map_err(|_| SealError::Unauthenticated)?;
+    key.verify_strict(&transcript(bundle), &signature)
+        .map_err(|_| SealError::Unauthenticated)
+}
+
+pub fn validate_recoverable(bundle: &SealedBundle, now: i64) -> Result<(), SealError> {
+    if now > bundle.expires_at.saturating_add(GRACE_DAYS * 86_400) {
+        return Err(SealError::Malformed("the recovery window expired".into()));
+    }
+    validate_envelope(bundle, now.min(bundle.expires_at.saturating_sub(1)))
+}
+
+pub fn delivery_id(bundle: &SealedBundle) -> String {
+    let mut hasher = Sha256::new();
+    for part in [
+        "lince.mailbox.id.v2",
+        &bundle.to_organ,
+        &bundle.sender_key,
+        &bundle.uid,
+    ] {
+        hasher.update((part.len() as u64).to_be_bytes());
+        hasher.update(part.as_bytes());
+    }
+    let digest: String = hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    format!("mb-{digest}")
+}
+
+pub fn envelope_hash(body: &str) -> String {
+    nucleus::fact::sha256_hex(body.as_bytes())
+}
+
 pub fn open(
     bundle: &SealedBundle,
     sender_key: &VerifyingKey,
@@ -231,16 +331,10 @@ pub fn open(
     if bundle.v != SEAL_VERSION {
         return Err(SealError::UnknownVersion(bundle.v));
     }
-    let signature = b64()
-        .decode(&bundle.signature)
-        .ok()
-        .and_then(|raw| <[u8; 64]>::try_from(raw.as_slice()).ok())
-        .map(|bytes| Signature::from_bytes(&bytes))
-        .ok_or(SealError::Unauthenticated)?;
-    sender_key
-        .verify(&transcript(bundle), &signature)
-        .map_err(|_| SealError::Unauthenticated)?;
-
+    validate_recoverable(bundle, nucleus::execution::now().timestamp())?;
+    if bundle.sender_key != b64().encode(sender_key.as_bytes()) {
+        return Err(SealError::Unauthenticated);
+    }
     let ephemeral = decode_point(&bundle.ephemeral)?;
     let (wrap, secret) = bundle
         .recipients
@@ -254,6 +348,9 @@ pub fn open(
 
     let secret = StaticSecret::from(*secret);
     let shared = secret.diffie_hellman(&PublicKey::from(ephemeral));
+    if !shared.was_contributory() {
+        return Err(SealError::Undecipherable);
+    }
     let key = wrap_key(
         shared.as_bytes(),
         &ephemeral,

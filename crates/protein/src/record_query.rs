@@ -344,6 +344,7 @@ fn validate_query(query: &Protein, budget: &mut Budget<'_>) -> Result<ValidatedQ
             )
             || query.fields.is_some()
             || query.include.extension.is_some()
+            || query.include.numeric_extensions
             || !query.order.is_empty()
         {
             return Err(QueryError::Unsupported);

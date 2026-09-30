@@ -14,6 +14,15 @@ const MAX_CHALLENGE_BYTES: usize = 512;
 const MAX_ACTION_BYTES: usize = 1_048_576;
 const MAX_ACTION_BASE64_BYTES: usize = 1_398_104;
 
+pub fn payload_requests_karma_preview(payload: &str) -> bool {
+    if payload.len() > MAX_ACTION_BASE64_BYTES {
+        return false;
+    }
+    B64.decode(payload).ok()
+        .and_then(|bytes| serde_json::from_slice::<Action>(&bytes).ok())
+        .is_some_and(|action| matches!(action, Action::PreviewKarmaProposal { .. }))
+}
+
 pub struct ActionIntentSession {
     person_uid: String,
     session_id: String,
@@ -309,8 +318,52 @@ impl Engine {
         &self,
         verified: VerifiedActionIntent,
     ) -> Result<ActionOutcome, EngineError> {
+        if matches!(&verified.action, Action::PreviewKarmaProposal { .. }) {
+            return self.act_verified_preview(verified).await;
+        }
         self.access_scope(true, self.act_verified_inner(verified))
             .await
+    }
+
+    async fn act_verified_preview(&self, verified: VerifiedActionIntent) -> Result<ActionOutcome, EngineError> {
+        let authorization = self.access_scope(true, async {
+            let mut tx = self.store.pool.begin().await?;
+            self.require_login_on(&mut tx).await?;
+            tx.commit().await?;
+            self.authorize_action(&verified.action, Some(&verified.person_uid)).await
+        }).await;
+        let mut result = match authorization {
+            Ok(()) => match verified.action {
+                Action::PreviewKarmaProposal { request } => self.preview_karma_proposal(request, Some(verified.person_uid.clone()), nucleus::execution::now()).await,
+                _ => return Err(invalid_intent("Verified preview has another Action kind")),
+            },
+            Err(error) => Err(error),
+        };
+        self.access_scope(true, async {
+            let access = async {
+                let mut tx = self.store.pool.begin().await?;
+                self.require_login_on(&mut tx).await?;
+                tx.commit().await?;
+                self.require_permission(Some(&verified.person_uid), "record:read").await?;
+                self.require_permission(Some(&verified.person_uid), "frequency:read").await?;
+                if let Ok(report) = &mut result {
+                    self.refuse_unreadable(Some(&verified.person_uid), &report.required_reads).await?;
+                    report.source_current = self.store.state_hash().await?.as_str() == report.source;
+                }
+                Ok::<_, EngineError>(())
+            }.await;
+            if let Err(error) = access {
+                result = Err(error);
+            }
+            let result = result.and_then(|report| {
+                Ok(ActionOutcome { data: Some(serde_json::to_value(report).map_err(EngineError::Json)?), ..Default::default() })
+            });
+            match &result {
+                Ok(_) => store::action_intents::mark_committed(&self.store.pool, &verified.intent_uid, &[], nucleus::execution::now()).await?,
+                Err(error) => store::action_intents::mark_failed(&self.store.pool, &verified.intent_uid, error.code(), &error.to_string(), nucleus::execution::now()).await?,
+            }
+            result
+        }).await
     }
 
     async fn act_verified_inner(

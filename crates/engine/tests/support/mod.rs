@@ -98,6 +98,7 @@ pub async fn plain(engine: &Engine, slug: &str, quantity: f64) -> String {
 
 pub fn promise(uid: &str, record: &str, person: &Person, delta: f64) -> TransferPromiseInput {
     TransferPromiseInput {
+        item: None,
         uid: Some(uid.into()),
         record: record.into(),
         party: Some(person.uid.clone()),
@@ -133,7 +134,8 @@ pub async fn create_transfer(
                 slug: Some(options.slug.into()),
                 head: options.slug.into(),
                 agreement: options.agreement,
-                agreement_pct: None,
+                agreement_pct: matches!(options.agreement, AgreementType::Percentage)
+                    .then_some(100),
                 satiation: TransferSatiation::None,
                 parent: None,
                 source: None,
@@ -326,6 +328,7 @@ pub async fn settle_from_preview(
                 expected_local_delta: preview["expected_local_delta"]
                     .as_f64()
                     .expect("preview local delta"),
+                expected_effects_hash: preview["expected_effects_hash"].as_str().map(str::to_owned),
                 expected_application_formula_hash: preview["expected_application_formula_hash"]
                     .as_str()
                     .expect("preview formula hash")

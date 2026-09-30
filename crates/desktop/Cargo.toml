@@ -124,6 +124,7 @@ sensei = { workspace = true }
 resvg = { version = "0.48.1", default-features = false }
 
 [dev-dependencies]
+store = { workspace = true }
 nucleus = { workspace = true }
 tempfile = "=3.27.0"
 

@@ -1,5 +1,5 @@
 use crate::{Edit, MAX_FILE_BYTES, MAX_WINDOW_BYTES, Result, diff::changes};
-use loro::{ExportMode, LoroDoc, Subscription, TextDelta, UndoManager, cursor::Cursor};
+use loro::{LoroDoc, Subscription, TextDelta, UndoManager, cursor::Cursor};
 use ropey::Rope;
 use std::sync::{Arc, Mutex};
 
@@ -16,7 +16,25 @@ pub enum Resolution {
 pub struct SavePoint {
     pub text: Rope,
     pub revision: u64,
-    update: Vec<u8>,
+    doc: LoroDoc,
+    from: loro::VersionVector,
+    to: loro::VersionVector,
+}
+
+pub struct EncodedSave {
+    pub text: Rope,
+    pub revision: u64,
+    update: loro::JsonSchema,
+}
+
+impl SavePoint {
+    pub fn encode(self) -> EncodedSave {
+        EncodedSave {
+            update: self.doc.export_json_updates(&self.from, &self.to),
+            text: self.text,
+            revision: self.revision,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -90,12 +108,16 @@ impl Buffer {
         if value.len() > MAX_FILE_BYTES {
             return Err("This file exceeds the 16 MiB editing limit".into());
         }
-        let doc = LoroDoc::new();
-        doc.get_text("text")
+        let disk = LoroDoc::new();
+        disk.get_text("text")
             .insert(0, value)
             .map_err(|e| e.to_string())?;
-        doc.commit();
-        let disk = doc.fork();
+        disk.commit();
+        let doc = LoroDoc::new();
+        doc.import_json_updates(disk.export_json_updates(&Default::default(), &disk.oplog_vv()))
+            .map_err(|e| e.to_string())?;
+        disk.set_peer_id(LoroDoc::new().peer_id())
+            .map_err(|e| e.to_string())?;
         let rope = Arc::new(Mutex::new(Rope::from_str(value)));
         let projection = rope.clone();
         let subscription = doc.subscribe_root(Arc::new(move |event| {
@@ -297,18 +319,10 @@ impl Buffer {
             return Ok(true);
         }
         apply(&self.disk, &plan.edits)?;
-        let update = self
-            .disk
-            .export(ExportMode::updates(&self.doc.oplog_vv()))
-            .map_err(|e| e.to_string())?;
-        self.doc.import(&update).map_err(|e| e.to_string())?;
+        transfer(&self.disk, &self.doc)?;
         if plan.identical {
             apply(&self.doc, &changes(&self.text(), &plan.value))?;
-            let update = self
-                .doc
-                .export(ExportMode::updates(&self.disk.oplog_vv()))
-                .map_err(|e| e.to_string())?;
-            self.disk.import(&update).map_err(|e| e.to_string())?;
+            transfer(&self.doc, &self.disk)?;
         }
         self.baseline = plan.value.into();
         self.conflict = None;
@@ -328,11 +342,7 @@ impl Buffer {
             Resolution::Disk => self.observed.to_string(),
         };
         apply(&self.disk, &changes(&self.baseline, &self.observed))?;
-        let update = self
-            .disk
-            .export(ExportMode::updates(&self.doc.oplog_vv()))
-            .map_err(|e| e.to_string())?;
-        self.doc.import(&update).map_err(|e| e.to_string())?;
+        transfer(&self.disk, &self.doc)?;
         apply(&self.doc, &changes(&self.text(), &selected))?;
         self.baseline = self.observed.clone();
         self.conflict = None;
@@ -347,24 +357,24 @@ impl Buffer {
         if self.conflict.is_some() {
             return Err("Resolve the disk conflict before saving".into());
         }
-        let update = self
-            .doc
-            .export(ExportMode::updates(&self.disk.oplog_vv()))
-            .map_err(|e| e.to_string())?;
         Ok(SavePoint {
             text: self.snapshot(),
             revision: self.revision,
-            update,
+            doc: self.doc.clone(),
+            from: self.disk.oplog_vv(),
+            to: self.doc.oplog_vv(),
         })
     }
 
     pub fn saved(&mut self, point: SavePoint) -> Result<()> {
         let text = point.text.to_string().into();
-        self.saved_with_text(point, text)
+        self.saved_with_text(point.encode(), text)
     }
 
-    pub fn saved_with_text(&mut self, point: SavePoint, text: Arc<str>) -> Result<()> {
-        self.disk.import(&point.update).map_err(|e| e.to_string())?;
+    pub fn saved_with_text(&mut self, point: EncodedSave, text: Arc<str>) -> Result<()> {
+        self.disk
+            .import_json_updates(point.update)
+            .map_err(|e| e.to_string())?;
         self.observed = text.clone();
         self.baseline = text;
         self.saved = point.revision;
@@ -423,6 +433,12 @@ fn apply(doc: &LoroDoc, edits: &[Edit]) -> Result<()> {
         }
     }
     doc.commit();
+    Ok(())
+}
+
+fn transfer(from: &LoroDoc, to: &LoroDoc) -> Result<()> {
+    to.import_json_updates(from.export_json_updates(&to.oplog_vv(), &from.oplog_vv()))
+        .map_err(|error| error.to_string())?;
     Ok(())
 }
 

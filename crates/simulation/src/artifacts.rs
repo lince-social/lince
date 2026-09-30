@@ -19,6 +19,49 @@ pub struct Manifest {
     pub scenario: CanonicalHash,
     pub files: BTreeMap<String, CanonicalHash>,
     pub comparison: Comparison,
+    pub sources: BTreeMap<String, SourceVersion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SourceVersion {
+    pub database: CanonicalHash,
+    pub state: CanonicalHash,
+    pub at_ms: i64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceStatus {
+    Matching,
+    Changed,
+    Generated,
+}
+
+pub async fn source_status(
+    directory: &Path,
+    cell: &str,
+    current: &store::Store,
+) -> Result<SourceStatus> {
+    let bundle = load(directory).map_err(|error| format!("invalid saved run: {error:?}"))?;
+    let Some(source) = bundle.manifest.sources.get(cell) else {
+        return Ok(SourceStatus::Generated);
+    };
+    let database = bundle
+        .scenario
+        .cells
+        .iter()
+        .find(|candidate| candidate.name == cell)
+        .and_then(|candidate| candidate.database.as_ref())
+        .ok_or("source database is absent")?;
+    if snapshot_state(&directory.join(&database.file)).await? != source.state {
+        return Err("saved source version does not match its database snapshot".into());
+    }
+    Ok(if current.state_hash().await? == source.state {
+        SourceStatus::Matching
+    } else {
+        SourceStatus::Changed
+    })
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, schemars::JsonSchema)]
@@ -40,6 +83,7 @@ pub struct Run {
     pub directory: PathBuf,
     pub result: report::Result,
     pub findings: Vec<report::Finding>,
+    pub cost: report::RunCost,
 }
 
 pub fn atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
@@ -91,10 +135,23 @@ pub struct Session {
     pub checks: Checks,
     directory: PathBuf,
     manifest: Manifest,
+    cost: report::RunCost,
 }
 
 impl Session {
-    pub async fn open(mut scenario: Scenario, directory: &Path, sources: &Path) -> Result<Self> {
+    pub async fn open(scenario: Scenario, directory: &Path, sources: &Path) -> Result<Self> {
+        Self::open_controlled(scenario, directory, sources, None, None, None).await
+    }
+
+    pub async fn open_interruptible(scenario: Scenario, directory: &Path, sources: &Path, control: nucleus::execution::control::Control) -> Result<Self> {
+        Self::open_controlled(scenario, directory, sources, None, Some(control), None).await
+    }
+
+    pub(crate) async fn open_karma_preview(scenario: Scenario, directory: &Path, sources: &Path, signer: Option<engine::trust::Signer>) -> Result<Self> {
+        Self::open_controlled(scenario, directory, sources, None, None, signer).await
+    }
+
+    async fn open_controlled(mut scenario: Scenario, directory: &Path, sources: &Path, replay_checkpoint: Option<u64>, control: Option<nucleus::execution::control::Control>, signer: Option<engine::trust::Signer>) -> Result<Self> {
         scenario.validate()?;
         std::fs::create_dir(directory)?;
         #[cfg(unix)]
@@ -105,6 +162,7 @@ impl Session {
         std::fs::create_dir(directory.join("seed"))?;
         let source_root = sources.canonicalize()?;
         let mut source_bytes = 0u64;
+        let mut source_versions = BTreeMap::new();
         for cell in &mut scenario.cells {
             if let Some(database) = &mut cell.database {
                 let original = source_root.join(&database.file).canonicalize()?;
@@ -130,6 +188,14 @@ impl Session {
                 if file_hash(&directory.join(&database.file))? != database.hash {
                     return Err("seed database changed while copying".into());
                 }
+                source_versions.insert(
+                    cell.name.clone(),
+                    SourceVersion {
+                        database: database.hash.clone(),
+                        state: snapshot_state(&directory.join(&database.file)).await?,
+                        at_ms: scenario.start_ms,
+                    },
+                );
             }
             cell.lingua
                 .sort_by(|left, right| left.name.cmp(&right.name));
@@ -174,23 +240,39 @@ impl Session {
             scenario: digest(&scenario)?,
             files: BTreeMap::new(),
             comparison: Comparison::V1,
+            sources: source_versions,
         };
         atomic(&directory.join("manifest.json"), &manifest)?;
-        let world = World::open(scenario, directory).await?;
+        let started = std::time::Instant::now();
+        let mut world = World::open_controlled(scenario, directory, replay_checkpoint, control, signer).await?;
+        let execution_micros = crate::world::elapsed(started).saturating_sub(world.evidence_micros);
+        let started = std::time::Instant::now();
         let mut checks = Checks::new(&world).await?;
-        checks.observe(&world).await?;
+        checks.observe(&mut world).await?;
         Ok(Self {
             world,
             checks,
             directory: directory.into(),
             manifest,
+            cost: report::RunCost {
+                execution_micros,
+                checking_micros: crate::world::elapsed(started),
+                ..Default::default()
+            },
         })
     }
 
     pub async fn step(&mut self) -> Result<bool> {
-        match self.world.step().await {
+        let started = std::time::Instant::now();
+        let evidence_before = self.world.evidence_micros;
+        let step = self.world.step().await;
+        self.cost.execution_micros += crate::world::elapsed(started)
+            .saturating_sub(self.world.evidence_micros - evidence_before);
+        match step {
             Ok(true) => {
-                self.checks.observe(&self.world).await?;
+                let started = std::time::Instant::now();
+                self.checks.observe(&mut self.world).await?;
+                self.cost.checking_micros += crate::world::elapsed(started);
                 Ok(true)
             }
             Ok(false) => Ok(false),
@@ -199,6 +281,7 @@ impl Session {
                 if self.world.stop.is_none() {
                     return Err(error);
                 }
+                self.checks.observe(&mut self.world).await?;
                 Ok(false)
             }
         }
@@ -213,12 +296,18 @@ impl Session {
             return Err("finish requires a completed or stopped run".into());
         }
         let Self {
-            world,
+            mut world,
             mut checks,
             directory,
             mut manifest,
+            mut cost,
         } = self;
-        let result = checks.finish(&world).await?;
+        let started = std::time::Instant::now();
+        let result = checks.finish(&mut world).await?;
+        cost.checking_micros += crate::world::elapsed(started);
+        cost.evidence_micros = world.evidence_micros;
+        cost.checks = checks.costs.clone();
+        atomic(&directory.join("cost.json"), &cost)?;
         atomic(&directory.join("checks.json"), &checks.specifications)?;
         json_lines(&directory.join("findings.jsonl"), &checks.findings)?;
         atomic(
@@ -236,6 +325,7 @@ impl Session {
             "inputs.jsonl",
             "trace.jsonl",
             "checks.json",
+            "cost.json",
             "findings.jsonl",
         ] {
             std::fs::File::open(directory.join(name))?.sync_all()?;
@@ -285,6 +375,7 @@ impl Session {
             directory: directory.into(),
             result,
             findings: checks.findings,
+            cost,
         })
     }
 }
@@ -401,6 +492,7 @@ pub struct Bundle {
     pub events: Vec<report::Event>,
     pub findings: Vec<report::Finding>,
     pub result: report::Result,
+    pub cost: report::RunCost,
 }
 
 pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
@@ -412,6 +504,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         "inputs.jsonl",
         "trace.jsonl",
         "checks.json",
+        "cost.json",
         "findings.jsonl",
     ] {
         if !manifest.files.contains_key(required) {
@@ -490,6 +583,8 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
     let mut completed_messages = std::collections::BTreeSet::new();
     let mut actions = std::collections::BTreeSet::new();
     let mut imported = std::collections::BTreeSet::new();
+    let mut interrupted_imports = std::collections::BTreeSet::new();
+    let mut cycles = BTreeMap::new();
     for (index, event) in events.iter().enumerate() {
         if event.sequence != index as u64
             || !scenario.cells.iter().any(|cell| cell.name == event.cell)
@@ -520,7 +615,38 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
             return Err(invalid("delivery refers to an unqueued message"));
         }
         match &event.observation {
-            report::Observation::LinguaImported { files, .. } => {
+            report::Observation::RuleCycle { cycle } => {
+                let contributors: std::collections::BTreeSet<_> = cycle.steps.iter().map(|step| &step.occurrence.rule_uid).collect();
+                if cycle.id.is_empty()
+                    || cycle.cell != event.cell
+                    || cycle.repetitions == 0
+                    || cycle.steps.len() < 2
+                    || cycle.steps.len() > 65
+                    || cycle.rules.is_empty()
+                    || cycle.rules.windows(2).any(|pair| pair[0] >= pair[1])
+                    || contributors.iter().any(|rule| !cycle.rules.contains(rule))
+                    || !cycle.truncated && contributors.len() != cycle.rules.len()
+                    || cycle.steps.first().map(|step| &step.occurrence.rule_uid) != cycle.steps.last().map(|step| &step.occurrence.rule_uid)
+                    || cycle.steps.iter().any(|step| {
+                        !scenario.cells.iter().any(|cell| cell.name == step.cell)
+                            || !(scenario.start_ms..=event.virtual_ms).contains(&step.virtual_ms)
+                            || step.changes.iter().any(|change| change.record.kind() != nucleus::karma::ReferenceKind::Record)
+                            || step.transfer_changes.iter().any(|change| {
+                                !scenario.cells.iter().any(|cell| cell.name == change.cell)
+                                    || !(step.virtual_ms..=event.virtual_ms).contains(&change.virtual_ms)
+                                    || change.before.transfer != change.after.transfer
+                                    || change.before == change.after
+                                    || change.before.validate().is_err()
+                                    || change.after.validate().is_err()
+                            })
+                    })
+                {
+                    return Err(invalid("cycle evidence has inconsistent Rules, Cells or times"));
+                }
+                cycles.insert(cycle.id.clone(), cycle.clone());
+            }
+            report::Observation::LinguaImported { files, .. }
+            | report::Observation::LinguaInterrupted { files } => {
                 let sources: BTreeMap<_, _> = scenario
                     .cells
                     .iter()
@@ -537,6 +663,9 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
                     || event.virtual_ms != scenario.start_ms
                 {
                     return Err(invalid("Lingua import does not match the authored seed"));
+                }
+                if matches!(event.observation, report::Observation::LinguaInterrupted { .. }) {
+                    interrupted_imports.insert(event.cell.as_str());
                 }
             }
             report::Observation::MessageQueued { message, to, .. } => {
@@ -562,7 +691,8 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
                 }
             }
             report::Observation::ActionAccepted { input, .. }
-            | report::Observation::ActionRefused { input, .. } => {
+            | report::Observation::ActionRefused { input, .. }
+            | report::Observation::ActionInterrupted { input } => {
                 if !actions.insert(input)
                     || !(scenario
                         .inputs
@@ -576,6 +706,11 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
                     return Err(invalid(
                         "Action result refers to a missing or repeated invocation",
                     ));
+                }
+            }
+            report::Observation::LoanQuantity {record,before,after,physical,..} => {
+                if record.kind() != nucleus::karma::ReferenceKind::Record || before.unit != after.unit || after.unit != physical.unit {
+                    return Err(invalid("loan projection has inconsistent identities or units"));
                 }
             }
             report::Observation::CommittedQuantity {
@@ -608,14 +743,41 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         || check_ids.len() != checks.len()
         || coverage_ids != check_ids
         || result.coverage.len() != checks.len()
+        || result.coverage.iter().any(|coverage| {
+            let Some(check) = checks.iter().find(|check| check.id == coverage.check) else {
+                return true;
+            };
+            let failed = findings.iter().any(|finding| finding.check.id == check.id);
+            (coverage.status == report::CheckStatus::Skipped) == check.options.enabled
+                || (coverage.status == report::CheckStatus::Failed) != failed
+                || (coverage.status == report::CheckStatus::Passed
+                    && (!coverage.complete
+                        || coverage.observations == 0
+                        || coverage.reason.is_some()))
+                || (coverage.complete && (coverage.observations == 0 || coverage.reason.is_some()))
+        })
+        || result.coverage.iter().fold(0u64, |total, coverage| {
+            total.saturating_add(coverage.observations)
+        }) > scenario.checking.evaluations
         || checks.iter().any(|check| {
-            !scenario
-                .checks
-                .iter()
-                .any(|input| input.id == check.id && input.predicate == check.predicate)
+            !scenario.checks.iter().any(|input| {
+                input.id == check.id
+                    && input.predicate == check.predicate
+                    && input.options == check.options
+            })
         })
         || !(scenario.start_ms..=scenario.end_ms).contains(&result.stopped_at_ms)
         || result.inputs > scenario.inputs.len() as u64
+        || result.rule_evaluations > scenario.limits.rule_evaluations
+        || result.execution_checkpoints < result.rule_evaluations
+        || (result.stop == report::Stop::RuleEvaluationBudget {}
+            && result.rule_evaluations != scenario.limits.rule_evaluations)
+        || (result.stop == report::Stop::WallTimeBudget {}
+            && (scenario.limits.wall_time_ms.is_none() || result.execution_checkpoints == 0))
+        || result.cycles.len() != cycles.len()
+        || result.cycles.iter().any(|cycle| cycles.get(&cycle.id) != Some(cycle))
+        || !interrupted_imports.is_empty() && !matches!(result.stop, report::Stop::RuleEvaluationBudget {} | report::Stop::WallTimeBudget {} | report::Stop::CheckFailed { .. } | report::Stop::EvidenceBudget {} | report::Stop::Cancelled {})
+        || result.execution_interrupted && (result.execution_checkpoints == 0 || !matches!(result.stop, report::Stop::RuleEvaluationBudget {} | report::Stop::WallTimeBudget {} | report::Stop::CheckFailed { .. } | report::Stop::EvidenceBudget {} | report::Stop::Cancelled {}))
         || result.steps > scenario.limits.steps
         || events
             .last()
@@ -624,12 +786,18 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
             && result.stopped_at_ms != scenario.end_ms)
         || (!findings.is_empty() && result.verdict != report::Verdict::Failed)
         || (findings.is_empty() && result.verdict == report::Verdict::Failed)
+        || (result.verdict == report::Verdict::Unverified
+            && checks.iter().any(|check| check.options.enabled))
+        || (result.verdict == report::Verdict::Passed
+            && checks.iter().all(|check| !check.options.enabled))
         || (result.verdict == report::Verdict::Passed
             && (result.stop != report::Stop::HorizonReached {}
-                || result
-                    .coverage
-                    .iter()
-                    .any(|coverage| !coverage.complete || coverage.observations == 0)))
+                || result.coverage.iter().any(|coverage| {
+                    coverage.status != report::CheckStatus::Skipped
+                        && (!coverage.complete
+                            || coverage.observations == 0
+                            || coverage.status != report::CheckStatus::Passed)
+                })))
     {
         return Err(ArtifactError::Invalid {
             path: "result.json".into(),
@@ -637,6 +805,17 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         });
     }
     for cell in &scenario.cells {
+        match (&cell.database, manifest.sources.get(&cell.name)) {
+            (Some(database), Some(source))
+                if source.database == database.hash && source.at_ms == scenario.start_ms => {}
+            (None, None) => {}
+            _ => {
+                return Err(ArtifactError::Invalid {
+                    path: "manifest.sources".into(),
+                    reason: "source versions do not match scenario inputs".into(),
+                });
+            }
+        }
         if !cell.lingua.is_empty() && !imported.contains(cell.name.as_str()) {
             return Err(ArtifactError::Incomplete {
                 path: format!("trace.jsonl:{}:lingua", cell.name),
@@ -673,9 +852,22 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
             });
         }
     }
+    if manifest.sources.len()
+        != scenario
+            .cells
+            .iter()
+            .filter(|cell| cell.database.is_some())
+            .count()
+    {
+        return Err(ArtifactError::Invalid {
+            path: "manifest.sources".into(),
+            reason: "source versions contain an unknown Cell".into(),
+        });
+    }
     for finding in &findings {
         if !checks.contains(&finding.check)
-            || finding.sequence >= events.len() as u64
+            || (finding.sequence >= events.len() as u64
+                && !(events.is_empty() && finding.sequence == 0))
             || finding
                 .evidence
                 .iter()
@@ -693,6 +885,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         events,
         findings,
         result,
+        cost: read(directory, "cost.json")?,
     })
 }
 
@@ -709,11 +902,26 @@ pub async fn replay(directory: &Path, destination: &Path) -> Result<ReplayStatus
             },
         });
     }
-    if bundle.result.stop == (report::Stop::Cancelled {}) {
+    if bundle.result.stop == (report::Stop::WallTimeBudget {}) {
+        let mut session = Session::open_controlled(bundle.scenario, destination, directory, Some(bundle.result.execution_checkpoints), None, None).await?;
+        while session.step().await? {}
+        session.finish().await?;
+    } else if bundle.result.stop == (report::Stop::Cancelled {}) {
+        if bundle.result.execution_interrupted {
+            let control = nucleus::execution::control::Control::new(bundle.scenario.limits.rule_evaluations, bundle.scenario.limits.wall_time_ms, None);
+            control.set_replay_stop(bundle.result.execution_checkpoints, nucleus::execution::control::Limit::Cancelled);
+            let mut session = Session::open_interruptible(bundle.scenario, destination, directory, control).await?;
+            while session.step().await? {}
+            session.finish().await?;
+        } else {
         let mut session = Session::open(bundle.scenario, destination, directory).await?;
-        while session.world.steps < bundle.result.steps && session.step().await? {}
+        while (session.world.steps < bundle.result.steps
+            || session.world.now_ms < bundle.result.stopped_at_ms)
+            && session.step().await?
+        {}
         session.cancel();
         session.finish().await?;
+        }
     } else {
         execute_with_sources(bundle.scenario, destination, directory).await?;
     }

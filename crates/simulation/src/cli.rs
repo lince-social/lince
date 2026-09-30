@@ -11,6 +11,7 @@ pub async fn run(arguments: &[String]) -> Result<u8> {
         .ok_or("--simulation is required")?;
     let mut cases = None;
     let mut replay = None;
+    let mut selected_checks = None;
     let mut count = None;
     let mut output = PathBuf::from("simulation-runs");
     let mut cursor = start + 1;
@@ -28,7 +29,7 @@ pub async fn run(arguments: &[String]) -> Result<u8> {
                     return Err("--cases must be positive".into());
                 }
             }
-            "--replay" | "--simulation-output" => {
+            "--replay" | "--simulation-output" | "--checks" => {
                 let option = &arguments[cursor];
                 cursor += 1;
                 let value = arguments
@@ -39,6 +40,13 @@ pub async fn run(arguments: &[String]) -> Result<u8> {
                 }
                 if option == "--replay" {
                     replay = Some(PathBuf::from(value));
+                } else if option == "--checks" {
+                    if std::fs::metadata(value)?.len() > 1024 * 1024 {
+                        return Err("check selection exceeds 1 MiB".into());
+                    }
+                    selected_checks = Some(serde_json::from_slice::<
+                        crate::campaign::CheckSelection,
+                    >(&std::fs::read(value)?)?);
                 } else {
                     output = value.into();
                 }
@@ -49,6 +57,12 @@ pub async fn run(arguments: &[String]) -> Result<u8> {
             value => return Err(format!("unknown simulation argument {value}").into()),
         }
         cursor += 1;
+    }
+    if selected_checks.is_some() && (replay.is_some() || cases.is_some()) {
+        return Err(
+            "--checks selects campaign checks; saved cases and replays keep their own definitions"
+                .into(),
+        );
     }
     if let Some(replay) = replay {
         if cases.is_some() {
@@ -65,7 +79,7 @@ pub async fn run(arguments: &[String]) -> Result<u8> {
     }
     match cases {
         Some(cases) => fixed_cases(&cases, &output).await,
-        None => crate::campaign::run(&output, count).await,
+        None => crate::campaign::run_with_checks(&output, count, selected_checks.as_ref()).await,
     }
 }
 
@@ -77,7 +91,7 @@ pub async fn fixed_cases(cases: &Path, output: &Path) -> Result<u8> {
         status = status.max(match run.result.verdict {
             Verdict::Passed => 0,
             Verdict::Failed => 2,
-            Verdict::Inconclusive => 3,
+            Verdict::Inconclusive | Verdict::Unverified => 3,
         });
     }
     Ok(status)
@@ -87,6 +101,7 @@ pub async fn fixed_cases(cases: &Path, output: &Path) -> Result<u8> {
 pub struct CaseResult {
     pub run: PathBuf,
     pub result: nucleus::simulation::Result,
+    pub cost: nucleus::simulation::RunCost,
 }
 
 pub async fn case_results(cases: &Path, output: &Path) -> Result<Vec<CaseResult>> {
@@ -120,6 +135,7 @@ pub async fn case_results(cases: &Path, output: &Path) -> Result<Vec<CaseResult>
         results.push(CaseResult {
             run: directory,
             result: run.result,
+            cost: run.cost,
         });
     }
     Ok(results)

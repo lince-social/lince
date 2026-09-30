@@ -1,8 +1,9 @@
 use std::{collections::BTreeMap, path::Path, sync::Arc};
 
 use nucleus::karma::{
-    ArtifactTimeZoneProvider, KarmaBoundaryError, MAX_TZDB_ARTIFACT_BYTES, TimeZoneArtifact,
-    TimeZoneDefinition, TimeZoneId, TimeZoneProvider, TzdbRevision, TzdbVersion, UtcOffsetSegment,
+    ArtifactTimeZoneProvider, BundledTimeZoneProvider, KarmaBoundaryError, MAX_TZDB_ARTIFACT_BYTES,
+    TimeZoneArtifact, TimeZoneDefinition, TimeZoneId, TimeZoneProvider, TzdbRevision, TzdbVersion,
+    UtcOffsetSegment,
 };
 
 use crate::EngineError;
@@ -40,6 +41,15 @@ pub fn load_time_zone_artifact(
 pub const UTC_TZDB_VERSION: &str = "lince-utc.1";
 
 pub const UTC_TIME_ZONE_IDS: [&str; 4] = ["Etc/GMT", "Etc/UTC", "GMT", "UTC"];
+
+pub fn bundled_time_zone_provider() -> Result<Arc<dyn TimeZoneProvider>, EngineError> {
+    Ok(Arc::new(BundledTimeZoneProvider::new().map_err(
+        |error| EngineError::Conflict {
+            code: "karma_tzdb_bundled_invalid",
+            message: error.to_string(),
+        },
+    )?))
+}
 
 pub fn utc_time_zone_provider() -> Result<Arc<dyn TimeZoneProvider>, EngineError> {
     let fixed = TimeZoneDefinition::new(vec![

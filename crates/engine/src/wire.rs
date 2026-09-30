@@ -72,7 +72,7 @@ pub struct ExpiredMail {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MailLeft {
-    Left { carrier: String, uid: String },
+    Left { carrier: String, uid: String, copies: usize, requested_copies: usize },
     NoRoster,
     NoPickupPoints,
     NoneAccepted { refusals: Vec<(String, String)> },
@@ -2200,7 +2200,7 @@ impl Wire {
                 Ok(true) => {
                     match self
                         .engine
-                        .bundles_for(&organ_uid, limit.clamp(1, 256))
+                        .bundles_for_device(&organ_uid, peer, limit.clamp(1, 256))
                         .await
                     {
                         Ok(held) => WireResponse::MailboxBundles {
@@ -2231,7 +2231,7 @@ impl Wire {
                 roster,
                 uids,
             } => match self.engine.may_collect(&organ_uid, peer, &roster).await {
-                Ok(true) => match self.engine.confirm_collected(&organ_uid, &uids).await {
+                Ok(true) => match self.engine.confirm_collected(&organ_uid, peer, &uids).await {
                     Ok(dropped) => WireResponse::Applied {
                         applied: dropped as usize,
                     },
@@ -2652,12 +2652,14 @@ impl Wire {
     ) -> Delivery {
         let unreachable = format!("{} unreachable", contact.record_uid);
         match self.leave_mail(&contact.record_uid, root, batch).await {
-            Ok(MailLeft::Left { carrier, uid }) => {
+            Ok(MailLeft::Left { carrier, uid, copies, requested_copies }) => {
                 tracing::info!(
                     contact = %contact.record_uid, %carrier, %uid,
                     "batch left as mail"
                 );
-                Delivery::Mailed
+                if copies >= requested_copies { Delivery::Mailed } else {
+                    Delivery::Failed(format!("{copies} of {requested_copies} mailbox servers accepted the envelope"))
+                }
             }
             Ok(_) | Err(_) => Delivery::Failed(unreachable),
         }
@@ -3023,7 +3025,23 @@ impl Wire {
                 ));
             }
         };
+        if bundles.len() > limit.clamp(1,256) as usize {
+            return Err(EngineError::Consequence("The mailbox exceeded the requested collection page".into()));
+        }
         if !bundles.is_empty() {
+            for bundle in &bundles {
+                let envelope: crate::seal::SealedBundle = serde_json::from_str(&bundle.body).map_err(EngineError::Json)?;
+                crate::seal::validate_recoverable(&envelope, nucleus::execution::now().timestamp())
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                if crate::seal::delivery_id(&envelope) != bundle.uid || envelope.to_organ != organ_uid {
+                    return Err(EngineError::Forbidden("The mailbox returned a different envelope identity or recipient".into()));
+                }
+                let body = serde_json::to_string(&envelope).map_err(EngineError::Json)?;
+                let expiry = chrono::DateTime::from_timestamp(envelope.expires_at, 0)
+                    .ok_or_else(|| EngineError::Consequence("Invalid envelope expiry".into()))?.to_rfc3339();
+                store::mailbox::delivery::receive(&self.engine.store.pool, &bundle.uid,
+                    &addr.id.to_string(), &body, &crate::seal::envelope_hash(&body), &expiry).await?;
+            }
             let uids = bundles.iter().map(|b| b.uid.clone()).collect::<Vec<_>>();
             let _ = self
                 .request(
@@ -3052,73 +3070,65 @@ impl Wire {
         if their_roster.roster.pickup.is_empty() {
             return Ok(MailLeft::NoPickupPoints);
         }
-        let bundle = self.engine.seal_batch_for(to_organ, root, batch).await?;
-        let body =
-            serde_json::to_string(&bundle).map_err(|e| EngineError::Consequence(e.to_string()))?;
+        let queued = self.engine.prepare_outgoing_mail(to_organ, root, batch).await?;
+        let envelope: crate::seal::SealedBundle = serde_json::from_str(&queued.body).map_err(EngineError::Json)?;
+        crate::seal::validate_envelope(&envelope, nucleus::execution::now().timestamp())
+            .map_err(|error| EngineError::Consequence(error.to_string()))?;
+        let mut receipts = store::mailbox::outbox::receipts(&self.engine.store.pool, &queued.uid).await?;
+        if queued.next_attempt > nucleus::execution::now().timestamp() && receipts.len() < queued.requested_copies as usize {
+            return Ok(if let Some((carrier,_)) = receipts.first() {
+                MailLeft::Left {carrier:carrier.clone(),uid:queued.uid,copies:receipts.len(),requested_copies:queued.requested_copies as usize}
+            } else { MailLeft::NoneAccepted {refusals:vec![(to_organ.into(),"retry_backoff".into())]} });
+        }
         let mut refusals = Vec::new();
-        for point in &their_roster.roster.pickup {
+        for point in their_roster.roster.pickup.iter().take(8) {
+            if receipts.len() >= queued.requested_copies as usize { break; }
+            if receipts.iter().any(|(_,node)| node == &point.node_id) { continue; }
             let Ok(id) = point.node_id.parse::<EndpointId>() else {
                 refusals.push((point.organ_uid.clone(), "unusable_node_id".to_string()));
                 continue;
             };
-            match self.deposit_bundle(EndpointAddr::new(id), &body).await {
+            match self.deposit_bundle(EndpointAddr::new(id), &queued.body).await {
                 Ok(Ok(uid)) => {
-                    store::mail_left::record(
-                        &self.engine.store.pool,
-                        &uid,
-                        &point.organ_uid,
-                        &point.node_id,
-                        to_organ,
-                    )
-                    .await?;
-                    return Ok(MailLeft::Left {
-                        carrier: point.organ_uid.clone(),
-                        uid,
-                    });
+                    if uid != queued.uid {
+                        refusals.push((point.organ_uid.clone(), "invalid_receipt".into()));
+                        continue;
+                    }
+                    store::mailbox::outbox::accepted(&self.engine.store.pool, &uid, &point.organ_uid, &point.node_id).await?;
+                    receipts.push((point.organ_uid.clone(), point.node_id.clone()));
                 }
                 Ok(Err(code)) => refusals.push((point.organ_uid.clone(), code)),
                 Err(_) => refusals.push((point.organ_uid.clone(), "unreachable".to_string())),
             }
         }
+        let error = if receipts.len() < queued.requested_copies as usize {
+            Some(format!("{} of {} servers accepted this envelope; {} refusal(s)", receipts.len(), queued.requested_copies, refusals.len()))
+        } else { None };
+        store::mailbox::outbox::attempted(&self.engine.store.pool, &queued.uid, error.as_deref()).await?;
+        if let Some((carrier,_)) = receipts.first() {
+            return Ok(MailLeft::Left {carrier:carrier.clone(),uid:queued.uid,copies:receipts.len(),requested_copies:queued.requested_copies as usize});
+        }
         Ok(MailLeft::NoneAccepted { refusals })
     }
 
     pub async fn collect_own_mail(&self) -> Result<usize, EngineError> {
+        let mut imported = self.engine.process_recovered_mail().await?;
         let points = self.engine.own_pickup_points().await?;
         if points.is_empty() {
-            return Ok(0);
+            return Ok(imported);
         }
         let Some(local) = store::organs::local(&self.engine.store.pool).await? else {
-            return Ok(0);
+            return Ok(imported);
         };
         let Some(ours) = self.engine.roster_of(&local.uid).await? else {
-            return Ok(0);
+            return Ok(imported);
         };
-        let mut imported = 0usize;
         for point in points {
             let Ok(id) = point.node_id.parse::<EndpointId>() else {
                 continue;
             };
-            let Ok(bundles) = self
-                .collect_mail(EndpointAddr::new(id), &local.uid, &ours, 50)
-                .await
-            else {
-                continue;
-            };
-            for held in bundles {
-                let Ok(bundle) = serde_json::from_str::<crate::seal::SealedBundle>(&held.body)
-                else {
-                    tracing::warn!(carrier = %point.organ_uid, "a collected bundle would not parse");
-                    continue;
-                };
-                match self.engine.open_mailed(&bundle).await {
-                    Ok(opened) => match self.engine.import_mailed_batch(&opened).await {
-                        Ok(count) => imported += count,
-                        Err(error) => tracing::warn!(%error, "a mailed batch was refused"),
-                    },
-                    Err(error) => tracing::warn!(%error, "a collected bundle could not be opened"),
-                }
-            }
+            let _ = self.collect_mail(EndpointAddr::new(id), &local.uid, &ours, 50).await;
+            imported += self.engine.process_recovered_mail().await?;
         }
         Ok(imported)
     }

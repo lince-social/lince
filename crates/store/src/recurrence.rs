@@ -411,6 +411,7 @@ pub async fn revise(
             .map_or(&[], |condition| condition.bindings.as_slice()),
     )
     .await?;
+    crate::karma_schedules::reflect_rule_edit(&mut tx, input.recurrence_uid, now).await?;
     tx.commit().await?;
 
     get(pool, input.recurrence_uid)
@@ -486,6 +487,7 @@ pub async fn set_state(
         },
     )
     .await?;
+    crate::karma_schedules::reflect_rule_edit(&mut tx, recurrence_uid, now).await?;
     tx.commit().await?;
 
     get(pool, recurrence_uid)
@@ -728,6 +730,8 @@ async fn insert_revision(
 
 pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
     let mut tx = crate::write_tx(pool).await?;
+    crate::karma_stages::invalidate_children_tx(&mut tx, uid, nucleus::execution::now()).await?;
+    crate::karma_commands::invalidate_children_tx(&mut tx, uid).await?;
     sqlx::query("DELETE FROM recurrence_skip WHERE recurrence_uid = ?")
         .bind(uid)
         .execute(&mut *tx)

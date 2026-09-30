@@ -305,7 +305,10 @@ impl KarmaDeadlineDirectorConfig {
             worker_id,
             DurationMs::new(HOST_LEASE_DURATION_MS),
             host_nonzero(64),
-            [crate::karma_timezone::utc_time_zone_provider()?],
+            [
+                crate::karma_timezone::utc_time_zone_provider()?,
+                crate::karma_timezone::bundled_time_zone_provider()?,
+            ],
         )
     }
 

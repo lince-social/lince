@@ -96,6 +96,57 @@ pub struct FileBinding {
     name: OsString,
 }
 
+pub struct SaveDestination {
+    pub path: PathBuf,
+    scope: Scope,
+    expected: Option<(Arc<FileBinding>, Snapshot)>,
+}
+
+impl SaveDestination {
+    pub fn inspect(path: &Path) -> Result<Self> {
+        let scope = Scope::open(path.parent().ok_or("Choose a directory")?)?;
+        let name = path.file_name().ok_or("Choose a file name")?;
+        let path = scope.path.join(name);
+        let expected = match scope.dir.symlink_metadata(name) {
+            Ok(metadata) if metadata.is_file() => {
+                let file = Arc::new(scope.bind(&path)?);
+                let snapshot = file.read()?;
+                Some((file, snapshot))
+            }
+            Ok(_) => {
+                return Err(
+                    "Choose a regular file; directories and links cannot be replaced".into(),
+                );
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.to_string()),
+        };
+        Ok(Self {
+            path,
+            scope,
+            expected,
+        })
+    }
+
+    pub fn exists(&self) -> bool {
+        self.expected.is_some()
+    }
+
+    pub fn save(self, text: &str, bom: bool) -> Result<(Arc<FileBinding>, Snapshot)> {
+        let (file, mut snapshot) = match self.expected {
+            Some(expected) => expected,
+            None => {
+                let file = Arc::new(self.scope.create(&self.path)?);
+                let snapshot = file.read()?;
+                (file, snapshot)
+            }
+        };
+        snapshot.bom = bom;
+        let saved = file.save(&snapshot, text)?;
+        Ok((file, saved))
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Snapshot {
     pub text: Arc<str>,

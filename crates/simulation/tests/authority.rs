@@ -193,6 +193,7 @@ async fn exercise() {
         });
     }
     case.checks.push(Check {
+        options: Default::default(),
         id: "stale-authority-refused".into(),
         predicate: Predicate::ExpectedRefusal {
             input: "stale".into(),

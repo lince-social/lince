@@ -46,7 +46,7 @@ pub(super) async fn execute(
     manual_query
         .filter
         .retain(|predicate| !matches!(predicate, Predicate::ProjectionWindow(_)));
-    let mut rows = crate::execute_records(store, &manual_query, visible).await?;
+    let mut rows = crate::execute_records(store, &manual_query, visible, actor).await?;
     let from = context
         .window
         .date(context.window.from_ms)
@@ -99,7 +99,7 @@ pub(super) async fn execute(
         if supported {
             let mut candidates = manual_query.clone();
             candidates.filter = filters;
-            let records = crate::execute_records(store, &candidates, visible).await?;
+            let records = crate::execute_records(store, &candidates, visible, actor).await?;
             let records: std::collections::HashMap<_, _> = records
                 .into_iter()
                 .filter_map(|row| Some((row["uid"].as_str()?.to_string(), row)))

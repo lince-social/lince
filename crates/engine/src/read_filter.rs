@@ -86,6 +86,13 @@ impl Engine {
     ) -> Result<Vec<String>, EngineError> {
         use crate::actions::Action;
         let named: Vec<&String> = match action {
+            Action::AddQuantityGroupExact { changes } => changes.keys().collect(),
+            Action::SetTransferPrivateApplicationPolicy { effects, .. } => effects.iter().map(|effect| &effect.record).collect(),
+            Action::SetTransferChildRequirement { transfer, child, .. } => vec![transfer, child],
+            Action::ProposeTransferCancellation { transfer, .. }
+            | Action::ProposeTransferLoanExtension { transfer, .. }
+            | Action::ApplyTransferCancellation { transfer, .. } => vec![transfer],
+            Action::ApplyTransferApplication { local_record, .. } => vec![local_record],
             Action::ChangeRecord { request } => vec![&request.record_uid],
             Action::CreateMessage { thread, .. } => vec![thread],
             Action::ProposeGroup { thread, .. } => vec![thread],
@@ -97,7 +104,9 @@ impl Engine {
                 thread,
                 ..
             } => vec![conversation, thread],
-            Action::SetQuantity { target, .. }
+            Action::SetRecordStockLimit { record: target, .. }
+            | Action::SetQuantity { target, .. }
+            | Action::AddQuantityExact { target, .. }
             | Action::AddQuantity { target, .. }
             | Action::Activate { target }
             | Action::Deactivate { target }
@@ -180,6 +189,42 @@ impl Engine {
                     out.push(entry.record_uid);
                 }
             }
+            Action::CompensateTransferApplication { application, .. } => {
+                if let Some(fact) = store::sqlx::query_scalar::<_, String>("SELECT application_fact_uid FROM transfer_local_application WHERE uid = ?")
+                    .bind(application).fetch_optional(&self.store.pool).await? {
+                    out.extend(store::transfer_effects::records(&self.store.pool, &fact).await?);
+                }
+            }
+            Action::ApplyTransferApplication { handoff, request_id, .. } => {
+                if let Some(previous) = store::transfer_delivery::local_application_for_request(&self.store.pool, request_id).await? {
+                    out.extend(store::transfer_effects::records(&self.store.pool, &previous.application_fact_uid).await?);
+                } else if let Some(handoff) = store::transfer_delivery::application_effect_handoff(&self.store.pool, handoff).await? {
+                    let exchange = self.application_handoff_exchange(&handoff, false).await?;
+                    if let Some(policy) = store::transfer_accounting::policy(&self.store.pool, &handoff.transfer_uid, &exchange, &handoff.participant_person_uid).await? {
+                        out.extend(policy.effects.into_iter().map(|effect| effect.record));
+                    }
+                }
+            }
+            Action::SettleTransferOccurrence { occurrence, .. } => {
+                if let Some(occurrence) = store::transfers::occurrence(&self.store.pool, occurrence).await? {
+                    let owner = store::misc::get_promise(&self.store.pool, &occurrence.promise_uid).await?
+                        .and_then(|promise| promise.party_uid);
+                    if let Some(owner) = owner {
+                        if let Some(policy) = store::transfer_accounting::policy(&self.store.pool, &occurrence.transfer_uid,
+                            occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), &owner).await? {
+                            out.extend(policy.effects.into_iter().map(|effect| effect.record));
+                        }
+                        if let Some(record) = store::transfer_accounting::bound_record(&self.store.pool, &occurrence.transfer_uid,
+                            occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), &owner,
+                            occurrence.record_uid.as_deref()).await? { out.push(record); }
+                    }
+                }
+            }
+            Action::CompensateTransferOccurrenceSettlement { settlement, .. } => {
+                if let Some(slice) = store::transfers::occurrence_settlement_slice(&self.store.pool, settlement).await? {
+                    out.extend(store::transfer_effects::records(&self.store.pool, &slice.application_fact_uid).await?);
+                }
+            }
             Action::ClassifyFact { fact, .. } => {
                 if let Some(fact) = store::facts::get(&self.store.pool, fact).await? {
                     out.push(fact.record_uid);
@@ -203,9 +248,9 @@ impl Engine {
         };
         for target in targets {
             if !self.may_read_record(Some(actor), target).await? {
-                return Err(EngineError::Forbidden(format!(
-                    "{target} is outside what this login may see, so it may not be changed either"
-                )));
+                return Err(EngineError::Forbidden(
+                    "a Record is outside what this login may see, so it may not be changed either".into()
+                ));
             }
         }
         Ok(())

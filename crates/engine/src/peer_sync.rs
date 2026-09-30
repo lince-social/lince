@@ -51,13 +51,23 @@ impl Engine {
         let covered =
             store::sync_ops::seq_covered_by_vector(&self.store.pool, &local, vector).await?;
         store::organs::advance_peer_acked_seq(&self.store.pool, authenticated, covered).await?;
-        let rows = store::sync_ops::ops_missing_from_vector(
-            &self.store.pool,
-            &local,
-            vector,
-            limit.clamp(1, 2000),
-        )
-        .await?;
+        let rows = if local == authenticated {
+            store::sync_ops::sibling_ops_missing_from_vector(
+                &self.store.pool,
+                &local,
+                vector,
+                limit.clamp(1, 2000),
+            )
+            .await?
+        } else {
+            store::sync_ops::ops_missing_from_vector(
+                &self.store.pool,
+                &local,
+                vector,
+                limit.clamp(1, 2000),
+            )
+            .await?
+        };
         let head = rows.last().map_or(0, |row| row.seq);
         let scope = contact.and_then(|contact| contact.scope_fields);
         let links = store::sync_ops::resolve_link_scope(&self.store.pool, scope.as_deref()).await?;
@@ -71,7 +81,13 @@ impl Engine {
                 visible.push(row);
             }
         }
-        let ops = self.hydrate_ops(visible).await?;
+        let mut ops = self.hydrate_ops(visible).await?;
+        if local == authenticated {
+            ops.extend(
+                self.export_transfer_transactions(&local, vector, limit.clamp(1, 128) as usize)
+                    .await?,
+            );
+        }
         Ok(Page {
             batch: OpBatch {
                 from_organ: local,

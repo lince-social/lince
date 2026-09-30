@@ -320,6 +320,7 @@ pub async fn calculate(
         let program_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_run").fetch_one(&private.pool).await?;
         let mut active = BTreeMap::new();
         let mut changed = std::collections::BTreeSet::new();
+        let mut loan_offsets = BTreeMap::new();
         for record in store::records::list_all(&private.pool).await? {
             let span = Span {
                 id: format!("initial:{}", record.uid),
@@ -359,13 +360,34 @@ pub async fn calculate(
                 }
                 if result.spans.len() + active.len() > MAX_SPANS { result.incomplete = Some(Incomplete::Budget {}); break; }
             }
+            let loans = store::transfer_loans::adjustments(&private.pool, now).await?;
+            let next_loan = loans.iter().filter_map(|loan| loan.next_ms).min();
+            let mut current_offsets = BTreeMap::new();
+            for loan in loans {
+                if loan.unit_changed { result.incomplete = Some(Incomplete::UnsupportedUnit {}); continue; }
+                current_offsets.insert(loan.record.clone(),loan.delta);
+                let delta = store::exact::difference(loan.delta,loan_offsets.get(&loan.record).copied().unwrap_or_else(store::exact::zero))?;
+                if delta.is_zero() {continue;}
+                if let Some(mut old) = active.remove(&loan.record) {
+                    let mut next = old.clone();
+                    next.id = format!("loan:{}:{now}",loan.record);
+                    next.from_ms = now.max(context.window.from_ms);
+                    next.quantity.value = store::exact::sum_exact([next.quantity.value,delta])?;
+                    next.cause = Cause::Timer {};
+                    old.until_ms = now;
+                    if old.until_ms > old.from_ms {result.spans.push(old);}
+                    changed.insert(loan.record.clone());
+                    active.insert(loan.record,next);
+                }
+            }
+            loan_offsets = current_offsets;
             if result.incomplete.is_some() { break; }
             let blocked: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_application WHERE rowid > ? AND status = 'failed') OR EXISTS(SELECT 1 FROM karma_run WHERE rowid > ? AND status NOT IN ('succeeded', 'not-applicable'))").bind(application_position).bind(program_position).fetch_one(&private.pool).await?;
             let effects: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_delivery_outbox WHERE status IN ('queued', 'failed')) OR EXISTS(SELECT 1 FROM karma_intent_state WHERE status = 'authorized')").fetch_one(&private.pool).await?;
             let effects = effects || database_effects.unsupported;
             if blocked || effects || database_effects.outcomes.iter().any(|effect| !effect.ok) { result.incomplete = Some(if effects { Incomplete::ExternalEffects {} } else { Incomplete::RuleFailure {} }); break; }
             if database_effects.pending { continue; }
-            match step.next_at_ms {
+            match step.next_at_ms.into_iter().chain(next_loan).min() {
                 Some(next) if next <= context.window.until_ms => {
                     if next > base_ms { result.expires_ms = result.expires_ms.min(next); }
                     now = next.max(now);

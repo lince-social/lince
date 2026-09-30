@@ -5,6 +5,16 @@ use serde_json::Value;
 
 pub use engine::presence::Cursor as CollabCursor;
 
+impl ClientMessage {
+    pub fn runs_karma_preview(&self) -> bool {
+        match self {
+            Self::Act { action: Action::PreviewKarmaProposal { .. }, .. } => true,
+            Self::SignedAct { action_base64, .. } => engine::action_intent::payload_requests_karma_preview(action_base64),
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {

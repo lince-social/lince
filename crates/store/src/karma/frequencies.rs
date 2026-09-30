@@ -164,6 +164,23 @@ pub async fn create_identified<F>(
 where
     F: Fn(&str) -> Option<String> + Send + Sync,
 {
+    let mut tx = crate::write_tx(pool).await?;
+    let commit = create_identified_tx(&mut tx, input, uid, admission, now, sign).await?;
+    tx.commit().await?;
+    Ok(commit)
+}
+
+pub async fn create_identified_tx<F>(
+    tx: &mut Transaction<'_, Sqlite>,
+    input: CreateFrequencyInput,
+    uid: Option<&str>,
+    admission: Option<FrequencyRuntimeAdmission<'_>>,
+    now: DateTime<Utc>,
+    sign: F,
+) -> Result<FrequencyMutationCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
     if let Some(uid) = uid {
         TypedUid::new(ReferenceKind::Frequency, uid).map_err(boundary)?;
     }
@@ -183,9 +200,7 @@ where
     let fingerprint = save_fingerprint(fingerprint, admission.map(|_| true))?;
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
-    let mut tx = crate::write_tx(pool).await?;
-    if let Some(commit) = replay_request(&mut tx, &input.request_id, &fingerprint).await? {
-        tx.rollback().await?;
+    if let Some(commit) = replay_request(tx, &input.request_id, &fingerprint).await? {
         return Ok(commit);
     }
 
@@ -195,7 +210,7 @@ where
     )
     .bind(crate::organs::LOCAL_ORGAN_SLUG)
     .bind(RecordKind::Organ.as_str())
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut **tx)
     .await?;
     sqlx::query(
         "INSERT INTO record
@@ -209,10 +224,10 @@ where
     .bind(&at)
     .bind(&at)
     .bind(origin_organ_uid)
-    .execute(&mut *tx)
+    .execute(&mut **tx)
     .await?;
 
-    insert_revision(&mut tx, &frequency_uid, &prepared, &at).await?;
+    insert_revision(tx, &frequency_uid, &prepared, &at).await?;
     sqlx::query(
         "INSERT INTO karma_frequency
             (record_uid, handle_revision, status, head_revision_hash,
@@ -225,7 +240,7 @@ where
     .bind(&input.owner_person_uid)
     .bind(&at)
     .bind(&at)
-    .execute(&mut *tx)
+    .execute(&mut **tx)
     .await?;
 
     let mut evidence = FrequencyMutationEvidence {
@@ -250,11 +265,11 @@ where
     if let Some(admission) = admission {
         sqlx::query("UPDATE karma_frequency SET handle_revision = 2 WHERE record_uid = ?")
             .bind(&frequency_uid)
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await?;
         evidence.handle_revision = 2;
         activate_saved_tx(
-            &mut tx,
+            tx,
             &input.frequency,
             &mut evidence,
             admission,
@@ -264,7 +279,7 @@ where
         .await?;
     }
     let fact = append_evidence_fact(
-        &mut tx,
+        tx,
         &frequency_uid,
         crate::exact::zero(),
         &input.request_id,
@@ -274,11 +289,11 @@ where
         &sign,
     )
     .await?;
-    let handle = get_handle_tx(&mut tx, &frequency_uid)
+    let handle = get_handle_tx(tx, &frequency_uid)
         .await?
         .expect("new Frequency handle exists");
     insert_request(
-        &mut tx,
+        tx,
         &input.request_id,
         FrequencyMutationAction::Create,
         &fingerprint,
@@ -292,7 +307,6 @@ where
         &at,
     )
     .await?;
-    tx.commit().await?;
     Ok(FrequencyMutationCommit::Committed { handle, fact })
 }
 

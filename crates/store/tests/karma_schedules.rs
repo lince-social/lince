@@ -616,6 +616,17 @@ async fn calendar_cursor_requires_its_pinned_provider_and_persists_typed_pause()
         row.deadline.as_ref().unwrap().next_intended_at(),
         timestamp("2026-01-01T11:00:00.000Z")
     );
+    let foreign_provider = FakeProvider {
+        revision: TzdbRevision {
+            version: TzdbVersion::new("other-provider.1").unwrap(),
+            digest: CanonicalHash::parse(format!("sha256:{}", "9".repeat(64))).unwrap(),
+        },
+        resolutions: provider.resolutions.clone(),
+    };
+    let before = store.state_hash().await.unwrap();
+    assert!(store::karma::schedules::list_armed_demanded_calendar_deadlines(&store.pool, &foreign_provider).await.unwrap().is_empty());
+    assert_eq!(store::karma::schedules::list_armed_demanded_calendar_deadlines(&store.pool, &provider).await.unwrap().len(), 1);
+    assert_eq!(store.state_hash().await.unwrap(), before);
     assert!(matches!(
         row.cursor,
         store::karma::schedules::StoredScheduleCursor::Calendar { .. }

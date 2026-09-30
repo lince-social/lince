@@ -130,7 +130,7 @@ CREATE TABLE promise (
     signature    TEXT,
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL,
-    CHECK (record_uid IS NOT NULL OR concept_uid IS NOT NULL)
+    CHECK (record_uid IS NOT NULL OR concept_uid IS NOT NULL OR transfer_uid IS NOT NULL)
 );
 CREATE INDEX idx_promise_record_state ON promise(record_uid, state);
 CREATE INDEX idx_promise_transfer ON promise(transfer_uid);

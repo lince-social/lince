@@ -28,6 +28,7 @@ pub struct Summary {
     pub index: u64,
     pub scenario: Scenario,
     pub result: nucleus::simulation::Result,
+    pub cost: nucleus::simulation::RunCost,
     pub retained: Option<PathBuf>,
 }
 
@@ -44,11 +45,34 @@ pub struct Reduction {
 }
 
 pub fn generate(index: u64) -> Scenario {
-    let mut case = match index % 4 {
+    let family = index % 23;
+    let replicated = index / 23 % 2 == 0;
+    let mut case = match family {
         0 => fixtures::daily(),
         1 => fixtures::network(true),
         2 => fixtures::network(false),
-        _ => fixtures::transfer::sale(),
+        3 => fixtures::transfer::sale(),
+        4 => fixtures::transfer::independent_donation(replicated),
+        5 => fixtures::transfer::donation_with_lost_acknowledgements(replicated),
+        6 => fixtures::transfer::trade(replicated),
+        7 => fixtures::transfer::private_trade(replicated),
+        8 => fixtures::transfer::three_parties(),
+        9 => fixtures::transfer::visibility(),
+        10 => fixtures::transfer::partial_cancellation(replicated),
+        11 => fixtures::transfer::nested_parents(replicated),
+        12 => fixtures::transfer::observer_outcomes(replicated),
+        13 => {
+            fixtures::transfer::grouped_needs(replicated, index / 46 % 2 != 0, index / 92 % 2 == 0)
+        }
+        14 => fixtures::transfer::temporary_loan(replicated, false),
+        15 => fixtures::transfer::extended_loan(replicated),
+        16 => fixtures::transfer::counteroffer(replicated),
+        17 => fixtures::transfer::open_offer(replicated),
+        18 => fixtures::transfer::competing_reservations(replicated),
+        19 => fixtures::transfer::donation_without_private_source(replicated),
+        20 => fixtures::transfer::declined_invitation(replicated),
+        21 => fixtures::transfer::private_correction_after_restart(replicated),
+        _ => fixtures::transfer::grouped_correction_after_restart(replicated),
     };
     let mut entropy = index.wrapping_add(0x9e3779b97f4a7c15);
     let mut next = || {
@@ -58,7 +82,7 @@ pub fn generate(index: u64) -> Scenario {
         entropy
     };
     case.seed = next();
-    case.name = format!("generated-{index}");
+    case.name = format!("generated-{index}-{}", case.name);
     for input in &mut case.inputs {
         if let crate::scenario::Event::Sync {
             delay_ms,
@@ -71,10 +95,10 @@ pub fn generate(index: u64) -> Scenario {
             *delay_ms = 1 + next() % 15;
             *copies = 1 + (next() % 3) as u8;
             *duplicate_spacing_ms = next() % 40;
-            *drop = next() % 4 == 0;
+            *drop = family < 4 && next() % 4 == 0;
         }
     }
-    if index % 4 == 0 {
+    if family == 0 {
         let delta = (next() % 21) as i64 - 10;
         let id = "generated-change".to_string();
         case.inputs.push(crate::scenario::Input {
@@ -99,7 +123,7 @@ pub fn generate(index: u64) -> Scenario {
                 nucleus::DecimalValue::parse_inferred(&(delta - 2).to_string()).unwrap();
         }
     }
-    if matches!(index % 4, 1 | 2) {
+    if matches!(family, 1 | 2) {
         use crate::scenario::{Event, Input};
         let mut add = |cell: &str, at: i64, event| {
             case.inputs.push(Input {
@@ -129,17 +153,46 @@ pub fn generate(index: u64) -> Scenario {
         add("a", 750, sync("b"));
         add("a", 750, sync("c"));
         add("a", 800, sync("d"));
-        if index % 4 == 1 {
+        if family == 1 {
             add("c", 850, sync("d"));
         }
     }
     case
 }
 
-pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
-    let directory = output
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CheckSelection {
+    pub checks: Vec<nucleus::simulation::CheckDefinition>,
+    #[serde(default)]
+    pub checking: nucleus::simulation::Checking,
+}
+
+pub fn directory(output: &Path, selection: Option<&CheckSelection>) -> Result<PathBuf> {
+    let base = output
         .join("campaigns")
         .join(BUILD_HASH.trim_start_matches("sha256:"));
+    Ok(match selection {
+        Some(selection) => base.join(format!(
+            "checks-{}",
+            crate::world::digest(selection)?
+                .as_str()
+                .trim_start_matches("sha256:")
+        )),
+        None => base,
+    })
+}
+
+pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
+    run_with_checks(output, count, None).await
+}
+
+pub async fn run_with_checks(
+    output: &Path,
+    count: Option<u64>,
+    selection: Option<&CheckSelection>,
+) -> Result<u8> {
+    let directory = directory(output, selection)?;
     std::fs::create_dir_all(directory.join("summaries"))?;
     let lock = std::fs::OpenOptions::new()
         .create(true)
@@ -148,6 +201,9 @@ pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
         .open(directory.join("campaign.lock"))?;
     lock.try_lock()
         .map_err(|_| "this campaign is already running")?;
+    if let Some(selection) = selection {
+        artifacts::atomic(&directory.join("selection.json"), selection)?;
+    }
     let cursor_path = directory.join("cursor.json");
     let mut cursor = if cursor_path.exists() {
         let cursor: Cursor = serde_json::from_slice(&std::fs::read(&cursor_path)?)?;
@@ -173,6 +229,7 @@ pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
     }
     let mut signal = std::pin::pin!(tokio::signal::ctrl_c());
     let mut completed = 0;
+    let mut status = 0;
     while count.is_none_or(|count| completed < count) {
         if retained_bytes(&directory)? > 2 * 1024 * 1024 * 1024 {
             return Err(
@@ -192,12 +249,20 @@ pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
             }
             cursor.next_case += 1;
             artifacts::atomic(&cursor_path, &cursor)?;
-            if summary.result.verdict != Verdict::Passed {
-                return Ok(2);
+            match summary.result.verdict {
+                Verdict::Failed => return Ok(2),
+                Verdict::Inconclusive => return Ok(3),
+                Verdict::Unverified => status = 3,
+                Verdict::Passed => {}
             }
             continue;
         }
-        let scenario = generate(cursor.next_case);
+        let mut scenario = generate(cursor.next_case);
+        if let Some(selection) = selection {
+            scenario.checks = selection.checks.clone();
+            scenario.checking = selection.checking.clone();
+        }
+        scenario.validate()?;
         let path = artifacts::next_directory(&directory)?;
         let result = tokio::select! {
             result = artifacts::execute(scenario.clone(), &path) => result?,
@@ -207,19 +272,21 @@ pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
             }
         };
         let passed = result.result.verdict == Verdict::Passed;
-        if !passed {
-            std::fs::create_dir_all(output.join("regressions"))?;
-            artifacts::atomic(
-                &output.join("regressions").join(format!(
-                    "{}-{}.json",
-                    BUILD_HASH.trim_start_matches("sha256:"),
-                    cursor.next_case
-                )),
-                &Regression {
-                    source: path.canonicalize()?,
-                    scenario: crate::world::digest(&scenario)?,
-                },
-            )?;
+        if result.result.verdict == Verdict::Failed {
+            if selection.is_none() {
+                std::fs::create_dir_all(output.join("regressions"))?;
+                artifacts::atomic(
+                    &output.join("regressions").join(format!(
+                        "{}-{}.json",
+                        BUILD_HASH.trim_start_matches("sha256:"),
+                        cursor.next_case
+                    )),
+                    &Regression {
+                        source: path.canonicalize()?,
+                        scenario: crate::world::digest(&scenario)?,
+                    },
+                )?;
+            }
             let repeated = artifacts::next_directory(&directory)?;
             let replay = artifacts::replay(&path, &repeated).await?;
             if matches!(replay, ReplayStatus::Verified { .. })
@@ -233,6 +300,7 @@ pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
             index: cursor.next_case,
             scenario,
             result: result.result,
+            cost: result.cost,
             retained: (!passed).then(|| path.clone()),
         };
         artifacts::atomic(&summary_path, &summary)?;
@@ -243,11 +311,14 @@ pub async fn run(output: &Path, count: Option<u64>) -> Result<u8> {
         artifacts::atomic(&cursor_path, &cursor)?;
         completed += 1;
         println!("{}", serde_json::to_string(&summary)?);
-        if !passed {
-            return Ok(2);
+        match summary.result.verdict {
+            Verdict::Failed => return Ok(2),
+            Verdict::Inconclusive => return Ok(3),
+            Verdict::Unverified => status = 3,
+            Verdict::Passed => {}
         }
     }
-    Ok(0)
+    Ok(status)
 }
 
 pub async fn minimize(source: &Path, destination: &Path, budget: u64) -> Result<Reduction> {

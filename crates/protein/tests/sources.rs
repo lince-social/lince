@@ -216,6 +216,7 @@ fn transfer_source_derives_the_occurrence_status_ladder() {
                     let bia_signer = Signer::generate(&bia, "test:status:bia");
 
                     let promise = |uid: &str, person: &str, delta: f64| TransferPromiseInput {
+                        item: None,
                         uid: Some(uid.into()),
                         record: apples.clone(),
                         party: Some(person.into()),
@@ -393,6 +394,7 @@ fn transfer_source_derives_the_occurrence_status_ladder() {
                                 expected_local_delta: preview["expected_local_delta"]
                                     .as_f64()
                                     .unwrap(),
+                                expected_effects_hash: preview["expected_effects_hash"].as_str().map(str::to_owned),
                                 expected_application_formula_hash:
                                     preview["expected_application_formula_hash"]
                                         .as_str()
@@ -497,16 +499,15 @@ async fn extension_and_projection_includes_attach() {
     };
     let rows = protein::execute(&e.store, &q).await.unwrap();
     assert_eq!(rows[0]["extension"]["points"], 3);
-    assert_eq!(
-        rows[0]["projected"]["quantity"], 8.0,
-        "the agreed +3 folds in by September"
-    );
+    assert!(rows[0]["projected"]["quantity"].is_null());
+    assert_eq!(rows[0]["projected"]["status"], "scenario_required");
 
     q.include.projection = Some(ProjectionInclude {
         at: "2026-07-15T00:00:00Z".into(),
     });
     let rows = protein::execute(&e.store, &q).await.unwrap();
-    assert_eq!(rows[0]["projected"]["quantity"], 5.0);
+    assert!(rows[0]["projected"]["quantity"].is_null());
+    assert_eq!(rows[0]["projected"]["at"], "2026-07-15T00:00:00Z");
 }
 
 #[tokio::test]

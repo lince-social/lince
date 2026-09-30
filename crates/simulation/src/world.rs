@@ -19,10 +19,14 @@ pub struct Node {
     pub next_ms: Option<i64>,
     pub offset_ms: i64,
     path: PathBuf,
+    state_hasher: store::snapshot::StateHasher,
     secret: [u8; 32],
     fact_position: i64,
     application_position: i64,
     quantities: BTreeMap<String, Quantity>,
+    loan_quantities: BTreeMap<String, Quantity>,
+    loan_unit_changes: std::collections::BTreeSet<String>,
+    deleted_records: BTreeSet<String>,
     pub(crate) person_key: Option<engine::trust::Signer>,
     pub online: bool,
 }
@@ -48,10 +52,28 @@ struct Message {
 }
 
 #[derive(Clone, Serialize)]
-enum Payload {
+pub(crate) enum Payload {
     Sync(engine::sync::OpBatch),
+    Pull {
+        uid: String, reference: String, after_cursor: u64,
+        wire: cell::transfer::Authenticated<cell::transfer::PullRequest>,
+    },
+    PullResult {
+        uid: String, reference: String, after_cursor: u64,
+        wire: cell::transfer::Authenticated<cell::transfer::PullResult>,
+    },
     Transfer(cell::transfer::Authenticated<cell::transfer::DeliveryPush>),
     Receipt(cell::transfer::Authenticated<nucleus::transfer_delivery::TransferPackageReceiptV1>),
+    Command {
+        input: String,
+        wire: cell::transfer::Authenticated<nucleus::transfer_delivery::TransferRemoteCommandV1>,
+    },
+    CommandResult {
+        input: String,
+        wire: cell::transfer::Authenticated<cell::transfer::CommandResult>,
+    },
+    Attestation(cell::transfer::Authenticated<cell::transfer::ApplicationAttestationRequest>),
+    AttestationResult(cell::transfer::Authenticated<cell::transfer::ApplicationAttestationResult>),
 }
 
 #[derive(Clone, Serialize)]
@@ -70,7 +92,10 @@ pub struct World {
     pub steps: u64,
     pub inputs: u64,
     pub evidence_bytes: u64,
+    pub evidence_micros: u64,
     pub stop: Option<report::Stop>,
+    pub control: nucleus::execution::control::Control,
+    pub(crate) assumed_transfers: crate::assumptions::Transfers,
     tasks: BTreeMap<(i64, u8, u64), Task>,
     partitions: BTreeSet<(String, String)>,
     serial: u64,
@@ -94,6 +119,10 @@ pub(crate) fn derived_secret(seed: u64, cell: &str, purpose: &str) -> [u8; 32] {
 
 impl World {
     pub async fn open(scenario: Scenario, directory: &Path) -> Result<Self> {
+        Self::open_controlled(scenario, directory, None, None, None).await
+    }
+
+    pub(crate) async fn open_controlled(scenario: Scenario, directory: &Path, replay_checkpoint: Option<u64>, control: Option<nucleus::execution::control::Control>, signer: Option<engine::trust::Signer>) -> Result<Self> {
         scenario.validate()?;
         std::fs::create_dir_all(directory.join("seed"))?;
         std::fs::create_dir_all(directory.join("working"))?;
@@ -103,6 +132,7 @@ impl World {
             .open(directory.join("trace.jsonl"))?;
         let mut world = Self {
             now_ms: scenario.start_ms,
+            control: control.unwrap_or_else(|| nucleus::execution::control::Control::new(scenario.limits.rule_evaluations, scenario.limits.wall_time_ms, replay_checkpoint)),
             scenario,
             nodes: BTreeMap::new(),
             trace: Vec::new(),
@@ -110,7 +140,9 @@ impl World {
             steps: 0,
             inputs: 0,
             evidence_bytes: 0,
+            evidence_micros: 0,
             stop: None,
+            assumed_transfers: BTreeMap::new(),
             tasks: BTreeMap::new(),
             partitions: BTreeSet::new(),
             serial: 0,
@@ -127,7 +159,7 @@ impl World {
                     ),
                 ),
                 world.now_ms,
-            )?;
+            )?.controlled(world.control.clone(), seed.name.clone());
             let secret = derived_secret(world.scenario.seed, &seed.name, "signer");
             let path = directory
                 .join("working")
@@ -164,7 +196,9 @@ impl World {
             .fetch_one(&store.pool)
             .await?;
             let cell = Cell::isolated(store, &execution, secret).await?;
+            let state_hasher = store::snapshot::StateHasher::new(cell.runtime().store.clone()).await?;
             let mut node = Node {
+                state_hasher,
                 cell,
                 execution,
                 next_ms: None,
@@ -174,10 +208,17 @@ impl World {
                 fact_position,
                 application_position,
                 quantities: BTreeMap::new(),
+                loan_quantities: BTreeMap::new(),
+                loan_unit_changes: Default::default(),
+                deleted_records: BTreeSet::new(),
                 person_key: None,
                 online: true,
             };
-            node.quantities = quantities(node.engine()).await?;
+            if seed.name == "current" && let Some(signer) = &signer {
+                node.execution.scope(node.engine().set_signer(signer.clone())).await?;
+                node.person_key = Some(signer.clone());
+            }
+            (node.quantities, node.deleted_records) = quantities(node.engine()).await?;
             let organ = store::organs::local(&node.engine().store.pool)
                 .await?
                 .ok_or("seed Organ missing")?;
@@ -192,11 +233,12 @@ impl World {
                 .insert(format!("cell:{}:uid", seed.name), local.uid);
             world.nodes.insert(seed.name.clone(), node);
             if !seed.lingua.is_empty() {
+                world.refresh_control_checks().await?;
                 let node = &world.nodes[&seed.name];
                 let working = directory
                     .join("working")
                     .join(format!("{}.lingua", seed.name));
-                let observation = node
+                let imported = node
                     .execution
                     .scope(crate::lingua::import(
                         node.engine(),
@@ -204,8 +246,18 @@ impl World {
                         directory,
                         &working,
                     ))
-                    .await?;
-                world.emit(&seed.name, Cause::Seed {}, observation)?;
+                    .await;
+                match imported {
+                    Ok(observation) => world.emit(&seed.name, Cause::Seed {}, observation)?,
+                    Err(error) => {
+                        if let Some(limit) = world.control.stopped() {
+                            world.stop = Some(control_stop(limit));
+                            world.emit(&seed.name, Cause::Seed {}, Observation::LinguaInterrupted { files: seed.lingua.iter().map(|file| (file.name.clone(), file.hash.clone())).collect() })?;
+                        } else {
+                            return Err(error);
+                        }
+                    }
+                }
                 world.observe(&seed.name, Cause::Seed {}).await?;
             }
             for invocation in seed.seed {
@@ -233,15 +285,60 @@ impl World {
                 .tasks
                 .insert((input.at_ms, 0, world.serial), Task::Input(input));
         }
-        for check in &world.scenario.checks {
-            if let report::Predicate::QuantityEquals { at_ms, .. }
-            | report::Predicate::Converged { at_ms, .. } = check.predicate
-            {
-                world.serial += 1;
-                world.tasks.insert((at_ms, 3, world.serial), Task::Check);
+        world.schedule_check(world.scenario.start_ms - 1);
+        Ok(world)
+    }
+
+    fn schedule_check(&mut self, after: i64) {
+        if let Some(at) = self
+            .scenario
+            .checks
+            .iter()
+            .filter_map(|check| {
+                check.next_time(after, self.scenario.start_ms, self.scenario.end_ms)
+            })
+            .min()
+        {
+            self.tasks.insert((at, 3, 0), Task::Check);
+        }
+    }
+
+    async fn refresh_control_checks(&self) -> Result<()> {
+        use nucleus::simulation::{FailureMode, Predicate};
+        let mut checks = Vec::new();
+        if self.scenario.checking.on_failure == FailureMode::Stop {
+            for definition in &self.scenario.checks {
+                if !definition.options.enabled {
+                    continue;
+                }
+                let record = match &definition.predicate {
+                    Predicate::Quantity { cell, record, .. } | Predicate::QuantityEquals { cell, record, .. } | Predicate::Nonnegative { cell, record } => {
+                        let Some(node) = self.nodes.get(cell) else { continue; };
+                        store::records::resolve(&node.engine().store.pool, &self.resolve_reference(record)).await?.map(|record| record.uid)
+                    }
+                    Predicate::NoRuleCycles { .. } => None,
+                    _ => continue,
+                };
+                checks.push(nucleus::execution::control::ResolvedCheck { definition: definition.clone(), record });
             }
         }
-        Ok(world)
+        self.control.configure(self.scenario.limits.evidence_bytes / 2, checks);
+        self.control.set_time(self.now_ms);
+        Ok(())
+    }
+
+    pub fn domain_next_ms(&self) -> Option<i64> {
+        self.tasks
+            .iter()
+            .filter(|(_, task)| !matches!(task, Task::Check))
+            .map(|(key, _)| key.0)
+            .chain(
+                self.nodes
+                    .values()
+                    .filter(|node| node.online)
+                    .filter_map(|node| node.next_ms),
+            )
+            .min()
     }
 
     pub(crate) fn emit(
@@ -250,6 +347,7 @@ impl World {
         caused_by: Cause,
         observation: Observation,
     ) -> Result<()> {
+        let started = std::time::Instant::now();
         let event = report::Event {
             sequence: self.trace.len() as u64,
             virtual_ms: self.now_ms,
@@ -269,20 +367,27 @@ impl World {
         self.journal.write_all(&bytes)?;
         self.journal.write_all(b"\n")?;
         self.trace.push(event);
+        self.evidence_micros += elapsed(started);
         Ok(())
     }
 
     pub(crate) async fn observe(&mut self, name: &str, cause: Cause) -> Result<()> {
+        let started = std::time::Instant::now();
+        let evidence_before = self.evidence_micros;
         let node = self.nodes.get_mut(name).ok_or("unknown Cell")?;
         let mut observations = Vec::new();
+        let previous_quantities = node.quantities.clone();
         loop {
-            let facts =
-                store::facts::after_position(&node.engine().store.pool, node.fact_position, 256)
-                    .await?;
+            let facts = store::facts::after_position_with_commits(
+                &node.engine().store.pool,
+                node.fact_position,
+                256,
+            )
+            .await?;
             if facts.is_empty() {
                 break;
             }
-            for (position, fact) in facts {
+            for (position, commit, fact) in facts {
                 let unit: Option<String> =
                     store::sqlx::query_scalar("SELECT unit_uid FROM record WHERE uid = ?")
                         .bind(&fact.record_uid)
@@ -316,6 +421,7 @@ impl World {
                     cause: fact_cause,
                     previous_fact_hash: fact.prev_hash,
                     fact_hash: fact.hash,
+                    commit,
                 });
                 node.fact_position = position;
             }
@@ -352,34 +458,92 @@ impl World {
             });
             node.application_position = row.get("position");
         }
-        node.quantities = quantities(node.engine()).await?;
-        let hash = node.cell.runtime().store.state_hash().await?;
+        (node.quantities, node.deleted_records) = quantities(node.engine()).await?;
+        let adjustments = node.execution.scope(store::transfer_loans::adjustments(&node.engine().store.pool, node.execution.now().timestamp_millis())).await?;
+        for adjustment in &adjustments {
+            if let Some(next) = adjustment.next_ms {
+                node.next_ms = node.next_ms.into_iter().chain(Some(next.saturating_sub(node.offset_ms).max(self.now_ms))).min();
+            }
+        }
+        let mut loan_quantities = BTreeMap::new();
+        node.loan_unit_changes.clear();
+        for adjustment in adjustments {
+            if adjustment.unit_changed { node.loan_unit_changes.insert(adjustment.record); continue; }
+            let Some(physical) = node.quantities.get(&adjustment.record) else { continue };
+            let after = Quantity { value: store::exact::sum_exact([physical.value, adjustment.delta])?, unit: physical.unit.clone() };
+            let before = node.loan_quantities.get(&adjustment.record).or_else(|| previous_quantities.get(&adjustment.record)).cloned().unwrap_or_else(|| physical.clone());
+            if before != after || !node.loan_quantities.contains_key(&adjustment.record) {
+                observations.push(Observation::LoanQuantity { record: TypedUid::new(ReferenceKind::Record, adjustment.record.clone())?, before, after: after.clone(), physical: physical.clone(), at_ms: node.execution.now().timestamp_millis() });
+            }
+            loan_quantities.insert(adjustment.record, after);
+        }
+        for (record, before) in &node.loan_quantities {
+            if !node.loan_unit_changes.contains(record) && !loan_quantities.contains_key(record) && let Some(physical) = node.quantities.get(record) {
+                observations.push(Observation::LoanQuantity {record:TypedUid::new(ReferenceKind::Record, record.clone())?,before:before.clone(),after:physical.clone(),physical:physical.clone(),at_ms:node.execution.now().timestamp_millis()});
+            }
+        }
+        node.loan_quantities = loan_quantities;
+        let hash = node.state_hasher.hash().await?;
         observations.push(Observation::State { hash });
+        let mut pending = self.tasks.values().any(|task| matches!(task, Task::Deliver(_)));
+        for node in self.nodes.values() {
+            let effects: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM effect_queue WHERE status IN ('queued', 'running'))").fetch_one(&node.engine().store.pool).await?;
+            pending |= effects;
+            let commands: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_transfer_command k JOIN transfer_remote_command c ON c.command_uid = k.command_uid WHERE k.cancelled = 0 AND c.direction = 'outgoing' AND c.status IN ('queued', 'sent'))").fetch_one(&node.engine().store.pool).await?;
+            pending |= commands;
+        }
+        if !pending && self.control.stopped().is_none() {
+            self.control.settle(name);
+        }
+        observations.extend(self.control.drain_cycles(name).into_iter().map(|cycle| Observation::RuleCycle { cycle }));
         for observation in observations {
             self.emit(name, cause.clone(), observation)?;
         }
         self.journal.sync_data()?;
+        self.evidence_micros +=
+            elapsed(started).saturating_sub(self.evidence_micros - evidence_before);
         Ok(())
     }
 
     pub async fn tick(&mut self, name: &str, cause: Cause) -> Result<()> {
+        self.refresh_control_checks().await?;
+        if let Some(limit) = self.control.stopped() {
+            self.stop.get_or_insert(control_stop(limit));
+            return self.observe(name, cause).await;
+        }
         let node = self.nodes.get_mut(name).ok_or("unknown Cell")?;
         if !node.online {
             return Ok(());
         }
         node.set_time(self.now_ms)?;
-        let step = node
+        let mut deadline_changes = node.engine().subscribe_karma_deadline_changes();
+        let step = match node
             .execution
             .scope(node.engine().step_karma_time(node.execution.now(), 1))
-            .await?;
+            .await {
+            Ok(step) => step,
+            Err(EngineError::ExecutionLimit(limit)) => {
+                self.stop = Some(control_stop(limit));
+                return self.observe(name, cause).await;
+            }
+            Err(error) => return Err(error.into()),
+        };
         node.next_ms = step
             .next_at_ms
             .map(|time| time.saturating_sub(node.offset_ms).max(self.now_ms));
-        let effects = node
+        let _ = deadline_changes.borrow_and_update();
+        let effects = match node
             .execution
             .scope(node.engine().run_database_effects())
-            .await?;
-        if effects.pending {
+            .await {
+            Ok(effects) => effects,
+            Err(EngineError::ExecutionLimit(limit)) => {
+                self.stop = Some(control_stop(limit));
+                return self.observe(name, cause).await;
+            }
+            Err(error) => return Err(error.into()),
+        };
+        if effects.pending || deadline_changes.has_changed().unwrap_or(false) {
             node.next_ms = Some(self.now_ms);
         }
         if effects.unsupported {
@@ -412,6 +576,10 @@ impl World {
         invocation: &Invocation,
         cause: Cause,
     ) -> Result<()> {
+        if self.stop.is_some() {
+            return Ok(());
+        }
+        self.refresh_control_checks().await?;
         let action = resolve(&invocation.action, &self.captured)?;
         let actor = invocation.actor.as_ref().map(|actor| {
             self.captured
@@ -431,6 +599,10 @@ impl World {
                     input: invocation.id.clone(),
                     created: outcome.created,
                 }
+            }
+            Err(EngineError::ExecutionLimit(limit)) => {
+                self.stop = Some(control_stop(limit));
+                Observation::ActionInterrupted { input: invocation.id.clone() }
             }
             Err(error) => match refusal(&error) {
                 Some(refusal) => Observation::ActionRefused {
@@ -466,6 +638,11 @@ impl World {
         if self.stop.is_some() {
             return Ok(false);
         }
+        self.control.wait_running().await;
+        if let Err(limit) = self.control.checkpoint(false) {
+            self.stop = Some(control_stop(limit));
+            return Ok(false);
+        }
         if self.steps >= self.scenario.limits.steps {
             self.stop = Some(report::Stop::EventBudget {});
             return Ok(false);
@@ -476,13 +653,14 @@ impl World {
             return Ok(false);
         };
         self.now_ms = next;
-        self.steps += 1;
+        self.refresh_control_checks().await?;
         let key = self
             .tasks
             .first_key_value()
             .map(|(key, _)| *key)
             .filter(|key| key.0 == next);
         if let Some(key) = key.filter(|key| key.1 < 2) {
+            self.steps += 1;
             let task = self.tasks.remove(&key).unwrap();
             let (cell, input) = match &task {
                 Task::Input(input) => (input.cell.clone(), Some(input.id.clone())),
@@ -490,6 +668,14 @@ impl World {
                 Task::Check => unreachable!(),
             };
             if let Err(error) = self.run_task(task).await {
+                if let Some(limit) = self.control.stopped() {
+                    self.stop = Some(control_stop(limit));
+                    let names: Vec<_> = self.nodes.keys().cloned().collect();
+                    for name in names {
+                        self.observe(&name, Cause::Timer {}).await?;
+                    }
+                    return Ok(true);
+                }
                 self.stop.get_or_insert(report::Stop::ExecutionError {
                     cell,
                     input,
@@ -503,9 +689,11 @@ impl World {
             .find(|(_, node)| node.online && node.next_ms == Some(next))
             .map(|(name, _)| name.clone())
         {
+            self.steps += 1;
             self.tick(&name, Cause::Timer {}).await?;
         } else if let Some(key) = key {
             self.tasks.remove(&key);
+            self.schedule_check(self.now_ms);
         }
         Ok(true)
     }
@@ -540,6 +728,7 @@ impl World {
                     );
                 }
                 match input.event {
+                    Event::AssumeLoan { timing } => self.assume_loan(&input.cell,timing,cause).await?,
                     Event::Online { online } => {
                         self.nodes.get_mut(&input.cell).unwrap().online = online;
                         self.emit(
@@ -554,16 +743,58 @@ impl World {
                     Event::PersonKey { person } => {
                         self.select_person(&input.cell, &person, cause).await?
                     }
-                    Event::AcceptInvitation { transfer, person } => {
-                        self.accept_invitation(
+                    Event::AcceptInvitation {
+                        transfer,
+                        person,
+                        peer,
+                    } => {
+                        self.decide_invitation(
                             &input.cell,
                             &input.id,
                             &transfer,
                             &person,
+                            peer.as_deref(),
+                            true,
                             cause.clone(),
                         )
                         .await?;
                         self.tick(&input.cell, cause).await?;
+                    }
+                    Event::RejectInvitation {
+                        transfer,
+                        person,
+                        peer,
+                    } => {
+                        self.decide_invitation(
+                            &input.cell,
+                            &input.id,
+                            &transfer,
+                            &person,
+                            peer.as_deref(),
+                            false,
+                            cause.clone(),
+                        )
+                        .await?;
+                        self.tick(&input.cell, cause).await?;
+                    }
+                    Event::TransferCommand {
+                        peer,
+                        transfer,
+                        invocation,
+                        delay_ms,
+                        copies,
+                        duplicate_spacing_ms,
+                        drop,
+                    } => {
+                        self.transfer_command(
+                            &input.cell,
+                            &peer,
+                            &transfer,
+                            &invocation,
+                            (delay_ms, copies, duplicate_spacing_ms, drop),
+                            cause,
+                        )
+                        .await?;
                     }
                     Event::SettleReviewed {
                         occurrence,
@@ -579,6 +810,32 @@ impl World {
                             cause.clone(),
                         )
                         .await?;
+                        self.tick(&input.cell, cause).await?;
+                    }
+                    Event::ApplyReceivedTransfer {
+                        transfer,
+                        occurrence,
+                        person,
+                        local_record,
+                    } => {
+                        self.apply_received_transfer(
+                            &input.cell,
+                            &input.id,
+                            &transfer,
+                            &occurrence,
+                            &person,
+                            &local_record,
+                            cause.clone(),
+                        )
+                        .await?;
+                        self.tick(&input.cell, cause).await?;
+                    }
+                    Event::AssumeTransfer { assumption } => {
+                        self.assume_transfer(&input.cell, &input.id, assumption, cause.clone()).await?;
+                        self.tick(&input.cell, cause).await?;
+                    }
+                    Event::RefreshTransfer { transfer, person } => {
+                        self.refresh_transfer(&input.cell, &input.id, &transfer, &person, cause.clone()).await?;
                         self.tick(&input.cell, cause).await?;
                     }
                     Event::TransferDelivery {
@@ -600,6 +857,7 @@ impl World {
                         )
                         .await?;
                         let mut messages = Vec::new();
+                        let mut cancelled_commands = Vec::new();
                         for row in rows {
                             let (recipient, request) = node
                                 .execution
@@ -608,6 +866,49 @@ impl World {
                             if recipient == remote.uid {
                                 messages.push(Payload::Transfer(request));
                             }
+                        }
+                        for row in store::transfer_delivery::application_attestations_due(
+                            &node.engine().store.pool,
+                            node.execution.now(),
+                            32,
+                        )
+                        .await?
+                        {
+                            if row.origin_organ_uid == remote.uid {
+                                let request = node
+                                    .execution
+                                    .scope(cell::transfer::prepare_application_attestation(
+                                        node.cell.runtime(),
+                                        &row,
+                                    ))
+                                    .await?;
+                                messages.push(Payload::Attestation(request));
+                            }
+                        }
+                        for row in store::transfer_delivery::remote_commands_due(
+                            &node.engine().store.pool, node.execution.now(), 32,
+                        ).await? {
+                            if row.origin_organ_uid == remote.uid {
+                                let command: nucleus::transfer_delivery::TransferRemoteCommandV1 = serde_json::from_str(&row.payload)?;
+                                let wire = match node.execution.scope(cell::transfer::prepare_command(node.cell.runtime(), &row)).await {
+                                    Ok(wire) => wire,
+                                    Err(error) if store::karma_commands::get(&node.engine().store.pool, &row.command_uid).await?.is_some_and(|state| state.cancelled) => {
+                                        cancelled_commands.push((row.command_uid, error));
+                                        continue;
+                                    }
+                                    Err(error) => return Err(error.into()),
+                                };
+                                messages.push(Payload::Command { input: command.message_id, wire });
+                            }
+                        }
+                        for row in store::transfer_delivery::pulls_due(&node.engine().store.pool, node.execution.now(), 32).await? {
+                            let (origin, wire) = node.execution.scope(cell::transfer::prepare_pull(node.cell.runtime(), &row)).await?;
+                            if origin == remote.uid {
+                                messages.push(Payload::Pull { uid: row.uid, reference: row.reference_uid, after_cursor: row.after_cursor, wire });
+                            }
+                        }
+                        for (uid, result) in cancelled_commands {
+                            self.emit(&input.cell, cause.clone(), Observation::DatabaseEffect { uid, effect: report::DatabaseEffectKind::Action, ok: false, result })?;
                         }
                         for payload in messages {
                             self.queue(
@@ -801,6 +1102,7 @@ impl World {
                             )))
                             .await?;
                         node.cell = Cell::isolated(store, &node.execution, node.secret).await?;
+                        node.state_hasher = store::snapshot::StateHasher::new(node.cell.runtime().store.clone()).await?;
                         if let Some(signer) = &node.person_key {
                             node.execution
                                 .scope(node.engine().set_signer(signer.clone()))
@@ -855,6 +1157,153 @@ impl World {
         node.set_time(self.now_ms)?;
         let batch = match message.payload {
             Payload::Sync(batch) => batch,
+            Payload::Pull { uid, reference, after_cursor, wire } => {
+                match node.execution.scope(cell::transfer::pull_envelope(node.cell.runtime(), wire)).await {
+                    Ok(value) => self.queue(&message.to, &message.from,
+                        Payload::PullResult { uid, reference, after_cursor, wire: serde_json::from_value(value)? },
+                        (1, 1, 0, false), cause.clone())?,
+                    Err((refusal, detail)) => {
+                        if matches!(refusal, cell::transfer::Refusal::Internal) { return Err(detail.into()); }
+                        self.emit(&message.to, cause.clone(), Observation::MessageRefused {
+                            message: message.id, from: message.from, refusal: transfer_refusal(refusal)?,
+                        })?;
+                    }
+                }
+                self.observe(&message.to, cause.clone()).await?;
+                return self.tick(&message.to, cause).await;
+            }
+            Payload::PullResult { uid, reference, after_cursor, wire } => {
+                let (cursor, receipt) = node.execution.scope(cell::transfer::receive_pull_result(node.cell.runtime(), &reference, after_cursor, wire)).await?;
+                node.execution.scope(store::transfer_delivery::pull_mark_completed(&node.engine().store.pool, &uid, cursor, node.execution.now())).await?;
+                if let Some(receipt) = receipt {
+                    self.queue(&message.to, &message.from, Payload::Receipt(receipt), (1, 1, 0, false), cause.clone())?;
+                }
+                self.emit(&message.to, cause.clone(), Observation::TransferReceived { message: message.id, from: message.from, receipt: false })?;
+                return self.observe(&message.to, cause).await;
+            }
+            Payload::Attestation(wire) => {
+                let result = node
+                    .execution
+                    .scope(cell::transfer::receive_application_attestation(
+                        node.cell.runtime(),
+                        wire,
+                    ))
+                    .await;
+                match result {
+                    Ok(value) => self.queue(
+                        &message.to,
+                        &message.from,
+                        Payload::AttestationResult(serde_json::from_value(value)?),
+                        (1, 1, 0, false),
+                        cause.clone(),
+                    )?,
+                    Err((refusal, detail)) => {
+                        if matches!(refusal, cell::transfer::Refusal::Internal) {
+                            return Err(detail.into());
+                        }
+                        self.emit(
+                            &message.to,
+                            cause.clone(),
+                            Observation::MessageRefused {
+                                message: message.id,
+                                from: message.from,
+                                refusal: transfer_refusal(refusal)?,
+                            },
+                        )?;
+                    }
+                }
+                self.observe(&message.to, cause.clone()).await?;
+                return self.tick(&message.to, cause).await;
+            }
+            Payload::AttestationResult(wire) => {
+                node.execution
+                    .scope(cell::transfer::receive_application_attestation_result(
+                        node.cell.runtime(),
+                        wire,
+                    ))
+                    .await
+                    .map_err(|(_, error)| error)?;
+                self.emit(
+                    &message.to,
+                    cause.clone(),
+                    Observation::TransferReceived {
+                        message: message.id,
+                        from: message.from,
+                        receipt: true,
+                    },
+                )?;
+                return self.observe(&message.to, cause).await;
+            }
+            Payload::Command { input, wire } => {
+                let result = node
+                    .execution
+                    .scope(cell::transfer::receive_command(node.cell.runtime(), wire))
+                    .await;
+                match result {
+                    Ok(value) => {
+                        self.queue(
+                            &message.to,
+                            &message.from,
+                            Payload::CommandResult {
+                                input,
+                                wire: serde_json::from_value(value)?,
+                            },
+                            (1, 1, 0, false),
+                            cause.clone(),
+                        )?;
+                    }
+                    Err((refusal, detail)) => {
+                        if matches!(refusal, cell::transfer::Refusal::Internal) {
+                            return Err(detail.into());
+                        }
+                        self.emit(
+                            &message.to,
+                            cause.clone(),
+                            Observation::MessageRefused {
+                                message: message.id,
+                                from: message.from,
+                                refusal: transfer_refusal(refusal)?,
+                            },
+                        )?;
+                    }
+                }
+                self.observe(&message.to, cause.clone()).await?;
+                return self.tick(&message.to, cause).await;
+            }
+            Payload::CommandResult { input, wire } => {
+                let result = node
+                    .execution
+                    .scope(cell::transfer::receive_command_result(
+                        node.cell.runtime(),
+                        wire,
+                    ))
+                    .await
+                    .map_err(|(_, error)| error)?;
+                let automatic = store::karma_commands::get(&node.engine().store.pool, &result.command_uid).await?.is_some();
+                let observation = if automatic {
+                    if let Some(created) = &result.created { self.captured.insert(result.command_uid.clone(), created.clone()); }
+                    Observation::DatabaseEffect { uid: result.command_uid, effect: report::DatabaseEffectKind::Action, ok: result.accepted, result: if result.accepted { format!("Transfer command accepted at revision {}", result.authoritative_revision) } else { format!("Transfer command refused: {}", result.message.unwrap_or_else(|| result.code.unwrap_or_else(|| "remote_action_rejected".into()))) } }
+                } else if result.accepted {
+                    if let Some(created) = &result.created {
+                        self.captured.insert(input.clone(), created.clone());
+                    }
+                    Observation::ActionAccepted {
+                        input,
+                        created: result.created,
+                    }
+                } else {
+                    Observation::ActionRefused {
+                        input,
+                        refusal: Refusal::Conflict {
+                            code: result
+                                .code
+                                .unwrap_or_else(|| "remote_action_rejected".into()),
+                        },
+                    }
+                };
+                self.emit(&message.to, cause.clone(), observation)?;
+                return self.observe(&message.to, cause).await;
+            }
             Payload::Transfer(request) => {
                 let result = node
                     .execution
@@ -883,6 +1332,7 @@ impl World {
                             cause.clone(),
                         )?;
                     }
+                    Err((refusal, detail)) if matches!(refusal, cell::transfer::Refusal::Internal) => return Err(detail.into()),
                     Err((refusal, _)) => self.emit(
                         &message.to,
                         cause.clone(),
@@ -991,7 +1441,7 @@ impl World {
         self.tick(&message.to, cause).await
     }
 
-    fn queue(
+    pub(crate) fn queue(
         &mut self,
         from: &str,
         to: &str,
@@ -1057,7 +1507,7 @@ impl World {
         for (name, node) in &self.nodes {
             hashes.push((
                 name,
-                node.cell.runtime().store.state_hash().await?,
+                node.state_hasher.hash().await?,
                 node.execution.snapshot(),
                 node.offset_ms,
                 node.next_ms,
@@ -1067,7 +1517,13 @@ impl World {
                     .map(|signer| (&signer.actor_uid, &signer.key_id, signer.public_key_b64())),
             ));
         }
-        let pending = digest(&self.tasks.iter().collect::<Vec<_>>())?;
+        let pending = digest(
+            &self
+                .tasks
+                .iter()
+                .filter(|(_, task)| !matches!(task, Task::Check))
+                .collect::<Vec<_>>(),
+        )?;
         Ok(canonical_hash(
             "lince.simulation.world.v1",
             &(
@@ -1075,6 +1531,7 @@ impl World {
                 pending,
                 &self.partitions,
                 &self.captured,
+                &self.assumed_transfers,
                 self.serial,
             ),
         )?)
@@ -1093,6 +1550,10 @@ impl World {
         cell: &str,
         reference: &str,
     ) -> Result<Option<(TypedUid, Quantity)>> {
+        self.quantity_with_basis(cell,reference,report::QuantityBasis::Stored).await
+    }
+
+    pub async fn quantity_with_basis(&self,cell:&str,reference:&str,basis:report::QuantityBasis)->Result<Option<(TypedUid,Quantity)>> {
         let node = self.nodes.get(cell).ok_or("unknown Cell")?;
         let Some(record) = store::records::resolve(
             &node.engine().store.pool,
@@ -1102,22 +1563,51 @@ impl World {
         else {
             return Ok(None);
         };
+        if basis == report::QuantityBasis::Available && node.loan_unit_changes.contains(&record.uid) { return Ok(None); }
         let uid = TypedUid::new(ReferenceKind::Record, record.uid)?;
         let unit = record
             .unit_uid
             .map(|uid| TypedUid::new(ReferenceKind::Unit, uid))
             .transpose()?;
+        let quantity = (basis == report::QuantityBasis::Available).then(||node.loan_quantities.get(uid.as_str())).flatten().cloned().unwrap_or(Quantity {value:record.quantity,unit});
         Ok(Some((
             uid,
-            Quantity {
-                value: record.quantity,
-                unit,
-            },
+            quantity,
         )))
+    }
+
+    pub(crate) fn observed_quantity(&self, cell: &str, uid: &str, basis:report::QuantityBasis) -> Option<&Quantity> {
+        let node = self.nodes.get(cell)?;
+        if node.deleted_records.contains(uid) || basis == report::QuantityBasis::Available && node.loan_unit_changes.contains(uid) {
+            None
+        } else {
+            (basis == report::QuantityBasis::Available).then(||node.loan_quantities.get(uid)).flatten().or_else(|| node.quantities.get(uid))
+        }
+    }
+
+    pub(crate) async fn available_unit_changed(&self, cell: &str, reference: &str) -> Result<bool> {
+        let node = self.nodes.get(cell).ok_or("unknown Cell")?;
+        if node.loan_unit_changes.is_empty() { return Ok(false); }
+        Ok(store::records::resolve(&node.engine().store.pool, &self.resolve_reference(reference)).await?.is_some_and(|record| node.loan_unit_changes.contains(&record.uid)))
+    }
+
+    pub(crate) fn has_loan_quantity(&self, cell: &str, uid: &str) -> bool {
+        self.nodes.get(cell).is_some_and(|node| node.loan_quantities.contains_key(uid))
     }
 }
 
-fn resolve(
+fn control_stop(limit: nucleus::execution::control::Limit) -> report::Stop {
+    use nucleus::execution::control::Limit;
+    match limit {
+        Limit::Evaluations => report::Stop::RuleEvaluationBudget {},
+        Limit::WallTime => report::Stop::WallTimeBudget {},
+        Limit::Cancelled => report::Stop::Cancelled {},
+        Limit::Restriction(check) => report::Stop::CheckFailed { check },
+        Limit::Evidence => report::Stop::EvidenceBudget {},
+    }
+}
+
+pub(crate) fn resolve(
     action: &engine::actions::Action,
     captured: &BTreeMap<String, String>,
 ) -> Result<engine::actions::Action> {
@@ -1145,32 +1635,90 @@ fn resolve(
     }
     let mut value = serde_json::to_value(action)?;
     visit(&mut value, captured)?;
+    match action {
+        engine::actions::Action::CreateRecurrence { .. } | engine::actions::Action::ReviseRecurrence { .. } => {
+            if let Some(source) = value["condition"].as_str() {
+                value["condition"] = resolve_source(source, captured)?.into();
+            }
+        }
+        engine::actions::Action::ReviseKarmaField { .. } => {
+            value["source"] = resolve_source(value["source"].as_str().ok_or("missing Rule source")?, captured)?.into();
+        }
+        engine::actions::Action::SaveKarmaRule { .. } => {
+            for field in value["fields"].as_array_mut().ok_or("missing Rule fields")? {
+                if let Some(source) = field["source"].as_str() {
+                    field["source"] = resolve_source(source, captured)?.into();
+                }
+            }
+        }
+        _ => {}
+    }
+    if let engine::actions::Action::CreateTransferMessage { body, .. } = action
+        && let Some(shared) = report::sharing::Shared::parse(body)
+    {
+        let mut shared = serde_json::to_value(shared)?;
+        visit(&mut shared, captured)?;
+        value["body"] = serde_json::to_string(&shared)?.into();
+    }
     Ok(serde_json::from_value(value)?)
 }
 
-async fn quantities(engine: &Engine) -> Result<BTreeMap<String, Quantity>> {
-    let rows =
-        store::sqlx::query("SELECT uid, quantity_mantissa, quantity_scale, unit_uid FROM record")
-            .fetch_all(&engine.store.pool)
-            .await?;
-    rows.into_iter()
-        .map(|row| {
-            let unit: Option<String> = row.get("unit_uid");
-            Ok((
-                row.get("uid"),
-                Quantity {
-                    value: store::exact::read_decimal(&row, "quantity")?,
-                    unit: unit
-                        .map(|uid| TypedUid::new(ReferenceKind::Unit, uid))
-                        .transpose()?,
-                },
-            ))
-        })
-        .collect()
+fn resolve_source(source: &str, captured: &BTreeMap<String, String>) -> Result<String> {
+    let mut result = String::new();
+    let mut index = 0;
+    let mut quoted = false;
+    let mut escaped = false;
+    while index < source.len() {
+        let rest = &source[index..];
+        if !quoted && rest.starts_with("@{") {
+            let end = rest.find('}').ok_or("unterminated captured Rule reference")?;
+            let name = &rest[2..end];
+            let uid = captured.get(name).ok_or_else(|| format!("unresolved Rule reference {name}"))?;
+            result.push('@');
+            result.push_str(uid);
+            index += end + 1;
+            continue;
+        }
+        let character = rest.chars().next().ok_or("invalid Rule source")?;
+        result.push(character);
+        index += character.len_utf8();
+        if quoted && escaped { escaped = false; }
+        else if quoted && character == '\\' { escaped = true; }
+        else if character == '"' { quoted = !quoted; }
+    }
+    Ok(result)
+}
+
+async fn quantities(engine: &Engine) -> Result<(BTreeMap<String, Quantity>, BTreeSet<String>)> {
+    let rows = store::sqlx::query(
+        "SELECT uid, quantity_mantissa, quantity_scale, unit_uid, deleted_at FROM record",
+    )
+    .fetch_all(&engine.store.pool)
+    .await?;
+    let mut quantities = BTreeMap::new();
+    let mut deleted = BTreeSet::new();
+    for row in rows {
+        let uid: String = row.try_get("uid")?;
+        let unit: Option<String> = row.try_get("unit_uid")?;
+        if row.try_get::<Option<String>, _>("deleted_at")?.is_some() {
+            deleted.insert(uid.clone());
+        }
+        quantities.insert(
+            uid,
+            Quantity {
+                value: store::exact::read_decimal(&row, "quantity")?,
+                unit: unit
+                    .map(|uid| TypedUid::new(ReferenceKind::Unit, uid))
+                    .transpose()?,
+            },
+        );
+    }
+    Ok((quantities, deleted))
 }
 
 fn refusal(error: &EngineError) -> Option<Refusal> {
     match error {
+        EngineError::Store(store::StoreError::Protocol(message)) if message.starts_with("hard stock limit:") => Some(Refusal::Conflict { code: "hard_stock_limit".into() }),
         EngineError::Store(store::StoreError::Protocol(message))
             if message.starts_with("karma_binding_") =>
         {
@@ -1259,4 +1807,8 @@ async fn fact_cause(engine: &Engine, fact: &nucleus::Fact) -> Result<Cause> {
         },
         consequence: cause.consequence,
     })
+}
+
+pub(crate) fn elapsed(started: std::time::Instant) -> u64 {
+    u64::try_from(started.elapsed().as_micros()).unwrap_or(u64::MAX)
 }

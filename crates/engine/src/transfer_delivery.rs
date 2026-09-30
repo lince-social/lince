@@ -120,6 +120,7 @@ impl Engine {
                 message: "canonical Transfer Actions must be submitted to the origin Cell".into(),
             });
         }
+        self.require_transfer_state_writer("transfer", &[transfer_uid]).await?;
         Ok(local.uid)
     }
 
@@ -328,16 +329,7 @@ impl Engine {
         let origin_organ_uid = self.require_transfer_origin_authority(transfer_uid).await?;
         require_kind(self, recipient_person_uid, nucleus::RecordKind::Person).await?;
         require_kind(self, recipient_organ_uid, nucleus::RecordKind::Organ).await?;
-        let is_party =
-            store::transfers::party_for_actor(&self.store.pool, transfer_uid, recipient_person_uid)
-                .await?
-                .is_some();
-        if !is_party {
-            return Err(delivery_conflict(
-                "transfer_delivery_recipient_not_eligible",
-                "recipient must be an active Transfer party",
-            ));
-        }
+        self.require_transfer_delivery_recipient(transfer_uid, recipient_person_uid, now).await?;
         let contact = store::organs::contact(&self.store.pool, recipient_organ_uid)
             .await?
             .ok_or_else(|| {
@@ -456,6 +448,8 @@ impl Engine {
         let transfer = store::transfers::get(&self.store.pool, transfer_uid)
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.into()))?;
+        self.require_transfer_delivery_recipient(transfer_uid, &policy.recipient_person_uid, now).await?;
+        self.prepare_counterparty_applications(transfer_uid, now).await?;
         let cursor = store::sqlx::query_scalar::<_, i64>(
             "SELECT COALESCE(MAX(cursor), 0) + 1 FROM transfer_delivery_outbox WHERE delivery_uid = ?",
         )
@@ -715,6 +709,29 @@ impl Engine {
         Ok(())
     }
 
+    async fn require_transfer_delivery_recipient(
+        &self,
+        transfer_uid: &str,
+        person_uid: &str,
+        now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(), EngineError> {
+        if store::transfers::party_for_actor(&self.store.pool, transfer_uid, person_uid).await?.is_some() {
+            return Ok(());
+        }
+        let invited = store::transfers::invitations_for_transfer(&self.store.pool, transfer_uid).await?
+            .into_iter().any(|invitation| invitation.addressed_person_uid == person_uid
+                && invitation.status == store::transfers::TransferInvitationStatus::Pending
+                && invitation.expires_at.as_deref().is_none_or(|expiry| chrono::DateTime::parse_from_rfc3339(expiry).is_ok_and(|expiry| expiry > now)));
+        let public = store::transfers::get(&self.store.pool, transfer_uid).await?
+            .is_some_and(|transfer| transfer.visibility == "public");
+        let visible = store::visibility::visible_targets(&self.store.pool, person_uid).await?
+            .contains(transfer_uid);
+        if invited || public || visible {
+            return Ok(());
+        }
+        Err(delivery_conflict("transfer_delivery_recipient_not_eligible", "recipient must be a participant, current invitee or permitted viewer"))
+    }
+
     pub async fn verify_transfer_remote_command(
         &self,
         command: &TransferRemoteCommandV1,
@@ -862,7 +879,19 @@ impl Engine {
             return serde_json::from_str(payload).map_err(EngineError::Json);
         }
         let intent_uid = self.ensure_remote_action_intent(command, now).await?;
-        let result = self
+        let state_guard = match &action {
+            crate::actions::Action::AssignTransferAgreementLevel { expected_state, .. }
+            | crate::actions::Action::PublishTransfer { expected_state, .. }
+            | crate::actions::Action::ActivateTransferFulfillment { expected_state, .. } => expected_state.as_ref(),
+            _ => None,
+        };
+        let evidence = if let Some(guard) = state_guard
+            && nucleus::execution::current().and_then(|execution| execution.control()).is_some() {
+            let mut before = store::transfers::karma_snapshot::read(&self.store.pool, &command.transfer_uid).await?;
+            before.participants.retain(|person, _| guard.participants.contains_key(person));
+            Some(before)
+        } else { None };
+        let result = crate::rule_runtime::RECEIVED_PARENT.scope(command.command_uid.clone(), self
             .act_at_with_authorship(
                 action,
                 None,
@@ -871,8 +900,13 @@ impl Engine {
                     person_uid: command.actor_person_uid.clone(),
                     intent_uid: intent_uid.clone(),
                 }),
-            )
+            ))
             .await;
+        if let Some(before) = evidence {
+            let mut after = store::transfers::karma_snapshot::read(&self.store.pool, &command.transfer_uid).await?;
+            after.participants.retain(|person, _| before.participants.contains_key(person));
+            self.observe_karma_transfer_change(before, after, now, Some(&command.command_uid))?;
+        }
         let revision = store::transfers::get(&self.store.pool, &command.transfer_uid)
             .await?
             .map(|transfer| transfer.revision as u64)
@@ -1020,7 +1054,7 @@ impl Engine {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn begin_remote_transfer_settlement(
+    pub async fn begin_transfer_settlement(
         &self,
         transfer_uid: &str,
         occurrence_uid: &str,
@@ -1031,6 +1065,9 @@ impl Engine {
         request_id: &str,
         now: chrono::DateTime<chrono::Utc>,
     ) -> Result<store::transfer_delivery::ApplicationHandoffRow, EngineError> {
+        if !expected_remaining.is_finite() || expected_remaining < 0.0 {
+            return Err(delivery_conflict("transfer_settlement_remaining_invalid", "The reviewed remaining amount must be finite and nonnegative"));
+        }
         let origin_organ_uid = self.require_transfer_origin_authority(transfer_uid).await?;
         let revision: i64 =
             store::sqlx::query_scalar("SELECT revision FROM transfer WHERE record_uid = ?")
@@ -1053,10 +1090,13 @@ impl Engine {
             let handoff = store::transfer_delivery::application_handoff(&self.store.pool, &uid)
                 .await?
                 .ok_or_else(|| EngineError::UnknownRecord(uid))?;
-            if store::transfer_delivery::application_handoff_detail(&self.store.pool, &handoff.uid)
-                .await?
-                .is_some()
-            {
+            if let Some(detail) = store::transfer_delivery::application_handoff_detail(&self.store.pool, &handoff.uid).await? {
+                if handoff.transfer_uid != transfer_uid || handoff.occurrence_uid != occurrence_uid
+                    || handoff.participant_person_uid != actor_person_uid || handoff.origin_revision != expected_revision
+                    || detail.canonical_quantity != canonical_quantity
+                    || store::exact::sum_exact([store::transfer_accounting::amount(detail.canonical_remaining_after)?, store::transfer_accounting::amount(detail.canonical_quantity)?])?.to_f64() != expected_remaining {
+                    return Err(delivery_conflict("transfer_settlement_replay_conflict", "settlement request was reused with different values"));
+                }
                 if let Some(delivery_uid) = store::sqlx::query_scalar::<_, String>(
                     "SELECT uid FROM transfer_delivery_policy
                      WHERE transfer_uid = ? AND recipient_person_uid = ?
@@ -1139,46 +1179,29 @@ impl Engine {
         .bind(&participant_organ_uid)
         .fetch_optional(&self.store.pool)
         .await?;
-        let delivery_uid = delivery_uid.ok_or_else(|| {
+        if participant_organ_uid != origin_organ_uid && delivery_uid.is_none() {
+            return Err(
             delivery_conflict(
                 "transfer_remote_settlement_delivery_missing",
                 "participant requires an active cross-Cell delivery policy",
-            )
-        })?;
+            ));
+        }
         if participant_organ_uid == origin_organ_uid {
-            return Err(delivery_conflict(
-                "transfer_remote_settlement_delivery_missing",
-                "participant requires an active cross-Cell delivery policy",
-            ));
+            let record: Option<String> = store::sqlx::query_scalar("SELECT record_uid FROM promise WHERE uid = ?").bind(&occurrence.1).fetch_one(&self.store.pool).await?;
+            if record.is_some() {
+                return Err(delivery_conflict("transfer_settlement_bound_record", "Use the existing Record's settlement review"));
+            }
         }
-        let local_sum: f64 = store::sqlx::query_scalar(
-            "SELECT COALESCE(SUM(canonical_quantity), 0.0)
-             FROM transfer_occurrence_settlement_slice WHERE occurrence_uid = ?",
-        )
-        .bind(occurrence_uid)
-        .fetch_one(&self.store.pool)
-        .await?;
-        let remote_sum: f64 = store::sqlx::query_scalar(
-            "SELECT COALESCE(SUM(d.canonical_quantity), 0.0)
-             FROM transfer_application_handoff h
-             JOIN transfer_application_handoff_detail d ON d.handoff_uid = h.uid
-             WHERE h.occurrence_uid = ? AND h.state IN ('pending', 'accepted')",
-        )
-        .bind(occurrence_uid)
-        .fetch_one(&self.store.pool)
-        .await?;
-        let cumulative_before = local_sum + remote_sum;
-        let remaining_before = (occurrence.2 - cumulative_before).max(0.0);
-        if (remaining_before - expected_remaining).abs() > 1e-9
-            || canonical_quantity > remaining_before
-        {
-            return Err(delivery_conflict(
-                "transfer_settlement_remaining_stale",
-                "reviewed remaining quantity is stale",
-            ));
+        let allocated = store::transfer_accounting::allocated(&self.store.pool, occurrence_uid, true).await?;
+        let total = store::exact::difference(store::transfer_accounting::amount(occurrence.2)?, store::transfer_cancellations::cancelled(&self.store.pool,occurrence_uid).await?)?;
+        let remaining_before = store::exact::difference(total, allocated)?.to_f64();
+        if remaining_before != expected_remaining || canonical_quantity > remaining_before {
+            return Err(delivery_conflict("transfer_settlement_remaining_stale", "reviewed remaining quantity is stale"));
         }
-        let cumulative_after = cumulative_before + canonical_quantity;
-        let remaining_after = occurrence.2 - cumulative_after;
+        let after = store::exact::sum_exact([allocated, store::transfer_accounting::amount(canonical_quantity)?])?;
+        let cumulative_before = allocated.to_f64();
+        let cumulative_after = after.to_f64();
+        let remaining_after = store::exact::difference(total, after)?.to_f64();
         let computed_slice_hash = hex_sha256(
             &serde_json::to_vec(&serde_json::json!({
                 "transfer": transfer_uid,
@@ -1237,6 +1260,7 @@ impl Engine {
             now,
         )
         .await?;
+        if let Some(delivery_uid) = delivery_uid {
         self.enqueue_transfer_delivery(
             transfer_uid,
             &delivery_uid,
@@ -1244,6 +1268,7 @@ impl Engine {
             now,
         )
         .await?;
+        }
         Ok(handoff)
     }
 
@@ -1301,6 +1326,7 @@ impl Engine {
                     "accepted attestation was replayed with changed signed contents",
                 ));
             }
+            self.prepare_counterparty_applications(&handoff.3, now).await?;
             return store::transfer_delivery::application_handoff(&self.store.pool, handoff_uid)
                 .await?
                 .ok_or_else(|| EngineError::UnknownRecord(handoff_uid.into()));
@@ -1442,6 +1468,7 @@ impl Engine {
                 .execute(&self.store.pool)
                 .await?;
         }
+        self.prepare_counterparty_applications(&accepted.transfer_uid, now).await?;
         if let Some(delivery_uid) = store::sqlx::query_scalar::<_, String>(
             "SELECT uid FROM transfer_delivery_policy
              WHERE transfer_uid = ? AND recipient_person_uid = ? AND recipient_organ_uid = ?
@@ -1478,6 +1505,24 @@ impl Engine {
         signature: &str,
         now: chrono::DateTime<chrono::Utc>,
     ) -> Result<Option<crate::actions::ActionOutcome>, EngineError> {
+        self.queue_remote_transfer_action_with_karma(action, actor_person_uid, key_id, session_id, session_challenge, sequence, message_id, action_base64, signature, now, None).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) async fn queue_remote_transfer_action_with_karma(
+        &self,
+        action: &crate::actions::Action,
+        actor_person_uid: &str,
+        key_id: &str,
+        session_id: &str,
+        session_challenge: &str,
+        sequence: u64,
+        message_id: &str,
+        action_base64: &str,
+        signature: &str,
+        now: chrono::DateTime<chrono::Utc>,
+        origin: Option<&store::karma_commands::Origin>,
+    ) -> Result<Option<crate::actions::ActionOutcome>, EngineError> {
         let Some(transfer_uid) = remote_action_transfer_token(action) else {
             return Ok(None);
         };
@@ -1513,9 +1558,10 @@ impl Engine {
         .bind(&local.uid)
         .fetch_optional(&self.store.pool)
         .await?;
-        let Some((origin_organ_uid, _reference_uid)) = reference else {
+        let Some((origin_organ_uid, reference_uid)) = reference else {
             return Ok(None);
         };
+        self.require_transfer_state_writer("transfer_remote_reference", &[&reference_uid]).await?;
         let public_key = identity_public_key(self, actor_person_uid, key_id).await?;
         let command = TransferRemoteCommandV1 {
             version: TRANSFER_ENVELOPE_VERSION,
@@ -1539,11 +1585,12 @@ impl Engine {
         command
             .validate_shape()
             .map_err(|message| delivery_conflict("transfer_remote_command_invalid", message))?;
-        let commit = store::transfer_delivery::persist_remote_command(
+        let commit = store::transfer_delivery::persist_remote_command_with_karma(
             &self.store.pool,
             "outgoing",
             &command,
             now,
+            origin,
         )
         .await?;
         let row = match commit {
@@ -1585,7 +1632,10 @@ pub(crate) fn remote_action_binding(
         | Action::CreateTransferMessage {
             request_id, person, ..
         } => Some((person, request_id, None)),
-        Action::BeginRemoteTransferSettlement {
+        Action::ProposeTransferLoanExtension {
+            expected_revision, request_id, person, ..
+        } => Some((person, request_id, Some(*expected_revision))),
+        Action::BeginTransferSettlement {
             expected_revision,
             request_id,
             person,
@@ -1622,12 +1672,26 @@ pub(crate) fn remote_action_binding(
             person: Some(person),
             ..
         }
+        | Action::SetTransferChildRequirement {
+            expected_revision, request_id, person: Some(person), ..
+        }
+        | Action::ProposeTransferCancellation {
+            expected_revision, request_id, person: Some(person), ..
+        }
+        | Action::ApplyTransferCancellation {
+            expected_revision, request_id, person: Some(person), ..
+        }
         | Action::SetTransferAgreementLevel {
             expected_revision,
             request_id,
             person: Some(person),
             ..
         }
+        | Action::AssignTransferAgreementLevel {
+            expected_revision, request_id, person: Some(person), ..
+        }
+        | Action::PublishTransfer { expected_revision, request_id, person: Some(person), .. }
+        | Action::ActivateTransferFulfillment { expected_revision, request_id, person: Some(person), .. }
         | Action::ActivateTransferOccurrence {
             expected_revision,
             request_id,
@@ -1672,6 +1736,13 @@ fn remote_action_transfer_token(action: &crate::actions::Action) -> Option<&str>
         | Action::CounterofferTransfer { transfer, .. }
         | Action::ClaimOpenTransferPromise { transfer, .. }
         | Action::SetTransferAgreementLevel { transfer, .. }
+        | Action::AssignTransferAgreementLevel { transfer, .. }
+        | Action::PublishTransfer { transfer, .. }
+        | Action::ActivateTransferFulfillment { transfer, .. }
+        | Action::SetTransferChildRequirement { transfer, .. }
+        | Action::ProposeTransferCancellation { transfer, .. }
+        | Action::ProposeTransferLoanExtension { transfer, .. }
+        | Action::ApplyTransferCancellation { transfer, .. }
         | Action::ActivateTransferOccurrence { transfer, .. }
         | Action::ConfigureTransferDelivery { transfer, .. }
         | Action::SetTransferDeliveryMode { transfer, .. }
@@ -1680,7 +1751,7 @@ fn remote_action_transfer_token(action: &crate::actions::Action) -> Option<&str>
         | Action::RevokeTransferDelivery { transfer, .. }
         | Action::CreateTransferThread { transfer, .. }
         | Action::CreateTransferMessage { transfer, .. } => Some(transfer),
-        Action::BeginRemoteTransferSettlement { transfer, .. } => Some(transfer),
+        Action::BeginTransferSettlement { transfer, .. } => Some(transfer),
         Action::AcceptTransferInvitation {
             transfer: Some(transfer),
             ..

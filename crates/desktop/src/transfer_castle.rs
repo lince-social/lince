@@ -1,4 +1,5 @@
 mod detail;
+mod karma;
 mod forms;
 mod model;
 mod persistence;
@@ -30,6 +31,8 @@ pub struct TransferCastle {
     pub selected: String,
     pub person: String,
     pub form: Option<Form>,
+    #[serde(default)]
+    pub shared_simulation: Option<String>,
 }
 
 impl Default for TransferCastle {
@@ -43,6 +46,7 @@ impl Default for TransferCastle {
             selected: String::new(),
             person: String::new(),
             form: None,
+            shared_simulation: None,
         }
     }
 }
@@ -64,6 +68,7 @@ struct View {
     expanded: HashSet<String>,
     preview: Option<Value>,
     preview_request: Option<String>,
+    disclosure_preview: Option<Option<String>>,
     selected_occurrences: HashSet<String>,
     notice: Option<String>,
 }
@@ -197,6 +202,7 @@ pub fn spawn(
         expanded: HashSet::new(),
         preview: None,
         preview_request: None,
+        disclosure_preview: None,
         selected_occurrences: HashSet::new(),
         notice: None,
     });

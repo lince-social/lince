@@ -23,6 +23,7 @@ pub enum ScheduleCursorLifecycle {
     Armed,
     Leased,
     Paused,
+    Retired,
     Superseded,
     Failed,
 }
@@ -33,6 +34,7 @@ impl ScheduleCursorLifecycle {
             Self::Armed => "armed",
             Self::Leased => "leased",
             Self::Paused => "paused",
+            Self::Retired => "retired",
             Self::Superseded => "superseded",
             Self::Failed => "failed",
         }
@@ -43,6 +45,7 @@ impl ScheduleCursorLifecycle {
             "armed" => Self::Armed,
             "leased" => Self::Leased,
             "paused" => Self::Paused,
+            "retired" => Self::Retired,
             "superseded" => Self::Superseded,
             "failed" => Self::Failed,
             _ => return None,

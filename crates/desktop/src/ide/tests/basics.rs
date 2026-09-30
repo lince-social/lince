@@ -1,6 +1,42 @@
 use super::*;
 use std::time::{Duration, Instant};
 
+#[test]
+fn japanese_word_navigation_and_deletion_follow_pending_typing() {
+    let (mut world, _, owner, _dir, path) = fixture("こんにちは世界");
+    let editor = world.get::<View>(owner).unwrap().editor;
+    editing::select(&mut world, owner, [0, 0], 0);
+    runtime::render(&mut world, owner);
+    world
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .queue_edit(TextEdit::WordRight(false));
+    editing::prepare(&mut world);
+    assert_eq!(world.get::<View>(owner).unwrap().selection, [5, 5]);
+    world
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .queue_edit(TextEdit::DeleteWord);
+    editing::prepare(&mut world);
+    assert_eq!(
+        world.resource::<Documents>().0[&path].buffer.text(),
+        "こんにちは"
+    );
+    world
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .queue_edit(TextEdit::Insert("world".into()));
+    world
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .queue_edit(TextEdit::BackspaceWord);
+    editing::prepare(&mut world);
+    assert_eq!(
+        world.resource::<Documents>().0[&path].buffer.text(),
+        "こんにちは"
+    );
+}
+
 fn drain(world: &mut World, ready: impl Fn(&World) -> bool) {
     let until = Instant::now() + Duration::from_secs(10);
     loop {
@@ -370,4 +406,34 @@ fn settings_and_tab_positions_round_trip_with_the_castle() {
             .selection,
         [2, 5]
     );
+}
+#[test]
+fn save_as_replacement_waits_for_confirmation_and_rejects_disk_races() {
+    let (mut world, _, owner, dir, path) = fixture("source\n");
+    world.init_resource::<crate::file_explorer::worker::Worker>();
+    let destination = dir.path().join("existing.txt");
+    std::fs::write(&destination, "destination\n").unwrap();
+    actions::save_copy(&mut world, owner, path.clone(), destination.clone());
+    drain(&mut world, |world| {
+        world.get::<View>(owner).unwrap().replacement.is_some()
+    });
+    assert_eq!(
+        std::fs::read_to_string(&destination).unwrap(),
+        "destination\n"
+    );
+    std::fs::write(&destination, "external\n").unwrap();
+    save_as::confirm(&mut world, owner, true);
+    drain(&mut world, |world| {
+        world.resource::<Documents>().0[&path].saving.is_none()
+    });
+    assert_eq!(std::fs::read_to_string(&destination).unwrap(), "external\n");
+    actions::save_copy(&mut world, owner, path, destination.clone());
+    drain(&mut world, |world| {
+        world.get::<View>(owner).unwrap().replacement.is_some()
+    });
+    save_as::confirm(&mut world, owner, true);
+    drain(&mut world, |world| {
+        world.get::<Ide>(owner).unwrap().active.as_ref() == Some(&destination)
+    });
+    assert_eq!(std::fs::read_to_string(&destination).unwrap(), "source\n");
 }

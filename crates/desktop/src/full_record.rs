@@ -90,6 +90,23 @@ pub(crate) fn fit_source(world: &mut World, source: Entity, castle: Entity) {
 #[derive(Clone)]
 pub struct Open(pub RecordBinding);
 
+#[derive(Clone)]
+pub(crate) struct Simulate(pub RecordBinding);
+
+impl Action for Simulate {
+    fn apply(&self, world: &mut World, _: Entity) {
+        if !matches!(self.0.source, Source::Local) { return; }
+        let mut cursor = Some(self.0.area);
+        while let Some(entity) = cursor {
+            if world.get::<crate::workspace::Workspaces>(entity).is_some() {
+                crate::simulation_castle::open_current(world, entity, Some(&self.0.uid));
+                return;
+            }
+            cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        }
+    }
+}
+
 impl Action for Open {
     fn apply(&self, world: &mut World, _: Entity) {
         let mut cursor = Some(self.0.area);

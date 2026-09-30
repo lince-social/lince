@@ -47,20 +47,23 @@ async fn bind(
             .map_err(|error| invalid(error.to_string()))?
             .reads()
         {
-            for authored in token.slug.split('|') {
+            let reading = nucleus::expr::binding_reading(&token.func);
+            for (position, authored) in token.slug.split('|').enumerate() {
                 if bindings
                     .iter()
-                    .any(|binding| binding.reading == token.func && binding.authored == authored)
+                    .any(|binding| binding.reading == reading && binding.authored == authored)
                 {
                     continue;
                 }
                 let bound = previous
                     .iter()
-                    .find(|binding| binding.reading == token.func && binding.authored == authored);
+                    .find(|binding| binding.reading == reading && binding.authored == authored);
                 let kind = match token.func.as_str() {
                     nucleus::expr::ASSERTION | "demand" => ReferenceKind::Concept,
                     "freq" => ReferenceKind::Frequency,
                     "promise_state" | "confidence" => ReferenceKind::Promise,
+                    name if nucleus::transfer::karma::is_reading(name) && position == 0 => ReferenceKind::Transfer,
+                    name if nucleus::transfer::karma::is_agreement_reading(name) => ReferenceKind::Person,
                     _ => ReferenceKind::Record,
                 };
                 let name = bound.map_or(authored, |binding| binding.target.as_str());
@@ -79,6 +82,10 @@ async fn bind(
                     },
                     ReferenceKind::Frequency => sqlx::query_scalar("SELECT r.uid FROM record r JOIN karma_frequency f ON f.record_uid = r.uid WHERE r.deleted_at IS NULL AND (r.uid = ? OR r.slug = ?)")
                         .bind(name).bind(name).fetch_optional(&mut **tx).await?,
+                    ReferenceKind::Transfer => sqlx::query_scalar("SELECT uid FROM record WHERE kind = 'transfer' AND deleted_at IS NULL AND (uid = ? OR slug = ?) UNION SELECT transfer_uid FROM transfer_remote_reference WHERE (transfer_uid = ? OR uid = ?) AND state = 'active' AND projection IS NOT NULL AND recipient_organ_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ' AND deleted_at IS NULL) LIMIT 1")
+                        .bind(name).bind(name).bind(name).bind(name).fetch_optional(&mut **tx).await?,
+                    ReferenceKind::Person => sqlx::query_scalar("SELECT uid FROM record WHERE kind = 'person' AND deleted_at IS NULL AND (uid = ? OR slug = ?)")
+                        .bind(name).bind(name).fetch_optional(&mut **tx).await?,
                     ReferenceKind::Promise => sqlx::query_scalar("SELECT uid FROM promise WHERE uid = ?")
                         .bind(name).fetch_optional(&mut **tx).await?,
                     _ => sqlx::query_scalar("SELECT uid FROM record WHERE deleted_at IS NULL AND (uid = ? OR slug = ?)")
@@ -94,13 +101,14 @@ async fn bind(
                     return Err(invalid("karma_binding_changed"));
                 }
                 bindings.push(ReferenceBinding {
-                    reading: token.func.clone(),
+                    reading: reading.into(),
                     authored: authored.into(),
                     target: TypedUid::new(kind, uid).map_err(|error| invalid(error.to_string()))?,
                 });
             }
         }
     }
+    bindings.extend(previous.iter().filter(|binding| binding.reading.starts_with("consequence.")).cloned());
     Ok(bindings)
 }
 

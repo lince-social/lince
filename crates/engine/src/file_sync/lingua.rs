@@ -1,4 +1,5 @@
 mod automation;
+mod habits;
 
 use super::*;
 use anicca::{ProjectedAssertion, ProjectedRecord, grammar::grammar as ast};
@@ -557,6 +558,9 @@ impl Engine {
                     .apply_lingua_frequencies(&document.automation, &mut report)
                     .await
                 {
+                    if matches!(error, EngineError::ExecutionLimit(_)) {
+                        return Err(error);
+                    }
                     conflict(&mut report, path, error);
                     failed.push(path.clone());
                 }
@@ -697,6 +701,7 @@ impl Engine {
                 Ok(()) => {
                     state.files.insert(path.clone(), document);
                 }
+                Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
                 Err(error) => conflict(&mut report, path, error),
             }
         }

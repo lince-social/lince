@@ -154,6 +154,7 @@ pub async fn set_hidden_from_organ(
     target_uid: &str,
     hidden: bool,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "DELETE FROM visibility_rule
           WHERE subject_kind = 'organ' AND subject_uid = ? AND target_uid = ?
@@ -161,7 +162,7 @@ pub async fn set_hidden_from_organ(
     )
     .bind(organ_uid)
     .bind(target_uid)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
     if hidden {
         sqlx::query(
@@ -171,10 +172,10 @@ pub async fn set_hidden_from_organ(
         .bind(nucleus::new_uid("v"))
         .bind(organ_uid)
         .bind(target_uid)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
     }
-    Ok(())
+    tx.commit().await
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

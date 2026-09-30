@@ -2,6 +2,9 @@ use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 
+pub mod delivery;
+pub mod outbox;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Registration {
     pub organ_uid: String,
@@ -151,9 +154,10 @@ pub async fn for_recipient(
     limit: i64,
 ) -> Result<Vec<HeldBundle>, StoreError> {
     Ok(sqlx::query(
-        "SELECT * FROM mailbox_bundle WHERE to_organ = ? ORDER BY received_at, uid LIMIT ?",
+        "SELECT * FROM mailbox_bundle WHERE to_organ = ? AND expires_at > ? ORDER BY received_at, uid LIMIT ?",
     )
     .bind(organ_uid)
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(limit)
     .fetch_all(pool)
     .await?

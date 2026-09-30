@@ -1,4 +1,10 @@
+mod checks_ui;
+mod limits_ui;
+mod cycles_ui;
 mod runner;
+mod sharing_ui;
+pub(crate) mod transfer_entry;
+mod transfers_ui;
 
 use crate::{actions::Action, workspace::WorkspaceMember};
 use bevy::{math::DVec2, prelude::*, text::EditableText};
@@ -17,6 +23,10 @@ pub struct SimulationCastle {
     pub selected_cell: String,
     pub search_count: String,
     pub through: String,
+    check_form: checks_ui::Form,
+    transfer_form: transfers_ui::Form,
+    pending_transfers: Vec<transfers_ui::Form>,
+    sharing: sharing_ui::Form,
 }
 
 impl Default for SimulationCastle {
@@ -31,6 +41,10 @@ impl Default for SimulationCastle {
             selected_cell: "a".into(),
             search_count: "1".into(),
             through: "2030-01-03".into(),
+            check_form: Default::default(),
+            transfer_form: Default::default(),
+            pending_transfers: Vec::new(),
+            sharing: Default::default(),
         }
     }
 }
@@ -54,6 +68,8 @@ struct Input {
 #[derive(Clone, Copy)]
 enum Evidence {
     Result,
+    Cycles,
+    Timeline,
     Events,
     Findings,
     Scenario,
@@ -61,6 +77,10 @@ enum Evidence {
 
 #[derive(Component)]
 struct View {
+    checks: Entity,
+    limits: Entity,
+    transfers: Entity,
+    sharing: Entity,
     editor: Entity,
     status: Entity,
     evidence: Entity,
@@ -75,6 +95,9 @@ struct View {
 
 impl Drop for View {
     fn drop(&mut self) {
+        if let Some(execution) = self.progress.as_ref().and_then(|progress| progress.borrow().execution.clone()) {
+            execution.request_cancel();
+        }
         if let Some(controls) = &self.controls {
             let _ = controls.send(Control::Stop);
         } else if let Some(task) = &self.task {
@@ -197,6 +220,7 @@ pub fn spawn(
         ("Save case", Command::Save),
         ("Run case folder", Command::Cases),
         ("Resume search", Command::Search),
+        ("Compare without Transfer assumptions", Command::Compare),
     ] {
         crate::castle_feed::button(world, setup, owner, label, command);
     }
@@ -229,7 +253,30 @@ pub fn spawn(
         text.allow_newlines = true;
         text.visible_lines = Some(10.0);
     }
+    let checks = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(owner),
+        ))
+        .id();
+    let limits = row(world, owner);
     let controls = row(world, owner);
+    let transfers = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(owner),
+        ))
+        .id();
     for (label, command) in [
         ("Run / Resume", Command::Run),
         ("Pause", Command::Pause),
@@ -238,6 +285,7 @@ pub fn spawn(
         ("Stop", Command::Stop),
         ("Replay", Command::Replay),
         ("Inspect", Command::Inspect),
+        ("Inspect other comparison run", Command::InspectOther),
         ("Reduce failure", Command::Reduce),
     ] {
         crate::castle_feed::button(world, controls, owner, label, command);
@@ -251,7 +299,9 @@ pub fn spawn(
     let browsing = row(world, owner);
     for (label, command) in [
         ("Result", Command::Evidence(Evidence::Result)),
+        ("Rule cycles", Command::Evidence(Evidence::Cycles)),
         ("Changes", Command::Evidence(Evidence::Events)),
+        ("Quantity timeline", Command::Evidence(Evidence::Timeline)),
         ("Failures", Command::Evidence(Evidence::Findings)),
         ("Saved scenario", Command::Evidence(Evidence::Scenario)),
         ("Previous page", Command::Page(false)),
@@ -261,9 +311,24 @@ pub fn spawn(
     }
     let evidence = crate::edit_mode::label(world, owner, "Run evidence will appear here.", 13.0);
     world.get_mut::<Node>(evidence).unwrap().flex_shrink = 0.0;
+    let sharing = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(owner),
+        ))
+        .id();
     world.entity_mut(owner).insert((
         model,
         View {
+            checks,
+            limits,
+            transfers,
+            sharing,
             editor,
             status,
             evidence,
@@ -276,10 +341,38 @@ pub fn spawn(
             page: 0,
         },
     ));
+    checks_ui::render(world, owner);
+    limits_ui::render(world, owner);
+    transfers_ui::render(world, owner);
+    sharing_ui::render(world, owner);
     owner
 }
 
+pub(crate) fn open_current(world: &mut World, root: Entity, record: Option<&str>) {
+    let now = nucleus::execution::now().timestamp_millis();
+    let scenario = simulation::fixtures::current_database(now);
+    let model = SimulationCastle {
+        scenario: serde_json::to_string_pretty(&scenario).unwrap(),
+        current_database: true,
+        selected_cell: "current".into(),
+        check_form: checks_ui::Form::target("current", record.unwrap_or_default()),
+        through: chrono::DateTime::from_timestamp_millis(scenario.end_ms)
+            .unwrap()
+            .to_rfc3339(),
+        ..Default::default()
+    };
+    let workspace = world
+        .get::<crate::workspace::Workspaces>(root)
+        .map_or(1, |spaces| spaces.active);
+    let position = world
+        .get::<crate::canvas::CanvasView>(root)
+        .map_or(DVec2::ZERO, |view| view.center);
+    spawn(world, root, workspace, position, model);
+}
+
 fn capture(world: &mut World) {
+    transfers_ui::capture(world);
+    checks_ui::capture(world);
     let values: Vec<_> = world
         .query::<(Entity, &View)>()
         .iter(world)
@@ -373,7 +466,28 @@ fn receive(world: &mut World) {
                         model.run_directory = path.clone();
                         update_input(world, owner, Field::Run, &path);
                     }
+                    if let Some(set) = outcome.check_set {
+                        let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
+                        if let Ok(mut scenario) =
+                            serde_json::from_str::<simulation::scenario::Scenario>(&model.scenario)
+                        {
+                            scenario.checks = set.checks.clone();
+                            model.scenario = serde_json::to_string_pretty(&scenario).unwrap();
+                            model.check_form.set_name = set.name.clone();
+                            model.check_form.saved = Some(set);
+                            let editor = world.get::<View>(owner).unwrap().editor;
+                            world
+                                .get_mut::<EditableText>(editor)
+                                .unwrap()
+                                .editor
+                                .set_text(&model.scenario);
+                            world.entity_mut(owner).insert(model);
+                            checks_ui::render(world, owner);
+                        }
+                    }
                     show_evidence(world, owner);
+                    world.get_mut::<SimulationCastle>(owner).unwrap().sharing = Default::default();
+                    sharing_ui::render(world, owner);
                 }
                 Err(error) => world.get_mut::<Text>(status).unwrap().0 = error,
             }
@@ -391,7 +505,18 @@ fn show_evidence(world: &mut World, owner: Entity) {
     };
     let count = match view.showing {
         Evidence::Events => bundle.events.len(),
+        Evidence::Timeline => bundle
+            .events
+            .iter()
+            .filter(|event| {
+                matches!(
+                    event.observation,
+                    nucleus::simulation::Observation::CommittedQuantity { .. } | nucleus::simulation::Observation::LoanQuantity {..}
+                )
+            })
+            .count(),
         Evidence::Findings => bundle.findings.len(),
+        Evidence::Cycles => bundle.result.cycles.len(),
         Evidence::Result | Evidence::Scenario => 1,
     };
     let pages = count.max(1).div_ceil(20);
@@ -402,8 +527,19 @@ fn show_evidence(world: &mut World, owner: Entity) {
     let bundle = view.bundle.as_ref().unwrap();
     let value = match view.showing {
         Evidence::Events => serde_json::to_string_pretty(&bundle.events[range]),
+        Evidence::Timeline => Ok(bundle.events.iter().filter_map(|event| {
+            if let nucleus::simulation::Observation::CommittedQuantity { record, before, after, at_ms, .. } | nucleus::simulation::Observation::LoanQuantity {record,before,after,at_ms,..} = &event.observation {
+                let measure = if matches!(&event.observation,nucleus::simulation::Observation::LoanQuantity {..}) {"available"} else {"stored"};
+                Some(format!("{} · {} · {} · {measure}: {} → {}{}", chrono::DateTime::from_timestamp_millis(*at_ms).map_or_else(|| at_ms.to_string(), |at| at.to_rfc3339()), event.cell, record.as_str(), before.value, after.value, after.unit.as_ref().map_or(String::new(), |unit| format!(" {}", unit.as_str()))))
+            } else { None }
+        }).skip(range.start).take(range.len()).collect::<Vec<_>>().join("\n")),
         Evidence::Findings => serde_json::to_string_pretty(&bundle.findings[range]),
-        Evidence::Result => serde_json::to_string_pretty(&serde_json::json!({"result":bundle.result,"checks":bundle.scenario.checks,"build":bundle.manifest.build})),
+        Evidence::Cycles => Ok(if bundle.result.cycles.is_empty() {
+            "No Rule cycles were observed during the covered period.".into()
+        } else {
+            bundle.result.cycles[range].iter().map(cycles_ui::describe).collect::<Vec<_>>().join("\n\n")
+        }),
+        Evidence::Result => serde_json::to_string_pretty(&serde_json::json!({"result":bundle.result,"checks":bundle.scenario.checks,"cost":bundle.cost,"build":bundle.manifest.build,"sources":bundle.manifest.sources})),
         Evidence::Scenario => serde_json::to_string_pretty(&bundle.scenario),
     }.unwrap();
     let text = format!("Page {} of {pages}\n{value}", page + 1,);
@@ -412,6 +548,9 @@ fn show_evidence(world: &mut World, owner: Entity) {
 
 #[derive(Clone)]
 enum Command {
+    Checks(checks_ui::Command),
+    Transfers(transfers_ui::Command),
+    Sharing(sharing_ui::Command),
     Create,
     Run,
     Pause,
@@ -420,9 +559,11 @@ enum Command {
     Stop,
     Replay,
     Inspect,
+    InspectOther,
     Reduce,
     Search,
     Cases,
+    Compare,
     Daily,
     Network(bool),
     Transfer,
@@ -501,6 +642,13 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
     }
     if let Some(task) = &view.task {
         if let Some(control) = control {
+            if let Some(execution) = view.progress.as_ref().and_then(|progress| progress.borrow().execution.clone()) {
+                match control {
+                    Control::Pause => execution.pause(),
+                    Control::Stop => execution.request_cancel(),
+                    _ => execution.resume(),
+                }
+            }
             if let Some(sender) = &view.controls {
                 sender.send(control)?;
             } else if control == Control::Stop {
@@ -511,8 +659,19 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         }
         return Ok(());
     }
+    if let Command::Checks(command) = command
+        && checks_ui::apply(command, world, owner)?
+    {
+        return Ok(());
+    }
     if matches!(command, Command::Pause | Command::Stop) {
         return Ok(());
+    }
+    if let Command::Transfers(command) = command {
+        return transfers_ui::apply(*command, world, owner);
+    }
+    if let Command::Sharing(command) = command {
+        return sharing_ui::apply(command, world, owner);
     }
     if matches!(
         command,
@@ -542,9 +701,17 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         model.scenario = value;
         model.current_database = matches!(command, Command::Current);
         model.selected_cell = selected.clone();
+        model.check_form = checks_ui::Form::target(&selected, "");
         model.through = through.clone();
+        model.transfer_form = Default::default();
+        model.pending_transfers.clear();
+        model.sharing = Default::default();
         update_input(world, owner, Field::Cell, &selected);
         update_input(world, owner, Field::Through, &through);
+        limits_ui::render(world, owner);
+        checks_ui::render(world, owner);
+        transfers_ui::render(world, owner);
+        sharing_ui::render(world, owner);
         world.get_mut::<Text>(status).unwrap().0 =
             "Setup prepared. Nothing runs until Run or Next event is pressed.".into();
         return Ok(());
@@ -600,11 +767,17 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         return Ok(());
     }
     let job = match command {
+        Command::Checks(checks_ui::Command::Save) => Job::SaveChecks,
+        Command::Checks(checks_ui::Command::Load) => Job::LoadChecks,
+        Command::Checks(checks_ui::Command::List) => Job::ListChecks,
+        Command::Checks(checks_ui::Command::Search) => Job::SearchSelected,
         Command::Replay => Job::Replay,
         Command::Inspect => Job::Inspect,
+        Command::InspectOther => Job::InspectOther,
         Command::Reduce => Job::Reduce,
         Command::Search => Job::Search,
         Command::Cases => Job::Cases,
+        Command::Compare => Job::Compare,
         _ => Job::Scenario(control.unwrap_or(Control::Run)),
     };
     let runtime = world
@@ -639,7 +812,7 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
     view.task = Some(task);
     view.completion = Some(receiver);
     view.progress = Some(updates);
-    view.controls = matches!(job, Job::Scenario(_)).then_some(controls);
+    view.controls = matches!(job, Job::Scenario(_) | Job::Compare).then_some(controls);
     view.bundle = None;
     world.get_mut::<Text>(status).unwrap().0 = "Preparing…".into();
     Ok(())
@@ -669,7 +842,16 @@ pub(crate) struct SavedSimulation {
 
 impl SavedSimulation {
     pub(crate) fn valid(&self) -> bool {
-        self.castle.scenario.len() <= 1024 * 1024
+        self.castle.check_form.valid()
+            && self.castle.transfer_form.valid()
+            && self.castle.pending_transfers.len() <= 64
+            && self
+                .castle
+                .pending_transfers
+                .iter()
+                .all(transfers_ui::Form::valid)
+            && self.castle.sharing.valid()
+            && self.castle.scenario.len() <= 1024 * 1024
             && [
                 &self.castle.source_directory,
                 &self.castle.output_directory,
@@ -737,7 +919,7 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedSimulation> 
 mod tests {
     use super::*;
 
-    fn fixture(model: SimulationCastle) -> (App, Entity) {
+    pub(super) fn fixture(model: SimulationCastle) -> (App, Entity) {
         let mut app = App::new();
         crate::laboratory::isolate(app.world_mut());
         app.add_plugins(MinimalPlugins)
@@ -767,6 +949,31 @@ mod tests {
         })
         .await
         .unwrap();
+    }
+
+    #[test]
+    fn check_controls_change_only_the_prepared_scenario() {
+        let (mut app, owner) = fixture(SimulationCastle::default());
+        let before: simulation::scenario::Scenario =
+            serde_json::from_str(&app.world().get::<SimulationCastle>(owner).unwrap().scenario)
+                .unwrap();
+        Command::Checks(checks_ui::Command::Toggle(0)).apply(app.world_mut(), owner);
+        Command::Checks(checks_ui::Command::Failure).apply(app.world_mut(), owner);
+        Command::Checks(checks_ui::Command::Builtin(0)).apply(app.world_mut(), owner);
+        let after: simulation::scenario::Scenario =
+            serde_json::from_str(&app.world().get::<SimulationCastle>(owner).unwrap().scenario)
+                .unwrap();
+        assert!(!after.checks[0].options.enabled);
+        assert_eq!(after.checks.len(), before.checks.len() + 1);
+        assert_eq!(
+            after.checking.on_failure,
+            nucleus::simulation::FailureMode::Continue
+        );
+        assert_eq!(
+            serde_json::to_value(after.inputs).unwrap(),
+            serde_json::to_value(before.inputs).unwrap()
+        );
+        assert!(app.world().get::<View>(owner).unwrap().task.is_none());
     }
 
     #[test]

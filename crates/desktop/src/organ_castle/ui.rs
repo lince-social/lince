@@ -659,8 +659,22 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         .unwrap_or(Value::Null);
     panel::clear(world, parent);
     if roster.is_null() {
-        label(world, parent, "Create an Organ on this device, or use a device enrolment code to join the Organ on another device.");
-        form(world, owner, parent, "Create my Organ", json!({"action":"roster-create-organ"}), vec![], Some("Create this Organ's identity? Joining another Organ afterward requires a fresh device profile."));
+        label(
+            world,
+            parent,
+            "Create an Organ on this device, or use a device enrolment code to join the Organ on another device.",
+        );
+        form(
+            world,
+            owner,
+            parent,
+            "Create my Organ",
+            json!({"action":"roster-create-organ"}),
+            vec![],
+            Some(
+                "Create this Organ's identity? Joining another Organ afterward requires a fresh device profile.",
+            ),
+        );
     }
     label(
         world,
@@ -685,7 +699,15 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         return;
     };
     for cell in cells {
-        form(world, owner, parent, "Save device name", json!({"action":"roster-rename-cell","cell_uid":cell["cell_uid"],"label":cell["label"]}), vec![field("/label", "Device name", &text(cell, "label"))], None);
+        form(
+            world,
+            owner,
+            parent,
+            "Save device name",
+            json!({"action":"roster-rename-cell","cell_uid":cell["cell_uid"],"label":cell["label"]}),
+            vec![field("/label", "Device name", &text(cell, "label"))],
+            None,
+        );
         label(
             world,
             parent,
@@ -801,10 +823,30 @@ pub(super) fn mail(world: &mut World, owner: Entity, parent: Entity) {
     label(
         world,
         parent,
+        "Choose one or two servers for new outgoing envelopes. Two copies improve availability. Server acceptance does not mean the recipient read the message.",
+    );
+    form(
+        world,
+        owner,
+        parent,
+        "Save mailbox copy policy",
+        json!({"action":"mailbox-set-copies","copies":2}),
+        vec![Field(
+            "/copies",
+            "Requested server copies (1 or 2)",
+            Kind::Number,
+            json!(2),
+        )],
+        None,
+    );
+    label(
+        world,
+        parent,
         "Mail · carry sealed mail for others, choose pickup points, and deliver changes while a contact is offline.",
     );
     for (caption, action) in [
         ("Refresh carried mail", "mailbox-status"),
+        ("Check saved message recovery", "mailbox-saved-status"),
         ("Refresh requests", "mailbox-requests"),
         ("Refresh pickup points", "mailbox-pickup-points"),
         ("Refresh outgoing mail", "mailbox-outbound"),
@@ -859,6 +901,56 @@ pub(super) fn mail(world: &mut World, owner: Entity, parent: Entity) {
 }
 
 pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &Value) {
+    if let Some(rows) = value["saved_outgoing"].as_array() {
+        if rows.is_empty() {
+            label(world, parent, "No saved outgoing envelopes.");
+        }
+        for row in rows {
+            label(
+                world,
+                parent,
+                &format!(
+                    "Outgoing message · {} of {} servers accepted · {} · {}",
+                    row["copies"],
+                    row["requested_copies"],
+                    row["state"].as_str().unwrap_or_default(),
+                    row["error"]
+                        .as_str()
+                        .unwrap_or("Waiting for recipient collection")
+                ),
+            );
+        }
+        let mut remaining = value.clone();
+        remaining.as_object_mut().unwrap().remove("saved_outgoing");
+        result(world, owner, parent, &remaining);
+        return;
+    }
+    if let Some(rows) = value["saved_mail"].as_array() {
+        if rows.is_empty() {
+            label(world, parent, "All saved mail has been processed.");
+        }
+        for row in rows {
+            label(
+                world,
+                parent,
+                &format!(
+                    "Saved message · {} · {}",
+                    row["state"].as_str().unwrap_or_default(),
+                    row["error"].as_str().unwrap_or("Waiting for recovery")
+                ),
+            );
+            if row["state"] != "expired" {
+                request(
+                    world,
+                    owner,
+                    parent,
+                    "Retry recovery",
+                    json!({"action":"mailbox-retry-saved","uid":row["uid"]}),
+                );
+            }
+        }
+        return;
+    }
     let sync = value.get("sync").unwrap_or(value);
     if let Some(recovery) = sync["recovery"].as_str() {
         label(world, parent, recovery);

@@ -349,9 +349,19 @@ impl Engine {
         automation: &Automation,
         report: &mut FileSyncReport,
     ) -> Result<(), EngineError> {
+        Box::pin(self.apply_lingua_frequencies_as(automation, report, None)).await
+    }
+
+    pub(super) async fn apply_lingua_frequencies_as(
+        &self,
+        automation: &Automation,
+        report: &mut FileSyncReport,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
         for frequency in &automation.frequencies {
             let definition = frequency_definition(frequency)?;
             let handle = frequencies::get_handle(&self.store.pool, &frequency.uid).await?;
+            self.require_permission(actor, if handle.is_some() { "frequency:update" } else { "frequency:create" }).await?;
             let before = handle.clone();
             let now = nucleus::execution::now();
             if let Some(handle) = handle {
@@ -376,14 +386,14 @@ impl Engine {
                             restart: true,
                         }
                     };
-                    self.act(action, None).await?;
+                    self.act(action, actor.map(str::to_owned)).await?;
                 }
             } else {
                 let input = frequencies::CreateFrequencyInput {
                     request_id: format!("lingua-import:{}", frequency.uid),
                     frequency: definition.clone(),
-                    owner_person_uid: None,
-                    actor_person_uid: None,
+                    owner_person_uid: actor.map(str::to_owned),
+                    actor_person_uid: actor.map(str::to_owned),
                 };
                 let signer = self.signer.lock().await.clone();
                 let commit = frequencies::create_identified(
@@ -407,7 +417,7 @@ impl Engine {
                         frequency_uid: frequency.uid.clone(),
                         expected_handle_revision: handle.handle_revision,
                     },
-                    None,
+                    actor.map(str::to_owned),
                 )
                 .await?;
             } else if frequency.quantity == 1 && handle.active_activation_hash.is_none() {
@@ -419,7 +429,7 @@ impl Engine {
                         revision_hash: handle.head_revision_hash,
                         parameter_overrides: Default::default(),
                     },
-                    None,
+                    actor.map(str::to_owned),
                 )
                 .await?;
             }
@@ -438,12 +448,20 @@ impl Engine {
         automation: &Automation,
         report: &mut FileSyncReport,
     ) -> Result<(), EngineError> {
+        Box::pin(self.apply_lingua_rules_as(automation, report, None)).await
+    }
+
+    pub(super) async fn apply_lingua_rules_as(
+        &self,
+        automation: &Automation,
+        report: &mut FileSyncReport,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
         for rule in &automation.rules {
             let target = rule
                 .record_uid
                 .as_ref()
                 .ok_or_else(|| invalid("Rule target is unresolved"))?;
-            self.reject_direct_transfer_record_mutation(target).await?;
             let mut cadence = rule_cadence(rule)?;
             let mut anchor = rule
                 .anchor_at
@@ -463,8 +481,14 @@ impl Engine {
             let consequences = self
                 .resolve_consequences(consequences.as_slice().to_vec())
                 .await?;
+            match self.transfer_rule_anchor(&consequences, actor).await? {
+                Some(anchor) if anchor != *target => return Err(invalid("Transfer Rule target does not match its anchor")),
+                Some(_) => {}
+                None => self.authorize_rule_target(target, actor).await?,
+            }
             let mut condition = rule_condition(rule)?;
             let current = store::recurrence::get(&self.store.pool, &rule.uid).await?;
+            self.require_permission(actor, if current.is_some() { "frequency:update" } else { "frequency:create" }).await?;
             if let Some(condition) = &mut condition {
                 condition.source = self
                     .canonical_condition(Some(condition.source.clone()))
@@ -480,7 +504,7 @@ impl Engine {
                 )
                 .await?;
             }
-            Box::pin(self.validate_automatic_rule(&consequences, condition.as_ref(), None)).await?;
+            Box::pin(self.validate_automatic_rule(&consequences, condition.as_ref(), actor)).await?;
             let before = current.clone();
             if let Some(current) = current {
                 if current.record_uid != *target {
@@ -505,7 +529,7 @@ impl Engine {
                             cadence,
                             anchor_at: Some(anchor.to_rfc3339()),
                         },
-                        None,
+                        actor.map(str::to_owned),
                     )
                     .await?;
                 }
@@ -521,7 +545,7 @@ impl Engine {
                         cadence,
                         anchor_at: anchor,
                         request_id: &format!("lingua-import:{}", rule.uid),
-                        actor_uid: None,
+                        actor_uid: actor,
                     },
                     Some(&rule.uid),
                     nucleus::execution::now(),
@@ -542,7 +566,7 @@ impl Engine {
                         request_id: nucleus::new_uid("lingua"),
                         paused: rule.quantity == 0,
                     },
-                    None,
+                    actor.map(str::to_owned),
                 )
                 .await?;
             }

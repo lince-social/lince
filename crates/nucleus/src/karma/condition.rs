@@ -145,7 +145,7 @@ impl Gate {
         if text == "always" {
             return Ok(Gate::Always);
         }
-        if text == "!=0" {
+        if text.strip_prefix("!=").is_some_and(|rest| DecimalValue::parse_inferred(rest.trim()).is_ok_and(|value| value.mantissa() == 0)) {
             return Ok(Gate::NonZero);
         }
         let (build, rest): (fn(DecimalValue) -> Gate, &str) =
@@ -241,6 +241,38 @@ pub struct Condition {
 impl Condition {
     pub fn parse(source: &str) -> Result<Condition, ConditionError> {
         let expr = Expr::parse(source).map_err(|error| ConditionError::Parse(error.to_string()))?;
+        fn validate(expr: &Expr) -> Result<(), ConditionError> {
+            match expr {
+                Expr::Fn(name, args) if name == "extension" => {
+                    crate::expr::extension_token(args)
+                        .map_err(|error| ConditionError::Parse(error.to_string()))?;
+                }
+                Expr::Fn(name, args) if crate::transfer::karma::is_reading(name) || name == "distance" => {
+                    let count = if crate::transfer::karma::is_agreement_reading(name) || name == "distance" { 2 } else { 1 };
+                    if args.len() != count || args.iter().any(|argument| !matches!(argument, Expr::Ref(_))) {
+                        return Err(ConditionError::Parse(format!("{name}() needs exactly {count} @references")));
+                    }
+                }
+                Expr::Fn(_, args) => {
+                    for argument in args {
+                        validate(argument)?;
+                    }
+                }
+                Expr::Unary(_, value) => validate(value)?,
+                Expr::Bin(_, left, right) => {
+                    validate(left)?;
+                    validate(right)?;
+                }
+                Expr::Text(_) => {
+                    return Err(ConditionError::Parse(
+                        "Text arguments belong inside an extension reading".into(),
+                    ));
+                }
+                _ => {}
+            }
+            Ok(())
+        }
+        validate(&expr)?;
         let readings = expr.tokens();
         if readings.is_empty() {
             return Err(ConditionError::Parse(
@@ -278,6 +310,16 @@ impl Condition {
             match expr {
                 Expr::Ref(name) => *name = resolve(reading, name)?,
                 Expr::Fn(name, arguments) => {
+                    if name == "extension" {
+                        let token = crate::expr::extension_token(arguments)
+                            .map_err(|error| ConditionError::Parse(error.to_string()))?;
+                        visit(
+                            &mut arguments[0],
+                            crate::expr::binding_reading(&token.func),
+                            resolve,
+                        )?;
+                        return Ok(());
+                    }
                     for argument in arguments {
                         visit(argument, name, resolve)?;
                     }
@@ -287,7 +329,7 @@ impl Condition {
                     visit(left, "quantity", resolve)?;
                     visit(right, "quantity", resolve)?;
                 }
-                Expr::Num(_) | Expr::Dur(_) => {}
+                Expr::Num(_) | Expr::Dur(_) | Expr::Text(_) => {}
             }
             Ok(())
         }
@@ -312,6 +354,9 @@ fn evaluate(expr: &Expr, resolver: &mut dyn ExactResolver) -> Result<DecimalValu
             DecimalValue::from_mantissa(0, *seconds as i128).map_err(|_| ConditionError::Overflow)
         }
         Expr::Ref(slug) => resolver.lookup("quantity", slug, None),
+        Expr::Text(_) => Err(ConditionError::Parse(
+            "Text cannot be used as a number".into(),
+        )),
         Expr::Fn(name, args) => call(name, args, resolver),
         Expr::Unary(op, inner) => {
             let value = evaluate(inner, resolver)?;
@@ -365,6 +410,21 @@ fn call(
     args: &[Expr],
     resolver: &mut dyn ExactResolver,
 ) -> Result<DecimalValue, ConditionError> {
+    if name == "extension" {
+        let token = crate::expr::extension_token(args)
+            .map_err(|error| ConditionError::Parse(error.to_string()))?;
+        return resolver.lookup(&token.func, &token.slug, None);
+    }
+    if crate::transfer::karma::is_agreement_reading(name) || name == "distance" {
+        let references = args.iter().map(|argument| match argument {
+            Expr::Ref(name) => Ok(name.as_str()),
+            _ => Err(ConditionError::Parse(format!("{name}() needs two @references"))),
+        }).collect::<Result<Vec<_>, _>>()?;
+        if references.len() != 2 {
+            return Err(ConditionError::Parse(format!("{name}() needs two @references")));
+        }
+        return resolver.lookup(name, &references.join("|"), None);
+    }
     let slug = match args.first() {
         Some(Expr::Ref(slug)) => slug.clone(),
         _ => {
@@ -597,5 +657,52 @@ mod tests {
         assert!(reads.contains(&"a".to_string()));
         assert!(reads.contains(&"b".to_string()));
         assert!(reads.contains(&"c".to_string()));
+    }
+
+    #[test]
+    fn extension_literals_are_explicit_and_only_the_record_is_bound() {
+        let condition =
+            Condition::parse(r#"extension(@apples.stock, "shop.inventory", "price") * 2"#).unwrap();
+        let reads = condition.reads();
+        assert_eq!(reads.len(), 1);
+        assert_eq!(reads[0].slug, "apples.stock");
+        assert_eq!(
+            crate::expr::extension_parts(&reads[0].func),
+            Some(("shop.inventory".into(), "price".into()))
+        );
+        let bound = condition
+            .map_references(|reading, record| {
+                assert_eq!(reading, "extension");
+                assert_eq!(record, "apples.stock");
+                Ok("original".into())
+            })
+            .unwrap();
+        assert_eq!(bound.reads()[0].slug, "original");
+        assert_eq!(bound.reads()[0].func, reads[0].func);
+        for invalid in [
+            r#"extension(@record)"#,
+            r#"extension(@record, @namespace, @property)"#,
+            r#"extension(@record, "", "price")"#,
+            r#"extension(@record, "work", "nested.price")"#,
+            r#"@record + "price""#,
+        ] {
+            assert!(Condition::parse(invalid).is_err(), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn extension_properties_supply_distinct_exact_values_to_condition_math() {
+        let mut readings = Map::default();
+        readings.set(
+            &crate::expr::extension_reading("inventory", "price"),
+            "stock",
+            "0.1",
+        );
+        readings.set(
+            &crate::expr::extension_reading("inventory", "count"),
+            "stock",
+            "3",
+        );
+        assert_eq!(eval(r#"extension(@stock, "inventory", "price") * extension(@stock, "inventory", "count")"#, &mut readings).to_string(), "0.3");
     }
 }

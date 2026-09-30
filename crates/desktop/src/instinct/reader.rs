@@ -103,6 +103,7 @@ fn scrolling(world: &mut World, parent: Entity, name: &str) -> Entity {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
+    super::habit_ui::capture(world, owner);
     let nav_scroll = world
         .get::<View>(owner)
         .and_then(|view| view.nav)
@@ -259,6 +260,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 source: crate::protein_area::Source::Local,
             },
         );
+        if section.uid == engine::karma_habits::GUIDE { super::habit_ui::spawn(world, owner, container); }
     }
     let footer = world
         .spawn((

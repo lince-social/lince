@@ -27,5 +27,7 @@ fn main() {
     output.push_str("];\n");
 
     let destination = Path::new(&std::env::var("OUT_DIR").expect("OUT_DIR")).join("bundle.rs");
-    std::fs::write(destination, output).expect("write bundle.rs");
+    if std::fs::read_to_string(&destination).ok().as_deref() != Some(output.as_str()) {
+        std::fs::write(destination, output).expect("write bundle.rs");
+    }
 }

@@ -2,6 +2,26 @@ use crate::credits::Attribution;
 
 pub(crate) const CREDITS: &[Attribution] = &[
     Attribution {
+        name: "Tokio",
+        author: "Tokio contributors",
+        license: include_str!("../../licenses/editor/tokio-MIT.txt"),
+    },
+    Attribution {
+        name: "Serde JSON",
+        author: "David Tolnay and contributors",
+        license: include_str!("../../licenses/editor/serde-json-MIT.txt"),
+    },
+    Attribution {
+        name: "URL",
+        author: "The rust-url developers",
+        license: include_str!("../../licenses/editor/url-MIT.txt"),
+    },
+    Attribution {
+        name: "ICU4X word segmentation",
+        author: "Unicode, Inc. and contributors",
+        license: include_str!("../../licenses/editor/icu4x-Unicode-3.0.txt"),
+    },
+    Attribution {
         name: "Regex",
         author: "The Rust Project Developers and contributors",
         license: include_str!("../../licenses/editor/regex-MIT.txt"),

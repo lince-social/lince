@@ -7,6 +7,10 @@ rustflags = [
 ]
 
 [env]
+ANDROID_HOME = { value = ".cache-lince-android/sdk", relative = true }
+ANDROID_USER_HOME = { value = ".cache-lince-android/user", relative = true }
+ANDROID_AVD_HOME = { value = ".cache-lince-android/avd", relative = true }
+GRADLE_USER_HOME = { value = ".cache-lince-android/gradle", relative = true }
 # The Action dispatcher is one very large async state machine, and unoptimized
 # debug builds keep every arm's locals live on the stack. A default 2 MiB test
 # thread overflows inside the Karma action paths; release builds never come

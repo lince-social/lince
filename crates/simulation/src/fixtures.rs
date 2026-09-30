@@ -15,6 +15,7 @@ pub fn daily() -> Scenario {
         action,
     };
     Scenario {
+        checking: Default::default(),
         version: Version::V1,
         name: "daily-negative".into(),
         seed: 42,
@@ -70,6 +71,7 @@ pub fn daily() -> Scenario {
         }],
         checks: vec![
             Check {
+                options: Default::default(),
                 id: "daily-result".into(),
                 predicate: Predicate::QuantityEquals {
                     cell: "a".into(),
@@ -82,14 +84,17 @@ pub fn daily() -> Scenario {
                 },
             },
             Check {
+                options: Default::default(),
                 id: "fact-chain".into(),
                 predicate: Predicate::FactChain {},
             },
             Check {
+                options: Default::default(),
                 id: "once".into(),
                 predicate: Predicate::OncePerOccurrence {},
             },
             Check {
+                options: Default::default(),
                 id: "no-unexpected-refusals".into(),
                 predicate: Predicate::NoUnexpectedRefusals {},
             },
@@ -99,6 +104,7 @@ pub fn daily() -> Scenario {
 
 pub fn current_database(start_ms: i64) -> Scenario {
     Scenario {
+        checking: Default::default(),
         version: Version::V1,
         name: "current-database".into(),
         seed: 42,
@@ -114,14 +120,17 @@ pub fn current_database(start_ms: i64) -> Scenario {
         inputs: Vec::new(),
         checks: vec![
             Check {
+                options: Default::default(),
                 id: "fact-chain".into(),
                 predicate: Predicate::FactChain {},
             },
             Check {
+                options: Default::default(),
                 id: "once-per-occurrence".into(),
                 predicate: Predicate::OncePerOccurrence {},
             },
             Check {
+                options: Default::default(),
                 id: "no-unexpected-refusals".into(),
                 predicate: Predicate::NoUnexpectedRefusals {},
             },
@@ -168,6 +177,7 @@ pub fn network(two_organs: bool) -> Scenario {
         )
     });
     case.checks.push(Check {
+        options: Default::default(),
         id: "converged".into(),
         predicate: Predicate::Converged {
             cells: ["a", "b", "c", "d"].map(String::from).into(),
@@ -177,6 +187,7 @@ pub fn network(two_organs: bool) -> Scenario {
     });
     if two_organs {
         case.checks.push(Check {
+            options: Default::default(),
             id: "second-organ-converged".into(),
             predicate: Predicate::Converged {
                 cells: vec!["c".into(), "d".into()],

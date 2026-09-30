@@ -9,6 +9,8 @@ pub(crate) async fn execute(
     store: &Store,
     query: &Protein,
     visible: Option<&HashSet<String>>,
+    actor: Option<&str>,
+    installed_signer_actor: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
     if query.aggregate.is_some() || !query.order.is_empty() {
         return Err(store::karma_fields::invalid(
@@ -20,14 +22,27 @@ pub(crate) async fn execute(
         let Some(condition) = &rule.condition else {
             continue;
         };
-        if !readable(store, visible, &rule.record_uid).await? {
+        let target = rule.consequences.iter().find_map(nucleus::karma::Consequence::transfer_target).unwrap_or(&rule.record_uid);
+        let transfer_state = if rule.consequences.iter().any(|effect| effect.transfer_target().is_some()) {
+            transfer_snapshot(store, target, actor, installed_signer_actor).await?
+        } else { None };
+        if rule.consequences.iter().any(|effect| effect.transfer_target().is_some()) {
+            if transfer_state.as_ref().is_none_or(|state| rule.consequences.iter().any(|effect| effect.transfer_person().is_none_or(|person| !state.participants.contains_key(person)))) { continue; }
+        } else if !readable(store, visible, &rule.record_uid).await? {
             continue;
         }
         let parsed = condition
             .parsed()
             .map_err(|error| store::karma_fields::invalid(&error.to_string()))?;
         let mut allowed = true;
-        for read in parsed.reads().into_iter().filter(|_| visible.is_some()) {
+        for read in parsed.reads() {
+            if nucleus::transfer::karma::is_reading(&read.func) {
+                let names: Vec<_> = read.slug.split('|').collect();
+                let state = transfer_snapshot(store, names[0], actor, installed_signer_actor).await?;
+                allowed &= state.as_ref().is_some_and(|state| !nucleus::transfer::karma::is_agreement_reading(&read.func) || names.get(1).is_some_and(|person| state.participants.contains_key(*person)));
+                continue;
+            }
+            if visible.is_none() { continue; }
             if read.func == nucleus::expr::ASSERTION || read.func == "demand" {
                 if let Some(concept) = store::concepts::resolve(&store.pool, &read.slug).await? {
                     for uid in store::ledger::records_with_concept(&store.pool, &concept).await? {
@@ -50,9 +65,9 @@ pub(crate) async fn execute(
             match predicate {
                 Predicate::UidEq(uid) if uid != &rule.uid => allowed = false,
                 Predicate::RecordEq(uid)
-                    if store::records::resolve(&store.pool, uid)
+                    if uid != target && store::records::resolve(&store.pool, uid)
                         .await?
-                        .is_none_or(|record| record.uid != rule.record_uid) =>
+                        .is_none_or(|record| record.uid != target) =>
                 {
                     allowed = false
                 }
@@ -76,7 +91,7 @@ pub(crate) async fn execute(
         let slug = identity
             .as_ref()
             .map_or(fallback_slug.as_str(), |identity| identity.slug.as_str());
-        rows.push(json!({"name": name, "slug": slug, "uid": rule.uid, "record": rule.record_uid, "bindings": condition.bindings, "fields": fields, "revision": rule.revision, "state": rule.state}));
+        rows.push(json!({"name": name, "slug": slug, "uid": rule.uid, "record": target, "bindings": condition.bindings, "fields": fields, "revision": rule.revision, "state": rule.state}));
         if query
             .limit
             .is_some_and(|limit| rows.len() >= limit as usize)
@@ -85,6 +100,17 @@ pub(crate) async fn execute(
         }
     }
     Ok(rows)
+}
+
+async fn transfer_snapshot(store: &Store, transfer: &str, actor: Option<&str>, installed_signer_actor: Option<&str>) -> Result<Option<nucleus::transfer::karma::Snapshot>, ProteinError> {
+    let query = Protein {
+        source: crate::Source::Transfer,
+        filter: vec![Predicate::UidEq(transfer.into())],
+        fields: Some(vec!["uid".into(), "karma_state".into()]),
+        include: Default::default(), aggregate: None, order: Vec::new(), limit: Some(1),
+    };
+    let rows = Box::pin(crate::execute_for_with_signer(store, &query, actor, installed_signer_actor)).await?;
+    Ok(rows.into_iter().find(|row| row["uid"] == transfer).and_then(|row| serde_json::from_value(row["karma_state"].clone()).ok()))
 }
 
 async fn readable(

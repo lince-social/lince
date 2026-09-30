@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::karma::{CanonicalHash, DecimalValue, TypedUid};
 
+pub mod checks;
+pub mod sharing;
+pub use crate::execution::causal::{CycleKind, RuleChange, RuleCycle, RuleStep, TransferChange};
+pub use checks::{
+    CheckDefinition, CheckOptions, CheckSet, CheckStatus, Checking, Comparison, CoverageKind,
+    CoverageReason, Evaluation, FailureMode, QuantityBasis, RunCost,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub enum Version {
     #[serde(rename = "lince.simulation.v1")]
@@ -28,7 +36,10 @@ impl TryFrom<String> for FactId {
                 && request.len() <= 1024
                 && !request.chars().any(char::is_control)
         });
-        if regular || delivery {
+        let application = value
+            .strip_prefix("taf:taa:")
+            .is_some_and(|uid| crate::valid_uid(uid, "tla"));
+        if regular || delivery || application {
             Ok(Self(value))
         } else {
             Err("invalid Fact identity".into())
@@ -93,10 +104,23 @@ pub enum Refusal {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Observation {
+    RuleCycle {
+        cycle: RuleCycle,
+    },
+    LoanQuantity {
+        record: TypedUid,
+        before: Quantity,
+        after: Quantity,
+        physical: Quantity,
+        at_ms: i64,
+    },
     LinguaImported {
         files: std::collections::BTreeMap<String, CanonicalHash>,
         created: Vec<String>,
         updated: Vec<String>,
+    },
+    LinguaInterrupted {
+        files: std::collections::BTreeMap<String, CanonicalHash>,
     },
     CommittedQuantity {
         record: TypedUid,
@@ -108,6 +132,8 @@ pub enum Observation {
         cause: Cause,
         previous_fact_hash: String,
         fact_hash: String,
+        #[serde(default)]
+        commit: Option<i64>,
     },
     RuleApplication {
         occurrence: RuleOccurrence,
@@ -121,6 +147,9 @@ pub enum Observation {
     ActionRefused {
         input: String,
         refusal: Refusal,
+    },
+    ActionInterrupted {
+        input: String,
     },
     DatabaseEffect {
         uid: String,
@@ -206,6 +235,16 @@ pub struct Event {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Predicate {
+    NoRuleCycles {
+        #[serde(default)]
+        include_timed_recurrence: bool,
+    },
+    Quantity {
+        cell: String,
+        record: String,
+        comparison: Comparison,
+        expected: Quantity,
+    },
     QuantityEquals {
         cell: String,
         record: String,
@@ -241,11 +280,15 @@ pub struct Check {
     pub id: String,
     pub implementation: CanonicalHash,
     pub predicate: Predicate,
+    pub options: CheckOptions,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Witness {
+    RuleCycle {
+        cycle: RuleCycle,
+    },
     RefusedRule {
         occurrence: RuleOccurrence,
         reason: Option<String>,
@@ -334,6 +377,7 @@ pub enum Verdict {
     Passed,
     Failed,
     Inconclusive,
+    Unverified,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -344,7 +388,13 @@ pub enum Stop {
     },
     HorizonReached {},
     EventBudget {},
+    RuleEvaluationBudget {},
+    WallTimeBudget {},
     EvidenceBudget {},
+    CheckBudget {},
+    CheckFailed {
+        check: String,
+    },
     Cancelled {},
     Paused {},
     ExecutionError {
@@ -369,6 +419,12 @@ pub struct Coverage {
     pub check: String,
     pub observations: u64,
     pub complete: bool,
+    pub status: CheckStatus,
+    pub kind: CoverageKind,
+    pub from_ms: i64,
+    pub until_ms: i64,
+    pub last_evaluated_ms: Option<i64>,
+    pub reason: Option<CoverageReason>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -379,6 +435,10 @@ pub struct Result {
     pub verdict: Verdict,
     pub stopped_at_ms: i64,
     pub steps: u64,
+    pub rule_evaluations: u64,
+    pub execution_checkpoints: u64,
+    pub execution_interrupted: bool,
+    pub cycles: Vec<RuleCycle>,
     pub inputs: u64,
     pub events: u64,
     pub findings: u64,
@@ -442,10 +502,16 @@ mod tests {
             assert_eq!(serde_json::from_str::<FactId>(&encoded).unwrap(), fact);
             assert_eq!(String::from(fact), value);
         }
+        let application = "taf:taa:tla_01Q3DCBD008RR8522CDK0Y63C5".to_owned();
+        assert_eq!(
+            String::from(FactId::try_from(application.clone()).unwrap()),
+            application
+        );
         for value in [
             "tdf:unknown:request",
             "tdf:enqueue:",
             "tdf:retry:bad\nrequest",
+            "taf:taa:tla_unknown",
         ] {
             assert!(FactId::try_from(value.to_owned()).is_err());
         }

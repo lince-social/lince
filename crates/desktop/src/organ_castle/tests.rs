@@ -99,6 +99,8 @@ fn all_contact_controls_use_typed_actions_and_do_not_persist_secrets() {
         "root-key-detach",
         "roster-status",
         "mailbox-status",
+        "mailbox-saved-status",
+        "mailbox-set-copies",
         "mailbox-requests",
         "mailbox-pickup-points",
         "mailbox-outbound",
@@ -153,6 +155,30 @@ fn all_contact_controls_use_typed_actions_and_do_not_persist_secrets() {
         "{\"not_a_predicate\":true}",
     );
     assert!(forms::payload(app.world(), fs).is_err());
+}
+
+#[test]
+fn saved_mail_recovery_uses_typed_actions_without_persisting_ciphertext() {
+    let (mut app, owner) = fixture();
+    let form = find(app.world_mut(), "mailbox-saved-status");
+    finish(
+        app.world_mut(),
+        form,
+        Ok(
+            json!({"saved_mail":[{"uid":"mb-example","state":"quarantine","error":"Missing keys"}]}),
+        ),
+    );
+    let retry = find(app.world_mut(), "mailbox-retry-saved");
+    let payload = forms::payload(app.world(), retry).unwrap();
+    assert_eq!(
+        payload,
+        json!({"action":"mailbox-retry-saved","uid":"mb-example"})
+    );
+    assert!(matches!(
+        serde_json::from_value::<engine::actions::Action>(payload).unwrap(),
+        engine::actions::Action::MailboxRetrySaved { uid } if uid == "mb-example"
+    ));
+    assert!(crate::sand_text::snapshot(app.world(), owner).is_empty());
 }
 
 #[test]

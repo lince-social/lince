@@ -128,10 +128,8 @@ async fn validate_role_on(
 }
 
 pub async fn get(pool: &SqlitePool, role_id: i64) -> Result<Option<RolePolicyRow>, StoreError> {
-    let mut tx = crate::write_tx(pool).await?;
-    let policy = get_on(&mut tx, role_id).await?;
-    tx.commit().await?;
-    Ok(policy)
+    let mut connection = pool.acquire().await?;
+    get_on(&mut connection, role_id).await
 }
 
 pub async fn get_on(
@@ -159,7 +157,7 @@ pub async fn get_on(
 }
 
 pub async fn all(pool: &SqlitePool) -> Result<Vec<RolePolicyRow>, StoreError> {
-    let mut tx = crate::write_tx(pool).await?;
+    let mut tx = pool.begin().await?;
     let policies = all_on(&mut tx).await?;
     tx.commit().await?;
     Ok(policies)

@@ -747,6 +747,76 @@ pub async fn delete_extension_on(
     Ok(true)
 }
 
+fn extension_decimal(raw: &str) -> Result<DecimalValue, StoreError> {
+    if !raw.starts_with(|character: char| character == '-' || character.is_ascii_digit()) {
+        return Err(protocol("Extension property is not a JSON number"));
+    }
+    let (coefficient, exponent) = raw.split_once(['e', 'E']).unwrap_or((raw, "0"));
+    let number = DecimalValue::parse_inferred(coefficient)
+        .map_err(|error| protocol(format!("Extension number is unsupported: {error}")))?;
+    let exponent: i32 = exponent.parse().map_err(|_| protocol("Extension number exponent is out of range"))?;
+    let mut scale = i64::from(number.scale()) - i64::from(exponent);
+    let mut mantissa = number.mantissa();
+    if mantissa == 0 {
+        return Ok(crate::exact::zero());
+    }
+    while scale > 0 && mantissa % 10 == 0 {
+        mantissa /= 10;
+        scale -= 1;
+    }
+    if scale < 0 {
+        let factor = u32::try_from(-scale).ok().and_then(|shift| 10_i128.checked_pow(shift));
+        mantissa = factor.and_then(|factor| mantissa.checked_mul(factor))
+            .ok_or_else(|| protocol("Extension number is too large"))?;
+        scale = 0;
+    }
+    let scale = u8::try_from(scale).map_err(|_| protocol("Extension number has too many decimal places"))?;
+    DecimalValue::from_mantissa(scale, mantissa).map_err(|error| protocol(format!("Extension number is unsupported: {error}")))
+}
+
+fn extension_raw_fields(raw: &str) -> Result<std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>, StoreError> {
+    if raw.len() > MAX_EXTENSION_BYTES {
+        return Err(protocol("Record extension exceeds its byte limit"));
+    }
+    let fields: std::collections::BTreeMap<String, Box<serde_json::value::RawValue>> = serde_json::from_str(raw)
+        .map_err(|error| protocol(format!("Extension is not a JSON object: {error}")))?;
+    if fields.len() > MAX_EXTENSION_KEYS {
+        return Err(protocol("Record extension exceeds its key count limit"));
+    }
+    Ok(fields)
+}
+
+pub async fn extension_number(
+    pool: &SqlitePool,
+    record_uid: &str,
+    namespace: &str,
+    property: &str,
+) -> Result<DecimalValue, StoreError> {
+    validate_extension_name(namespace, "namespace", true)?;
+    validate_extension_name(property, "property", false)?;
+    let raw: Option<String> = sqlx::query_scalar("SELECT substr(fds, 1, ?) FROM record_extension WHERE record_uid = ? AND namespace = ?")
+        .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap()).bind(record_uid).bind(namespace).fetch_optional(pool).await?;
+    let raw = raw.ok_or_else(|| protocol(format!("Record extension {namespace} is missing")))?;
+    let fields = extension_raw_fields(&raw)?;
+    let raw = fields.get(property).ok_or_else(|| protocol(format!("Extension property {namespace}.{property} is missing")))?;
+    extension_decimal(raw.get()).map_err(|error| protocol(format!("Cannot read {namespace}.{property}: {error}")))
+}
+
+pub async fn numeric_extensions(pool: &SqlitePool, record_uid: &str) -> Result<Vec<Value>, StoreError> {
+    let rows = sqlx::query("SELECT namespace, substr(fds, 1, ?) AS fds FROM record_extension WHERE record_uid = ? ORDER BY namespace")
+        .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap()).bind(record_uid).fetch_all(pool).await?;
+    let mut readings = Vec::new();
+    for row in rows {
+        let namespace: String = row.get("namespace");
+        for (property, raw) in extension_raw_fields(&row.get::<String, _>("fds"))? {
+            if let Ok(number) = extension_decimal(raw.get()) {
+                readings.push(serde_json::json!({"namespace": namespace, "property": property, "value": number.to_string()}));
+            }
+        }
+    }
+    Ok(readings)
+}
+
 pub async fn get_extension(
     pool: &SqlitePool,
     record_uid: &str,
@@ -1000,12 +1070,15 @@ pub async fn set_place_on(
     log_set_on(tx, uid, "place_uid", serde_json::json!(place_uid)).await
 }
 
-pub async fn bump_quantity(
-    tx: &mut Transaction<'_, Sqlite>,
-    uid: &str,
-    delta: DecimalValue,
-    now_rfc3339: &str,
-) -> Result<(), StoreError> {
+pub async fn bump_quantity(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: DecimalValue, now_rfc3339: &str) -> Result<(), StoreError> {
+    bump_quantity_on(tx, uid, delta, now_rfc3339, None).await
+}
+
+pub async fn bump_imported_quantity(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: DecimalValue, now_rfc3339: &str, writer: &str) -> Result<(), StoreError> {
+    bump_quantity_on(tx, uid, delta, now_rfc3339, Some(writer)).await
+}
+
+async fn bump_quantity_on(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: DecimalValue, now_rfc3339: &str, imported_writer: Option<&str>) -> Result<(), StoreError> {
     let row = sqlx::query("SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ?")
         .bind(uid)
         .fetch_optional(&mut **tx)
@@ -1029,6 +1102,13 @@ pub async fn bump_quantity(
     .await?;
     if res.rows_affected() == 0 {
         return Err(sqlx::Error::RowNotFound);
+    }
+    if let Some(writer) = imported_writer {
+        crate::transfer_stock::validate_record_on(tx, uid, Some(writer)).await?;
+    } else {
+        let is_transfer: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer WHERE record_uid = ?)").bind(uid).fetch_one(&mut **tx).await?;
+        if is_transfer { crate::transfer_stock::validate_all_on(tx).await?; }
+        else { crate::transfer_stock::validate_record_on(tx, uid, None).await?; }
     }
     Ok(())
 }

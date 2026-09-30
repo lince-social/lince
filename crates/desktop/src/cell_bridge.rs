@@ -67,6 +67,7 @@ impl Drop for CellBridge {
 }
 
 pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
+    simulation::karma_preview::install(&runtime.engine).expect("Karma preview service");
     let (outgoing, mut requests) = mpsc::channel::<ClientMessage>(64);
     let (responses, incoming) = mpsc::channel(64);
     let mut session = runtime.local_session();
@@ -98,6 +99,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
         let mut lane_tasks = tokio::task::JoinSet::new();
         let mut call_tasks = tokio::task::JoinSet::new();
         let mut speech_tasks = tokio::task::JoinSet::new();
+        let mut preview_tasks = tokio::task::JoinSet::new();
         let mut call_queue = std::collections::VecDeque::new();
         let mut terminals = cell::terminal::TerminalHost::new();
         let (terminal_output, mut terminal_messages) = mpsc::channel(64);
@@ -112,6 +114,15 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
             let messages = tokio::select! {
                 request = requests.recv() => {
                     let Some(request) = request else { break };
+                    if let ClientMessage::Act { id, action: engine::actions::Action::PreviewKarmaProposal { .. } } = &request {
+                        if preview_tasks.len() >= 4 {
+                            if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Four previews are already running; wait for a result".into(), code: Some("preview_busy".into()) }]).await { break; }
+                        } else {
+                            let mut preview = session.fork_call();
+                            preview_tasks.spawn(async move { preview.handle(request).await });
+                        }
+                        continue;
+                    }
                     if let ClientMessage::Speech { id, .. } = &request {
                         if speech_tasks.len() >= 8 {
                             if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Speech controls are busy; try again".into(), code: Some("speech_busy".into()) }]).await { break; }
@@ -203,6 +214,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                 Some(message) = terminal_messages.recv() => vec![message],
                 Some(result) = call_tasks.join_next(), if !call_tasks.is_empty() => result.unwrap_or_default(),
                 Some(result) = speech_tasks.join_next(), if !speech_tasks.is_empty() => result.unwrap_or_default(),
+                Some(result) = preview_tasks.join_next(), if !preview_tasks.is_empty() => result.unwrap_or_default(),
                 Some(id) = terminal_exits.recv() => { terminals.forget(&id); Vec::new() },
                 finished = lane_tasks.join_next(), if !lane_tasks.is_empty() => {
                     lanes.retain(|_, task| !task.is_finished());
@@ -759,5 +771,54 @@ pub(crate) mod tests {
         async backend_actions_without_facts_refresh_protein_views,
         async assertions_deliver_live_results_and_acknowledge_writes,
         async a_slow_interface_recovers_current_data_after_the_fact_bus_overflows,
+    }
+
+    #[cfg(test)]
+    struct HeldPreview {
+        ready: Arc<tokio::sync::Notify>,
+        release: Arc<tokio::sync::Notify>,
+    }
+
+    #[cfg(test)]
+    impl engine::karma_preview::Runner for HeldPreview {
+        fn run<'a>(&'a self, engine: &'a Engine, _actor: Option<String>, request: engine::karma_preview::Request,
+            now: chrono::DateTime<chrono::Utc>) -> engine::karma_preview::PreviewFuture<'a> {
+            Box::pin(async move {
+                let source = engine.store.state_hash().await?.as_str().into();
+                self.ready.notify_one();
+                self.release.notified().await;
+                Ok(engine::karma_preview::Report {
+                    required_reads: Vec::new(), draft: request.fingerprint()?, source, source_current: true,
+                    start_ms: now.timestamp_millis(), requested_until_ms: now.timestamp_millis(), stopped_at_ms: now.timestamp_millis(),
+                    stop: nucleus::simulation::Stop::HorizonReached {}, evaluations: 0, final_values: Vec::new(),
+                    first_failure: None, cycles: Vec::new(), coverage: Vec::new(), incomplete: false, unsupported: Vec::new(), assumptions: Vec::new(),
+                })
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn native_karma_preview_keeps_live_editing_available_and_reports_stale_data() {
+        let (runtime, uid) = fixture().await;
+        let mut bridge = connect(runtime.clone(), WakeSignal::new(|| {}));
+        let ready = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        runtime.engine.install_karma_preview_runner(Arc::new(HeldPreview { ready: ready.clone(), release: release.clone() })).unwrap();
+        let request = engine::karma_preview::Request {
+            proposals: vec![engine::karma_preview::ProposedRule { identity: None, rule: None, expected_revision: None,
+                fields: ["1", "always", &format!("@{uid}")].map(|source| nucleus::karma::rule_field::RuleFieldInput::Text { source: source.into() }) }],
+            limits: Default::default(), inputs: Vec::new(), records: Vec::new(), quantity_basis: Default::default(),
+            checks: Vec::new(), saved_checks: None, checks_start_ms: None, checking: Default::default(),
+        };
+        bridge.outgoing.send(ClientMessage::Act { id: "preview".into(), action: Action::PreviewKarmaProposal { request } }).await.unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(5), ready.notified()).await.unwrap();
+        bridge.outgoing.send(ClientMessage::Act { id: "edit".into(), action: Action::SetQuantityExact { target: uid.clone(), amount: "5".into() } }).await.unwrap();
+        let reply = tokio::time::timeout(std::time::Duration::from_secs(5), next(&mut bridge)).await.unwrap();
+        assert!(matches!(reply, ServerMessage::ActionOk { id, .. } if id == "edit"));
+        let reading = runtime.engine.act(Action::PreviewKarmaReading { source: format!("@{uid}") }, None).await.unwrap();
+        assert_eq!(reading.data.unwrap()["value"], "5");
+        release.notify_one();
+        let reply = next(&mut bridge).await;
+        assert!(matches!(reply, ServerMessage::ActionOk { id, data: Some(data), .. } if id == "preview" && data["source_current"] == false));
     }
 }

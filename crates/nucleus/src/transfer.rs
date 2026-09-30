@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod disclosure;
+pub mod exchange;
+pub mod application;
+pub mod loans;
+pub mod agreement;
+pub use agreement::AgreementGuard;
+pub mod karma;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionSnapshot {
     pub revision: u64,
@@ -11,6 +19,10 @@ pub struct TransferRevisionSnapshot {
     pub promises: Vec<TransferRevisionPromise>,
     #[serde(default)]
     pub dependencies: Vec<TransferRevisionDependency>,
+    #[serde(default)]
+    pub cancellations: Vec<TransferCancellationTerms>,
+    #[serde(default)]
+    pub children: Vec<TransferChildTerms>,
 }
 
 impl TransferRevisionSnapshot {
@@ -19,7 +31,24 @@ impl TransferRevisionSnapshot {
         self.invitations.sort_by(|a, b| a.uid.cmp(&b.uid));
         self.promises.sort_by(|a, b| a.uid.cmp(&b.uid));
         self.dependencies.sort_by(|a, b| a.uid.cmp(&b.uid));
+        self.cancellations.sort_by(|a, b| a.uid.cmp(&b.uid));
+        self.children.sort_by(|a, b| a.uid.cmp(&b.uid));
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransferChildTerms {
+    pub uid: String,
+    pub required: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransferCancellationTerms {
+    pub uid: String,
+    pub exchange_path_uid: String,
+    pub occurrences: Vec<String>,
+    pub quantity: crate::DecimalValue,
+    pub required_people: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -66,6 +95,8 @@ fn default_invitation_attempt() -> u64 {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionPromise {
     pub uid: String,
+    #[serde(default)]
+    pub item: Option<disclosure::TransferItem>,
     #[serde(default)]
     pub source_promise_uid: Option<String>,
     pub revision: u64,
@@ -143,6 +174,8 @@ pub struct TransferRevisionDependency {
     pub promise_uid: Option<String>,
     pub upstream_kind: TransferDependencyUpstreamKind,
     pub upstream_uid: String,
+    #[serde(default)]
+    pub origin_organ_uid: Option<String>,
     #[serde(default = "default_dependency_required_state")]
     pub required_state: String,
 }
@@ -204,32 +237,6 @@ pub fn transfer_dependency_order(
             .map(|(node, _)| node)
             .collect())
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TransferDependencyReadiness {
-    pub dependency_uid: String,
-    pub upstream: TransferDependencyNode,
-    pub required_state: String,
-    pub current_state: Option<String>,
-}
-
-impl TransferDependencyReadiness {
-    pub fn ready(&self) -> bool {
-        self.current_state.as_deref() == Some(self.required_state.as_str())
-    }
-}
-
-pub fn ordered_transfer_dependency_readiness(
-    mut values: Vec<TransferDependencyReadiness>,
-) -> Vec<TransferDependencyReadiness> {
-    values.sort_by(|left, right| {
-        left.ready()
-            .cmp(&right.ready())
-            .then_with(|| left.upstream.cmp(&right.upstream))
-            .then_with(|| left.dependency_uid.cmp(&right.dependency_uid))
-    });
-    values
 }
 
 fn default_dependency_required_state() -> String {
@@ -311,6 +318,8 @@ pub struct TransferOccurrenceSnapshot {
     pub uid: String,
     pub promise_uid: String,
     pub exchange_path_uid: String,
+    #[serde(default)]
+    pub exchange_uid: Option<String>,
     pub opposite_promise_uid: Option<String>,
     pub record_uid: Option<String>,
     pub concept_uid: Option<String>,

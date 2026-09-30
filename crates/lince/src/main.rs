@@ -158,6 +158,8 @@ fn main() -> Result<(), Error> {
             error
         })?;
 
+    simulation::karma_preview::install(&cell.runtime().engine).map_err(Error::other)?;
+
     if server_mode || (has_arg(&args, "--facade") && staged_password.is_some()) {
         if let Err(error) = runtime.block_on(cell::ensure_admin(
             &cell.runtime().store,

@@ -157,6 +157,8 @@ pub async fn set_record_field(
                 if superseded(&mut tx, &stamp).await? {
                     return Ok(false);
                 }
+                let guarded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_stock_limit WHERE record_uid = ?)").bind(uid).fetch_one(&mut *tx).await?;
+                if guarded { return Err(StoreError::Protocol("a guarded Record cannot accept a new opening quantity".into())); }
                 let row = sqlx::query(
                     "SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ?",
                 )

@@ -31,8 +31,8 @@ fn dispatch() -> Result<()> {
 
     match task.to_str() {
         Some("android") => android::dispatch(&root, &extra),
-        Some("android-clean") => android_clean::run(&extra),
-        Some("android-smoke") => android_smoke::run(&extra),
+        Some("android-clean") => android_clean::run(&root, &extra),
+        Some("android-smoke") => android_smoke::run(&root, &extra),
         Some("mobile-preview") => {
             if extra.len() > 1 {
                 return Err("usage: cargo xtask mobile-preview [data-directory]".into());

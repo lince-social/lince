@@ -14,6 +14,55 @@ fn run(work: impl Future<Output = ()> + Send + 'static) {
 }
 
 #[test]
+fn campaign_check_selection_has_an_independent_cursor_and_unverified_results() {
+    run(async {
+        let directory = tempfile::tempdir().unwrap();
+        let mut selection = simulation::campaign::CheckSelection {
+            checks: Vec::new(),
+            checking: Default::default(),
+        };
+        assert_eq!(
+            simulation::campaign::run_with_checks(directory.path(), Some(1), Some(&selection))
+                .await
+                .unwrap(),
+            3
+        );
+        let unchecked =
+            simulation::campaign::directory(directory.path(), Some(&selection)).unwrap();
+        let summary: simulation::campaign::Summary = serde_json::from_slice(
+            &std::fs::read(unchecked.join("summaries/00000000.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            summary.result.verdict,
+            nucleus::simulation::Verdict::Unverified
+        );
+        assert!(summary.retained.is_some());
+        assert!(!directory.path().join("regressions").exists());
+        selection.checks.push(simulation::scenario::Check {
+            id: "integrity".into(),
+            predicate: nucleus::simulation::Predicate::FactChain {},
+            options: Default::default(),
+        });
+        let checked = simulation::campaign::directory(directory.path(), Some(&selection)).unwrap();
+        assert_ne!(checked, unchecked);
+        assert_eq!(
+            simulation::campaign::run_with_checks(directory.path(), Some(1), Some(&selection))
+                .await
+                .unwrap(),
+            0
+        );
+        let summary: simulation::campaign::Summary = serde_json::from_slice(
+            &std::fs::read(checked.join("summaries/00000000.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(summary.result.verdict, nucleus::simulation::Verdict::Passed);
+        assert_eq!(summary.scenario.checks.len(), 1);
+        assert_eq!(summary.cost.checks.len(), 1);
+    });
+}
+
+#[test]
 fn completed_cases_resume_without_repeating_their_indices() {
     run(async {
         let directory = tempfile::tempdir().unwrap();
@@ -54,6 +103,7 @@ fn reduction_removes_irrelevant_inputs_and_reexecutes_the_same_failure() {
         let directory = tempfile::tempdir().unwrap();
         let mut case = simulation::fixtures::daily();
         case.checks.push(simulation::scenario::Check {
+            options: Default::default(),
             id: "nonnegative".into(),
             predicate: nucleus::simulation::Predicate::Nonnegative {
                 cell: "a".into(),
@@ -86,6 +136,7 @@ fn reduction_keeps_a_prerequisite_when_removing_it_introduces_another_failure() 
         let directory = tempfile::tempdir().unwrap();
         let mut case = simulation::fixtures::daily();
         case.checks.push(simulation::scenario::Check {
+            options: Default::default(),
             id: "nonnegative".into(),
             predicate: nucleus::simulation::Predicate::Nonnegative {
                 cell: "a".into(),

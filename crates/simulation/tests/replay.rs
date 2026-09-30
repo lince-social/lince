@@ -35,6 +35,7 @@ fn refused_actions_require_an_explicit_expected_refusal() {
             matches!(&failed.findings[0].witness, nucleus::simulation::Witness::RefusedAction { input, .. } if input == "missing")
         );
         case.checks.push(Check {
+            options: Default::default(),
             id: "expected-missing".into(),
             predicate: Predicate::ExpectedRefusal {
                 input: "missing".into(),
@@ -127,6 +128,7 @@ fn witnessed_failure_survives_completion_and_replay_and_corruption_is_distinct()
         let original = directory.path().join("original");
         let mut case = scenario();
         case.checks.push(Check {
+            options: Default::default(),
             id: "stock-never-negative".into(),
             predicate: Predicate::Nonnegative {
                 cell: "a".into(),
@@ -188,6 +190,7 @@ fn four_cells_converge_after_duplicates_partition_loss_and_restart() {
         }
         case.end_ms = case.start_ms + 10_000;
         case.checks = vec![Check {
+            options: Default::default(),
             id: "converged".into(),
             predicate: Predicate::Converged {
                 cells: vec!["a".into(), "b".into(), "c".into(), "d".into()],
@@ -418,6 +421,63 @@ fn reviewed_transfer_settles_and_delivers_through_duplicates_and_restart() {
             finding.witness,
             nucleus::simulation::Witness::RefusedMessage { .. }
         )));
+    });
+}
+
+#[test]
+fn transfer_item_visibility_survives_delivery_and_replay() {
+    run(async {
+        for mode in [
+            nucleus::transfer_delivery::TransferDeliveryMode::Replicated,
+            nucleus::transfer_delivery::TransferDeliveryMode::Hosted,
+        ] {
+            let directory = tempfile::tempdir().unwrap();
+            let original = directory.path().join("visibility");
+            let mut case = simulation::fixtures::transfer::visibility();
+            for input in &mut case.inputs {
+                if let simulation::scenario::Event::Action { invocation } = &mut input.event
+                    && let Action::ConfigureTransferDelivery {
+                        mode: configured, ..
+                    } = &mut invocation.action
+                {
+                    *configured = mode;
+                }
+            }
+            let mut session =
+                simulation::artifacts::Session::open(case, &original, std::path::Path::new("."))
+                    .await
+                    .unwrap();
+            while session.step().await.unwrap() {}
+            let source = session.world.resolve_reference("$bike");
+            let pool = &session.world.nodes["a"].engine().store.pool;
+            let payloads: Vec<String> =
+                store::sqlx::query_scalar("SELECT payload FROM transfer_delivery_outbox")
+                    .fetch_all(pool)
+                    .await
+                    .unwrap();
+            assert!(!payloads.is_empty());
+            for payload in payloads {
+                let envelope: nucleus::transfer_delivery::TransferEnvelopeV1 =
+                    serde_json::from_str(&payload).unwrap();
+                assert!(!payload.contains(&source), "{payload}");
+                assert_eq!(envelope.projection["promises"][0]["title"], "City bike");
+                assert!(envelope.facts.is_empty());
+                assert!(envelope.action_intents.is_empty());
+            }
+            let result = session.finish().await.unwrap();
+            assert_eq!(
+                result.result.verdict,
+                Verdict::Passed,
+                "{:?}",
+                result.findings
+            );
+            assert!(matches!(
+                simulation::artifacts::replay(&original, &directory.path().join("replay"))
+                    .await
+                    .unwrap(),
+                ReplayStatus::Verified { .. }
+            ));
+        }
     });
 }
 

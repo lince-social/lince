@@ -56,6 +56,7 @@ pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, 
         Some(value) => value,
         None => crate::config::transfer_reservation_default(pool).await?,
     };
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO promise (uid, record_uid, concept_uid, delta, window_end, party_uid,
                               state, condition, transfer_uid, rule_uid, reserve_from,
@@ -75,8 +76,10 @@ pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, 
     .bind(&reserve_from)
     .bind(&now)
     .bind(&now)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    crate::transfer_stock::validate_all_on(&mut tx).await?;
+    tx.commit().await?;
     Ok(uid)
 }
 
@@ -99,12 +102,15 @@ pub async fn expired_promises(
 }
 
 pub async fn set_promise_delta(pool: &SqlitePool, uid: &str, delta: f64) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query("UPDATE promise SET delta = ?, updated_at = ? WHERE uid = ?")
         .bind(delta)
         .bind(nucleus::execution::now().to_rfc3339())
         .bind(uid)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+    crate::transfer_stock::validate_all_on(&mut tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -180,12 +186,15 @@ pub async fn set_promise_state(
     uid: &str,
     state: PromiseState,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query("UPDATE promise SET state = ?, updated_at = ? WHERE uid = ?")
         .bind(state.as_str())
         .bind(nucleus::execution::now().to_rfc3339())
         .bind(uid)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+    crate::transfer_stock::validate_all_on(&mut tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -254,6 +263,7 @@ pub async fn finish_effect(
     ok: bool,
     result: &str,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "UPDATE effect_queue SET status = ?, finished_at = ?, result = ?,
                 attempts = attempts + 1 WHERE uid = ?",
@@ -262,8 +272,11 @@ pub async fn finish_effect(
     .bind(nucleus::execution::now().to_rfc3339())
     .bind(result)
     .bind(uid)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    sqlx::query("INSERT INTO karma_effect_outcome(effect_uid, attempt, status, result, at) SELECT uid, attempts, status, result, finished_at FROM effect_queue WHERE uid = ?")
+        .bind(uid).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 

@@ -18,11 +18,15 @@ nucleus = { workspace = true }
 protein = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+base64 = { workspace = true }
 schemars = { workspace = true }
 sha2 = { workspace = true }
 chrono = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tempfile = "=3.27.0"
+
+[dev-dependencies]
+fiote = { workspace = true }
 
 [build-dependencies]
 sha2 = { workspace = true }

@@ -74,10 +74,11 @@ pub async fn replace_inline(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Resu
     let Some(condition) = row.get::<Option<String>, _>("condition_src") else {
         return Ok(());
     };
+    let consequences: Vec<nucleus::karma::Consequence> = serde_json::from_str(&row.get::<String, _>("consequences_json"))
+            .map_err(|_| invalid("Unreadable consequences"))?;
     let consequence = RuleConsequence {
-        target: row.get("record_uid"),
-        consequences: serde_json::from_str(&row.get::<String, _>("consequences_json"))
-            .map_err(|_| invalid("Unreadable consequences"))?,
+        target: consequences.iter().find_map(nucleus::karma::Consequence::transfer_target).map(str::to_owned).unwrap_or_else(|| row.get("record_uid")),
+        consequences,
     };
     let sources = [condition, row.get("gate"), consequence.as_text()];
     for (kind, source) in RuleFieldKind::ALL.into_iter().zip(sources) {
@@ -128,10 +129,22 @@ pub async fn save_rule(
     now: DateTime<Utc>,
 ) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
-    write_rule(&mut tx, rule, request, now).await?;
+    save_rule_tx(&mut tx, rule, fields, identity, request, now).await?;
+    tx.commit().await
+}
+
+pub async fn save_rule_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    rule: &Recurrence,
+    fields: &[Selection],
+    identity: Option<&nucleus::karma::rule_field::RuleIdentity>,
+    request: &str,
+    now: DateTime<Utc>,
+) -> Result<(), StoreError> {
+    write_rule(tx, rule, request, now).await?;
     for selection in fields {
         if selection.fresh {
-            insert_field(&mut tx, &selection.field).await?;
+            insert_field(tx, &selection.field).await?;
         } else {
             let revision: Option<i64> = sqlx::query_scalar(
                 "SELECT revision FROM karma_field WHERE uid = ? AND kind = ? AND source = ?",
@@ -139,26 +152,26 @@ pub async fn save_rule(
             .bind(&selection.field.uid)
             .bind(selection.field.kind.as_str())
             .bind(&selection.field.source)
-            .fetch_optional(&mut *tx)
+            .fetch_optional(&mut **tx)
             .await?;
             if revision != Some(selection.field.revision) {
                 return Err(invalid("This shared field changed. Refresh before saving."));
             }
         }
-        bind(&mut tx, &rule.uid, &selection.field).await?;
+        bind(tx, &rule.uid, &selection.field).await?;
     }
     if let Some(identity) = identity {
         sqlx::query("UPDATE recurrence SET name = ?, slug = ? WHERE uid = ?")
             .bind(&identity.name)
             .bind(&identity.slug)
             .bind(&rule.uid)
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await?;
     }
     sqlx::query("UPDATE recurrence_revision SET name = (SELECT name FROM recurrence WHERE uid = ?), slug = (SELECT slug FROM recurrence WHERE uid = ?) WHERE request_id = ?")
-        .bind(&rule.uid).bind(&rule.uid).bind(request).execute(&mut *tx).await?;
-    remember(&mut tx, request, &rule.uid).await?;
-    tx.commit().await
+        .bind(&rule.uid).bind(&rule.uid).bind(request).execute(&mut **tx).await?;
+    remember(tx, request, &rule.uid).await?;
+    Ok(())
 }
 
 pub async fn revise_field(
@@ -248,6 +261,7 @@ async fn write_rule(
         .bind(request).bind(&rule.uid).execute(&mut **tx).await?;
     crate::karma_bindings::save(tx, &rule.uid, Some(&condition.source), &condition.bindings)
         .await?;
+    crate::karma_schedules::reflect_rule_edit(tx, &rule.uid, now).await?;
     Ok(())
 }
 

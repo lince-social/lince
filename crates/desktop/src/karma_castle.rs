@@ -1,5 +1,8 @@
 use lince_interface::karma as model;
 mod persistence;
+mod schedules_ui;
+mod preview_ui;
+mod history_ui;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -25,6 +28,10 @@ pub struct KarmaCastle {
     pub search: String,
     #[serde(default)]
     pub edits: Vec<Draft>,
+    #[serde(default)]
+    pub schedule: Option<model::schedules::Draft>,
+    #[serde(default)]
+    pub preview: preview_ui::Form,
 }
 
 #[derive(Component)]
@@ -40,6 +47,8 @@ struct View {
     rules: Vec<Rule>,
     records: Vec<Value>,
     frequencies: Vec<Value>,
+    transfers: Vec<Value>,
+    acting_person: Option<String>,
     record_lookup: HashMap<String, usize>,
     frequency_lookup: HashMap<String, usize>,
     pending: Option<String>,
@@ -53,6 +62,21 @@ struct Requests {
     readings: HashMap<String, Entity>,
 }
 
+#[derive(Component)]
+struct FocusRule(String);
+
+pub(crate) fn open_rule(world: &mut World, source: Entity, uid: &str) {
+    let mut root = source;
+    while world.get::<crate::workspace::Workspaces>(root).is_none() {
+        let Some(parent) = world.get::<ChildOf>(root) else { return; };
+        root = parent.parent();
+    }
+    let workspace = world.get::<WorkspaceMember>(source).map_or(1, |member| member.0);
+    let position = world.get::<crate::canvas::CanvasItem>(source).map_or(DVec2::ZERO, |item| item.position + DVec2::new(40.0, 40.0));
+    let owner = spawn(world, root, workspace, position, KarmaCastle::default());
+    world.entity_mut(owner).insert(FocusRule(uid.into()));
+}
+
 pub struct KarmaCastlePlugin;
 
 impl Plugin for KarmaCastlePlugin {
@@ -63,7 +87,7 @@ impl Plugin for KarmaCastlePlugin {
             .add_observer(ui::hover_off)
             .add_systems(
                 Update,
-                (receive.after(ReceiveCell), maintain, ui::tick).chain(),
+                (receive.after(ReceiveCell), maintain, ui::tick, schedules_ui::maintain, preview_ui::maintain).chain(),
             )
             .add_systems(
                 PostUpdate,
@@ -143,6 +167,8 @@ pub fn spawn(
         rules: Vec::new(),
         records: Vec::new(),
         frequencies: Vec::new(),
+        transfers: Vec::new(),
+        acting_person: None,
         record_lookup: HashMap::new(),
         frequency_lookup: HashMap::new(),
         pending: None,
@@ -150,6 +176,9 @@ pub fn spawn(
         ready: false,
     });
     ui::render_form(world, owner);
+    schedules_ui::spawn(world, owner, scroll);
+    preview_ui::spawn(world, owner, scroll);
+    history_ui::spawn(world, owner, scroll);
     owner
 }
 
@@ -275,15 +304,19 @@ fn delete_next(world: &mut World, owner: Entity) {
 }
 
 fn query(index: usize) -> protein::Protein {
-    let source = ["karma_rule", "record", "frequency"][index];
+    let source = ["karma_rule", "record", "frequency", "transfer"][index];
     let mut query: protein::Protein =
         serde_json::from_value(serde_json::json!({"source": source})).unwrap();
     if index == 1 {
+        query.include.numeric_extensions = true;
         query.fields = Some(
-            ["uid", "slug", "head", "quantity"]
+            ["uid", "slug", "head", "quantity", "numeric_extensions"]
                 .map(str::to_owned)
                 .into(),
         );
+    }
+    if index == 3 {
+        query.fields = Some(["uid", "slug", "head", "parties", "promises", "karma_state"].map(str::to_owned).into());
     }
     query
 }
@@ -317,7 +350,7 @@ fn maintain(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        for index in 0..3 {
+        for index in 0..4 {
             let id = format!("karma-castle-{}-{index}", owner.to_bits());
             if world.resource::<Requests>().subscriptions.contains_key(&id) {
                 continue;
@@ -347,6 +380,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .map(|message| message.0.clone())
         .collect();
     for message in messages {
+        if schedules_ui::receive(world, &message) { continue; }
+        if preview_ui::receive(world, &message) { continue; }
+        if history_ui::receive(world, &message) { continue; }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
                 let Some((owner, index)) =
@@ -354,6 +390,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 else {
                     continue;
                 };
+                schedules_ui::dirty(world, owner);
+                preview_ui::dirty(world, owner);
                 let Some(mut view) = world.get_mut::<View>(owner) else {
                     continue;
                 };
@@ -389,15 +427,27 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         view.record_lookup = lookup(&rows);
                         view.records = rows;
                     }
-                    _ => {
+                    2 => {
                         if view.frequencies == rows {
                             continue;
                         }
                         view.frequency_lookup = lookup(&rows);
                         view.frequencies = rows;
                     }
+                    _ => {
+                        let acting = rows.iter().find(|row| row["kind"] == "transfer_context").and_then(|row| row["acting_person"].as_str()).map(str::to_owned);
+                        let transfers: Vec<_> = rows.into_iter().filter(|row| row["kind"] != "transfer_context").collect();
+                        if view.transfers == transfers && view.acting_person == acting { continue; }
+                        view.transfers = transfers;
+                        view.acting_person = acting;
+                    }
                 }
                 ui::refresh_links(world, owner);
+                if index == 0 && let Some(uid) = world.get::<FocusRule>(owner).map(|focus| focus.0.clone())
+                    && world.get::<View>(owner).unwrap().rules.iter().any(|rule| rule.uid == uid) {
+                    world.entity_mut(owner).remove::<FocusRule>();
+                    ui::Command::EditCell(uid, 0).apply(world, owner);
+                }
             }
             ServerMessage::ActionOk { id, data, .. } => {
                 let reading = world.resource_mut::<Requests>().readings.remove(&id);

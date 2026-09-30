@@ -14,6 +14,95 @@ fn fixture() -> (World, Entity) {
 }
 
 #[test]
+fn explorer_keyboard_selects_without_opening_and_scrolls_to_the_selection() {
+    use bevy::input_focus::{FocusCause, InputFocus};
+    let (mut world, root) = fixture();
+    world.init_resource::<InputFocus>();
+    world.init_resource::<ButtonInput<KeyCode>>();
+    let owner = spawn(&mut world, root, 1, DVec2::ZERO, FileExplorer::default());
+    let mut view = world.get_mut::<View>(owner).unwrap();
+    view.restore = false;
+    view.dirty = false;
+    view.rows = (0..100)
+        .map(|n| Row {
+            entry: Entry {
+                path: PathBuf::from(format!("/root/file{n}")),
+                directory: false,
+                link: false,
+            },
+            root: PathBuf::from("/root"),
+            depth: 1,
+        })
+        .collect();
+    let viewport = view.viewport;
+    world
+        .resource_mut::<InputFocus>()
+        .set(viewport, FocusCause::Navigated);
+    world
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ArrowDown);
+    navigation::keyboard(&mut world);
+    assert_eq!(
+        world
+            .get::<View>(owner)
+            .unwrap()
+            .selected
+            .as_ref()
+            .unwrap()
+            .entry
+            .path,
+        PathBuf::from("/root/file0")
+    );
+    world.resource_mut::<ButtonInput<KeyCode>>().reset_all();
+    world
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::End);
+    navigation::keyboard(&mut world);
+    assert_eq!(
+        world
+            .get::<View>(owner)
+            .unwrap()
+            .selected
+            .as_ref()
+            .unwrap()
+            .entry
+            .path,
+        PathBuf::from("/root/file99")
+    );
+    assert!(world.get::<ScrollPosition>(viewport).unwrap().y > 0.0);
+    assert_eq!(
+        world
+            .query_filtered::<Entity, With<crate::ide::Ide>>()
+            .iter(&world)
+            .count(),
+        0
+    );
+}
+
+#[test]
+fn returning_focus_invalidates_cached_directory_contents() {
+    use bevy::ecs::system::RunSystemOnce;
+    let (mut world, root) = fixture();
+    let owner = spawn(&mut world, root, 1, DVec2::ZERO, FileExplorer::default());
+    world.get_mut::<View>(owner).unwrap().restore = false;
+    world.get_mut::<View>(owner).unwrap().cache.insert(
+        PathBuf::from("/root"),
+        Listing {
+            entries: Vec::new(),
+            truncated: false,
+        },
+    );
+    world.init_resource::<Messages<bevy::window::WindowFocused>>();
+    world.write_message(bevy::window::WindowFocused {
+        window: Entity::PLACEHOLDER,
+        focused: true,
+    });
+    world.run_system_once(runtime::focus).unwrap();
+    runtime::update(&mut world);
+    assert!(world.get::<View>(owner).unwrap().cache.is_empty());
+}
+
+#[test]
 fn tree_and_grid_only_spawn_the_visible_rows() {
     let (mut world, root) = fixture();
     let owner = spawn(&mut world, root, 1, DVec2::ZERO, FileExplorer::default());
@@ -218,4 +307,85 @@ fn explorer_creates_renames_moves_and_restores_deleted_items() {
     await_operation(&mut world, owner, directory.path());
     assert!(target.is_dir());
     assert!(!renamed.exists());
+}
+#[test]
+fn folder_picking_requires_selection_and_grid_browses_one_directory() {
+    let (mut world, root) = fixture();
+    let dir = tempfile::tempdir().unwrap();
+    let child = dir.path().join("child");
+    std::fs::create_dir(&child).unwrap();
+    std::fs::write(child.join("file.txt"), "text").unwrap();
+    let field = input(&mut world, root, "Folder", "", 4096);
+    let picker = world.spawn(Node::default()).id();
+    populate(
+        &mut world,
+        picker,
+        FileExplorer {
+            roots: vec![dir.path().into()],
+            grid: true,
+            ..default()
+        },
+        Target::Input {
+            entity: field,
+            original: String::new(),
+            extensions: Vec::new(),
+            directories: true,
+        },
+    );
+    await_operation(&mut world, picker, dir.path());
+    let row = Row {
+        entry: Entry {
+            path: child.clone(),
+            directory: true,
+            link: false,
+        },
+        root: dir.path().into(),
+        depth: 1,
+    };
+    actions::Control::Entry(row).apply(&mut world, picker);
+    assert_eq!(
+        world
+            .get::<EditableText>(field)
+            .unwrap()
+            .value()
+            .to_string(),
+        ""
+    );
+    assert_eq!(
+        world.get::<View>(picker).unwrap().directory.as_ref(),
+        Some(&child)
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        runtime::update(&mut world);
+        if world.get::<View>(picker).unwrap().rows.len() == 1 {
+            break;
+        }
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::sleep(std::time::Duration::from_millis(2));
+    }
+    assert_eq!(
+        world.get::<View>(picker).unwrap().rows[0].entry.path,
+        child.join("file.txt")
+    );
+    actions::Control::Up.apply(&mut world, picker);
+    assert_eq!(
+        world.get::<View>(picker).unwrap().directory.as_deref(),
+        Some(dir.path())
+    );
+    actions::Control::Back.apply(&mut world, picker);
+    assert_eq!(
+        world.get::<View>(picker).unwrap().directory.as_ref(),
+        Some(&child)
+    );
+    actions::Control::SelectFolder.apply(&mut world, picker);
+    assert_eq!(
+        world
+            .get::<EditableText>(field)
+            .unwrap()
+            .value()
+            .to_string(),
+        child.to_str().unwrap()
+    );
+    assert!(world.get_entity(picker).is_err());
 }

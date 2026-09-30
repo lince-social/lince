@@ -61,6 +61,26 @@ fn query() -> ClientMessage {
 }
 
 #[tokio::test]
+async fn an_unlocked_long_read_allows_live_edits_and_rechecks_login_before_returning() {
+    let (engine, login, record) = fixture().await;
+    let ready = tokio::sync::Notify::new();
+    let release = tokio::sync::Notify::new();
+    let read = login.run_unlocked(&engine, async {
+        ready.notify_one();
+        release.notified().await;
+        Ok(())
+    });
+    let edit = async {
+        ready.notified().await;
+        tokio::time::timeout(std::time::Duration::from_secs(3), engine.act(Action::SetQuantityExact { target: record, amount: "4".into() }, None)).await.unwrap().unwrap();
+        login.revoke();
+        release.notify_one();
+    };
+    let (result, ()) = tokio::join!(read, edit);
+    assert!(matches!(result, Err(engine::EngineError::Forbidden(_))));
+}
+
+#[tokio::test]
 async fn revocation_stops_queries_collaboration_and_actions_but_keeps_local_owner_access() {
     let (engine, login, record) = fixture().await;
     let mut session = Session::authenticated(

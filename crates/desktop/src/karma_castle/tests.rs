@@ -426,7 +426,7 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
         .collect();
     ui::render_list(world, owner);
     let controls = world.get::<View>(owner).unwrap().controls;
-    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 2);
     let list = world.get::<View>(owner).unwrap().list;
     let first = world.get::<Children>(list).unwrap()[0];
     let delete_cell = world.get::<Children>(first).unwrap()[0];
@@ -458,8 +458,12 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
     assert_eq!(world.get::<KarmaCastle>(owner).unwrap().edits.len(), 1);
     assert_eq!(
         world
-            .query::<&bevy::text::EditableText>()
+            .query::<(&bevy::text::EditableText, &bevy::a11y::AccessibilityNode)>()
             .iter(world)
+            .filter(|(_, node)| matches!(
+                node.label(),
+                Some("Filter rules" | "Condition" | "Threshold" | "Consequence" | "Name" | "Slug")
+            ))
             .count(),
         2
     );
@@ -480,8 +484,12 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
     );
     assert_eq!(
         world
-            .query::<&bevy::text::EditableText>()
+            .query::<(&bevy::text::EditableText, &bevy::a11y::AccessibilityNode)>()
             .iter(world)
+            .filter(|(_, node)| matches!(
+                node.label(),
+                Some("Filter rules" | "Condition" | "Threshold" | "Consequence" | "Name" | "Slug")
+            ))
             .count(),
         2
     );
@@ -492,8 +500,8 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
     ui::Command::New.apply(world, owner);
     assert_eq!(world.get::<ScrollPosition>(scroll).unwrap().0, Vec2::ZERO);
     let buttons = world.get::<Children>(controls).unwrap();
-    assert_eq!(buttons.len(), 2);
-    let create = world.get::<Children>(buttons[0]).unwrap()[0];
+    assert_eq!(buttons.len(), 3);
+    let create = world.get::<Children>(buttons[1]).unwrap()[0];
     assert_eq!(world.get::<Text>(create).unwrap().0, "Create");
     let form = world.get::<View>(owner).unwrap().form;
     assert_eq!(world.get::<Children>(form).unwrap().len(), 1);
@@ -525,7 +533,7 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
             && z.0 == 30
     ));
     ui::Command::Cancel.apply(world, owner);
-    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 2);
 }
 
 #[test]

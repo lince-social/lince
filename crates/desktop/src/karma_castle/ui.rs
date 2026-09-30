@@ -37,6 +37,7 @@ pub(super) struct Reading {
 #[derive(Clone)]
 pub(super) enum Command {
     Create,
+    Simulate,
     New,
     Cancel,
     Save,
@@ -86,6 +87,10 @@ impl Action for Command {
         }
         capture(world, owner);
         match self {
+            Self::Simulate => {
+                super::preview_ui::run_captured(world, owner);
+                return;
+            }
             Self::Create => {}
             Self::New => {
                 let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
@@ -539,6 +544,7 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
     let creating = castle.draft.is_some();
     let editing = !castle.edits.is_empty();
     clear(world, controls);
+    button(world, controls, owner, Command::Simulate, "Simulate unsaved Rules");
     if creating || editing {
         for (command, title) in [
             (Command::Save, if creating { "Create" } else { "Save" }),
@@ -616,6 +622,7 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     !busy,
                 );
                 size_icon(world, toggle, 16.0);
+                super::history_ui::button(world, owner, line, &rule.uid);
                 line
             } else {
                 rich_text(
@@ -887,13 +894,15 @@ pub(super) fn inputs(world: &mut World) {
         }
         let view = world.get::<View>(owner).unwrap();
         let prefix = text.get(..selection.end.min(text.len())).unwrap_or(&text);
-        let choices = model::suggestions(
+        let mut choices = model::suggestions(
             RuleFieldKind::ALL[index],
             prefix,
             &view.rules,
             &view.records,
             &view.frequencies,
         );
+        let tail = prefix.rsplit(|character: char| character.is_whitespace() || matches!(character, '(' | ')' | '*' | '/' | '+' | '=' | ',')).next().unwrap_or("").to_lowercase();
+        choices.extend(model::transfers::elements(RuleFieldKind::ALL[index], &view.transfers, view.acting_person.as_deref()).into_iter().filter(|element| element.to_lowercase().contains(&tail) || model::transfers::label(element, &view.transfers).to_lowercase().contains(&tail)).take(16).map(Suggestion::Element));
         if !choices.is_empty() {
             world.get_mut::<Node>(suggestions).unwrap().display = Display::Flex;
         }
@@ -905,7 +914,7 @@ pub(super) fn inputs(world: &mut World) {
                 }
                 Suggestion::Element(element) => (
                     Command::Insert(row, index, element.clone(), selection.clone()),
-                    element,
+                    model::transfers::label(&model::element_label(&element, &world.get::<View>(owner).unwrap().records), &world.get::<View>(owner).unwrap().transfers),
                 ),
             };
             button(world, suggestions, owner, command, &label);

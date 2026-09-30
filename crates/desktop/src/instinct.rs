@@ -1,5 +1,6 @@
 mod persistence;
 mod reader;
+mod habit_ui;
 pub(crate) mod tests;
 
 use crate::{actions::Action, canvas::CanvasItem, workspace::WorkspaceMember};
@@ -88,6 +89,7 @@ struct Section {
 pub struct InstinctPlugin;
 impl Plugin for InstinctPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<habit_ui::Subscriptions>().add_systems(Update, habit_ui::tick.after(crate::cell_bridge::ReceiveCell));
         app.add_systems(
             PostUpdate,
             (reader::scroll_to_record, reader::reveal_selection)

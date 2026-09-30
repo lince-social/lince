@@ -98,6 +98,7 @@ pub(super) fn maintain(world: &mut World) {
                 break;
             }
         }
+        karma::maintain(world, owner);
     }
 }
 
@@ -157,6 +158,7 @@ pub(super) fn receive(
         .map(|message| message.0.clone())
         .collect();
     for message in messages {
+        if karma::receive(world, &message) { continue; }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
                 let Some((owner, kind)) = world.resource::<Requests>().0.get(&id).cloned() else {

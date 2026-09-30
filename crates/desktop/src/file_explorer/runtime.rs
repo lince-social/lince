@@ -2,8 +2,22 @@ use super::*;
 
 #[derive(Resource, Default)]
 pub(super) struct Watching {
-    watch: Option<lince_editor::watch::Watch>,
+    watch: Option<Arc<std::sync::Mutex<lince_editor::watch::Watch>>>,
+    pending: Option<Arc<std::sync::Mutex<lince_editor::watch::Changes>>>,
+    wanted: BTreeSet<PathBuf>,
+    updating: bool,
+    fallback: bool,
     attempted: bool,
+    refresh: bool,
+}
+
+pub(super) fn focus(
+    mut events: MessageReader<bevy::window::WindowFocused>,
+    mut watching: ResMut<Watching>,
+) {
+    if events.read().any(|event| event.focused) {
+        watching.refresh = true;
+    }
 }
 
 pub(super) fn update(world: &mut World) {
@@ -145,17 +159,41 @@ fn render(world: &mut World, owner: Entity) {
             rows.clone()
         } else {
             let mut rows = Vec::new();
-            for root in &config.roots {
+            let directories = view.directory.iter().collect::<Vec<_>>();
+            let roots = if directories.is_empty() {
+                config.roots.iter().collect()
+            } else {
+                directories
+            };
+            for directory in roots {
+                let root = view
+                    .scopes
+                    .keys()
+                    .filter(|root| directory.starts_with(root))
+                    .max_by_key(|root| root.components().count())
+                    .unwrap_or(directory);
+                if config.grid && view.directory.is_some() {
+                    if let Some(listing) = view.cache.get(directory) {
+                        rows.extend(listing.entries.iter().cloned().map(|entry| Row {
+                            entry,
+                            root: root.clone(),
+                            depth: 1,
+                        }));
+                    }
+                    continue;
+                }
                 rows.push(Row {
                     entry: Entry {
-                        path: root.clone(),
+                        path: directory.clone(),
                         directory: true,
                         link: false,
                     },
                     root: root.clone(),
                     depth: 0,
                 });
-                flatten(view, root, root, 1, &mut rows);
+                if !config.grid {
+                    flatten(view, root, directory, 1, &mut rows);
+                }
             }
             rows
         };
@@ -163,6 +201,12 @@ fn render(world: &mut World, owner: Entity) {
         view.rows = rows;
         view.shown = None;
         view.dirty = false;
+        let location = view.location;
+        let caption = view.directory.as_ref().map_or_else(
+            || "Selected roots".to_owned(),
+            |path| path.display().to_string(),
+        );
+        crate::sand_panel::status(world, location, caption);
     }
     let view = world.get::<View>(owner).unwrap();
     let grid = world.get::<FileExplorer>(owner).unwrap().grid;
@@ -199,6 +243,7 @@ fn render(world: &mut World, owner: Entity) {
         .collect();
     let expanded = view.expanded.clone();
     let search = view.search_rows.is_some();
+    let selected = view.selected.as_ref().map(|row| row.entry.path.clone());
     crate::sand_panel::clear(world, content);
     world.get_mut::<Node>(content).unwrap().height = px(total as f32 * height);
     for (index, row) in rows.into_iter().enumerate() {
@@ -220,7 +265,7 @@ fn render(world: &mut World, owner: Entity) {
                 .to_string_lossy()
                 .into_owned()
         } else if row.depth == 0 {
-            row.root.display().to_string()
+            row.entry.path.display().to_string()
         } else {
             row.entry
                 .path
@@ -245,6 +290,11 @@ fn render(world: &mut World, owner: Entity) {
             &caption,
             actions::Control::Entry(row.clone()),
         );
+        if selected.as_ref() == Some(&row.entry.path) {
+            world
+                .entity_mut(button)
+                .insert(BackgroundColor(Color::srgba(0.25, 0.45, 0.7, 0.35)));
+        }
         world.entity_mut(button).insert(Node {
             position_type: PositionType::Absolute,
             left: if grid {
@@ -268,7 +318,7 @@ fn render(world: &mut World, owner: Entity) {
             overflow: Overflow::clip(),
             ..default()
         });
-        if !grid && row.depth == 0 {
+        if !grid && row.depth == 0 && row.entry.path == row.root {
             let remove = crate::sand_panel::button(
                 world,
                 content,
@@ -328,6 +378,7 @@ fn watches(world: &mut World, owners: &[Entity]) {
     }
     let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
     let mut watching = world.resource_mut::<Watching>();
+    let refresh = std::mem::take(&mut watching.refresh);
     if !watching.attempted && !wanted.is_empty() {
         watching.attempted = true;
         match lince_editor::watch::Watch::new(move || {
@@ -335,7 +386,10 @@ fn watches(world: &mut World, owners: &[Entity]) {
                 wake.ring();
             }
         }) {
-            Ok(watch) => watching.watch = Some(watch),
+            Ok(watch) => {
+                watching.pending = Some(watch.pending());
+                watching.watch = Some(Arc::new(std::sync::Mutex::new(watch)));
+            }
             Err(e) => {
                 for owner in owners {
                     status(
@@ -348,18 +402,48 @@ fn watches(world: &mut World, owners: &[Entity]) {
             }
         }
     }
-    let Some(watch) = &mut watching.watch else {
-        return;
-    };
-    let result = watch.set(wanted);
-    let changes = watch.drain();
-    if let Err(e) = result {
-        for owner in owners {
-            status(
+    let mut changes = watching
+        .pending
+        .as_ref()
+        .map(|pending| std::mem::take(&mut *pending.lock().expect("watch events")))
+        .unwrap_or_default();
+    changes.rescan |= refresh;
+    watching.fallback |= changes.error.take().is_some();
+    if !watching.updating && (watching.wanted != wanted || watching.fallback) {
+        let fallback = watching.fallback;
+        let watcher = watching.watch.clone();
+        drop(watching);
+        if let Some(watcher) = watcher {
+            let requested = wanted.clone();
+            let owners = owners.to_vec();
+            let result = worker::run(
                 world,
-                *owner,
-                format!("Some paths cannot be watched: {e}. Use Refresh."),
+                move || {
+                    let mut watcher = watcher.lock().expect("file watcher");
+                    if fallback {
+                        watcher.use_polling();
+                    }
+                    watcher.set(requested)
+                },
+                move |world, result| {
+                    world.resource_mut::<Watching>().updating = false;
+                    if let Err(error) = result {
+                        for owner in owners {
+                            status(
+                                world,
+                                owner,
+                                format!("Some paths cannot be watched: {error}. Use Refresh."),
+                            );
+                        }
+                    }
+                },
             );
+            if result.is_ok() {
+                let mut watching = world.resource_mut::<Watching>();
+                watching.wanted = wanted;
+                watching.updating = true;
+                watching.fallback = false;
+            }
         }
     }
     if !changes.rescan && changes.paths.is_empty() {

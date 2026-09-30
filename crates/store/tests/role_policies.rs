@@ -6,6 +6,19 @@ async fn role(store: &Store, name: &str) -> i64 {
 }
 
 #[tokio::test]
+async fn reading_policies_preserves_the_source_state() {
+    let store = Store::open_memory().await.unwrap();
+    let configured = role(&store, "configured").await;
+    let empty = role(&store, "empty").await;
+    let policy = store::role_policies::set(&store.pool, configured, &json!({}), 0).await.unwrap();
+    let before = store.state_hash().await.unwrap();
+    assert_eq!(store::role_policies::get(&store.pool, configured).await.unwrap(), Some(policy.clone()));
+    assert_eq!(store::role_policies::get(&store.pool, empty).await.unwrap(), None);
+    assert_eq!(store::role_policies::all(&store.pool).await.unwrap(), vec![policy]);
+    assert_eq!(store.state_hash().await.unwrap(), before);
+}
+
+#[tokio::test]
 async fn the_real_migration_has_a_strict_role_policy_home() {
     let store = Store::open_memory().await.unwrap();
     let columns = store::sqlx::query_as::<_, (String, String, i64, Option<String>, i64, i64)>(

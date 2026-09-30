@@ -3,14 +3,19 @@ mod diff;
 pub mod explorer;
 pub mod files;
 pub mod indent;
+pub mod language;
+pub mod lsp;
 pub mod operations;
 pub mod project_search;
 pub mod recovery;
 pub mod search;
+pub mod tooling;
 pub mod watch;
+pub mod words;
 
 pub use buffer::{
-    Buffer, Checkpoint, Conflict, Reconciled, Reconciliation, Resolution, SavePoint, TextWindow,
+    Buffer, Checkpoint, Conflict, EncodedSave, Reconciled, Reconciliation, Resolution, SavePoint,
+    TextWindow,
 };
 pub use diff::Edit;
 

@@ -111,6 +111,7 @@ pub enum Incomplete {
     UnavailableRuntime {},
     PastWindow {},
     UnsupportedFilter {},
+    UnsupportedUnit {},
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]

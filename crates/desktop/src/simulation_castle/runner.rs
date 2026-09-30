@@ -19,11 +19,17 @@ pub(super) enum Control {
 
 #[derive(Clone, Copy)]
 pub(super) enum Job {
+    SaveChecks,
+    LoadChecks,
+    ListChecks,
     Scenario(Control),
+    Compare,
     Replay,
     Inspect,
+    InspectOther,
     Reduce,
     Search,
+    SearchSelected,
     Cases,
 }
 
@@ -31,9 +37,11 @@ pub(super) enum Job {
 pub(super) struct Progress {
     pub status: String,
     pub evidence: String,
+    pub execution: Option<nucleus::execution::control::Control>,
 }
 
 pub(super) struct Outcome {
+    pub check_set: Option<nucleus::simulation::CheckSet>,
     pub path: Option<String>,
     pub status: String,
     pub bundle: Option<Bundle>,
@@ -49,18 +57,122 @@ pub(super) async fn run(
 ) -> Result<Outcome> {
     let output = Path::new(&model.output_directory);
     match job {
+        Job::SaveChecks | Job::LoadChecks | Job::ListChecks => {
+            let runtime = runtime.ok_or("Current Cell unavailable")?;
+            let sets = simulation::saved_checks::list(&runtime.store.pool).await?;
+            let mut scenario: simulation::scenario::Scenario =
+                serde_json::from_str(&model.scenario)?;
+            let selected = if matches!(job, Job::SaveChecks) {
+                scenario.validate()?;
+                let saved = model
+                    .check_form
+                    .saved
+                    .as_ref()
+                    .filter(|set| set.name == model.check_form.set_name.trim());
+                let uid = saved.map(|set| set.uid.clone()).unwrap_or_else(|| {
+                    format!(
+                        "checks-{}",
+                        nucleus::fact::sha256_hex(model.check_form.set_name.trim().as_bytes())
+                    )
+                });
+                Some(
+                    simulation::saved_checks::save(
+                        &runtime.store.pool,
+                        &uid,
+                        &model.check_form.set_name,
+                        saved.map_or(0, |set| set.revision),
+                        &scenario.checks,
+                    )
+                    .await?,
+                )
+            } else if matches!(job, Job::LoadChecks) {
+                let set = sets
+                    .iter()
+                    .find(|set| set.name == model.check_form.set_name.trim())
+                    .ok_or("Saved set not found; use List sets to see its name")?
+                    .clone();
+                scenario.checks = set.checks.clone();
+                scenario.validate()?;
+                Some(set)
+            } else {
+                None
+            };
+            let status = selected.as_ref().map_or_else(
+                || "Saved check sets".into(),
+                |set| format!("{} · revision {}", set.name, set.revision),
+            );
+            Ok(Outcome {
+                check_set: selected,
+                path: None,
+                status,
+                bundle: None,
+                evidence: serde_json::to_string_pretty(&sets)?,
+            })
+        }
+
         Job::Scenario(mode) => {
             let destination = artifacts::next_directory(output)?;
-            let (scenario, sources, _temporary) = prepare(&model, runtime).await?;
-            let session = Session::open(scenario, &destination, &sources).await?;
+            let (scenario, sources, _temporary) = prepare(&model, runtime.clone()).await?;
+            let execution = nucleus::execution::control::Control::new(scenario.limits.rule_evaluations, scenario.limits.wall_time_ms, None);
+            progress.send_replace(Progress {status:"Preparing simulation".into(),evidence:String::new(),execution:Some(execution.clone())});
+            let session = Session::open_interruptible(scenario, &destination, &sources, execution).await?;
             drive(session, mode, controls, progress).await?;
-            inspect(&destination)
+            inspect_source(&destination, &model.selected_cell, runtime.as_ref()).await
         }
-        Job::Inspect => inspect(Path::new(&model.run_directory)),
+        Job::Compare => {
+            let destination = artifacts::next_directory(output)?;
+            let (scenario, sources, _temporary) = prepare(&model, runtime).await?;
+            let (proposed, mut baseline) =
+                simulation::comparison::open(scenario, &destination, &sources).await?;
+            let mut controls = controls;
+            let proposed =
+                drive_with_controls(proposed, Control::Run, &mut controls, progress.clone())
+                    .await?;
+            let baseline = if proposed.result.stop == (nucleus::simulation::Stop::Cancelled {}) {
+                baseline.cancel();
+                baseline.finish().await?
+            } else {
+                drive_with_controls(baseline, Control::Run, &mut controls, progress).await?
+            };
+            let comparison = simulation::comparison::save(&destination, proposed, baseline)?;
+            Ok(Outcome {
+                check_set: None,
+                path: Some(comparison.with_transfers.clone()),
+                bundle: None,
+                status: format!(
+                    "With Transfer assumptions: {:?} · Without: {:?}",
+                    comparison.proposed.verdict, comparison.baseline.verdict
+                ),
+                evidence: serde_json::to_string_pretty(&comparison)?,
+            })
+        }
+        Job::Inspect => {
+            inspect_source(
+                Path::new(&model.run_directory),
+                &model.selected_cell,
+                runtime.as_ref(),
+            )
+            .await
+        }
+        Job::InspectOther => {
+            let current = Path::new(&model.run_directory).canonicalize()?;
+            let parent = current.parent().ok_or("Comparison directory unavailable")?;
+            let comparison: simulation::comparison::Comparison =
+                serde_json::from_slice(&std::fs::read(parent.join("comparison.json"))?)?;
+            let other = if current == Path::new(&comparison.with_transfers) {
+                &comparison.without_transfers
+            } else if current == Path::new(&comparison.without_transfers) {
+                &comparison.with_transfers
+            } else {
+                return Err("Selected run does not belong to this comparison".into());
+            };
+            inspect_source(Path::new(other), &model.selected_cell, runtime.as_ref()).await
+        }
         Job::Replay => {
             let destination = artifacts::next_directory(output)?;
             let result = artifacts::replay(Path::new(&model.run_directory), &destination).await?;
             Ok(Outcome {
+                check_set: None,
                 path: None,
                 status: format!("Replay: {result:?}"),
                 bundle: None,
@@ -79,15 +191,25 @@ pub(super) async fn run(
             );
             Ok(outcome)
         }
-        Job::Search => {
+        Job::Search | Job::SearchSelected => {
             let count: u64 = model.search_count.trim().parse()?;
             if count == 0 || count > 100_000 {
                 return Err("Choose between 1 and 100000 search cases".into());
             }
-            let status = simulation::campaign::run(output, Some(count)).await?;
-            let directory = output
-                .join("campaigns")
-                .join(simulation::BUILD_HASH.trim_start_matches("sha256:"));
+            let selection = if matches!(job, Job::SearchSelected) {
+                let scenario: simulation::scenario::Scenario =
+                    serde_json::from_str(&model.scenario)?;
+                Some(simulation::campaign::CheckSelection {
+                    checks: scenario.checks,
+                    checking: scenario.checking,
+                })
+            } else {
+                None
+            };
+            let status =
+                simulation::campaign::run_with_checks(output, Some(count), selection.as_ref())
+                    .await?;
+            let directory = simulation::campaign::directory(output, selection.as_ref())?;
             let cursor: simulation::campaign::Cursor =
                 serde_json::from_slice(&std::fs::read(directory.join("cursor.json"))?)?;
             let latest: Option<simulation::campaign::Summary> = if cursor.next_case == 0 {
@@ -100,6 +222,7 @@ pub(super) async fn run(
                 )?)?)
             };
             Ok(Outcome {
+                check_set: None,
                 path: None,
                 status: format!(
                     "Search finished with status {status}. Progress and results saved in {}",
@@ -119,6 +242,7 @@ pub(super) async fn run(
                 .filter(|run| run.result.verdict == nucleus::simulation::Verdict::Passed)
                 .count();
             Ok(Outcome {
+                check_set: None,
                 path: None,
                 status: format!(
                     "{} cases finished, {passed} passed. Runs saved in {}",
@@ -135,6 +259,7 @@ pub(super) async fn run(
 pub(super) fn inspect(path: &Path) -> Result<Outcome> {
     let bundle = artifacts::load(path).map_err(|error| format!("Run unavailable: {error:?}"))?;
     Ok(Outcome {
+        check_set: None,
         path: Some(path.canonicalize()?.to_string_lossy().into()),
         status: format!(
             "{:?} · {:?} · {} steps · {} changes · {} findings",
@@ -149,10 +274,31 @@ pub(super) fn inspect(path: &Path) -> Result<Outcome> {
     })
 }
 
+async fn inspect_source(
+    path: &Path,
+    cell: &str,
+    runtime: Option<&cell::CellRuntime>,
+) -> Result<Outcome> {
+    let mut outcome = inspect(path)?;
+    if let Some(runtime) = runtime {
+        match artifacts::source_status(path, cell, &runtime.store).await? {
+            artifacts::SourceStatus::Matching => outcome.status.push_str(" · Source unchanged"),
+            artifacts::SourceStatus::Changed => {
+                outcome.status.push_str(" · Source changed since this run")
+            }
+            artifacts::SourceStatus::Generated => {}
+        }
+    }
+    Ok(outcome)
+}
+
 async fn prepare(
     model: &SimulationCastle,
     runtime: Option<cell::CellRuntime>,
 ) -> Result<(simulation::scenario::Scenario, PathBuf, tempfile::TempDir)> {
+    if model.transfer_form.pending || !model.pending_transfers.is_empty() {
+        return Err("Choose your Record and add the Transfer assumption before running".into());
+    }
     let mut scenario: simulation::scenario::Scenario = serde_json::from_str(&model.scenario)?;
     scenario.validate()?;
     let temporary = tempfile::tempdir()?;
@@ -178,6 +324,12 @@ async fn prepare(
             input.at_ms = shifted(input.at_ms)?;
         }
         for check in &mut scenario.checks {
+            if let nucleus::simulation::Evaluation::At { at_ms } = &mut check.options.evaluation {
+                *at_ms = shifted(*at_ms)?;
+            }
+            check.options.window.from_ms = check.options.window.from_ms.map(shifted).transpose()?;
+            check.options.window.until_ms =
+                check.options.window.until_ms.map(shifted).transpose()?;
             match &mut check.predicate {
                 nucleus::simulation::Predicate::QuantityEquals { at_ms, .. }
                 | nucleus::simulation::Predicate::Converged { at_ms, .. } => {
@@ -207,9 +359,18 @@ async fn prepare(
 }
 
 pub(super) async fn drive(
+    session: Session,
+    mode: Control,
+    mut controls: mpsc::UnboundedReceiver<Control>,
+    progress: watch::Sender<Progress>,
+) -> Result<simulation::artifacts::Run> {
+    drive_with_controls(session, mode, &mut controls, progress).await
+}
+
+async fn drive_with_controls(
     mut session: Session,
     mut mode: Control,
-    mut controls: mpsc::UnboundedReceiver<Control>,
+    controls: &mut mpsc::UnboundedReceiver<Control>,
     progress: watch::Sender<Progress>,
 ) -> Result<simulation::artifacts::Run> {
     loop {
@@ -232,6 +393,7 @@ pub(super) async fn drive(
             }
         }
         progress.send_replace(Progress {
+            execution: Some(session.world.control.clone()),
             status: format!(
                 "{} · {} · {} steps · {} changes · {} findings",
                 if let Some(reason) = pause_reason {
@@ -258,13 +420,16 @@ pub(super) async fn drive(
             break;
         }
         if mode == Control::Pause {
+            session.world.control.pause();
             mode = controls.recv().await.unwrap_or(Control::Stop);
+            session.world.control.resume();
             continue;
         }
+        let previous_steps = session.world.steps;
         if !session.step().await? {
             break;
         }
-        if mode == Control::Step {
+        if mode == Control::Step && session.world.steps > previous_steps {
             mode = Control::Pause;
         }
         tokio::task::yield_now().await;

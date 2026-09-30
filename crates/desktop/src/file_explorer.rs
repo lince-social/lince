@@ -1,4 +1,5 @@
 mod actions;
+mod navigation;
 mod operations;
 mod persistence;
 mod runtime;
@@ -63,6 +64,9 @@ struct View {
     selected_label: Entity,
     operations: Entity,
     selected: Option<Row>,
+    directory: Option<PathBuf>,
+    history: Vec<Option<PathBuf>>,
+    location: Entity,
     confirmation: Option<Arc<lince_editor::operations::Entry>>,
     trash: Option<(Scope, lince_editor::operations::TrashTicket)>,
     busy: bool,
@@ -104,7 +108,13 @@ pub struct FileExplorerPlugin;
 impl Plugin for FileExplorerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<worker::Worker>()
+            .add_message::<bevy::window::WindowFocused>()
             .init_resource::<runtime::Watching>()
+            .add_systems(Update, runtime::focus)
+            .add_systems(
+                PreUpdate,
+                navigation::keyboard.after(bevy::input::InputSystems),
+            )
             .add_systems(
                 PostUpdate,
                 runtime::update
@@ -201,6 +211,33 @@ fn populate(world: &mut World, owner: Entity, config: FileExplorer, target: Targ
     }
     button(world, row, owner, "Choose…", actions::Control::Choose);
     button(world, row, owner, "Refresh", actions::Control::Refresh);
+    button(world, row, owner, "Back", actions::Control::Back);
+    button(world, row, owner, "Up", actions::Control::Up);
+    button(
+        world,
+        row,
+        owner,
+        "Open folder",
+        actions::Control::OpenFolder,
+    );
+    if matches!(
+        target,
+        Target::Input {
+            directories: true,
+            ..
+        }
+    ) {
+        button(
+            world,
+            row,
+            owner,
+            "Select folder",
+            actions::Control::SelectFolder,
+        );
+    }
+    let location = crate::edit_mode::label(world, owner, "Selected roots", 12.0);
+    world.entity_mut(location).insert(TextLayout::no_wrap());
+    world.get_mut::<Node>(location).unwrap().overflow = Overflow::clip();
     if !matches!(target, Target::Input { .. }) {
         crate::sand_panel::button(world, row, owner, "Files…", operations::Control::Tools);
     }
@@ -289,6 +326,9 @@ fn populate(world: &mut World, owner: Entity, config: FileExplorer, target: Targ
             selected_label,
             operations,
             selected: None,
+            directory: None,
+            history: Vec::new(),
+            location,
             confirmation: None,
             trash: None,
             busy: false,

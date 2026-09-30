@@ -198,11 +198,11 @@ pub async fn set_transfer_reservation_default(
 }
 
 pub async fn transfer_application_formula(pool: &SqlitePool) -> Result<String, StoreError> {
-    ensure_default(pool).await?;
     Ok(
         sqlx::query_scalar("SELECT transfer_application_formula FROM configuration WHERE id = 1")
-            .fetch_one(pool)
-            .await?,
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or_else(|| "incoming()".into()),
     )
 }
 
@@ -229,11 +229,11 @@ pub async fn set_transfer_application_formula(
 }
 
 pub async fn transfer_remainder_policy(pool: &SqlitePool) -> Result<String, StoreError> {
-    ensure_default(pool).await?;
     Ok(
         sqlx::query_scalar("SELECT transfer_remainder_policy FROM configuration WHERE id = 1")
-            .fetch_one(pool)
-            .await?,
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or_else(|| "visible".into()),
     )
 }
 

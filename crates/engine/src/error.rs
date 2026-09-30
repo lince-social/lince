@@ -10,6 +10,7 @@ pub enum EngineError {
     Json(serde_json::Error),
     Forbidden(String),
     Conflict { code: &'static str, message: String },
+    ExecutionLimit(nucleus::execution::control::Limit),
 }
 
 impl fmt::Display for EngineError {
@@ -23,6 +24,7 @@ impl fmt::Display for EngineError {
             Self::Json(e) => write!(f, "json: {e}"),
             Self::Forbidden(m) => write!(f, "forbidden: {m}"),
             Self::Conflict { message, .. } => write!(f, "conflict: {message}"),
+            Self::ExecutionLimit(limit) => write!(f, "Simulation stopped: {limit:?}"),
         }
     }
 }

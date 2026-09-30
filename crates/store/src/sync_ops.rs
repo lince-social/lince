@@ -416,7 +416,7 @@ pub async fn version_vector_for_organ(
     pool: &SqlitePool,
     organ_uid: &str,
 ) -> Result<Vec<VectorEntry>, StoreError> {
-    Ok(sqlx::query(
+    let mut vector: Vec<VectorEntry> = sqlx::query(
         "SELECT actor_cell, MAX(hlc) AS max_hlc FROM sync_op
           WHERE organ_uid = ? AND replica_root IS NULL
           GROUP BY actor_cell ORDER BY actor_cell",
@@ -429,7 +429,14 @@ pub async fn version_vector_for_organ(
         actor_cell: row.get("actor_cell"),
         max_hlc: row.get("max_hlc"),
     })
-    .collect())
+    .collect();
+    let ours: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE slug = 'local-organ' AND uid = ?)").bind(organ_uid).fetch_one(pool).await?;
+    if ours {
+        let rows = sqlx::query("SELECT cell_uid,MAX(sequence) AS sequence FROM transfer_sync_message WHERE organ_uid = ? GROUP BY cell_uid ORDER BY cell_uid")
+            .bind(organ_uid).fetch_all(pool).await?;
+        vector.extend(rows.iter().map(|row| VectorEntry { actor_cell: format!("{}{}", crate::transfer_replication::VECTOR_PREFIX, row.get::<String,_>("cell_uid")), max_hlc: row.get("sequence") }));
+    }
+    Ok(vector)
 }
 
 fn uncovered_clause(theirs: &[VectorEntry]) -> String {
@@ -606,6 +613,18 @@ pub async fn ops_missing_from_vector(
         .into_iter()
         .map(map)
         .collect())
+}
+
+pub async fn sibling_ops_missing_from_vector(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    theirs: &[VectorEntry],
+    limit: i64,
+) -> Result<Vec<OpRow>, StoreError> {
+    let sql = format!("SELECT * FROM sync_op WHERE organ_uid = ? AND replica_root IS NULL AND NOT (kind = 'fact' AND EXISTS (SELECT 1 FROM fact f JOIN transfer_sync_journal j ON j.commit_sequence = f.commit_sequence WHERE f.uid = sync_op.uid AND j.cell_uid = sync_op.actor_cell AND j.organ_uid = sync_op.organ_uid)){} ORDER BY seq LIMIT ?", uncovered_clause(theirs));
+    let mut query = sqlx::query(&sql).bind(organ_uid);
+    for entry in theirs { query = query.bind(&entry.actor_cell).bind(entry.max_hlc); }
+    Ok(query.bind(limit.max(0)).fetch_all(pool).await?.into_iter().map(map).collect())
 }
 
 pub async fn ops_missing_from_vector_in_root(

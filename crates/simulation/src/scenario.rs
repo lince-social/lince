@@ -16,20 +16,32 @@ pub struct Scenario {
     pub cells: Vec<Cell>,
     pub inputs: Vec<Input>,
     pub checks: Vec<Check>,
+    #[serde(default)]
+    pub checking: nucleus::simulation::Checking,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Limits {
     pub steps: u64,
+    #[serde(default = "default_rule_evaluations")]
+    pub rule_evaluations: u64,
+    #[serde(default)]
+    pub wall_time_ms: Option<u64>,
     pub evidence_bytes: u64,
     pub pending_messages: usize,
+}
+
+fn default_rule_evaluations() -> u64 {
+    100_000
 }
 
 impl Default for Limits {
     fn default() -> Self {
         Self {
             steps: 10_000,
+            rule_evaluations: default_rule_evaluations(),
+            wall_time_ms: None,
             evidence_bytes: 64 * 1024 * 1024,
             pending_messages: 1024,
         }
@@ -82,6 +94,9 @@ pub struct Input {
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Event {
+    AssumeLoan {
+        timing: crate::loans::Timing,
+    },
     Action {
         invocation: Invocation,
     },
@@ -100,11 +115,42 @@ pub enum Event {
     AcceptInvitation {
         transfer: String,
         person: String,
+        #[serde(default)]
+        peer: Option<String>,
+    },
+    RejectInvitation {
+        transfer: String,
+        person: String,
+        #[serde(default)]
+        peer: Option<String>,
+    },
+    RefreshTransfer {
+        transfer: String,
+        person: String,
+    },
+    TransferCommand {
+        peer: String,
+        transfer: String,
+        invocation: Invocation,
+        delay_ms: u64,
+        copies: u8,
+        #[serde(default)]
+        duplicate_spacing_ms: u64,
+        drop: bool,
     },
     SettleReviewed {
         occurrence: String,
         person: String,
         quantity: nucleus::DecimalValue,
+    },
+    ApplyReceivedTransfer {
+        transfer: String,
+        occurrence: String,
+        person: String,
+        local_record: String,
+    },
+    AssumeTransfer {
+        assumption: crate::assumptions::TransferAssumption,
     },
     TransferDelivery {
         peer: String,
@@ -135,12 +181,7 @@ pub enum Event {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Check {
-    pub id: String,
-    pub predicate: Predicate,
-}
+pub use nucleus::simulation::CheckDefinition as Check;
 
 fn name(value: &str) -> bool {
     !value.is_empty()
@@ -170,6 +211,9 @@ impl Scenario {
             || self.limits.evidence_bytes < 4096
             || self.limits.evidence_bytes > 1024 * 1024 * 1024
             || self.limits.pending_messages > 100_000
+            || self.limits.rule_evaluations == 0
+            || self.limits.rule_evaluations > 10_000_000
+            || self.limits.wall_time_ms.is_some_and(|millis| millis == 0 || millis > 43_200_000)
         {
             return Err(invalid("limits"));
         }
@@ -235,11 +279,26 @@ impl Scenario {
                 return Err(invalid("input Cell or time"));
             }
             match &input.event {
+                Event::AssumeLoan { timing } => timing.validate()?,
                 Event::Action { invocation } => {
                     if invocation.id != input.id {
                         return Err(invalid("Action invocation id must equal input id"));
                     }
                     validate_action(&invocation.action)?;
+                }
+                Event::TransferCommand {
+                    peer, invocation, ..
+                } => {
+                    if peer == &input.cell || !cells.contains(peer) || invocation.id != input.id {
+                        return Err(invalid("remote command peer or invocation"));
+                    }
+                    validate_action(&invocation.action)?;
+                }
+                Event::AcceptInvitation { peer: Some(peer), .. }
+                | Event::RejectInvitation { peer: Some(peer), .. } => {
+                    if peer == &input.cell || !cells.contains(peer) {
+                        return Err(invalid("invitation peer"));
+                    }
                 }
                 Event::Pair { peer }
                 | Event::Enrol { peer }
@@ -262,7 +321,18 @@ impl Scenario {
                 | Event::Online { .. }
                 | Event::PersonKey { .. }
                 | Event::AcceptInvitation { .. }
+                | Event::RejectInvitation { .. }
+                | Event::RefreshTransfer { .. }
+                | Event::ApplyReceivedTransfer { .. }
                 | Event::SettleReviewed { .. } => {}
+                Event::AssumeTransfer { assumption } => {
+                    if assumption.key.is_empty() || assumption.key.len() > 256
+                        || assumption.title.len() > 2_000 || !assumption.quantity.is_positive()
+                        || assumption.person.is_empty() || assumption.record.is_empty()
+                        || assumption.source.as_ref().is_some_and(|source| source.revision == 0 || source.transfer.is_empty() || source.promise.is_empty() || source.exchange.is_empty()) {
+                        return Err(invalid("Transfer assumption"));
+                    }
+                }
             }
             if let Event::Sync {
                 delay_ms,
@@ -271,6 +341,12 @@ impl Scenario {
                 ..
             }
             | Event::TransferDelivery {
+                delay_ms,
+                copies,
+                duplicate_spacing_ms,
+                ..
+            }
+            | Event::TransferCommand {
                 delay_ms,
                 copies,
                 duplicate_spacing_ms,
@@ -289,11 +365,56 @@ impl Scenario {
             }
         }
         let mut checks = BTreeSet::new();
+        if self.checking.evaluations == 0
+            || self.checking.evaluations > 10_000_000
+            || self.checks.len() > 1024
+        {
+            return Err(invalid("check budget"));
+        }
         for check in &self.checks {
             if !name(&check.id) || !checks.insert(&check.id) {
                 return Err(invalid("check id"));
             }
+            let (from, until) = check.interval(self.start_ms, self.end_ms);
+            if matches!(
+                check.predicate,
+                Predicate::FactChain {}
+                    | Predicate::OncePerOccurrence {}
+                    | Predicate::NoUnexpectedRefusals {}
+                    | Predicate::ExpectedRefusal { .. }
+                    | Predicate::ExpectedMessageRefusal { .. }
+            ) && (from != self.start_ms || until != self.end_ms)
+            {
+                return Err(invalid(
+                    "history checks cover the full run; time windows apply to quantity and convergence checks",
+                ));
+            }
+            if from < self.start_ms
+                || until > self.end_ms
+                || from > until
+                || check.options.name.len() > 200
+            {
+                return Err(invalid("check window or name"));
+            }
+            use nucleus::simulation::Evaluation;
+            match check.evaluation() {
+                Evaluation::At { at_ms } if !(from..=until).contains(&at_ms) => {
+                    return Err(invalid("check time"));
+                }
+                Evaluation::EveryEvents { every: 0 } | Evaluation::EveryDuration { millis: 0 } => {
+                    return Err(invalid("check interval"));
+                }
+                Evaluation::EveryDuration { millis } if millis > i64::MAX as u64 => {
+                    return Err(invalid("check interval"));
+                }
+                _ => {}
+            }
             match &check.predicate {
+                Predicate::Quantity { cell, record, .. }
+                    if !cells.contains(cell) || record.is_empty() =>
+                {
+                    return Err(invalid("quantity check target"));
+                }
                 Predicate::QuantityEquals { cell, at_ms, .. } => {
                     if !cells.contains(cell) || !(self.start_ms..=self.end_ms).contains(at_ms) {
                         return Err(invalid("quantity check scope"));
@@ -321,7 +442,7 @@ impl Scenario {
                     let valid = self.inputs.iter().any(|candidate| {
                         candidate.id == *input
                             && matches!(candidate.event,
-                                Event::Sync { copies, .. } | Event::TransferDelivery { copies, .. }
+                                Event::Sync { copies, .. } | Event::TransferDelivery { copies, .. } | Event::TransferCommand { copies, .. }
                                 if *copy < copies)
                     });
                     if !valid {
@@ -330,9 +451,6 @@ impl Scenario {
                 }
                 _ => {}
             }
-        }
-        if self.checks.is_empty() {
-            return Err(invalid("at least one required check"));
         }
         Ok(())
     }
@@ -350,8 +468,11 @@ pub fn validate_action(action: &Action) -> crate::Result<()> {
         Action::CreateRecord { .. }
         | Action::SetQuantity { .. }
         | Action::SetQuantityExact { .. }
+        | Action::AddQuantityExact { .. }
+        | Action::AddQuantityGroupExact { .. }
         | Action::AddQuantity { .. }
         | Action::SetSlug { .. }
+        | Action::SetExtension { .. }
         | Action::DeleteRecord { .. }
         | Action::CreateFrequency { .. }
         | Action::DeleteFrequency { .. }
@@ -359,12 +480,24 @@ pub fn validate_action(action: &Action) -> crate::Result<()> {
         | Action::ReviseRecurrence { .. }
         | Action::DeleteRecurrence { .. }
         | Action::SetRecurrencePaused { .. }
+        | Action::ApplyRecurrenceOccurrence { .. }
         | Action::SaveKarmaRule { .. }
+        | Action::SaveKarmaSchedule { .. }
+        | Action::InspectKarmaSchedules { .. }
+        | Action::PreviewKarmaScheduleDates { .. }
+        | Action::PreviewKarmaHabit { .. }
+        | Action::ImportKarmaHabit { .. }
+        | Action::CancelKarmaSchedule { .. }
+        | Action::RetryKarmaSchedule { .. }
         | Action::ReviseKarmaField { .. }
         | Action::PreviewKarmaReading { .. } => Ok(()),
         Action::SetContactTrust { .. }
         | Action::SetSyncPolicy { .. }
         | Action::SetContactScope { .. }
+        | Action::CreateLingua { .. }
+        | Action::CreateConcept { .. }
+        | Action::SetUnit { .. }
+        | Action::HideRecordFromContact { .. }
         | Action::GrantVisibility { .. }
         | Action::GrantPermission { .. }
         | Action::RevokePermission { .. }
@@ -379,18 +512,37 @@ pub fn validate_action(action: &Action) -> crate::Result<()> {
         | Action::SetKarmaExecution { .. }
         | Action::RespondKarmaCandidate { .. } => Ok(()),
         Action::CreateTransferDraft { .. }
+        | Action::CreateTransferThread { .. }
+        | Action::CreateTransferMessage { .. }
         | Action::ReviseTransferDraft { .. }
+        | Action::CounterofferTransfer { .. }
+        | Action::ClaimOpenTransferPromise { .. }
         | Action::AddressTransferInvitation { .. }
         | Action::AcceptTransferInvitation { .. }
         | Action::RejectTransferInvitation { .. }
         | Action::SetTransferAgreementLevel { .. }
+        | Action::AssignTransferAgreementLevel { .. }
+        | Action::PublishTransfer { .. }
+        | Action::ActivateTransferFulfillment { .. }
         | Action::ActivateTransferOccurrence { .. }
         | Action::SetTransferOccurrenceClaim { .. }
+        | Action::SetTransferOccurrenceDispute { .. }
+        | Action::CompensateTransferApplication { .. }
+        | Action::CompensateTransferOccurrenceSettlement { .. }
         | Action::SettleTransferOccurrence { .. }
+        | Action::BeginTransferSettlement { .. }
+        | Action::SetTransferPrivateApplicationPolicy { .. }
+        | Action::ProposeTransferLoanExtension { .. }
+        | Action::SetRecordStockLimit { .. }
+        | Action::SetTransferChildRequirement { .. }
+        | Action::ProposeTransferCancellation { .. }
+        | Action::ApplyTransferCancellation { .. }
+        | Action::ApplyTransferApplication { .. }
         | Action::ConfigureTransferDelivery { .. }
         | Action::EnqueueTransferDelivery { .. }
         | Action::RetryTransferDelivery { .. }
-        | Action::RevokeTransferDelivery { .. } => Ok(()),
+        | Action::RevokeTransferDelivery { .. }
+        | Action::RefreshTransferDelivery { .. } => Ok(()),
         _ => Err(
             "Action requires an environment adapter that this scenario runner does not provide"
                 .into(),

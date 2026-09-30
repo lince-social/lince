@@ -85,6 +85,7 @@ impl Engine {
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
         for effect in store::misc::due_effects(&self.store.pool).await? {
+            crate::rule_runtime::execution_checkpoint(false).await?;
             if database_only && !database_effect(&effect) {
                 break;
             }
@@ -97,9 +98,16 @@ impl Engine {
             if claimed.rows_affected() == 0 {
                 continue;
             }
-            let execution = self.execute_effect(&effect.kind, &effect.payload).await;
+            let execution = match effect.payload.get("occurrence") {
+                Some(occurrence) => {
+                    let occurrence = serde_json::from_value(occurrence.clone()).map_err(EngineError::Json)?;
+                    crate::rule_runtime::EFFECT_OCCURRENCE.scope(occurrence, self.execute_effect(&effect.kind, &effect.payload)).await
+                }
+                None => self.execute_effect(&effect.kind, &effect.payload).await,
+            };
             let (ok, result) = match execution {
                 Ok(result) => result,
+                Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
                 Err(error) => (false, error.to_string()),
             };
             store::misc::finish_effect(&self.store.pool, &effect.uid, ok, &result).await?;
@@ -132,6 +140,7 @@ impl Engine {
                 result,
             });
         }
+        if store::karma_schedules::refresh(&self.store.pool, nucleus::execution::now()).await? { self.notify_karma_deadline_change(); }
         Ok(out)
     }
 
@@ -162,7 +171,7 @@ impl Engine {
                     "Rule target was deleted before the effect ran".into(),
                 ));
             }
-            self.refuse_unreadable(actor, &[current.record_uid.clone()])
+            self.refuse_unreadable_karma_inputs(actor, &[crate::karma_transfer_effects::target(&current).into()])
                 .await?;
             Some(current)
         } else {
@@ -260,6 +269,12 @@ impl Engine {
                 let carried: Option<nucleus::DecimalValue> =
                     serde_json::from_value(payload["carried"].clone())
                         .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                if consequence.transfer_target().is_some() {
+                    let evaluated = serde_json::from_value(payload["transfer_evaluation"].clone()).map_err(EngineError::Json)?;
+                    let request = payload["request_id"].as_str().ok_or_else(|| EngineError::Consequence("Transfer effect has no request identity".into()))?;
+                    let result = self.execute_transfer_effect(&rule, &consequence, evaluated, request, nucleus::execution::now()).await?;
+                    return Ok((true, result));
+                }
                 self.execute_deferred_consequence(
                     &rule,
                     &consequence,
@@ -348,7 +363,10 @@ fn database_effect(effect: &store::misc::EffectRow) -> bool {
             Ok(Consequence::SetConcept { .. }
                 | Consequence::AddConcept { .. }
                 | Consequence::RemoveConcept { .. }
-                | Consequence::SetQuantityWhere { .. })
+                | Consequence::SetQuantityWhere { .. }
+                | Consequence::SetTransferAgreement { .. }
+                | Consequence::PublishTransfer { .. }
+                | Consequence::ActivateTransferFulfillment { .. })
         ),
         _ => false,
     }

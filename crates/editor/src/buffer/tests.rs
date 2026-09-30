@@ -170,6 +170,34 @@ fn edits_during_save_remain_dirty() {
     assert!(buffer.is_dirty());
     assert_eq!(buffer.observed(), "abcd");
     assert_eq!(buffer.text(), "abcde");
+    buffer.reconcile("Abcd").unwrap();
+    assert_eq!(buffer.text(), "Abcde");
+    assert!(buffer.conflict().is_none());
+}
+
+#[test]
+fn deferred_encoding_contains_only_the_requested_save_version() {
+    let mut buffer = Buffer::new("one\ntwo\nthree\n").unwrap();
+    buffer
+        .edit(Edit {
+            range: 0..3,
+            text: "saved".into(),
+        })
+        .unwrap();
+    let point = buffer.prepare_save().unwrap();
+    buffer
+        .edit(Edit {
+            range: 6..9,
+            text: "later".into(),
+        })
+        .unwrap();
+    let point = std::thread::spawn(move || point.encode()).join().unwrap();
+    let text = point.text.to_string().into();
+    buffer.saved_with_text(point, text).unwrap();
+    buffer.reconcile("saved\ntwo\ndisk\n").unwrap();
+    assert_eq!(buffer.text(), "saved\nlater\ndisk\n");
+    assert!(buffer.is_dirty());
+    assert!(buffer.conflict().is_none());
 }
 
 #[test]
@@ -190,7 +218,7 @@ fn large_file_save_snapshots_preserve_newer_edits() {
             text: "later\n".into(),
         }])
         .unwrap();
-    buffer.saved_with_text(point, saved_text).unwrap();
+    buffer.saved_with_text(point.encode(), saved_text).unwrap();
     assert!(buffer.is_dirty());
     assert!(buffer.observed().starts_with("first\ntext"));
     buffer.undo(false).unwrap();

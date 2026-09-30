@@ -140,7 +140,6 @@ CREATE TABLE transfer_occurrence (
     dispute_fact_uid    TEXT REFERENCES fact(uid),
     disputed_at         TEXT,
     created_at          TEXT NOT NULL,
-    CHECK (record_uid IS NOT NULL OR concept_uid IS NOT NULL),
     CHECK ((location_lat IS NULL) = (location_lon IS NULL)),
     CHECK ((disputed = 0 AND dispute_fact_uid IS NULL AND disputed_at IS NULL)
         OR (disputed = 1 AND dispute_fact_uid IS NOT NULL AND disputed_at IS NOT NULL)),

@@ -172,6 +172,14 @@ impl Session {
         if let Some(login) = &self.login {
             login.touch();
         }
+        if msg.runs_karma_preview() {
+            let engine = self.engine.clone();
+            if let Some(login) = self.login.clone() {
+                return login.run_unlocked(&engine, async { Ok(self.handle_inner(msg).await) }).await
+                    .unwrap_or_else(|_| vec![session_expired()]);
+            }
+            return self.handle_inner(msg).await;
+        }
         if self.local_sync && self.login.is_none() && matches!(msg, ClientMessage::Fiote { .. } | ClientMessage::FioteTerminal { .. } | ClientMessage::Speech { .. }) {
             return self.handle_inner(msg).await;
         }
@@ -910,7 +918,7 @@ impl Session {
         let Some(session) = self.action_intent.as_mut() else {
             return self.action_intent_unavailable(id);
         };
-        let verified = match self.engine.verify_action_intent(session, intent).await {
+        let verified = match self.engine.access_scope(true, self.engine.verify_action_intent(session, intent)).await {
             Ok(verified) => verified,
             Err(error) => return action_error(id, error),
         };

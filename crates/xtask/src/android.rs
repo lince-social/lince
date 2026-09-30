@@ -113,7 +113,7 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
             "Requires Android Command-line Tools, a JDK for setup, and hardware virtualization."
         );
         println!(
-            "SDK discovery: --sdk, ANDROID_HOME, ANDROID_SDK_ROOT, or the Android Studio default."
+            "SDK discovery: --sdk, ANDROID_HOME, ANDROID_SDK_ROOT, or .cache-lince-android/sdk in this repository."
         );
         println!(
             "setup downloads the emulator and Android 35 Google APIs image for this computer."
@@ -132,7 +132,7 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
         );
         return Ok(());
     }
-    let sdk = sdk_path(&options)?;
+    let sdk = sdk_path(root, options.sdk.as_deref())?;
     let package = options.package();
     let component = format!("{package}/social.lince.mobile.MainActivity");
     if options.action == "setup" {
@@ -308,19 +308,28 @@ fn startup_result(report: &str, log: &str) -> Result<()> {
     Ok(())
 }
 
-fn sdk_path(options: &Options) -> Result<PathBuf> {
-    let home = env::var_os("HOME").map(PathBuf::from);
-    let default = if cfg!(target_os = "windows") {
-        env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Android/Sdk"))
-    } else if cfg!(target_os = "macos") {
-        home.map(|p| p.join("Library/Android/sdk"))
+pub(crate) fn sdk_path(root: &Path, explicit: Option<&Path>) -> Result<PathBuf> {
+    let sdk = explicit
+        .map(Path::to_path_buf)
+        .or_else(|| {
+            env::var_os("ANDROID_HOME")
+                .filter(|v| !v.is_empty())
+                .map(PathBuf::from)
+        })
+        .or_else(|| {
+            env::var_os("ANDROID_SDK_ROOT")
+                .filter(|v| !v.is_empty())
+                .map(PathBuf::from)
+        })
+        .unwrap_or_else(|| root.join(".cache-lince-android/sdk"));
+    if sdk.is_dir() {
+        Ok(sdk)
     } else {
-        home.map(|p| p.join("Android/Sdk"))
-    };
-    options.sdk.clone().or_else(|| env::var_os("ANDROID_HOME").filter(|v| !v.is_empty()).map(PathBuf::from))
-        .or_else(|| env::var_os("ANDROID_SDK_ROOT").filter(|v| !v.is_empty()).map(PathBuf::from))
-        .or(default).filter(|p| p.is_dir())
-        .ok_or_else(|| "Android SDK not found. Install Android Command-line Tools and set ANDROID_HOME, or pass --sdk PATH.".into())
+        Err(format!(
+            "Android SDK not found at {}. Install Android Command-line Tools there, or pass --sdk PATH.",
+            sdk.display()
+        ))
+    }
 }
 
 fn tool(sdk: &Path, relative: &str) -> Result<PathBuf> {

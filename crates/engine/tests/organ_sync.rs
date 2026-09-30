@@ -235,6 +235,10 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     .await
     .unwrap();
 
+    assert!(a.open_promise_export(&b_organ).await.unwrap().is_empty());
+    store::visibility::grant(&a.store.pool, "public", None, &apples)
+        .await
+        .unwrap();
     let fetched = a.open_promise_export(&b_organ).await.unwrap();
     assert_eq!(fetched.len(), 1, "only what visibility allows travels");
     b.refresh_discovery(&a_organ, fetched).await.unwrap();

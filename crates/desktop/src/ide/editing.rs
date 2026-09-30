@@ -88,6 +88,17 @@ pub(super) fn prepare(world: &mut World) {
         let mut native = Vec::new();
         let mut extending = false;
         for edit in edits {
+            if !native.is_empty()
+                && matches!(
+                    edit,
+                    TextEdit::WordLeft(_)
+                        | TextEdit::WordRight(_)
+                        | TextEdit::BackspaceWord
+                        | TextEdit::DeleteWord
+                )
+            {
+                flush(world, owner, &mut native);
+            }
             let view = world.get::<View>(owner).unwrap();
             let Some(path) = &view.path else {
                 continue;
@@ -118,6 +129,27 @@ pub(super) fn prepare(world: &mut World) {
                 .iter()
                 .any(|p| *p < window.start || *p > window.end);
             match edit {
+                TextEdit::WordLeft(extend) | TextEdit::WordRight(extend) => {
+                    let backwards = matches!(edit, TextEdit::WordLeft(_));
+                    let position = lince_editor::words::boundary(&rope, selection[1], backwards);
+                    select(
+                        world,
+                        owner,
+                        [if extend { selection[0] } else { position }, position],
+                        rope.char_to_line(position),
+                    );
+                }
+                TextEdit::BackspaceWord | TextEdit::DeleteWord => {
+                    if selection[0] == selection[1] {
+                        let position = lince_editor::words::boundary(
+                            &rope,
+                            selection[1],
+                            matches!(edit, TextEdit::BackspaceWord),
+                        );
+                        world.get_mut::<View>(owner).unwrap().selection = [selection[1], position];
+                    }
+                    replace_selection(world, owner, String::new());
+                }
                 TextEdit::SelectAll => {
                     select(world, owner, [0, rope.len_chars()], 0);
                 }
@@ -173,10 +205,7 @@ pub(super) fn prepare(world: &mut World) {
                     });
                     replace_selection(world, owner, value.to_string());
                 }
-                TextEdit::Backspace
-                | TextEdit::BackspaceWord
-                | TextEdit::Delete
-                | TextEdit::DeleteWord
+                TextEdit::Backspace | TextEdit::Delete
                     if outside && selection[0] != selection[1] =>
                 {
                     replace_selection(world, owner, String::new())
@@ -278,6 +307,30 @@ pub(super) fn prepare(world: &mut World) {
     }
 }
 
+fn flush(world: &mut World, owner: Entity, native: &mut Vec<TextEdit>) {
+    world.init_resource::<bevy::clipboard::Clipboard>();
+    let editor = world.get::<View>(owner).unwrap().editor;
+    world
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .pending_edits
+        .extend(std::mem::take(native));
+    world.resource_scope(|world, mut fonts: Mut<FontCx>| {
+        world.resource_scope(|world, mut layout: Mut<LayoutCx>| {
+            world.resource_scope(|world, mut clipboard: Mut<bevy::clipboard::Clipboard>| {
+                world
+                    .get_mut::<EditableText>(editor)
+                    .unwrap()
+                    .apply_pending_edits(&mut fonts.context, &mut layout.0, &mut clipboard, |_| {
+                        true
+                    });
+            });
+        });
+    });
+    world.get_mut::<View>(owner).unwrap().had_input = true;
+    capture_one(world, owner);
+}
+
 fn shortcuts(world: &mut World, owner: Entity) {
     let Some(focused) = world.get_resource::<InputFocus>().and_then(InputFocus::get) else {
         return;
@@ -308,7 +361,11 @@ fn shortcuts(world: &mut World, owner: Entity) {
     ]);
     let editor = world.get::<View>(owner).unwrap().editor;
     let action = if control {
-        if keys.just_pressed(KeyCode::KeyS) {
+        if keys.just_pressed(KeyCode::Space) {
+            Some(actions::Control::Complete)
+        } else if shift && keys.just_pressed(KeyCode::KeyI) {
+            Some(actions::Control::Format)
+        } else if keys.just_pressed(KeyCode::KeyS) {
             Some(if shift {
                 actions::Control::SaveAs
             } else {

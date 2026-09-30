@@ -7,6 +7,17 @@ pub(super) enum Control {
     Create,
     Save,
     SaveAs,
+    ReplaceFile,
+    CancelReplacement,
+    Tools,
+    Connect,
+    Disconnect,
+    Complete,
+    Format,
+    FormatCommand,
+    LintCommand,
+    ChooseCompletion(usize),
+    Diagnostic(usize),
     Undo(bool),
     Refresh,
     Close,
@@ -53,6 +64,22 @@ impl Action for Control {
             return;
         }
         match self {
+            Self::Tools
+            | Self::Connect
+            | Self::Disconnect
+            | Self::Complete
+            | Self::Format
+            | Self::FormatCommand
+            | Self::LintCommand
+            | Self::ChooseCompletion(_)
+            | Self::Diagnostic(_) => {
+                tools::action(world, owner, self);
+                return;
+            }
+            Self::ReplaceFile | Self::CancelReplacement => {
+                save_as::confirm(world, owner, matches!(self, Self::ReplaceFile));
+                return;
+            }
             Self::SaveClose => {
                 closing::apply(world, owner, true);
                 return;
@@ -456,7 +483,7 @@ pub(super) fn save(world: &mut World, owner: Entity, path: PathBuf) {
             return;
         }
     };
-    let text = point.text.clone();
+    let revision = point.revision;
     let expected = document.disk.clone();
     let Some(file) = document.file.clone() else {
         status(
@@ -469,17 +496,21 @@ pub(super) fn save(world: &mut World, owner: Entity, path: PathBuf) {
     let reply_path = path.clone();
     let result = crate::file_explorer::worker::run(
         world,
-        move || file.save(&expected, &text.to_string()),
+        move || {
+            let point = point.encode();
+            file.save(&expected, &point.text.to_string())
+                .map(|snapshot| (point, snapshot))
+        },
         move |world, result| {
             let mut documents = world.resource_mut::<Documents>();
             let Some(document) = documents.0.get_mut(&reply_path) else {
                 return;
             };
-            let Some(point) = document.saving.take() else {
+            let Some(_) = document.saving.take() else {
                 return;
             };
             match result {
-                Ok(snapshot) => {
+                Ok((point, snapshot)) => {
                     let text = snapshot.text.clone();
                     document.disk = snapshot;
                     document.error = document.buffer.saved_with_text(point, text).err();
@@ -500,7 +531,7 @@ pub(super) fn save(world: &mut World, owner: Entity, path: PathBuf) {
                 .0
                 .get_mut(&path)
                 .unwrap()
-                .saving = Some(point);
+                .saving = Some(revision);
             status(world, owner, "Saving…");
         }
         Err(e) => status(world, owner, e),
@@ -528,106 +559,5 @@ fn save_as(world: &mut World, owner: Entity, path: PathBuf) {
 }
 
 pub(super) fn save_copy(world: &mut World, owner: Entity, path: PathBuf, destination: PathBuf) {
-    editing::capture_one(world, owner);
-    let Some(view) = world.get::<View>(owner) else {
-        return;
-    };
-    if view.draft
-        || world
-            .get::<EditableText>(view.editor)
-            .is_some_and(|input| input.is_composing())
-    {
-        status(
-            world,
-            owner,
-            "Finish composing or resolve the visible draft before saving",
-        );
-        return;
-    }
-    let Some(document) = world.resource::<Documents>().0.get(&path) else {
-        return;
-    };
-    if document.preview.is_some() {
-        return;
-    }
-    if document.moving
-        || document.reading
-        || document.saving.is_some()
-        || world.resource::<Documents>().0.contains_key(&destination)
-    {
-        status(
-            world,
-            owner,
-            "Wait for file access and choose a path that is not already open",
-        );
-        return;
-    }
-    let point = match document.buffer.prepare_save() {
-        Ok(point) => point,
-        Err(e) => {
-            status(world, owner, e);
-            return;
-        }
-    };
-    let text = point.text.clone();
-    let bom = document.disk.bom;
-    let reply_path = path.clone();
-    let result = crate::file_explorer::worker::run(
-        world,
-        move || {
-            if destination.to_str().is_none() {
-                return Err("Choose a UTF-8 path".into());
-            }
-            let scope = Scope::open(destination.parent().ok_or("Choose a directory")?)?;
-            let file = scope.create(&destination)?;
-            let mut snapshot = file.read()?;
-            snapshot.bom = bom;
-            let disk = file.save(&snapshot, &text.to_string())?;
-            Ok::<_, String>((file, disk))
-        },
-        move |world, result| {
-            let mut documents = world.resource_mut::<Documents>();
-            let Some(document) = documents.0.get_mut(&reply_path) else {
-                return;
-            };
-            let Some(point) = document.saving.take() else {
-                return;
-            };
-            match result {
-                Ok((file, disk)) => {
-                    let destination = file.path.clone();
-                    let mut document = documents.0.remove(&reply_path).unwrap();
-                    document.file = Some(Arc::new(file));
-                    let text = disk.text.clone();
-                    document.disk = disk;
-                    document.error = document.buffer.saved_with_text(point, text).err();
-                    documents.0.insert(destination.clone(), document);
-                    tabs::relocate(world, &reply_path, &destination);
-                    for mut ide in world.query::<&mut Ide>().iter_mut(world) {
-                        for path in &mut ide.paths {
-                            if *path == reply_path {
-                                *path = destination.clone();
-                            }
-                        }
-                        if ide.active.as_ref() == Some(&reply_path) {
-                            ide.active = Some(destination.clone());
-                        }
-                    }
-                    status(world, owner, "Saved to the new path");
-                }
-                Err(e) => status(world, owner, e),
-            }
-        },
-    );
-    match result {
-        Ok(()) => {
-            world
-                .resource_mut::<Documents>()
-                .0
-                .get_mut(&path)
-                .unwrap()
-                .saving = Some(point)
-        }
-        Err(e) => status(world, owner, e),
-    }
+    save_as::inspect(world, owner, path, destination);
 }

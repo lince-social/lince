@@ -43,6 +43,9 @@ pub mod record_revisions;
 pub mod records;
 pub mod recurrence;
 pub mod karma_fields;
+pub mod karma_schedules;
+pub mod karma_stages;
+pub mod karma_commands;
 pub mod replica;
 pub mod role_permissions;
 pub mod role_policies;
@@ -55,7 +58,18 @@ pub mod sync_activity;
 pub mod sync_apply;
 pub mod sync_ops;
 pub mod snapshot;
+pub mod simulation_checks;
 pub mod transfer_delivery;
+pub mod transfer_replication;
+pub mod transfer_accounting;
+pub mod transfer_effects;
+pub mod transfer_loans;
+pub mod transfer_balances;
+pub mod transfer_stock;
+pub mod transfer_cancellations;
+pub mod transfer_agreement;
+pub mod transfer_outcomes;
+pub mod transfer_children;
 pub mod transfers;
 pub mod visibility;
 
@@ -75,12 +89,15 @@ pub type StoreError = sqlx::Error;
 pub async fn write_tx(
     pool: &SqlitePool,
 ) -> Result<sqlx::Transaction<'static, sqlx::Sqlite>, StoreError> {
-    pool.begin_with("BEGIN IMMEDIATE").await
+    let mut tx = pool.begin_with("BEGIN IMMEDIATE").await?;
+    sqlx::query("UPDATE commit_sequence SET value = value + 1 WHERE id = 1")
+        .execute(&mut *tx).await?;
+    Ok(tx)
 }
 
 impl Store {
     pub async fn open(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Normal, true, false).await?;
+        let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, true, false).await?;
         initialize(pool).await
     }
 
@@ -157,6 +174,7 @@ async fn migrate(pool: &SqlitePool) -> Result<(), StoreError> {
             sqlx::migrate::MigrateError::Execute(e) => e,
             other => sqlx::Error::Protocol(other.to_string()),
         })?;
+    transfer_replication::install(pool).await?;
     projection::install(pool).await
 }
 

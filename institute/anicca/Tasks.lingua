@@ -45,139 +45,20 @@ Rule Thoughts (@rule-thoughts: 0) {
 - [ ] **Automate Transfers:** propose purchases, donations, and returns when a quantity or date calls for them. Transfer automation (institute/anicca/Lince.lingua:565), scheduled returns (institute/anicca/Tasks.lingua:266). This needs lots of thought.
 
 - [ ] **Provide reusable Karma Trails:** workflows for habits, supplies, and recurring obligations that people connect to their own Records. Karma Trails (institute/anicca/Lince.lingua:529). Sure, lets enhance the karmas in the trails/habits/simple/ and add that to the set of .lingua that gets ingested into Instinct, when the person is reading the karma part of instinct there is a button to dump the ingested frequency+rules+records into their db. I'm thinking of doing that myself, i'll fill it with good habits later, just to the wiring and the hello world of a daily Cleaning Room recurring task.
-
-
-On your numbered points: 1. agree. 2. make sure this is simple, like cooldown and rate limit are the same, debounce can be also the same??
-
-1. **Extension readings: choose a namespaced property.**
-
-   I recommend reading a number from an explicitly named extension and property. `@myrecord.extension.weight` leaves the namespace unclear; the exact syntax can come later.
-
-   An extension that “returns a value” introduces execution into reading data. Calculations can stay in Conditions; commands can produce Signals.
-
-   Suggested wording: “Read numeric properties from namespaced Record extensions. Missing or nonnumeric values stop that evaluation with an explanation. Changes to a watched property wake its Rules, even when the Record’s quantity stays unchanged.”
-2. **Temporal controls: one place to configure them, three different behaviors.**
-
-   Debounce, cooldown, and rate limit should share the Threshold editor, but remain separately configurable. Merge the later “partly built” entry into this task.
-
-   First define whether a Rule fires on every qualifying update or only when its Threshold starts passing. Otherwise, ten identical Signal samples might mean ten actions—or one—and neither interpretation is obvious.
-
-   I suggest debounce means “the Threshold keeps passing for this duration,” rather than requiring an unchanged number. Its deadline must wake the Rule without waiting for another update. Cooldown and rate limits should suppress firings; a Frequency should control repetition.
-
-   Save timing state **per Rule**, even when Rules share a Threshold definition. Count a firing when its action is durably accepted; retries belong to that same firing.
-3. **Cycles: your daily example should be allowed.**
-
-   My earlier suggestion to check chains before saving was too broad if interpreted as rejecting every cycle. A daily reset is normal recurrence. Even an immediate chain can return to an earlier Record and then stop.
-
-   Simulation can own the analysis and show the chain. However, a finite simulation cannot establish that every future execution will terminate.
-
-   Suggested wording: “Use Simulation to explain repeating Rule chains and find reactions that keep running without time advancing. Allow intended recurrence. Report the period and inputs checked, and distinguish a found loop from a run that reached its work limit.”
-
-   Keep a runtime limit as well. The existing 256-evaluation cutoff (crates/engine/src/rule\_runtime.rs:262) can also stop a long valid chain, so reaching it should not itself be reported as proof of a cycle.
-4. **Signals and incoming requests: remove the duplicate task and define failures.**
-
-   The command-to-Signal backend exists. The remaining task should cover creating, configuring, inspecting, and using Signals.
-
-   A Signal needs a last successful reading, its time, and the latest failure. Decide how old a reading may be before a Condition refuses it. Currently, sampling updates the timestamp before checking success (crates/engine/src/effects.rs:189), so that timestamp alone cannot establish freshness.
-
-   “Accept commands over an endpoint” also contains two different operations: submit a Signal sample, or request execution of a saved command. Define which the endpoint permits, authorize access to that specific target, and make repeated delivery of one request produce one result.
-5. **The bicycle example needs an agreed due date.**
-
-   “After three days” needs a starting event. I would use the agreed return date attached to the borrowing Transfer.
-
-   Suggested wording: “At the agreed return date, create a return proposal and update the expected Need. Rescheduling or cancelling the borrowing updates the scheduled action. Repeating its delivery must not create another proposal.”
-
-   The scheduled date should not itself declare that the physical return happened.
-6. **Simulation: distinguish checking a scenario from enforcing a live constraint.**
-
-   “Never below zero during this run” and “at least zero at the end” are useful, different checks. Reuse the existing Simulation checks (crates/desktop/src/simulation\_castle/checks\_ui.rs:1).
-
-   With Simulation enabled, evaluate the proposed Rule change before activating it. Show the first broken constraint, its time, and the actions leading to it. An incomplete run must remain visibly incomplete.
-
-   For quantities, average, median, and mode should account for **time spent at each value**. Counting updates would make a frequently updated Record distort the statistics. Include minimum, maximum, and final value too.
-
-   Future Signal readings need declared assumptions or supplied samples. Simulated calls, commands, and Transfers should appear as proposed effects without performing the real action.
-7. **Fiote: describe its abilities through ordinary actions.**
-
-   I would replace “CRUD karma and its tables” with: “Fiote can inspect, create, edit, pause, and remove Rules, Frequencies, and Signals through the same actions and permissions as the interface.”
-
-   Add explaining why a Rule fired or did not fire, and running the same Simulation checks on a proposal. Direct database-table editing would bypass the behavior you are trying to make consistent.
-8. **Board workflows: make the consequence a saved presentation request.**
-
-   Your pinned Protein area is a good fit. A Rule could request: “Show this saved Castle or area template here, with these Records and settings.” The interface then renders it using existing placement and sorting.
-
-   The request needs a destination, a template, supplied data, and a lifetime. One firing should produce one item; reconnecting should not duplicate it. Dismissing an item and completing its task should remain separate actions.
-
-   For the task-list example, a permanently placed Protein area filtering negative quantities may already provide the desired behavior. Karma only needs to change the underlying Records.
-
-   For calls, showing a call Castle and initiating a call should be separately configurable consequences. Automatic calling can then specify the device and existing call permissions without making “display this Castle” unexpectedly start communication.
-9. **Transfer automation: split it into concrete capabilities.**
-
-   Start with creating or updating a draft proposal from a Rule. Publishing, accepting, and fulfilling a Transfer are separate actions with their own authority and conditions.
-
-   A persistent shortage must not create another purchase proposal on every evaluation. Define whether the Rule updates an outstanding proposal or waits for it to finish. The bicycle return is a useful first example because it has a clear origin and endpoint.
-10. **The Cleaning Room Trail is a suitable first complete workflow.**
-
-I would specify: at the chosen local time each day, set Cleaning Room to `-1`; checking it off sets it to `0`. Setting `-1` avoids accumulating a larger debt for missed days.
-
-The Instinct button should explain what it imports, handle name conflicts, and avoid duplicating or resetting the example when clicked again. Importing today should not replay years of missed cleaning tasks.
-
-This tests Frequencies, Rules, task presentation, completion, and importing together before you add more habits.
-
-The `.ics` task fits in Blood (institute/anicca/Lince.lingua:334). I would initially scope it to exporting the scheduled or projected occurrences already shown in the calendar.
-
 }
 
-Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
+Ontology Tasks (@ontology-tasks: 0) {
 Ontology in Lince can be a castle, it is for managing the content of your database. The meaning of records through Lingua Vocabulary, in the tasks it is referred as the central point for guaranteeing you have the data you want, dealing with sync and organ discovery, it is the vibe of several features in Lince. These are the remaining tasks of several features related to this Ontology vibe:
 
 # Organ Profile and Discovery:
 - [ ] One of the ways to get data from an organ that is more byte heavy (i believe some discovery formats are limited, maybe you can only get this much data after getting the person's iroh address and wanting to see more) is one where they send their profile picture, header picture, name of organ, and some description. This can be a pattern for now and wire into existing properties of organs, like adding it's public address so you add them, and other organ stuff, not too many.
 	- [ ] Would it be cool to be able to post it in a Lince server? So you call that server for the profile instead of asking them directly? They would need to be online if not and would make the anonymous-request/individual-ddos-prevention a hard thing to balance? How could it not? Could an organ be like having a profile/user in some public Lince organ and linking that user to a personal organ in the bio or something? We would be maintaining two identities, but it would be like having a profile in linkedin and a personal website, not the craziest. We could try and mirror both?
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
+- [ ] What should we hop between organs? Public transfers are cool.
+	- [ ] Propagate OPEN promises past direct contacts, hop by hop, with a TTL and a per-hop visibility check. Payload and route exist (`GET /organ/open-promises`); this is propagation, not a new message type.
+	- [ ] Build the gossip cache and the delegated ask-around search — asking a contact to ask onward under the same hop and TTL limits, and holding what comes back. The user that asks around searches some plain text?
 
-### Organ Profile — T0 and T1
+Unrefined by human yet.
 
-- [ ] Make T0 carry a structured pair — display name and profile version — in 245 bytes of text. No image ever; T0 lasts forever.
-- [ ] Keep the published organ key off T0. The key arrives after connect, so a nearby row shows no card until then.
-- [ ] Build T1, the card (a few KB, the only tier that gossips): name, description, organ key, coarse area if set, inline 128px webp avatar at 4–8KB, pronouns and language as first-class fields, a reachability hint (direct / relay-only / always-on Cell exists) that never names Cells, and offering/looking-for as OPEN promises.
-- [ ] Make the card degrade to its text half over low-bandwidth radio rather than fail.
-- [ ] Sign the card with the organ key (integrity, not identity); drop a card whose signature fails, silently.
-- [ ] Give the card a version number, a TTL, a cache eviction lifetime separate from the card's, and a last-updated timestamp.
-- [ ] Content-address every image and every Facade.
-- [ ] Take the coarse area as a self-declared country/region/city/neighbourhood; never derive it from IP or GPS.
-- [ ] Make gossiping your card opt-in per tier, with none implying the next.
-- [ ] Default the coarse area to unset, and to its coarsest granularity when set.
-- [ ] Make the seen-set, the per-source budget and the age expiry mandatory, not tunable.
-- [ ] Make publishing into a directory a separate explicit act from gossiping.
-- [ ] Keep the invite door default-closed.
-
-### Multi-hop discovery, gossip and the directory
-
-- [ ] Propagate OPEN promises past direct contacts, hop by hop, with a TTL and a per-hop visibility check. Payload and route exist (`GET /organ/open-promises`); this is propagation, not a new message type.
-- [ ] Build the gossip cache and the delegated ask-around search — asking a contact to ask onward under the same hop and TTL limits, and holding what comes back.
 - [ ] Design world-reach discovery beyond gossip and the directory before building anything for it.
 - [ ] Dedup the flood on content hash with a seen-set.
 - [ ] Forward to a random subset, not to everyone.
@@ -201,42 +82,7 @@ Ontology in Lince can be a castle, it is for managing the content of your databa
 - [ ] Add byte accounting against a configurable ceiling.
 - [ ] Decide the one option namespace for relay and townsquare, alongside the role.
 - [ ] Say in the Discovery panel when a peer is being throttled.
-- [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
-
-### LAST — T2, the Facade
-
-An HTML page fetched on demand by hash, never gossiped.
-
-- [ ] Reconcile T2's no-network wording with the static/dynamic delivery modes in `anicca/interface/interoperability.md` before implementing dynamic Facades.
-- [ ] Close the beacon channels with a CSP and an empty sandbox (`<img src>`, CSS `url()`, `<link>`, webfonts, form actions).
-- [ ] Sanitise on receipt, not on export, and refuse a Facade that fails sanitisation instead of cleaning it.
-- [ ] Render a Facade inside a bounded card that visibly belongs to someone else — never fullscreen, never chrome-shaped, never able to imitate a Lince prompt.
-- [ ] Fetch only on an explicit click.
-- [ ] Draw links inside a Facade as inert visible URL text that does not navigate; click-to-confirm shows the full URL as a per-viewer setting.
-- [ ] Fetch by hash from any holder, never from the origin Organ; render nothing on a cache miss and say so.
-- [ ] Bound Facade storage with a per-Facade size cap shown before the fetch, plus relay-side eviction.
-- [ ] Reduce fetch-side leakage by fetching through the relay you already use.
-
-### LAST — the public face of an Organ
-
-- [ ] Show a published-subset view: what the public Organ actually holds, shown as data.
-- [ ] Generate the Facade from the public Organ, not the internal one.
-
-### LAST — Deployments, as Resenha scenarios
-
-- [ ] `iroh-relay` on the VPS — needs a public IP, a DNS name and TLS.
-- [ ] A Cell on the VPS as a roster member (`mode = "server"`), on a different machine from the relay's user and state.
-- [ ] The blind mailbox actually deployed (`mode = "front-door"`); only the deployment is missing.
-- [ ] "Where this Cell is reachable from" in the Discovery panel.
-
-## 4. Sync, login and sessions
-
-The pending-offers UI (one list, all four handshakes, accept/refuse per row, honest empty state, one delivery state per row, refusal never looking like an unanswered offer) is in `interface/plans/interface.md`, reading `offers::pending`.
-
-- [ ] Build the "did it arrive?" surface, where receipts and checkpoints answer one user question two ways. Keep delivery semantics and domain objects apart.
-- [ ] Give the Facade a secure origin — a name and a certificate — as part of the Facade work.
-- [ ] LAST — Close the off-LAN camera gap when there is a mobile Lince (`getUserMedia` needs a secure context). No second device exists to hit it yet.
-} r_S8PQ17MQ3WBWM53ZN700K89V9F
+} 
 
 Fiote (@fiote: 0, #instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
 - [ ] When Fiote suggests stuff, the suggestion may be seen as sands of the data being added. It can also run a Simulation to understand how things will change with that proposal before it shows you it's recommendation.
@@ -260,7 +106,6 @@ Fiote (@fiote: 0, #instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
 
 - [ ] What if the actions people do on board, are events, like moving things around are Karma Consequences? That way karma can control the appearance/disappearance of sands the interaction with them. It could even control the position of records with some properties. Like moving them up and down. Agents doing actions in board can also fire these events so Fiote can move sands around to tidy them, add things it thinks you need for your workflows, call people (activating the Communication of a Record-message with someone). So when you interact with the board as a user you are not calling js directly, you are interacting with things that fire events and these events have consequences, Karma once again in frontend.
 } r_137BM4Q7GV2707HBTRQ3GTJ9E5
-
 
 Interface Tasks (@interface-tasks: 0) {
 - [ ] Being able to put a shader per task, the tasks left to do are dimmed versions of themselves, instead of a glowing spinning ball of energy it is a gray stopped ball, two wgsls, doing the tasks is what makes them glow or vice versa, evil versions of themselves saying you need to do something, and calm when they arent negative. Needs to pass through rust their quantities. So maybe we see the component lying down in 3d with the shaders floating above. Maybe we can do a gaussian splatting of a room, and add a shader to it, passing record quantities. If it needs cleaning it will put on top of the gaussian a lot of black goo or mut on the floors. Your room can be given coordinates, in the canvas (which is the world) and your stuff can have coordinates inside that room, so moving the room around doesnt change anything. The tasks you need to do may appear with some sand and some wgsl outside of the record's description. So you can have ambient effects on your room when you look at it, and inside it some floating stuff to do that is more computer focused so they float around your pc. And you can also have a kanban board on your wall digitally, and then when you take a 3d hologram projector it can take the room of your Lince and project to the real world, so you see the kanban, and if a camera is pointing at you and seeing your gestures you can move the sands on lince and projection, connecting the worlds.

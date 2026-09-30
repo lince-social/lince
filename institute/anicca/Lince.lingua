@@ -628,3 +628,9 @@ Simulation is the basis of controlling several Lince instances, each with their 
 	- [ ] It would be nice to be able to save different versions of the Record's description/title, or maybe quantity/link. Putting a limit to it in mb per total local history of edits, maybe keyed by amount of seconds spent not editing, makes a new save + explicit save. Again, how to not frankestein? Loro?
 	- [ ] Be able to set Constraints, that are enforced, so the state doesnt reach an undesired point. Maybe this means putting a lot of constraints that need to be checked to make sure they are true in one run and not activating them in another, only a part of it. The one with less Constraints will be able to simulate more events per second happening since it doesnt need to be constantly checked to make sure it didnt pass thorugh an undesired state. Similar to the difference of unit tests and end-to-end ones. But instead of it being a division by part it is a division by period of Constraint checking, we can still have a difference of the equivalent of unit tests and e2e and several other types of tests, and still make them be checked in different times.
 }
+
+Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
+Ontology in Lince can be a castle, it is for managing the content of your database. The meaning of records through Lingua Vocabulary, in the tasks it is referred as the central point for guaranteeing you have the data you want, dealing with sync and organ discovery, it is the vibe of several features in Lince. These are the remaining tasks of several features related to this Ontology vibe:
+
+ [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
+} r_S8PQ17MQ3WBWM53ZN700K89V9F

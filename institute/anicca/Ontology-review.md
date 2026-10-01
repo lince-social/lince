@@ -1,751 +1,382 @@
-# Ontology: implementation plan for social features 1–6
+# Ontology: remaining implementation plan for social features 1–6
 
-## Working agreement
+Updated 2026-10-01. Implement the six approved packages sequentially, keeping the design simple and reusing existing sync. Work on the current branch and preserve concurrent Karma/UI changes. Never modify the owner’s .lingua files, AGENTS.md or README.md. Use cargo check, treat warnings as errors and add no code comments. Item 7 remains excluded.
 
-Implementation update, 2026-09-30. This document specifies six social features: optional anonymous/identified publication, one shared public Organ profile, Record-based conversation sync, stranger introductions, directory/gossip discovery, and reliable server delivery. The wider work previously grouped under item 7 is excluded from the current implementation plan.
+## Active implementation guide
 
-The human has chosen: small Needs and Contributions that can be posted anonymously or under the Organ's public identity; connections between strangers; gossip; servers that remain online; reliable asynchronous conversations; questions and recommendations before implementation.
+No whole package is complete. Publication/profiles, private Requests, remembered servers, directory browsing, contact gossip, contact queries, moderation, deliberate reports and saved searches have qualified implementations. Source disagreement, inactive metadata cleanup, restore and operational/resource closure remain open. Finish backend, native UI and meaningful qualification together. Replace a completed subject's long checklist with its short verified description; preserve the detailed requirements of unfinished subjects across compaction.
 
-Each decision below has a stable number, a simple explanation, a question, and a recommended answer. Recommendations are the document's working defaults. The human's comments amend those defaults; a comment does not remove the rest of a feature unless it explicitly says so. Unmentioned recommendations stay in the document, as requested. The human requested that items 1–6 be carried through into this plan. This document records agreed behavior and implementation requirements; editing it does not mean those features have been built.
+Verified private-flow subject: [the two-person regression](../../crates/engine/tests/social_request_flow.rs) passes on the normal test stack. It covers two independent hosts, one offline host, exact ciphertext retries, bounded provisional replies, acceptance after post withdrawal, actual device enrollment with history arriving before fresh session authorization, concurrent reception, quantity converging to one, signed profile Reveal, mutual Connect, disabled foreign general sync, own-device contact reconstruction and block/archive/unblock. Six mailbox regressions and retained history also pass. Social actions use a smaller dispatch path with the existing actor/permission checks, avoiding the general dispatcher’s stack overflow. The current native component conflict is recorded in the checkpoint below.
 
-Status labels distinguish **existing code**, **partial foundation**, **remaining work**, and **design recommendation**. A checked box means code was found, not that a production deployment was verified. The original inspection did not execute tests; section 16 records implementation and executed checks separately. The working tree contains other agents' changes, so implementation must recheck the relevant code.
+Completed controls: [persistent blocks/admissions](../../crates/engine/src/social/admission.rs), [private profile bindings and mutual contacts](../../crates/engine/src/social/reveal.rs), and [native Requests controls](../../crates/desktop/src/organ_castle/social.rs). Blocks survive archival and apply across conversation tokens from the same pseudonymous owner. Only a newer explicit introduction window resets host counters. Reveal is private, requires a current reviewed profile, and binds that profile to the token and both participants. Mutual Connect derives a known contact with general sync disabled, empty broad scopes and no invented network endpoint or private replica grant.
 
-The planned work includes the social frontend/backend and correctness, security and performance checks. After approving items 1–6, the human authorized implementing what can be completed while another model works on Karma, preserving that model's work and reporting anything skipped. The owner continues to author .lingua.
+Existing foundations to reuse: typed signed public snippets/profiles, separate anonymous posting authority, exact preview, draft/edit/withdrawal actions, source privacy filtering, bounded public cache/index, durable publication work, seven-day profile/editor authority, offline profile drafts, safe deliberate image loading, per-device encrypted SDK state and independent delivery/pickup workers. Latest gates passed: publication 37, full Requests 1, contact queries 5, focused units 6, discovery 3, gossip 4 and private transport downgrade 1. Native Organ runtime passed 21 tests; Desktop and Cell cargo check --tests passed with warnings denied. Earlier six mailbox regressions remain retained evidence.
 
-### Confirmed identity and connection decisions
+Confirmed device contract: the owner device authorizes fresh messaging keys through existing own-device sync. Already authorized keys last seven days; hosts immediately enforce known newer revocations. Retained history arrives even if the owner is offline, while sending from a fresh device waits. Each device keeps separate live accounts/ratchets. Independent hosts receive no Main identity secret or pseudonymous owner wallet. Restore history and the separate authority wallet, then establish fresh sessions rather than rolling back or cloning ratchets. Lost required keys and every backup cannot be recovered from history alone.
 
-- Each post can be anonymous or identified, chosen by its author. Anonymous publication conceals the Organ identity in the public listing; stronger network-origin anonymity is outside the current scope.
-- Anonymous posts use separate posting identities by default, with an optional persistent alias.
-- Strangers can send a bounded private introduction and exchange private replies before sharing Organ profiles.
-- Each participant chooses when to reveal their identity. Becoming known Organ contacts requires mutual acceptance.
-- An initial reply permission allows a bounded introduction; acceptance allows continued conversation.
-- Each Organ has one stable public identity and one current public profile shared by its authorized devices. A device or profile host does not create another public identity.
-- Devices with a UI must provide public-profile viewing and editing controls. Authorized edits sync to the Organ's other devices and update its published profile.
-- Conversations remain the existing Conversation, Thread and Message Records, synchronized between authorized devices. Anonymous identities and delivery machinery integrate with those Records.
+Asynchronous lease contract: a seven-day authorization limits new deposits; it does not shorten an accepted chat envelope's thirty-day retention. Pickup validates sender authorization at the selected host's recorded admission time, envelope expiry at the recipient's current time, and current known generation floors. The recipient still needs its own fresh pickup authorization. Admission time is a claim of the deliberately selected authenticated mailbox, not an independently provable clock. A host cannot forge sender signatures or decrypt content, but its timestamps and availability are trusted within this role. An explicit late-pickup regression is being added; do not claim it has passed until recorded here.
 
-These are confirmed decisions. The other numbered recommendations remain in the plan unless amended. They are requirements for the six planned features.
+Concurrent-message contract: social Conversation/Thread/Message Records open at zero and assign presence one using the existing quantity register with offset one. Each device’s authenticated import Fact has a distinct UID and zero delta. Passive own-history import does not create ordinary synthetic social Message events. Actual send/receive enqueues one stable logical event for existing idempotent rule/effect processing. Convergence and effect-commit/queue-cleanup replay pass; full process/storage faults remain open without changing concurrent Karma code.
 
-## 1. Scope and source coverage
+Completed backend subject: [recipient refusal](../../crates/engine/src/social/refusal.rs) retains at most 256 device-local failed-ciphertext references and errors, without another plaintext history. Explicit Discard saves intent before I/O and signs exact envelope/message/content hashes. Hosts preserve recipient-refused across retries/restart and retain spam counters. Sender verification rejects forged status, cancels pending local copies and retains Message history; another own device observes the refusal through existing sync. Six mailbox regressions and the expanded two-person flow pass. Native Organ runtime checks passed. This cannot erase copies already held by other devices or operators.
 
-The [Ontology record](Lince.lingua) describes managing data, its meaning, sync, and Organ discovery. Its direct children are Assertion, Organ, Lingua, Blood, Trail, and Sync. Its explicit remaining checkbox is the LoRa adapter. The detailed social networking checklist is in [Ontology Tasks](Tasks.lingua). The Interface task also asks for exploring Concepts, directed Assertions, Trails, and progress without graph movement changing relationships.
+Additional verified qualifications: blocked fresh conversation tokens are refused; declined/blocked logical duplicates preserve the original retained Message and state. Existing Karma applies the Message effect once when its stable event is replayed after effect commit; this simulates lost queue cleanup, not a power-loss campaign. The real QUIC transport regression denies private own-history fetch on both an existing connection and a new connection after write-to-read-only downgrade and after removal, without adding private grants.
 
-The record's #done tag is not evidence that all these tasks are implemented.
+Remaining private-flow qualifications: full restore/key changes, old-route discard deferral, ending-at-first-registration, pagination/draft resumption and deletion cleanup. Expired-proof recovery now shows retained consent separately from current verifiable identity; fresh Reveal is required before contact reconstruction. Global block/admission metadata cleanup remains bounded but must not silently forget active denials. Full process/storage fault injection is still open.
 
-| Source | Relevant material carried into this plan |
+Completed retained-block subject: [admission controls](../../crates/engine/src/social/admission.rs) keep newer deleted-context decisions on the stable private Organ, combine them with original entries using the monotonic window and require Organ settings permission for deleted-context controls. Own-sync qualification and two focused units pass: the same denial can be deliberately unblocked on another enrolled device without restoring its deleted Record, and original/retained maps share one 256-pair bound without double counting or dropping active denials. Host updates wait visibly for current device authority. Cleanup of inactive historical admission/window evidence still needs a retention rule and tests.
+
+Completed archive/key-continuity subject: ended posts and archived materialized introductions stay hidden, reject edits/resumption and protect their key contexts from ordinary deletion. Archival waits for unfinished final-message windows. Active conversations/blocks keep authority renewable; fully inactive archives stop automatic renewal, preserve old transport keys through the delivery grace period, and allow deliberate preparation of fresh authority for later controls. Public units and the updated two-person flow pass these cases without restoring archived Conversations.
+
+Completed proof-recovery subject: Requests and contact reconciliation validate retained profile bindings against current time and known authority floors. Native controls separate retained consent, an existing contact and the need for fresh Reveal; expiry preserves history and existing contact permissions. Stale proof cannot silently reconstruct a contact. Unit, native and full Requests gates passed.
+
+Completed directory-frame subject: trim documents and controls to the complete response bound, explicitly label incomplete authority refresh, reject malformed control arrays and independently verify result hashes. Three discovery regressions and native continuation controls passed.
+
+Implementation locations: [contracts](../../crates/nucleus/src/social.rs), [storage](../../crates/store/src/social.rs), [actions](../../crates/engine/src/social.rs), [profiles](../../crates/engine/src/social/profile.rs), [history/message transactions](../../crates/engine/src/social/conversation.rs), [drafts and Requests](../../crates/engine/src/social/outbound.rs), [delivery workers](../../crates/engine/src/social/delivery_worker.rs), [mailbox](../../crates/engine/src/social/mailbox.rs), [service handlers](../../crates/engine/src/social/service.rs), [public transport](../../crates/engine/src/wire/social.rs), [native forms](../../crates/desktop/src/organ_castle/social.rs). Migrations 0203–0204 and 0310–0325 belong to these features; preserve unrelated migrations and changes.
+
+Next order: finish remaining publication/profile/history qualifications and inactive retention, package 5 reports/subscriptions/source disagreement, then package 6 restore/delivery/resource closure. Shared headless hosting/supervision is implemented. Existing full own-device Wire requires current write-capable sibling membership and rechecks it per frame; retain this protection for private history and shared editing leaves. Removed/downgraded devices can retain old keys, so authority rotation and host generation floors remain necessary.
+
+Current qualification checkpoint: saved searches are qualified (backend 6, moderation 5, discovery 3, Native Organ 26, Desktop/Cell check --tests). Expired resend and exact delivery review are linked; Native Organ 27 and Engine library checking passed. Backend five-flow/mailbox/session gate v2 failed on the nested resend_races test module path, now corrected explicitly; rerun in /tmp/lince-social-resend-backend-v3.log. A fresh Desktop/Cell --tests check is blocked by concurrent component_push tests using removed ComponentState::Record.start_call (lines 405, 423, 469, 577); do not alter that agent's files. Thread qualification is queued in /tmp/lince-social-resend-threads-v1.log and may encounter the same mismatch. Profile-device avatar and gossip-source privacy reproduction gates are queued in /tmp/lince-social-{profile-device,source-privacy}-reproduce-v1.log; do not claim those bugs proven before their results. Preserve unfinished resend/media/source contracts. Encrypted restore, inactive cleanup, broader health, relay/fault/resource qualification and sharing audit remain; no whole package is complete.
+
+Completed hosting/supervision subject: [Engine operator controls](../../crates/engine/src/social/operator.rs), [Cell startup/supervisor](../../crates/cell/src/social_host.rs), [native health](../../crates/desktop/src/organ_castle/social/operator.rs) and [NixOS configuration](../../flake.nix) pass backend 3, Cell 2, native Organ 22 and NixOS evaluation gates; Desktop/Cell checking also passes. `services.lince.social.enable` manages independent directory/townsquare/mailbox roles and validated limits/contact/policy through an 8 KiB JSON file loaded before Wire. Unset deployment preserves native choices; managed settings reject native overwrites. Social worker crashes restart with bounded backoff; shutdown cancels the active child. Health exposes bounded local counts/times without query or Message contents. Deliberate index rebuild revalidates signatures/current floors and preserves ending evidence. Existing systemd restart and separate Iroh relay modules are reused. Application onward carrying remains unavailable and is rejected; no customer identity wallet is granted to an independent host. Remaining operator moderation, broader delivery health, restore, physical limits and deployment qualification stay below.
+
+### Retention and restore details still to close
+
+Completed owner-context retention: [maintenance](../../crates/engine/src/social/retention.rs) and migration 0322 inspect 64 contexts per pass, isolate malformed contexts visibly, stop leases only for explicitly archived/deleted contexts without live activity, and preserve active blocks. Retirement on the authorizing owner waits through the last issued authority plus 30 days, rechecks current wallet/control and activity in a write transaction, and deletes only expired local transport work/account/session state. History, owner wallets, signed evidence, blocks and floors remain. Dormant/retired contexts leave the renewable 256-context set; registration checks also rotate in bounded batches. Eleven social units and the updated full Requests/session regressions pass ongoing conversations, pending Discard, grace boundaries, fresh authority, deliberate key recovery and malformed/completed-job handling. Native key status shows dormancy, earliest retirement and bounded private error detail.
+
+Remaining retention work: other devices conservatively retain dormant keys because their offline copy cannot prove the owner's newest issued permissions. Propagate an owner-signed retirement decision before automatic deletion there, or keep that conservative bound explicit. Compact inactive historical admission/window evidence without forgetting active blocks or monotonic floors. Owner wallets and permanent host ledgers remain bounded; exhaustion must stay visible rather than silently dropping denials. This is independent from safe backup restore.
+
+Encrypted backup/restore is still an actual missing feature. Reuse the existing database/Record history and separate authority-wallet encryption rather than copying live ratchets. Backup must capture a coherent database snapshot, relevant root/transport/pin material and the separately encrypted owner wallet; exclude live accounts/sessions or mark them unusable after restore. Authenticate the complete manifest and limits, encrypt before writing a new file, avoid logging passwords/keys, reject wrong passwords/corrupt or oversized files before mutation, and stage restore for atomic installation while the Cell is stopped. A stale owner roster must never reauthorize a removed device. The human explicitly confirmed owner-only authorization after restore, with fresh enrollment of every other device. Restoring old permissions must not authorize a formerly removed device. Even owner-only restore needs current host authority floors before publishing fresh anonymous/profile control generations. Hosts restored from old backups must similarly refresh floors before accepting old leases; inability to learn current floors is a visible recovery state.
+
+Completed atomic session reset: [reset](../../crates/engine/src/social/session.rs) now preserves the local encryption wrapping key and deletes live accounts/ratchets, holds outgoing ciphertext and cancels destinations in one SQLite transaction. The injected database failure first reproduced unreadable accounts with the old filesystem-before-commit reset; the regression now passes rollback, successful reset, fresh messaging identities and separate authority-wallet continuity. Retained history is unaffected. The expanded queue assertions are included in the current report gate. This fixes reset atomicity; encrypted backup/restore remains missing.
+
+### Discovery controls still to implement
+
+Completed personal hiding and host removal: [backend](../../crates/engine/src/social/moderation.rs), migrations 0323 and [native controls](../../crates/desktop/src/organ_castle/social/moderation.rs) preserve signed cache/floor evidence. Private post/public-author mutes use existing Own field sync and tombstones, with a 256-entry/64-KiB live limit; paged review/unmute can resolve a concurrent over-limit merge. Raw search cursors survive hidden pages, and saved contact answers are filtered locally. Independent host removal persists across revisions/restart, suppresses listing/active refresh/onward gossip, and restores only currently valid evidence transactionally. Withdrawals and authority controls still propagate. Five moderation and five gossip regressions pass, including enrolled-device sync, foreign-export denial, overflow recovery, expired restoration and already-queued removal. Native Organ 26 and Desktop/Cell checking passed after paging and saved-search integration. Hiding/removal sends no report automatically.
+
+Completed deliberate reports: [contracts](../../crates/nucleus/src/social/reports.rs), [Engine](../../crates/engine/src/social/reports.rs), migration 0324 and [native controls](../../crates/desktop/src/organ_castle/social/reports.rs) send one exactly previewed signed public Snippet and optional explanation to one chosen operator, with no attached Main profile/private source. Actor-private local work retains at most 32 jobs; supervised sending retries identical bytes and distinguishes intake acceptance, refusal and expiry. Directory/townsquare intake retains at most 256 reports / 4 MiB for seven days, with eight accepted per transport source and 256 globally per UTC day. Dismissal preserves independent replay/admission evidence; invalid, conflicting, expired and mailbox-only submissions fail. Report work expires after seven days, remains visibly expired for one day and can be cleared without recalling remote intake. Four backend regressions pass privacy, lost receipt/restart, actor isolation, queue/expiry and daily/global limits after dismissal/reopen; Native Organ 25 and Desktop/Cell checking with warnings denied pass. Reports do not remove a listing automatically, and transport origin anonymity is not promised.
+
+Completed saved searches: [typed filters](../../crates/nucleus/src/social/subscriptions.rs), [Engine and worker](../../crates/engine/src/social/subscriptions.rs), migration 0325 and [native settings](../../crates/desktop/src/organ_castle/social/subscriptions.rs) use existing private Own field sync/tombstones. Sixteen filters, eight active, one-hour minimum and independent default-off Cell participation bound automatic queries. Each supervised pass claims one due filter with a durable lease and thirty-second deadline; current actor, membership, participation and unchanged configuration are rechecked inside imports and match commits. Offline cache/reconnect/restart scheduling, paged over-limit resolution and current withdrawal/mute filtering are qualified. Device-local public match references retain 256 seen identities per filter / 4,096 per Cell through expiry; clearing the display preserves deduplication and exhaustion is visible. Optional in-app notices use generic text, coalescing and local quiet hours (22:00–08:00 by default). Notice attempts are advisory, while saved matches persist. Six backend regressions, moderation 5, discovery 3, Native Organ 26 and Desktop/Cell checking pass with warnings denied. The human explicitly selected the existing in-app feed; OS push while closed remains outside this increment. Viewing settings/results makes no network request.
+
+### Profile renewal and offline draft contract
+
+An enabled public profile renews automatically with the same fields and selected hosts when its authority is near expiry and the owner can renew it. This changes signature freshness, not claimed activity or presence. Withdrawn and local-only profiles never renew automatically. Multiple heads require review; renewal checks the retained state again inside its write transaction so it cannot overwrite a concurrent human edit. Posts retain their deliberate lifetime and explicit renewal. An authorized device with expired or missing public editing authority still saves its selected profile fields, parents, hosts and publication/withdrawal choice as a bounded private draft through existing own sync. Keep one latest pending draft per device, plus signed profile branches; the owner signs queued edits after reconnecting. Commit draft consumption and the signed profile atomically, preserve concurrent branches, and keep errors visible when old parent history needs manual resolution. Native forms restore the local draft and distinguish saved/waiting from hosted publication. If owner authority is unavailable, retain the profile and show expiry rather than granting an independent service signing rights.
+
+### Contracts to preserve during the remaining work
+
+Messages stay in Conversation → Thread → Message Records. Live SDK accounts/sessions remain encrypted and device-local; work tables contain references, ciphertext and retry metadata. Introductions first save a signed MessageDraft and wait visibly for owner authorization. Ordinary retries retain identical ciphertext. A verified replacement recipient key requires a new session/envelope while preserving logical Message/content identity and creation time. Pending copies are cancelled or held after known revocation. Public post archival cannot strand a separately accepted conversation.
+
+The private owner binding is signed by the Organ root and synchronized only between owned write-capable devices. Other devices request authorization with their current operational keys. The owner wallet retains latest requests and rejects old/conflicting requests after restore. Replacing live device identities advances the pseudonymous generation; routine certificate renewal preserves live account identity. Keep current/previous fallback keys for the advertised envelope lifetime. Restore clears live ratchets with a fresh local storage key while retaining the separately encrypted owner wallet and Record history. A complete filesystem rollback requires deliberate restore/reset.
+
+Public envelope IDs derive from canonical immutable sender/ciphertext bytes. Logical Message identities include the private token and author owner. Conflicting same-ID content fails without advancing the saved session. Reception commits account/prekey/session changes, Records/links, deduplication, import Fact, stable event intent and recipient receipt atomically. Only then acknowledge storage at the host. Current certificate authorization can accompany unchanged ciphertext. A carrier receipt means storage; a signed recipient-durable receipt means import; explicit refusal, expiry and optional reading are separate states.
+
+Public profile versions compare authority generation before revision. Signed parent evidence contains at most 64 ancestors; a host missing more requires explicit resolution or owner-authority advancement. A new generation supersedes every old editor revision, including the maximum integer. An ending-only delegation for an old identified post cannot authorize new active publication. Profile root pins and public ending floors survive display-cache expiry. Anonymous IDs bind separate owner authority, never the Main Organ root.
+
+Remaining qualifications keep these concrete cases: actual enrolled-device offline/concurrent profile edits and media; more than 64 missed profile ancestors; restore without resurrected permission; old-route discard waiting for unavailable keys; ending delivered to a host that first registers after expiry; deletion and bounded denial/admission cleanup; meaningful effect replay after its commit; existing/new native connections after a write-to-read-only downgrade; native Thread/Requests controls; physical resource and fault limits. Backend/UI denial alone does not prove that current editing secrets are absent from an unauthorized device.
+
+The full private content is limited to 20 KiB, the complete encrypted delivery to 32 KiB, and a public/collection frame to 256 KiB including wrappers. Signed purpose distinguishes introduction, text and control; decrypted content must match it. Introduction/control reserves remain usable after three provisional texts. A failed ciphertext reference is a temporary deferral unless the recipient explicitly chooses Discard. Do not classify a missing history/session prerequisite as permanent loss.
+
+### Concrete implementation boundaries
+
+- Keep source, publication-authority secrets, editor drafts and participant/request/reveal mappings in scoped Record extensions or associated Records. `store::records::set_extension_on` already logs extension changes to existing sync; use that path and the Engine actor/Fact path. Do not introduce a parallel private-history database or copy live session ratchets through ordinary history sync.
+- Public snippets/profiles have narrow typed documents and fixed signing bytes. Public IDs differ from private Record UIDs. A directory stores only validated public documents; delivery services store admitted ciphertext. Private extension namespaces must be excluded from foreign-Organ exports, even through broad grants.
+- Keep publication/hosting/search/reply permissions explicit. Native UI uses authenticated Engine actions. New public Wire handlers have bounded request/reply framing and never dispatch arbitrary private Actions.
+- Give publication and delivery jobs durable identity, destination, state and retry deadlines. Reuse the existing inbox/outbox, receipts, idempotency and quota machinery where its identified-mail contract applies; anonymous Requests need their own identity-free envelope and admission scope.
+- Extend the active Organ/Thread interface and add a simple Discovery view with My posts, Search/Browse and Requests. Every visible button must have its backend path and understandable offline/failure state. Integrate social message composition into existing Thread Records.
+- Use existing Rust/Iroh/SQLite layers. Implement contact gossip with a bounded durable forwarding ledger; no additional gossip platform or compulsory federation. Evaluate a reviewed Rust session library rather than inventing cryptography.
+
+### Package checkpoints to keep current
+
+| Package | Code paths to reuse | Required retained evidence before slimming |
+| --- | --- | --- |
+| 1 — Publication | Engine Actions/actor permissions; Record extensions, OPEN export; native forms | Exact preview/signature, separate anonymous authority, source/privacy audit, edit/withdrawal and native flow |
+| 2 — Shared profile | Organ identity/roster; Record/Fact edits; own-device extension sync; blob facilities | Same identity across devices/hosts, delegated editing, offline/conflict handling, anonymous posts unaffected |
+| 3 — History | Conversation/Thread/Message, replica roots/grants, own-device sync, message lifecycle | Same retained UIDs on existing/new devices, private mapping isolation, concurrent receipt and separate session provisioning |
+| 4 — Requests | Existing threads/invitations; admitted durable work; selected reviewed session protocol | Offline pseudonymous introduction/reply, separate stranger capacity, accept/block/reveal/connect, unchanged history |
+| 5 — Discovery | Iroh/Wire; promise-cache concepts; SQLite index; consent/contact state | Two selected services, bounded search/gossip/query work, expiry/withdrawal, source labels and opt-in UI |
+| 6 — Services/delivery | Persisted mailbox inbox/outbox/receipts; sync runner; Wire supervisor; headless/NixOS | Independent retry workers, prompt chat fallback, freshness/key-change policy, truthful receipts, roles/restore/resource and full social scenario |
+
+For each increment record the implemented files, exact checks run and remaining gaps here. If concurrent changes block a target, continue an independent authorized task and retain the blocked check and its error; do not rewrite another agent's work to make the check pass.
+
+## Scope and agreed behavior
+
+The source is the [Ontology record](Lince.lingua) and its social networking tasks, now consolidated by the human in the current Records. Ontology connects the meaning of Records with Organ identity, synchronization and discovery. This plan completes its six approved social feature packages. The wider subjects previously grouped as item 7 remain excluded: vocabulary publishing/import, expanded Ontology/Relations exploration, file-sync closure, generic Trail packages, calendar export, Blood integrations and LoRa.
+
+The following choices remain agreed. Unmentioned recommendations stay in force; a comment changes the relevant choice rather than deleting the surrounding feature.
+
+- Each Need or Contribution can be published anonymously or under the Organ's public identity. Anonymous posts use separate posting keys by default; an optional persistent alias deliberately links posts. The owner explicitly authorizes anonymous editing too, using seven-day permissions and immediate enforcement of known revocations. Key replacement preserves the post identity; creating a fresh anonymous identity on another device waits for the owner when offline.
+- Each Organ has one stable public identity and one current public profile, shared across authorized devices and selected hosts. Every UI device provides profile controls, with backend-enforced editing permissions.
+- Strangers can exchange bounded private introductions and replies without revealing their Organ profiles. Conversation acceptance and becoming known contacts are separate choices. Profile reveal is independently chosen; contact conversion requires mutual acceptance.
+- Conversations continue to use the existing Conversation → Thread → Message Records and UIDs. Retained authorized history and private participant/request mappings synchronize between own devices, including newly enrolled devices.
+- Publication, directory search, gossip, carrying another contact's traffic and private replication have separate permissions. Selecting a server does not enable every role or disclose every query automatically.
+- Anonymous publication hides the Organ association in the public document. Operators can still observe connection metadata, timing and text. Stronger network-origin anonymity is outside this scope.
+
+Publication or discovery never creates an accepted Transfer, changes stock, establishes trust, or grants access to private Organ data. A valid signature proves control of a key, not a real name, skill or location.
+
+## How the network pieces fit
+
+Example: you publish “I can repair bicycles this weekend.” A stranger finds it, sends a private introduction while your phone is offline, and you reply later. Both can keep pseudonyms; sharing profiles and becoming contacts remain deliberate actions.
+
+| Piece | Simple meaning | Remaining responsibility |
+| --- | --- | --- |
+| Cell / Organ | A running installation / the shared context represented by its authorized Cells | Keep device, identity and permission boundaries explicit |
+| Public snippet | A small chosen announcement | Safe anonymous/identified publication, updates and withdrawal |
+| Directory / townsquare | Searchable listings / browsing those listings | Independent selectable services with a validated public index |
+| Gossip | Passing public announcements between willing peers | Consent, deduplication, expiry and bounded forwarding |
+| Ask-around | Asking contacts to search and optionally ask onward | Separate query consent, deadlines and total work limits |
+| Iroh relay | Infrastructure that helps endpoints establish and carry a connection | Verify operational availability separately from Lince service roles |
+| Lince mailbox | Durable encrypted storage for later pickup | Admission, selected copies, retry, truthful receipts and bounded retention |
+| Session / receipt | Private conversation encryption state / evidence of a delivery stage | Reviewed per-device sessions and truthful recipient delivery status |
+
+A connection relay does not replace a mailbox. A directory does not retain private conversations. Gossip announces public offers; it does not distribute private history. Mailboxes cannot guarantee recovery after every copy or required key is lost or retention expires.
+
+An independent always-online mailbox keeps deposited ciphertext available while people are offline. It does not renew their seven-day permissions. A returning owner device can renew its own keys; another device whose lease expired waits for that owner or a deliberately trusted personal authority server. Already admitted accepted-chat copies can remain readable for their thirty-day delivery window, subject to current known revocations and fresh recipient pickup authority. Public snippet expiry is separate: gossip and storage do not extend a post's reviewed lifetime.
+
+## Stack and shared contracts
+
+Decision references: D01–D03, D39, D67, D85. Keep Rust, the current Iroh transport, SQLite/SQLx and the active Rust interface. Add focused social protocols within these layers. No compulsory central account or external social network is required.
+
+| Layer | Remaining responsibility |
 | --- | --- |
-| Lince.lingua, Ontology and its Organ/Sync/Assertion children | Organ identity, existing Record relationships, grants and synchronization boundaries |
-| Tasks.lingua, Organ Profile and Discovery | Rich profiles, hosting, OPEN promise propagation, cache, delegated search and independent directories |
-| Tasks.lingua, Relay Cells | Separate application carriers, explicit consent, batch authentication, capability enforcement, byte/connection limits and throttling UI |
-| The human's refinements | Optional anonymous/identified posts, one shared public identity/profile, editable UI and synchronized conversation Records |
-
-### The six features in scope
-
-These numbers match the requested 1–6. They are feature packages; the later numbered implementation steps describe the dependency order.
-
-| Item | Planned result | Existing foundation to reuse | What remains |
-| --- | --- | --- | --- |
-| 1 | Publish a Need or Contribution anonymously or under the Organ's public identity | Records, signed data, OPEN promise export | Safe publication projection, per-post authority, preview, destinations, revisions and ending/renewal controls |
-| 2 | Maintain one editable public profile per Organ across its authorized devices and chosen hosts | Organ Records, profile properties, signed rosters and own-device sync | Public projection and restricted signing authority, native editor, media limits, conflict handling and signed republication |
-| 3 | Keep the same retained conversations on authorized devices, including newly enrolled devices | Conversation, Thread and Message Records, grants and sync | Prove history coverage; sync private participant/request state; provision new sessions; handle concurrent receives and revoked devices |
-| 4 | Let strangers introduce themselves and continue privately before optionally becoming contacts | Existing conversations, invitations, contact controls and sealing primitives | Pseudonymous reply/session contract, Requests, separate admission, explicit reveal, mutual contact conversion and block/close controls |
-| 5 | Find people through independent directories, browsing, bounded gossip and ask-around search | Local discovery, known-Organ address lookup and promise cache | Public searchable index, validated cache, consent, bounded forwarding/query workers, source merging, expiry and withdrawal |
-| 6 | Keep asynchronous delivery working through always-online services | Headless Cell, Wire, sealed mailbox batches, quotas and connection caps | Mailbox correctness fixes, separate service roles, durable inbox/outbox, redundant copies, current authorization, operator controls and restore evidence |
-
-Completion means these six packages work together through the stranger-to-conversation acceptance scenario. Existing helpers are reuse candidates, not evidence that a package is complete.
-
-The excluded item 7 subjects—vocabulary publishing/import, expanded Ontology/Relations exploration, file-sync closure, generic Trail packages/content/progress, .ics export, Blood integrations and LoRa—have no implementation tasks in this plan. Existing concepts, units and sync may be reused where a social feature needs them.
-
-## 2. Learn the pieces through one example
-
-You post: “I can repair bicycles this weekend.” Someone you have never met finds it and sends “Could you help with my brakes?” You can answer while keeping your personal profile hidden. If both choose, you become Organ contacts and create a Transfer.
-
-| Word | Simple meaning | Job in the example |
-| --- | --- | --- |
-| Cell | One running Lince installation | Your phone or a server |
-| Organ | A shared context represented by Cells | Your personal identity, family, or workshop |
-| Public snippet | A small announcement you choose to distribute anonymously or with your Organ profile | Your repair offer |
-| Posting identity | A key used for an anonymous post, separate from your Organ's public identity | Proving who can update the offer without naming you |
-| Public Organ identity | The same stable identity and current profile across your authorized devices | Showing your chosen name and profile on identified posts |
-| Signature | Proof that the holder of a key approved specific bytes | Preventing a server from rewriting your offer |
-| Gossip | Passing announcements between willing peers | A contact passes the offer onward |
-| Cache | Locally saved results that may become stale | Seeing an offer without asking its author every time |
-| Directory | A searchable index of published listings | Finding bicycle repair outside your contact network |
-| Townsquare | A public place to browse published snippets | Browsing local offers without a specific search |
-| Address lookup | Finding how to reach an identity already known | Connecting after an Organ identity is shared |
-| Iroh relay | Network infrastructure for reaching endpoints | Carrying an encrypted connection when a direct route is unavailable |
-| Lince carrier or relay | A service permitted to carry Lince envelopes | Accepting traffic under Lince's consent and budget rules |
-| Mailbox | A carrier that stores encrypted traffic for later pickup | Holding the introduction while your phone is offline |
-| Vocabulary | Shared definitions with stable identities | Agreeing what a repair service or an hour means |
-| Receipt | A statement about a delivery stage | Distinguishing stored on a server from delivered to a device |
-
-Iroh relays handle connectivity. Application mailboxes must provide the durable storage required for offline conversation. These are separate responsibilities. [Iroh relay documentation](https://docs.iroh.computer/concepts/relays).
-
-An always-online server improves availability; it cannot guarantee delivery after every copy is lost, keys are lost, storage fills, or retention expires. The app must show those states and support retries.
-
-~~~mermaid
-flowchart LR
-    A["Author's private Cell"] -->|"Choose anonymous or identified"| P["Anonymous posting key or shared Organ identity"]
-    P --> G["Consenting gossip peers"]
-    P --> D["Chosen directories and townsquares"]
-    G --> S["Stranger finds snippet"]
-    D --> S
-    S -->|"Encrypted introduction"| M["Author's chosen mailbox"]
-    M -->|"Pick up after reconnecting"| A
-    A --> C["Private reply and optional identity sharing"]
-    C --> T["Mutual contact and optional Transfer"]
-~~~
-
-The signature identifies a posting key. It does not prove a real name, skill, physical location, or trustworthiness.
+| nucleus | Typed public documents, search, admission, session-routing and receipt contracts |
+| store | Public cache and rebuildable FTS5 index; scoped private state; transactional message/session integration |
+| engine | Publication, authority, consent, role isolation, revocation and session policies |
+| Wire | Isolated social handlers, pinned service authentication, bounded framing and timeouts |
+| cell | Supervised publication, delivery, collection, gossip and search workers |
+| interface / desktop | Native social flows alongside each backend feature; reuse existing Organ and Thread views |
+| Headless Lince / NixOS | Validated role configuration, durable service state, supervision and restore |
 
-## 3. What exists and what still needs work
+### Remaining shared prerequisites
 
-| Subject | Status and evidence | Remaining work |
-| --- | --- | --- |
-| Concepts, assertions, identity, hierarchy | Existing: [Ontology UI](../../crates/desktop/src/ontology/ui.rs), engine and desktop ontology tests | Reuse stable concept/unit references and Record links in social features; new definition publishing and exploration are excluded |
-| Separate Organs and contacts | Existing: Organ Castle, store/organs.rs | Optional anonymous/identified posting and deliberate conversion to contacts |
-| Local discovery | Existing: engine/wire/discovery.rs uses mDNS; Nearby UI | Public internet discovery and server selection |
-| Known-Organ address publication | Existing: engine/directory.rs signs Organ identity, roster version, front-door endpoints | Searchable listings; this file is not the requested directory index |
-| OPEN promise export | Partial: engine/sync.rs open_promise_export(), organ_sync tests | Network request, explicit publish action, public snippet projection |
-| Promise cache and matching | Existing foundation: store/senses.rs, refresh_discovery(), engine/senses.rs | Unknown publishers, anonymity, signed versions, expiry, withdrawal |
-| Contact proximity | Existing: store/organs.rs and Organ Castle | Clear distinction from physical nearness and gossip routes |
-| Conversations, invitations, threads, messages | Existing foundation: engine/threads.rs, Wire conversation requests, desktop/thread_castle | Anonymous introductions integrated into these Records, complete own-device history sync, durable delivery status, robust recovery |
-| Sealed mailbox batches | Existing: engine/seal.rs, engine/mailbox.rs, Wire mailbox verbs, mailbox and seal tests | Reliability fixes, pseudonymous delivery, current authorization, redundancy |
-| Signed batch envelope | Already exists for sealed mail: SealedBundle signs sender, recipient, ciphertext, and key wrapping metadata | Stable delivery ID, signed expiry, replay policy; consistent contract for other forwarding |
-| Restricted Cell capabilities | Existing foundation: relay_capabilities(), roster projection, migration 0055, enrolment tests | Enforced role configuration; restriction on reading is a separate concern |
-| Connection and frame limits | Existing in engine/wire.rs; private Wire limits configurable | Shared service budgets, smaller social frames, response byte limits, UI |
-| Mailbox registration, quota, expiry, invitations | Existing: engine/mailbox.rs and store/mailbox.rs | Atomic quota reservation, invitation-to-registration transaction, sender admission |
-| Searchable directories, bounded gossip, delegated search | No complete implementation found in inspected paths | Core social work below |
-| Anonymous or identified public posting | No complete implementation found | Per-post choice, distinct anonymous authority, shared Organ profile, discovery and reply contracts |
-| Lince relay/townsquare role configuration | Partial foundations only | Roles, opt-in, policy, accounting, operator management |
+Typed public documents, canonical signing bytes and Unicode/exact-number vectors are implemented. Private session selection is stable Olm v1 through pinned vodozemac 0.11.1 with default features disabled; its initiation, replies, replay/order and encrypted restart checks passed.
 
-Correction to round 1: there is already one signature per sealed mailbox batch. The task is to complete and reuse that contract, not invent another copy of the same envelope.
+Completed descriptor subject: pinned endpoint inspection reports effective roles, limits, public operator contact/policy and five-minute expiry; disabled roles remain inspectable without enabling them.
 
-The Tasks record says GET /organ/open-promises exists. That route was not found in the active checkout. The export function is real; an active endpoint and its authorization still need to be demonstrated. Implementation should use the current transport boundaries rather than recreate an old web route by assumption.
+- [ ] Finish restore/native qualification and protocol/version refusal across every new verb. Recipient refusal/import, sender authentication, complete own-history frames and bounded social request/reply framing have retained gates.
+- [ ] Finish small-device/server resource qualification, supported-target checks and session/message transactions. Bound configured storage, retained ledgers, memory, connections, verification and worker work.
 
-## 4. Bugs and gaps to resolve before extending delivery
+A ratchet advances conversation keys to limit exposure from a later key theft. Saved plaintext on a compromised device remains exposed. History synchronization and provisioning another device's session are separate jobs. [Double Ratchet](https://signal.org/docs/specifications/doubleratchet/), [Sesame](https://signal.org/docs/specifications/sesame/).
 
-The findings below describe the inspected baseline. See section 16 for corrections already implemented and the proof still required; the historical findings are retained so their IDs keep a clear meaning.
+## 1. Anonymous or identified Needs and Contributions
 
-These are source-inspection findings, not executed reproductions. “Observed” describes the code path; “risk to verify” marks a suspected failure requiring a regression test.
+Decision references: D04–D05, D12, D16–D20, D71–D72.
 
-| ID | Finding and evidence | Required correction and proof |
-| --- | --- | --- |
-| B01, critical, observed | Wire.collect_mail() sends MailboxCollected before collect_own_mail() parses, opens, and imports the bundles. The server deletes acknowledged rows. | Persist a received envelope locally before acknowledging it. Invalid or temporarily unreadable mail must remain recoverable or enter a bounded quarantine. Kill the client at every step and prove recoverable mail survives. |
-| B02, high, observed | Engine.accept_bundle() reads held_bytes(), checks quota, then deposits in a separate operation. | Reserve quota and insert in one serialized transaction. Concurrent deposits at the boundary must not exceed recipient or global storage limits. |
-| B03, high, observed | Every accepted deposit gets a new random mailbox UID. Retry of the same sealed payload has no stable deposit identity here. | Define a stable authenticated envelope ID. Duplicate deposit returns the existing receipt and consumes no extra quota. A retry after a lost response must store one logical envelope. |
-| B04, high, observed | may_collect() accepts a valid presented roster and checks whether it names the peer; that function does not compare a current roster floor or revoked membership. | Require current authorization or a bounded, explicit freshness policy. An old signed roster must not let a removed device collect or delete current mail. |
-| B05, high, observed | Mailbox collection authenticates Organ membership. confirm_collected() deletes Organ-wide rows. | Define ownership of the acknowledgement and distribution to sibling devices. One device must not erase the only copy before others have a recoverable path. |
-| B06, high, observed | accept_bundle() checks format/version, registration and size, but has no recipient-issued sender admission token or stable replay check. | Separate public introductions from approved conversation delivery; cap stranger traffic without letting it consume the trusted inbox. Invalid mail must not starve valid mail. |
-| B07, privacy, observed | SealedBundle exposes from_organ, to_organ, and from_cell outside the ciphertext. open_mailed() requires a known sender roster. | Do not use that envelope unchanged for anonymous stranger introductions. Add a separately authenticated pseudonymous contract without public Organ identifiers. |
-| B08, security, risk to verify | relay_capabilities() removes authoring capabilities. seal_batch_for() selects every unexpired recipient sealing key in the roster. | A blind carrier must not join a private Organ or receive its mail keys. Test restricted roles cannot obtain private plaintext. “Cannot write” does not mean “cannot read.” |
-| B09, recovery, observed | redeem_mailbox_invite() spends the invite before a separate registration write. | Claim the invitation and create registration atomically. A crash must not consume an invitation without creating the mailbox. |
-| B10, user experience, observed | Automatic mailbox fallback waits MAIL_AFTER, currently ten minutes. leave_mail() returns after the first accepting pickup point. | Chat gets prompt mailbox fallback and optional two-server replication. Keep distinct policy for ordinary sync batches. Show how many durable copies exist. |
-| B11, availability, observed | Collection clamps the number of bundles, but a count limit is not a reply byte limit. | Page by bytes and count so legal batches cannot produce an oversized Wire response. Test many maximum-sized envelopes. |
-| B12, key lifetime, design gap | Current sealing is encrypted batch delivery, not a demonstrated ratcheting chat protocol. | State the actual guarantees. Decide D39 before promising that later key compromise cannot reveal captured older messages. |
+**Result:** publish a useful general offer or need without exposing the private Record behind it, with an explicit identity choice per post.
 
-Also verify: expired mail is excluded even before the sweep runs; full disks never produce a successful storage receipt; database durability settings match the receipt promise; acknowledgements are bound to the exact recipient and envelope; source limits survive restart; role policy changes cannot silently widen capabilities.
+Implemented foundation: standalone and sanitized Record/OPEN-promise projections; chosen public fields and anonymous/identified mode; deliberate alias reuse; exact signed preview; draft, edit, pause, renew, fulfilled, withdrawal and archive actions; persistent ending floors; durable selected-host jobs. Native Discovery has composition, source review, My posts, previews, lifecycle actions and per-host results. Regressions cover privacy, source closure, quantities, stale/conflicting updates and real two-host publication.
 
-The tests already present cover sealing, recipient collection, quotas, fallback pickup points, expiry notices, and conversation-root import. They are useful foundations, but their existence does not close the crash, concurrency, stale-roster, and anonymity gaps above.
+### Remaining closure
 
-## 5. Recommended stack and ownership
+- [ ] Qualify anonymous wallet restore and ending delivery to an offline mailbox host. Enrollment, owner waiting, actual removal, cached-viewer revocation and maximum-revision recovery passed; preserve their retained regressions.
+- [ ] Complete native runtime gates, visible authorization/conflict states and physical resource qualification. Remove detailed lease implementation notes only after these gates pass.
 
-Keep the existing Rust application and reuse its domain model, storage, and networking. Add small explicit protocols for social features.
+**Completion evidence:** preview matches signed bytes; anonymity field/hosted-metadata audit passes; wrong-key/stale/conflicting updates fail; source changes cannot silently disclose fields; discovery leaves stock, agreements and trust unchanged.
 
-| Layer | Working choice | Reason and required check |
-| --- | --- | --- |
-| Domain types | nucleus: typed profiles, snippets, identities, envelopes, policy, statuses | One meaning for each message across UI and server |
-| Persistence | store: SQLite through existing SQLx; transactional inbox/outbox and service quotas | Durable work survives process restarts |
-| Search | SQLite FTS5 plus typed concept, direction, language, and coarse-area filters | Useful plain-text search without a separate search cluster; verify FTS5 availability on supported targets |
-| Validation and decisions | engine: signatures, consent, matching, roles, retry rules, expiry | UI and network cannot bypass the same rules |
-| Runtime | cell: supervised workers, offline/online transitions, bounded queues | Fits the app's existing orchestration |
-| Network | Existing Iroh endpoint/Wire; named social protocol handlers; transport interfaces where they already fit | Reuse encrypted connections and address lookup; isolate public service verbs from private replication |
-| Gossip | Start with bounded forwarding among eligible contacts; evaluate iroh-gossip for separately opted-in public topics | Application visibility policy differs from broadcasting to everyone in a topic |
-| Profiles and media | Existing blob facilities; content hashes, size limits, on-demand fetch | Images do not travel in gossip |
-| Signing and sealing | Reuse existing Ed25519 and reviewed sealing primitives where applicable | Preserve batch signatures; new anonymity/session contracts need explicit review |
-| UI | Rust UI integrated through current cell/actions and desktop feature modules, using interface widgets | Extend the active Rust interface; do not revive the old web frontend |
-| Server | Headless Lince, separate service data, NixOS configuration; persistent storage and health checks | Reuse deployment support while adding clear social roles |
+## 2. One shared public Organ profile
 
-FTS5 supplies text indexing and ranking; its external-content indexes need correctly maintained updates and deletion. Treat the index as rebuildable from validated listings. [SQLite FTS5 documentation](https://sqlite.org/fts5.html).
+Decision references: D09, D11, D13–D15, D73–D74.
 
-SQLite WAL permits concurrent readers but still has one writer at a time. Keep transactions short and handle busy responses. Durable service receipts need a storage mode that meets the promised crash/power-loss behavior, plus realistic storage testing. [SQLite WAL](https://www.sqlite.org/wal.html), [synchronous settings](https://www.sqlite.org/pragma.html#pragma_synchronous).
+**Result:** changing your profile on an authorized phone changes the same public profile seen on other devices and hosts. It does not create a second identity.
 
-The manifest currently declares Iroh 1.2.0 and its companion mDNS adapter. This document does not propose upgrading them. Evaluate any new crate against the repository's locked dependency graph.
+Implemented foundation: one Organ-bound public projection, narrow seven-day root delegation, authority/revision floors, succession and editor replacement, own-device Record/Fact sync, selected-host publication, bounded branch/ancestor merging and explicit public media preparation/fetch. Profile images use a separate validated public store. Native controls provide editing permissions, hosts, conflict resolution, withdrawal and opt-in media loading.
 
-iroh-gossip broadcasts among endpoints subscribed to a topic and needs bootstrap peers. It does not supply Lince's private visibility, directory search, or durable mailbox behavior. A topic also reveals participation to other participants. The recommendation to start with application-controlled forwarding is an architectural judgment based on those differences. [iroh-gossip documentation](https://docs.rs/iroh-gossip/latest/iroh_gossip/).
+### Remaining closure
 
-**D01 — Stack.** Do you agree with keeping Rust, Iroh, SQLite and the current UI, adding social contracts around them? **Recommendation:** yes. Add a new service dependency only for a measured missing capability. Do not introduce a compulsory Matrix, Nostr, or central-account dependency.
+- [ ] Qualify a pending profile edit from an actually enrolled device through removal, concurrent edits and originating-device media upload. Automatic renewal and missing/expired-authority draft recovery passed; current roster validation and atomic per-device consumption are implemented.
 
-**D02 — Gossip library.** Should shared public topics be available alongside contact-to-contact gossip? **Recommendation:** design the adapter now, evaluate iroh-gossip against consent, privacy, resource limits and Iroh compatibility, and enable public topics only as a separate opt-in mode. Contact gossip remains required.
+Actual root-signed enrollment and normal Own export/import reproduced the originating-device avatar gap in /tmp/lince-social-profile-device-reproduce-v1.log: the signed draft syncs, but the owner cannot publish because only the selected hash arrives and the prepared image bytes remain on the editing device. Fix this with up to two selected prepared images in the device-signed pending draft, using the existing private Own extension. Each image stays within the current normalized 128 KiB limit; the whole retained profile state stays within 2 MiB and 32 latest-per-device pending drafts. Validate encoding, selected hashes, deduplication, content hash and bounded decoding before signing; import the validated assets, consume the exact draft and commit the signed profile together, after final current originating-device and local membership checks. Do not grant arbitrary blob access or automatically fetch foreign images. Removed-device drafts remain visibly rejected. Independent concurrent heads remain available for explicit review/resolution. Native pending/error/conflict controls must explain image synchronization and the resulting state. Qualify corrupt/wrong/unselected/oversized image data, removal, concurrent edits and selected-host publication before slimming this subject.
+- [ ] Recover a host that missed more than the retained 64 ancestors: refresh/import its signed heads for explicit resolution or deliberately advance owner authority. Do not silently discard a conflicting host head.
+- [ ] Complete native runtime, fresh Desktop/Cell checking and resource/restore qualifications.
 
-**D03 — Implementation boundary.** Should a public server be allowed to serve private Organ replication just because it provides a directory or mailbox? **Recommendation:** no. Its public handlers and storage are isolated; each private replication permission remains explicit.
+**Completion evidence:** two devices and two hosts agree on one Organ identity; unauthorized backend edits fail; offline/conflicting edits survive restart; stale hosts cannot replace current state; name/avatar changes leave anonymous posts and conversation UIDs intact.
 
-## 6. Public identity, profiles, and snippets
+## 3. Conversation Records and own-device history
 
-### Identity and first contact
+Decision references: D09, D38, D41, D75–D76.
 
-**D04 — Optional anonymous or identified publication. Confirmed.** For each Need or Contribution, its author chooses anonymous publication or publication under the Organ's public identity. Anonymous listings carry no public link to that Organ; identified listings deliberately link to its one public profile. Stronger concealment of network origin from operators is outside the current scope. Connection details, timing and the text itself can still identify or correlate a person; direct contacts may recognize who sent a snippet.
+**Result:** the same retained conversations appear on authorized devices, including a device enrolled later, without duplicating threads when someone reveals a profile.
 
-Anonymous listings point to chosen service mailboxes, not the author's personal Iroh endpoint. They use neither the main Organ signing key nor its public roster. Public identity concealment and concealment from direct contacts/operators remain different guarantees.
+Implemented foundation: retained Conversation/Thread/Message UIDs and private mappings synchronize through existing own-device operations, including a newly enrolled device; the regression refuses duplicate import and foreign export. Fresh per-device authorization and encrypted account persistence remain separate from history. Receiving typed content commits SDK accounts/sessions, scoped Records/links, immutable content metadata, an import Fact, event intent and recipient receipt together. Regressions passed rollback, two-host ciphertext duplicates, re-encrypted logical duplicates and fresh-key recovery with unchanged UIDs; no private replication grant is created. The aggregate complete sync-frame boundary, including escaping/wrappers, passed. Private introduction drafts reuse the same own-history wrapper and existing MessageDraft kind.
 
-**D05 — Linkability. Confirmed.** Anonymous posts use separate posting keys by default; a persistent anonymous alias is optional. Identified posts use the same public Organ identity across devices and hosts. Separate anonymous keys do not guarantee unlinkability when timing, servers, text or network identifiers match.
+### Remaining integration
 
-**D06 — Introductions. Confirmed.** A stranger can send a short private introduction through a scoped reply address before either participant reveals an Organ. It goes to Requests, not the trusted inbox. The recipient may respond pseudonymously, decline, or block. Identified posts use the same permission controls.
+- [ ] Finish full process-restart/key-change/deletion and restore qualification. History-first, simultaneous fresh-device receipts, actual once-only rule-effect replay after commit and native Thread/Requests runtime gates pass. Keep the same logical Message and unchanged UIDs.
 
-**D07 — Identity reveal. Confirmed.** Each participant chooses when and what profile to reveal. Mutual acceptance creates known Organ contacts. Preserve the same Conversation, Thread and Message Records and deliberately link them to the revealed contact; do not duplicate the conversation or publish its association.
+- [ ] Qualify the implemented fresh-device provisioning, replacement/removal and separate-wallet reset against actual backup/restore. Keep unavailable authority and all-keys/all-copies-lost states visible.
+- [ ] Audit foreign-Organ exports, broad contact/root grants, restricted carrier paths and private blobs. Private participant mappings and session keys must not escape through general sharing. Revocation prevents future access under current authority but cannot erase plaintext already retained.
+- [ ] Finish inactive admission/window cleanup and non-owner dormant-key bounds without forgetting active denials. Accepted text is immutable; explicit local Message deletion and close-before-archive already preserve other people's retained copies.
 
-**D08 — Reply permission. Confirmed.** A public reply address permits a bounded introduction; acceptance grants separate renewable permission for continued conversation. Rotate or close the introduction address when a snippet ends. A capability is a narrow permission, not an Organ login.
+### Native UI work
 
-**D09 — One public Organ identity, device controls and conversation sync. Confirmed.** Each Organ has one stable public identity, one current public profile, and the same retained conversations across its authorized devices. Every device with a UI must offer profile viewing and editing controls; only authorized devices/users may save edits. Changing the name, description, avatar, banner or other chosen public fields changes that profile, not the Organ's stable identity.
+Existing conversation/thread views now show pseudonymous or deliberately revealed social participants, Requests linkage, fresh-session waiting and permission-aware reply controls. Remaining UI work is explicit expired resend and restore recovery, alongside their backend work.
 
-Profile changes are saved through the existing Record/Fact write path and synchronized within the Organ. For already enabled public-profile publication, saving an authorized edit queues an updated signed profile to its selected hosts and updates local identified-post views. Offline edits remain saved locally and publish after reconnecting; show pending, published and failed status. Server hosts and other devices hold copies of that same identity/profile.
+**Completion evidence:** reconnect a second device and enroll a third; recover identical retained UIDs once. Exercise concurrent receipt, cross-Organ denial, carrier key isolation, device removal, rollback and deliberate retention limits.
 
-Conversations remain Conversation Records containing Thread and Message Records. Synchronize retained history, invitations, participant mappings and relevant conversation state across authorized devices, including authorized newly enrolled devices. Keep Organ boundaries and conversation grants intact. Anonymous posting keys and private mappings follow those same authorized devices but never enter public profile exports.
+## 4. Stranger Requests, private replies and optional contacts
 
-Cryptographic session state and device delivery cursors remain distinct from conversation content: provision them according to the chosen session protocol rather than copying a live session key indiscriminately. Define backup, device removal and lost-key recovery. A device without editing authority can view the profile and the reason editing is unavailable.
+Decision references: D06–D08, D10, D39, D66, D77–D78.
 
-**D10 — Trust.** Should the app label a signed anonymous post as a verified person? **Recommendation:** no. Show “signature valid” separately from user trust. Blocking one posting key cannot guarantee blocking every new identity a person creates; global service budgets are still needed.
+**Result:** people who do not know each other can talk privately while keeping pseudonyms, then optionally reveal profiles and become contacts.
 
-### Rich profiles and hosting
+Implemented subject: pseudonymous owner/device-signed routes, stable Olm v1 sessions, atomic receive/deduplication, distinct stranger/control/trusted capacity, one introduction and three provisional texts, private acceptance/decline/block/close, profile-bound Reveal and mutual Connect. Native Requests and existing Threads provide those controls and retain the same history. Independent workers register, send, collect and inspect exact receipts while people are offline. Contact conversion creates no general feed or private replica grant. The two-person/enrolled-device test covers this flow, and native forms are permission-aware.
 
-**D11 — Profile contents.** What should the shared Organ profile publish? **Recommendation:** chosen name, description, avatar, banner, contact route, vocabulary references, version and expiry. Exact address, work context and personal contact details are separate opt-in fields. The one-identity model and profile controls on authorized UI devices are confirmed under D09.
+### Remaining closure
 
-**D12 — Profile association by publication mode.** Should an anonymous snippet automatically show the rich Organ profile? **Recommendation:** no. Anonymous posts show only their alias and deliberately selected anonymous details. Identified posts link to the Organ's current public profile. A profile edit updates identified views without changing a snippet's anonymous/identified choice or revealing anonymous posts.
+- [ ] Qualify simultaneous first messages, bounded out-of-order/restart/restore behavior, request floods, aggregate physical capacity and control progress under saturation.
+Expired-proof recovery and existing Thread runtime checks pass: retained consent/history survive, and contact reconstruction waits for current verified Reveal. Remaining identity-key changes and restore recovery need explicit qualification.
+- [ ] Qualify old-route discard deferral, durable discard intent after restart and bounded metadata cleanup; sender refusal authentication/retry/restart are verified.
+- [ ] Finish the remaining root-grant/blob audit. Foreign general feeds and real transport downgrade denial are verified; consent stays separate from trust, private sharing, Main endpoint verification and optional read receipts.
 
-**D13 — Hosted profile identity.** Should a host require a second public Organ identity? **Decision:** no; D09 confirms one public identity per Organ. A host serves a signed copy of that Organ's current public profile. Hosting registration may be an operator-local account, but it does not create another public identity or replace the author's signature. Separate Organs remain separate contexts.
+**Completion evidence:** unknown people initiate while the recipient is offline, reply before reveal and continue after acceptance. Test reply-key substitution, expired permissions, floods, unilateral reveal, blocked new tokens and denied private data; conversion preserves history.
 
-**D14 — Offline profile access.** Should profiles remain readable when their author is offline? **Recommendation:** yes, from chosen hosts and validated caches until expiry. Show version and freshness, with media fetched only when requested.
+## 5. Directories, townsquares, gossip and ask-around
 
-**D15 — Images and previews.** Should listings carry images and external link previews? **Recommendation:** snippets remain text first. Profiles may have bounded images. Fetch previews only on user action; avoid leaking searches or opening private-network URLs through server-side preview fetching.
+Decision references: D02, D21–D31, D63, D79–D80.
 
-### What people publish
+**Result:** someone can find relevant Needs and Contributions outside their current contacts through selected services and bounded peer sharing.
 
-**D16 — Eligible content.** What should travel publicly? **Recommendation:** explicit public Need and Contribution snippets, including standalone general offers and sanitized projections of OPEN promises. A discovered post is not an agreement, and publication does not reveal the private Record, its history, or its counterparties.
+### Directory and browsing work
 
-**D17 — Post format.** How much detail belongs in a snippet? **Recommendation:** title, short text, Need/Contribution direction, optional exact quantity and unit, vocabulary/concept reference, language, optional coarse area, availability, signed revision, expiry, reply descriptor and authenticated anonymous/identified mode. Include a public Organ/profile reference only in identified mode. Quantity may be absent for “I can teach guitar”; do not invent a numeric balance.
+Completed browsing subject: bounded filters/public cursors and the exact query/selected endpoints survive native continuation. The 55-document regression covers 50 + 5 + empty pages and rejects private Record cursors. Cache labels keep availability unconfirmed; continuation enables no publication or additional service.
 
-**D18 — Posting flow.** Should making a Record public immediately send its complete contents? **Recommendation:** no. A Publish action previews the exact exported fields, anonymous/identified choice and chosen destinations. Keep a private mapping to the source Record. Updating the underlying Need/Contribution changes a draft; automatic snippet republication requires a separate saved rule and consent.
+Completed inspection subject: an endpoint-authenticated five-minute descriptor reports effective directory/townsquare/mailbox roles, configured bounds, 30-day maximum mail retention and bounded operator contact/policy. Disabled roles can be inspected; unfinished relay/gossip flags are not advertised. Native inspection/QR and permission-aware hosting controls passed backend/native tests. Inspection enables no role or destination; policy is an operator statement, not verified uptime or physical independence.
 
-The shared public profile has a different update rule: once its publication and hosts are enabled, authorized profile edits update and republish that same profile under D09. Existing snippets keep their selected author mode. Changing an already published snippet's mode requires an explicit preview; publishing an identity link cannot later erase older public copies. To make a previously identified offer anonymous, prefer a fresh anonymous post and withdrawal of the old one.
+Completed server-choice subject: [private per-device choices](../../crates/engine/src/social/servers.rs) and [native forms](../../crates/desktop/src/organ_castle/social.rs) retain at most sixteen pinned endpoints and eight selections per role. Publication, deliberate query and return-mailbox roles stay independent. Saving/removing choices changes no existing signed destination, private queue or contact grant, and makes no network request. Backend and native regressions passed. Operator labels help selection but do not prove independent operators/disks; there is no automatically selected starter host.
 
-**D19 — Ending and updating.** How should an offer stop circulating? **Recommendation:** monotonic signed revisions and a signed withdrawal. Fulfilled, paused, cancelled and expired states are distinct. Keep a small withdrawal marker long enough to suppress older revisions; expiry limits damage when cancellation cannot reach everyone. For concurrent edits by your devices, keep both candidates private and resolve the publication revision explicitly; do not silently pick a conflicting signed payload with the same revision.
+Implemented foundation: an isolated signed public cache and FTS5 index, bounded plain-text/typed-filter search, selected independent directory hosts, a separately enabled townsquare role, expiry/withdrawal maintenance and native search/My posts/source results. Publication and search regressions passed on the current target. Public listings remain distinct from private Records and known-Organ address lookup. [FTS5](https://sqlite.org/fts5.html).
 
-**D20 — Visibility.** Do contact-only offers use the same public mechanism? **Recommendation:** preserve existing private/direct sharing. Public gossip requires deliberate permission to redistribute. Every hop checks the publication policy, expiry and destination's consent before forwarding. Receiving data does not authorize forwarding it, and later hiding a public post cannot erase other people's copies.
+- [ ] Qualify supported targets and measured resource tiers. Deliberate signature/floor-aware index rebuild and operator health are implemented and qualified.
+- [ ] Qualify merged source disagreement and bounded partial authority refresh; pagination and effective role descriptors are implemented.
+Pinned selectable independent servers, inspection/QR and separate publication/query/mailbox choices are implemented and qualified. An optional transparent starter list remains a separate choice; no host is selected automatically, and searching does not publish the searcher's Organ identity.
+- [ ] Merge authenticated post/revision/hash results across sources, expose disagreement, show source-specific failures and cached freshness. Rank by relevance, explicit filters and freshness; distinguish declared area, known-contact proximity and unverified routing hints.
 
-### Tasks and acceptance
+Source privacy boundary: an authenticated selected directory is the source of its response. Public replies must not export the directory's private incoming gossip/contact path, internal contact UID or local source labels. Keep such provenance available only in permitted local views; forwarding a chosen public announcement does not grant permission to disclose a contact relationship. A regression now imports real consented gossip, searches locally and queries the directory from outside to check this boundary. Its reproduction gate is queued in /tmp/lince-social-source-privacy-reproduce-v1.log. For subsequent source merging, verify signatures/hashes before observation, distinguish stale valid revisions from same-authority/same-revision equivocation, bound retained observations and keep expiry unchanged. Invalid or unavailable sources remain individually visible; source disagreement must not silently choose the first responder or turn routing hints into location/trust. Preserve raw pagination cursors when ranking a bounded page, and show the ranking basis plainly.
+Local hiding, conversation blocks, host removal and deliberate public reports are implemented and qualified. Operator decisions preserve author-signed bytes and stay independent.
 
-- [ ] Add anonymous/identified selection per Need or Contribution, with the selected mode authenticated in the publication.
-- [ ] Add separate anonymous posting identities and a private mapping to source Records; identified posts reference the one public Organ identity.
-- [ ] Define profiles, anonymous aliases, snippet payloads, revisions, withdrawals and reply descriptors.
-- [ ] Connect existing OPEN promise export through an explicit sanitized publication path.
-- [ ] Support general standalone snippets without requiring an agreed Transfer.
-- [ ] Add hosted, signed profile copies and on-demand media retrieval.
-- [ ] Add a shared public-profile Record projection and viewing/editing controls on every UI device, enforcing edit permissions through the backend.
-- [ ] Synchronize profile edits and publish new signed profile versions to already selected hosts; show pending/offline/failure state.
-- [ ] Resolve concurrent device profile edits into one current profile with visible conflicts; preserve stable Organ identity and detect stale hosted copies.
-- [ ] Add public-preview, destination selection, edit, pause, renew and withdraw controls.
-- [ ] Prove an anonymous listing contains no Organ UID, private Record UID, roster, device ID, private assertion, private address or unwanted profile link.
-- [ ] Prove an identified listing resolves to the same Organ profile from every authorized device and selected host.
-- [ ] Prove editing the public profile never reveals anonymous listings, changes their posting keys or silently changes their publication mode.
-- [ ] Prove discovery never modifies stock, creates an accepted agreement, or turns an unknown publisher into a trusted contact.
+Confirmed conflict policy: when independently verified documents from the same signing authority claim different hashes for the same generation and revision, quarantine that public post from discovery, contact answers, subscriptions and onward gossip. Retain bounded signed evidence and show a local explanation. A valid newer author revision or withdrawal resolves the conflict; an older valid copy is merely stale and cannot create a conflict or renew expiry. Invalid signatures cannot quarantine a legitimate post. Use existing cache state/index and explicit source results instead of a new consensus protocol. Bound retained source observations and proof bytes; exhaustion must stay visible and must not leave a proven conflict discoverable. Do not expose private incoming contact paths in public responses. Qualify both arrival orders, restart, already queued forwarding, mute/removal interaction and resolution by a newer signed revision.
 
-## 7. Gossip, ask-around search, and directory discovery
+Conflict increment limits: keep up to eight immediate authenticated source observations for a post's current revision and at most 8,192 observations globally, evicting oldest observations when full. Keep at most two signed variant documents for each proven conflict, with 256 retained evidence pairs and an 8 MiB total evidence ceiling; an exhausted evidence store must still quarantine the cached post and report that full evidence could not be retained. These are local bounded observations, not a reliability score or agreement vote. Show the check time and source count in local results, and the conflicting public ID/revision and explanation in a bounded local review. Public directory responses continue to name only that directory. Ranking may reorder the bounded returned page by relevance and freshness with stable ties; preserve the raw UID continuation cursor and label this page-local ranking so users are not promised global best-first results. Ordinary source failures remain separate from signed equivocation.
 
-These features have three different jobs. Gossip spreads known public announcements. Ask-around sends a particular question through consenting peers. Directory search consults an index. Each needs its own consent and resource limits.
+### Gossip and cache work
 
-### Gossip and delegated search
+Completed contact-forwarding subject: [receiver](../../crates/engine/src/social/gossip.rs), [durable ledger](../../crates/engine/src/social/gossip_store.rs), [independent worker](../../crates/engine/src/social/gossip_worker.rs), migration 0320 and native controls pass backend/native gates. Cell and separate per-contact send/receive consent default off. Only signed public announcements with author redistribution permission and public destinations enter forwarding; private history and profile media are excluded. Inventories use the public post ID and exact payload hash. Each retained revision is assigned at most three eligible peers, with persisted choices, bounded retries and traffic accounting. Withdrawals and related authority floors use reserved admission and suppress older copies, including when withdrawal arrives first. Changing redistribution after publication requires withdrawal and a fresh post.
 
-**D21 — World reach.** Must every post reach every Lince user? **Recommendation:** promise access through selected independent directories plus bounded gossip, not universal delivery. Design the extension points for public-topic networks, additional discovery adapters and content routing now. Evaluate their coverage, bootstrap dependence, privacy and abuse costs before adding them; do not quietly remove the source's “beyond gossip and directory” design task.
+Remaining qualification:
 
-**D22 — Hop limits.** Should a hop limit be a strict privacy boundary? **Recommendation:** no. A hop is a forwarding step, but public bytes can be copied and reintroduced. A sender's count and even a removable signed trail cannot prove a universal path limit. Enforce local forwarding limits, age, destination consent and budgets regardless of the sender. Keep the source's distrust-of-hop-count requirement; if a hard global route limit is essential, it needs a different permission protocol and cannot be promised for freely public snippets.
+- [ ] Qualify endpoint-change/churn scenarios. The real three-endpoint Iroh/QUIC regression passes gossip, contact queries, withdrawal propagation and private-grant isolation; simulated handlers cover cycles and response loss.
+- [ ] Measure physical ledger/cache/index overhead and verification work, many posting identities and traffic saturation. The configured entry/byte ceilings and admission/control reserve are implemented, not measured capacity claims.
+- [ ] Qualify control progress when the shared public cache is full, as well as the forwarding ledger. Preserve active denials and ending floors across cleanup and restore.
 
-**D23 — Fan-out and deduplication.** How widely should a Cell forward one revision? **Recommendation:** to at most three randomly selected eligible peers, once per revision while its forwarding record is retained. Deduplicate by stable signed payload hash, excluding changing routing metadata. Keep revision identity separate from content identity. Full caches stop admitting new work or use a documented bounded eviction policy; no unbounded seen-set.
+Completed public-cache accounting fix: real signed revisions filled the configured byte budget and reproduced a refused withdrawal. Directory, gossip and query imports now validate the final transaction size after an authenticated withdrawal removes older revisions; ordinary new data still reserves space first, and identical duplicates do not reserve another copy. The regression passes valid withdrawal, duplicate replay and forged-withdrawal refusal. Entry/byte limits and ending floors remain enforced. Physical disk-full behavior and authority-control reserve saturation still require qualification.
+A hop is one forwarding step. Local hop/fan-out limits constrain Lince's work; freely public text can still be copied and reintroduced. They cannot guarantee universal reach or a universal privacy boundary.
 
-**D24 — Rate budgets.** Should every new posting key receive a fresh unlimited allowance? **Recommendation:** no. Enforce limits per connection, posting key, service registration and Cell-wide total. Source limits constrain one identity; the global ceiling still applies to people making many keys. Incoming parsing, verification and outgoing work all count.
+### Ask-around and broader discovery work
 
-**D25 — Age and clocks.** Does remaining hop allowance keep an old offer alive? **Recommendation:** no. Signed creation and expiry plus a locally enforced maximum lifetime control freshness. Forwarding never resets expiry. Reject or hold implausibly future-dated posts; use monotonic time for retry waits and wall time only where needed for published dates.
+Completed contact-query subject: [receiver and actor-private history](../../crates/engine/src/social/ask.rs), [independent worker](../../crates/engine/src/social/ask_worker.rs), migration 0321 and [native controls](../../crates/desktop/src/organ_castle/social/ask.rs) pass five backend regressions, budget/clock units, native controls and real QUIC qualification. Participation and separate ask/answer/onward contact permissions default off. Queries start deliberately, retain a thirty-second deadline and split twelve total work credits, fifty results and 192 KiB of documents across at most three children per node. Four active local queries, twenty recent queries and bounded receiver reservations prevent unlimited retained work. Current actor permissions, pins, consent, signatures, expiry and known withdrawals are rechecked. Query history is private to its initiating actor; cancellation stops local work, clearing works offline and saved answers are filtered again. Onward questions carry no original Organ identity; contacted peers can read the question. No private history, local-only post or profile media is exported. Remaining work is churn, physical resource measurements and subscriptions, rather than another query protocol.
 
-**D26 — Ask-around behavior.** Should plain-text search be available, with optional filters? **Recommendation:** yes. Search the local cache first. “Ask contacts” is a deliberate action with an explanation that peers may see the query. Use a unique request ID, short expiry, bounded onward requests, replies, result count and total bytes. Cancellation stops local work; it cannot erase a question already seen.
+Stack comparison checked against the upstream projects on 2026-10-01: [iroh-gossip](https://github.com/n0-computer/iroh-gossip) provides topic swarms and broadcast trees with bootstrap peers. Our initial recommendation remains bounded forwarding over the existing Lince transport, retaining an adapter for a separately opted-in topic swarm later. This avoids making public topic membership a prerequisite for the approved per-contact flow. [Iroh relays](https://docs.iroh.computer/concepts/relays) carry live encrypted connections and retain no application messages; offline conversation recovery belongs to Lince mailboxes. Production relay availability remains an operator decision and qualification task.
 
-**D27 — Result ordering.** What should rank a result? **Recommendation:** clear text relevance and explicit filters, then freshness. Distinguish a known contact's user-set proximity, a stranger's unknown proximity, declared area, and any unverified route information. Never invent an Organ bond score from hops or infer exact distance from network addresses.
+- [ ] Qualify contact churn and receiver restart during an unfinished query. Completed reply replay, cancellation, local expiry and restart, conflicting request IDs, aggregate budgets, permission revocation and blocked peers pass. Keep any missing-parent lookup separately bounded rather than recursively fetching unrestricted history.
+- [ ] Compare world-reach discovery extensions beyond directories/contact gossip, retaining an adapter boundary. Evaluate separately opted-in public topics/iroh-gossip and bootstrap/privacy/abuse costs. Initial coverage comes from selected directories and bounded gossip; no universal-delivery promise or compulsory server federation. Mirror only to author-allowed destinations, respecting each operator's moderation.
 
-**D28 — Meaning of search words.** Should “apple” automatically equal every concept named apple? **Recommendation:** use plain text for broad finding, and stable vocabulary/concept identity for precise matching. Explain when a result merely shares words. Exact quantities, units and agreed definitions matter only when moving toward a Transfer.
+### Native UI work
 
-### Directories and townsquares
+- [ ] Finish disagreement/freshness labels. Native Browse/Search/My posts, filters, server selection, paging, mute/block/removal/reports, gossip/contact consent and Ask contacts/cancel are implemented; rendering does not start network work.
+Saved searches/subscriptions, deliberate notification opt-in, bounded frequency and quiet hours are qualified. Engagement ranking, public comments and group social features remain outside this release.
 
-**D29 — Independent services and bootstrap.** How does a new user find servers without contacts? **Recommendation:** support user-selected, independently operated directories through addable links/QR codes and an optional transparent starter list. Pin each chosen service's identity. Do not designate one as authoritative or silently enable publication or search to all listed servers.
+**Completion evidence:** two independent directories and a contact cycle handle duplicates, conflicting sources, stale results, out-of-order withdrawals, cache-full behavior, query cancellation and abuse within configured budgets. Distinguish proximity from physical nearness and hops in the UI.
 
-**D30 — Publication, search and disclosure.** Should a directory have to know your personal Organ? **Recommendation:** anonymous publication authenticates with its posting key and service-specific admission policy; identified publication verifies the declared public Organ/profile association. Search need not require revealing an Organ. At the search action, identify which services receive the query; they can observe content, timing and connection metadata. Querying more directories improves coverage while disclosing to more operators.
+## 6. Always-online services and the remaining delivery work
 
-**D31 — Townsquare, area and federation.** What belongs in the public browsing service? **Recommendation:** paginated public snippets, optional manually declared city/region, language and concept filters. The directory supplies search; townsquare supplies browsing. One operator may run both. Public listings may be mirrored only to destinations the author allowed; operators retain their own moderation. Defer compulsory server-to-server federation until its consent and withdrawal protocol is proven.
+Decision references: D03, D32–D38, D40–D44, D81–D84.
 
-### Message contracts
+**Result:** private conversations continue across offline periods and server failures, with truthful progress and bounded service costs. The existing durable mailbox mechanisms are reused; the following gaps remain.
 
-| Contract | Required fields and rules |
+### Complete autonomous delivery and authorization
+
+Implemented and qualified: independent supervised preparation/send/pickup workers retain durable work, exact ordinary-retry ciphertext and destination schedules. Current membership and fresh seven-day authority gate sending; known revocations hold obsolete local copies. Prompt direct delivery and selected mailbox fallback work independently. Authenticated carrier and recipient receipts distinguish queued, stored, recipient-durable, conversation-ready, refused and expired states. Receiver-approved trusted admission remains separate from bounded introductions and control capacity. Read receipts, presence and typing remain off. The two-person flow, mailbox and new-device history regressions cover these paths; a full process/storage fault campaign remains below.
+
+- [ ] Add deliberate expired-message resend in an accepted conversation. Give it a fresh authenticated delivery window while preserving the logical Message/content/history and effect identity. Do not renew introductions, refusals or closed conversations automatically.
+
+Expired resend increment contract (next implementation): add a distinct confirmed action, leaving ordinary Resume unable to extend a lifetime. Require the current actor's access, current own-device write membership, a retained outgoing Message in a live accepted conversation, an expired delivery window and immutable authenticated Text content. Refuse introductions/control messages, archived/deleted/closed/blocked conversations and known recipient-durable/refused messages. An archived source announcement does not close an accepted conversation. Prepare current owner-authorized device keys through the existing path; if the owner is unavailable, keep a visible waiting work item rather than granting a host signing power. Preserve Message/Thread/Conversation UIDs, content hash, original creation time, quantity and effect identity. Give only the new envelope/work a thirty-day lifetime; current seven-day authorization is still required. Ordinary retries of that envelope remain identical. Inside one write transaction, recheck actor/membership, participant/content/delivery snapshots and live Records, cancel old local copies/destinations, replace the old preparation work and save the fresh deadline/origin state. Do not depend on work_on's ordinary conflict branch, which intentionally does not extend expires_at. A late nonterminal response for a cancelled copy must not overwrite the fresh attempt; a verified terminal receipt still applies to the same logical Message. Existing encrypted preparation creates current envelope IDs/ciphertext while preserving logical content. Other devices learn the same logical status through Own sync and may deliberately resume that fresh attempt. Old deposited copies expire normally; they cannot be recalled. Recipient logical-content deduplication and stable effect events must prevent duplicate Records/stock changes even if the old receipt was lost. Native Requests controls show the immutable Message, original creation date and new deadline before confirmed resend; Thread delivery UI links to the same controls. Rendering never resends. Qualify expiry boundary, refusal/durable/provisional/closed/permission denial, concurrent state change, same content/UIDs/effect, changed envelope/fresh authorization, restart and recipient replay.
+- [ ] Qualify sender/recipient key replacement, root succession and permission changes during pending retries. Show held/replacement-envelope states clearly, and retain exact bytes when the same envelope remains authorized.
+- [ ] Finish old-route Discard deferral and ending delivery to a host that first registers after expiry. Preserve durable intent through unavailable keys and restart.
+- [ ] Complete encrypted restore and refresh authority floors before resumed publication/pickup. Stale host or restored-device evidence must leave a visible recovery state.
+
+### Isolate roles and finish operator support
+
+Implemented and qualified: independently disabled directory/townsquare/mailbox roles, remembered role-specific servers, pinned inspection, native settings, deployment-managed NixOS configuration and worker supervision. Existing Wire connection/handshake/frame limits are reused. Index rebuild preserves signed evidence and current floors. Independent mailbox hosts receive ciphertext and scoped authorization rather than private Organ/session/identity secrets.
+
+Confirmed relay scope: use existing Iroh relays for live connections and Lince mailboxes for delayed delivery. No separate Lince server-to-server forwarding protocol is added in this release. Iroh relay deployment/configuration and fallback still require concrete verification. Application-relay role flags remain rejected rather than advertised as available.
+
+- [ ] Add outbox/destination health, including held/expired/refused work, delivery queue age and delayed retries. Keep default logs and health summaries free of Message/query bodies.
+- [ ] Finish admission/block/resource/retention views. Report intake/review is qualified; host-local listing removal is separate from author withdrawal and private conversation blocks.
+- [ ] Extend measured capacity from payload quotas to disk/index/WAL overhead, headroom, memory and verification work. Qualify control progress under data saturation rather than claiming configured ceilings are measured capacity.
+- [ ] Verify client relay selection and real direct/relay fallback. A configured standalone Iroh relay does not automatically select that relay in each client.
+- [ ] Finish stopped atomic encrypted backup/restore and identity continuity. A deployment needs a named external target; none has been provided, so no operating public server is claimed.
+
+### Native UI work
+
+Existing Requests/Threads and service settings show permission-aware actions, selected copies, authorization waiting, receipts and limits. Remaining UI must accompany expired resend, restore recovery, admission/resource controls and broader delivery health. Background work must remain off the UI path.
+
+### Qualification still required
+
+- [ ] Run fault injection at deposit, local inbox, message/import/session commit and acknowledgement boundaries; combine response loss, client/host restart, failover and changed batches. Separate process-crash tests from power-loss/storage assumptions.
+- [ ] Exercise disk full, database busy, physical storage overhead, concurrent quotas, maximum legal frames and restore. Existing unit/integration regressions do not replace this campaign.
+- [ ] Test permissions changing during retries, a revoked device presenting an old roster to a stale host, key rotation, new-device history and restore without widened access.
+- [ ] Test source floods, many identities, stranger-partition exhaustion, worker/connection saturation and control-message progress; measure memory, CPU, disk and traffic ceilings.
+- [ ] Audit every carrier/private replication/blob path and verify another operator cannot decrypt, rewrite valid private envelopes or forge recipient receipts. Reproduce the full offline two-person/two-host flow below.
+
+## Starting limits to implement or verify in the new social paths
+
+Decision references: D65–D67. These are configurable design bounds, not measured capacity claims. Existing mail retention and limits are reused where appropriate; new protocols and UI must advertise and enforce them.
+
+| Area | Agreed starting bound |
 | --- | --- |
-| PublicSnippet | Protocol/domain tag, authenticated anonymous/identified mode, posting authority, Organ/profile reference only when identified, random public post ID, monotonic revision, signed creation/expiry, public fields, optional meaning/area references, reply descriptor, redistribution policy, signature |
-| Withdrawal | Same posting authority and post ID; higher revision; signed state and expiry; retained suppression marker |
-| GossipOffer | Announcement IDs and revision/hash inventory; bounded fetch; optional routing hint never trusted as proof |
-| SearchRequest | Random request ID, bounded text/filters, expiry, local work budget, opaque reply route; no automatic main Organ identity |
-| SearchReply | Request ID and bounded independently verified snippets; never trust a peer's text as the author's payload |
-| PublishReceipt | Service identity, post/revision/hash, accepted retention, status; “accepted by this directory” is not worldwide publication |
-| ServiceDescriptor | Pinned operator identity, offered roles, endpoints, limits, supported protocol versions, operator policy and expiry |
-| Profile | Stable public Organ identity, current revision/expiry, selected fields and hashed media references; signed by an authorized profile authority; devices and hosts serve copies of the same profile |
-
-Use deterministic signing bytes, protocol domain separation, bounded lengths, and fixed published test vectors. Ordinary JSON display order is not a signing specification. Unknown fields and protocol versions must have an explicit rejection/extension rule. No compatibility scaffolding for older Lince releases is required.
-
-Plain-text search treats the person's words as data. Compile a bounded safe query instead of passing arbitrary text straight into SQL or FTS query syntax. Limit filters, wildcard/prefix expansion and execution time; parameter binding alone does not make every search inexpensive.
-
-### Tasks and acceptance
-
-- [ ] Add active snippet export/fetch and publication handlers under the current transport, with identical validation for local UI and network requests.
-- [ ] Extend the existing promise cache where its semantics fit; keep unknown public snippets separate from trusted Organ data.
-- [ ] Add stable hashes, revision ordering, withdrawal suppression, expiry, cache ceilings and persistent forwarding work.
-- [ ] Forward to the allowed random subset; respect Cell and contact opt-in before considering a destination.
-- [ ] Add delegated search with its own bounded request/reply protocol and private local history.
-- [ ] Add directory publication, bounded search, update, removal, expiry and rebuildable indexes.
-- [ ] Add townsquare browsing as a separately enabled role.
-- [ ] Add independently selectable servers, source labels, duplicate merging and source-specific failure status.
-- [ ] Add coarse-area search from deliberately declared data only.
-- [ ] Record and compare designs for discovery beyond gossip/directories; measure what coverage each actually provides.
-- [ ] Prove cycles, duplicates, sender-reset hop hints, many identities and large replies cannot exhaust a Cell's configured budget.
-- [ ] Prove withdrawn/expired revisions do not return as current through stale peers or directory mirrors.
-- [ ] Show “not yet refreshed” when offline; do not label cached availability as confirmed.
-
-## 8. Relay Cells and reliable asynchronous conversations
-
-A transport carries bytes. A mailbox makes them durable. A conversation gives them meaning and permissions. Completing one does not automatically complete the other two.
-
-### Roles, consent and configuration
-
-**D32 — Relay contract.** Should a relay provide live forwarding, delayed delivery, or both? **Recommendation:** both are defined, with delayed encrypted delivery implemented first because it directly solves offline conversations. Live forwarding uses the same signed-envelope and budget policies later. Existing Iroh relays continue to handle connection fallback.
-
-**D33 — Cell roles.** Should personal devices automatically help carry traffic? **Recommendation:** no. Explicit role choices are personal, carrier, directory and townsquare; a machine may combine public roles with separate switches, storage and budgets. Every Cell that never opted in forwards nothing.
-
-**D34 — Blind carrier isolation.** Should a mailbox join the user's private Organ to help? **Recommendation:** no. It stores ciphertext using scoped registration and delivery permissions. If a restricted Cell is published in an Organ roster, enforce relay_capabilities() and forbid widening that role; reading and key access require additional restrictions. Public directory authoring belongs to a separate service context.
-
-**D35 — Contact permissions.** Is adding a contact permission to relay its operations? **Recommendation:** no. Default to no onward carrying. Distinguish permission to publish public snippets, send to a mailbox, carry a specific contact's envelopes, and import private operations. Relays never gain ownership of the originating Facts.
-
-**D36 — Settings namespace.** Where should server roles be configured? **Recommendation:** one Lince social-service namespace: services.lince.social.relay, .mailbox, .directory and .townsquare in NixOS, mirrored by one structured runtime configuration. Reuse current connection-limit machinery. Keep services.iroh-relay separate; clearly map old checklist terminology to this chosen namespace before implementation.
-
-### Delivery correctness
-
-**D37 — What counts as sent?** Should “the server accepted it” mean “the person received it”? **Recommendation:** no. Expose queued locally, stored by carrier, durably received by recipient, available in conversation, and failed/expired. Read receipts are separate and off by default. A server receipt promises only that server's storage stage.
-
-**D38 — Reliability and duplicate messages.** Should a retry risk displaying the same message twice? **Recommendation:** at-least-once transport with idempotent processing: retry as needed, store one logical message per stable ID. Persist sender outbox, recipient inbox, receipt and retry state. Acknowledge only after a durable recoverable local copy; commit chat/session state atomically where applicable.
-
-**D39 — Encryption strength.** Should future theft of a chat key reveal previously captured messages? **Recommendation:** target forward secrecy for private conversations through an established reviewed session protocol, including offline initiation and multiple devices. Existing sealed sync batches remain useful, but are not proof of that guarantee. Select the session library in a dedicated pre-implementation decision after checking license, maintenance, platform support, key/state persistence and tests; do not handwrite a ratchet.
-
-A ratchet changes keys as a conversation advances and deletes old keys where appropriate. That limits what a later compromise can expose; it does not protect plaintext already saved on a compromised device. Offline session initiation and multiple devices add separate requirements. [Double Ratchet specification](https://signal.org/docs/specifications/doubleratchet/), [Sesame session-management specification](https://signal.org/docs/specifications/sesame/).
-
-Recommend evaluating **vodozemac/Olm** first for the private one-to-one session layer: the project implements cryptographic ratchets in Rust, has an Apache-2.0 license, and documents an external audit. This is an integration recommendation, not a claim that Lince's complete messaging design has been audited. It does not require joining the Matrix network. [vodozemac project](https://github.com/matrix-org/vodozemac).
-
-The evaluation must prove offline prekey publication/consumption, authentication of the anonymous posting authority, per-device sessions, atomic session-state/message commits, crash recovery, out-of-order bounds, revocation and supported target builds. Do not copy a live ratchet between devices. If those requirements cannot be met, record the failed criterion and choose another reviewed protocol before building the session layer.
-
-libsignal remains an alternative to assess, with its external-use support constraint stated explicitly. [libsignal repository](https://github.com/signalapp/libsignal).
-
-**D40 — Multiple servers.** How many copies should be stored? **Recommendation:** support two independent recipient-chosen mailboxes by default when available. Sender retries retain the same logical envelope ID, with separate receipts per server. A single configured server remains usable but is shown as one durable copy. Replication improves resilience and exposes metadata to more operators.
-
-**D41 — Multiple devices.** Can one device delete everyone else's delivery copy? **Recommendation:** not until there is a documented recoverable distribution path. Prefer per-device delivery cursors/acknowledgements for the authorized recipient set. A shared ciphertext may be stored once with per-device state. Under confirmed D09, retained Conversation, Thread and Message Records synchronize to authorized existing and newly enrolled devices; synchronize public-profile edits and private participant mappings within the same Organ as well. Keep record-history sync distinct from session-key provisioning. Define removal and replacement; do not let a revoked device erase current traffic.
-
-**D42 — Retention and offline behavior.** How long should servers wait? **Recommendation:** an initial 30-day mail retention policy, visibly advertised and acknowledged by the sender, with configurable quotas. Local conversation history has its own retention. If all server copies expire, mark delivery failed and offer resend. Fetch on reconnect; polling is the baseline, with optional wake notifications carrying no message text.
-
-**D43 — Retry and capacity.** Should failure cause repeated immediate reconnects? **Recommendation:** use capped exponential backoff with randomness, per-destination health, and a durable retry schedule. Chat falls back to mailboxes promptly after a short direct attempt, unlike the current ten-minute general-sync delay. Quota-full, refused, offline and storage-error states remain distinct.
-
-**D44 — Limits, operation and recovery.** What must an operator control? **Recommendation:** global and per-peer connections, bytes in/out, reserved storage, per-mailbox quotas, request sizes and retention. Include worker health, disk-full behavior, encrypted backups, tested restore, identity continuity and signed operator configuration. Logs avoid message bodies and raw search text by default. A restored mailbox must not resurrect removed permissions or reset abuse budgets unnoticed.
-
-### Required private envelope
-
-The carrier sees only routing and admission data needed for delivery, plus ciphertext and unavoidable transport metadata. It must not receive a personal Organ identity for the anonymous introduction flow.
-
-A private delivery contract includes a protocol/domain tag, stable envelope ID, destination mailbox/device scope, opaque conversation reference, ciphertext hash, signed creation/expiry, admission proof, and authenticated sender/session information as appropriate to the selected protocol. Existing Organ sync mail remains a distinct authenticated use case.
-
-One transport signature covers a batch. Preserve existing Fact provenance where the domain requires it; “one batch signature” does not authorize removing semantic authorship validation or accepting unsigned arbitrary operations.
-
-Allocate the logical message/envelope ID before sealing, authenticate it with the content and recipient scope, and persist the sealed bytes for retry. Re-sealing on each attempt must not invent a new logical message. The same authenticated ID with different contents is refused. Recipient receipts name the exact ID/hash and stage, and carriers cannot fabricate them.
-
-Anonymous introduction permissions and established conversation permissions are separate. A public introduction address is inherently discoverable; it cannot by itself eliminate spam. Limit it, isolate its storage, let recipients close it, and let operators refuse abuse without requiring a real name.
-
-### Reliable message state
-
-~~~mermaid
-stateDiagram-v2
-    [*] --> LocalQueue
-    LocalQueue --> CarrierStored: Durable deposit receipt
-    LocalQueue --> RecipientInbox: Direct durable receipt
-    CarrierStored --> RecipientInbox: Fetch and local commit
-    RecipientInbox --> ConversationReady: Validate and process
-    ConversationReady --> Delivered: Recipient receipt reaches sender
-    LocalQueue --> Failed: Deadline or explicit refusal
-    CarrierStored --> Failed: Every recoverable copy expired or lost
-    Failed --> LocalQueue: User chooses resend
-~~~
-
-Retries can occur at any stage without creating another logical message. “Read” is deliberately outside this state machine.
-
-### Tasks and acceptance
-
-- [ ] Fix B01–B11 in the implementation sequence before claiming reliable public mailbox delivery.
-- [ ] Define signed envelopes, replay behavior, durable receipts and pseudonymous introduction/session delivery.
-- [ ] Add explicit role, Cell and per-contact consent, capability enforcement and isolated public service handlers.
-- [ ] Add a transactional service inbox/outbox, stable IDs, retry workers and bounded quarantine.
-- [ ] Add receiver-authorized stranger Requests, acceptance, decline, block, renewable conversation permission and optional identity reveal.
-- [ ] Select and review the conversation session library before implementing its cryptographic state.
-- [ ] Integrate anonymous and identified conversations into the existing Conversation, Thread and Message Records and UI; public posts never automatically grant replica-root access.
-- [ ] Synchronize retained conversation history, invitations and participant identity/reveal mappings to authorized devices, including authorized newly enrolled devices.
-- [ ] Preserve the same conversation/thread/message UIDs when a pseudonymous participant reveals an Organ; do not create duplicate histories.
-- [ ] Prove a message received on one device remains recoverable and appears once on the other authorized devices after reconnecting.
-- [ ] Add multiple pickup points with durable replication and source-specific status.
-- [ ] Add current device authorization, per-device delivery state, revocation and key-rotation behavior.
-- [ ] Add operator byte accounting, atomic storage reservation, traffic ceilings and throttling notices.
-- [ ] Add NixOS/runtime role settings, persistent service state, supervision, health checks, backups and restore tests.
-- [ ] Prove a never-opted-in Cell and a never-authorized contact cause no forwarding.
-- [ ] Prove carrier operators cannot decrypt private message content, alter valid envelopes, or manufacture recipient receipts.
-- [ ] Prove a revoked Cell cannot collect or acknowledge new mail using an old roster.
-- [ ] Prove losing a deposit response, retrying through another server, or crashing during collection preserves one recoverable logical message.
-
-## 9. Implementation contracts for items 1–6
-
-These contracts turn the preceding decisions into work a developer can execute. They preserve the confirmed choices and add recommended defaults for details those choices leave open. D45–D60 and D70 are intentionally absent: their previous subjects are outside this scope. New decisions use D71 onward so earlier references keep their meaning.
-
-### Item 1 — Optional anonymous or identified publication
-
-**D71 — Public and private data.** Should a public snippet reuse the UID and full contents of its private source Record? **Recommendation:** give it a random public ID and a narrow typed projection. Keep the source UID, internal assertions, counterparties, device membership and editing history inside the author's Organ. Validate the publication through the same backend path whether requested by UI, automation or network. A public listing never creates stock movements or an accepted Transfer.
-
-The posting screen offers standalone Need/Contribution text or a preview derived from an eligible existing Record/OPEN promise. Quantity and unit are optional; when supplied, preserve exact decimal values and validate direction. Publish concept/unit identifiers only when they already have an allowed public reference; otherwise use an explicit plain-text label rather than exposing a private definition Record. Select language, coarse area, availability, expiry and allowed destinations. Anonymous mode generates a separate posting identity by default; the optional alias control explicitly explains that reuse links posts. Identified mode links the one public Organ profile.
-
-**D72 — Updating a publication.** Should editing a private source automatically change a public offer? **Recommendation:** save a changed public draft and require a new preview, except where the author enabled a separate explicit republication rule. Support edit, pause, resume, renew, fulfilled and withdraw actions. An identified-to-anonymous change creates a fresh anonymous post and offers withdrawal of the old one; the UI explains that older identified copies can remain.
-
-A revision authenticates its issue time and expiry. A renewed revision can have a new issue time without pretending the original post was created again. A post ID cannot be taken over by another authority. Reject conflicting payloads with the same signed revision. Concurrent updates that share a parent are publication conflicts; retain both private drafts and resolve them explicitly. Publication results name each selected service and the accepted revision/hash.
-
-**Exit evidence:** preview equals the signed public projection; anonymous payload and hosted metadata have no public Organ/private-source link; alias reuse is deliberate; wrong-key updates and stale/conflicting revisions fail; mode changes never expose unrelated anonymous posts.
-
-### Item 2 — One shared public Organ profile
-
-**D73 — Identity and authorized editors.** Does one public identity require copying the Organ's root private key to every device or profile host? **Recommendation:** no. The identity is stable; profile fields are editable data. Use a narrowly scoped, root-authorized profile-signing delegation for permitted editors, with expiry and revocation. Hosts receive signed public documents and verification material, never private signing or conversation keys. Viewing, editing and publishing permissions are distinct and enforced by the backend.
-
-Use an explicit public-profile projection of the existing Organ Record: chosen display name, description, avatar/banner hashes, optional coarse area and contact route. Do not automatically publish the private Organ name, record tree or full Cell roster. Known identity keys must match the stored trust anchor or a verified succession chain. A valid signature proves control of that key; it does not prove a person's name.
-
-**D74 — Conflicting edits and freshness.** What happens if the phone and laptop edit the profile while disconnected? **Recommendation:** save both edits within the Organ and record the publication base/head for each. Nonconflicting field edits can merge; conflicting fields remain visible for resolution. Signed publication revisions bind their parent revision/hash and editor authority so concurrent branches are detectable. Hosts preserve evidence of a conflict rather than silently using whichever packet arrives last. Resolution creates a new signed revision covering the resolved heads.
-
-The UI identifies the active Organ, shows a preview and permitted fields, explains disabled editing, and displays pending/published/failed status per host. Once the person enabled publication to selected hosts, authorized saves queue republication automatically. Device views converge after sync; disconnected devices and hosts can temporarily show older versions with a freshness label. Switching publication off stops further exports and offers withdrawal, while explaining that public copies cannot be recalled.
-
-Identified snippets carry a bounded profile reference and authority proof, not the complete rich profile; a 16 KiB profile cannot fit inside a 6 KiB snippet. Fetch its signed document separately and label an unavailable or stale profile.
-
-Media is separate from profile text. Grant read access only to the deliberately published assets; a profile host must not expose the author's general private blob store. Fetch only after a user request, verify content hashes, enforce encoded-byte and decoded-dimension bounds, and offer a text fallback. A current cached profile may update the display of an identified post; it cannot change the post's signed content, author mode or authority.
-
-**Exit evidence:** one Organ identity across two UI devices and two hosts; forbidden edits fail through direct backend calls; offline and conflicting edits survive restart; stale hosts cannot silently replace newer accepted state; a name/avatar change leaves anonymous posts and conversation UIDs untouched.
-
-### Item 3 — Conversation Records and own-device history
-
-**D75 — Where history lives.** Should anonymous conversations create a second chat database and a new UI history? **Recommendation:** preserve the existing Conversation → Thread → Message Records and their durable UIDs. Store private posting/participant mappings, request state and delivery metadata as scoped extensions or associated private Records. Delivery queues are work state, not a competing source of conversation content.
-
-Materializing a validated incoming message must be idempotent. Commit the message, its thread relationship, receipt/processing marker and applicable cryptographic state atomically. The same logical message arriving through another server or device must not create another Record or repeat Fact effects. A conflicting message with the same ID is refused.
-
-**D76 — New and removed devices.** Should enrolling a device give it a copied live chat session? **Recommendation:** synchronize retained authorized history through Organ sync, then establish that device's own sessions through the reviewed protocol. Existing and newly enrolled devices get the same permitted conversation/thread/message UIDs, private participant mappings and request decisions. Per-device session keys, delivery cursors and authorization remain separate from history.
-
-The composer and message lifecycle must route social conversations through the social delivery path while reusing existing Thread UI. Edits, deletion and closing obey the existing message permissions and explicit social lifecycle policy; they do not imply deletion from another person's device. Revocation denies future session provisioning, pickup and acknowledgements once the current authority is known. It cannot erase plaintext or keys that a device already retained.
-
-Filter social private namespaces and key material from foreign-Organ exports, including broad contact scopes and explicitly shared roots. Carrier-role Cells must not become plaintext recipients merely because their authoring capability list is empty.
-
-**Exit evidence:** reconnect a second device after delivery and enroll a third later; both recover retained authorized history once, with identical UIDs. Test foreign-contact export, restricted carrier access, device revocation, concurrent receipt, crash recovery and deliberate history-retention limits.
-
-### Item 4 — Stranger Requests and optional contact conversion
-
-**D77 — Conversation acceptance versus becoming contacts.** Should accepting an introduction reveal identities or grant access to private Organ Records? **Recommendation:** neither happens automatically. Acceptance opens continued private communication. Each person can reveal their selected profile independently. Only after both choose contact conversion does the app establish the authenticated Organ relationship; private data grants and login rights remain explicit.
-
-The reply descriptor names a scoped pseudonymous mailbox/session route, not the author's personal endpoint or public Organ roster in anonymous mode. Bind the encryption/session key and admission scope to the posting authority so a directory cannot substitute its own reply key. Give the sender a separate pseudonymous reply route. Authenticate session setup against that authority, validate offline prekeys, and keep one-time-key consumption and session state durable.
-
-**D78 — Talking before acceptance.** How much communication is allowed while the request is undecided? **Recommendation:** allow one introduction of at most 2 KiB UTF-8 text and a small provisional exchange, initially three replies per side within seven days. Recipient acceptance grants renewable ongoing conversation permission. Decline closes that attempt; block rejects that identity and its delivery capabilities. A per-post/key limit is supplemented by service-wide limits because an attacker can create new keys.
-
-Requests occupy a reserved, bounded stranger partition. Start with at most 32 pending attempts and 1 MiB per recipient, at most 32 KiB for a complete introduction envelope, plus a configured service-wide stranger-storage ceiling. Refuse or visibly throttle new attempts when that partition is full; trusted conversation/control capacity remains separate. They cannot fill the trusted inbox. Ending a post closes new introductions but preserves separately accepted conversations. Show accept, bounded reply, decline, block, reveal, connect and close actions with their actual effects. Both users may remain pseudonymous indefinitely.
-
-When both convert to contacts, bind the revealed Organ identity to a verified public authority and authenticated route, then link the existing conversation. Preserve all Record UIDs, messages and disclosure decisions. Never turn a name in a message into a trusted contact automatically.
-
-**Exit evidence:** unknown people initiate while the recipient is offline, exchange bounded private replies, accept ongoing conversation and optionally reveal/connect without duplicate histories. Test reply-key substitution, expired capabilities, block, request floods, unilateral reveal and denied private-data access.
-
-### Item 5 — Directories, gossip and delegated search
-
-**D79 — Discovery consent.** Should selecting a server enable all publication, search and forwarding automatically? **Recommendation:** use separate choices. Pin the service identity; show its roles and policy; select which servers receive posts and queries. Gossip needs Cell participation, author redistribution permission and eligible-contact consent. A public announcement can be copied outside the protocol, so these controls govern Lince's behavior rather than guaranteeing control over every public copy.
-
-The directory stores validated public projections and signed profile copies; its FTS5 index is rebuildable. Search treats input as bounded data, with safe text tokenization and explicit direction, language, concept/unit and declared-area filters. Browse uses bounded pages. Search local cache first, then selected services when requested; show cached freshness, source, per-service failures and the next-page control. Merge matching post/revision hashes across sources and surface disagreement.
-
-**D80 — Forwarding and asking onward.** Should a peer be trusted to declare the true hop count? **Recommendation:** no. Maintain a persistent, bounded local ledger keyed by signed announcement revision/hash. Forward once to up to three randomly selected eligible peers while that ledger entry is retained. Do not reset signed expiry. Count inbound bytes, verification work and outbound bytes against independent source and global budgets.
-
-Ask-around uses a different request contract: random ID, at most 30 seconds, at most three eligible onward peers at each Cell, four active local requests and a bounded aggregate response. Retain query deduplication for its lifetime, stop on cancellation/deadline, validate each returned announcement, and explain that contacted peers can read the query. A short lifetime and fan-out limit still need a global work budget to bound branching.
-
-Withdrawals retain a revision floor/suppression marker until all permitted older versions expire plus clock allowance. They are processed even if the original offer never arrived. Reserve bounded control capacity so ordinary traffic cannot starve withdrawal and receipt processing. Public-topic or server-federation alternatives remain design comparisons; they are not necessary to deliver the initial contact-gossip/directory flow.
-
-Add local mute/block, service-specific operator removal and deliberate reports. Reports share only selected evidence; operator decisions never rewrite the author's signed payload. Optional saved searches/subscriptions use explicit notification opt-in, bounded frequency and quiet hours.
-
-**Exit evidence:** two independent directories and a contact cycle; text/typed filtering, duplicates, source disagreement, out-of-order withdrawal, expiry, cache-full behavior, many posting keys, oversized replies, query cancellation and throttling all stay within configured limits.
-
-### Item 6 — Always-online services and reliable delivery
-
-**D81 — What gets acknowledged.** When may a receiver tell a mailbox to discard its copy? **Recommendation:** only after a durable, recoverable local inbox commit, followed by the documented device-distribution policy. Processing may happen later; unreadable mail stays in a bounded retry/quarantine state. For multiple devices, retain per-device acknowledgements for the authorized recipient set rather than letting the first pickup erase everyone else's copy.
-
-Allocate the logical message ID before creating recipient-device envelopes. Each envelope has its own stable authenticated ID/hash, recipient scope, signed issue/expiry and admission proof. Persist the exact bytes for retries. Different device sessions may require different ciphertext envelopes for one logical message; the UI still displays one Message Record. Identical deposit retries are idempotent; same envelope ID with changed bytes is refused.
-
-**D82 — Redundancy and retention.** How much protection should two servers provide? **Recommendation:** deposit promptly to two independent recipient-selected mailboxes when configured, track each durable receipt separately, retain the sender outbox and fetch on reconnect. One selected server is usable with a visible single-copy status. Use the advertised 30-day retention and quotas; distinguish carrier-stored, recipient-durable, conversation-ready and failed/expired. A carrier cannot issue the recipient's authenticated delivery receipt.
-
-Atomic storage reservation covers global capacity, per-recipient quota and the separate introduction partition. Make invite redemption plus registration transactional. Collection is bounded by the exact encoded response bytes as well as count. Every legal envelope must fit at least one legal reply, with room for framing/receipt metadata, so maximum-sized mail cannot become permanently uncollectable.
-
-Current authorization needs a persisted monotonic floor and an explicit freshness policy. Reject presented rosters/device manifests older than the known floor. Publish removal updates to all selected hosts and show hosts still awaiting the update. A disconnected server cannot know an unseen revocation instantly; narrow expiring pickup permissions bound that exposure. Restore must refresh permission floors before resuming collection/deletion.
-
-**D83 — Worker behavior.** Should restart or repeated network failure reset delivery state? **Recommendation:** durable queues, bounded supervised workers, capped randomized exponential backoff, destination-specific health, timeouts and persistent retry deadlines. Each work item is resumable. Expiry is explicit and does not silently delete local conversation history. Full disks produce a storage failure, never a successful durable receipt. Use a database/storage durability setting that meets the receipt promise and test process crashes separately from power-loss assumptions.
-
-**D84 — Server roles and operator defaults.** What should a continuously running server expose? **Recommendation:** independently disabled-by-default directory, townsquare, mailbox and application-relay switches under services.lince.social, mirrored by validated runtime settings. A directory indexes listings, a townsquare browses them, a mailbox stores authorized ciphertext, and an application relay carries only explicitly permitted envelopes. None grants private Organ replication or signing rights. Live onward forwarding may be enabled only with its own per-contact policy; delayed mailbox delivery is the initial reliability path.
-
-Record a small-device and modest-server resource profile before enabling public service. Starting server controls may use 64 global and eight per-peer connections, 1 GiB service storage, 64 MiB per registered mailbox and 4 MiB/minute global incoming plus 4 MiB/minute global outgoing budgets, with stricter individual-source and stranger limits. These are proposed configuration defaults for measurement, not demonstrated capacity claims. Health checks report worker liveness, quota pressure, effective roles and durable queue age without logging message bodies or raw queries.
-
-Add operator controls for admission, quotas, removal/block lists, retention, restore and identity continuity. Service descriptors advertise effective limits and operator contact/policy. Select independent failure domains when choosing two hosts. Iroh connection relays remain a separate infrastructure choice; verify their production availability and fallback behavior rather than treating development relay access as an uptime guarantee. [Iroh relay documentation](https://docs.iroh.computer/concepts/relays).
-
-**Exit evidence:** fix B01–B11 with regressions; restart/kill at each commit boundary; race concurrent quota deposits; retry after a lost response; fail one host; reconnect devices; refuse stale authorization; restore without widening permissions; show truthful failure/copy/throttling states in native UI.
-
-### Shared data ownership and signing rules
-
-| Data | Authoritative home | May public services receive it? |
+| Snippet | Title 160 / text 1,200 Unicode characters; complete signed document within 6 KiB |
+| Public profile / images | 16 KiB text; avatar 256 KiB / banner 512 KiB encoded; decoded at most 2,048 × 2,048 / 4,096 × 2,048, plus decoder work/memory limits |
+| Introduction | 2 KiB UTF-8 text; 32 KiB envelope; 32 pending / 1 MiB per recipient; separate service-wide stranger ceiling |
+| Provisional exchange / chat | Three replies per side within seven days; ongoing chat text 16 KiB; attachments separately requested |
+| Social reply/frame | 50 items and 256 KiB maximum, paginate; envelope limits reserve all framing overhead; larger existing sync traffic has separate bounds |
+| Public freshness | Seven-day revision lifetime; five-minute future-date allowance; forwarding never renews; withdrawals suppress every older permitted revision through expiry plus allowance |
+| Retention / copies | Advertise existing 30-day mail retention; two independent selected hosts where available, visible single-copy operation otherwise |
+| Storage / cache | 64 MiB trusted mailbox, separate 1 MiB stranger partition, control reserve and global capacity; personal cache 10,000 disk entries with separate bounded memory/mobile profile |
+| Gossip / ask-around | Three eligible gossip peers per revision while ledger retained; query 30 seconds, three onward peers, four active local queries, 50 results / 256 KiB accumulated locally and explicit aggregate work limits |
+| Modest-server measurement defaults | 64 global / eight per-peer connections; 1 GiB service storage; 4 MiB/min incoming and 4 MiB/min outgoing globally, stricter source limits and bounded pending handshakes |
+| Local metadata / disclosure | Bounded private search history and receipts with clearing; explicit publication/query destinations; unknown contacts get no automatic trust/proximity grants |
+
+Validate impossible/negative configurations and legal envelope/reply combinations. Persist budget state that must survive restart. Account for input, verification and output independently; generating another key does not reset a Cell-wide ceiling. Text/media fetching remains deliberate, hash-verified and bounded.
+
+## Sequential implementation order
+
+Feature numbers remain the approved scope; the steps below follow dependencies. UI and checks accompany the backend at each step. Do not release an advertised contact flow with unfinished reply/delivery controls.
+
+Reuse the existing Cell startup and hourly `renew_local_roster` path for Main membership renewal; social seven-day leases are a separate authorization layer. A trusted personal authority server uses those existing paths. Independent service hosts receive neither the user's Main identity key nor its pseudonymous authority wallet.
+
+| Step | Remaining work | Exit evidence |
 | --- | --- | --- |
-| Source Need/Contribution and private assertions | Existing private Organ Records | Only the explicitly selected public projection |
-| Public profile and announcement | Signed author projection; validated hosted/cache copies | Yes, selected public fields |
-| Anonymous private key and source/participant mapping | Authorized private Organ/device storage | No |
-| Conversation history | Existing Conversation, Thread and Message Records under intended grants | Only encrypted transport envelopes |
-| Live session state | Its specific authorized device and reviewed protocol storage | No; history sync does not clone it |
-| Service roles, admission and budgets | The operating Cell's configuration and durable service state | Advertise effective public limits, not private operator keys |
-| Delivery work and receipts | Durable sender outbox, carrier queue and recipient inbox | Only the routing/admission/ciphertext and receipt fields required for that stage |
+| 1 | Finish enrolled profile/media, long-missed host recovery and scoped sharing audit | Actual enrollment/offline/concurrent/removal tests, same identity/history and no private export |
+| 2 | Complete expired resend, pending key/permission changes and inactive cleanup | Atomic renewal, fresh authority, stable logical history, terminal denial and restart evidence |
+| 3 | Complete source disagreement/freshness and discovery churn | Authenticated source merging, visible conflicts/failures, withdrawal progress and opt-in isolation |
+| 4 | Finish delivery/admission/resource health and operator controls | Useful bounded native views, private-content-free counters and restart behavior |
+| 5 | Implement stopped encrypted owner-only restore and recovery | Wrong/corrupt/oversized backup rejection, fresh keys, re-enrollment and current floors without permission resurrection |
+| 6 | Qualify Iroh relay selection and direct/relay/mailbox fallback | Deliberate client configuration and actual connection/failure tests; no extra application forwarder |
+| 7 | Run process/storage/security faults and declared resource measurements | Reproducible crash/busy/full/quota/abuse cases, reference machine and honest physical limits |
+| 8 | Reconcile end-to-end evidence and slim completed subjects | All approved flows qualified, concrete limitations and an external target only if supplied |
 
-**D85 — Exact signing bytes.** Should two implementations choose their own JSON formatting before signing? **Recommendation:** use a documented canonicalization contract, such as RFC 8785 JCS, for typed public documents, with a distinct domain/version tag for profiles, snippets, withdrawals, service descriptors and permissions. Represent exact amounts and large revision values as canonical decimal strings; reject duplicate/unknown fields and unsupported versions. Sign the document without its signature field; changing transport/source metadata does not change the author's payload hash. Reuse the existing sealed-batch transcript where applicable and keep Fact provenance intact. [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785).
+Add server supervision/resource controls as their roles arrive; step 8 completes operational qualification. Package work follows the human's 1–6 order, with necessary shared prerequisites introduced when required. A step closes only with its native UI where needed and relevant correctness/security/performance evidence. Keep the active checkpoint above current across compaction. When a complete subject passes its evidence, replace its checklist here with a short description and implementation/test links.
 
-Publish fixed vectors covering Unicode, optional fields, exact decimals, nested profile authority, revisions and domain separation before writing network handlers. Validate all size limits against serialized bytes, including base64 expansion and wrappers. Keep public handlers on an isolated social protocol boundary; no public request is translated into arbitrary private sync operations.
+## End-to-end completion and measurements
 
-### Planned code ownership and review evidence
+Decision references: D61–D64, D68–D69. One social entry point provides Browse, Search, My posts and Requests; profile editing belongs in the active Organ view, private conversation in existing threads, operator controls in settings. Include keyboard/accessibility checks. New embedded Sand dependencies require their licenses and credits.
 
-These are proposed modules or responsibilities, not files claimed to exist already. Keep the existing Engine action/authorship path, Actor/Organ context and Record permissions authoritative; a UI shortcut or worker must not bypass them.
+- [ ] Two previously unknown people demonstrate both anonymous and identified posts; select services and find bicycle help outside their contact network. Preview, public identity choice, source, freshness and query disclosure are understandable.
+- [ ] An encrypted introduction waits while its recipient is offline. Both exchange private pseudonymous replies, accept continued conversation and optionally reveal chosen profiles. Only mutual consent converts them to contacts; discovery grants no private data.
+- [ ] Fail one independently selected host, lose a deposit response and reconnect devices. Retry produces one logical message and once-only Facts, with truthful carrier/recipient/failure status and usable local UI.
+- [ ] Edit a profile offline on one device. The same Organ identity/profile converges across authorized devices and selected hosts; conflicts remain visible; anonymous posts stay unlinked.
+- [ ] Enroll another authorized device and recover retained Conversation/Thread/Message UIDs and private participant state, with separately provisioned sessions. Profile reveal preserves the same history.
+- [ ] Withdraw a post and revoke a device. Current discovery and future authorized delivery reflect those changes; stale/offline hosts have visible bounded freshness rather than a promise of instant unseen revocation. Test restore without resurrected permissions.
+- [ ] Show optional deliberate Transfer creation without discovery itself changing stock or creating an agreement. Public services/carriers see only permitted public data, routing/admission metadata and ciphertext.
+- [ ] Benchmark declared small-device and modest-server profiles: 10,000 cached snippets, 100,000 directory listings and simulated 500-Cell churn/abuse. Target p95 local search below 250 ms on the named reference machine; measure memory, worker, storage, verification and traffic limits before claiming capacity.
 
-| Layer | Planned responsibility | Review evidence |
-| --- | --- | --- |
-| nucleus social types | Typed public profile, snippet, search, service descriptor, admission, receipt and command contracts | Unknown/duplicate fields, exact amounts, canonical signing vectors and encoded-size tests |
-| store social repositories and existing Record repositories | Validated public cache/index; atomic admission/quota/inbox/outbox/receipt work; scoped private Record state | Unique IDs, transactional message/session commits, recovery, quota races, rebuild/restore tests |
-| engine social policies and existing mailbox/sync modules | Publication validation, actor permissions, authority/capability checks, consent, revocation, session integration and private-export filtering | Direct backend forbidden-action tests, cross-Organ isolation and B01–B12 evidence |
-| Wire social handlers | Isolated public protocol admission, bounded request/reply framing, pinned service authentication and timeouts | Public service verbs cannot call private replication; malformed/oversized/flood cases |
-| cell supervised workers | Queued publication, gossip/search, prompt delivery, collection, backoff, expiry and health | Offline/restart/failover behavior; bounded work and UI responsiveness |
-| Native Rust interface and desktop feature modules | Discovery, post/profile forms, Requests, existing Thread integration, status, subscriptions and server/operator controls | Full keyboard-accessible stranger flow, forbidden-edit state, consent previews and failure/resend behavior |
-| Headless/NixOS service configuration | Role switches, durable paths, effective limits, identity continuity and operational health | Disabled-by-default tests, validated configuration, restart and restore without permission widening |
-
-Each feature review records code paths, tests actually executed, resource measurements and open failures. A source-inspected helper is marked as a foundation; a passing type check is marked as a type check. Neither closes the social end-to-end gate.
-
-## 10. Interface and social behavior
-
-The interface should teach through visible actions and statuses. It should not expose protocol machinery unless it explains a choice the person needs to make.
-
-**D61 — Where the features live.** Should users navigate several technical network panels to meet someone? **Recommendation:** one Discovery/social entry point with Browse, Search, My posts and Requests. Reuse Organ Castle, Thread Castle and Transfer Castle for their existing jobs; place server/operator details in settings. Under confirmed D09, include a Public profile view/editor in Organ Castle on every UI device, with active-Organ selection, save/preview, publication destinations, permission state, update status and conflict resolution.
-
-**D62 — Browsing and notifications.** Should the first social release include an engagement-ranked feed, public comments and constant push alerts? **Recommendation:** start with useful searchable/browsable snippets and private introductions. Optional subscriptions notify on selected Needs/Contributions, with quiet hours and bounded frequency. Typing/presence and read receipts are off by default. Public discussions and group social features remain separately designed additions.
-
-**D63 — Moderation and blocking.** How should strangers and operators handle abuse? **Recommendation:** local block/mute plus operator-specific listing removal and inbox admission limits. Reporting shares only the content the person explicitly selects. A server can decline a listing without changing its author's signed bytes. Show server policy and appeals/contact information where available; an operator ban is not a universal network verdict.
-
-**D64 — Status and consent.** What must users see? **Recommendation:** anonymous/identified state, selected publication destinations, query disclosure, listing freshness, source, vocabulary, coarse area, pending introductions, delivery stage, number of durable copies, expiry and throttling. Reveal a profile or accept a connection deliberately. Keep network errors understandable: “mailbox full,” “waiting for connection,” or “server limited requests.”
-
-### Required interaction coverage
-
-| Feature | Backend work | UI work |
-| --- | --- | --- |
-| Anonymous or identified publication | Per-post mode, anonymous posting identity or shared Organ identity, sanitized payload, consent, revisions | Compose/preview, anonymous/identified choice, alias/profile display, targets, renew/withdraw |
-| Discovery | Cache, directories, query and source merging | Browse/search/filter, disclosure, source/freshness/meaning |
-| Gossip | Destination consent, forwarding ledger, budgets | Simple participation setting; per-contact exceptions and status |
-| Introductions | Scoped permission, encrypted Requests, rate limits | Requests, reply, accept, decline, block, identity reveal |
-| Conversations | Existing Conversation/Thread/Message Records, retained-history and participant-mapping sync, durable delivery, sessions, retries, device authorization | Same conversations across authorized devices; existing threads plus clear delivery/failure/resend controls |
-| Profiles | One public identity/profile per Organ, authorized Record/Fact edits, own-device sync, signed republication, hosting and bounded media | Public profile view/editor on every UI device, preview, permission/conflict/update state, hosted sources, on-demand images |
-| Servers | Roles, registration, quotas, health, backups | Add/remove/select server; operator role and throttling controls |
-
-No user-facing feature is complete with only a backend handler. Operator-only tasks need operator controls rather than a public feed. New embedded Sand dependencies must include the required licenses and credits.
-
-## 11. Starting bounds and policy defaults
-
-**D65 — Initial limits.** Are these suitable starting defaults? **Recommendation:** use them as configurable initial bounds, then adjust from measured usage. The implementation must count encoded bytes and processing work, not only visible characters. Defaults are design choices, not existing measured guarantees.
-
-| Item | Starting recommendation |
-| --- | --- |
-| Snippet title / text | 160 / 1,200 Unicode characters, within a 6 KiB total signed envelope |
-| Profile document | 16 KiB; media separate |
-| Avatar / banner | 256 / 512 KiB encoded; at most 2,048 × 2,048 / 4,096 × 2,048 decoded pixels, with decoder memory/time limits |
-| Stranger introduction | 2 KiB UTF-8 text; 32 KiB complete envelope; at most 32 pending attempts / 1 MiB per recipient and a separate service-wide ceiling |
-| Chat message | 16 KiB text; attachments separately requested |
-| Social mailbox envelope/frame | 256 KiB complete encoded social frame; reserve wrapper overhead so one accepted envelope always fits a legal reply. Existing larger sync batches have separate explicit limits |
-| One service reply | At most 50 items and 256 KiB, whichever comes first; paginate |
-| Public listing lifetime | Seven days maximum per signed revision; deliberate renewal |
-| Clock allowance | Five-minute future-date tolerance; no expiry extension by forwarding |
-| Withdrawal suppression | At least until all permitted older revisions expire, plus clock allowance |
-| Mail retention | 30 days, disclosed before relying on it |
-| Recipient storage | 64 MiB trusted-mail quota; separate 1 MiB stranger partition, control reserve and global service capacity |
-| Server durability | Two independently chosen mailbox copies where available |
-| Personal social cache | 10,000 entries on disk; memory bounded separately; smaller mobile profile |
-| Gossip fan-out | Three eligible peers per revision per forwarding cycle; persistent ledger and overall budget |
-| Ask-around | 30-second lifetime; three eligible next peers; four active local queries; 50 results / 256 KiB maximum accumulated local result |
-| Connections | Reuse current per-peer cap of eight; role-specific global cap and pending-handshake deadlines |
-| Rate enforcement | Separate inbound/outbound byte and work budgets, per-source and global; persist accounting needed across restart |
-| Search history / receipts | Local and private by default; bounded storage and explicit clearing |
-| New connections | Unknown until accepted; no automatic visibility/proximity grant |
-| Post identity | Explicit anonymous/identified choice; anonymous keys separate from the Organ profile |
-| Public profile | One identity/profile per Organ; authorized edits sync and update already enabled publication destinations |
-| Own-device history | Retained Conversation, Thread and Message Records synchronize within authorized Organ/grant boundaries |
-| Public search services | Explicit selection; no automatic search to every available directory |
-
-Exact inbound/outbound rates and server global storage ceilings must be selected for the intended machine profile before exposure. Validate configuration, reject impossible/negative settings and publish effective limits. Reserve control capacity for withdrawals and receipts so heavy ordinary traffic cannot prevent cleanup; control traffic is still authenticated and bounded.
-
-**D66 — Spam admission.** Should public services require real names or payment? **Recommendation:** neither as the default. Use size/rate/storage budgets, invitation or operator admission where needed, and separate trusted inboxes from introductions. Anonymous unlimited access and strong spam resistance cannot both be assumed; stronger proof-of-work or anonymous credential systems require a separate measured design.
-
-**D67 — Attachments and fetching.** Should every incoming message download media immediately? **Recommendation:** text first, explicit bounded downloads, content-hash verification, safe media handling and cache limits. Never execute incoming content or auto-open arbitrary URLs. Directory and mailbox operators get no private attachment keys merely by hosting ciphertext.
-
-## 12. Sequential implementation order
-
-This is the implementation sequence for feature packages 1–6. Their detailed contracts are in sections 6–10; the build sequence follows dependencies. A step is complete only after its frontend/backend work and exit evidence are recorded.
-
-| Step | Work | Required exit evidence |
-| --- | --- | --- |
-| 1 | Apply confirmed identity/profile/conversation decisions; settle remaining contracts, session-library integration and server resource profile | Written contracts, tested dependency choice and unresolved gates named; no contradictory promises |
-| 2 | Typed domain contracts, deterministic signing vectors, policy/capability interfaces and isolated public transport handlers | Malformed/version/size tests; anonymity field audit; limits enforceable |
-| 3 | Existing mailbox corrections B01–B11, transactional inbox/outbox and durable receipt state | Crash/concurrency/replay/revocation regression tests pass |
-| 4 | Isolated service roles, opt-in, operator limits, current device authorization | Never-opted-in/no-per-contact-consent tests; restricted-role privacy tests |
-| 5 | One shared public Organ profile with device editing/sync/republication; anonymous/identified standalone snippets and OPEN promise projections | Stable identity across devices/hosts; authorized profile updates visible; publication preview matches exact bytes; anonymous posts remain anonymous |
-| 6 | Searchable directory and townsquare, hosting, server selection, moderation | Two independent servers; expiry/removal/index recovery; bounded query tests |
-| 7 | Stranger Requests, chosen session protocol, pseudonymous replies and mutual Organ conversion within existing Conversation/Thread/Message Records | Offline initiation, preserved conversation UIDs, identity reveal, block, key-change and multiple-device tests |
-| 8 | Reliable chat over direct connections and replicated mailboxes; authorized retained-history sync | Both people/devices offline at different times; failover, receipts, one shared logical history, duplicate and expiry behavior |
-| 9 | Contact gossip, stable cache, consent, withdrawal and delegated search | Cycles, offline gaps, churn, adversarial source and total-budget tests |
-| 10 | Full social UI and notification settings integrated throughout steps 5–9 | User can complete the whole flow and understand each failure state |
-| 11 | Headless server operations, restoration and end-to-end release qualification | Restart/restore/failover campaign, privacy and resource measurements |
-
-UI work happens alongside each corresponding feature. The excluded item 7 subjects in section 1 are outside this implementation sequence.
-
-## 13. Verification and definition of done
-
-**D68 — Social acceptance scenario.** Is this the right observable result? **Recommendation:** two people with no prior contact publish/find anonymous or identified snippets, exchange a private introduction, communicate across offline periods and a failed server, optionally reveal identities and connect, then deliberately create a Transfer. Demonstrate both publication modes. Edit a public profile on one authorized device and see the same identity/profile update on the others and selected hosts; synchronize the same conversation history across devices. Neither person obtains the other's private Organ data through discovery.
-
-**D69 — Performance target.** Which workloads should drive limits? **Recommendation:** define one small personal-device profile and one modest server profile. Benchmark 10,000 cached snippets, 100,000 directory listings, and a simulated 500-Cell network with churn and abusive peers. Target p95 local search under 250 ms on the declared reference machine, with all social background queues and memory bounded. Measure first; do not present these targets as achieved.
-
-
-### Social release gate
-
-- [ ] A fresh user can select services and discover someone outside their contacts.
-- [ ] An anonymous snippet has no unwanted public link to the author's Organ.
-- [ ] The author can deliberately publish a Need or Contribution under the one public Organ identity instead.
-- [ ] Every UI device exposes public-profile controls and enforces editing permissions.
-- [ ] Editing the profile on one authorized device updates the same profile on other devices and selected hosts, with queued status while offline.
-- [ ] Concurrent profile edits converge to one current profile with visible conflict handling; stale hosts cannot replace a newer profile.
-- [ ] Profile edits and identified posting never expose anonymous posts or their private source mappings.
-- [ ] Operators/public readers see only what the documented privacy model permits; known metadata limitations are shown honestly.
-- [ ] A stranger can send a bounded encrypted introduction while its recipient is offline.
-- [ ] Both parties can keep pseudonyms or reveal chosen profiles; contact status changes only through deliberate acceptance.
-- [ ] Identity reveal preserves the existing Conversation, Thread and Message Records and their UIDs.
-- [ ] Authorized devices, including authorized newly enrolled devices, receive retained conversation history and participant mappings within the intended Organ/grants.
-- [ ] Private conversation works while each person is offline at different times.
-- [ ] A server outage, response loss or client crash does not destroy the only acknowledged recoverable copy.
-- [ ] Retrying and multiple servers produce one logical message, not duplicate UI messages or Facts.
-- [ ] Device revocation blocks later collection and deletion; key changes do not silently redirect a conversation.
-- [ ] Carrier operators cannot read private content; session-security claims match the reviewed implementation.
-- [ ] A post can be edited, paused, fulfilled, cancelled or expired without stale results appearing current.
-- [ ] Gossip, delegated search, public browsing and every carrier respect opt-in and measurable resource ceilings.
-- [ ] The person sees delivery, freshness, failure, throttling and server-copy status.
-- [ ] Local data remains usable without internet access; network workers do not freeze the interface.
-
-### Required test campaign
-
-| Area | Cases that matter |
-| --- | --- |
-| Identity and privacy | Anonymous/identified mode integrity; anonymous field leakage; alias reuse; one Organ identity across devices/hosts; signed profile substitution; key changes; text/metadata disclosure |
-| Profile editing and sync | Authorized and forbidden edits; offline save/republication; concurrent edits; stale hosts; stable identity during name/avatar changes; anonymous posts unaffected |
-| Signatures and encoding | Wrong key, altered content, cross-protocol replay, noncanonical bytes, unknown versions, malformed lengths |
-| Publication lifecycle | Out-of-order revisions, same revision with conflicting payload, withdrawal before original arrival, stale renewal, clock skew |
-| Delivery | Kill process before/after deposit commit, lost acceptance response, local receive commit, processing commit and acknowledgement |
-| Storage | Concurrent quota races, disk full, database busy, service restart, encrypted backup/restore, duplicate deposit |
-| Permissions | Never opted in, per-contact default denial, stale roster, revoked Cell, cross-Organ import, carrier key isolation |
-| Search and gossip | Cycles, random subset behavior, bounded seen-sets, many identities, expensive queries, oversized replies, directory disagreement |
-| Sessions and devices | Offline initiation, simultaneous first messages, out-of-order messages, skipped-message limits, retained-history sync/new-device enrollment, no duplicate conversation on identity reveal, device removal, state rollback |
-| Sync and meaning | Exact amounts, differing vocabularies, private links, conflict resolution, non-repeated Fact effects |
-| UX | Entire stranger-to-contact flow, keyboard/accessibility support, offline statuses, block/withdraw, understandable retry errors |
-
-Use deterministic simulations where possible and real network/device tests for assumptions simulations cannot prove. Run cargo check for changed targets, with warnings treated as errors, and the relevant correctness/security/performance tests. No cargo build. Do not spawn coding agents or create worktrees. Do not edit AGENTS.md, README.md or the owner's .lingua records.
-
-## 14. Criticisms and recommendations carried forward
-
-1. **Finding people and delivering messages are separate systems.** Share validation and budgets, but give publication, search and delivery distinct contracts and statuses.
-2. **Anonymous cannot mean everything is hidden.** Separate public identity from network metadata and content-based identification. Stronger network privacy changes the stack and must be deliberately chosen.
-3. **Existing sync payloads expose Organ identity.** Reuse their durable mechanisms, not their identifying envelope unchanged for public anonymity.
-4. **A mailbox receipt is not delivery.** The early-acknowledgement bug is a concrete example; persist before acknowledging and show each stage.
-5. **Always-online does not mean loss-proof.** Two independent copies, durable local state and restoration tests are necessary; expiry and lost keys still have visible failure outcomes.
-6. **A hop ceiling does not secure freely public data.** Local budgets, deduplication, expiry and consent provide enforceable limits. Do not label unverified routing hints as facts.
-7. **Public visibility needs withdrawal and versioning.** A cancellation can limit current discovery without recalling copies already distributed.
-8. **Multiple directories bring both resilience and disclosure.** Let people select them and see which service received each action.
-9. **Empty authoring capabilities do not establish confidentiality.** Blind carriers need separate data/key boundaries.
-10. **Shared words are not shared meaning.** Preserve vocabulary identity and exact units when moving from discovery to agreements.
-11. **Cryptographic primitives are not a complete messenger.** Sessions, device changes, durable state and rollback behavior need their own review.
-12. **Complete must be observable.** Use the six-feature release gates above; do not close a feature because a helper function exists.
-
-## 15. Refinement rounds
-
-Comments can refer to decision numbers. Change only what the human changes, update dependencies and test criteria accordingly, and leave unmentioned recommendations in place. Record tensions with .lingua openly rather than editing the owner's source.
-
-1. Identity and connection: D04–D09 confirmed in round 3, with optional anonymous/identified posting, one public Organ identity/profile, device editing controls and Record-based conversation sync. D10 remains the unchanged trust recommendation.
-2. Public content and discovery: D11–D31, including public redistribution and world reach.
-3. Servers and conversation reliability: D32–D44, including the session stack and multiple devices.
-4. Interface, moderation and bounds: D61–D67.
-5. Acceptance and measurements: D68–D69.
-6. Implementation detail review: D71–D85, covering projection boundaries, concurrency, device sessions, admission, disclosure, durability and exact signing bytes.
-
-The next refinement group is profile publication and discovery, D11–D31 and D71–D74/D79–D80, using the confirmed identity model. Session-library integration and the server resource profile remain named technical selection gates. Recommendations remain working defaults unless the human alters them; do not treat a missing comment as a feature removal.
-
-Implementation progress and executed checks must be recorded against each of the six feature packages. This document update does not mark their implementation complete.
-
-## 16. Implementation ledger — 2026-09-30
-
-The first implementation pass addresses the existing mailbox foundations in sequence step 3. It does not complete any of the six social packages as a whole. Item 7 remains excluded.
-
-### What is implemented in this pass
-
-The receive path validates the signed envelope identity and recipient, saves its encrypted bytes in the local database, and only then acknowledges the carrier. Opening and importing happen from that saved inbox. Temporary failures back off; repeated failures enter quarantine and have a native recovery control. Recovery status uses bounded explanations instead of raw parser errors or private input. Locally saved encrypted envelopes have the existing three-day recovery allowance after the signed thirty-day expiry. Once that allowance ends, the ciphertext is removed and an expired status remains for bounded retention. Successful imports retain a small hash/identity entry so another server's copy does not create a second logical delivery.
-
-Normal file-backed application databases now use SQLite FULL synchronization while retaining their existing identity initialization. This supports the local durability promise; it is not evidence that every disk failure, backup restoration or power-loss boundary has been tested.
-
-The sending path saves an encrypted envelope before the network attempt. Retries of the same batch, recipient keys and copy policy reuse those exact saved bytes and delivery ID, including after restart. Server acceptance is recorded independently per authenticated server endpoint. Native Mail controls select one or two copies for new envelopes, with two as the default. A partial result does not clear the ordinary sync outbox as fully mailed. Retries back off, and “Send mail now” resets the retry delay. The outgoing view reports how many servers accepted the envelope. Acceptance is a server's statement that it took responsibility, not a recipient-delivery or read receipt, nor proof that two endpoints have independent operators or disks.
-
-The existing sync worker remains the retry driver. A complete independent worker for every saved outgoing intent, cancellation/reprojection when permissions change, sender signing-key rotation, deliberate renewal of expired mail, and chat-specific immediate fallback remain work. In particular, changing an exported batch can leave an earlier prepared intent in the local queue; do not claim that every such intent is independently drained. Define whether previously queued sender signatures remain authorized across an operational-key change and when a still-authorized message must be resealed, preserving its logical message identity.
-
-| Finding | Implemented correction | Remaining qualification |
-| --- | --- | --- |
-| B01 | Durable local inbox before acknowledgement; restart recovery, retry/quarantine and bounded expiry; native recovery action | Kill/power-loss campaign at every receive/import boundary; full-disk and restoration cases |
-| B02 | Recipient and global payload quota reservation plus insertion in one serialized transaction | Measured resource ceilings, physical disk/WAL/index overhead and separate control reserve |
-| B03 | Signed stable envelope ID, canonical storage, saved sender ciphertext, hash conflict checks and completed-delivery suppression until signed expiry | Campaign combining lost responses, host/client crashes and changes to exported batches |
-| B04 | Persisted monotonic signed-roster floor; reject rollback and same-version conflicting payloads; collect/acknowledge only with current recorded write capability | A server must learn a revocation before the floor protects against it. Prompt revocation distribution and a bounded freshness policy are still required |
-| B05 | Separate acknowledgements for addressed authorized devices; retain the server copy until those devices save it; reconcile saved acknowledgements when devices are revoked; filter by addressed keys before paging | New devices need retained own-device history and session/key provisioning; an old envelope cannot give them keys it never addressed |
-| B06 | Envelope self-signature/shape validation, replay identity, payload/global bounds and quarantine foundation | Recipient-issued sender admission, stranger/trusted partitions and persistent source/work/traffic budgets |
-| B07 | Existing identified sync format is kept separate from the planned anonymous contract | Pseudonymous envelope, private reply capability and session implementation are not built |
-| B08 | Restricted roster entries receive no wrapped private-mail key and cannot collect, acknowledge or author private mail through this path | Independent carrier roles and the audit of all private replica/blob paths |
-| B09 | Invitation claim and registration commit together; a failed root-key match leaves the invite usable | Crash injection and complete root succession/revocation policy |
-| B10 | Saved exact outgoing bytes, one/two-server policy, independent acceptance records and truthful partial status | Immediate chat fallback and complete independently resumed intent delivery |
-| B11 | Collection limits both count and conservative encoded response bytes; expired rows are excluded without waiting for a sweep | Full adversarial transport/resource campaign; new social handlers need their smaller dedicated bounds |
-| B12 | The implementation still states the actual encrypted-batch guarantee | Reviewed session-library integration, ratchet state and multiple-device protocol tests |
-
-Self-signed envelopes also validate routing lengths, encryption field sizes, recipient-key uniqueness and signed lifetime. Unsafe X25519 shared secrets are refused. Opening a bundle addressed to another local Organ is refused. These checks do not grant an unknown sender permission to use a trusted inbox.
-
-### Feature coverage and the next work
-
-| Item | Result of this pass | Work still to implement |
-| --- | --- | --- |
-| 1 — Anonymous/identified Needs and Contributions | No new publication feature | Typed public projection, posting keys/aliases, preview, publication/lifecycle controls and destinations |
-| 2 — One public Organ profile | No new public-profile feature | Scoped signing delegations, private edit state, native editor, own-device convergence, conflict resolution and signed host republication |
-| 3 — Conversation Records and history | Existing Record model preserved; mailbox recovery improved | Prove retained history on newly enrolled devices; synchronize private participant/reveal state; session provisioning and concurrent receive coverage |
-| 4 — Stranger connections | No new stranger-connection feature | Reviewed pseudonymous sessions, Requests, bounded reply permission, consent, block/reveal and mutual contact conversion |
-| 5 — Directories, gossip and delegated search | No new discovery feature | Public index and browsing, selected servers, signed cache, contact consent, forwarding ledger, expiry/withdrawal and total query budgets |
-| 6 — Always-online services and reliable delivery | Mailbox reliability corrections and native recovery/copy controls implemented as a partial foundation | Remaining qualifications above, isolated service roles, operator controls, server operations, backups/restoration and the full asynchronous conversation scenario |
-
-Continue with the remaining contracts and session integration gates, complete step 3's qualification and delivery-worker gaps, then follow steps 4–11. The profile/publication and stranger features remain requirements; this ledger does not remove them from the plan.
-
-### Executed checks
-
-- `cargo test -p store --test social_mail_delivery`: 15 tests passed, including durable restart recovery, concurrent quota enforcement, completed-delivery suppression, separate server receipts and filtering before pagination.
-- `nix develop .#interface -c cargo check -p lince-desktop --lib -j 2`: passed during the implementation pass.
-- `nix develop .#interface -c cargo test -p lince-desktop --lib organ_castle::tests -j 2`: all 7 selected native tests passed; other desktop test cases were not run.
-- `cargo test -p engine --test social_mail_delivery --test mailbox --test seal`: all 14 new delivery, 19 existing mailbox and 16 sealing tests passed in the final run.
-- These selected suites total 71 passing tests across storage, engine and native controls. The full workspace suite and the power-loss/resource/restore campaign were not run.
-- Final `cargo check -p engine -p lince-cell`: passed. Rust warnings are denied by the workspace configuration.
-
-No Karma-owned code was changed to work around another model's implementation. No source conflict from that work required skipping a selected test. Remaining social features are unfinished work, not removed requirements.
+Use deterministic simulations and real network/storage tests where assumptions require them. Run relevant changed-target tests and `cargo check`, with warnings as errors. Full-disk, power-loss assumptions, backup restore, key/permission changes and real multi-device flows must be tested before calling the social system complete.

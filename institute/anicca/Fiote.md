@@ -1,184 +1,228 @@
-# Remaining Fiote work
+# Fiote — implementation and remaining work
 
-Refined with the owner's decisions on 2026-09-30 and checked against the current working tree. Sources: the [Fiote record](Tasks.lingua), `@fiote` / `r_137BM4Q7GV2707HBTRQ3GTJ9E5`, and the shared [Karma plan](Lince.md). The owner's latest refinement defines this plan; the Record remains unchanged. This was a review of implementation and test sources, without running the installed app or tests.
+Updated for the owner's implementation authorization and refinements on 2026-09-30, and the real-Codex, normal-message attachment and application-launch requests on 2026-10-01. The source was the Fiote Record, `@fiote` / `r_137BM4Q7GV2707HBTRQ3GTJ9E5`, formerly in `Tasks.lingua`. Another chat removed that file during this work; this implementation does not edit or relocate owner-authored Records. This Markdown records implementation details, verification and remaining acceptance. Owner decisions in this conversation supersede older agent plans.
 
-Karma CRUD, reading/firing explanations, and unsaved Rule Simulation have now been delivered through ordinary Actions, including `PreviewKarmaProposal`. Reuse them. MCP, genai integration, ordinary Record editing, Message persistence, attachments, dictation, assignment dispatch, and inherited-instruction inspection also already have implementation.
+## 1. Execution ledger
 
-The numbers retain the previous discussion's references. Point 8 is an idea outside the implementation plan. Backend and native UI work below form one feature; proposed operation names describe the design, not APIs already present.
+The previously authorized implementation is present in the shared working tree. There are 82 passing focused tests; native and media-enabled integration compile checks passed with warnings denied. Four MCP socket cases were blocked by this sandbox; three external-agent cases require a fixture or installed provider. The new all-conversation attachment audit, any missing implementation and the required application-launch investigation are planned below, not implemented or tested by the 2026-10-01 documentation update. Installed acceptance remains a separate, ordered checklist in section 3; implementation and compilation do not establish provider or device acceptance.
 
-Implementation should proceed sequentially: define the shared composition contract and balloon isolation from points 1/5; connect canvas delivery and saving from points 2/5; finish proposal/report and call integration from points 1/2; then deliver activation, Transfer workflows, receipt entry, and context inspection in points 3/4/6/7. Apply point 9's accessibility controls as each UI is built, then verify the installed workflows in point 11. Point 10 stays deferred.
+| Order | Feature | Implementation present | Verification |
+| --- | --- | --- | --- |
+| 1 | Reusable influence-area isolation | `Isolation` blocks both crossing directions and preserves same-side interaction; ordinary area controls expose it; sound uses the shared influence guard | Focused area and sound tests passed |
+| 2 | Shared native composition | Typed parts, layout, buttons and named events; shared size/depth/count validation; backend validates Action payloads and nested Record access | Shared contract and backend presentation tests passed |
+| 3 | Presentation, balloon and saving | Shared `PresentComponent`; automatic existing Fiote balloon, inner canvas/event scope, Save/Close, library and placement restoration | Backend and native bridge/save/reopen tests passed |
+| 4 | Proposals and Communication | Reuse normal native Record/Karma/Transfer views, revision/preview Actions and the existing Communication controls | Pending workflow acceptance; no automatic model-response Simulation adapter |
+| 5 | Generic activation | Normal Action, Karma consequence/editor, durable requests, busy coalescing, waiting/cancel/recovery and native controls | Engine and Cell coalescing/waiting/restart tests passed |
+| 6 | Transfer CRUD | Existing Actions plus creator-only unused-draft discard and native control; Fiote tool guidance and CRUD acceptance test | Signed backend and native CRUD tool tests passed |
+| 7 | General conversation and Facts | Normal conversational tools, exact entry Actions, request identities and source-Message attribution; conversation does not force Fact creation | Conversation, discussion, retry and evidence tests passed; real receipt acceptance remains |
+| 8 | Context inspection | Pinned descriptions plus supplied-input snapshots, tool calls/results, attachment references, task/activation metadata and reported child links | Cell context, attachment and child-inspection tests passed; external-agent acceptance remains |
+| 9 | Accessibility | Labelled fields/buttons, native keyboard controls, live questions/status/errors and one completion announcement rather than streamed tokens | Native labels/status/masking/completion tests passed; screen-reader/microphone acceptance remains |
+| 10 | Normal-message attachments in every conversation | Existing shared attachment controls/storage and Fiote content conversion; audit and complete every composer/send path when implementation resumes | Pending ordinary-conversation and real Fiote tests for audio, video, PDF, CSV, text and photo |
+| 11 | Runnable installed application | Previous launch failed before UI; reproduce when the owner has arranged a sole-agent run, diagnose and fix any application/configuration defect simply | Required before live UI acceptance; not permanently waived as a concurrent-agent problem |
 
-## 1. Temporary UI for proposals and interaction
+Other human chats own the broader Karma/command/ontology changes. Reuse their ordinary Actions and presentation infrastructure. Do not replace their work, edit `.lingua`, edit README/AGENTS, create worktrees or spawn coding agents.
 
-Fiote may compose a temporary interface from existing components to present information, ask questions, review proposed changes, or help with a task. Point 5 defines its composition format; point 2 defines how it reaches the canvas.
+## 2. Implementation contracts
 
-- [ ] Show proposed Record, Karma, or Transfer changes with the relevant existing Sands/Castles. Include the targets, current values, proposed values, and source revisions. Offer edit, apply, and dismiss controls.
-- [ ] Let the person save the temporary composition as a named reusable component through the existing component library. Saving the UI and applying its proposed data changes are separate operations. Closing the UI removes its presentation and leaves already committed changes in place.
-- [ ] Make every generated UI interactive immediately within ordinary authorization and validation. There is no extra enable-actions step. A particular task may still present proposed changes with Apply/Dismiss controls.
-- [ ] Mount every Fiote-generated UI inside the known Fiote conversation balloon component. Lince adds and owns this wrapper and its immunity automatically, without a model request, generated instructions, or additional model tokens. Fiote supplies only the content; it cannot remove or weaken the boundary.
-- [ ] Block influence effects across the balloon boundary in both directions: outside areas cannot affect its contents, and inside areas cannot affect outside components. Cover forces, sorting, scaling, area membership/entry/exit, property-change effects, and sound/event triggers. Components and areas inside the same balloon may interact normally. Use component ownership, not just overlapping screen coordinates, to decide which side an instance belongs to.
-- [ ] Establish that boundary before mounting content or evaluating effects, and preserve it during movement, resizing, closing, saving, and reopening. Bind generated layout/events to instances within their own balloon; ordinary data queries and authorized Record/Transfer Actions remain available.
-- [ ] Use the existing `PreviewKarmaProposal` Action for unsaved Rules. Attach its final values, broken checks, cycles, coverage, and stop reason to the corresponding proposal. Changing the proposal or its source data makes the result stale.
-- [ ] For Record or Transfer proposals outside that Action's supported inputs, extend the shared Simulation bridge only where needed. Simulated effects remain in copied state, with controlled external responses and authorized evidence.
-- [ ] Let Fiote try another option after a selected check fails and explain the rejected alternatives using the report's evidence. Simulation stays optional; applying a proposal uses a separate ordinary Action.
-- [ ] Reuse existing backend Simulation tests. Add coverage for immediate interaction, display/save/close, stale proposals, refused actions, and immunity in both directions, including overlapping areas, unlimited reach, repeated Record views, and independent balloon instances.
+### 2.1 Canvas influence and event isolation
 
-The previous plan's claim that Fiote lacked access to Rule proposal Simulation is superseded. The remaining work is the composed UI, linking that UI to reports/actions, and supporting other proposal types where needed.
+`Isolation` is an ordinary influence-area behavior. For a shield, it blocks a source/target pair exactly when one center is inside and the other is outside. Both inside and both outside remain allowed. It differs from `All`, which also blocks interactions within the area. `Containment` retains its existing meaning and Record-transition exception.
 
-**Boundary meaning:** Immunity isolates canvas influence and component events. An intentional authorized edit still changes the shared Record/Transfer, updates other views of it, and may trigger its existing Karma. Isolating the data as well would require copied Records or staged proposals as a separate feature.
+The shared guard applies to attraction/repulsion, sorting, scaling, Record transitions and sound membership. A blocked sound target is excluded from membership sampling; applying immunity must not fabricate an exit sound.
 
-**Existing mechanism to extend:** `External` blocks outside sources from affecting inside targets; `Internal` blocks inside sources from affecting inside targets; `All` blocks both kinds of source from affecting inside targets. `Containment` blocks outgoing forces but deliberately leaves Record transitions unblocked. None alone provides the requested two-way boundary while preserving internal interaction. Extend the shared area/effect mechanism and apply the balloon policy across its consumers; do not simply select `All` or rely on a model-authored area. The balloon presentation exists, but this mandatory host policy is remaining work.
+Every typed composition receives the existing Fiote balloon automatically. Lince constructs an inner canvas and a boundary for all named component events before mounting its content. Canvas ownership keeps outside areas detached even if geometry overlaps, a source has unlimited reach, or two balloons show the same Record. Each balloon has its own inner canvas/event scope. Its host is excluded from ordinary geometric shield sampling: two outside-owned components still interact normally when their geometry overlaps the balloon. Internal components may interact normally; nested compositions establish their own scope.
 
-References: [native tool guidance](../../crates/transport/src/native/catalog.rs), [Rule proposal contract](../../crates/engine/src/karma_preview.rs), [native component library](../../crates/desktop/src/custom_castle/library.rs), [existing balloon](../../crates/desktop/src/fiote.rs), [immunity modes](../../crates/desktop/src/area_effects.rs), [area transition checks](../../crates/desktop/src/area_mutation.rs), [containment tests](../../crates/desktop/src/area_effects/tests.rs).
+The wrapper, immunity and event scope are Lince-owned features. They are not generated instructions and require no model request or additional model tokens. They are restored on workspace load and component-library reopening/copying. A typed saved composition cannot be rewritten into the legacy unprotected component format through collaborative text changes.
 
-## 2. Shared commands from the backend to the canvas
+**Data meaning:** an intentional authorized Action still updates the real Record/Transfer and its other views, and may trigger existing Karma. This boundary isolates canvas influence and component events. It does not create a private copy of the database.
 
-Fiote and future Karma presentation consequences should use one mechanism for putting a component on a person's canvas. This needs a shared backend/interface contract; the current workspace lives in the native interface, so sending an arbitrary database Action does not already edit it.
+Implementation: [area behavior](../../crates/desktop/src/area_effects.rs), [sound](../../crates/desktop/src/sound_area.rs), [balloon host](../../crates/desktop/src/component_push/composition.rs), [event scopes](../../crates/desktop/src/scoped_events.rs).
 
-- [ ] Define ordinary authorized Actions for requesting component presentation and its supported updates/removal. Address the user, workspace, receiving interface session, destination area when relevant, composition, and instance explicitly.
-- [ ] Have the native interface consume those requests through its ordinary component loader and workspace operations. Send operations against identified instances instead of replacing the workspace file; preserve concurrent local edits.
-- [ ] Give each request an identity and report queued, applied, or refused status. Repeated delivery updates the intended instance without spawning extra copies. No available recipient means pending/unavailable presentation, not successful display.
-- [ ] Use the same path for Fiote's temporary compositions and saved components. The native loader must enforce point 1's balloon host for every Fiote-generated UI, including replayed requests; neither the generated payload nor a requested destination may bypass it. Connect Karma's future show/place consequence to the shared path when that work is ready. Broader device routing and offline presentation remain in point 10.
-- [ ] Let Fiote open the existing Communication/call component through this mechanism. A real call must also use the ordinary call context/start/join/end operations; displaying the component alone does not mean a call started or someone answered.
-- [ ] Show the normal participant/call state and controls, and verify authorization, changed targets, cancellation, duplicate delivery, and preservation of local canvas edits.
+### 2.2 Composing and saving existing components
 
-This is shared infrastructure for points 1 and 5, with a later Karma consumer. General board manipulation is deferred in point 10.
+The shared document uses format `lince.custom_component` and a `composition` with `name` and `parts`. Each part has a local `id`, integer center `position`, integer `size`, a typed `component`, and optional `events`. The first supported catalog is:
 
-References: [transport protocol](../../crates/transport/src/protocol.rs), [workspace](../../crates/desktop/src/workspace.rs), [call controls](../../crates/desktop/src/communication/calls.rs).
+| Kind | Configuration and behavior |
+| --- | --- |
+| `record` | Stable Record binding; `full`, `description` or `call` view |
+| `text` | Editable native text |
+| `karma` / `frequency` | Existing editors, optional search |
+| `transfer` | Existing Transfer Castle, optional search |
+| `calendar` | Existing native Calendar and its normal date interaction |
+| `area` | Ordinary influence area with configured immunity and strength; wider in-balloon area editing remains outside this catalog |
+| `button` | Label plus exact ordinary Action JSON |
+| `composition` | A nested typed composition |
 
-## 3. Generic Fiote activation as a Karma consequence
+A button Action uses the normal `action` discriminator. A named event binding contains `event` and an ordinary `action` object. Bindings belong to the part's instance and balloon scope; they do not address outside canvas entities. Event actions currently use explicit parameters, while existing native event consumers retain their ordinary behavior. This catalog is not a claim that every native Sand or every editable runtime property has a generated-data representation.
 
-A Fiote's description and inherited instructions define its job. A habit reviewer, a UI suggester, and any other initiative are configurations of the same Fiote mechanism. There is no separate habit-review scheduler or special habit-agent implementation.
+Limits: 256 KiB per shared document, 256 total parts, 8 composition levels, 32 named event bindings per part, bounded names/coordinates/sizes. Fiote tool arguments have their existing smaller 128 KiB limit. Backend creation/presentation and native loading validate the shared contract; the backend also parses every button/event Action and checks nested Record bindings through ordinary access rules. Slugs are resolved to stable bindings before saving.
 
-**Decided:** Each Rule occurrence produces one activation request carrying its nonzero value. The request wakes the selected Fiote; it does not set or reset that Record's stored quantity. Zero produces no activation.
+`PresentComponent` uses the existing local backend-to-interface channel and stable target/component slots. Identical pushes reuse an instance; changed configuration may replace it. A missing native receiver is an explicit error. A receiver count means delivery was queued, not that a person saw the UI. Delivery is local to the connected interface.
 
-**Decided:** While a Fiote is running, later activations combine into one pending run. Each occurrence still has its own request identity. Preserve the triggering Rules and carried values so the pending run can explain what woke it; do not silently add values with different meanings.
+Fiote-origin presentation of a single supported component is wrapped automatically too. Compositions are immediately interactive through ordinary authorized Actions. Save component persists their name/layout/bindings through the existing library; Close removes the presentation while committed data changes remain. Workspace placement and library copies reconstruct protected, independent instances. Native text/search edits, layout and the supported area immunity/strength are captured when saving. A saved generated composition retains its originating Fiote/conversation; Open originating conversation uses the ordinary thread UI. Wider native area properties are outside this typed catalog.
 
-- [ ] Add an ordinary Fiote activation Action and a typed Karma consequence that uses it. Retain the actor, trigger identity, Fiote UID, and carried value; for Karma, also retain the Rule/revision, occurrence, and consequence position. Use that evidence for authorization and duplicate-request handling.
-- [ ] Reuse Fiote's existing dispatch/runtime machinery. Start a run from the Fiote's effective instructions and supply the activation metadata as task input. A fresh automatic run should pin the descriptions current at its start; it can read earlier results through ordinary tools.
-- [ ] Start promptly when idle; when busy, collect activations into the single pending run. Keep its causes inspectable, bound what is supplied to the model, and freeze that batch when the next run starts. Further activations then belong to a new pending run.
-- [ ] Require normal permission to activate the selected Fiote and recheck permission/configuration before dispatch. A wake request does not grant additional read/write access or permission to change Fiote's instructions.
-- [ ] Refuse new requests for a disabled Fiote. Keep an enabled but locked/unavailable Fiote's pending run inspectable as waiting work; disabling it cancels pending work. On restart, recover unstarted requests and mark interrupted runs for inspection rather than blindly repeating their effects.
-- [ ] Add the consequence to the ordinary Karma editor, plus Fiote controls for its prompt, enabled state, Run now, Stop, and pending activations. Existing Frequency/Rule controls supply the schedule.
-- [ ] In Simulation, record the activation intent and use a controlled response if available. A preview does not start a real provider request or edit the live canvas; missing model-response coverage is reported.
-- [ ] Check Frequency-based activation, zero/nonzero values, duplicates, coalescing, prompt changes, revoked access, stop/restart, and reactions caused by Fiote's own edits.
+Reused native components retain their existing licenses/credits. No embedded dependency or arbitrary executable is added by a composition.
 
-Why use a request: a persistent quantity of `1` cannot by itself distinguish today's activation from tomorrow's. The current generic `Activate` Action only sets quantity to `1`; it does not dispatch Fiote. The chosen design keeps the Rule occurrence as the durable evidence for waking it.
+Implementation: [shared schema](../../crates/nucleus/src/component.rs), [document contract](../../crates/nucleus/src/component/composition.rs), [backend presentation](../../crates/engine/src/component_presentation.rs), [backend saving](../../crates/engine/src/custom_component.rs), [native library](../../crates/desktop/src/custom_castle/library.rs).
 
-References: [current activation Actions](../../crates/engine/src/actions.rs), [Karma consequences](../../crates/nucleus/src/karma/consequence.rs), [assignment dispatch](../../crates/cell/src/fiote/assignments.rs), [prompt snapshots](../../crates/cell/src/fiote/behavior.rs).
+### 2.3 Proposals, Simulation and calls
 
-## 4. Full Transfer CRUD through ordinary Actions
+Fiote can display a report with existing typed views/text and provide edit/apply/dismiss buttons invoking normal Actions. Saving the UI and applying its data changes are separate operations. Use existing revision checks for Karma/Transfer edits and `PreviewAreaTransition` / `ApplyAreaTransition` for guarded Record changes; a proposal is not authority to bypass a stale-data refusal.
 
-The goal is complete Fiote access to the Transfer operations a person can perform, using the same backend Actions. The generic tool catalog already exposes the Action schemas; finish the workflow guidance, any missing shared operations, and acceptance coverage.
+`PreviewKarmaProposal` already supports unsaved Rule proposals. Its final values, failures, cycles, coverage and stop reason are evidence for comparing options. A changed proposal/source requires a fresh preview. Existing Transfer Simulation is reused where supported. An unmodelled outward effect is reported as missing coverage; a preview never starts a real Fiote provider or presents live UI.
 
-- [ ] Create Transfer drafts with their items, parties, terms, timing, dependencies, and disclosure; read the permitted Transfer projection and history; revise drafts/terms; and discover the exact schema for each operation.
-- [ ] Cover invitations, counteroffers, publication, agreement, activation, delivery/receipt/dispute, settlement, loans/extensions, private accounting, dependencies/children, cancellation, and corrections through their existing Actions. Add a shared ordinary Action only where the requested operation has no such path.
-- [ ] Read current terms, participant, and revision before a change. Preserve signing requirements and disclosure rules. Report accepted, refused, or awaiting remote delivery accurately.
-- [ ] Present suggested Transfer edits through point 1. Use the existing Transfer Simulation paths when prediction is wanted; extend the bridge rather than creating another Transfer runtime.
-- [ ] Complete the delete operation for an unused draft: add a shared draft-discard Action and native button if no equivalent exists. The recommended eligibility is the creator's unpublished/unaddressed draft with no commitments or settled effects. Validate that eligibility again at commit time.
-- [ ] For negotiated/active Transfers, use the appropriate cancellation operations. For settled effects, use corrections/reversals and retain the signed history. Generic `DeleteRecord` currently refuses Transfer mutation.
-- [ ] Verify creation, reading, revision, draft discard, and the main lifecycle through Fiote tools, including changed terms, wrong participants, hidden data, retries, and interruption. Reuse the existing Transfer acceptance fixtures.
+A `record` component in `call` mode opens the normal Communication controls. The person uses the normal context/start/join/end path and media/device choices. Presenting the panel does not start or answer a call, or enable microphone/camera/screen capture. Real call and device acceptance remains necessary in an installed media-enabled application.
 
-Draft discard is a concrete backend/UI gap, not a promise that every Transfer can be erased. The lifecycle actions determine what “remove this Transfer” can accomplish in its current state.
+References: [Rule proposal bridge](../../crates/engine/src/karma_preview.rs), [Transfer Simulation](../../crates/simulation/tests/transfers.rs), [Communication](../../crates/desktop/src/communication/calls.rs).
 
-References: [ordinary Actions](../../crates/engine/src/actions.rs), [Transfer Protein source](../../crates/protein/src/lib.rs), [tool catalog](../../crates/transport/src/native/catalog.rs), [Transfer plan](Transfers.md).
+### 2.4 Generic Fiote activation
 
-## 5. Compose existing Sands, Castles, events, and areas
+A Fiote's description/inherited instructions define its job. Habit review and UI suggestions are configurations of the same activation mechanism.
 
-**Agreed scope:** Fiote combines existing native components into a new reusable composition. This works through data loaded by the running application and does not require recompiling Lince for each composition.
+- `ActivateFiote` carries a stable `request_id`, target and exact nonzero `value`. Zero creates no request. It never changes or resets the Fiote Record's quantity.
+- Karma authors use `@fiote: activate-fiote`; the editor offers this consequence. Each Rule occurrence/consequence position has its own durable request identity and carried value.
+- Requests preserve actor and cause. Karma causes include Rule/revision and occurrence evidence. Duplicate identities return the original receipt; conflicting reuse is refused.
+- The existing Cell dispatcher starts a fresh thread with current pinned instructions. If any thread for that Fiote is working, later requests remain one pending batch. When it starts, that batch is frozen; later requests form the next pending batch.
+- Values retain their individual meanings. Up to 32 sampled causes plus total count are supplied to the model; all request rows remain durable. Do not silently sum values. There is a 4096-request pending limit per Fiote and the existing eight-running-thread limit.
+- Permissions, Fiote configuration and Karma Rule revision/paused state are rechecked before dispatch. A wake request grants no extra authority.
+- Disabled/unavailable runtimes refuse new requests. Locked/missing provider credentials keep accepted requests visible as waiting. Disabling cancels pending requests. Stop current and pending runs cancels waiting work and interrupts active work; future Rule occurrences may wake an enabled Fiote again.
+- Unstarted requests survive restart; formerly running work is marked interrupted for inspection rather than replayed. Uncertain completed effects are not automatically repeated.
+- Run now, Refresh activations, Stop current and pending runs, activation values/causes/state and Open activation thread are native management controls. Frequency/Rule editors supply scheduling.
 
-- [ ] Publish a discoverable catalog of supported parts, editable properties, data bindings, event slots, and area behavior. Include the exact typed composition schema.
-- [ ] Extend the current native composition format to represent the required existing components and named event/action bindings. The current format supports selected parts; it is not yet a universal catalog of all Sands, Castles, and events.
-- [ ] Validate the entire composition with one shared contract used by backend creation and native loading. Current backend checks are structural, while the native loader performs deeper validation; Fiote-created components need the full validation before success is reported.
-- [ ] Bind events to existing native behaviors and ordinary Actions with typed parameters. Keep the same access checks and area transition semantics used by hand-built UI, with point 1's mandatory boundary around the composition. Resolve local layout/event targets within that instance rather than accepting references to arbitrary outside canvas instances.
-- [ ] Render the result temporarily through point 2. Provide a name field and Save component control using the existing library, plus normal workspace placement/persistence for a kept instance.
-- [ ] Save the composition's layout, bindings, configuration, and Fiote origin so it can be reopened as an independent instance. Every saved or copied Fiote-generated composition receives the same Lince-owned balloon and immunity on loading; saving does not remove the boundary. Keep licenses and credits available for its reused or embedded dependencies.
-- [ ] Check unsupported parts, malformed bindings, invalid area/layout references, interactive controls, refused actions, saving/reopening, and independent copies.
+Simulation reports activation as an outward intent with missing model-response coverage. A preview does not run the provider. Scheduling uses the existing Frequency/Rule mechanism.
 
-New Rust behavior is a separate extension question, explained below. It is not needed to deliver this agreed composition scope.
+Implementation: [activation Action/storage](../../crates/engine/src/fiote_activation.rs), [Cell dispatch](../../crates/cell/src/fiote/activations.rs), [native controls](../../crates/desktop/src/fiote/session/management.rs).
 
-References: [native composition model](../../crates/desktop/src/custom_castle.rs), [library encoding/loading](../../crates/desktop/src/custom_castle/library.rs), [backend validation](../../crates/engine/src/custom_component.rs), [existing component tests](../../crates/desktop/tests/custom_components.rs).
+### 2.5 Transfer CRUD through normal Actions
 
-## 6. Turn notes, dictation, and receipts into Facts
+Fiote's native tool catalog discovers the same Action schemas used by the interface. Existing Actions cover draft creation/revision, parties/terms/timing/dependencies, invitations, counteroffers, publication, agreement, activation, delivery/receipt/dispute, settlement, loans/extensions, private accounting, children, cancellation and corrections. Read the permitted projection and current terms/participant/revision before a change. Preserve signatures and disclosure. Queued remote delivery is awaiting acceptance.
 
-- [ ] Complete “I spent 42 reais on lunch”: extract amount, currency/unit, date, and meaning; search permitted Records/Concepts; rank plausible matches and explain the selected match.
-- [ ] Use existing exact entry/quantity Actions and classification for the Fact. Keep the original message/receipt as evidence. Resolve a missing target or ambiguous interpretation before committing.
-- [ ] Offer a new Record through the proposal UI when no suitable Record exists. Avoid duplicates caused only by differing names.
-- [ ] Show the amount, target, category, source, and resulting change in an editable preview. Support correction through ordinary entry revision/void operations.
-- [ ] Check typed text, dictated text, receipt images, matching ambiguity, decimals/units, refused access, corrections, and retries without duplicate expenses.
+`DiscardTransferDraft` completes removal of an unused creator draft. It requires normal Transfer update authority, the creator's signing identity, expected revision and a stable request identity. Eligibility is checked again in the write transaction: hidden, unaddressed, no agreement/occurrence/delivery commitments, no parent/source lineage, no committed promises or other Transfers depending on this draft or its Promises. Dependencies entirely inside the unused draft do not prevent its removal. A draft's creation already adds quantity one to its backing Record; eligibility therefore uses real commitments rather than a zero-quantity assumption. It records signed evidence and tombstones the Record while retaining history; duplicate requests return the original receipt. Native Transfer details offer the corresponding review/apply control.
 
-Attachments and final-block dictation already exist. The remaining work is extraction, matching, review, and commit. Verify actual receipt-image acceptance with the selected model.
+Negotiated/active Transfers use cancellation; settled effects use correction/compensation/reversal. Generic Record deletion remains inappropriate for those lifecycle operations.
 
-References: [attachment adapter](../../crates/fiote/src/acp/content.rs), [dictation](../../crates/desktop/src/speech.rs), [entry Actions](../../crates/engine/src/actions.rs).
+Implementation: [discard](../../crates/engine/src/transfer_discard.rs), [native control](../../crates/desktop/src/transfer_castle/detail.rs), [tool guidance](../../crates/transport/src/native/catalog.rs). The separate [Transfer plan](Transfers.md) owns broader Transfer work.
 
-## 7. Show Fiote and subagent context
+### 2.6 General conversation, Facts and evidence
 
-- [ ] Extend instruction inspection to show the pinned ancestor/Fiote instructions, assigned task or activation causes, included messages, attachment references, available tools, and retained summaries/results supplied to each session.
-- [ ] Distinguish stored conversation history from the current supplied context. Lince currently loads the latest 12 messages; that window is not a summary.
-- [ ] Identify visible child sessions by parent, task, thread, and working/waiting/stopped state. Define a child-session reporting/linking contract; prompt ancestry alone is not an execution tree.
-- [ ] Show only the external context/usage a connected agent exposes, and label unavailable internal context accurately.
-- [ ] Verify session/child isolation, instruction revisions, restart, bounded inspection, and exclusion of credentials and inaccessible content.
+The normal conversation can discuss, ask questions, search Records, compose UI, or perform instructed Actions. Fact creation is requested/configured behavior, not a mandatory extraction pipeline for every message.
 
-Existing prompt inspection and reported usage are the foundation. Pet animations and a new compaction operation are outside this implementation plan.
+For “record 42 reais for lunch”, discover the exact entry schema, search permitted targets and units, clarify ambiguity, then use `CaptureEntry` with exact amount and stable request identity. Use classification and normal revision/void operations for corrections. Ask or present an editable proposal when a target/meaning is missing; do not guess a target or create a duplicate Record because its name differs.
 
-References: [prompt sources](../../crates/cell/src/fiote/behavior.rs), [history loading](../../crates/cell/src/fiote.rs), [status types](../../crates/fiote/src/config.rs), [inspection controls](../../crates/desktop/src/fiote/session/management.rs).
+Fiote-origin Facts retain agent/thread attribution and the source user Message UID. The Message preserves its text and attachment references. Backend entry request identities and tool retry receipts prevent an uncertain retry becoming a second expense. General discussion need not create any entry Fact. Attachments and dictation reuse existing conversation features; dictation remains editable and unsent until the person sends it.
 
-## 9. Concrete accessibility features
+Receipt images use the configured provider's existing attachment capability. A model's extraction/matching quality, real currency/unit interpretation and image acceptance require provider acceptance; the deterministic test verifies the native conversation/Action/evidence/retry route.
 
-The first delivery is a conversation-driven route to existing operations, with keyboard controls and screen-reader output.
+References: [conversation runtime/tests](../../crates/cell/src/fiote/tests.rs), [origin attribution](../../crates/engine/src/operation_origin.rs), [native tools](../../crates/transport/src/native.rs), [dictation](../../crates/desktop/src/speech.rs).
 
-- [ ] Make the message composer and Send, Stop, Attach, Dictate, Stop/transcribe, and Cancel dictation controls reachable in a predictable Tab/Shift+Tab order, with visible focus. Enter/Space activates a focused button; text inputs retain their normal multiline behavior.
-- [ ] Make Fiote questions, generated balloon controls, and proposal fields operable from the keyboard. Use real labels for targets, current/proposed values, required fields, and errors. Provide Save component, Apply, and Cancel/Dismiss without requiring a canvas drag.
-- [ ] Expose replies, questions, errors, run status, and proposal values in the platform accessibility tree. Announce a finished reply, new actionable question, or error once; avoid announcing every streamed token or stealing focus.
-- [ ] Use the person's screen reader for spoken read-back. Dictation continues to insert editable, unsent text; sending remains a separate control. A separate text-to-speech provider or live voice mode is not part of this delivery.
-- [ ] Keep these controls usable in a normal Fiote thread even when its generated UI is spatial or unavailable. Render the same candidate fields and invoke the same normal Actions.
-- [ ] Verify keyboard-only typed/dictated requests, question answering, proposal correction/application, a refusal, and cancellation with a real screen reader on the supported native platform.
+### 2.7 Context and reported child sessions
 
-References: [native text/button controls](../../crates/desktop/src/description.rs), [message rendering](../../crates/desktop/src/thread_castle/message_view.rs), [speech controls](../../crates/desktop/src/speech.rs).
+Instruction inspection retains pinned Fiote/ancestor description revisions and indicates unapplied prompt changes. The snapshot records the input supplied by Lince: messages/attachment metadata, tool names, task and activation metadata, thread/Fiote and snapshot time. Direct sessions update it before each model request, including accumulated tool calls/results and the source user Message UID. Attachment bytes are omitted, so inspecting a large receipt does not duplicate it or consume the snapshot budget. Inspection is bounded to 1 MiB and excludes stored credentials.
 
-## 10. Board controls for later, after shared Karma work
+The normal direct history window is 12 messages, not a summary. Fresh external sessions receive Lince's starting history; later external sessions may retain their own history. Inspection distinguishes the latest direct request from an external starting-input snapshot. External agents retain and expose their own context according to their protocol; Lince does not claim access to unreported internal memory or tool results.
 
-Temporary composition display uses point 2, and its mandatory immunity belongs to point 1's first delivery. Broader board editing waits for the shared presentation/area/Karma contract and further owner refinement.
+`ReportFioteChild` links distinct existing conversation threads with task and reported state. It does not launch a child agent. Reporting through native tools is scoped to the connection's current parent thread; the backend validates thread kinds, access, states and bounded acyclic ancestry. Inspection exposes up to 128 visible links, indicates whether a context snapshot exists, and prefers a known Lince running state over a reported state. Prompt ancestry and child execution links remain separate concepts.
 
-- [ ] Define Fiote's access to existing canvas structure and requests to move, resize, hide/show, or remove an instance. Decide what happens with pins, sorting, physics, and influence areas.
-- [ ] Define which events may be configured in a composition and which can be Karma consequences. Preserve the distinction between layout edits and transitions that change Record state.
-- [ ] Refine multiple-device/session routing, offline requests, stale placements, and keeping or expiring automatically shown UI. Do not silently choose whichever workspace happens to be focused when delivery occurs.
-- [ ] Connect saved-component placement and scheduled presentation to Karma's eventual consequence implementation. Reuse the shared command path and verify ordering, repeats, access changes, and reconnect.
+Implementation: [snapshots/children](../../crates/cell/src/fiote/context.rs), [inspection UI](../../crates/desktop/src/fiote/session/management.rs).
 
-These are later tasks with decisions still open. They do not expand the current plan into arbitrary board automation.
+### 2.8 Accessibility
 
-References: [deferred Karma presentation](Lince.md), [workspace](../../crates/desktop/src/workspace.rs), [area transition tools](../../crates/transport/src/native/catalog.rs).
+Reuse native focus/Tab navigation and ordinary buttons. Message, component-name, proposal/question and Fiote settings fields have explicit accessible labels. Secret fields use the password role and masked accessible values. Save/Close, Send/Stop, question answer/decline/cancel and existing attachment/dictation controls remain keyboard controls.
 
-## 11. Installation and acceptance
+Questions and status/errors are live accessible output. A writing reply stays silent while streaming; completion/interruption announces its final text once without moving focus. The person's screen reader handles spoken output. No separate TTS provider or live voice mode is added.
 
-- [ ] Verify the installed executable/wrapper and the actual user-service environment. Exercise login, readiness checks, Stop, and resume outside the development shell.
-- [ ] Exercise immediately interactive UI, immunity in both directions, saving/reopening with the same protection, proposal reports, generic activation/coalescing, Transfer CRUD, receipt entry, context inspection, and keyboard/screen-reader interaction.
-- [ ] Verify real microphone/device selection and a real receipt-image request with configured providers. Check selected audio/file paths where supported; readiness checks remain free of generation.
-- [ ] Keep shared messages/questions/attachments/dictation usable without Fiote where applicable.
-- [ ] During implementation, run focused correctness/security tests and relevant `cargo check` targets with warnings denied. Check bounded composition/context size, pending activations, and delivery work where those paths change.
+Implementation: [accessible controls](../../crates/desktop/src/accessibility.rs), [message completion](../../crates/desktop/src/thread_castle/message_view.rs), [questions](../../crates/desktop/src/fiote/session/questions.rs).
 
-References: [Cell workflow tests](../../crates/cell/src/fiote/tests.rs), [native tool tests](../../crates/transport/tests/native.rs), [packaging](../../flake.nix).
+### 2.9 Normal-message attachments — shared feature, pending completion audit
 
-## Settled decisions and later refinement
+Files belong to the normal Message alongside its text. The same attach/remove/send/read/save behavior must work in every Lince conversation, including ordinary Record threads, conversations between people/private conversations and Fiote threads. Sending a file must not require a Fiote-specific command or a separate message type exposed to the person.
 
-Activation requests carry each Rule occurrence's nonzero value, and busy requests combine into one pending run. Generated UI is immediately interactive inside a mandatory, automatically supplied balloon with immunity in both directions. These decisions are recorded in points 1 and 3.
+Existing code provides **Attach files**, **Paste image**, attachment draft cards, **Preview / play**, **Save attachment**, stored Message content and provider/ACP conversion. However, the inspected thread composer mounts `message_content::draft` only in the non-social branch; private/social conversation coverage must be checked and completed. Presence of shared code is not acceptance of every conversation path or every model format.
 
-Board routing, placement, and lifetime decisions remain deferred in point 10. A general runtime plugin host is an optional idea below; it is not required for saving compositions of existing components.
+When implementation resumes, inspect all native composers, ordinary send Actions, backend storage/read access, receiving views and Fiote history/provider conversion. Reuse the shared implementation and add only missing frontend/backend pieces. A normal text-plus-file message must preserve its text, filename, MIME type and exact bytes; sent attachments remain accessible after reopening/restart and to permitted conversation participants. Removed files must not be sent. Failed, busy or refused sends preserve the draft. A local-file reference alone does not prove the original attachment was delivered.
 
-## Ideas outside the implementation plan
+Initial acceptance uses small files within the existing limits: 4 MiB total Message content and at most 16 content parts. Large-file transport is not part of this test. Preserve ordinary access rules and the existing bounded loading/storage behavior. Add focused correctness/access/limit checks for any missing implementation; do not introduce another upload service or duplicate Fiote composer.
 
-**Point 8 — pet compaction and animations:** Keep petting Fiote to compact context, sleeping/waking, and working/idle animations as an idea only. This plan adds no compaction operation, pet implementation, or associated acceptance work.
+Separate **normal attachment delivery** from **LLM analysis**. The former must work for all six requested file types. The latter depends on the selected provider, model and adapter, and must be tried through Fiote's normal UI. Unsupported audio/video/PDF input must produce an explicit capability result while preserving the attachment and conversation; it must not be silently omitted or reported as analyzed. Do not substitute transcripts, extracted text, frames or a different provider and call that original-file analysis. Additional provider trials, if needed, use an already available, normally authenticated UI connection and identify that provider separately.
 
-**Generating genuinely new Rust behavior:** Fiote can generate source, but the current installed Lince cannot execute an arbitrary new Rust Sand from that source. There are three different delivery paths:
+References: [shared composer](../../crates/desktop/src/message_content.rs), [attachment display/retrieval](../../crates/desktop/src/message_content/attachments.rs), [thread send paths](../../crates/desktop/src/thread_castle.rs), [Message validation/storage contract](../../crates/nucleus/src/message.rs), [ACP input conversion](../../crates/fiote/src/acp/content.rs).
 
-| Path | What is compiled? | Rebuild Lince for each new component? |
+## 3. Verification and concrete remaining tasks
+
+Use `cargo check`, with warnings denied, and focused tests. Do not use `cargo build`. Completed checks are summarized here; keep the remaining steps detailed until their acceptance passes.
+
+### A. Completed automated checks
+
+`cargo check -p lince-cell -p lince-desktop --tests --offline` and the final check with `--features lince-desktop/native-media` both passed in the cached native environment with warnings denied. They check the shared engine/transport integration; focused tests also compile the final native changes.
+
+| Suite | Passed | Evidence and reproduction |
 | --- | --- | --- |
-| Composition of existing parts | Existing parts were compiled with Lince; a new composition is data | No |
-| New built-in Rust Sand/Castle | New source and the application containing it | Yes |
-| Future runtime plugin host | Add the host to Lince once; compile each new plugin separately | No, while the plugin fits the supported host interface |
+| Shared contract | 2 | Roundtrip, size/depth/ID/geometry/strength validation and activation parse/render; `cargo test -p nucleus --test component_composition --offline` |
+| Backend presentation | 6 | Actual Action/event parsing, Record access, stable bindings, Rule execution, missing receiver, automatic protection and refusal to remove it; `cargo test -p engine --test component_presentation --offline` |
+| Activation Action/Karma | 2 | Exact values, all numeric zero forms, unchanged quantity, occurrence identity and duplicate/conflicting requests; `cargo test -p engine --test fiote_activation --offline` |
+| Signed draft discard | 3 | Creator/revision/addressing guards, outside versus internal dependencies, signed tombstone and retry; `cargo test -p engine --test transfer_discard --offline` |
+| Native tools | 10 | Normal Transfer create/read/revise/discard, Karma access, collaborative edits, visibility and signer provenance; `cargo test -p transport --test native --offline` |
+| Cell Fiote | 33 | Busy coalescing and exact causes, waiting/restart, prompt/session isolation, optional expense versus discussion, retry/source-Message evidence, latest tool input, attachment metadata and child inspection; `cargo test -p lince-cell --lib fiote:: --offline` also encounters the blocked/ignored cases below |
+| Native desktop | 26 | Local bridge, instance reuse, ordinary Action buttons/events, Save/Close/reopen/copies, internal force versus crossing isolation, outside overlap, sound, event scope, labels/status/password masking and completion announcements; focused selection below |
 
-For a future plugin route, my recommendation is Rust compiled to WebAssembly, exchanging typed UI/events and ordinary Action requests with a native host. The host must provide the rendering and application APIs; a Wasm module does not automatically become a Bevy Sand. A compiler is still needed locally or elsewhere for each generated module. Rust supports [compilation to WebAssembly](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html).
+Engine/transport suites were run with the workspace's native feature selection. Checks use the cached native environment, `-D warnings` and an isolated Cargo target to avoid other human chats' build locks. For the native selection, run `fiote::session::tests`, `component_push::tests`, `area_effects::tests`, `sound_area::tests`, `scoped_events::isolation_tests`, `accessibility::tests` and `streamed_tokens_stay_silent_and_completion_announces_once`. The 26 passing cases were run together from the freshly compiled test executable, excluding the socket-blocked credentials case. Do not describe the full Cell or native suite as passing.
 
-Native dynamic libraries are another possible route, but direct exchange of Rust/Bevy types is a poor default for generated extensions because Rust's [native ABI has no stability guarantee](https://doc.rust-lang.org/reference/items/external-blocks.html#abi). A deliberately designed foreign-function boundary could support native plugins, with its own loading and failure model.
+Fiote activation uses migration 0207 and draft discard uses 0208. Their versions were checked against concurrent migrations. Other chats' broader Karma/social work remains separate.
 
-Lince already uses [Wasmi for its embedded terminal engine](../../crates/desktop/src/terminal/vt.rs). That is a specific integration, not a general Sand plugin host. A general host, its typed API, compiler distribution, resource limits, packaging, licenses, and supported platforms would be a separate feature to design if compositions prove insufficient. No runtime-plugin implementation is authorized by this plan.
+Sources: [contract](../../crates/nucleus/tests/component_composition.rs), [presentation](../../crates/engine/tests/component_presentation.rs), [activation](../../crates/engine/tests/fiote_activation.rs), [discard](../../crates/engine/tests/transfer_discard.rs), [native tools](../../crates/transport/tests/native.rs), [Cell](../../crates/cell/src/fiote/tests.rs), [composition](../../crates/desktop/src/component_push/tests.rs), [area](../../crates/desktop/src/area_effects/tests.rs), [sound](../../crates/desktop/src/sound_area/tests.rs), [accessibility](../../crates/desktop/src/accessibility.rs).
+
+### B. Finish environment-dependent automated acceptance
+
+1. On an environment allowing local sockets, rerun three Cell cases: `agent_tools_open_without_a_model_provider_and_lock_revokes_them`, `assignment_starts_one_visible_session_and_survives_restart_without_replay`, and `mentioning_a_fiote_replies_in_the_record_with_only_recent_context`. They stop at MCP tool-server setup with `Operation not permitted (os error 1)` here. Rerun the native `native_provider_credentials_remain_separate_from_agent_login` case too; its `OpenTools` connection fails for the same reason. The local MCP listener binds `127.0.0.1:0`; these failures remain explicit, not silently skipped.
+2. With `LINCE_TEST_AGENT_BIN` pointing to the local protocol fixture, run the ignored `agent_login_check_and_conversation_workflow` and `agent_question_answers_stay_on_the_question_and_cancel_when_the_turn_stops` cases. They need the fixture executable and no model. With an installed authenticated ACP agent, run `installed_agent_edits_code_and_record_and_resumes_thread`; this uses a real model turn. The three cases were ignored, not passed.
+
+### C. Required launch and shared attachment coverage, before live acceptance
+
+1. The owner will arrange the implementation/test session so this is the only agent working. Do not spawn agents or make worktrees. Reproduce application startup then; do not assume another agent caused the earlier read-only failure.
+2. Running Lince and controlling its real UI are required acceptance conditions. Launch normally under the person's existing desktop account and normal data/configuration. Verify the installed version matches the implementation being tested. Do not count a headless test, an older installed artifact or a CLI-only model reply as installed UI acceptance.
+3. If startup still fails, treat it as a reproducible launch bug and investigate before running the LLM workflow. Capture the failing operation/path, application error and wrapper/service environment; distinguish wrong application paths/permissions from an enforced execution restriction. Inspect normal writable application data/cache/state directories and desktop/session access.
+4. Fix an application or packaging/configuration defect with the smallest conventional solution: correct runtime paths using the existing platform/XDG conventions, create normal application directories with appropriate permissions, or correct the launcher/service environment as evidence requires. Installed binaries may remain read-only; application state belongs in writable user directories. Preserve the normal account, stored data and existing Codex login. Avoid a new privileged helper, a second launcher architecture, blanket permission changes, or moving the account/data into a disposable home to conceal the error. An actual tool-enforced restriction must be identified explicitly; do not claim an application fix removes it.
+5. Audit and, if missing, implement the shared all-conversation attachment path from section 2.9, including ordinary human conversations. Complete the applicable frontend/backend pieces and focused checks, then verify through **Attach files → choose file → enter accompanying text → Send → reopen Message → Save attachment**. Compare saved bytes with the original. Reuse passing implementation instead of rewriting it.
+6. After a startup/attachment fix, run the relevant focused checks and `cargo check` with warnings denied, including native media for audio/device paths. Then continue the live UI sequence below. This update only plans that work; it does not implement fixes or launch another test.
+
+### D. First live acceptance: existing Codex subscription and a real hello
+
+This is a UI workflow using the person's existing Codex subscription. Do not replace it with an API-key provider, copy authentication tokens or send a CLI-only test message. Startup and missing shared attachment implementation may be fixed during the later implementation session under section C. If the normal interface cannot use the existing account, stop before inference and report the observed blocker.
+
+1. Launch the installed Lince normally as the same person who uses Codex CLI. Inspect the actual interface and record the installed version; a compiled working tree does not establish which version is installed.
+2. Click **Manage Fiote**, choose an existing Fiote or **Create Fiote**, then **Provider, model and settings** and **Change provider / sign in**. Choose the Codex subscription connection if offered. Lince's external-agent interface speaks ACP, defaulting to `goose acp`; a compatible Codex provider/bridge must actually be available. The `codex` CLI itself advertises `app-server`, not an ACP command, so its presence alone does not validate the Lince connection.
+3. Click **Check connection · no tokens**. The Codex-backed agent should reuse its existing cached ChatGPT login under the same user/environment. Confirm session readiness through the interface. If it asks for account authentication, use its normal sign-in interface; if existing-account login cannot complete normally, stop here. A CLI login-status result alone does not prove the provider can generate.
+4. Click **Save and load choices**. Select **GPT-6 Luna** (`gpt-6-luna`) and **Low** reasoning when offered, then the offered **Fast / normal** choice. Start with Fast enabled if it is available, recording the actual selected value. Model, reasoning effort and Fast mode are separate settings. If a requested control is not offered, report that limitation instead of assuming an unshown setting was applied. Official [Codex model guidance](https://learn.chatgpt.com/docs/models) and [speed guidance](https://learn.chatgpt.com/docs/agent-configuration/speed) describe availability; the live adapter's choices establish what Lince can set.
+5. Click **Check and open conversation**. Enter **Hello** in the normal composer and click **Send** once. Wait for completion without restarting or retrying an uncertain turn.
+6. Inspect the displayed assistant reply and completed state, then reopen the conversation to confirm the saved reply. Record the chosen provider/model/reasoning/speed, sent Message and received reply. A ready connection, echoed input or error text does not count as a model response. Do not use a model's own claimed identity as proof of the selected model.
+
+Inspection/attempt on 2026-10-01: installed `codex-cli 0.159.3`; `codex login status` returned **Logged in using ChatGPT**. Official [authentication guidance](https://learn.chatgpt.com/docs/auth) confirms cached logins are reused. Launching installed `lince` exited before its UI with `ReadOnlyFilesystem` (OS error 30). The desktop user bus returned `Operation not permitted`; installed Goose ACP also failed to open its session database directory because the home filesystem is read-only in this sandbox. Provider discovery, UI account readiness, model/settings selection and the hello/reply remain unverified. The live workflow stopped; no model request or credential copying was performed. Source code is unchanged by this inspection.
+
+### E. File attachments and audio through the same conversation UI
+
+Run this after the real hello succeeds. Prepare small fixtures with known contents and answers, then send each as an actual attachment with accompanying text in a normal Message. First verify the ordinary human-conversation delivery path, then repeat the six formats in a Fiote conversation through **Attach files → choose file → enter the request → Send**. Inspect the attachment card and sent Message, wait for the Fiote outcome, reopen it and save the attachment to verify its bytes. A response must demonstrate access to file contents rather than repeat its filename or the question.
+
+| Order | File | Request and evidence |
+| --- | --- | --- |
+| 1 | UTF-8 text (`.txt`) | Ask for a distinctive sentence or marker stored only in the file; check the answer against its known text |
+| 2 | CSV (`.csv`) | Ask for row count and a simple numeric total; verify columns, values and the known total rather than guessed summaries |
+| 3 | PDF (`.pdf`) | Use a small document with known text; ask for a fact and its page, verifying actual PDF input/read access |
+| 4 | Photo (`.jpg` or `.png`) | Ask about a known visible object/count or receipt amount; check the image content and the saved original |
+| 5 | Audio (`.wav` or another offered format) | Send a short clip with a known spoken phrase; ask what was said. Separately exercise **Preview / play → Close preview / stop**. Record analysis support and playback results independently |
+| 6 | Video (`.mp4` or another offered format) | Send a short clip with known events in order; ask what happened first/last. Preserve the original clip and record whether the model/adapter can access temporal content |
+
+For every row, record filename/MIME/size, conversation and sent Message, provider/model/settings, stored/downloaded-byte result, actual reply, expected-content comparison and one explicit outcome: analyzed, model/adapter unsupported, or application/transport failure. A model limitation is acceptable evidence of the attempted analysis; a broken ordinary attachment path remains work to fix. An unsupported row must not prevent trying the remaining formats. Preserve the original draft/Message and continue with a new Message without silently dropping the problematic file.
+
+Also send accompanying text with two different supported attachments in one Message and verify both arrive. In another draft, remove one selected file before sending and confirm only the retained files arrive. Check cancelled selection and one oversize rejection without losing the draft. Check refusal/retry behavior does not duplicate a Message. Keep retries deliberate after inspecting the saved state.
+
+Exercise microphone dictation separately from attaching an audio file: **Dictate → speak a known phrase → Stop and transcribe → inspect/edit the unsent text → Send**. Confirm transcription does not send automatically, and **Cancel** leaves no unintended Message. Record the speech provider and device result independently of Codex's audio-attachment capability; the existing dictation feature adds text, not the captured audio file. Missing microphone/provider readiness must be reported rather than counted as a passed audio test.
+
+### F. Further installed acceptance, in order
+
+1. **Runtime readiness:** check the installed executable/wrapper and user-service environment outside a development shell. Select/configure a provider, log in, inspect readiness, send a message, Stop and restart. Confirm credentials and interrupted work behave as shown in the UI.
+2. **Protected interactive UI:** ask Fiote to combine supported components with an Action button and a named event. Apply an authorized edit immediately. Place outside areas across its balloon; check both crossing directions are blocked while inner components interact. Save, Close, restart/reopen and make a library copy; verify independent protection and persisted supported edits.
+3. **Proposal and Simulation:** request a report with edit/apply/dismiss controls. Preview an unsaved Karma alternative, compare its evidence, apply the chosen revision, then provoke a stale-data refusal. Confirm previews do not start a provider or emit real canvas effects.
+4. **Activation and Transfer:** configure a Frequency/Rule to activate Fiote with a nonzero value, then trigger it again while busy. Inspect individual causes, one pending run and unchanged Record quantity; Stop, disable and restart. Through conversation, create/read/revise/discard an unused Transfer draft and inspect its signed evidence; use normal publication/agreement/cancellation controls for a committed Transfer.
+5. **Conversation and evidence:** discuss without requesting recording, then request an exact expense and inspect Fact agent/thread/source-Message attribution. Use a real receipt with an image-capable provider; confirm amount/unit/date/meaning, clarification of ambiguity and correction. Retry must not duplicate an entry. Mocked provider tests establish the Action route, not extraction quality.
+6. **Inspection and external sessions:** inspect pinned/current instructions and the latest direct request including tool input/results. Check attachment metadata without exposed credentials. Report an existing child thread and open it; external sessions must label their starting-input snapshot rather than imply visibility of unreported agent memory.
+7. **Accessibility and media:** use a screen reader, Tab/Shift+Tab and focused button activation for the composer, settings, question answers and Save/Close. Check final-reply and refusal announcements, cancellation and editable unsent microphone dictation. In the media-enabled Communication panel, complete a real call/device workflow; displaying its controls alone does not establish media acceptance.

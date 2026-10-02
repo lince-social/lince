@@ -193,7 +193,7 @@ async fn project_logs(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<(),
     save_work(tx, uid, &work).await
 }
 
-async fn apply_register(
+pub(crate) async fn apply_register(
     tx: &mut Transaction<'_, Sqlite>,
     uid: &str,
     property: &str,

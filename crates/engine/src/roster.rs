@@ -159,14 +159,6 @@ pub fn needs_publishing(held: Option<&SignedRoster>, root_key: &str, cells: &[Ce
     if held.roster.root_key != root_key {
         return true;
     }
-    if held
-        .roster
-        .cells
-        .iter()
-        .any(|cell| cell.capabilities.is_empty())
-    {
-        return true;
-    }
     let mut held_cells = held.roster.cells.clone();
     let mut next_cells = cells.to_vec();
     held_cells.sort_by(|left, right| left.cell_uid.cmp(&right.cell_uid));
@@ -233,10 +225,10 @@ impl Engine {
     ) -> Result<SignedRoster, EngineError> {
         let organ_uid = root.actor_uid.clone();
         let previous = store::roster::get(&self.store.pool, &organ_uid).await?;
-        let pickup = self
-            .roster_of(&organ_uid)
-            .await?
-            .map(|signed| signed.roster.pickup)
+        let previous_signed = self.roster_of(&organ_uid).await?;
+        let pickup = previous_signed
+            .as_ref()
+            .map(|signed| signed.roster.pickup.clone())
             .unwrap_or_default();
         let roster = Roster {
             organ_uid: organ_uid.clone(),
@@ -253,6 +245,7 @@ impl Engine {
         };
         self.store_roster(&signed).await?;
         self.mirror_roster(&signed).await?;
+        self.social_note_roster_change(previous_signed.as_ref().map(|held| &held.roster),&signed.roster).await?;
         Ok(signed)
     }
 
@@ -322,6 +315,8 @@ impl Engine {
             }
         }
         store::organs::clear_awaiting_roster(&self.store.pool, &signed.roster.organ_uid).await?;
+        self.notify_karma_deadline_change();
+        self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
         Ok(())
     }
 
@@ -406,6 +401,8 @@ impl Engine {
                 store::cells::set_label(&self.store.pool, &member.label).await?;
             }
         }
+        let previous_roster = previous.as_ref().map(|row| serde_json::from_str::<Roster>(&row.payload)).transpose()?;
+        self.social_note_roster_change(previous_roster.as_ref(),&signed.roster).await?;
         Ok(RosterOutcome::Accepted)
     }
 
@@ -611,6 +608,12 @@ impl Engine {
             .await?
             .map(|signed| signed.roster.cells)
             .unwrap_or_default();
+        let mut cell = cell;
+        if let Some(existing) = cells.iter().find(|existing| existing.cell_uid == cell.cell_uid) {
+            cell.capabilities = existing.capabilities.clone();
+        } else if !cells.is_empty() {
+            cell.capabilities.retain(|capability| capability != CAP_KARMA);
+        }
         cells.retain(|existing| existing.cell_uid != cell.cell_uid);
         cells.push(cell);
         self.publish_roster(root, cells).await

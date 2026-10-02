@@ -78,8 +78,80 @@ struct Controller {
 }
 
 pub struct CallsPlugin;
+
+pub(crate) fn start_automatically(
+    world: &mut World,
+    binding: RecordBinding,
+    start: &nucleus::component::CallStart,
+) -> Result<(), String> {
+    let runtime = world
+        .get_resource::<Runtime>()
+        .ok_or("Call controls are unavailable")?;
+    let intent = match start.media {
+        nucleus::component::CallMedia::Audio => 0,
+        nucleus::component::CallMedia::Video => 1,
+    };
+    if let Some(controller) = &runtime.controller {
+        if controller.thread != start.thread || controller.person.as_ref() != Some(&start.person) {
+            return Err(
+                "Close or leave the current call before starting another automatic call".into(),
+            );
+        }
+        if controller.media.is_some()
+            || controller.intent.is_some()
+            || runtime
+                .pending
+                .values()
+                .any(|(_, pending)| matches!(pending, Pending::Join(_)))
+        {
+            return Ok(());
+        }
+        let mut controller = world.resource_mut::<Runtime>().controller.take().unwrap();
+        controller.intent = Some(intent);
+        let result = context(world, &controller);
+        if result.is_ok() {
+            panel::status(world, controller.status, "Starting call…");
+        } else {
+            controller.intent = None;
+        }
+        world.resource_mut::<Runtime>().controller = Some(controller);
+        return result;
+    }
+    if crate::protein_area::editor_sender(world, &binding).is_none() {
+        return Err("The Cell is disconnected".into());
+    }
+    open(
+        world,
+        binding,
+        start.thread.clone(),
+        Snapshot::default(),
+        Some(intent),
+    );
+    let mut controller = world.resource_mut::<Runtime>().controller.take().unwrap();
+    controller.person = Some(start.person.clone());
+    let queued = world
+        .resource::<Runtime>()
+        .pending
+        .values()
+        .any(|(_, pending)| matches!(pending, Pending::Context));
+    if queued {
+        panel::status(world, controller.status, "Starting call…");
+    } else {
+        controller.intent = None;
+    }
+    world.resource_mut::<Runtime>().controller = Some(controller);
+    if queued {
+        Ok(())
+    } else {
+        Err("The Cell could not load call membership".into())
+    }
+}
+
 pub(crate) fn microphone_active(world: &World) -> bool {
-    world.get_resource::<Runtime>().and_then(|runtime| runtime.controller.as_ref()).is_some_and(|controller| controller.tracks.microphone || controller.preview.is_some())
+    world
+        .get_resource::<Runtime>()
+        .and_then(|runtime| runtime.controller.as_ref())
+        .is_some_and(|controller| controller.tracks.microphone || controller.preview.is_some())
 }
 impl Plugin for CallsPlugin {
     fn build(&self, app: &mut App) {
@@ -813,6 +885,9 @@ fn received(
 ) -> Result<(), String> {
     match message {
         ServerMessage::Error { message, .. } => {
+            if matches!(pending, Pending::Context) {
+                controller.intent = None;
+            }
             if matches!(pending, Pending::Poll | Pending::Tracks(None)) {
                 controller.media = None;
             }
@@ -830,6 +905,17 @@ fn received(
             }
             controller.context = Some(context.clone());
             render_context(world, controller);
+            if let Some(person) = controller.person.clone()
+                && let Some(intent) = controller.intent.take()
+            {
+                if !context.people.iter().any(|(uid, _)| uid == &person) {
+                    return Err("The configured Person cannot join this call".into());
+                }
+                if context.group.is_some() && !context.admitted.contains(&person) {
+                    return Err("Your Organ must admit this Person to the group".into());
+                }
+                apply(world, controller, &Ui::Start(intent))?;
+            }
         }
         ServerMessage::ActionOk { created, .. } => {
             if let Some(uid) = created {

@@ -145,6 +145,11 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
     if capability(transfer, "edit_terms") || capability(transfer, "adopt_terms") {
         button(world, heading, owner, "Edit terms", Command::Edit(false));
     }
+    if capability(transfer, "edit_terms") && transfer["visibility"] == "hidden" {
+        let mut form = Form::action("Discard unused draft", base(world, owner, transfer, "discard-transfer-draft"));
+        form.review = json!({"operation":"Discard this unpublished, unaddressed draft. Signed history is retained; eligibility and revision are checked again when applying."});
+        button(world, heading, owner, "Discard unused draft", Command::Open(form));
+    }
     if capability(transfer, "counteroffer") {
         button(world, heading, owner, "Counteroffer", Command::Edit(true));
     }

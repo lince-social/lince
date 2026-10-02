@@ -51,7 +51,7 @@ async fn level(engine: &Engine, record: &str) -> String {
 
 #[tokio::test]
 async fn saved_references_survive_renames_slug_reuse_and_unrelated_edits() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 2.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
     let uid = rule(&engine, "@source", "target").await.unwrap();
@@ -94,7 +94,7 @@ async fn saved_references_survive_renames_slug_reuse_and_unrelated_edits() {
 
 #[tokio::test]
 async fn missing_and_wrong_kind_references_do_not_save_a_rule() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "ordinary", 1.0).await;
     support::plain(&engine, "target", 0.0).await;
     for condition in ["@missing", "freq(@ordinary)"] {
@@ -110,8 +110,8 @@ async fn missing_and_wrong_kind_references_do_not_save_a_rule() {
 
 #[tokio::test]
 async fn cells_resolve_the_same_slug_to_their_own_identity() {
-    let first = support::engine().await;
-    let second = support::engine().await;
+    let first = support::karma::engine().await;
+    let second = support::karma::engine().await;
     let mut targets = Vec::new();
     for engine in [&first, &second] {
         let source = support::plain(engine, "source", 1.0).await;
@@ -132,7 +132,7 @@ async fn cells_resolve_the_same_slug_to_their_own_identity() {
 
 #[tokio::test]
 async fn shared_fields_keep_bindings_when_linked_after_slug_reuse() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 2.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
     let original = rule(&engine, "@source", "target").await.unwrap();
@@ -177,7 +177,7 @@ async fn shared_fields_keep_bindings_when_linked_after_slug_reuse() {
 
 #[tokio::test]
 async fn deleted_target_never_rebinds_to_a_reused_slug() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 2.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
     let uid = rule(&engine, "@source", "target").await.unwrap();

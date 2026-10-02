@@ -1,7 +1,9 @@
 target/
 /.cache-lince-*/
+/.cache*/
 /logs
 mprocs.log
+.aws/
 .env
 .config/lince/
 .rustup/

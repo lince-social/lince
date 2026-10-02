@@ -72,6 +72,14 @@ impl Settings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    Activate {
+        record: String,
+        value: String,
+        request_id: String,
+    },
+    CancelActivations {
+        record: String,
+    },
     SessionReset {
         thread: String,
     },
@@ -207,6 +215,8 @@ pub enum Request {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Status {
     #[serde(default)]
+    pub activations: Vec<serde_json::Value>,
+    #[serde(default)]
     pub questions: Vec<PrivateQuestion>,
     #[serde(default)]
     pub usage: Vec<nucleus::operation::Usage>,
@@ -293,6 +303,8 @@ pub struct PromptSession {
     pub thread: String,
     pub sources: Vec<PromptSource>,
     pub changed: bool,
+    #[serde(default)]
+    pub context: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

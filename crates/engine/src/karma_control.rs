@@ -46,6 +46,9 @@ impl Engine {
                 })?;
         let admission = self.compiled_frequency_admission(&compiled, &runtime)?;
         let signer = self.signer.lock().await.clone();
+        let signing_actor = actor
+            .clone()
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = match (frequency_uid, expected_handle_revision) {
             (Some(frequency_uid), Some(expected_handle_revision)) => {
                 store::karma::frequencies::revise_with_schedule(
@@ -55,7 +58,7 @@ impl Engine {
                         frequency_uid,
                         expected_handle_revision,
                         frequency,
-                        actor_person_uid: actor,
+                        actor_person_uid: signing_actor,
                     },
                     Some(admission),
                     restart,
@@ -71,7 +74,7 @@ impl Engine {
                         request_id,
                         frequency,
                         owner_person_uid: actor.clone(),
-                        actor_person_uid: actor,
+                        actor_person_uid: signing_actor,
                     },
                     Some(admission),
                     now,
@@ -85,10 +88,13 @@ impl Engine {
 
     pub async fn respond_karma_candidate(
         &self,
-        input: store::karma::candidates::RespondCandidateInput,
+        mut input: store::karma::candidates::RespondCandidateInput,
         now: DateTime<Utc>,
     ) -> Result<store::karma::candidates::CandidateReviewCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::candidates::respond(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -101,10 +107,13 @@ impl Engine {
 
     pub async fn create_karma_program(
         &self,
-        input: CreateProgramInput,
+        mut input: CreateProgramInput,
         now: DateTime<Utc>,
     ) -> Result<ProgramMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::programs::create(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -114,10 +123,13 @@ impl Engine {
 
     pub async fn revise_karma_program(
         &self,
-        input: ReviseProgramInput,
+        mut input: ReviseProgramInput,
         now: DateTime<Utc>,
     ) -> Result<ProgramMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::programs::revise(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -127,10 +139,13 @@ impl Engine {
 
     pub async fn activate_karma_program(
         &self,
-        input: ActivateProgramInput,
+        mut input: ActivateProgramInput,
         now: DateTime<Utc>,
     ) -> Result<ProgramMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::programs::activate(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -140,10 +155,13 @@ impl Engine {
 
     pub async fn pause_karma_program(
         &self,
-        input: PauseProgramInput,
+        mut input: PauseProgramInput,
         now: DateTime<Utc>,
     ) -> Result<ProgramMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::programs::pause(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -153,10 +171,13 @@ impl Engine {
 
     pub async fn create_karma_frequency(
         &self,
-        input: CreateFrequencyInput,
+        mut input: CreateFrequencyInput,
         now: DateTime<Utc>,
     ) -> Result<FrequencyMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::frequencies::create(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -166,10 +187,13 @@ impl Engine {
 
     pub async fn revise_karma_frequency(
         &self,
-        input: ReviseFrequencyInput,
+        mut input: ReviseFrequencyInput,
         now: DateTime<Utc>,
     ) -> Result<FrequencyMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::frequencies::revise(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })
@@ -179,7 +203,7 @@ impl Engine {
 
     pub async fn activate_karma_frequency(
         &self,
-        input: ActivateFrequencyInput,
+        mut input: ActivateFrequencyInput,
         runtime: &KarmaDeadlineDirectorConfig,
         now: DateTime<Utc>,
     ) -> Result<FrequencyMutationCommit, EngineError> {
@@ -187,6 +211,9 @@ impl Engine {
             .frequency_admission(&input.revision_hash, &input.parameter_overrides, runtime)
             .await?;
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::frequencies::activate_admitted(
             &self.store.pool,
             input,
@@ -200,7 +227,7 @@ impl Engine {
 
     pub async fn set_karma_frequency_parameters(
         &self,
-        input: SetFrequencyParametersInput,
+        mut input: SetFrequencyParametersInput,
         runtime: &KarmaDeadlineDirectorConfig,
         now: DateTime<Utc>,
     ) -> Result<FrequencyMutationCommit, EngineError> {
@@ -212,6 +239,9 @@ impl Engine {
             )
             .await?;
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::frequencies::set_parameters_admitted(
             &self.store.pool,
             input,
@@ -225,7 +255,7 @@ impl Engine {
 
     pub async fn reset_karma_frequency_parameters(
         &self,
-        input: ResetFrequencyParametersInput,
+        mut input: ResetFrequencyParametersInput,
         runtime: &KarmaDeadlineDirectorConfig,
         now: DateTime<Utc>,
     ) -> Result<FrequencyMutationCommit, EngineError> {
@@ -234,6 +264,9 @@ impl Engine {
             .frequency_admission(&input.expected_active_revision_hash, &overrides, runtime)
             .await?;
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::frequencies::reset_parameters_admitted(
             &self.store.pool,
             input,
@@ -247,10 +280,13 @@ impl Engine {
 
     pub async fn pause_karma_frequency(
         &self,
-        input: PauseFrequencyInput,
+        mut input: PauseFrequencyInput,
         now: DateTime<Utc>,
     ) -> Result<FrequencyMutationCommit, EngineError> {
         let signer = self.signer.lock().await.clone();
+        input.actor_person_uid = input
+            .actor_person_uid
+            .or_else(|| signer.as_ref().map(|key| key.actor_uid.clone()));
         let commit = store::karma::frequencies::pause(&self.store.pool, input, now, |hash| {
             signer.as_ref().map(|value| value.sign_hash(hash))
         })

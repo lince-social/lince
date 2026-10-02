@@ -3,9 +3,13 @@ use super::*;
 #[derive(Component)]
 pub(super) struct Status;
 
+#[derive(Component)]
+struct ReplyState(String);
+
 pub(crate) fn status(world: &mut World, parent: Entity) -> Entity {
     let entity = crate::edit_mode::label(world, parent, "", 12.0);
     world.entity_mut(entity).insert(Status);
+    crate::accessibility::status(world, entity);
     world.get_mut::<Node>(entity).unwrap().display = Display::None;
     entity
 }
@@ -133,7 +137,11 @@ pub(super) fn spawn(
             ChildOf(content),
         ))
         .id();
+    if !data["social_delivery"].is_null() {
+        crate::organ_castle::social_delivery_controls(world, entity, content, uid);
+    }
     for (title, action) in [("Edit", true), ("Delete", false)] {
+        if action && !data["social"].is_null() { continue; }
         let button = if action {
             control(world, actions, entity, title, Edit)
         } else {
@@ -167,7 +175,7 @@ pub(super) fn spawn(
             ChildOf(content),
         ))
         .id();
-    crate::edit_mode::label(world, confirmation, "Delete this message Record?", 14.0);
+    crate::edit_mode::label(world, confirmation, if data["social"].is_null() { "Delete this message Record?" } else { "Delete this retained Message on your devices? This cannot erase the other person's copy." }, 14.0);
     control(world, confirmation, entity, "Delete Record", Delete);
     control(world, confirmation, entity, "Cancel", AskDelete(false));
     world.entity_mut(entity).insert(Message {
@@ -181,6 +189,9 @@ pub(super) fn spawn(
         input,
         preview,
     });
+    world.entity_mut(entity).insert(ReplyState(
+        data["message_state"].as_str().unwrap_or("finished").into(),
+    ));
     entity
 }
 
@@ -193,6 +204,22 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous:
         message.input,
         message.preview,
     );
+    let state = data["message_state"].as_str().unwrap_or("finished");
+    let completed = world
+        .get::<ReplyState>(entity)
+        .is_some_and(|old| old.0 == "writing" && state != "writing");
+    let mut accessible = accesskit::Node::new(accesskit::Role::Paragraph);
+    accessible.set_label(data["body"].as_str().unwrap_or_default());
+    accessible.set_live(if completed {
+        accesskit::Live::Polite
+    } else {
+        accesskit::Live::Off
+    });
+    accessible.set_live_atomic();
+    world
+        .entity_mut(preview)
+        .insert(bevy::a11y::AccessibilityNode(accessible));
+    world.entity_mut(entity).insert(ReplyState(state.into()));
     let author = data["author"].as_str();
     world.get_mut::<Node>(identity).unwrap().display = if author.is_some() && author == previous {
         Display::None
@@ -210,6 +237,11 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous:
         .or(author)
         .unwrap_or("Unknown author");
     world.get_mut::<Text>(author_name).unwrap().0 = name.into();
+    if let Some(stage)=data["social_delivery"]["stage"].as_str() {
+        let status=world.get::<Message>(entity).unwrap().status;
+        let detail=data["social_delivery"]["error"].as_str().unwrap_or_default();
+        world.get_mut::<Text>(status).unwrap().0=format!("{stage} {detail}");
+    }
     if world.get::<Node>(input).unwrap().display == Display::None
         && !world
             .get::<crate::record_binding::TextBinding>(input)

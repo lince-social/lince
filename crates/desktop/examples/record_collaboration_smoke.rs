@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use bevy::{
     prelude::*,

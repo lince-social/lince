@@ -3,6 +3,7 @@ mod persistence;
 mod schedules_ui;
 mod preview_ui;
 mod history_ui;
+mod commands_ui;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -179,6 +180,7 @@ pub fn spawn(
     schedules_ui::spawn(world, owner, scroll);
     preview_ui::spawn(world, owner, scroll);
     history_ui::spawn(world, owner, scroll);
+    commands_ui::spawn(world, owner, scroll);
     owner
 }
 
@@ -382,6 +384,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     for message in messages {
         if schedules_ui::receive(world, &message) { continue; }
         if preview_ui::receive(world, &message) { continue; }
+        if commands_ui::receive(world, &message) { continue; }
         if history_ui::receive(world, &message) { continue; }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {

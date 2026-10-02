@@ -31,6 +31,7 @@ pub enum Immunity {
     Internal,
     All,
     Containment,
+    Isolation,
 }
 
 impl Immunity {
@@ -41,6 +42,7 @@ impl Immunity {
             Self::Internal => target_inside && source_inside,
             Self::All => target_inside,
             Self::Containment => source_inside && !target_inside,
+            Self::Isolation => source_inside != target_inside,
         }
     }
 }
@@ -193,21 +195,24 @@ pub(crate) fn blocked(
     };
     let center = DVec2::from_array(area.center);
     world
-        .query::<(
+        .query_filtered::<(
             Entity,
             &InfluenceArea,
             &ChildOf,
             &WorkspaceMember,
             Option<&Matches>,
-        )>()
+        ), Without<crate::component_push::composition::Generated>>()
         .iter(world)
         .any(|(entity, shield, parent, member, filter)| {
             entity != source
                 && parent.parent() == root
                 && member.0 == workspace
+                && shield.enabled
                 && shield.validate()
-                && shield.contains(point)
-                && immunity_blocks(shield, center)
+                && shield.immunity != Immunity::Containment
+                && shield
+                    .immunity
+                    .blocks(shield.contains(center), shield.contains(point))
                 && if shield.filter.is_some() {
                     record.is_some_and(|r| filter.is_some_and(|f| f.allows(r, binding)))
                 } else {
@@ -216,28 +221,19 @@ pub(crate) fn blocked(
         })
 }
 
-fn immunity_blocks(shield: &InfluenceArea, center: DVec2) -> bool {
-    match shield.immunity {
-        Immunity::None | Immunity::Containment => false,
-        Immunity::All => true,
-        Immunity::Internal => shield.contains(center),
-        Immunity::External => !shield.contains(center),
-    }
-}
-
 pub(crate) fn refresh(world: &mut World) {
     world.init_resource::<Influences>();
     let mut runtime = world.remove_resource::<Influences>().unwrap();
     let previous: HashMap<_, _> = runtime.fields.iter().map(|f| (f.entity, f)).collect();
     let mut fields: Vec<_> = world
-        .query::<(
+        .query_filtered::<(
             Entity,
             &InfluenceArea,
             &ChildOf,
             &WorkspaceMember,
             Option<Ref<Matches>>,
             Option<&GeneratedGroup>,
-        )>()
+        ), Without<crate::component_push::composition::Generated>>()
         .iter(world)
         .filter(|(_, area, _, _, _, group)| area.enabled && (area.validate() || group.is_some()))
         .map(|(entity, area, parent, member, filter, group)| Field {

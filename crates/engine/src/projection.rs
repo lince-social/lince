@@ -310,11 +310,6 @@ pub async fn calculate(
         engine.set_signer(signer).await?;
         let config = match config { Some(config) => config, None => crate::karma_runtime::KarmaDeadlineDirectorConfig::for_host(format!("{}:projection", cell.uid))? };
         engine.install_karma_runtime_config(config)?;
-        for grant in store::karma::grants::list_revisions(&private.pool).await? {
-            for boundary in [grant.revision.spec.valid_from.as_millis(), grant.revision.spec.expires_at.as_millis()] {
-                if boundary > base_ms { result.expires_ms = result.expires_ms.min(boundary); }
-            }
-        }
         let mut position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM fact").fetch_one(&private.pool).await?;
         let application_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_rule_application").fetch_one(&private.pool).await?;
         let program_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_run").fetch_one(&private.pool).await?;
@@ -383,7 +378,7 @@ pub async fn calculate(
             loan_offsets = current_offsets;
             if result.incomplete.is_some() { break; }
             let blocked: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_application WHERE rowid > ? AND status = 'failed') OR EXISTS(SELECT 1 FROM karma_run WHERE rowid > ? AND status NOT IN ('succeeded', 'not-applicable'))").bind(application_position).bind(program_position).fetch_one(&private.pool).await?;
-            let effects: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_delivery_outbox WHERE status IN ('queued', 'failed')) OR EXISTS(SELECT 1 FROM karma_intent_state WHERE status = 'authorized')").fetch_one(&private.pool).await?;
+            let effects: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_delivery_outbox WHERE status IN ('queued', 'failed'))").fetch_one(&private.pool).await?;
             let effects = effects || database_effects.unsupported;
             if blocked || effects || database_effects.outcomes.iter().any(|effect| !effect.ok) { result.incomplete = Some(if effects { Incomplete::ExternalEffects {} } else { Incomplete::RuleFailure {} }); break; }
             if database_effects.pending { continue; }

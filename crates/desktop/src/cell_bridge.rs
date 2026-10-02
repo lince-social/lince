@@ -70,6 +70,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
     simulation::karma_preview::install(&runtime.engine).expect("Karma preview service");
     let (outgoing, mut requests) = mpsc::channel::<ClientMessage>(64);
     let (responses, incoming) = mpsc::channel(64);
+    let mut components = runtime.engine.subscribe_components();
     let mut session = runtime.local_session();
     let queue_connection = session.connection_id().to_owned();
     let queued_requests = outgoing.downgrade();
@@ -212,6 +213,11 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                     session.on_sync_event(event).await
                 },
                 Some(message) = terminal_messages.recv() => vec![message],
+                result = components.recv() => match result {
+                    Ok(presentation) => vec![ServerMessage::PresentComponent { presentation }],
+                    Err(broadcast::error::RecvError::Lagged(_)) => vec![ServerMessage::Error { id: "interface-components".into(), message: "Some component pushes were missed".into(), code: Some("components_lagged".into()) }],
+                    Err(broadcast::error::RecvError::Closed) => break,
+                },
                 Some(result) = call_tasks.join_next(), if !call_tasks.is_empty() => result.unwrap_or_default(),
                 Some(result) = speech_tasks.join_next(), if !speech_tasks.is_empty() => result.unwrap_or_default(),
                 Some(result) = preview_tasks.join_next(), if !preview_tasks.is_empty() => result.unwrap_or_default(),

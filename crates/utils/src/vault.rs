@@ -79,6 +79,14 @@ fn aad(record_uid: &str) -> Vec<u8> {
     format!("{AAD_TAG}{record_uid}").into_bytes()
 }
 
+pub(crate) fn backup_cipher(
+    password: &str,
+    salt: &[u8; SALT_LEN],
+) -> Result<XChaCha20Poly1305, VaultError> {
+    let key = derive(password, salt, MEMORY_KIB, ITERATIONS, PARALLELISM)?;
+    Ok(XChaCha20Poly1305::new((&key.0).into()))
+}
+
 pub fn is_locked(description: &str) -> bool {
     parse(description).is_some()
 }

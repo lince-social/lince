@@ -53,9 +53,14 @@ pub enum Consequence {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         message: Option<String>,
     },
+    InvokeCommand { command: String },
     RunCommand {
         command: String,
     },
+    ShowComponent {
+        component: crate::component::ComponentState,
+    },
+    ActivateFiote,
     RunQuery {
         query: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -107,7 +112,10 @@ impl Consequence {
             Self::EmitPromise { .. } => "emit-promise",
             Self::Ask { .. } => "ask",
             Self::Notify { .. } => "notify",
+            Self::InvokeCommand { .. } => "invoke-command",
             Self::RunCommand { .. } => "run-command",
+            Self::ShowComponent { .. } => "show-component",
+            Self::ActivateFiote => "activate-fiote",
             Self::RunQuery { .. } => "run-query",
             Self::RunAction { .. } => "run-action",
             Self::SetVisibility { .. } => "set-visibility",
@@ -123,7 +131,10 @@ impl Consequence {
             Self::EmitPromise { .. }
                 | Self::Ask { .. }
                 | Self::Notify { .. }
+                | Self::InvokeCommand { .. }
                 | Self::RunCommand { .. }
+                | Self::ShowComponent { .. }
+                | Self::ActivateFiote
                 | Self::RunQuery { .. }
                 | Self::RunAction { .. }
                 | Self::SetVisibility { .. }
@@ -180,6 +191,9 @@ impl Consequence {
     }
 
     fn validate(&self) -> Result<(), NucleusError> {
+        if let Self::ShowComponent { component } = self {
+            component.validate().map_err(NucleusError::Parse)?;
+        }
         if let Some(target) = self.transfer_target() {
             if target.trim().is_empty() || self.transfer_person().is_none_or(|person| person.trim().is_empty()) {
                 return Err(NucleusError::Parse("Choose a Transfer and acting Person".into()));
@@ -214,7 +228,7 @@ impl Consequence {
             )));
         }
         let named = match self {
-            Self::RunCommand { command } => Some(command),
+            Self::InvokeCommand { command } | Self::RunCommand { command } => Some(command),
             Self::RunQuery { query, .. } => Some(query),
             Self::RunAction { action } => Some(action),
             _ => None,

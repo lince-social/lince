@@ -1,4 +1,5 @@
 pub mod action_intent;
+pub mod component;
 pub mod blob_sync;
 pub mod error;
 pub mod execution;
@@ -15,6 +16,7 @@ pub mod place;
 pub mod promise;
 pub mod record;
 pub mod sync;
+pub mod social;
 pub mod simulation;
 pub mod projection;
 pub mod transfer;
@@ -32,3 +34,5 @@ pub use record::{MessageDraftTiming, MessageState, RecordKind};
 pub mod operation;
 
 pub mod question;
+
+pub mod command;

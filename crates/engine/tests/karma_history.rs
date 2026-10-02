@@ -58,7 +58,7 @@ async fn set(engine: &Engine, target: &str, amount: &str) {
 
 #[tokio::test]
 async fn an_execution_limit_records_only_the_committed_evaluation() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 0.0).await;
     let uid = rule(&engine, "@source + 1", "always", "source").await;
     let execution = nucleus::execution::Execution::new([3; 32], 1_893_456_000_000)
@@ -95,7 +95,7 @@ async fn an_execution_limit_records_only_the_committed_evaluation() {
 
 #[tokio::test]
 async fn historical_decisions_keep_actual_values_after_later_edits() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 0.0).await;
     support::plain(&engine, "target", 0.0).await;
     let uid = rule(&engine, "@source * 2", ">5", "target").await;
@@ -135,7 +135,7 @@ async fn historical_decisions_keep_actual_values_after_later_edits() {
 
 #[tokio::test]
 async fn failed_readings_preserve_partial_evidence_and_the_reason() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 0.0).await;
     support::plain(&engine, "target", 0.0).await;
     let uid = rule(
@@ -169,7 +169,7 @@ async fn failed_readings_preserve_partial_evidence_and_the_reason() {
 
 #[tokio::test]
 async fn an_unreadable_threshold_preserves_the_successful_condition_value() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 0.0).await;
     support::plain(&engine, "target", 0.0).await;
     let uid = rule(&engine, "@source", ">0.000000000001", "target").await;
@@ -187,7 +187,7 @@ async fn an_unreadable_threshold_preserves_the_successful_condition_value() {
 
 #[tokio::test]
 async fn nested_input_history_stays_private_after_the_current_rule_changes() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let secret = support::plain(&engine, "secret", 0.0).await;
     support::plain(&engine, "derived", 0.0).await;
     support::plain(&engine, "target", 0.0).await;

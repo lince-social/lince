@@ -1,16 +1,11 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use chrono::Utc;
 use nucleus::{Cause, CauseKind, NewFact};
-use tokio::io::{AsyncRead, AsyncReadExt};
 
 use crate::Engine;
 use crate::append::append_one;
 use crate::error::EngineError;
-
-const OUTPUT_LIMIT: u64 = 65_536;
-const COMMAND_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Clone)]
 pub struct EffectOutcome {
@@ -37,32 +32,56 @@ impl Engine {
                 return;
             }
             drop(recovery);
-            loop {
-                changed.borrow_and_update();
-                match self.run_due_effects().await {
-                    Ok(outcomes) if !outcomes.is_empty() => {
-                        tokio::task::yield_now().await;
-                        continue;
+            if let Err(error) = self.recover_commands().await { tracing::warn!(%error, "Could not recover command evaluations"); return; }
+            let mut commands_changed = self.effects_changed.subscribe();
+            let work = async {
+                loop {
+                    changed.borrow_and_update();
+                    match self.run_effects(false, Some(false)).await {
+                        Ok(outcomes) if !outcomes.is_empty() => {
+                            tokio::task::yield_now().await;
+                            continue;
+                        }
+                        Ok(_) => {}
+                        Err(error) => {
+                            tracing::warn!(%error, "Effect worker stopped");
+                            return;
+                        }
                     }
-                    Ok(_) => {}
-                    Err(error) => {
-                        tracing::warn!(%error, "Effect worker stopped");
+                    if changed.changed().await.is_err() {
                         return;
                     }
                 }
-                if changed.changed().await.is_err() {
-                    return;
+            };
+            let commands = async {
+                loop {
+                    commands_changed.borrow_and_update();
+                    match self.run_effects(false, Some(true)).await {
+                        Ok(outcomes) if !outcomes.is_empty() => {
+                            tokio::task::yield_now().await;
+                            continue;
+                        }
+                        Ok(_) => {}
+                        Err(error) => {
+                            tracing::warn!(%error, "Command worker stopped");
+                            return;
+                        }
+                    }
+                    if commands_changed.changed().await.is_err() {
+                        return;
+                    }
                 }
-            }
+            };
+            tokio::join!(work, commands);
         })
     }
 
     pub async fn run_due_effects(&self) -> Result<Vec<EffectOutcome>, EngineError> {
-        self.run_effects(false).await
+        self.run_effects(false, None).await
     }
 
     pub async fn run_database_effects(&self) -> Result<DatabaseEffects, EngineError> {
-        let outcomes = self.run_effects(true).await?;
+        let outcomes = self.run_effects(true, None).await?;
         let pending: bool = store::sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM effect_queue WHERE status IN ('queued', 'running'))",
         )
@@ -72,7 +91,7 @@ impl Engine {
             && store::misc::due_effects(&self.store.pool)
                 .await?
                 .first()
-                .is_none_or(|effect| !database_effect(effect));
+                .is_none_or(|effect| !database_effect(effect) && !self.controlled_command_effect(effect));
         Ok(DatabaseEffects {
             outcomes,
             pending,
@@ -80,37 +99,39 @@ impl Engine {
         })
     }
 
-    async fn run_effects(&self, database_only: bool) -> Result<Vec<EffectOutcome>, EngineError> {
-        let _guard = self.effect_execution.lock().await;
+    async fn run_effects(&self, database_only: bool, command_lane: Option<bool>) -> Result<Vec<EffectOutcome>, EngineError> {
+        let guard = self.effect_execution.lock().await;
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
-        for effect in store::misc::due_effects(&self.store.pool).await? {
+        let effects = store::misc::due_effects_for_lane(&self.store.pool, command_lane).await?;
+        drop(guard);
+        for effect in effects {
+            let command = matches!(effect.kind.as_str(), "command" | "signal" | "saved-command");
+            if command_lane.is_some_and(|lane| lane != command) { continue; }
             crate::rule_runtime::execution_checkpoint(false).await?;
-            if database_only && !database_effect(&effect) {
+            if database_only && !database_effect(&effect) && !self.controlled_command_effect(&effect) {
                 break;
             }
-            let claimed = store::sqlx::query(
-                "UPDATE effect_queue SET status = 'running' WHERE uid = ? AND status = 'queued'",
-            )
-            .bind(&effect.uid)
-            .execute(&self.store.pool)
-            .await?;
-            if claimed.rows_affected() == 0 {
+            if !store::misc::claim_effect(&self.store.pool, &effect.uid).await? {
                 continue;
             }
             let execution = match effect.payload.get("occurrence") {
                 Some(occurrence) => {
                     let occurrence = serde_json::from_value(occurrence.clone()).map_err(EngineError::Json)?;
-                    crate::rule_runtime::EFFECT_OCCURRENCE.scope(occurrence, self.execute_effect(&effect.kind, &effect.payload)).await
+                    crate::rule_runtime::EFFECT_OCCURRENCE.scope(occurrence, self.execute_effect(&effect.uid, &effect.kind, &effect.payload)).await
                 }
-                None => self.execute_effect(&effect.kind, &effect.payload).await,
+                None => self.execute_effect(&effect.uid, &effect.kind, &effect.payload).await,
             };
             let (ok, result) = match execution {
                 Ok(result) => result,
                 Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
                 Err(error) => (false, error.to_string()),
             };
+            let request = effect.payload["request_id"].as_str().unwrap_or(&effect.uid);
+            if !ok { self.fail_command(request, &result).await?; }
             store::misc::finish_effect(&self.store.pool, &effect.uid, ok, &result).await?;
+            self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.resume_command_query(&effect.payload).await?;
             if let Some(origin) = &effect.origin_uid {
                 match append_one(
                     &self.store,
@@ -144,8 +165,16 @@ impl Engine {
         Ok(out)
     }
 
+    fn controlled_command_effect(&self, effect: &store::misc::EffectRow) -> bool {
+        if nucleus::execution::current().is_none() { return false; }
+        if !matches!(effect.kind.as_str(), "command" | "signal" | "saved-command") { return false; }
+        let command = effect.payload["saved_command"].as_str().or_else(|| effect.payload["signal"].as_str()).or_else(|| effect.payload["command_snapshot"]["uid"].as_str()).unwrap_or(&effect.uid);
+        self.command_responses.read().is_ok_and(|responses| responses.as_ref().is_some_and(|responses| responses.iter().any(|response| response.command == command)))
+    }
+
     async fn execute_effect(
         &self,
+        request: &str,
         kind: &str,
         payload: &serde_json::Value,
     ) -> Result<(bool, String), EngineError> {
@@ -171,6 +200,7 @@ impl Engine {
                     "Rule target was deleted before the effect ran".into(),
                 ));
             }
+            self.require_karma_execution(Some(&current.record_uid)).await?;
             self.refuse_unreadable_karma_inputs(actor, &[crate::karma_transfer_effects::target(&current).into()])
                 .await?;
             Some(current)
@@ -178,47 +208,12 @@ impl Engine {
             None
         };
         match kind {
-            "command" | "signal" => {
-                self.require_permission(actor, "organ:update").await?;
-                let cmd = payload
-                    .get("command")
-                    .and_then(|value| value.as_str())
-                    .unwrap_or("");
+            "command" | "signal" | "saved-command" => {
                 if kind == "signal" {
-                    let signal = payload
-                        .get("signal")
-                        .and_then(|value| value.as_str())
-                        .ok_or_else(|| {
-                            EngineError::Consequence("Signal effect has no Signal".into())
-                        })?;
-                    if !self.rule_dependencies().await?.records.contains_key(signal) {
-                        return Ok((false, "Signal no longer has an active reader".into()));
-                    }
+                    let signal = payload["signal"].as_str().ok_or_else(|| EngineError::Consequence("Signal effect has no Signal".into()))?;
+                    if !self.rule_dependencies().await?.records.contains_key(signal) { return Ok((false, "Signal no longer has an active reader".into())); }
                 }
-                let (ok, result) = run_shell(cmd, COMMAND_TIMEOUT).await;
-                if kind == "signal" {
-                    let signal = payload
-                        .get("signal")
-                        .and_then(|value| value.as_str())
-                        .expect("validated Signal");
-                    let now = nucleus::execution::now();
-                    store::misc::set_signal_sampled(&self.store.pool, signal, &now.to_rfc3339())
-                        .await?;
-                    if ok {
-                        let value = nucleus::DecimalValue::parse_inferred(result.trim()).map_err(
-                            |error| {
-                                EngineError::Consequence(format!(
-                                    "Signal output is not a number: {error}"
-                                ))
-                            },
-                        )?;
-                        let current = store::facts::level(&self.store.pool, signal).await?;
-                        let delta = store::exact::difference(value, current)?;
-                        self.append(NewFact::quantity(signal, delta, Cause::signal(signal)), now)
-                            .await?;
-                    }
-                }
-                Ok((ok, result))
+                self.execute_command_effect(payload["request_id"].as_str().unwrap_or(request), payload).await
             }
             "notify" => {
                 let budget = store::config::attention_budget(&self.store.pool).await?;
@@ -269,6 +264,12 @@ impl Engine {
                 let carried: Option<nucleus::DecimalValue> =
                     serde_json::from_value(payload["carried"].clone())
                         .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                if matches!(consequence, nucleus::karma::Consequence::ActivateFiote) {
+                    let value = carried.ok_or_else(|| EngineError::Consequence("Fiote activation needs a calculated nonzero value".into()))?;
+                    let request = payload["request_id"].as_str().ok_or_else(|| EngineError::Consequence("Activation has no occurrence identity".into()))?;
+                    self.activate_fiote(rule.record_uid.clone(), value.to_string(), request.into(), serde_json::json!({"kind":"karma","rule":rule.uid,"revision":rule.revision,"occurrence":payload["occurrence"],"request_id":request}), actor).await?;
+                    return Ok((true, "Fiote activation requested".into()));
+                }
                 if consequence.transfer_target().is_some() {
                     let evaluated = serde_json::from_value(payload["transfer_evaluation"].clone()).map_err(EngineError::Json)?;
                     let request = payload["request_id"].as_str().ok_or_else(|| EngineError::Consequence("Transfer effect has no request identity".into()))?;
@@ -298,6 +299,7 @@ impl Engine {
         use crate::actions::Action;
         use nucleus::karma::Consequence;
         let action = match consequence {
+            Consequence::ShowComponent { component } => Some(Action::PresentComponent { target: rule.record_uid.clone(), component: component.clone() }),
             Consequence::SetConcept { concept } => Some(Action::SetIdentity {
                 subject: rule.record_uid.clone(),
                 predicate: Some(concept.clone()),
@@ -369,111 +371,5 @@ fn database_effect(effect: &store::misc::EffectRow) -> bool {
                 | Consequence::ActivateTransferFulfillment { .. })
         ),
         _ => false,
-    }
-}
-
-async fn read_output(reader: impl AsyncRead + Unpin) -> Result<Vec<u8>, String> {
-    let mut bytes = Vec::new();
-    reader
-        .take(OUTPUT_LIMIT + 1)
-        .read_to_end(&mut bytes)
-        .await
-        .map_err(|error| error.to_string())?;
-    if bytes.len() as u64 > OUTPUT_LIMIT {
-        return Err("Command output exceeded 64 KiB per stream".into());
-    }
-    Ok(bytes)
-}
-
-async fn run_shell(cmd: &str, timeout: Duration) -> (bool, String) {
-    if cmd.trim().is_empty() {
-        return (false, "empty command".into());
-    }
-    let mut command = tokio::process::Command::new("sh");
-    command
-        .arg("-c")
-        .arg(cmd)
-        .kill_on_drop(true)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
-    #[cfg(target_os = "linux")]
-    {
-        command.process_group(0);
-    }
-    let mut child = match command.spawn() {
-        Ok(child) => child,
-        Err(error) => return (false, error.to_string()),
-    };
-    #[cfg(target_os = "linux")]
-    let _group = CommandGroup(
-        child
-            .id()
-            .and_then(|pid| rustix::process::Pid::from_raw(pid as i32)),
-    );
-    let stdout = child.stdout.take().expect("piped stdout");
-    let stderr = child.stderr.take().expect("piped stderr");
-    let result = tokio::time::timeout(timeout, async {
-        tokio::try_join!(read_output(stdout), read_output(stderr), async {
-            child.wait().await.map_err(|error| error.to_string())
-        })
-    })
-    .await;
-    match result {
-        Ok(Ok((stdout, stderr, status))) => {
-            let mut text = String::from_utf8_lossy(&stdout).trim().to_string();
-            if !status.success() {
-                text.push_str(&String::from_utf8_lossy(&stderr));
-            }
-            (status.success(), text)
-        }
-        Ok(Err(error)) => {
-            let _ = child.kill().await;
-            (false, error)
-        }
-        Err(_) => {
-            let _ = child.kill().await;
-            (
-                false,
-                format!("Command exceeded {} ms", timeout.as_millis()),
-            )
-        }
-    }
-}
-
-#[cfg(target_os = "linux")]
-struct CommandGroup(Option<rustix::process::Pid>);
-
-#[cfg(target_os = "linux")]
-impl Drop for CommandGroup {
-    fn drop(&mut self) {
-        if let Some(pid) = self.0 {
-            let _ = rustix::process::kill_process_group(pid, rustix::process::Signal::KILL);
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn commands_are_bounded_and_report_failure() {
-        assert_eq!(
-            run_shell("printf '42'", COMMAND_TIMEOUT).await,
-            (true, "42".into())
-        );
-        assert!(!run_shell("exit 7", COMMAND_TIMEOUT).await.0);
-        assert!(
-            run_shell("sleep 30", Duration::from_millis(20))
-                .await
-                .1
-                .contains("exceeded")
-        );
-        assert!(
-            run_shell("yes x", COMMAND_TIMEOUT)
-                .await
-                .1
-                .contains("64 KiB")
-        );
     }
 }

@@ -1,3 +1,5 @@
+mod support;
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     num::{NonZeroU32, NonZeroU64, NonZeroUsize},
@@ -27,7 +29,7 @@ use store::karma::frequencies::{
 
 #[tokio::test]
 async fn tickless_runner_reconciles_sleeps_claims_and_rearms_without_heartbeat() {
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let engine = Arc::new(support::karma::engine().await);
     let now = Utc::now();
     let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
     let created = committed(
@@ -150,12 +152,16 @@ async fn tickless_runner_reconciles_sleeps_claims_and_rearms_without_heartbeat()
 
 #[tokio::test]
 async fn host_default_runtime_serves_utc_and_fires_without_any_configuration() {
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let engine = Arc::new(support::karma::engine().await);
     let now = Utc::now();
     let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
     let runtime = KarmaDeadlineDirectorConfig::for_host("engine-host-default".to_string()).unwrap();
 
-    let revision = runtime.provider_revisions().next().cloned().unwrap();
+    let revision = runtime
+        .provider_revisions()
+        .find(|revision| revision.version.as_str() == engine::karma_timezone::UTC_TZDB_VERSION)
+        .cloned()
+        .expect("the host runtime retains its fixed UTC provider");
     assert_eq!(
         revision.version.as_str(),
         engine::karma_timezone::UTC_TZDB_VERSION
@@ -406,7 +412,7 @@ impl DeadlineClock for ManualDeadlineClock {
 
 #[tokio::test]
 async fn manual_clock_reaches_exact_deadlines_without_wall_time() {
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let engine = Arc::new(support::karma::engine().await);
     let anchor = TimestampMs::parse_canonical("2026-01-01T00:00:00.000Z").unwrap();
     let now = Utc
         .timestamp_millis_opt(anchor.as_millis())
@@ -527,7 +533,7 @@ impl TimeZoneProvider for FakeCalendarProvider {
 
 #[tokio::test]
 async fn provider_scoped_calendar_runner_arms_and_commits_without_elapsed_fallback() {
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let engine = Arc::new(support::karma::engine().await);
     let now = Utc::now();
     let first = TimestampMs::from_millis(now.timestamp_millis() + 30).unwrap();
     let second = TimestampMs::from_millis(now.timestamp_millis() + 86_400_030).unwrap();
@@ -638,7 +644,7 @@ async fn provider_scoped_calendar_runner_arms_and_commits_without_elapsed_fallba
 
 #[tokio::test]
 async fn activation_admission_is_atomic_for_reject_and_explicit_for_pause() {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = support::karma::engine().await;
     let now = Utc::now();
     let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
     let runtime = KarmaDeadlineDirectorConfig::new(
@@ -763,7 +769,7 @@ async fn activation_admission_is_atomic_for_reject_and_explicit_for_pause() {
 
 #[tokio::test]
 async fn exact_wake_rate_capacity_rejects_dense_activation_without_a_cadence_cutoff() {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = support::karma::engine().await;
     let now = Utc::now();
     let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
     let runtime = KarmaDeadlineDirectorConfig::new(
@@ -835,7 +841,7 @@ async fn exact_wake_rate_capacity_rejects_dense_activation_without_a_cadence_cut
 
 #[tokio::test]
 async fn director_arms_a_persisted_lease_expiry_and_recovers_after_restart() {
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let engine = Arc::new(support::karma::engine().await);
     let now = Utc::now();
     let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
     let runtime = KarmaDeadlineDirectorConfig::new(
@@ -940,7 +946,7 @@ async fn director_arms_a_persisted_lease_expiry_and_recovers_after_restart() {
 
 #[tokio::test]
 async fn dense_rearm_does_not_requery_an_unrelated_sparse_cursor() {
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let engine = Arc::new(support::karma::engine().await);
     let now = Utc::now();
     let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
     let runtime = KarmaDeadlineDirectorConfig::new(

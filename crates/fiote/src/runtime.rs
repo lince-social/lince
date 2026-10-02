@@ -136,6 +136,7 @@ async fn turn(
             return Err("Stopped by you.".into());
         }
         validate_context(system, &messages)?;
+        output.context(&messages).await?;
         let progress = Prefix {
             text: &text,
             output,

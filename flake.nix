@@ -102,7 +102,17 @@
           }
           // {
             environment =
-              (lib.optionalAttrs (!isDesktop) { XDG_CONFIG_HOME = "${cfg.dataDir}/.config"; }) // cfg.environment;
+              (lib.optionalAttrs (!isDesktop) { XDG_CONFIG_HOME = "${cfg.dataDir}/.config"; }) // cfg.environment
+              // lib.optionalAttrs cfg.social.enable {
+                LINCE_SOCIAL_CONFIG = toString (pkgs.writeText "lince-social.json" (builtins.toJSON {
+                  inherit (cfg.social) directory townsquare mailbox relay contact policy;
+                  gossip = false;
+                  cache_entries = cfg.social.cacheEntries;
+                  storage_bytes = cfg.social.storageBytes;
+                  incoming_bytes_per_minute = cfg.social.incomingBytesPerMinute;
+                  outgoing_bytes_per_minute = cfg.social.outgoingBytesPerMinute;
+                }));
+              };
           };
         in
         {
@@ -273,10 +283,55 @@
               default = false;
               description = "Allow the peer UDP port and local discovery on UDP 5353.";
             };
+            social = {
+              enable = lib.mkEnableOption "deployment-managed social hosting; native choices apply when disabled";
+              directory = lib.mkEnableOption "hosting selected public posts and profiles";
+              townsquare = lib.mkEnableOption "public browsing and searching";
+              mailbox = lib.mkEnableOption "admitted encrypted offline mail storage";
+              relay = lib.mkEnableOption "application onward carrying, unavailable until qualified";
+              cacheEntries = lib.mkOption {
+                type = lib.types.ints.between 1 100000;
+                default = 10000;
+                description = "Maximum retained public documents.";
+              };
+              storageBytes = lib.mkOption {
+                type = lib.types.ints.between 1048576 17179869184;
+                default = 1073741824;
+                description = "Application payload budget; disk and WAL overhead require additional headroom.";
+              };
+              incomingBytesPerMinute = lib.mkOption {
+                type = lib.types.ints.between 1048576 1073741824;
+                default = 4194304;
+                description = "Global incoming social frame budget per minute.";
+              };
+              outgoingBytesPerMinute = lib.mkOption {
+                type = lib.types.ints.between 1048576 1073741824;
+                default = 4194304;
+                description = "Global outgoing social frame budget per minute.";
+              };
+              contact = lib.mkOption {
+                type = lib.types.str;
+                default = "";
+                description = "Public operator contact, at most 160 characters.";
+              };
+              policy = lib.mkOption {
+                type = lib.types.str;
+                default = "";
+                description = "Public operator policy, at most 1000 characters.";
+              };
+            };
           };
 
           config = lib.mkIf cfg.enable {
             assertions = [
+              {
+                assertion = !cfg.social.enable || !cfg.social.relay;
+                message = "services.lince.social.relay is unavailable; use the separate Iroh relay module for live connectivity and social.mailbox for offline mail.";
+              }
+              {
+                assertion = !cfg.social.enable || !cfg.social.mailbox || (cfg.social.cacheEntries >= 32 && cfg.social.storageBytes >= 4194304);
+                message = "services.lince.social.mailbox needs at least 32 entries and 4 MiB of payload capacity.";
+              }
               {
                 assertion =
                   cfg.mode != "server" || cfg.initialAdminPasswordFile != null || cfg.initialAdminPassword != null;
@@ -735,9 +790,9 @@
                 ++ lib.optionals ui interfaceLinuxBuildInputs;
 
               postInstall = lib.optionalString pkgs.stdenv.isLinux ''
-                install -Dm644 packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
-                install -Dm644 packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
-                install -Dm644 packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
+                install -Dm644 institute/packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
+                install -Dm644 institute/packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
+                install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
               '';
 
               postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
@@ -813,9 +868,9 @@
                 install -Dm755 bin/lince "$out/bin/lince"
                 install -Dm644 LICENSE "$out/share/licenses/lince/LICENSE"
                 install -Dm644 revision "$out/share/lince/revision"
-                install -Dm644 ${./packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
-                install -Dm644 ${./packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
-                install -Dm644 ${./packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
+                install -Dm644 ${./institute/packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
+                install -Dm644 ${./institute/packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
+                install -Dm644 ${./institute/packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
                 runHook postInstall
               '';
               postFixup = ''
@@ -985,8 +1040,29 @@
                 healthy = host { };
                 lince-unit = healthy.systemd.services.lince.serviceConfig;
                 relay-unit = healthy.systemd.services.iroh-relay.serviceConfig;
+                social-host = host {
+                  services.lince.social = {
+                    enable = true;
+                    directory = true;
+                    mailbox = true;
+                  };
+                };
               in
               {
+                social-hosting-config = pkgs.runCommand "social-hosting-config" { } (
+                  assert !(healthy.services.lince.social.directory || healthy.services.lince.social.mailbox || healthy.services.lince.social.townsquare || healthy.services.lince.social.relay);
+                  assert !(healthy.systemd.services.lince.environment ? LINCE_SOCIAL_CONFIG);
+                  assert failures social-host == [ ];
+                  assert social-host.systemd.services.lince.environment ? LINCE_SOCIAL_CONFIG;
+                  assert social-host.systemd.services.lince.serviceConfig.Restart == "always";
+                  assert refuses "unsupported application relay" {
+                    services.lince.social = { enable = true; relay = true; };
+                  } "social.relay";
+                  assert refuses "undersized mailbox" {
+                    services.lince.social = { enable = true; mailbox = true; storageBytes = 1048576; };
+                  } "social.mailbox";
+                  "touch $out"
+                );
                 vps-coexistence = pkgs.runCommand "vps-coexistence" { } (
                   assert failures healthy == [ ];
                   # Separate everything, asserted against the units that would
@@ -1204,7 +1280,7 @@
         system = "x86_64-linux";
         specialArgs = { inherit self; };
         modules = [
-          ./institute/configuration.nix
+          ./institute/server/configuration.nix
         ];
       };
     };

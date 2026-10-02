@@ -57,6 +57,7 @@ impl Engine {
                         token.func.as_str(),
                         "quantity"
                             | "signal"
+                            | "query_command"
                             | "value"
                             | "sum"
                             | "sum_pos"
@@ -68,6 +69,7 @@ impl Engine {
                 {
                     return Err(invalid("This reading has no authorized private preview"));
                 }
+                if token.func == "query_command" { self.require_permission(actor, "organ:update").await?; }
                 for name in token.slug.split('|') {
                     let record = store::records::resolve(&self.store.pool, name)
                         .await?

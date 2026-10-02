@@ -138,7 +138,7 @@ pub async fn root_for_op_tx(
     uid: &str,
 ) -> Result<Option<String>, StoreError> {
     Ok(match tbl {
-        "record" => {
+        "record" | "record_extension" => {
             sqlx::query_scalar::<_, Option<String>>("SELECT replica_root FROM record WHERE uid = ?")
                 .bind(uid)
                 .fetch_optional(&mut **tx)
@@ -149,6 +149,13 @@ pub async fn root_for_op_tx(
             "SELECT r.replica_root FROM record_assertion a
                JOIN record r ON r.uid = a.subject_uid
               WHERE a.uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(&mut **tx)
+        .await?
+        .flatten(),
+        "fact" => sqlx::query_scalar::<_, Option<String>>(
+            "SELECT r.replica_root FROM fact f JOIN record r ON r.uid=f.record_uid WHERE f.uid=?",
         )
         .bind(uid)
         .fetch_optional(&mut **tx)
@@ -174,11 +181,18 @@ pub async fn root_for_op(
     uid: &str,
 ) -> Result<Option<String>, StoreError> {
     match tbl {
-        "record" => root_of(pool, uid).await,
+        "record" | "record_extension" => root_of(pool, uid).await,
         "record_assertion" => Ok(sqlx::query_scalar::<_, Option<String>>(
             "SELECT r.replica_root FROM record_assertion a
                JOIN record r ON r.uid = a.subject_uid
               WHERE a.uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(pool)
+        .await?
+        .flatten()),
+        "fact" => Ok(sqlx::query_scalar::<_, Option<String>>(
+            "SELECT r.replica_root FROM fact f JOIN record r ON r.uid=f.record_uid WHERE f.uid=?",
         )
         .bind(uid)
         .fetch_optional(pool)

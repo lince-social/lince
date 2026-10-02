@@ -18,6 +18,7 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
         source: Source::Local,
     };
     let saved = FioteStatus {
+        activations: Vec::new(),
         questions: Vec::new(),
         usage: Vec::new(),
         agent_session: None,

@@ -1,9 +1,6 @@
 V1.0.0 (@v-one: 0) {
-
 # Interface Tasks:
 
-- [ ] Move, not copy, data (Record, Karma, Assertions) to another Organ through an offer the recipient can accept, with progress and cancellation controls.
-	- [ ] Put invitations, replica grants, Record moves and Transfer invitations in one pending-offers list. Show the local outcome clearly while respecting any rule that keeps refusal private from the sender.
 - [ ] Explain which forces, sorting rules, pins and immunity affect a Sand when clicking it in some mode. Provide limits and pause controls when rules conflict or keep triggering one another.
 - [ ] Share published Sand packages between connected Organs without requiring a central registry. Preserve their author, identity, origin, permissions and licenses even when a recipient cannot run them yet.
 - [ ] Choose direct or mailbox delivery per contact. Explain delivery limits and reconnect when a contact's device list is missing.
@@ -72,14 +69,18 @@ V1.0.0 (@v-one: 0) {
 
 # Finishing V1.0.0:
 
-For finishing v1 we need to do these tasks for specific things, when you touch code related to these features, try to debloat them. In the end we'll make a pass over the entire codebase to make the code function equally or better with more shared utils and minimalist code, the current codebase is hundreds of thousands of lines of code and we need to make it tighter for v1.0.0. But it is working this is just for maintainability. The tasks to wrap it up:
 - [ ] Reset migrations, understanding the path we want to go and optmizing the schema completely, fixing with the breakages.	
 - [ ] Make the design better.
-- [ ] Profile performance over each workflow and feature and optimize 3 times each part of Lince finding the bottlenecks.
-- [ ] Debloat the codebase: make the code work (current) and be human readable, meaning the files and function calls are organized in a tree-like structure, functions are not that big with famous idiomatic naming strategy. Prioritize more files with unique names over one file with more code. It's ok to make dirs inside dirs in the crates.
-	- [ ] Maybe we can make a castle for visualizing the lines of code of files and dirs and crates and where they are called, maybe the idea of general file spawned as protein and lsp doing the connections between them with the structs/functions/traits... caled between files.
-	Crates that went through this purifying process:
-		- [ ] 
+
+**Transfer — remaining follow-ups**
+
+The agreed non-Karma implementation and automated acceptance are complete. These follow-ups are outside that completed scope:
+
+1. [ ] **Manual native UI walkthrough:** propose and revise a multi-party Transfer, agree without Simulation, optionally simulate with checks, then settle and inspect quantities and permitted disclosures.
+2. [ ] **Public Transfer history / trust portfolio:** let people inspect a party's permitted completed Transfer history with verifiable identity, preserving private fields. This comes from the broader Transfer Record and was outside the implementation plan.
+3. [ ] **Automatic writer/queue handoff:** deferred; define its scope before implementation.
+
+Karma automation remains separate. The owner-authored `.lingua` task markers still need reconciliation with completed work.
 
 # Blood Tasks:
 

@@ -33,6 +33,7 @@ impl ProposedRule {
 #[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Input {
+    CommandResponse { after_ms: u64, response: nucleus::command::CommandResponse },
     Quantity {
         after_ms: u64,
         record: String,
@@ -53,7 +54,7 @@ pub enum Input {
 impl Input {
     pub fn after_ms(&self) -> u64 {
         match self {
-            Self::Quantity { after_ms, .. }
+            Self::CommandResponse { after_ms, .. } | Self::Quantity { after_ms, .. }
             | Self::Extension { after_ms, .. }
             | Self::Occurrence { after_ms, .. } => *after_ms,
         }

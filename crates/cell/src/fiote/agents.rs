@@ -16,6 +16,7 @@ struct Runtime {
     config: acp::Config,
     fresh: std::sync::atomic::AtomicBool,
     settings: Mutex<()>,
+    tools: transport::native::NativeTools,
     _server: transport::mcp::Connection,
 }
 
@@ -811,6 +812,25 @@ impl Host {
             record: record.uid.clone(),
             thread: thread.into(),
         });
+        native.set_source_message(outcome.created.as_deref());
+        runtime.tools.set_source_message(outcome.created.as_deref());
+        let mut supplied = if runtime.fresh.load(std::sync::atomic::Ordering::Acquire) {
+            history.clone()
+        } else {
+            Vec::new()
+        };
+        supplied.push(if content.is_empty() {
+            Message::User(body.into())
+        } else {
+            Message::RichUser {
+                text: body.into(),
+                content: content.to_vec(),
+            }
+        });
+        let mut available = Registry::default();
+        native.register(&mut available);
+        self.save_context(thread, &record.uid, &supplied, &available)
+            .await?;
         if let Err(error) = native.attach_message(&reply).await {
             let _ = self
                 .engine
@@ -840,6 +860,8 @@ impl Host {
             },
         ) {
             let output = output::Output {
+                context_path: None,
+                source_message: None,
                 usage_path: None,
                 tools: &tools,
                 message: &reply,

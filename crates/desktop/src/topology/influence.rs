@@ -35,12 +35,12 @@ pub fn update(world: &mut World) {
     let mut forces = world.remove_resource::<Forces>().unwrap();
     forces.totals.clear();
     let areas: Vec<_> = world
-        .query::<(
+        .query_filtered::<(
             Entity,
             &InfluenceArea,
             &ChildOf,
             &crate::workspace::WorkspaceMember,
-        )>()
+        ), Without<crate::component_push::composition::Generated>>()
         .iter(world)
         .filter(|(e, a, _, _)| {
             a.enabled
@@ -612,13 +612,13 @@ pub(crate) fn blocked(
         return false;
     };
     world
-        .query::<(
+        .query_filtered::<(
             Entity,
             &InfluenceArea,
             &ChildOf,
             &crate::workspace::WorkspaceMember,
             Option<&crate::protein_area::filter::Matches>,
-        )>()
+        ), Without<crate::component_push::composition::Generated>>()
         .iter(world)
         .any(|(entity, shield, parent, member, filter)| {
             if !shield.enabled

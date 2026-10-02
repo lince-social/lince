@@ -89,7 +89,8 @@ impl Engine {
         root: &str,
         batch: &OpBatch,
     ) -> Result<usize, EngineError> {
-        if !store::replica::is_accepted(&self.store.pool, root, &batch.from_organ).await? {
+        let own = store::organs::local(&self.store.pool).await?.is_some_and(|organ|organ.uid == batch.from_organ);
+        if !own && !store::replica::is_accepted(&self.store.pool, root, &batch.from_organ).await? {
             return Err(EngineError::Consequence(format!(
                 "no accepted grant on {root} for organ {}",
                 batch.from_organ
@@ -120,10 +121,28 @@ impl Engine {
     }
 
     pub async fn import_op_batch(&self, batch: &OpBatch) -> Result<usize, EngineError> {
-        self.import_ops(batch, None).await
+        let normal = OpBatch { from_organ:batch.from_organ.clone(),ops:batch.ops.iter().filter(|op|op.tbl != crate::social::history::TABLE).cloned().collect() };
+        let mut imported = self.import_ops(&normal, None).await?;
+        for op in batch.ops.iter().filter(|op|op.tbl == crate::social::history::TABLE) {
+            imported += self.import_own_conversation(&batch.from_organ, op).await?;
+        }
+        Ok(imported)
     }
 
     pub async fn batch_is_saved(&self, batch: &OpBatch) -> Result<bool, EngineError> {
+        if !batch.ops.iter().any(|op|op.tbl == crate::social::history::TABLE) {
+            return self.plain_batch_is_saved(batch).await;
+        }
+        for op in &batch.ops {
+            if op.tbl == crate::social::history::TABLE {
+                if !self.own_conversation_saved(op).await? { return Ok(false); }
+            }
+        }
+        let normal = OpBatch { from_organ:batch.from_organ.clone(),ops:batch.ops.iter().filter(|op|op.tbl != crate::social::history::TABLE).cloned().collect() };
+        self.plain_batch_is_saved(&normal).await
+    }
+
+    pub(crate) async fn plain_batch_is_saved(&self, batch: &OpBatch) -> Result<bool, EngineError> {
         for op in &batch.ops {
             if op.tbl == "transfer_replication" {
                 if !self.transfer_transaction_saved(op).await? { return Ok(false); }
@@ -204,7 +223,7 @@ impl Engine {
         }
         match &opened.root {
             Some(root) => self.import_grant_batch(root, &opened.batch).await,
-            None => self.import_ops(&opened.batch, None).await,
+            None => self.import_op_batch(&opened.batch).await,
         }
     }
 
@@ -260,6 +279,11 @@ impl Engine {
                     "only this Organ's own Cells may set a Person's standing",
                 ));
             }
+        }
+        if nucleus::social::private_sync_field(&op.tbl, &op.field)
+            && store::organs::local(&self.store.pool).await?.is_none_or(|organ| organ.uid != batch.from_organ)
+        {
+            return Ok(Some("private social state is synchronized only within its own Organ"));
         }
         if let Some(signed) = self.roster_of(&batch.from_organ).await? {
             if !signed
@@ -381,6 +405,7 @@ impl Engine {
         replica_root: Option<&str>,
     ) -> Result<(usize, Vec<String>), EngineError> {
         let mut accept: Option<Vec<String>> = None;
+        let mut general_disabled=false;
         if let Some(contact) = store::organs::contact(&self.store.pool, &batch.from_organ).await? {
             if contact.trust == "blocked" {
                 return Err(EngineError::Consequence(format!(
@@ -388,6 +413,7 @@ impl Engine {
                     batch.from_organ
                 )));
             }
+            general_disabled=!contact.sync_in;
             accept = contact.accept_fields;
         }
         if let Some(reason) = store::contact_rate::backing_off(
@@ -402,6 +428,9 @@ impl Engine {
         let ours = store::organs::local(&self.store.pool)
             .await?
             .is_some_and(|organ| organ.uid == batch.from_organ);
+        if !ours && replica_root.is_none() && general_disabled {
+            return Err(EngineError::Forbidden("General replication from this contact is disabled".into()));
+        }
         if !ours && self.roster_of(&batch.from_organ).await?.is_none() {
             store::organs::mark_awaiting_roster(&self.store.pool, &batch.from_organ).await?;
             if store::organs::awaiting_roster_longer_than(
@@ -704,6 +733,9 @@ impl Engine {
         touched.dedup();
         let subjects = touched.iter().take(32).cloned().collect();
         for record_uid in touched {
+            if store::records::get_extension(pool,&record_uid,nucleus::social::requests::MESSAGE_NAMESPACE).await?.is_some() {
+                continue;
+            }
             if store::records::get(pool, &record_uid).await?.is_some() {
                 let parent = received_parents.get(&record_uid).cloned();
                 let append = self.append(
@@ -1008,6 +1040,12 @@ impl Engine {
                         if contact_uid != from_organ
                             && op.tbl == "record_extension"
                             && store::karma::sync::is_definition_field(&op.field) =>
+                    {
+                        sync_ops::outbox_delete(pool, &row).await?;
+                    }
+                    Some(op)
+                        if contact_uid != from_organ
+                            && nucleus::social::private_sync_field(&op.tbl, &op.field) =>
                     {
                         sync_ops::outbox_delete(pool, &row).await?;
                     }

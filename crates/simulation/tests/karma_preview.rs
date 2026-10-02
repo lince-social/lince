@@ -11,6 +11,11 @@ use nucleus::simulation::{
     CheckDefinition, CheckOptions, Comparison, Evaluation, Predicate, Quantity, Stop,
 };
 
+#[allow(dead_code)]
+mod karma {
+    include!(concat!(env!("CARGO_MANIFEST_DIR"), "/../engine/tests/support/karma.rs"));
+}
+
 fn run(test: impl Future<Output = ()> + Send + 'static) {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)
@@ -32,6 +37,7 @@ fn now() -> DateTime<Utc> {
 
 async fn engine() -> Engine {
     let engine = Engine::open_memory().await.unwrap();
+    karma::authorize(&engine).await;
     simulation::karma_preview::install(&engine).unwrap();
     for slug in ["stock", "other"] {
         engine
@@ -89,6 +95,20 @@ fn request(proposals: Vec<ProposedRule>) -> Request {
     }
 }
 
+#[test]
+fn component_presentation_preview_records_incomplete_external_coverage_without_live_pushes() {
+    run(async {
+        let engine = engine().await;
+        let mut components = engine.subscribe_components();
+        let before = engine.store.state_hash().await.unwrap();
+        let report = preview(&engine, request(vec![proposal("1", "@stock: show({\"kind\":\"record\",\"mode\":\"call\"})")])).await;
+        assert!(report.incomplete);
+        assert_eq!(report.stop, Stop::UnsupportedEffect { cell: "current".into() });
+        assert!(components.try_recv().is_err());
+        assert_eq!(engine.store.state_hash().await.unwrap(), before);
+    });
+}
+
 async fn preview(engine: &Engine, request: Request) -> Report {
     serde_json::from_value(
         engine
@@ -99,6 +119,35 @@ async fn preview(engine: &Engine, request: Request) -> Report {
             .unwrap(),
     )
     .unwrap()
+}
+
+#[test]
+fn command_queries_and_consequences_use_controlled_responses_in_a_private_copy() {
+    run(async {
+        let engine = engine().await;
+        let command = engine.act_at(Action::SaveKarmaCommand {
+            target: None, expected_revision: None, slug: "reader".into(), head: "Reader".into(),
+            configuration: nucleus::command::Command::Shell { script: "exit 99".into() }, host: None,
+        }, None, now()).await.unwrap().created.unwrap();
+        let before = engine.store.state_hash().await.unwrap();
+        let mut query = request(vec![proposal("query_command(@reader)", "@stock")]);
+        query.inputs.insert(0, Input::CommandResponse { after_ms: 0, response: nucleus::command::CommandResponse { command: command.clone(), ok: true, stdout: "-2.75".into(), stderr: String::new() } });
+        let report = preview(&engine, query).await;
+        assert!(!report.incomplete, "{:?}", report.unsupported);
+        assert_eq!(report.final_values[0].quantity.as_ref().unwrap().value.to_string(), "-2.75");
+        let report = preview(&engine, request(vec![proposal("query_command(@reader)", "@stock")])).await;
+        assert!(report.incomplete);
+        assert_eq!(report.final_values[0].quantity.as_ref().unwrap().value.to_string(), "0");
+        let mut consequence = request(vec![proposal("1", "@stock: run(@reader)")]);
+        consequence.inputs.insert(0, Input::CommandResponse { after_ms: 0, response: nucleus::command::CommandResponse { command, ok: true, stdout: "done".into(), stderr: String::new() } });
+        assert!(!preview(&engine, consequence).await.incomplete);
+        let report = preview(&engine, request(vec![proposal("1", "@stock: run(@reader)")])).await;
+        assert!(report.incomplete);
+        assert_eq!(report.stop, Stop::UnsupportedEffect { cell: "current".into() });
+        assert_eq!(engine.store.state_hash().await.unwrap(), before);
+        let invocations: i64 = store::sqlx::query_scalar("SELECT count(*) FROM karma_command_invocation").fetch_one(&engine.store.pool).await.unwrap();
+        assert_eq!(invocations, 0);
+    });
 }
 
 #[test]

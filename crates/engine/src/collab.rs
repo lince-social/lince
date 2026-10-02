@@ -146,6 +146,9 @@ impl crate::Engine {
         actor: Option<&str>,
         uid: &str,
     ) -> Result<BTreeSet<Property>, EngineError> {
+        if store::records::get_extension(&self.store.pool,uid,nucleus::social::requests::MESSAGE_NAMESPACE).await?.is_some() {
+            return Ok(BTreeSet::new());
+        }
         self.record_property_permissions(
             actor,
             uid,
@@ -299,6 +302,22 @@ impl crate::Engine {
         }
         let publish = publish && !prepared.is_duplicate();
         let candidate = &prepared;
+        if let Some(record) = store::records::get(&self.store.pool, uid).await?
+            && let Ok(previous) = nucleus::component::Document::decode(&record.body)
+        {
+            let document =
+                nucleus::component::Document::decode(candidate.body()).map_err(refused)?;
+            if previous.composition.origin.is_some() && previous.composition.origin != document.composition.origin {
+                return Err(refused("A saved generated composition must retain its origin"));
+            }
+            let component = nucleus::component::ComponentState::Composition {
+                composition: document.composition,
+            };
+            self.resolve_component(component.clone()).await?;
+            if publish {
+                self.authorize_component(&component, actor).await?;
+            }
+        }
         let has_history: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind IN ('crdt', 'snapshot'))").bind(uid).fetch_one(&self.store.pool).await?;
         let beginning = VersionVector::default();
         let delta = candidate
@@ -487,7 +506,8 @@ impl crate::Engine {
                 .await?;
             drop(_serial);
             if let Some(fact) = fact {
-                self.observe_committed_fact(fact, nucleus::execution::now()).await
+                self.observe_committed_fact(fact, nucleus::execution::now())
+                    .await
             } else {
                 Ok(Vec::new())
             }

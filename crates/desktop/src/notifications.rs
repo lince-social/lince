@@ -138,6 +138,9 @@ pub fn report(world: &World, source: &str, message: &str) {
 }
 
 fn recommendation(source: &str, message: &str) -> &'static str {
+    if source == "lince::owner-backup" && message.starts_with("Encrypted owner backup saved.") {
+        return "Keep the backup file and its passphrase. Restoring this file in Lince is still being implemented.";
+    }
     let detail = format!("{source} {message}").to_lowercase();
     if detail.contains("no space") || detail.contains("disk full") {
         "Try this: free some disk space, then reopen Lince."

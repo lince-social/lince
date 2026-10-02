@@ -39,6 +39,7 @@ fn check_donation(recovery: bool, unbound: bool) {
                         if let Some(at) = review_at {
                             while session.world.next_ms().is_some_and(|time| time < at) { assert!(session.step().await.unwrap()); }
                             let node = &session.world.nodes["a"];
+                            let probe = nucleus::execution::Execution::restore(node.execution.snapshot()).unwrap();
                             assert_eq!(store::records::resolve(&node.engine().store.pool, "stock-a").await.unwrap().unwrap().quantity.to_f64(),30.0);
                             let (binding,state):(Option<String>,String) = store::sqlx::query_as("SELECT record_uid,state FROM promise WHERE transfer_uid IS NOT NULL").fetch_one(&node.engine().store.pool).await.unwrap();
                             assert_eq!(binding,None);
@@ -48,9 +49,9 @@ fn check_donation(recovery: bool, unbound: bool) {
                                 transfer:session.world.resolve_reference("$routes"),occurrence:session.world.resolve_reference("$activate"),
                                 person:session.world.resolve_reference("$ana"),expected_revision:2,expected_remaining_quantity:10.0,canonical_quantity:quantity,request_id:"settle".into(),
                             };
-                            let replay = node.execution.scope(node.engine().act(action(10.0),None)).await.unwrap();
+                            let replay = probe.scope(node.engine().act(action(10.0),None)).await.unwrap();
                             assert_eq!(replay.created,Some(session.world.resolve_reference("$settle")));
-                            let error = node.execution.scope(node.engine().act(action(1.0),None)).await.unwrap_err();
+                            let error = probe.scope(node.engine().act(action(1.0),None)).await.unwrap_err();
                             assert!(error.to_string().contains("reused with different"),"{error}");
                             let forbidden = engine::actions::Action::ApplyTransferApplication {
                                 expected_effects_hash: None,
@@ -59,7 +60,7 @@ fn check_donation(recovery: bool, unbound: bool) {
                                 expected_formula_hash:nucleus::transfer::occurrence_application_formula_hash("-incoming()"),expected_formula_version:0,
                                 expected_local_delta:-10.0,expected_local_cumulative_before:0.0,request_id:"foreign-record".into(),
                             };
-                            let error=node.execution.scope(node.engine().act(forbidden,None)).await.unwrap_err();
+                            let error=probe.scope(node.engine().act(forbidden,None)).await.unwrap_err();
                             assert!(error.to_string().contains("originating in this Cell"),"{error}");
                             assert_eq!(before,node.engine().store.state_hash().await.unwrap());
                         }

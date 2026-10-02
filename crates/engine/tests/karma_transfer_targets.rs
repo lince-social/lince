@@ -18,7 +18,7 @@ fn run(test: impl std::future::Future<Output = ()> + Send + 'static) {
 }
 
 async fn fixture() -> (Engine, Person, Person, TransferFixture) {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let a = support::person(&engine, "a").await;
     let b = support::person(&engine, "b").await;
     let record = support::plain(&engine, "item", 10.0).await;

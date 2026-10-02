@@ -398,7 +398,6 @@ fn private_requests_plain_and_protein_are_the_only_ordinary_new_kinds() {
         RecordKind::Sand,
         RecordKind::Program,
         RecordKind::Frequency,
-        RecordKind::Grant,
         RecordKind::CallSession,
     ] {
         assert!(!ordinary_kind(kind));

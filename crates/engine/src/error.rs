@@ -59,3 +59,9 @@ impl From<std::io::Error> for EngineError {
         Self::Io(error)
     }
 }
+
+impl From<serde_json::Error> for EngineError {
+    fn from(error: serde_json::Error) -> Self {
+        Self::Json(error)
+    }
+}

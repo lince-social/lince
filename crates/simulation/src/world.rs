@@ -554,6 +554,7 @@ impl World {
                 "action" => report::DatabaseEffectKind::Action,
                 "consequence" => report::DatabaseEffectKind::Consequence,
                 "notify" => report::DatabaseEffectKind::Notify,
+                "command" | "signal" | "saved-command" => report::DatabaseEffectKind::Command,
                 _ => return Err("unsupported database effect executed".into()),
             };
             self.emit(
@@ -728,6 +729,7 @@ impl World {
                     );
                 }
                 match input.event {
+                    Event::CommandResponse { response } => { self.nodes[&input.cell].engine().append_command_response(response.clone())?; }
                     Event::AssumeLoan { timing } => self.assume_loan(&input.cell,timing,cause).await?,
                     Event::Online { online } => {
                         self.nodes.get_mut(&input.cell).unwrap().online = online;

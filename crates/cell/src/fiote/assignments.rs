@@ -58,6 +58,9 @@ impl Host {
                 if let Err(error) = host.assignment_tick().await {
                     tracing::warn!(%error, "Fiote assignment dispatch failed");
                 }
+                if let Err(error) = host.activation_tick().await {
+                    tracing::warn!(%error, "Fiote activation dispatch failed");
+                }
             }
         })
     }

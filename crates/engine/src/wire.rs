@@ -2,13 +2,16 @@ mod presence;
 mod groups;
 mod discovery;
 mod siblings;
+mod social;
+mod mail_delivery;
+mod relays;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use iroh::endpoint::{Connection, presets};
+use iroh::endpoint::Connection;
 use iroh::{Endpoint, EndpointAddr, EndpointId, SecretKey};
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +22,7 @@ use crate::roster::SignedRoster;
 use crate::sync::{Delivery, Introduction, OpBatch, WireOp};
 
 pub use iroh::{EndpointAddr as PeerAddr, EndpointId as PeerId};
+pub use relays::configured_relays;
 
 pub const ALPN_SYNC: &[u8] = b"lince/sync/2";
 
@@ -29,6 +33,7 @@ pub const ALPN_LIVE: &[u8] = b"lince/live/2";
 pub const ALPN_HELLO: &[u8] = b"lince/hello/1";
 
 pub const ALPN_MAILBOX: &[u8] = b"lince/mailbox/1";
+pub const ALPN_SOCIAL: &[u8] = b"lince/social/1";
 
 pub const DEFAULT_PEER_PORT: u16 = 6175;
 
@@ -483,6 +488,7 @@ pub struct Wire {
     presence_connections: Arc<tokio::sync::Mutex<HashMap<String, Connection>>>,
     reach: Reach,
     peer_port: u16,
+    relays: Vec<iroh::RelayUrl>,
     local_discovery: discovery::LocalDiscovery,
     live: Arc<Mutex<Option<Arc<dyn LiveSessions>>>>,
     live_connections: Arc<Mutex<HashMap<String, Connection>>>,
@@ -559,15 +565,24 @@ impl Wire {
                 ALPN_LIVE.to_vec(),
                 ALPN_HELLO.to_vec(),
                 ALPN_MAILBOX.to_vec(),
+                ALPN_SOCIAL.to_vec(),
                 crate::blob_sync::ALPN.to_vec(),
                 crate::blob_sync::DATA_ALPN.to_vec(),
             ]
         };
-        let mut builder = match reach {
-            Reach::Internet => Endpoint::builder(presets::N0),
-            Reach::Relay => Endpoint::builder(presets::N0).clear_ip_transports(),
-            Reach::Local => Endpoint::builder(presets::Minimal),
+        let relays = if private.is_none() {
+            let fields = match store::cells::config(&engine.store.pool, "lince.discovery").await? {
+                Some(fields) => Some(fields),
+                None => match store::organs::local(&engine.store.pool).await? {
+                    Some(organ) => store::records::get_extension(&engine.store.pool, &organ.uid, "lince.discovery").await?,
+                    None => None,
+                },
+            };
+            configured_relays(fields.as_ref())?
+        } else {
+            Vec::new()
         };
+        let mut builder = relays::endpoint_builder(reach, &relays);
         if let Some(config) = private {
             builder = builder
                 .portmapper_config(iroh::endpoint::PortmapperConfig::Disabled)
@@ -612,6 +627,7 @@ impl Wire {
             engine,
             reach,
             peer_port,
+            relays,
             local_discovery: local_lookup,
             open_per_peer: Arc::new(Mutex::new(HashMap::new())),
             presence_connections: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
@@ -1154,10 +1170,17 @@ impl Wire {
         self.peer_port
     }
 
+    pub fn configured_relays(&self) -> &[iroh::RelayUrl] {
+        &self.relays
+    }
+
     pub fn network_status(&self) -> serde_json::Value {
         serde_json::json!({
             "configured_port": self.peer_port,
             "relay_only": self.reach == Reach::Relay,
+            "relay_selection": if self.reach == Reach::Local { "disabled" } else if self.relays.is_empty() { "preset" } else { "custom" },
+            "selected_relays": self.relays.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            "advertised_relays": self.endpoint.addr().relay_urls().map(ToString::to_string).collect::<Vec<_>>(),
             "listening": self.endpoint.bound_sockets().iter().map(ToString::to_string).collect::<Vec<_>>(),
             "addresses": self.endpoint.addr().ip_addrs().map(ToString::to_string).collect::<Vec<_>>(),
         })
@@ -1173,12 +1196,17 @@ impl Wire {
             return;
         }
         while let Some(incoming) = self.endpoint.accept().await {
+            let Ok(slot) = self.connection_slots.clone().try_acquire_owned() else {
+                incoming.refuse();
+                continue;
+            };
             let wire = self.clone();
             tokio::spawn(async move {
-                let connection = match incoming.await {
-                    Ok(connection) => connection,
-                    Err(error) => {
-                        tracing::debug!(%error, "iroh handshake failed");
+                let _slot = slot;
+                let connection = match tokio::time::timeout(DIAL_TIMEOUT, incoming).await {
+                    Ok(Ok(connection)) => connection,
+                    _ => {
+                        tracing::debug!("iroh handshake failed or timed out");
                         return;
                     }
                 };
@@ -1409,6 +1437,10 @@ impl Wire {
         if contact.as_ref().is_some_and(|c| c.trust == "blocked") {
             connection.close(0u32.into(), b"blocked");
             return Ok(());
+        }
+
+        if alpn == ALPN_SOCIAL {
+            return self.serve_social_connection(connection).await;
         }
 
         if alpn == crate::blob_sync::ALPN || alpn == crate::blob_sync::DATA_ALPN {
@@ -1994,8 +2026,11 @@ impl Wire {
                 )
                 .await
                 {
-                    Ok(rows) => {
+                    Ok(mut rows) => {
                         let head = rows.last().map(|row| row.seq).unwrap_or_default();
+                        if authenticated != local {
+                            rows.retain(|row| !nucleus::social::private_sync_field(&row.tbl, &row.field));
+                        }
                         match self.engine.hydrate_ops(rows).await {
                             Ok(ops) => WireResponse::Ops {
                                 from_organ: local,
@@ -2113,7 +2148,12 @@ impl Wire {
                 match store::sync_ops::version_vector_for_organ(&self.engine.store.pool, &organ_uid)
                     .await
                 {
-                    Ok(vector) => WireResponse::Vector { vector },
+                    Ok(mut vector) => {
+                        if authenticated != local {
+                            vector.retain(|entry| !entry.actor_cell.starts_with(nucleus::social::CONVERSATION_VECTOR_PREFIX));
+                        }
+                        WireResponse::Vector { vector }
+                    },
                     Err(error) => WireResponse::Error {
                         message: error.to_string(),
                     },
@@ -2570,6 +2610,16 @@ impl Wire {
                         .expect("live connections")
                         .get(&contact.record_uid)
                         .cloned();
+                    let conversation = wire.is_conversation_delivery(root.as_deref()).await;
+                    if conversation {
+                        return match wire.try_direct_conversation(&contact, &request, live, &connections).await {
+                            Ok(Some(WireResponse::BatchSaved { complete: true, .. })) => Delivery::Sent,
+                            Ok(Some(other)) => Delivery::Failed(format!("{other:?}")),
+                            Ok(None) | Err(_) if contact.delivery() == store::organs::Delivery::Direct =>
+                                Delivery::Failed(format!("{} unreachable", contact.record_uid)),
+                            Ok(None) | Err(_) => wire.mail_now(&contact, root.as_deref(), &batch).await,
+                        };
+                    }
                     if let Some(live) = live {
                         match wire.exchange(&live, &request).await {
                             Ok(WireResponse::BatchSaved { complete: true, .. }) => {
@@ -2619,6 +2669,9 @@ impl Wire {
         root: Option<&str>,
         batch: &OpBatch,
     ) -> Delivery {
+        if self.is_conversation_delivery(root).await {
+            return self.mail_now(contact, root, batch).await;
+        }
         let unreachable = format!("{} unreachable", contact.record_uid);
         let now = nucleus::execution::now();
         let since = match store::organs::contact(&self.engine.store.pool, &contact.record_uid).await
@@ -3071,44 +3124,7 @@ impl Wire {
             return Ok(MailLeft::NoPickupPoints);
         }
         let queued = self.engine.prepare_outgoing_mail(to_organ, root, batch).await?;
-        let envelope: crate::seal::SealedBundle = serde_json::from_str(&queued.body).map_err(EngineError::Json)?;
-        crate::seal::validate_envelope(&envelope, nucleus::execution::now().timestamp())
-            .map_err(|error| EngineError::Consequence(error.to_string()))?;
-        let mut receipts = store::mailbox::outbox::receipts(&self.engine.store.pool, &queued.uid).await?;
-        if queued.next_attempt > nucleus::execution::now().timestamp() && receipts.len() < queued.requested_copies as usize {
-            return Ok(if let Some((carrier,_)) = receipts.first() {
-                MailLeft::Left {carrier:carrier.clone(),uid:queued.uid,copies:receipts.len(),requested_copies:queued.requested_copies as usize}
-            } else { MailLeft::NoneAccepted {refusals:vec![(to_organ.into(),"retry_backoff".into())]} });
-        }
-        let mut refusals = Vec::new();
-        for point in their_roster.roster.pickup.iter().take(8) {
-            if receipts.len() >= queued.requested_copies as usize { break; }
-            if receipts.iter().any(|(_,node)| node == &point.node_id) { continue; }
-            let Ok(id) = point.node_id.parse::<EndpointId>() else {
-                refusals.push((point.organ_uid.clone(), "unusable_node_id".to_string()));
-                continue;
-            };
-            match self.deposit_bundle(EndpointAddr::new(id), &queued.body).await {
-                Ok(Ok(uid)) => {
-                    if uid != queued.uid {
-                        refusals.push((point.organ_uid.clone(), "invalid_receipt".into()));
-                        continue;
-                    }
-                    store::mailbox::outbox::accepted(&self.engine.store.pool, &uid, &point.organ_uid, &point.node_id).await?;
-                    receipts.push((point.organ_uid.clone(), point.node_id.clone()));
-                }
-                Ok(Err(code)) => refusals.push((point.organ_uid.clone(), code)),
-                Err(_) => refusals.push((point.organ_uid.clone(), "unreachable".to_string())),
-            }
-        }
-        let error = if receipts.len() < queued.requested_copies as usize {
-            Some(format!("{} of {} servers accepted this envelope; {} refusal(s)", receipts.len(), queued.requested_copies, refusals.len()))
-        } else { None };
-        store::mailbox::outbox::attempted(&self.engine.store.pool, &queued.uid, error.as_deref()).await?;
-        if let Some((carrier,_)) = receipts.first() {
-            return Ok(MailLeft::Left {carrier:carrier.clone(),uid:queued.uid,copies:receipts.len(),requested_copies:queued.requested_copies as usize});
-        }
-        Ok(MailLeft::NoneAccepted { refusals })
+        self.deliver_saved_mail(&queued).await
     }
 
     pub async fn collect_own_mail(&self) -> Result<usize, EngineError> {
@@ -3486,6 +3502,7 @@ fn reference_gone() -> WireResponse {
 
 #[cfg(test)]
 mod private_wire {
+    use iroh::endpoint::presets;
     use super::*;
     use std::time::Duration;
     use tokio::sync::mpsc;
@@ -3561,6 +3578,42 @@ mod private_wire {
         .await
         .unwrap()
         .uid
+    }
+
+    #[tokio::test]
+    async fn social_direct_deadline_includes_a_stalled_live_response() {
+        let sender = wire(config()).await;
+        let peer = Endpoint::builder(presets::Minimal)
+            .alpns(vec![ALPN_LIVE.to_vec()])
+            .portmapper_config(iroh::endpoint::PortmapperConfig::Disabled)
+            .net_report_config(iroh::endpoint::NetReportConfig::minimal())
+            .clear_ip_transports()
+            .bind_addr("127.0.0.1:0").unwrap().bind().await.unwrap();
+        let address = EndpointAddr::new(peer.id()).with_ip_addr(peer.bound_sockets()[0]);
+        let peer_task = peer.clone();
+        let (held, observed) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(async move {
+            let connection = peer_task.accept().await.unwrap().await.unwrap();
+            let (_send, mut recv) = connection.accept_bi().await.unwrap();
+            recv.read_to_end(MAX_FRAME_BYTES).await.unwrap();
+            held.send(()).unwrap();
+            connection.closed().await;
+        });
+        let live = sender.endpoint.connect(address, ALPN_LIVE).await.unwrap();
+        let uid = contact(&sender, &peer).await;
+        let recipient = store::organs::contact(&sender.engine.store.pool, &uid).await.unwrap().unwrap();
+        let connections = tokio::sync::Mutex::new(HashMap::new());
+        let started = tokio::time::Instant::now();
+        let result = sender.try_direct_conversation(&recipient, &WireRequest::Introduction,
+            Some(live.clone()), &connections).await;
+        observed.await.unwrap();
+        assert!(result.is_err());
+        assert!(started.elapsed() >= Duration::from_secs(3));
+        assert!(started.elapsed() < Duration::from_secs(5));
+        live.close(0u32.into(), b"test complete");
+        server.abort();
+        peer.close().await;
+        sender.endpoint.close().await;
     }
 
     async fn contact(wire: &Wire, client: &Endpoint) -> String {

@@ -2,8 +2,6 @@ pub mod candidates;
 pub mod execution;
 pub mod expansions;
 pub mod frequencies;
-pub mod grants;
-pub mod intents;
 pub mod occurrences;
 pub mod programs;
 pub mod runs;

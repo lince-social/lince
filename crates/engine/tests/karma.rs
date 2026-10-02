@@ -7,7 +7,7 @@ mod support;
 use store::records::NewRecord;
 
 async fn engine() -> Engine {
-    Engine::open_memory().await.expect("engine opens")
+    support::karma::engine().await
 }
 
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
@@ -286,7 +286,7 @@ async fn a_paused_rule_stops_acting_and_stops_being_read() {
     .unwrap();
 
     e.append_user(&apples, -1.0).await.unwrap();
-    e.fire_due_rules(Utc::now()).await.unwrap();
+    e.advance_karma_time(Utc::now()).await.unwrap();
     assert_eq!(
         level(&e, &counter).await,
         0.0,

@@ -63,7 +63,7 @@ async fn rule(
 
 #[tokio::test]
 async fn record_changes_each_execute_and_chain_without_a_period_lock() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 10.0).await;
     let counter = support::plain(&engine, "counter", 0.0).await;
     let mirror = support::plain(&engine, "mirror", 0.0).await;
@@ -99,7 +99,7 @@ async fn record_changes_each_execute_and_chain_without_a_period_lock() {
 
 #[tokio::test]
 async fn one_frequency_serves_many_rules_and_record_events_do_not_repeat_beats() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 3.0).await;
     let first = support::plain(&engine, "first", 0.0).await;
     let second = support::plain(&engine, "second", 0.0).await;
@@ -149,7 +149,7 @@ async fn one_frequency_serves_many_rules_and_record_events_do_not_repeat_beats()
 
 #[tokio::test]
 async fn deleting_last_reader_disarms_and_resume_skips_inactive_time() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "target", 0.0).await;
     let start = now();
     let frequency = frequency(&engine, start + TimeDelta::seconds(1), 1_000).await;
@@ -226,7 +226,7 @@ async fn deleting_last_reader_disarms_and_resume_skips_inactive_time() {
 
 #[tokio::test]
 async fn commands_wake_without_heartbeat_and_are_claimed_once() {
-    let engine = Arc::new(support::engine().await);
+    let engine = Arc::new(support::karma::engine().await);
     let source = support::plain(&engine, "source", 0.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
     rule(
@@ -259,7 +259,7 @@ async fn commands_wake_without_heartbeat_and_are_claimed_once() {
 
 #[tokio::test]
 async fn deadline_director_changes_quantities_without_heartbeat() {
-    let engine = Arc::new(support::engine().await);
+    let engine = Arc::new(support::karma::engine().await);
     let target = support::plain(&engine, "target", 0.0).await;
     frequency(&engine, now() + TimeDelta::milliseconds(200), 50).await;
     rule(
@@ -290,7 +290,7 @@ async fn deadline_director_changes_quantities_without_heartbeat() {
 
 #[tokio::test]
 async fn revising_a_rule_replaces_its_live_dependencies() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let first = support::plain(&engine, "first", 0.0).await;
     let second = support::plain(&engine, "second", 0.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
@@ -332,7 +332,7 @@ async fn revising_a_rule_replaces_its_live_dependencies() {
 
 #[tokio::test]
 async fn paused_rules_cancel_queued_commands_and_failed_batches_roll_back() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 0.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
     let uid = rule(
@@ -388,7 +388,7 @@ async fn paused_rules_cancel_queued_commands_and_failed_batches_roll_back() {
 
 #[tokio::test]
 async fn signals_use_the_shared_clock_and_each_sample_is_reactive() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let signal = engine
         .act(
             Action::CreateSignal {
@@ -440,7 +440,7 @@ async fn signals_use_the_shared_clock_and_each_sample_is_reactive() {
 
 #[tokio::test]
 async fn recurrence_without_a_condition_uses_a_frequency_and_manual_application_deduplicates() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "target", 0.0).await;
     let start = now();
     let due = start + TimeDelta::seconds(1);
@@ -480,12 +480,12 @@ async fn recurrence_without_a_condition_uses_a_frequency_and_manual_application_
 
 #[tokio::test]
 async fn frequency_permission_alone_cannot_author_commands() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let person = support::person(&engine, "rule-author").await;
     let role = store::auth::ensure_role(&engine.store.pool, "rule-author")
         .await
         .unwrap();
-    for (subject, action) in [("frequency", "create"), ("record", "update")] {
+    for (subject, action) in [("frequency", "create"), ("record", "update"), ("record", "read")] {
         let permission = store::auth::ensure_permission(&engine.store.pool, subject, action)
             .await
             .unwrap();
@@ -497,6 +497,9 @@ async fn frequency_permission_alone_cannot_author_commands() {
         .await
         .unwrap();
     let target = support::plain(&engine, "target", 0.0).await;
+    store::visibility::grant(&engine.store.pool, "actor", Some(&person.uid), &target)
+        .await
+        .unwrap();
     let result = engine
         .act(
             Action::CreateRecurrence {
@@ -533,7 +536,7 @@ async fn frequency_permission_alone_cannot_author_commands() {
 
 #[tokio::test]
 async fn unused_frequencies_do_not_arm_and_late_wakes_replay_intended_beats() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "target", 0.0).await;
     let start = now();
     frequency(&engine, start + TimeDelta::seconds(1), 1_000).await;

@@ -405,6 +405,7 @@ async fn two_servers_receive_the_same_envelope_and_partial_delivery_can_resume()
     store::mailbox::outbox::retry_recipient(&sender.store.pool, &organ)
         .await
         .unwrap();
+    assert_eq!(wire.retry_saved_mail_once().await.unwrap(), 1);
     assert!(
         matches!(wire.leave_mail(&organ, None, &batch).await.unwrap(),
         engine::wire::MailLeft::Left {uid:ref completed,copies:2,requested_copies:2,..} if completed==&uid)

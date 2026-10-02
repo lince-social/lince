@@ -221,7 +221,14 @@ pub async fn run(
         let at_ms = start_ms
             .checked_add(i64::try_from(input.after_ms())?)
             .ok_or("Input date is out of range")?;
+        if let Input::CommandResponse { response, .. } = input {
+            let mut response = response.clone();
+            response.command = bind_record(engine, actor, &response.command).await?.as_str().into();
+            inputs.push(scenario::Input { id: format!("command-response-{index}"), at_ms, cell: "current".into(), event: scenario::Event::CommandResponse { response } });
+            continue;
+        }
         let action = match input {
+            Input::CommandResponse { .. } => unreachable!("handled above"),
             Input::Quantity { record, value, .. } => Action::SetQuantityExact {
                 target: bind_record(engine, actor, record).await?,
                 amount: value.to_string(),

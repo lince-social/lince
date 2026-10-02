@@ -59,6 +59,7 @@ pub(super) fn sync(world: &mut World, saved: &FioteStatus) {
                 ))
                 .id();
             crate::edit_mode::label(world, card, "Private agent interaction", 16.0);
+            crate::accessibility::question(world, card, &request.prompt);
             crate::edit_mode::label(world, card, &request.prompt, 14.0);
             let form =
                 request.schema.as_ref().and_then(|schema| {
@@ -90,6 +91,7 @@ pub(super) fn sync(world: &mut World, saved: &FioteStatus) {
                 crate::description::button(world, card, card, "Copy private address", Copy);
             }
             let status = crate::edit_mode::label(world, card, "", 12.0);
+            crate::accessibility::status(world, status);
             if form.is_some() || url.is_some() {
                 crate::description::button(
                     world,

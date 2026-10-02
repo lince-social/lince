@@ -107,12 +107,10 @@ fn person_record_identity_other_reference_kinds_retain_their_prefixes() {
         (ReferenceKind::Model, "r"),
         (ReferenceKind::Objective, "r"),
         (ReferenceKind::Workflow, "r"),
-        (ReferenceKind::Grant, "r"),
         (ReferenceKind::TrustScope, "r"),
         (ReferenceKind::Run, "r"),
         (ReferenceKind::Candidate, "r"),
         (ReferenceKind::Decision, "r"),
-        (ReferenceKind::Intent, "r"),
         (ReferenceKind::Receipt, "r"),
         (ReferenceKind::Simulation, "r"),
     ] {

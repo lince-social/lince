@@ -334,6 +334,13 @@ impl Engine {
         now: chrono::DateTime<Utc>,
         rounds: u32,
     ) -> Result<KarmaStep, EngineError> {
+        if !self.karma_device_execution().await?.executing {
+            return Ok(KarmaStep {
+                facts: Vec::new(),
+                processed: 0,
+                next_at_ms: None,
+            });
+        }
         let mut config = match self.configured_karma_runtime() {
             Ok(config) => config,
             Err(EngineError::Conflict {
@@ -348,6 +355,13 @@ impl Engine {
         let mut directory = rebuild_directory(self, &config).await?;
         let mut processed = 0;
         for _ in 0..rounds.min(64) {
+            if !self.karma_device_execution().await?.executing {
+                return Ok(KarmaStep {
+                    facts: Vec::new(),
+                    processed,
+                    next_at_ms: None,
+                });
+            }
             let due = directory.index.pop_due(timestamp);
             if due.due.is_empty() {
                 break;
@@ -358,32 +372,67 @@ impl Engine {
                     .calendar_provider_by_activation
                     .get(armed.entry.activation_hash());
                 match process_deadline(self, &config, armed.entry, revision, now).await? {
-                    DeadlineProcess::Rearm(entry) => { directory.index.upsert(ArmedDeadline {
-                        entry,
-                        lane_resolution_ms: armed.lane_resolution_ms,
-                        degraded: armed.degraded,
-                    }); }
-                    DeadlineProcess::RetryAt(expiry) => directory.lease_recovery_at = earliest(directory.lease_recovery_at, Some(expiry)),
+                    DeadlineProcess::Rearm(entry) => {
+                        directory.index.upsert(ArmedDeadline {
+                            entry,
+                            lane_resolution_ms: armed.lane_resolution_ms,
+                            degraded: armed.degraded,
+                        });
+                    }
+                    DeadlineProcess::RetryAt(expiry) => {
+                        directory.lease_recovery_at =
+                            earliest(directory.lease_recovery_at, Some(expiry))
+                    }
                     DeadlineProcess::Reload => directory = rebuild_directory(self, &config).await?,
                     DeadlineProcess::Disarmed => {}
                 }
             }
         }
+        if !self.karma_device_execution().await?.executing {
+            return Ok(KarmaStep {
+                facts: Vec::new(),
+                processed,
+                next_at_ms: None,
+            });
+        }
         if store::karma::expansions::has_pending_schedule_occurrences(&self.store.pool).await? {
-            store::karma::expansions::expand_pending_schedule_occurrences(&self.store.pool, config.occurrence_expansion.recovery_source_limit, config.occurrence_expansion.page_size, now).await?;
+            store::karma::expansions::expand_pending_schedule_occurrences(
+                &self.store.pool,
+                config.occurrence_expansion.recovery_source_limit,
+                config.occurrence_expansion.page_size,
+                now,
+            )
+            .await?;
         }
         if store::karma::runs::has_pending_occurrences(&self.store.pool).await? {
-            store::karma::runs::process_next_occurrence(&self.store.pool, config.program_processing.evaluation, config.program_processing.member_page_size, now, Some(&SavedProteinInputs { store: &self.store })).await?;
+            store::karma::runs::process_next_occurrence(
+                &self.store.pool,
+                config.program_processing.evaluation,
+                config.program_processing.member_page_size,
+                now,
+                Some(&SavedProteinInputs { store: &self.store }),
+            )
+            .await?;
         }
         let facts = self.process_rule_occurrences(now).await?;
-        self.query_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.query_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
         let pending = self.has_rule_occurrences().await?
             || store::karma::runs::has_pending_occurrences(&self.store.pool).await?
             || store::karma::expansions::has_pending_schedule_occurrences(&self.store.pool).await?;
-        let next = if pending { Some(timestamp) } else {
-            earliest(directory.index.next_host_wake(), directory.lease_recovery_at)
+        let next = if pending {
+            Some(timestamp)
+        } else {
+            earliest(
+                directory.index.next_host_wake(),
+                directory.lease_recovery_at,
+            )
         };
-        Ok(KarmaStep { facts, processed, next_at_ms: next.map(|time| time.as_millis()) })
+        Ok(KarmaStep {
+            facts,
+            processed,
+            next_at_ms: next.map(|time| time.as_millis()),
+        })
     }
 
     pub fn start_karma_deadline_director(
@@ -401,6 +450,7 @@ pub struct KarmaStep {
     pub next_at_ms: Option<i64>,
 }
 
+#[derive(Default)]
 struct DeadlineDirectory {
     index: DeadlineIndex,
     calendar_provider_by_activation: BTreeMap<CanonicalHash, TzdbRevision>,
@@ -436,44 +486,56 @@ async fn run_deadline_director(
     let mut lease_recovery_at = directory.lease_recovery_at;
 
     loop {
+        if !engine.karma_device_execution().await?.executing {
+            await_directory_change(&mut changed).await?;
+            directory = rebuild_directory(&engine, &config).await?;
+            lease_recovery_at = directory.lease_recovery_at;
+            continue;
+        }
         let next_wake = earliest(directory.index.next_host_wake(), lease_recovery_at);
         if directory.pending_occurrence_expansion
             || directory.pending_program_processing
             || directory.pending_rule_processing
         {
             let expansion_now = config.clock.now()?;
-            if next_wake.is_none_or(|deadline| deadline > expansion_now) {
-                let background_now = chrono_timestamp(expansion_now)?;
-                if directory.pending_occurrence_expansion {
-                    store::karma::expansions::expand_pending_schedule_occurrences(
-                        &engine.store.pool,
-                        config.occurrence_expansion.recovery_source_limit,
-                        config.occurrence_expansion.page_size,
-                        background_now,
-                    )
+            let background_now = chrono_timestamp(expansion_now)?;
+            if directory.pending_occurrence_expansion {
+                store::karma::expansions::expand_pending_schedule_occurrences(
+                    &engine.store.pool,
+                    config.occurrence_expansion.recovery_source_limit,
+                    config.occurrence_expansion.page_size,
+                    background_now,
+                )
+                .await?;
+            }
+            directory.pending_occurrence_expansion =
+                store::karma::expansions::has_pending_schedule_occurrences(&engine.store.pool)
                     .await?;
+            if store::karma::runs::has_pending_occurrences(&engine.store.pool).await? {
+                store::karma::runs::process_next_occurrence(
+                    &engine.store.pool,
+                    config.program_processing.evaluation,
+                    config.program_processing.member_page_size,
+                    background_now,
+                    Some(&SavedProteinInputs {
+                        store: &engine.store,
+                    }),
+                )
+                .await?;
+            }
+            directory.pending_program_processing =
+                store::karma::runs::has_pending_occurrences(&engine.store.pool).await?;
+            engine.process_rule_occurrences(background_now).await?;
+            directory.pending_rule_processing = engine.has_rule_occurrences().await?;
+            tokio::task::yield_now().await;
+            if directory.pending_occurrence_expansion
+                || directory.pending_program_processing
+                || directory.pending_rule_processing
+            {
+                let processed_at = config.clock.now()?;
+                if next_wake.is_none_or(|deadline| deadline > processed_at) {
+                    continue;
                 }
-                directory.pending_occurrence_expansion =
-                    store::karma::expansions::has_pending_schedule_occurrences(&engine.store.pool)
-                        .await?;
-                if store::karma::runs::has_pending_occurrences(&engine.store.pool).await? {
-                    store::karma::runs::process_next_occurrence(
-                        &engine.store.pool,
-                        config.program_processing.evaluation,
-                        config.program_processing.member_page_size,
-                        background_now,
-                        Some(&SavedProteinInputs {
-                            store: &engine.store,
-                        }),
-                    )
-                    .await?;
-                }
-                directory.pending_program_processing =
-                    store::karma::runs::has_pending_occurrences(&engine.store.pool).await?;
-                engine.process_rule_occurrences(background_now).await?;
-                directory.pending_rule_processing = engine.has_rule_occurrences().await?;
-                tokio::task::yield_now().await;
-                continue;
             }
         }
         let Some(next_wake) = next_wake else {
@@ -500,6 +562,9 @@ async fn run_deadline_director(
             }
         };
         let observed_at = chrono_timestamp(observed_timestamp)?;
+        if !engine.karma_device_execution().await?.executing {
+            continue;
+        }
         if lease_recovery_at.is_some_and(|expiry| expiry <= observed_timestamp) {
             directory = rebuild_directory(&engine, &config).await?;
             lease_recovery_at = directory.lease_recovery_at;
@@ -543,7 +608,9 @@ async fn run_deadline_director(
         directory.pending_program_processing =
             store::karma::runs::has_pending_occurrences(&engine.store.pool).await?;
         engine.process_rule_occurrences(observed_at).await?;
-        engine.query_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+        engine
+            .query_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
         directory.pending_rule_processing = engine.has_rule_occurrences().await?;
         if reload {
             directory = rebuild_directory(&engine, &config).await?;
@@ -559,6 +626,9 @@ async fn process_deadline(
     provider_revision: Option<&TzdbRevision>,
     observed_at: chrono::DateTime<Utc>,
 ) -> Result<DeadlineProcess, EngineError> {
+    if !engine.karma_device_execution().await?.executing {
+        return Ok(DeadlineProcess::Reload);
+    }
     let claim = store::karma::schedules::claim_due(
         &engine.store.pool,
         entry.activation_hash(),
@@ -653,6 +723,9 @@ async fn rebuild_directory(
     engine: &Engine,
     config: &KarmaDeadlineDirectorConfig,
 ) -> Result<DeadlineDirectory, EngineError> {
+    if !engine.karma_device_execution().await?.executing {
+        return Ok(DeadlineDirectory::default());
+    }
     let now = chrono_timestamp(config.clock.now()?)?;
     let used = engine.reconcile_rule_frequencies(config, now).await?;
     let demand_policy = store::karma::schedules::ScheduleDemandPolicy {
@@ -746,7 +819,9 @@ async fn rebuild_directory(
     .await?;
     let lease_recovery_at =
         store::karma::schedules::next_active_schedule_lease_expiry(&engine.store.pool).await?;
-    engine.query_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+    engine
+        .query_changed
+        .send_modify(|revision| *revision = revision.wrapping_add(1));
     Ok(DeadlineDirectory {
         index,
         calendar_provider_by_activation,
@@ -861,9 +936,11 @@ fn earliest(left: Option<TimestampMs>, right: Option<TimestampMs>) -> Option<Tim
 }
 
 fn system_timestamp() -> Result<TimestampMs, EngineError> {
-    TimestampMs::from_millis(nucleus::execution::now().timestamp_millis()).map_err(|error| EngineError::Conflict {
-        code: "karma_clock_boundary",
-        message: error.to_string(),
+    TimestampMs::from_millis(nucleus::execution::now().timestamp_millis()).map_err(|error| {
+        EngineError::Conflict {
+            code: "karma_clock_boundary",
+            message: error.to_string(),
+        }
     })
 }
 
@@ -898,4 +975,38 @@ fn validate_runtime_identity(
         });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct UnavailableClock;
+
+    impl DeadlineClock for UnavailableClock {
+        fn now(&self) -> Result<TimestampMs, EngineError> {
+            Err(EngineError::Consequence(
+                "Clock must not run on a disabled Cell".into(),
+            ))
+        }
+
+        fn sleep_until(&self, _deadline: TimestampMs) -> DeadlineSleep<'_> {
+            Box::pin(async { Err(EngineError::Consequence("Clock must remain stopped".into())) })
+        }
+    }
+
+    #[tokio::test]
+    async fn disabled_startup_does_not_initialize_frequencies_or_read_the_clock() {
+        let engine = Engine::open_memory().await.unwrap();
+        store::organs::ensure_local(&engine.store.pool, "http://disabled.test")
+            .await
+            .unwrap();
+        assert!(!engine.karma_device_execution().await.unwrap().executing);
+        let source = engine.store.state_hash().await.unwrap();
+        let mut config = KarmaDeadlineDirectorConfig::for_host("disabled-test".into()).unwrap();
+        config.clock = Arc::new(UnavailableClock);
+        let directory = rebuild_directory(&engine, &config).await.unwrap();
+        assert!(directory.index.is_empty());
+        assert_eq!(engine.store.state_hash().await.unwrap(), source);
+    }
 }

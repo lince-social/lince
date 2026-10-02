@@ -2,14 +2,13 @@ use crate::{Engine, EngineError, actions::ActionOutcome};
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, NewFact, RecordKind};
 
-pub const FORMAT: &str = "lince.custom_component";
-pub const MAX_BYTES: usize = 256 * 1024;
+pub use nucleus::component::composition::{FORMAT, MAX_BYTES};
 
 impl Engine {
     pub(crate) async fn create_custom_component(
         &self,
         head: String,
-        body: String,
+        mut body: String,
         actor: Option<String>,
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
@@ -24,7 +23,34 @@ impl Engine {
         }
         let value: serde_json::Value = serde_json::from_str(&body)
             .map_err(|_| EngineError::Consequence("Invalid custom component".into()))?;
-        if value["format"] != FORMAT
+        if crate::operation_origin::is_fiote() && value.get("composition").is_none() {
+            return Err(EngineError::Consequence(
+                "Fiote creates components through the shared typed composition format".into(),
+            ));
+        }
+        if value.get("composition").is_some() {
+            let mut document =
+                nucleus::component::Document::decode(&body).map_err(EngineError::Consequence)?;
+            if let Some(origin) = crate::operation_origin::component_origin() {
+                document.composition.origin = Some(origin);
+            }
+            if document.composition.name != head {
+                return Err(EngineError::Consequence(
+                    "Component name does not match its document".into(),
+                ));
+            }
+            let component = self
+                .resolve_component(nucleus::component::ComponentState::Composition {
+                    composition: document.composition,
+                })
+                .await?;
+            self.authorize_component(&component, actor.as_deref())
+                .await?;
+            if let nucleus::component::ComponentState::Composition { composition } = component {
+                body = nucleus::component::Document::encode(composition)
+                    .map_err(EngineError::Consequence)?;
+            }
+        } else if value["format"] != FORMAT
             || value["castle"]["name"] != head
             || !value["castle"]["parts"].as_array().is_some_and(|parts| {
                 !parts.is_empty()

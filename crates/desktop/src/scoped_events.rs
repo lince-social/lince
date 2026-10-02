@@ -18,6 +18,9 @@ impl EventBoundary {
 #[derive(Component)]
 pub struct EventListener(pub Vec<String>);
 
+#[derive(Component)]
+pub(crate) struct IsolatedEvents;
+
 #[derive(EntityEvent, Clone, Debug)]
 pub struct SandEvent {
     pub entity: Entity,
@@ -34,6 +37,9 @@ enum Scope {
 
 fn scope(world: &World, mut entity: Entity, name: &str) -> Scope {
     loop {
+        if world.get::<IsolatedEvents>(entity).is_some() {
+            return Scope::Entity(entity);
+        }
         let parent = world.get::<ChildOf>(entity).map(ChildOf::parent);
         if let (Some(parent), Some(group)) = (
             parent,
@@ -96,6 +102,29 @@ pub fn emit(world: &mut World, source: Entity, name: &str, value: Value) {
 
 #[derive(Clone)]
 pub(crate) struct ToggleDateBoundary;
+
+#[cfg(test)]
+mod isolation_tests {
+    use super::*;
+
+    #[test]
+    fn arbitrary_named_events_stay_within_each_balloon() {
+        let mut world = World::new();
+        let canvas = world.spawn_empty().id();
+        let host = world.spawn(ChildOf(canvas)).id();
+        let first = world.spawn((ChildOf(host), IsolatedEvents)).id();
+        let second = world.spawn((ChildOf(host), IsolatedEvents)).id();
+        let source = world.spawn(ChildOf(first)).id();
+        let inside = world.spawn(ChildOf(first)).id();
+        let other = world.spawn(ChildOf(second)).id();
+        let outside = world.spawn(ChildOf(canvas)).id();
+        for name in ["Date selected", "Custom interaction", "Another event"] {
+            assert!(scope(&world, source, name) == scope(&world, inside, name));
+            assert!(scope(&world, source, name) != scope(&world, outside, name));
+            assert!(scope(&world, source, name) != scope(&world, other, name));
+        }
+    }
+}
 
 impl crate::actions::Action for ToggleDateBoundary {
     fn apply(&self, world: &mut World, target: Entity) {

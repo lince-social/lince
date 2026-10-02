@@ -2,6 +2,8 @@ use super::*;
 use fiote::provider::TextOutput;
 
 pub(super) struct Output<'a> {
+    pub context_path: Option<PathBuf>,
+    pub source_message: Option<String>,
     pub usage_path: Option<PathBuf>,
     pub tools: &'a Registry,
     pub message: &'a str,
@@ -38,6 +40,12 @@ impl Output<'_> {
 
 #[async_trait::async_trait]
 impl TextOutput for Output<'_> {
+    async fn context(&self, messages: &[Message]) -> Result<(), String> {
+        if let Some(path) = &self.context_path {
+            super::context::supplied(path, messages, self.source_message.as_deref())?;
+        }
+        Ok(())
+    }
     async fn usage(&self, report: nucleus::operation::Usage) -> Result<(), String> {
         if let Some(path) = &self.usage_path {
             usage::record(path, report)?;

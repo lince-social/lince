@@ -23,9 +23,6 @@ pub fn peer_network_label(network: &Value) -> String {
     if network.is_null() {
         return "Peer connection unavailable. Check whether another app is using this port.".into();
     }
-    if network["relay_only"] == true {
-        return "Internet relay only. Enable LAN access to listen on this port.".into();
-    }
     let addresses = network["addresses"]
         .as_array()
         .filter(|values| !values.is_empty())
@@ -35,12 +32,33 @@ pub fn peer_network_label(network: &Value) -> String {
         .filter_map(Value::as_str)
         .collect::<Vec<_>>()
         .join(", ");
-    format!("Peer UDP addresses: {addresses}")
+    let reach = if network["relay_only"] == true {
+        "Internet relay only. Enable direct connections to listen on this port.".to_owned()
+    } else {
+        format!("Peer UDP addresses: {addresses}")
+    };
+    let urls = |field: &str| {
+        network[field].as_array().into_iter().flatten().filter_map(Value::as_str).collect::<Vec<_>>().join(", ")
+    };
+    let selection = match network["relay_selection"].as_str() {
+        Some("disabled") => "Connection relays disabled for local-only reach".to_owned(),
+        Some("custom") => format!("Selected connection relays: {}", urls("selected_relays")),
+        _ => "Connection relays: Iroh preset".to_owned(),
+    };
+    let advertised = urls("advertised_relays");
+    let advertised = if advertised.is_empty() {
+        "No connection relay advertised yet".to_owned()
+    } else {
+        format!("Currently advertised connection relay: {advertised}")
+    };
+    format!("{reach}\n{selection}\n{advertised}")
 }
 
 #[derive(Clone)]
 pub enum FieldKind {
     Text,
+    OptionalText,
+    TextList,
     Number,
     Filter,
     Scope,
@@ -51,6 +69,8 @@ impl FieldKind {
     pub fn parse(&self, value: &Value, text: &str) -> Result<Value, String> {
         Ok(match self {
             Self::Text => json!(text.trim()),
+            Self::OptionalText => if text.trim().is_empty() { Value::Null } else { json!(text.trim()) },
+            Self::TextList => json!(text.split([',', '\n']).map(str::trim).filter(|s| !s.is_empty()).collect::<Vec<_>>()),
             Self::Number => json!(
                 text.trim()
                     .parse::<u32>()

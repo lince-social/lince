@@ -1,18 +1,28 @@
 use nucleus::message::{self, MessagePart, StoredPart};
 use serde_json::json;
-use sqlx::{Error, SqlitePool};
+use sqlx::{Error, Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 fn invalid(error: impl ToString) -> Error {
     Error::Protocol(error.to_string())
 }
 
 pub async fn save(pool: &SqlitePool, message: &str, parts: &[MessagePart]) -> Result<(), Error> {
+    let mut transaction = crate::write_tx(pool).await?;
+    save_on(&mut transaction, message, parts).await?;
+    transaction.commit().await
+}
+
+pub async fn save_on(
+    transaction: &mut Transaction<'_, Sqlite>,
+    message: &str,
+    parts: &[MessagePart],
+) -> Result<(), Error> {
     let descriptors = message::describe(parts).map_err(invalid)?;
     for (index, part) in parts.iter().enumerate() {
         if let MessagePart::Attachment { data, .. } = part {
             if data.is_empty() {
-                crate::records::set_extension(
-                    pool,
+                crate::records::set_extension_on(
+                    transaction,
                     message,
                     &message::chunk_namespace(index, 0),
                     &json!({"data":""}),
@@ -21,8 +31,8 @@ pub async fn save(pool: &SqlitePool, message: &str, parts: &[MessagePart]) -> Re
             }
             for (chunk, bytes) in data.as_bytes().chunks(message::CHUNK_BYTES).enumerate() {
                 let data = std::str::from_utf8(bytes).map_err(invalid)?;
-                crate::records::set_extension(
-                    pool,
+                crate::records::set_extension_on(
+                    transaction,
                     message,
                     &message::chunk_namespace(index, chunk),
                     &json!({"data":data}),
@@ -31,18 +41,48 @@ pub async fn save(pool: &SqlitePool, message: &str, parts: &[MessagePart]) -> Re
             }
         }
     }
-    crate::records::set_extension(
-        pool,
+    crate::records::set_extension_on(
+        transaction,
         message,
         "lince.message-content",
         &json!({"parts":descriptors}),
     )
-    .await
+    .await?;
+    Ok(())
 }
 
 pub async fn load(pool: &SqlitePool, uid: &str) -> Result<Vec<MessagePart>, Error> {
-    let Some(value) = crate::records::get_extension(pool, uid, "lince.message-content").await?
-    else {
+    let mut connection = pool.acquire().await?;
+    load_on(&mut connection, uid).await
+}
+
+async fn extension_on(
+    connection: &mut SqliteConnection,
+    uid: &str,
+    namespace: &str,
+) -> Result<Option<serde_json::Value>, Error> {
+    let raw: Option<String> = sqlx::query_scalar(
+        "SELECT substr(fds, 1, ?) FROM record_extension WHERE record_uid=? AND namespace=?",
+    )
+    .bind((crate::records::MAX_EXTENSION_BYTES + 1) as i64)
+    .bind(uid)
+    .bind(namespace)
+    .fetch_optional(connection)
+    .await?;
+    raw.map(|raw| {
+        if raw.len() > crate::records::MAX_EXTENSION_BYTES {
+            return Err(invalid("Record extension exceeds its byte limit."));
+        }
+        serde_json::from_str(&raw).map_err(invalid)
+    })
+    .transpose()
+}
+
+pub async fn load_on(
+    connection: &mut SqliteConnection,
+    uid: &str,
+) -> Result<Vec<MessagePart>, Error> {
+    let Some(value) = extension_on(connection, uid, "lince.message-content").await? else {
         return Ok(Vec::new());
     };
     let descriptors: Vec<StoredPart> =
@@ -71,15 +111,14 @@ pub async fn load(pool: &SqlitePool, uid: &str) -> Result<Vec<MessagePart>, Erro
                 }
                 let mut data = String::new();
                 for chunk in 0..chunks {
-                    let value = crate::records::get_extension(
-                        pool,
-                        uid,
-                        &message::chunk_namespace(index, chunk),
-                    )
-                    .await?
-                    .ok_or_else(|| {
-                        invalid("This attachment has not arrived or is no longer available.")
-                    })?;
+                    let value =
+                        extension_on(connection, uid, &message::chunk_namespace(index, chunk))
+                            .await?
+                            .ok_or_else(|| {
+                                invalid(
+                                    "This attachment has not arrived or is no longer available.",
+                                )
+                            })?;
                     let piece = value["data"]
                         .as_str()
                         .ok_or_else(|| invalid("Invalid attachment chunk."))?;

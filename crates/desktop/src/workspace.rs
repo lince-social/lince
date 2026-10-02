@@ -821,7 +821,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     }
 }
 
-fn persist(world: &mut World) {
+pub(crate) fn persist(world: &mut World) {
     if !world.resource::<Messages<AppExit>>().is_empty() && crate::ide::protect(world, None) {
         world.resource_mut::<Messages<AppExit>>().clear();
     }
@@ -838,7 +838,7 @@ fn persist(world: &mut World) {
         return;
     }
     let Some(root) = world
-        .query_filtered::<Entity, (With<Workspaces>, Without<crate::laboratory::LaboratoryRoot>)>()
+        .query_filtered::<Entity, (With<Workspaces>, Without<crate::laboratory::LaboratoryRoot>, Without<crate::component_push::composition::GeneratedCanvas>)>()
         .iter(world)
         .next()
     else {

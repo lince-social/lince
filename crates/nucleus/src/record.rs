@@ -66,7 +66,6 @@ pub enum RecordKind {
     ThreadInvite,
     Program,
     Frequency,
-    Grant,
     CallSession,
 }
 
@@ -91,7 +90,6 @@ impl RecordKind {
             Self::ThreadInvite => "thread_invite",
             Self::Program => "program",
             Self::Frequency => "frequency",
-            Self::Grant => "grant",
             Self::CallSession => "call_session",
         }
     }
@@ -116,7 +114,6 @@ impl RecordKind {
             "thread_invite" => Self::ThreadInvite,
             "program" => Self::Program,
             "frequency" => Self::Frequency,
-            "grant" => Self::Grant,
             "call_session" => Self::CallSession,
             _ => return None,
         })

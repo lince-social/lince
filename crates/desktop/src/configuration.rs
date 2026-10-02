@@ -127,16 +127,17 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     let relays = panel::field(
         world,
         pages[1],
-        "Relay URLs, separated by commas (blank uses defaults)",
+        "HTTPS connection relay URLs, separated by commas (blank uses Iroh preset)",
         "",
     );
     panel::button(
         world,
         pages[1],
         sand,
-        "Save discovery",
+        "Save discovery and restart connections",
         Command::SaveDiscovery,
     );
+    crate::edit_mode::label(world, pages[1], "Changing reach or relay selection restarts live connections. Connection relays help devices communicate while online; selected Lince mailboxes retain encrypted messages while a person is offline. Local-only reach uses no connection relay.", 13.0);
     let peer_port = panel::field(world, pages[1], "Peer UDP port (0 chooses automatically)", "6175");
     panel::button(world, pages[1], sand, "Save peer port", Command::SavePeerPort);
     let peer_network = crate::edit_mode::label(world, pages[1], "Loading peer addresses…", 13.0);
@@ -154,6 +155,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         Command::SaveBudget,
     );
     let usage = crate::edit_mode::label(world, pages[2], "Loading disk usage…", 13.0);
+    crate::owner_backup::populate(world, pages[2]);
     let sync = panel::column(world, pages[2]);
     world.get_mut::<Node>(sync).unwrap().height = px(540);
     crate::sync_castle::populate(world, root, sync);
@@ -368,13 +370,9 @@ fn actions(
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
                 .collect();
-            for relay in &relays {
-                let url = reqwest::Url::parse(relay).map_err(|_| "Enter complete relay URLs")?;
-                if !matches!(url.scheme(), "https" | "http") || url.host_str().is_none() {
-                    return Err("Relay URLs must use http or https and include a host".into());
-                }
-            }
-            fields.insert("relays".into(), serde_json::json!(relays));
+            let relays = engine::wire::configured_relays(Some(&serde_json::json!({"relays":relays})))
+                .map_err(|error| error.to_string())?;
+            fields.insert("relays".into(), serde_json::json!(relays.iter().map(ToString::to_string).collect::<Vec<_>>()));
             Ok(vec![Action::SetCellConfig {
                 namespace: "lince.discovery".into(),
                 fds: fields.into(),
@@ -771,6 +769,58 @@ mod tests {
         }
     }
 
+    #[test]
+    fn relay_form_validates_before_saving_and_explains_the_connection_restart() {
+        let mut app = app();
+        let owner = app.world_mut().spawn(Node::default()).id();
+        populate(app.world_mut(), owner, owner);
+        loaded(app.world_mut(), owner, Configuration {
+            organ_uid:"organ".into(), name:"Owner".into(), address:String::new(),
+            discovery:serde_json::json!({"internet":true,"local":false,"direct":false,"other_setting":"retain","relays":["https://relay.example/"]}),
+            peer_port:6175, peer_network:serde_json::json!({"relay_only":true,"relay_selection":"custom","selected_relays":["https://relay.example/"],"advertised_relays":[]}),
+            contacts:Vec::new(), storage:cell::configuration::Storage { budget_bytes:0,database_bytes:0,quarantine_bytes:0,on_disk_bytes:None },
+        });
+        let relays = app.world().get::<ConfigurationSand>(owner).unwrap().relays;
+        assert_eq!(panel::value(app.world(), relays).unwrap(), "https://relay.example/");
+        for value in ["http://relay.example", "https://user:secret@relay.example", "https://relay.example?option=true", "https://relay.example,https://RELAY.example:443/"] {
+            set_text(app.world_mut(), relays, value);
+            assert!(actions(app.world(), owner, &Command::SaveDiscovery).is_err());
+            assert_eq!(panel::value(app.world(), relays).unwrap(), value);
+            assert!(app.world().get::<ConfigurationSand>(owner).unwrap().pending.is_none());
+        }
+        set_text(app.world_mut(), relays, "https://SECOND.example:443");
+        let queued = actions(app.world(), owner, &Command::SaveDiscovery).unwrap();
+        let engine::actions::Action::SetCellConfig { namespace, fds } = &queued[0] else { panic!("Expected Cell discovery settings"); };
+        assert_eq!(namespace, "lince.discovery");
+        assert_eq!(fds["relays"], serde_json::json!(["https://second.example/"]));
+        assert_eq!(fds["other_setting"], "retain");
+        assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text| text.0.contains("Save discovery and restart connections")));
+        assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text| text.0.contains("Lince mailboxes retain encrypted messages")));
+        assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text| text.0.contains("Selected connection relays: https://relay.example/")));
+    }
+
+    #[tokio::test]
+    async fn relay_save_reaches_the_backend_and_invalid_drafts_leave_the_saved_choice_intact() {
+        let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+        let mut app = app();
+        let runtime = connect(&mut app, engine);
+        app.add_plugins(ConfigurationPlugin);
+        let owner = app.world_mut().spawn(Node::default()).id();
+        populate(app.world_mut(), owner, owner);
+        settle(&mut app, |world| world.get::<ConfigurationSand>(owner).unwrap().snapshot.is_some()).await;
+        let relays = app.world().get::<ConfigurationSand>(owner).unwrap().relays;
+        set_text(app.world_mut(), relays, "https://RELAY.example:443");
+        Command::SaveDiscovery.apply(app.world_mut(), owner);
+        settle(&mut app, |world| world.get::<ConfigurationSand>(owner).unwrap().pending.is_none()).await;
+        let saved = runtime.configuration().await.unwrap().discovery;
+        assert_eq!(saved["relays"], serde_json::json!(["https://relay.example/"]));
+        set_text(app.world_mut(), relays, "http://relay.example");
+        Command::SaveDiscovery.apply(app.world_mut(), owner);
+        assert!(app.world().get::<ConfigurationSand>(owner).unwrap().pending.is_none());
+        assert_eq!(runtime.configuration().await.unwrap().discovery, saved);
+        assert_eq!(panel::value(app.world(),relays).unwrap(),"http://relay.example");
+    }
+
     #[tokio::test]
     async fn configuration_saves_identity_cell_discovery_and_disk_budget() {
         let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
@@ -839,7 +889,7 @@ mod tests {
         };
         assert_eq!(
             fds["relays"],
-            serde_json::json!(["https://relay.example.test"])
+            serde_json::json!(["https://relay.example.test/"])
         );
         let expiry =
             chrono::DateTime::parse_from_rfc3339(fds["local_until"].as_str().unwrap()).unwrap();
@@ -849,6 +899,14 @@ mod tests {
         );
         set_text(app.world_mut(), relays, "file:///private");
         assert!(actions(app.world(), owner, &Command::SaveDiscovery).is_err());
+        for value in ["http://relay.example.test", "https://user:secret@relay.example.test", "https://relay.example.test?option=true", "https://relay.example.test, https://RELAY.example.test:443/"] {
+            set_text(app.world_mut(), relays, value);
+            assert!(actions(app.world(), owner, &Command::SaveDiscovery).is_err());
+        }
+        let label = lince_interface::organ::peer_network_label(&serde_json::json!({"relay_only":true,"relay_selection":"custom","selected_relays":["https://relay.example.test/"],"advertised_relays":[]}));
+        assert!(label.contains("Selected connection relays: https://relay.example.test/"));
+        assert!(label.contains("No connection relay advertised yet"));
+        assert!(!label.contains("Lince mailbox"));
         set_text(app.world_mut(), relays, "");
         set_text(app.world_mut(), minutes, "-1");
         assert!(actions(app.world(), owner, &Command::SaveDiscovery).is_err());

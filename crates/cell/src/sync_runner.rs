@@ -49,6 +49,147 @@ pub fn spawn_runner(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     })
 }
 
+fn supervised<F, Fut>(state: CellRuntime, worker: engine::social::Worker, run: F) -> tokio::task::JoinHandle<()>
+where
+    F: Fn(CellRuntime) -> Fut + Send + 'static,
+    Fut: std::future::Future<Output = ()> + Send + 'static,
+{
+    crate::social_host::supervise(state.engine.clone(), worker, move || tokio::spawn(run(state.clone())))
+}
+
+pub fn spawn_social(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    supervised(state, engine::social::Worker::Publication, |state| async move {
+        let mut changes = state.engine.watch_query_changes();
+        loop {
+            let online = state.wire.read().await.is_some();
+            let mut succeeded = true;
+            succeeded &= state.engine.social_refresh_reply_authorizations().await.is_ok();
+            succeeded &= state.engine.social_reconcile_private_admissions().await.is_ok();
+            succeeded &= state.engine.social_reconcile_revealed_contacts().await.is_ok();
+            succeeded &= state.engine.social_prepare_messages_once().await.is_ok();
+            succeeded &= state.engine.social_process_message_events_once().await.is_ok();
+            if online {
+                succeeded &= state.engine.social_publish_once().await.is_ok();
+                succeeded &= state.engine.social_send_reports_once().await.is_ok();
+            }
+            state.engine.social_worker_completed(engine::social::Worker::Publication, succeeded);
+            if !succeeded { tracing::debug!("Social publication or authorization remains queued"); }
+            tokio::select! {
+                result = changes.changed() => {
+                    if result.is_err() { break; }
+                    tokio::time::sleep(Duration::from_millis(250)).await;
+                }
+                _ = tokio::time::sleep(Duration::from_secs(5)) => {}
+            }
+        }
+    })
+}
+
+pub fn spawn_private_send(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    supervised(state, engine::social::Worker::Send, |state| async move {
+        loop {
+            if state.wire.read().await.is_some() {
+                let sent = state.engine.social_send_private_once().await.is_ok();
+                let refreshed = state.engine.social_refresh_private_routes_once().await.is_ok();
+                state.engine.social_worker_completed(engine::social::Worker::Send, sent && refreshed);
+                if !sent || !refreshed { tracing::debug!("Private delivery or route refresh remains queued"); }
+            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+    })
+}
+
+pub fn spawn_private_pickup(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    supervised(state, engine::social::Worker::Pickup, |state| async move {
+        loop {
+            if state.wire.read().await.is_some() {
+                let succeeded = state.engine.social_collect_private_once().await.is_ok();
+                state.engine.social_worker_completed(engine::social::Worker::Pickup, succeeded);
+                if !succeeded { tracing::debug!("Private mailbox pickup remains queued"); }
+            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+    })
+}
+
+pub fn spawn_gossip(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    supervised(state, engine::social::Worker::Gossip, |state| async move {
+        let mut changes = state.engine.watch_query_changes();
+        loop {
+            if state.wire.read().await.is_some() {
+                let succeeded = state.engine.social_gossip_once().await.is_ok();
+                state.engine.social_worker_completed(engine::social::Worker::Gossip, succeeded);
+                if !succeeded { tracing::debug!("Public announcement forwarding remains bounded and queued"); }
+            }
+            tokio::select! {
+                result = changes.changed() => { if result.is_err() { break; } tokio::time::sleep(Duration::from_millis(250)).await; }
+                _ = tokio::time::sleep(Duration::from_secs(5)) => {}
+            }
+        }
+    })
+}
+
+pub fn spawn_ask(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    supervised(state, engine::social::Worker::Ask, |state| async move {
+        let mut changes = state.engine.watch_query_changes();
+        loop {
+            if state.wire.read().await.is_some() {
+                let succeeded = state.engine.social_ask_once().await.is_ok();
+                state.engine.social_worker_completed(engine::social::Worker::Ask, succeeded);
+                if !succeeded { tracing::debug!("Contact query work waits within its original bounded deadline"); }
+            }
+            tokio::select! {
+                result = changes.changed() => { if result.is_err() { break; } tokio::time::sleep(Duration::from_millis(250)).await; }
+                _ = tokio::time::sleep(Duration::from_secs(1)) => {}
+            }
+        }
+    })
+}
+
+pub fn spawn_subscriptions(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    supervised(state,engine::social::Worker::Subscriptions,|state| async move {
+        let mut changes=state.engine.watch_query_changes();
+        loop {
+            let online=state.wire.read().await.is_some();
+            let result=state.engine.social_subscriptions_once(online).await;
+            state.engine.social_worker_completed(engine::social::Worker::Subscriptions,result.is_ok());
+            if let Ok(notices)=result {
+                for id in notices {
+                    utils::diagnostics::Diagnostics::global().report(&format!("social::saved-search::{id}"),"New public announcements match a saved search. Open Discovery's saved searches to review cached matches.");
+                }
+            } else {tracing::debug!("Saved-search work waits for participation, permission or bounded resources");}
+            tokio::select! {
+                result=changes.changed()=>{if result.is_err(){break;} tokio::time::sleep(Duration::from_millis(250)).await;}
+                _=tokio::time::sleep(Duration::from_secs(5))=>{}
+            }
+        }
+    })
+}
+
+pub fn spawn_mail_delivery(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut changes = state.engine.watch_query_changes();
+        loop {
+            let wire = state.wire.read().await.clone();
+            if let Some(wire) = wire {
+                if let Err(error) = wire.retry_saved_mail_once().await {
+                    tracing::debug!(%error, "Saved mail delivery remains queued");
+                }
+                if let Err(error) = wire.collect_own_mail().await {
+                    tracing::debug!(%error, "Mail collection will retry");
+                }
+            }
+            tokio::select! {
+                result = changes.changed() => {
+                    if result.is_err() { break; }
+                    tokio::time::sleep(Duration::from_millis(250)).await;
+                }
+                _ = tokio::time::sleep(Duration::from_secs(5)) => {}
+            }
+        }
+    })
+}
+
 async fn republish(state: &CellRuntime, wire: Option<&engine::wire::Wire>) {
     if let Err(error) = state.engine.renew_local_roster().await {
         tracing::warn!(%error, "Could not renew the device roster");

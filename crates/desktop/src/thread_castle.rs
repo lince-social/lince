@@ -67,6 +67,7 @@ struct Message {
 
 #[derive(Component)]
 struct ThreadForm {
+    social: bool,
     binding: RecordBinding,
     thread: Option<String>,
     input: Entity,
@@ -207,7 +208,7 @@ fn control(
     crate::description::button(world, parent, owner, title, action)
 }
 
-fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Option<String>) {
+fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Option<String>, social:bool) {
     let container = world
         .spawn((
             Node {
@@ -250,9 +251,15 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
         })
         .id();
     world.get_mut::<EditableText>(input).unwrap().max_characters = Some(65_536);
+    crate::accessibility::input(world, input, "Message", true);
     world.get_mut::<EditableText>(input).unwrap().visible_lines = Some(1.0);
     world.get_mut::<TextFont>(input).unwrap().font_size = 16.0.into();
-    mentions::attach(world, input);
+    if social {
+        world.get_mut::<EditableText>(input).unwrap().max_characters=Some(8000);
+        world.entity_mut(input).insert(crate::icons::Tooltip("Private message · Enter to send · Shift+Enter for a new line".into()));
+    } else {
+        mentions::attach(world, input);
+    }
     let send = control(world, composer, container, "↑", Send);
     world.entity_mut(send).insert((
         crate::sand::Borderless,
@@ -264,9 +271,11 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
     let status = message_view::status(world, container);
 
     if let Some(thread) = &thread {
-        crate::message_content::draft(world, container, input, status, thread, &binding);
-        crate::message_commands::create(world, container, container, thread, input);
-        crate::fiote::session::thread_controls(world, container, thread, &binding);
+        crate::message_content::draft(world, container, input, status, thread, &binding, social);
+        if !social {
+            crate::message_commands::create(world, container, container, thread, input);
+            crate::fiote::session::thread_controls(world, container, thread, &binding);
+        }
     }
     let mut children: Vec<_> = world
         .get::<Children>(container)
@@ -277,6 +286,7 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
     children.push(composer);
     world.entity_mut(container).replace_children(&children);
     world.entity_mut(container).insert(ThreadForm {
+        social,
         binding,
         thread,
         input,
@@ -292,6 +302,7 @@ fn page(
     binding: &RecordBinding,
     uid: &str,
     title: &str,
+    social:bool,
 ) -> Entity {
     let entity = world
         .spawn((
@@ -398,7 +409,7 @@ fn page(
             ChildOf(viewport),
         ))
         .id();
-    form(world, entity, binding.clone(), Some(uid.into()));
+    form(world, entity, binding.clone(), Some(uid.into()), social);
     world.entity_mut(entity).insert(Page {
         castle,
         uid: uid.into(),
@@ -431,7 +442,7 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         let entity = *castle
             .pages
             .entry(uid.into())
-            .or_insert_with(|| page(world, parent, castle.tabs, &castle.binding, uid, title));
+            .or_insert_with(|| page(world, parent, castle.tabs, &castle.binding, uid, title,thread["social_conversation"]==true));
         if castle.select_new.as_deref() == Some(uid) {
             selected_new = true;
             castle.active = Some(uid.into());
@@ -446,7 +457,7 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         }
         let mut page = world.entity_mut(entity).take::<Page>().unwrap();
         #[cfg(feature = "native-media")]
-        crate::communication::calls::summaries(world, entity, thread);
+        if thread["social_conversation"]!=true {crate::communication::calls::summaries(world, entity, thread);}
         let limit = thread["messages_limit"]
             .as_u64()
             .unwrap_or(PAGE_SIZE as u64) as usize;
@@ -840,6 +851,7 @@ impl Action for Send {
             return;
         }
         let value = text.value().to_string();
+        let social=form.social;
         let mut content = match crate::message_content::contents(world, entity) {
             Ok(content) => content,
             Err(error) => {
@@ -856,9 +868,11 @@ impl Action for Send {
         let thread = form.thread.clone();
         let in_thread = thread.is_some();
         let literal = crate::message_commands::literal(world, entity);
-        if !literal && thread.as_deref().is_some_and(|thread| {
-            crate::fiote::session::thread_command(world, &binding, thread, &value)
-        }) {
+        if !social && !literal
+            && thread.as_deref().is_some_and(|thread| {
+                crate::fiote::session::thread_command(world, &binding, thread, &value)
+            })
+        {
             world
                 .get_mut::<EditableText>(input)
                 .unwrap()
@@ -866,11 +880,18 @@ impl Action for Send {
                 .set_text("");
             return;
         }
-        if in_thread && !crate::fiote::session::ready(world, &binding) {
+        if !social && in_thread && !crate::fiote::session::ready(world, &binding) {
             return;
         }
-        let mut body = mentions::body(world, input, &value);
-        if literal && in_thread { content.insert(0, nucleus::message::MessagePart::Text { text: std::mem::take(&mut body) }); }
+        let mut body = if social {value.clone()} else {mentions::body(world, input, &value)};
+        if literal && in_thread {
+            content.insert(
+                0,
+                nucleus::message::MessagePart::Text {
+                    text: std::mem::take(&mut body),
+                },
+            );
+        }
         let form = world.get::<ThreadForm>(entity).unwrap();
         let action = if let Some(thread) = &form.thread {
             engine::actions::Action::CreateMessage {
@@ -892,7 +913,9 @@ impl Action for Send {
         let status = form.status;
         match crate::protein_area::execute(world, &binding, entity, action) {
             Ok(()) => {
-                if let Some(mut draft) = world.get_mut::<crate::message_content::Draft>(entity) { draft.locked = true; }
+                if let Some(mut draft) = world.get_mut::<crate::message_content::Draft>(entity) {
+                    draft.locked = true;
+                }
                 world.get_mut::<ThreadForm>(entity).unwrap().pending = Some(value);
                 world.get_mut::<Text>(status).unwrap().0 = "Sending…".into();
             }
@@ -940,7 +963,11 @@ pub(crate) fn created(world: &mut World, entity: Entity, created: Option<&str>) 
 }
 
 pub(crate) fn finished(world: &mut World, entity: Entity, error: Option<String>) -> bool {
-    if crate::message_progress::finished(world, entity, error.clone()) || crate::message_questions::finished(world, entity, error.clone()) { return true }
+    if crate::message_progress::finished(world, entity, error.clone())
+        || crate::message_questions::finished(world, entity, error.clone())
+    {
+        return true;
+    }
     if controls::finished(world, entity, error.clone()) {
         return true;
     }

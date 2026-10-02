@@ -25,7 +25,7 @@ fn time(offset: i64) {
 }
 
 async fn fixture() -> (Engine, Person, TransferFixture) {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let a = support::person(&engine, "a").await;
     let b = support::person(&engine, "b").await;
     let item = support::plain(&engine, "item", 10.0).await;
@@ -52,7 +52,7 @@ async fn fixture() -> (Engine, Person, TransferFixture) {
 #[test]
 fn agreement_by_an_unread_participant_does_not_cancel_the_own_stage() {
     run(async {
-        let engine = support::engine().await;
+        let engine = support::karma::engine().await;
         let a = support::person(&engine, "a").await;
         let b = support::person(&engine, "b").await;
         let item = support::plain(&engine, "item", 10.0).await;

@@ -1,3 +1,5 @@
+mod support;
+
 use std::future::Future;
 
 use chrono::{DateTime, Utc};
@@ -28,7 +30,7 @@ fn run(test: impl Future<Output = ()> + Send + 'static) {
 }
 
 async fn engine() -> Engine {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = support::karma::engine().await;
     engine
         .install_karma_runtime_config(
             engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("habit-test".into())

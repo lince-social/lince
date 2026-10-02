@@ -39,6 +39,8 @@ impl Pinned {
 #[derive(Component, Clone, Default, Serialize, Deserialize)]
 pub struct Placement {
     #[serde(default)]
+    pub backend_component: Option<crate::component_push::Placed>,
+    #[serde(default)]
     pub layout: Option<crate::layout::LayoutBox>,
     #[serde(default)]
     pub events: crate::scoped_events::EventBoundary,
@@ -56,7 +58,14 @@ pub struct Placement {
 
 impl Placement {
     pub(crate) fn capture(world: &World, entity: Entity) -> Self {
+        let mut backend_component = world.get::<crate::component_push::Placed>(entity).cloned();
+        if let Some(component) = &mut backend_component
+            && let Some(composition) = crate::component_push::composition::capture(world, entity)
+        {
+            component.component = nucleus::component::ComponentState::Composition { composition };
+        }
         Self {
+            backend_component,
             layout: world.get::<crate::layout::LayoutBox>(entity).copied(),
             events: world
                 .get::<crate::scoped_events::EventBoundary>(entity)
@@ -76,6 +85,14 @@ impl Placement {
     }
 
     pub(crate) fn restore(self, world: &mut World, entity: Entity) {
+        if let Some(component) = self.backend_component {
+            if let nucleus::component::ComponentState::Composition { composition } = &component.component {
+                if let Err(error) = crate::component_push::composition::populate(world, entity, composition.clone()) {
+                    crate::notifications::report(world, "interface::components", &error);
+                }
+            }
+            world.entity_mut(entity).insert(component);
+        }
         if let Some(layout) = self.layout {
             world.entity_mut(entity).insert(layout);
             if world.get::<crate::area::InfluenceArea>(entity).is_some() {
@@ -100,7 +117,8 @@ impl Placement {
     }
 
     pub(crate) fn valid(&self) -> bool {
-        self.pinned.is_none_or(|pin| pin.valid())
+        self.backend_component.as_ref().is_none_or(crate::component_push::Placed::valid)
+            && self.pinned.is_none_or(|pin| pin.valid())
             && self.layout.is_none_or(|layout| layout.valid())
             && self.events.valid()
             && self.spatial.valid()

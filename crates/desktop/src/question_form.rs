@@ -122,6 +122,19 @@ pub(crate) fn create(
                 })
                 .id();
             world.get_mut::<EditableText>(input).unwrap().max_characters = Some(8192);
+            crate::accessibility::input(
+                world,
+                input,
+                &format!(
+                    "{title}{}",
+                    if required {
+                        " (required)"
+                    } else {
+                        " (optional)"
+                    }
+                ),
+                true,
+            );
             Some(input)
         };
         world.entity_mut(entity).insert(Field {

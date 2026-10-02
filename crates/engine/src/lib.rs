@@ -1,6 +1,8 @@
 #![recursion_limit = "256"]
 
 mod fiote_config;
+pub mod fiote_activation;
+mod transfer_discard;
 
 pub mod access;
 pub mod action_intent;
@@ -20,6 +22,7 @@ pub mod record_creation;
 pub mod communication;
 pub mod directory;
 pub mod effects;
+pub mod commands;
 pub mod enrolment;
 pub mod error;
 pub mod expiry;
@@ -29,7 +32,7 @@ pub mod imagination;
 pub mod projection;
 pub mod instinct;
 pub mod karma_control;
-pub mod karma_grants;
+pub mod karma_execution;
 pub mod karma_runtime;
 pub mod karma_preview;
 pub mod karma_history;
@@ -66,8 +69,9 @@ pub mod rebuild;
 pub mod roster;
 pub mod seal;
 pub mod senses;
+pub mod social;
 pub mod share;
-pub mod signals;
+pub mod component_presentation;
 pub mod sync;
 pub mod sync_service;
 mod tagged_record;
@@ -121,8 +125,14 @@ pub struct Engine {
     pub sync_service: sync_service::SyncService,
     pub presence: presence::Presence,
     bus: broadcast::Sender<Fact>,
+    component_presentations: broadcast::Sender<nucleus::component::Presentation>,
+    fiote_availability: std::sync::RwLock<std::collections::HashMap<String, bool>>,
     query_changed: watch::Sender<u64>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
+    pub(crate) social_network: std::sync::Mutex<Option<std::sync::Weak<dyn social::Network>>>,
+    pub(crate) social_deployment: std::sync::Mutex<Option<nucleus::social::ServiceSettings>>,
+    pub(crate) social_workers: std::sync::Mutex<std::collections::BTreeMap<&'static str, social::WorkerStatus>>,
+    pub(crate) social_memory_wallet_key: std::sync::Mutex<Option<[u8; 32]>>,
     pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
     karma_deadline_changed: watch::Sender<u64>,
     notifications_changed: watch::Sender<u64>,
@@ -131,6 +141,10 @@ pub struct Engine {
     karma_preview_runner: RwLock<Option<std::sync::Arc<dyn karma_preview::Runner>>>,
     pub(crate) rule_index: Mutex<Option<(u64, std::sync::Arc<rule_runtime::RuleIndex>)>>,
     pub(crate) rule_execution: Mutex<()>,
+    pub(crate) roster_execution: Mutex<()>,
+    pub(crate) command_authoring: Mutex<()>,
+    pub(crate) command_capacity: tokio::sync::Semaphore,
+    pub(crate) command_responses: RwLock<Option<Vec<nucleus::command::CommandResponse>>>,
     pub(crate) effects_changed: watch::Sender<u64>,
     pub(crate) effect_execution: Mutex<()>,
     pub(crate) collab_docs: std::sync::Mutex<collab::DocRegistry>,
@@ -165,6 +179,7 @@ impl Engine {
             nucleus::hlc::observe(max);
         }
         let (bus, _) = broadcast::channel(1024);
+        let (component_presentations, _) = broadcast::channel(64);
         let (query_changed, _) = watch::channel(0);
         let (karma_deadline_changed, _) = watch::channel(0);
         let (notifications_changed, _) = watch::channel(0);
@@ -185,8 +200,14 @@ impl Engine {
             sync_service: sync_service::SyncService::default(),
             presence: presence::Presence::default(),
             bus,
+            component_presentations,
+            fiote_availability: Default::default(),
             query_changed,
             signer: Mutex::new(None),
+            social_network: std::sync::Mutex::new(None),
+            social_deployment: std::sync::Mutex::new(None),
+            social_workers: Default::default(),
+            social_memory_wallet_key: std::sync::Mutex::new(None),
             organ_signer: Mutex::new(None),
             karma_deadline_changed,
             notifications_changed,
@@ -195,6 +216,10 @@ impl Engine {
             karma_preview_runner: RwLock::new(None),
             rule_index: Mutex::new(None),
             rule_execution: Mutex::new(()),
+            roster_execution: Mutex::new(()),
+            command_authoring: Mutex::new(()),
+            command_capacity: tokio::sync::Semaphore::new(8),
+            command_responses: RwLock::new(None),
             effects_changed,
             effect_execution: Mutex::new(()),
             collab_docs: std::sync::Mutex::new(collab::DocRegistry::default()),
@@ -372,10 +397,6 @@ impl Engine {
             nucleus::execution::now(),
         )
         .await
-    }
-
-    pub async fn fire_due_rules(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
-        self.advance_karma_time(now).await
     }
 
     pub async fn heartbeat(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {

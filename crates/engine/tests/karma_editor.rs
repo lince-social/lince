@@ -53,7 +53,7 @@ async fn change(
 
 #[tokio::test]
 async fn linked_conditions_update_all_rules_and_detached_text_stays_independent() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let source = support::plain(&engine, "source", 2.0).await;
     for target in ["first", "second", "copy"] {
         support::plain(&engine, target, 0.0).await;
@@ -117,7 +117,7 @@ async fn linked_conditions_update_all_rules_and_detached_text_stays_independent(
 
 #[tokio::test]
 async fn threshold_and_consequence_links_are_real_references_and_invalid_edits_are_atomic() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "source", 2.0).await;
     support::plain(&engine, "target", 0.0).await;
     let first = create(&engine, text("@source"), "target").await;
@@ -181,7 +181,7 @@ async fn threshold_and_consequence_links_are_real_references_and_invalid_edits_a
 
 #[tokio::test]
 async fn replacing_a_link_preserves_other_readers_and_stale_saves_do_not_write() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "source", 2.0).await;
     support::plain(&engine, "target", 0.0).await;
     let first = create(&engine, text("@source"), "target").await;
@@ -244,7 +244,7 @@ async fn replacing_a_link_preserves_other_readers_and_stale_saves_do_not_write()
 
 #[tokio::test]
 async fn protein_projects_three_shared_fields_without_expanding_occurrences() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "source", 2.0).await;
     support::plain(&engine, "target", 0.0).await;
     let rule = create(&engine, text("@source"), "target").await;
@@ -272,7 +272,7 @@ async fn protein_projects_three_shared_fields_without_expanding_occurrences() {
 
 #[tokio::test]
 async fn unknown_references_and_field_kind_confusion_are_rejected_without_partial_rules() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "target", 0.0).await;
     for fields in [
         [text("@missing"), text("always"), text("@target")],
@@ -340,7 +340,7 @@ async fn unknown_references_and_field_kind_confusion_are_rejected_without_partia
 
 #[tokio::test]
 async fn hover_uses_the_runtime_evaluator_without_enacting_consequences() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "source", 7.0).await;
     let target = support::plain(&engine, "target", 0.0).await;
     create(&engine, text("@source * 3"), "target").await;
@@ -366,7 +366,7 @@ async fn hover_uses_the_runtime_evaluator_without_enacting_consequences() {
 
 #[tokio::test]
 async fn castle_commands_still_require_organ_authority() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let person = support::person(&engine, "author").await;
     let role = store::auth::ensure_role(&engine.store.pool, "castle-author")
         .await
@@ -430,7 +430,7 @@ async fn castle_commands_still_require_organ_authority() {
 
 #[tokio::test]
 async fn frequency_projection_reports_the_actual_next_scheduler_boundary() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "target", 0.0).await;
     let now = chrono::DateTime::from_timestamp_millis(chrono::Utc::now().timestamp_millis() + 100)
         .unwrap();
@@ -523,7 +523,7 @@ async fn brushing_rule(
 
 #[tokio::test]
 async fn bare_record_consequence_enacts_the_conditions_final_quantity_once_per_beat() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let (target, first) = brushing_rule(&engine, 0.0, "!=0").await;
     for (at, expected) in [
         (first, "-1"),
@@ -570,7 +570,7 @@ async fn bare_record_consequence_enacts_the_conditions_final_quantity_once_per_b
 #[tokio::test]
 async fn bare_record_consequence_still_obeys_the_threshold_when_the_result_is_zero() {
     for (threshold, expected) in [("!=0", "1"), ("always", "0")] {
-        let engine = support::engine().await;
+        let engine = support::karma::engine().await;
         let (target, first) = brushing_rule(&engine, 1.0, threshold).await;
         engine.advance_karma_time(first).await.unwrap();
         assert_eq!(
@@ -585,7 +585,7 @@ async fn bare_record_consequence_still_obeys_the_threshold_when_the_result_is_ze
 
 #[tokio::test]
 async fn bare_record_destination_does_not_bypass_record_write_permissions() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "protected", 5.0).await;
     let person = support::person(&engine, "rule-reader").await;
     let role = store::auth::ensure_role(&engine.store.pool, "rule-reader")
@@ -636,7 +636,7 @@ async fn bare_record_destination_does_not_bypass_record_write_permissions() {
 
 #[tokio::test]
 async fn private_dependencies_cannot_be_revealed_through_a_derived_hover() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let person = support::person(&engine, "reader").await;
     let role = store::auth::ensure_role(&engine.store.pool, "hover-reader")
         .await
@@ -682,7 +682,7 @@ async fn private_dependencies_cannot_be_revealed_through_a_derived_hover() {
 
 #[tokio::test]
 async fn rule_identity_is_atomic_unique_and_removed_with_the_rule() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "source", 2.0).await;
     support::plain(&engine, "target", 0.0).await;
     let identity = |name: &str, slug: &str| {
@@ -792,7 +792,7 @@ async fn rule_identity_is_atomic_unique_and_removed_with_the_rule() {
 
 #[tokio::test]
 async fn rule_deletion_requires_permission_and_a_readable_target() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "private-target", 0.0).await;
     let uid = create(&engine, text("@private-target"), "private-target").await;
     let person = support::person(&engine, "rule-deleter").await;

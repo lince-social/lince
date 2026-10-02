@@ -139,6 +139,7 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    PresentComponent { presentation: nucleus::component::Presentation },
     Speech { id: String, status: crate::speech::Status },
     FioteTerminal { id: String, frame: fiote::acp::terminal::TerminalFrame },
     Command { id: String, response: crate::command::Response },

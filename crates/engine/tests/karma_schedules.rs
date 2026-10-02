@@ -9,7 +9,7 @@ mod support;
 #[tokio::test]
 async fn ordinary_runtime_resolves_and_fires_a_brazilian_local_date() {
     use nucleus::karma::{CivilDateTime, FoldPolicy, GapPolicy, TimeZoneId};
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 0.0).await;
     let preview = engine
         .act_at(
@@ -111,7 +111,7 @@ async fn level(engine: &Engine) -> nucleus::DecimalValue {
 
 #[tokio::test]
 async fn a_range_uses_ordinary_rules_and_ends_at_zero_after_an_intervening_edit() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 3.0).await;
     let inputs = vec![
         boundary(Purpose::Start, 5_000, -1),
@@ -166,7 +166,7 @@ async fn a_range_uses_ordinary_rules_and_ends_at_zero_after_an_intervening_edit(
 
 #[tokio::test]
 async fn expired_ranges_never_apply_the_start_and_cancellation_preserves_current_quantity() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 3.0).await;
     let uid = save(
         &engine,
@@ -233,7 +233,7 @@ async fn expired_ranges_never_apply_the_start_and_cancellation_preserves_current
 
 #[tokio::test]
 async fn editing_both_dates_is_atomic_and_completed_starts_are_kept() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 0.0).await;
     let start = boundary(Purpose::Start, 5_000, -1);
     let uid = save(
@@ -337,7 +337,7 @@ async fn editing_both_dates_is_atomic_and_completed_starts_are_kept() {
 
 #[tokio::test]
 async fn failed_effects_retry_without_reapplying_quantities_and_keep_each_outcome() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "room", 0.0).await;
     let mut input = boundary(Purpose::Once, 5_000, -1);
     input.consequences.push(Consequence::RunQuery {
@@ -416,7 +416,7 @@ async fn failed_effects_retry_without_reapplying_quantities_and_keep_each_outcom
 
 #[tokio::test]
 async fn failed_evaluations_append_an_attempt_for_the_original_occurrence() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 0.0).await;
     let price = support::plain(&engine, "price", 0.0).await;
     let uid = save(
@@ -521,7 +521,7 @@ async fn local_dates_use_installed_rules_and_explicit_gap_and_fold_choices() {
         TimeZoneDefinition, TimeZoneId, TimeZoneProvider, TimestampMs, TzdbVersion,
         UtcOffsetSegment,
     };
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 0.0).await;
     let first = TimestampMs::from_millis(at(0).timestamp_millis()).unwrap();
     let second = TimestampMs::from_millis(at(172_800_000).timestamp_millis()).unwrap();

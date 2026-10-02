@@ -511,6 +511,9 @@ fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
 const MAX_FILTER_INDENT: usize = 10;
 
 pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
+    if protein.include.extension.as_ref().is_some_and(|extension| extension.namespace.starts_with("lince.social.")) {
+        return Err(store::StoreError::Protocol("Private social state is available only through scoped social controls".into()));
+    }
     fn visit(predicate: &Predicate, group_depth: usize, source: Source) -> Result<(), ProteinError> {
         match predicate {
             Predicate::ProjectionWindow(window) => {
@@ -1191,8 +1194,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
                 "dismiss": true,
                 "snooze": true,
             },
-            "creates_intent": false,
-            "intent_blocking_reasons": ["karma_intent_not_implemented"],
             "action_templates": {
                 "accept": {
                     "action": "respond-karma-candidate",
@@ -1218,146 +1219,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
             },
         }));
     }
-    for handle in store::karma::grants::list_handles(&store.pool).await? {
-        let revoked = handle.status == nucleus::karma::GrantStatus::Revoked;
-        let head_is_active =
-            handle.active_revision_hash.as_ref() == Some(&handle.head_revision_hash);
-        let can_activate = !revoked && !head_is_active;
-        let head = store::karma::grants::get_revision(
-            &store.pool,
-            &handle.record_uid,
-            &handle.head_revision_hash,
-        )
-        .await?
-        .ok_or_else(|| {
-            karma_query_error(
-                "protein_karma_grant_revision_missing",
-                handle.head_revision_hash.as_str(),
-            )
-        })?;
-        rows.push(json!({
-            "object_kind": "grant",
-            "uid": handle.record_uid,
-            "slug": handle.slug,
-            "handle_revision": handle.handle_revision,
-            "status": handle.status.as_str(),
-            "head_revision_hash": handle.head_revision_hash,
-            "active_revision_hash": handle.active_revision_hash,
-            "principal_person_uid": handle.principal_person_uid,
-            "purpose": head.revision.spec.purpose,
-            "program_uid": head.revision.spec.program_uid,
-            "program_revision": head.revision.spec.program_revision,
-            "candidate_templates": head.revision.spec.candidate_templates,
-            "capabilities_granted": head.revision.spec.capabilities,
-            "targets": head.revision.spec.targets,
-            "valid_from": head.revision.spec.valid_from,
-            "expires_at": head.revision.spec.expires_at,
-            "budget": head.revision.spec.budget,
-            "signature_provenance": {
-                "signer_person_uid": head.signature.signer_person_uid,
-                "key_id": head.signature.key_id,
-                "revision_hash": head.revision_hash,
-            },
-            "created_at": handle.created_at,
-            "updated_at": handle.updated_at,
-            "capabilities": {
-                "narrow": !revoked,
-                "activate": can_activate,
-                "revoke": !revoked,
-            },
-            "blocking_reasons": {
-                "narrow": if revoked { vec!["grant_revoked"] } else { Vec::<&str>::new() },
-                "activate": if revoked {
-                    vec!["grant_revoked"]
-                } else if head_is_active {
-                    vec!["head_already_active"]
-                } else {
-                    Vec::<&str>::new()
-                },
-                "revoke": if revoked { vec!["grant_revoked"] } else { Vec::<&str>::new() },
-            },
-            "authorizes_effects": false,
-            "effect_blocking_reasons": ["karma_execution_not_implemented"],
-            "action_templates": {
-                "narrow": {
-                    "action": "narrow-karma-grant",
-                    "request_id": Value::Null,
-                    "grant_uid": handle.record_uid,
-                    "expected_handle_revision": handle.handle_revision,
-                    "grant": head.revision.spec,
-                },
-                "activate": {
-                    "action": "activate-karma-grant",
-                    "request_id": Value::Null,
-                    "grant_uid": handle.record_uid,
-                    "expected_handle_revision": handle.handle_revision,
-                    "revision_hash": handle.head_revision_hash,
-                },
-                "revoke": {
-                    "action": "revoke-karma-grant",
-                    "request_id": Value::Null,
-                    "grant_uid": handle.record_uid,
-                    "expected_handle_revision": handle.handle_revision,
-                },
-            },
-        }));
-    }
-    for revision in store::karma::grants::list_revisions(&store.pool).await? {
-        rows.push(json!({
-            "object_kind": "grant_revision",
-            "uid": revision.revision_hash,
-            "grant_uid": revision.grant_uid,
-            "revision_hash": revision.revision_hash,
-            "principal_person_uid": revision.revision.principal_person_uid,
-            "grant": revision.revision.spec,
-            "signature_provenance": {
-                "signer_person_uid": revision.signature.signer_person_uid,
-                "key_id": revision.signature.key_id,
-                "signature": revision.signature.signature,
-            },
-            "created_at": revision.created_at,
-        }));
-    }
-
-    for intent in store::karma::intents::list(&store.pool).await? {
-        let state = store::karma::intents::get_state(&store.pool, &intent.intent_hash)
-            .await?
-            .ok_or_else(|| {
-                karma_query_error(
-                    "protein_karma_intent_state_missing",
-                    intent.intent_hash.as_str(),
-                )
-            })?;
-        rows.push(json!({
-            "object_kind": "intent",
-            "uid": intent.intent_hash,
-            "intent_hash": intent.intent_hash,
-            "candidate_hash": intent.candidate_hash,
-            "grant_uid": intent.grant_uid,
-            "grant_revision_hash": intent.grant_revision_hash,
-            "program_uid": intent.intent.program_uid,
-            "program_revision_hash": intent.intent.program_revision_hash,
-            "template": intent.intent.template,
-            "capability": intent.intent.capability,
-            "target": intent.intent.target,
-            "fields": intent.intent.fields,
-            "quantity": intent.intent.quantity,
-            "idempotency_key": intent.intent.idempotency_key,
-            "deadline": intent.intent.deadline,
-            "status": state.status.as_str(),
-            "state_revision": state.state_revision,
-            "current_event_hash": state.current_event_hash,
-            "cancelled_reason": state.cancelled_reason,
-            "actor_person_uid": state.actor_person_uid,
-            "policy_proof": intent.intent.authorization,
-            "created_at": intent.created_at,
-            "updated_at": state.updated_at,
-            "executable": false,
-            "execution_blocking_reasons": ["karma_execution_not_implemented"],
-            "action_templates": {},
-        }));
-    }
-
     let mut filtered = Vec::new();
     for row in rows {
         if karma_predicates_match(&row, &protein.filter)? {
@@ -2125,6 +1986,9 @@ async fn threads_for_record(
         if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
         }
+        let social_root=store::replica::root_of(&store.pool,&thread.uid).await?;
+        let social_participant=if let Some(root)=&social_root {store::records::get_extension(&store.pool,root,nucleus::social::requests::PARTICIPANTS_NAMESPACE).await?} else {None};
+        let social_reveal=if let Some(root)=&social_root && social_participant.is_some() {store::records::get_extension(&store.pool,root,nucleus::social::requests::REVEAL_NAMESPACE).await?} else {None};
         let messages_limit = settings.message_limits.get(&thread.uid).copied().unwrap_or(settings.messages_limit).clamp(1, 2000);
         let before = settings.message_before.get(&thread.uid);
         let mut messages = Vec::new();
@@ -2180,15 +2044,19 @@ async fn threads_for_record(
                 organ_name_for(store, &mut organ_names, message.organ_uid.as_deref()).await?;
             let lifecycle =
                 store::records::get_extension(&store.pool, &message.uid, "lince.message").await?;
-            let author = lifecycle
+            let social=store::records::get_extension(&store.pool,&message.uid,nucleus::social::requests::MESSAGE_NAMESPACE).await?;
+            let author = social.as_ref().and_then(|s|s["content"]["author_owner"].as_str()).map(str::to_owned).or_else(|| lifecycle
                 .as_ref()
                 .and_then(|value| value.get("author"))
                 .and_then(Value::as_str)
                 .map(str::to_string)
                 .or_else(|| created_by.clone())
                 .or_else(|| message.organ_uid.clone())
-                .unwrap_or_else(|| "local".into());
-            let author_name = organ_name_for(store, &mut organ_names, Some(&author)).await?;
+                ).unwrap_or_else(|| "local".into());
+            let author_name = if social.is_some() {
+                if social_participant.as_ref().is_some_and(|p|p["local_owner"]==author) { Some("You (private identity)".to_owned()) }
+                else { social_reveal.as_ref().and_then(|r|r["peer"]["profile"]["fields"]["name"].as_str()).filter(|s|!s.is_empty()).map(str::to_owned).or_else(||social_participant.as_ref().and_then(|p|p["alias"].as_str().filter(|s|!s.is_empty()).map(str::to_owned))).or_else(||Some("Anonymous participant".to_owned())) }
+            } else { organ_name_for(store, &mut organ_names, Some(&author)).await? };
             let operator = lifecycle
                 .as_ref()
                 .and_then(|value| value.get("operator"))
@@ -2215,6 +2083,8 @@ async fn threads_for_record(
                 "author_name": author_name,
                 "operator": operator,
                 "message_state": message_state,
+                "social": social,
+                "social_delivery": store::records::get_extension(&store.pool,&message.uid,nucleus::social::requests::DELIVERY_NAMESPACE).await?,
                 "tool_call": tool_call,
                 "progress": store::records::get_extension(&store.pool, &message.uid, "lince.message-progress").await?,
                 "content": store::records::get_extension(&store.pool, &message.uid, "lince.message-content").await?,
@@ -2255,6 +2125,7 @@ async fn threads_for_record(
         let (thread_created_by, thread_sender) = creator_info(store, &thread.uid).await?;
         let thread_organ_name =
             organ_name_for(store, &mut organ_names, thread.organ_uid.as_deref()).await?;
+        let social_conversation=social_participant.is_some();
         out.push(json!({
             "uid": thread.uid,
             "head": thread.head,
@@ -2269,6 +2140,7 @@ async fn threads_for_record(
             "messages_has_more": has_more,
             "messages_before": next_cursor,
             "messages_limit": messages_limit,
+            "social_conversation": social_conversation,
         }));
     }
     Ok(out)

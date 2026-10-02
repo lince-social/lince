@@ -63,6 +63,8 @@ pub(super) fn form(
                     &scope_text(&value),
                 ))
             }
+            Kind::TextList => Some(panel::field(world, field, caption, &scope_text(&value))),
+            Kind::OptionalText => Some(panel::field(world, field, caption, value.as_str().unwrap_or_default())),
             _ => Some(panel::field(
                 world,
                 field,
@@ -183,6 +185,9 @@ impl Action for Submit {
             {
                 panel::clear(world, output);
                 label(world, output, &question);
+                if payload["action"] == "social" && payload["request"]["command"] == "save-profile" {
+                    social::profile_confirmation(world, output, &payload["request"]);
+                }
                 panel::button(world, output, entity, "Confirm", Confirm(payload));
                 panel::button(world, output, output, "Cancel", Clear);
                 Ok(())

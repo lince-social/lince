@@ -2,7 +2,13 @@ mod catalog;
 mod messages;
 mod text;
 
-use std::{collections::BTreeMap, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use engine::{Engine, actions::Action};
 use fiote::{
@@ -34,6 +40,7 @@ struct Read {
 }
 
 struct State {
+    context: Context,
     session: Session,
     reads: BTreeMap<String, Read>,
     receipts: BTreeMap<String, ([u8; 32], Result<Value, String>)>,
@@ -50,6 +57,7 @@ pub struct NativeTools {
     context: Context,
     instructions: Option<Arc<String>>,
     closed: Arc<AtomicBool>,
+    source_message: Arc<std::sync::RwLock<Option<String>>>,
 }
 
 impl NativeTools {
@@ -57,6 +65,7 @@ impl NativeTools {
         Self {
             engine,
             state: Arc::new(Mutex::new(State {
+                context: context.clone(),
                 session,
                 reads: BTreeMap::new(),
                 receipts: BTreeMap::new(),
@@ -68,12 +77,35 @@ impl NativeTools {
             context,
             instructions: None,
             closed: Arc::new(AtomicBool::new(false)),
+            source_message: Default::default(),
         }
     }
 
     pub fn with_instructions(mut self, instructions: String) -> Self {
         self.instructions = Some(Arc::new(instructions));
         self
+    }
+
+    pub fn set_source_message(&self, uid: Option<&str>) {
+        *self
+            .source_message
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = uid.map(str::to_string);
+    }
+
+    async fn origin<F: std::future::Future>(&self, work: F) -> F::Output {
+        let message = self
+            .source_message
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+        engine::operation_origin::fiote_from_message(
+            &self.context.agent,
+            &self.context.thread,
+            message.as_deref(),
+            work,
+        )
+        .await
     }
 
     pub fn register(&self, registry: &mut Registry) {
@@ -164,8 +196,12 @@ impl Drop for PreviewPermit {
         if self.finished {
             return;
         }
-        let Some(state) = self.state.upgrade() else { return };
-        let Ok(runtime) = tokio::runtime::Handle::try_current() else { return };
+        let Some(state) = self.state.upgrade() else {
+            return;
+        };
+        let Ok(runtime) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
         let request = self.request.clone();
         let fingerprint = self.fingerprint;
         runtime.spawn(async move {
@@ -173,7 +209,13 @@ impl Drop for PreviewPermit {
             if state.previews.get(&request) == Some(&fingerprint) {
                 state.previews.remove(&request);
                 state.receipt_bytes += request.len() + 160;
-                state.receipts.insert(request, (fingerprint, Err("This preview was interrupted. Request a fresh preview.".into())));
+                state.receipts.insert(
+                    request,
+                    (
+                        fingerprint,
+                        Err("This preview was interrupted. Request a fresh preview.".into()),
+                    ),
+                );
             }
         });
     }
@@ -246,19 +288,18 @@ impl Tool for NativeTool {
         }
         if matches!(self.kind, Kind::Action)
             && let Ok(args) = serde_json::from_value::<ActionArguments>(arguments.clone())
-            && matches!(args.action, Action::PreviewKarmaProposal { .. }) {
-            let result = engine::operation_origin::fiote(
-                &self.native.context.agent,
-                &self.native.context.thread,
-                self.run_preview(args, arguments),
-            ).await?;
+            && matches!(args.action, Action::PreviewKarmaProposal { .. })
+        {
+            let result = self
+                .native
+                .origin(self.run_preview(args, arguments))
+                .await?;
             return bounded(result);
         }
         let write = matches!(self.kind, Kind::Action | Kind::Edit | Kind::Message);
-        let result = engine::operation_origin::fiote(
-            &self.native.context.agent,
-            &self.native.context.thread,
-            self.native.engine.access_scope(write, async {
+        let result = self
+            .native
+            .origin(self.native.engine.access_scope(write, async {
                 let mut state = self.native.state.lock().await;
                 if state.closed || self.native.closed.load(Ordering::Acquire) {
                     return Err(engine::EngineError::Forbidden(
@@ -303,10 +344,9 @@ impl Tool for NativeTool {
                     },
                 };
                 result.map_err(engine::EngineError::Consequence)
-            }),
-        )
-        .await
-        .map_err(error)?;
+            }))
+            .await
+            .map_err(error)?;
         bounded(result)
     }
 }
@@ -315,30 +355,69 @@ impl NativeTool {
     async fn run_preview(&self, args: ActionArguments, arguments: Value) -> Result<Value, String> {
         let mut session = {
             let mut state = self.native.state.lock().await;
-            if state.closed || self.native.closed.load(Ordering::Acquire) || !state.session.subject_may_act().await {
+            if state.closed
+                || self.native.closed.load(Ordering::Acquire)
+                || !state.session.subject_may_act().await
+            {
                 return Err("This agent connection is closed or its access was removed.".into());
             }
             if !args.read_ids.is_empty() {
-                return Err("A proposal preview does not change live data. Use an empty read_ids list.".into());
+                return Err(
+                    "A proposal preview does not change live data. Use an empty read_ids list."
+                        .into(),
+                );
             }
             if let Some(previous) = state.previous(&args.request_id, &arguments)? {
                 if let Some(source) = previous["data"]["source"].as_str()
-                    && self.native.engine.store.state_hash().await.map_err(error)?.as_str() != source {
-                    return Err("Source data changed. Request a fresh preview to check current access.".into());
+                    && self
+                        .native
+                        .engine
+                        .store
+                        .state_hash()
+                        .await
+                        .map_err(error)?
+                        .as_str()
+                        != source
+                {
+                    return Err(
+                        "Source data changed. Request a fresh preview to check current access."
+                            .into(),
+                    );
                 }
                 return Ok(previous);
             }
             if state.previews.len() >= 4 || state.receipts.len() + state.previews.len() >= 4096 {
-                return Err("This connection's preview budget is occupied. Retry after a preview finishes.".into());
+                return Err(
+                    "This connection's preview budget is occupied. Retry after a preview finishes."
+                        .into(),
+                );
             }
-            state.previews.insert(args.request_id.clone(), fingerprint(&arguments));
+            state
+                .previews
+                .insert(args.request_id.clone(), fingerprint(&arguments));
             state.session.fork_call()
         };
-        let mut permit = PreviewPermit { state: Arc::downgrade(&self.native.state), request: args.request_id.clone(), fingerprint: fingerprint(&arguments), finished: false };
-        let result = response(session.handle(ClientMessage::Act { id: args.request_id.clone(), action: args.action }).await).and_then(bounded);
+        let mut permit = PreviewPermit {
+            state: Arc::downgrade(&self.native.state),
+            request: args.request_id.clone(),
+            fingerprint: fingerprint(&arguments),
+            finished: false,
+        };
+        let result = response(
+            session
+                .handle(ClientMessage::Act {
+                    id: args.request_id.clone(),
+                    action: args.action,
+                })
+                .await,
+        )
+        .and_then(bounded);
         let mut state = self.native.state.lock().await;
         state.previews.remove(&args.request_id);
-        let result = if state.closed || self.native.closed.load(Ordering::Acquire) || !state.session.subject_may_act().await {
+        let result = if state.closed
+            || self.native.closed.load(Ordering::Acquire)
+            || !state.session.subject_may_act().await
+        {
             Err("This agent connection is closed or its access was removed.".into())
         } else {
             result
@@ -603,7 +682,8 @@ impl State {
                 "This preview is still running. Retry the same request after it finishes."
             } else {
                 "This request_id was already used for a different operation."
-            }.into());
+            }
+            .into());
         }
         if let Some((original, result)) = self.receipts.get(id) {
             if *original != fingerprint(args) {
@@ -611,7 +691,9 @@ impl State {
             }
             return result.clone().map(Some);
         }
-        if self.receipts.len() + self.previews.len() >= 4096 || self.receipt_bytes >= 16 * 1024 * 1024 {
+        if self.receipts.len() + self.previews.len() >= 4096
+            || self.receipt_bytes >= 16 * 1024 * 1024
+        {
             return Err("This connection has reached its operation budget. Close it and open a new connection. Inspect uncertain effects before retrying.".into());
         }
         Ok(None)
@@ -631,6 +713,11 @@ impl State {
 
     async fn action(&mut self, arguments: Value) -> Result<Value, String> {
         let args: ActionArguments = serde_json::from_value(arguments.clone()).map_err(error)?;
+        if let Action::ReportFioteChild { parent, .. } = &args.action {
+            if parent != &self.context.thread {
+                return Err("Report children only for this connection's parent thread".into());
+            }
+        }
         if matches!(&args.action, Action::ConfigureFiote { .. })
             || matches!(&args.action, Action::SetExtension { namespace, .. } if namespace.starts_with("lince.fiote"))
         {

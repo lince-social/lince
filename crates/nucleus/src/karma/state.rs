@@ -68,69 +68,6 @@ pub enum CandidateStatus {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum IntentStatus {
-    Staged,
-    Authorized,
-    Leased,
-    Dispatching,
-    Succeeded,
-    Failed,
-    Cancelled,
-    Uncertain,
-    Compensated,
-    DeadLetter,
-}
-
-impl IntentStatus {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Staged => "staged",
-            Self::Authorized => "authorized",
-            Self::Leased => "leased",
-            Self::Dispatching => "dispatching",
-            Self::Succeeded => "succeeded",
-            Self::Failed => "failed",
-            Self::Cancelled => "cancelled",
-            Self::Uncertain => "uncertain",
-            Self::Compensated => "compensated",
-            Self::DeadLetter => "dead-letter",
-        }
-    }
-
-    pub fn parse(value: &str) -> Option<Self> {
-        Some(match value {
-            "staged" => Self::Staged,
-            "authorized" => Self::Authorized,
-            "leased" => Self::Leased,
-            "dispatching" => Self::Dispatching,
-            "succeeded" => Self::Succeeded,
-            "failed" => Self::Failed,
-            "cancelled" => Self::Cancelled,
-            "uncertain" => Self::Uncertain,
-            "compensated" => Self::Compensated,
-            "dead-letter" => Self::DeadLetter,
-            _ => return None,
-        })
-    }
-
-    pub const fn holds_reservation(self) -> bool {
-        match self {
-            Self::Authorized
-            | Self::Leased
-            | Self::Dispatching
-            | Self::Succeeded
-            | Self::Uncertain => true,
-            Self::Staged
-            | Self::Failed
-            | Self::Cancelled
-            | Self::Compensated
-            | Self::DeadLetter => false,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub enum WorkflowStatus {
     Queued,
     Running,
@@ -176,9 +113,7 @@ pub enum KarmaObjectKind {
     ModelCheckpoint,
     Candidate,
     Decision,
-    Grant,
     TrustScope,
-    ActionIntent,
     Attempt,
     Receipt,
     Workflow,
@@ -206,16 +141,12 @@ pub enum KarmaActionKind {
     ReplayKarmaRun,
     RebuildKarmaModel,
     DisableKarmaModel,
-    CreateKarmaGrant,
-    NarrowKarmaGrant,
-    RevokeKarmaGrant,
     CreateAutomationTrustScope,
     ReviseAutomationTrustScope,
     ActivateAutomationTrustRevision,
     RespondKarmaCandidate,
     Decide,
     ControlKarmaWorkflow,
-    ControlKarmaIntent,
     SimulateKarmaProgram,
     ImportKarmaTemplate,
 }

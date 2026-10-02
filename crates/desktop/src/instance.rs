@@ -51,8 +51,11 @@ impl Drop for InstanceGuard {
 }
 
 pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
-    std::fs::create_dir_all(data_dir)?;
-    let canonical = data_dir.canonicalize()?;
+    std::fs::create_dir_all(data_dir)
+        .map_err(|error| path_error(error, "create application data directory", data_dir))?;
+    let canonical = data_dir
+        .canonicalize()
+        .map_err(|error| path_error(error, "resolve application data directory", data_dir))?;
     use std::hash::{Hash, Hasher};
     let mut hash = std::collections::hash_map::DefaultHasher::new();
     canonical.hash(&mut hash);
@@ -69,7 +72,9 @@ pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
             .mode(0o600)
             .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32);
     }
-    let lock = options.open(lock_path)?;
+    let lock = options
+        .open(&lock_path)
+        .map_err(|error| path_error(error, "open instance lock", &lock_path))?;
     match lock.try_lock() {
         Ok(()) => {}
         Err(std::fs::TryLockError::WouldBlock) => {
@@ -86,7 +91,9 @@ pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
     }
     let (sender, receiver) = mpsc::sync_channel(1);
     let wake = Arc::new(Mutex::new(None::<WakeSignal>));
-    let task = listen(&endpoint, sender, wake.clone()).await?;
+    let task = listen(&endpoint, sender, wake.clone())
+        .await
+        .map_err(|error| path_error(error, "listen for application activation", &endpoint))?;
     Ok(Some(InstanceGuard {
         _lock: lock,
         endpoint,
@@ -96,6 +103,13 @@ pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
             wake,
         },
     }))
+}
+
+fn path_error(error: io::Error, operation: &str, path: &Path) -> io::Error {
+    io::Error::new(
+        error.kind(),
+        format!("Cannot {operation} at {}: {error}", path.display()),
+    )
 }
 
 #[cfg(unix)]
@@ -109,9 +123,21 @@ fn control_directory(_: &Path) -> io::Result<PathBuf> {
     match std::fs::DirBuilder::new().mode(0o700).create(&path) {
         Ok(()) => {}
         Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
-        Err(error) => return Err(error),
+        Err(error) => {
+            return Err(path_error(
+                error,
+                "create private application control directory",
+                &path,
+            ));
+        }
     }
-    let metadata = std::fs::symlink_metadata(&path)?;
+    let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+        path_error(
+            error,
+            "inspect private application control directory",
+            &path,
+        )
+    })?;
     if !metadata.is_dir() || metadata.uid() != uid || metadata.mode() & 0o077 != 0 {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,

@@ -3,6 +3,49 @@ use crate::area::{AreaShape, InfluenceArea};
 use bevy::math::DVec2;
 
 #[test]
+fn sound_membership_blocks_cross_boundary_interactions_in_both_directions() {
+    let mut world = World::new();
+    world.init_resource::<Runtime>();
+    let root = world.spawn(Workspaces::default()).id();
+    let mut source = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(500.0));
+    source.sound = Some(SoundArea::default());
+    let source = crate::area::spawn_area(&mut world, root, 1, source).unwrap();
+    let mut shield = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0));
+    shield.immunity = crate::area_effects::Immunity::Isolation;
+    crate::area::spawn_area(&mut world, root, 1, shield).unwrap();
+    let target = world
+        .spawn((
+            CanvasItem {
+                position: DVec2::X * 100.0,
+                size: Vec2::splat(10.0),
+            },
+            ChildOf(root),
+            WorkspaceMember(1),
+        ))
+        .id();
+    update(&mut world);
+    assert!(
+        !world.resource::<Runtime>().0.areas[&source]
+            .1
+            .contains_key(&target)
+    );
+    world.get_mut::<CanvasItem>(target).unwrap().position = DVec2::ZERO;
+    update(&mut world);
+    assert_eq!(
+        world.resource::<Runtime>().0.areas[&source].1.get(&target),
+        Some(&true)
+    );
+    world.get_mut::<InfluenceArea>(source).unwrap().center = [100.0, 0.0];
+    world.get_mut::<CanvasItem>(source).unwrap().position = DVec2::X * 100.0;
+    update(&mut world);
+    assert!(
+        !world.resource::<Runtime>().0.areas[&source]
+            .1
+            .contains_key(&target)
+    );
+}
+
+#[test]
 fn sound_area_crossings_are_silent_on_start_and_play_only_on_edges() {
     let mut world = World::new();
     let area = world.spawn_empty().id();

@@ -234,6 +234,11 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
     for (mode, icon, tip) in [
         (Immunity::None, Icon::Stop, "Immunity off"),
         (
+            Immunity::Isolation,
+            Icon::Group,
+            "Block influence across this boundary in both directions. Areas and Sands inside can interact normally.",
+        ),
+        (
             Immunity::External,
             Icon::Backward,
             "Cancel Areas whose centers are outside this boundary",

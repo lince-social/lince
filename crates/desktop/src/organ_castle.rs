@@ -6,6 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 mod forms;
 mod qr;
+mod social;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -15,7 +16,7 @@ use forms::{Field, Kind, form};
 #[derive(Component)]
 pub struct OrganCastle {
     root: Entity,
-    pages: [Entity; 6],
+    pages: [Entity; 8],
     status: Entity,
     list: Entity,
     detail: Entity,
@@ -29,6 +30,10 @@ pub struct OrganCastle {
 struct Requests {
     subscriptions: HashSet<String>,
     actions: HashMap<String, (Entity, std::time::Instant)>,
+}
+
+pub(crate) fn social_delivery_controls(world: &mut World, owner: Entity, parent: Entity, message: &str) {
+    forms::form(world, owner, parent, "Review private delivery", json!({"action":"social","request":{"command":"private-delivery-status","message":message}}), vec![], None);
 }
 
 #[derive(Component)]
@@ -55,6 +60,8 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         "Add contact",
         "My devices",
         "Mail",
+        "Discovery",
+        "Public profile",
     ]
     .iter()
     .enumerate()
@@ -92,7 +99,10 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     let devices = panel::column(world, pages[4]);
     ui::device_controls(world, sand, pages[4]);
     ui::mail(world, sand, pages[5]);
+    social::populate(world, sand, pages[6]);
+    social::profile(world, sand, pages[7], &json!({}));
     panel::credits(world, tabs, body, qr::CREDITS);
+    panel::credits(world, tabs, body, social::CREDITS);
     world.entity_mut(sand).insert(OrganCastle {
         root,
         pages,
@@ -322,6 +332,15 @@ fn finish(world: &mut World, entity: Entity, result: Result<Value, String>) {
     panel::clear(world, output);
     match result {
         Ok(value) => {
+            if value["karma"].is_object() {
+                let karma = &value["karma"];
+                label(world, output, &format!("Karma permission: {} · local state: {} · {}", if karma["permitted"] == true { "enabled" } else { "disabled" }, if karma["local_running"] == true { "running" } else { "stopped" }, if karma["executing"] == true { "may execute" } else { "will not execute" }));
+                if let Some(reason) = karma["reason"].as_str() { label(world, output, reason); }
+            }
+            if world.get::<forms::Form>(entity).is_some_and(|form| form.payload["action"] == "social") {
+                social::result(world, owner, output, &value);
+                return;
+            }
             if let Some(target) = world.get::<qr::ScanTarget>(entity).map(|target| target.0) {
                 if let Some(text) = value["scanned"].as_str() {
                     if let Some(mut input) = world.get_mut::<bevy::text::EditableText>(target) {
@@ -428,6 +447,7 @@ fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::cell_bridge::CellMessage>>,
 ) {
+    social::poll_media(world);
     let messages: Vec<_> = cursor
         .read(world.resource::<Messages<crate::cell_bridge::CellMessage>>())
         .map(|m| m.0.clone())

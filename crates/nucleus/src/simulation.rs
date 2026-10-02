@@ -346,6 +346,7 @@ pub enum Witness {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum DatabaseEffectKind {
+    Command,
     Action,
     Consequence,
     Notify,

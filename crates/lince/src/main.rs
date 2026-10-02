@@ -19,14 +19,19 @@ fn main() -> Result<(), Error> {
             .name("lince-simulation".into())
             .stack_size(32 * 1024 * 1024)
             .spawn(move || -> simulation::Result<u8> {
-                let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+                let runtime = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()?;
                 runtime.block_on(simulation::cli::run(&args))
             })?
             .join()
             .map_err(|_| Error::other("simulation thread panicked"))?;
         let code = match result {
             Ok(code) => code,
-            Err(error) => { eprintln!("{error}"); 3 }
+            Err(error) => {
+                eprintln!("{error}");
+                3
+            }
         };
         std::process::exit(i32::from(code));
     }
@@ -147,7 +152,10 @@ fn main() -> Result<(), Error> {
             local_base_url: listen_addr.as_ref().map(|addr| format!("http://{addr}")),
             language,
             peer_port: arg_value(&args, "--peer-port")
-                .map(|port| port.parse::<u16>().map_err(|error| Error::other(format!("Invalid peer port: {error}"))))
+                .map(|port| {
+                    port.parse::<u16>()
+                        .map_err(|error| Error::other(format!("Invalid peer port: {error}")))
+                })
                 .transpose()?,
         }))
         .map_err(|error| {
@@ -236,20 +244,53 @@ fn main() -> Result<(), Error> {
     #[cfg(feature = "ui")]
     {
         let cell_runtime = cell.runtime().clone();
-        let _guard = runtime.enter();
-        let result = lince_desktop::run_native_interface(
-            cell_runtime,
-            instance
-                .as_ref()
-                .expect("UI instance was claimed before opening the Cell"),
-            &utils::config::lince_data_dir()
-                .expect("UI data directory was resolved before opening the Cell"),
-            !has_arg(&args, "--no-tray"),
-        );
+        let data_dir = utils::config::lince_data_dir()
+            .expect("UI data directory was resolved before opening the Cell");
+        let backup_handoff = lince_desktop::owner_backup::BackupHandoff::default();
+        let result = {
+            let _guard = runtime.enter();
+            lince_desktop::run_native_interface(
+                cell_runtime,
+                instance
+                    .as_ref()
+                    .expect("UI instance was claimed before opening the Cell"),
+                &data_dir,
+                !has_arg(&args, "--no-tray"),
+                backup_handoff.clone(),
+            )
+        };
         runtime.block_on(cell.shutdown());
         result?;
         #[cfg(feature = "facade")]
         drop(_facade);
+        if let Some(request) = backup_handoff.take()? {
+            let executable = information.state.borrow().executable.clone();
+            drop(_journal);
+            drop(information);
+            drop(runtime);
+            eprintln!("Creating encrypted owner backup; Lince will reopen when finished");
+            let captured = cell::owner_backup::capture_stopped(&data_dir, request);
+            let message = match captured {
+                Ok(_) => "Encrypted owner backup saved. Retained Records and owner keys are included; external attachments, interface layouts and live messaging sessions are excluded. Copy the complete data directory with Lince stopped for a directory backup".to_string(),
+                Err(error) => format!("Owner backup failed. The running data and any earlier backup were kept: {error}"),
+            };
+            let journal = match utils::diagnostics::Journal::open(
+                data_dir.join("notifications.json"),
+                diagnostics.clone(),
+            ) {
+                Ok(journal) => Some(journal),
+                Err(error) => {
+                    eprintln!("Could not retain the owner-backup result: {error}");
+                    None
+                }
+            };
+            diagnostics.report("lince::owner-backup", &message);
+            eprintln!("{message}");
+            drop(journal);
+            drop(instance);
+            utils::self_update::net::restart_program(&executable)?;
+            return Ok(());
+        }
         drop(instance);
         if information.ready_to_restart() {
             utils::self_update::net::restart_program(&information.state.borrow().executable)?;
@@ -284,7 +325,9 @@ fn print_help() {
     println!("  -h, --help            Show this help message");
     println!("      --directory <path> Override the Lince data directory");
     println!("      --port <port>     Override the local HTTP listen port");
-    println!("      --peer-port <port> Save the peer UDP port for this Cell (default 6175; 0 automatic)");
+    println!(
+        "      --peer-port <port> Save the peer UDP port for this Cell (default 6175; 0 automatic)"
+    );
     println!("      --listen-addr <addr>  Override the local listen address");
     println!("      --quiet          Suppress normal status output");
     println!("      --simulation [cases]  Run scenarios, or resume a generated campaign");

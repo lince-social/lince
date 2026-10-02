@@ -1,5 +1,7 @@
 mod attachments;
 mod drafts;
+#[cfg(test)]
+mod tests;
 
 use crate::{actions::Action, protein_area::RecordBinding};
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -46,7 +48,7 @@ pub(crate) struct Draft {
     pub parts: Vec<MessagePart>,
     list: Entity,
     status: Entity,
-    reference: Entity,
+    reference: Option<Entity>,
     pub input: Entity,
     pub locked: bool,
 }
@@ -128,6 +130,7 @@ pub(crate) fn draft(
     status: Entity,
     thread: &str,
     binding: &RecordBinding,
+    private: bool,
 ) {
     let bar = world
         .spawn((
@@ -142,28 +145,33 @@ pub(crate) fn draft(
         .id();
     crate::description::button(world, bar, owner, "Attach files", Pick(false));
     crate::description::button(world, bar, owner, "Paste image", PasteImage);
-    crate::description::button(world, bar, owner, "Reference local file", Pick(true));
-    let reference = world
-        .spawn((
-            crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0),
-            ChildOf(bar),
-        ))
-        .insert(Node {
-            width: px(220),
-            ..default()
-        })
-        .id();
-    world
-        .get_mut::<EditableText>(reference)
-        .unwrap()
-        .allow_newlines = false;
-    world
-        .entity_mut(reference)
-        .insert(crate::icons::Tooltip("Resource URL or Record UID".into()));
-    crate::description::button(world, bar, owner, "Add reference", Reference);
+    let reference = if private {
+        None
+    } else {
+        crate::description::button(world, bar, owner, "Reference local file", Pick(true));
+        let reference = world
+            .spawn((
+                crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0),
+                ChildOf(bar),
+            ))
+            .insert(Node {
+                width: px(220),
+                ..default()
+            })
+            .id();
+        world
+            .get_mut::<EditableText>(reference)
+            .unwrap()
+            .allow_newlines = false;
+        world
+            .entity_mut(reference)
+            .insert(crate::icons::Tooltip("Resource URL or Record UID".into()));
+        crate::description::button(world, bar, owner, "Add reference", Reference);
+        crate::message_progress::composer(world, owner, bar);
+        crate::message_questions::composer(world, owner, bar);
+        Some(reference)
+    };
     crate::speech::composer(world, owner, owner, input);
-    crate::message_progress::composer(world, owner, bar);
-    crate::message_questions::composer(world, owner, bar);
     let list = world
         .spawn((
             Node {
@@ -274,9 +282,13 @@ fn mime(path: &std::path::Path) -> &'static str {
         "ogg" => "audio/ogg",
         "flac" => "audio/flac",
         "m4a" => "audio/mp4",
+        "mp4" | "m4v" => "video/mp4",
+        "webm" => "video/webm",
+        "mov" => "video/quicktime",
         "pdf" => "application/pdf",
+        "csv" => "text/csv",
         "json" => "application/json",
-        "txt" | "md" | "rs" | "py" | "js" | "ts" | "toml" | "yaml" | "yml" | "csv" => "text/plain",
+        "txt" | "md" | "rs" | "py" | "js" | "ts" | "toml" | "yaml" | "yml" => "text/plain",
         _ => "application/octet-stream",
     }
 }
@@ -369,7 +381,9 @@ impl Action for Reference {
         if draft.locked {
             return;
         }
-        let input = draft.reference;
+        let Some(input) = draft.reference else {
+            return;
+        };
         let text = world
             .get::<EditableText>(input)
             .unwrap()

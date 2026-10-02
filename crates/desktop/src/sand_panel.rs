@@ -49,6 +49,7 @@ pub(crate) fn field(world: &mut World, parent: Entity, caption: &str, value: &st
         input.allow_newlines = false;
         input.visible_lines = Some(1.0);
     }
+    crate::accessibility::input(world, entity, caption, false);
     world.entity_mut(entity).insert((
         crate::icons::Tooltip(caption.into()),
         Node {

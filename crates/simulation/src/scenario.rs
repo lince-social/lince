@@ -94,6 +94,7 @@ pub struct Input {
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Event {
+    CommandResponse { response: nucleus::command::CommandResponse },
     AssumeLoan {
         timing: crate::loans::Timing,
     },
@@ -317,6 +318,9 @@ impl Scenario {
                         return Err(invalid("clock offset"));
                     }
                 }
+                Event::CommandResponse { response } => {
+                    if response.command.len() > 256 || response.stdout.len() > 65_536 || response.stderr.len() > 65_536 { return Err("Command response exceeds input limits".into()); }
+                }
                 Event::Restart {}
                 | Event::Online { .. }
                 | Event::PersonKey { .. }
@@ -501,15 +505,15 @@ pub fn validate_action(action: &Action) -> crate::Result<()> {
         | Action::GrantVisibility { .. }
         | Action::GrantPermission { .. }
         | Action::RevokePermission { .. }
-        | Action::RevokeKarmaGrant { .. }
-        | Action::CreateKarmaGrant { .. }
-        | Action::NarrowKarmaGrant { .. }
-        | Action::ActivateKarmaGrant { .. }
         | Action::CreateKarmaProgram { .. }
         | Action::ReviseKarmaProgram { .. }
         | Action::ActivateKarmaProgram { .. }
         | Action::PauseKarmaProgram { .. }
         | Action::SetKarmaExecution { .. }
+        | Action::SaveKarmaCommand { .. }
+        | Action::RunKarmaCommand { .. }
+        | Action::InspectKarmaCommands
+        | Action::DesignateKarmaExecutor { .. }
         | Action::RespondKarmaCandidate { .. } => Ok(()),
         Action::CreateTransferDraft { .. }
         | Action::CreateTransferThread { .. }

@@ -351,6 +351,21 @@ async fn sends_supported_images_audio_files_and_references_without_flattening_th
             mime_type: "text/plain".into(),
             data: "bm90ZQ==".into(),
         },
+        MessagePart::Attachment {
+            name: "table.csv".into(),
+            mime_type: "text/csv".into(),
+            data: "aXRlbSx2YWx1ZQphLDIKYiwzCg==".into(),
+        },
+        MessagePart::Attachment {
+            name: "document.pdf".into(),
+            mime_type: "application/pdf".into(),
+            data: "JVBERi0xLjQ=".into(),
+        },
+        MessagePart::Attachment {
+            name: "video.mp4".into(),
+            mime_type: "video/mp4".into(),
+            data: "AAAAFGZ0eXBtcDQy".into(),
+        },
         MessagePart::Reference {
             name: "source".into(),
             uri: "file:///source.rs".into(),
@@ -376,9 +391,29 @@ async fn sends_supported_images_audio_files_and_references_without_flattening_th
         .collect();
     assert_eq!(
         types,
-        ["text", "image", "audio", "resource", "resource_link"]
+        [
+            "text",
+            "image",
+            "audio",
+            "resource",
+            "resource",
+            "resource",
+            "resource",
+            "resource_link"
+        ]
     );
     assert_eq!(sent["prompt"][3]["resource"]["text"], "note");
+    assert_eq!(
+        sent["prompt"][4]["resource"]["text"],
+        "item,value\na,2\nb,3\n"
+    );
+    for (index, mime, blob) in [
+        (5, "application/pdf", "JVBERi0xLjQ="),
+        (6, "video/mp4", "AAAAFGZ0eXBtcDQy"),
+    ] {
+        assert_eq!(sent["prompt"][index]["resource"]["mimeType"], mime);
+        assert_eq!(sent["prompt"][index]["resource"]["blob"], blob);
+    }
     connection.close();
 }
 

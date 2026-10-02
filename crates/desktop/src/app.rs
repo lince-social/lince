@@ -17,11 +17,13 @@ pub fn run_native_interface(
     instance: &crate::instance::InstanceGuard,
     data_dir: &std::path::Path,
     tray_enabled: bool,
+    backup_handoff: crate::owner_backup::BackupHandoff,
 ) -> std::io::Result<()> {
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
     let mut app = interface_app_at(data_dir.join("interface-assets"));
+    app.insert_resource(backup_handoff);
     app.insert_resource(crate::sound::Audio::open(
         data_dir.to_path_buf(),
         app.world()
@@ -135,6 +137,8 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         crate::tutorial::TutorialPlugin,
     ))
     .add_plugins(crate::karma_castle::KarmaCastlePlugin)
+    .add_plugins(crate::accessibility::AccessibilityPlugin)
+    .add_plugins(crate::component_push::ComponentPushPlugin)
     .add_plugins(crate::simulation_castle::SimulationCastlePlugin)
     .add_plugins(crate::sound::SoundPlugin)
     .add_plugins(crate::sound_area::SoundAreaPlugin)
@@ -153,6 +157,7 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         crate::terminal::TerminalPlugin,
         crate::command_castle::CommandCastlePlugin,
         crate::configuration::ConfigurationPlugin,
+        crate::owner_backup::BackupPlugin,
         crate::organ_castle::OrganCastlePlugin,
         crate::todo::TodoPlugin,
         crate::ontology::OntologyPlugin,

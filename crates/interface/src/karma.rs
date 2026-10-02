@@ -182,6 +182,7 @@ pub fn suggestions(
             "sum_pos(",
             "sum_neg(",
             "signal(",
+            "query_command(",
             "freq(",
             "extension(",
         ]
@@ -190,7 +191,18 @@ pub fn suggestions(
         RuleFieldKind::Threshold => ["!=0", "always", ">0", ">=1", "<0", "<=0", "==0"]
             .map(str::to_owned)
             .into(),
-        RuleFieldKind::Consequence => [": command(\"\")"].map(str::to_owned).into(),
+        RuleFieldKind::Consequence => [
+            ": activate-fiote",
+            ": command(\"\")",
+            ": run(@command)",
+            ": show({\"kind\":\"record\",\"mode\":\"full\"})",
+            ": show({\"kind\":\"record\",\"mode\":\"description\"})",
+            ": show({\"kind\":\"record\",\"mode\":\"call\"})",
+            ": show({\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"thread\",\"person\":\"me\",\"media\":\"audio\"}})",
+            ": show({\"kind\":\"text\",\"text\":\"Reminder\"})",
+            ": show({\"kind\":\"karma\",\"search\":\"\"})",
+            ": show({\"kind\":\"frequency\",\"search\":\"\"})",
+        ].map(str::to_owned).into(),
     };
     if kind != RuleFieldKind::Threshold {
         elements.extend(
@@ -422,6 +434,17 @@ pub fn frequency_hint(frequency: &Value, now_ms: i64) -> String {
 mod extension_tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn automatic_call_template_is_editable_and_uses_the_shared_consequence_parser() {
+        let choices = suggestions(RuleFieldKind::Consequence, "start_call", &[], &[], &[]);
+        let template = choices.iter().find_map(|choice| match choice {
+            Suggestion::Element(value) if value.contains("start_call") => Some(value),
+            _ => None,
+        }).unwrap();
+        let source = insert_at("@family", 7..7, template, RuleFieldKind::Consequence);
+        assert!(nucleus::karma::rule_field::RuleConsequence::parse(&source).is_ok());
+    }
 
     #[test]
     fn native_choices_insert_namespace_property_and_show_the_current_value() {

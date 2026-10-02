@@ -7,7 +7,13 @@ pub mod communication;
 pub mod app;
 
 #[cfg(feature = "native-runtime")]
+pub mod owner_backup;
+
+#[cfg(feature = "native-runtime")]
 pub mod actions;
+
+#[cfg(feature = "native-runtime")]
+mod accessibility;
 
 #[cfg(feature = "native-runtime")]
 pub mod notifications;
@@ -165,6 +171,9 @@ pub mod wake;
 
 #[cfg(feature = "native-runtime")]
 pub mod cell_bridge;
+
+#[cfg(feature = "native-runtime")]
+pub mod component_push;
 
 #[cfg(feature = "native-runtime")]
 pub mod record_view;

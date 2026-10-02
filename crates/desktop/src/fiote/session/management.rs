@@ -27,6 +27,46 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         );
     }
     crate::description::button(world, content, owner, "Create Fiote", Create);
+    crate::description::button(world, content, owner, "Run now", RunNow);
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Refresh activations",
+        RefreshActivations,
+    );
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Stop current and pending runs",
+        CancelActivations,
+    );
+    let activations = collapsed(world, content, "Show activations");
+    for activation in &saved.activations {
+        crate::edit_mode::label(
+            world,
+            activations,
+            &format!(
+                "{} · value {} · {}\n{}\n{}",
+                activation["request_id"].as_str().unwrap_or_default(),
+                activation["value"].as_str().unwrap_or_default(),
+                activation["state"].as_str().unwrap_or_default(),
+                activation["detail"].as_str().unwrap_or_default(),
+                activation["cause"]
+            ),
+            13.0,
+        );
+        if let Some(thread) = activation["thread"].as_str() {
+            crate::description::button(
+                world,
+                activations,
+                owner,
+                "Open activation thread",
+                OpenTask(thread.into()),
+            );
+        }
+    }
     crate::edit_mode::label(world, content, "Selected Fiote", 18.0);
     let binding = world.get::<Panel>(owner).unwrap().binding.clone();
     if let Some(source) = saved.instructions.last() {
@@ -41,6 +81,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                     ChildOf(content),
                 ))
                 .id();
+            crate::accessibility::input(world, editor, label, property != "head");
             if property == "head" {
                 world
                     .get_mut::<EditableText>(editor)
@@ -164,6 +205,41 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                 Retry(task.thread.clone()),
             );
         }
+    }
+}
+
+#[derive(Clone)]
+struct RefreshActivations;
+impl Action for RefreshActivations {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
+        request(world, owner, FioteRequest::Inspect { record });
+    }
+}
+
+#[derive(Clone)]
+struct RunNow;
+impl Action for RunNow {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
+        request(
+            world,
+            owner,
+            FioteRequest::Activate {
+                record,
+                value: "1".into(),
+                request_id: nucleus::new_uid("fiote-run"),
+            },
+        );
+    }
+}
+
+#[derive(Clone)]
+struct CancelActivations;
+impl Action for CancelActivations {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
+        request(world, owner, FioteRequest::CancelActivations { record });
     }
 }
 
@@ -327,6 +403,9 @@ pub(super) fn instructions(world: &mut World, saved: &FioteStatus) {
                 current.body
             ));
         }
+    }
+    if let Some(context) = &session.context {
+        text.push_str(&format!("\nContext: {}\nTools: {}\nTask: {}\nActivation: {}\nIncluded messages and attachment references:\n{}\nChild sessions (reported unless marked Lince runtime):\n{}\n", context["scope"], context["tools"], context["task"], context["activation"], serde_json::to_string_pretty(&context["messages"]).unwrap_or_default(), serde_json::to_string_pretty(&context["children"]).unwrap_or_default()));
     }
     for entity in controls {
         world.get_mut::<Text>(entity).unwrap().0 = text.clone();

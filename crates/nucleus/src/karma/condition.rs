@@ -247,7 +247,7 @@ impl Condition {
                     crate::expr::extension_token(args)
                         .map_err(|error| ConditionError::Parse(error.to_string()))?;
                 }
-                Expr::Fn(name, args) if crate::transfer::karma::is_reading(name) || name == "distance" => {
+                Expr::Fn(name, args) if crate::transfer::karma::is_reading(name) || name == "distance" || name == "query_command" => {
                     let count = if crate::transfer::karma::is_agreement_reading(name) || name == "distance" { 2 } else { 1 };
                     if args.len() != count || args.iter().any(|argument| !matches!(argument, Expr::Ref(_))) {
                         return Err(ConditionError::Parse(format!("{name}() needs exactly {count} @references")));

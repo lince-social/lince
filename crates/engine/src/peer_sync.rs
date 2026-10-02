@@ -13,6 +13,9 @@ impl Engine {
         vector: &[store::sync_ops::VectorEntry],
         limit: i64,
     ) -> Result<Page, EngineError> {
+        if vector.len() > 4096 || vector.iter().any(|entry|entry.actor_cell.len() > 200) {
+            return Err(EngineError::Consequence("The sync version vector exceeds its bounds".into()));
+        }
         let local = store::organs::local(&self.store.pool)
             .await?
             .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?
@@ -59,7 +62,7 @@ impl Engine {
                 limit.clamp(1, 2000),
             )
             .await?
-        } else {
+        } else if contact.as_ref().is_some_and(|contact|contact.sync_out) {
             store::sync_ops::ops_missing_from_vector(
                 &self.store.pool,
                 &local,
@@ -67,14 +70,19 @@ impl Engine {
                 limit.clamp(1, 2000),
             )
             .await?
+        } else {
+            Vec::new()
         };
-        let head = rows.last().map_or(0, |row| row.seq);
+        let mut head = rows.last().map_or(0, |row| row.seq);
         let scope = contact.and_then(|contact| contact.scope_fields);
         let links = store::sync_ops::resolve_link_scope(&self.store.pool, scope.as_deref()).await?;
         let rows = store::sync_ops::narrow_ops_to_scope(rows, scope.as_deref(), &links);
         let hidden = store::visibility::hidden_from_organ(&self.store.pool, authenticated).await?;
         let mut visible = Vec::new();
         for row in rows {
+            if local != authenticated && nucleus::social::private_sync_field(&row.tbl, &row.field) {
+                continue;
+            }
             if !store::visibility::op_hidden_from(&self.store.pool, &hidden, &row.tbl, &row.uid)
                 .await?
             {
@@ -82,19 +90,24 @@ impl Engine {
             }
         }
         let mut ops = self.hydrate_ops(visible).await?;
+        let general_count = ops.len();
         if local == authenticated {
+            ops.extend(self.export_own_conversations(&local, vector).await?);
             ops.extend(
                 self.export_transfer_transactions(&local, vector, limit.clamp(1, 128) as usize)
                     .await?,
             );
         }
-        Ok(Page {
-            batch: OpBatch {
-                from_organ: local,
-                ops,
-            },
-            head,
-        })
+        let mut batch = OpBatch { from_organ: local.clone(), ops };
+        if crate::social::history::bound_sync_page(&mut batch, 15 * 1024 * 1024)?
+            && batch.ops.len() < general_count
+        {
+            head = if let Some(last) = batch.ops.last() {
+                store::sqlx::query_scalar::<_, Option<i64>>("SELECT MAX(seq) FROM sync_op WHERE organ_uid=? AND actor_cell=? AND hlc=?")
+                    .bind(&local).bind(&last.actor_cell).bind(last.hlc).fetch_one(&self.store.pool).await?.unwrap_or(0)
+            } else { 0 };
+        }
+        Ok(Page { batch, head })
     }
 
     pub async fn receive_sync_batch(
@@ -111,16 +124,19 @@ impl Engine {
         let ours = store::organs::local(&self.store.pool)
             .await?
             .is_some_and(|organ| organ.uid == authenticated);
+        let contact=store::organs::contact(&self.store.pool,authenticated).await?;
         if !ours
-            && store::organs::contact(&self.store.pool, authenticated)
-                .await?
-                .is_none_or(|contact| contact.trust != "known")
+            && contact.as_ref().is_none_or(|contact| contact.trust != "known")
         {
             return Err(EngineError::Conflict {
                 code: "not_known",
                 message: "sync requires a known, unblocked Organ".into(),
             });
         }
-        self.import_op_batch(batch).await
+        if !ours && contact.as_ref().is_some_and(|contact|!contact.sync_in) {
+            Err(EngineError::Forbidden("General replication from this contact is disabled".into()))
+        } else {
+            self.import_op_batch(batch).await
+        }
     }
 }

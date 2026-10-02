@@ -51,7 +51,7 @@ async fn fire(engine: &Engine, rule: &str, due: i64) -> Result<(), engine::Engin
 
 #[tokio::test]
 async fn range_edits_keep_elapsed_dates_and_the_bound_target_after_renaming() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let original = support::plain(&engine, "room", 0.0).await;
     let mut start = input(Purpose::Start, 5_000, -1);
     let uid = engine
@@ -141,6 +141,7 @@ async fn accepted_retry_survives_interruption_before_evaluation_and_database_reo
     let engine = Engine::open(&format!("sqlite://{}", path.display()))
         .await
         .unwrap();
+    support::karma::authorize(&engine).await;
     let room = support::plain(&engine, "room", 0.0).await;
     let price = support::plain(&engine, "price", 0.0).await;
     let uid = engine
@@ -221,7 +222,7 @@ async fn accepted_retry_survives_interruption_before_evaluation_and_database_reo
     let recovered = Engine::open(&format!("sqlite://{}", path.display()))
         .await
         .unwrap();
-    recovered.fire_due_rules(at(8_000)).await.unwrap();
+    recovered.advance_karma_time(at(8_000)).await.unwrap();
     recovered.act_at(retry, None, at(9_000)).await.unwrap();
     let rows = store::sqlx::query("SELECT event_id, status, attempt FROM karma_rule_application WHERE rule_uid = ? ORDER BY attempt")
         .bind(&boundary.rule).fetch_all(&recovered.store.pool).await.unwrap();
@@ -242,7 +243,7 @@ async fn accepted_retry_survives_interruption_before_evaluation_and_database_reo
 
 #[tokio::test]
 async fn revoked_visibility_hides_history_and_refuses_schedule_edits_and_replay() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "room", 0.0).await;
     let person = support::person(&engine, "scheduler").await;
     let role = store::auth::ensure_role(&engine.store.pool, "scheduler")
@@ -332,7 +333,7 @@ async fn revoked_visibility_hides_history_and_refuses_schedule_edits_and_replay(
             .await
             .is_err()
     );
-    engine.fire_due_rules(at(5_000)).await.unwrap();
+    engine.advance_karma_time(at(5_000)).await.unwrap();
     assert!(
         store::facts::level(&engine.store.pool, &target)
             .await
@@ -350,7 +351,7 @@ async fn revoked_visibility_hides_history_and_refuses_schedule_edits_and_replay(
 
 #[tokio::test]
 async fn changing_a_partly_applied_boundary_cannot_repeat_committed_work() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let target = support::plain(&engine, "room", 0.0).await;
     let mut boundary = input(Purpose::Once, 5_000, 1);
     boundary.consequences = vec![
@@ -452,7 +453,7 @@ async fn changing_a_partly_applied_boundary_cannot_repeat_committed_work() {
 
 #[tokio::test]
 async fn ordinary_rule_edits_refresh_the_range_and_refuse_a_stale_date_form() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     support::plain(&engine, "room", 0.0).await;
     let old_inputs = vec![
         input(Purpose::Start, 5_000, -1),

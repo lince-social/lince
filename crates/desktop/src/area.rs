@@ -142,6 +142,8 @@ impl PropertyRule {
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct InfluenceArea {
     #[serde(default)]
+    pub backend_components: bool,
+    #[serde(default)]
     pub records: std::collections::BTreeMap<String, crate::record_presentation::Saved>,
     pub id: String,
     pub name: String,
@@ -183,6 +185,7 @@ impl InfluenceArea {
         getrandom::fill(&mut bytes).expect("area identity");
         Self {
             records: Default::default(),
+            backend_components: false,
             id: bytes.iter().map(|byte| format!("{byte:02x}")).collect(),
             name: "Area of influence".into(),
             enabled: true,

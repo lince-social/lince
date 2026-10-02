@@ -36,7 +36,7 @@ pub struct RuleIndex {
     pub(crate) used: BTreeSet<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct RuleEvent {
     pub id: String,
     pub frequency: Option<String>,
@@ -88,6 +88,7 @@ impl Engine {
         due: DateTime<Utc>,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
+        self.require_karma_execution(Some(&rule.record_uid)).await?;
         let _guard = self.rule_execution.lock().await;
         let index = Box::pin(self.rule_dependencies()).await?;
         let frequency = index
@@ -218,7 +219,7 @@ impl Engine {
         if consequences.iter().any(|effect| {
             matches!(
                 effect,
-                nucleus::karma::Consequence::RunCommand { .. }
+                nucleus::karma::Consequence::InvokeCommand { .. } | nucleus::karma::Consequence::RunCommand { .. }
                     | nucleus::karma::Consequence::RunAction { .. }
             )
         }) {
@@ -226,6 +227,11 @@ impl Engine {
         }
         if let Some(condition) = condition {
             self.karma_condition_records(condition.parsed().map_err(|error| invalid(error.to_string()))?, actor).await?;
+        }
+        for consequence in consequences.iter() {
+            if let nucleus::karma::Consequence::ShowComponent { component } = consequence {
+                self.authorize_component(component, actor).await?;
+            }
         }
         Ok(())
     }
@@ -243,7 +249,7 @@ impl Engine {
         crate::as_one_firing(self.run_rule_reactions(changed, event_id, now)).await
     }
 
-    async fn run_rule_reactions(
+    pub(crate) async fn run_rule_reactions(
         &self,
         changed: Vec<String>,
         event_id: String,
@@ -276,6 +282,7 @@ impl Engine {
                 }
             }
             for uid in readers {
+                if crate::commands::SAMPLE_ORIGIN.try_with(|origin| origin.as_deref() == Some(uid.as_str())).unwrap_or(false) { continue; }
                 steps += 1;
                 if steps > 256 && nucleus::execution::current().and_then(|execution| execution.control()).is_none() {
                     return Err(EngineError::Conflict {
@@ -482,7 +489,12 @@ impl Engine {
         event: &RuleEvent,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
-        crate::karma_transfers::scope(rule.actor_uid.as_deref(), self.execute_rule_event_with_reads(rule, event, now)).await
+        let context = crate::commands::QueryContext { rule_uid: rule.uid.clone(), revision: rule.revision, event: event.clone() };
+        let result = crate::commands::QUERY_CONTEXT.scope(context, crate::karma_transfers::scope(rule.actor_uid.as_deref(), self.execute_rule_event_with_reads(rule, event, now))).await;
+        match result {
+            Err(EngineError::Conflict { code: "karma_query_pending", .. }) => Ok(Vec::new()),
+            other => other,
+        }
     }
 
     async fn execute_rule_event_with_reads(
@@ -499,7 +511,7 @@ impl Engine {
         }
         crate::karma_history::CAPTURE.scope(std::cell::RefCell::new(evidence), async {
             let result = Box::pin(self.execute_rule_event_inner(rule, event, now)).await;
-            if result.as_ref().err().is_some_and(|error| !matches!(error, EngineError::ExecutionLimit(_))) {
+            if result.as_ref().err().is_some_and(|error| !matches!(error, EngineError::ExecutionLimit(_) | EngineError::Conflict { code: "karma_query_pending", .. })) {
                 let mut connection = self.store.pool.acquire().await?;
                 crate::karma_history::persist(&mut connection, rule, event).await?;
             }
@@ -513,6 +525,7 @@ impl Engine {
         event: &RuleEvent,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
+        self.require_karma_execution(Some(&rule.record_uid)).await?;
         let current = store::recurrence::get(&self.store.pool, &rule.uid).await?;
         if current.is_none_or(|current| current.is_paused() || current.revision != rule.revision) {
             return Ok(Vec::new());
@@ -578,6 +591,10 @@ impl Engine {
             }
             transfer_effects.push(prepared);
         }
+        let mut command_snapshots = Vec::with_capacity(rule.consequences.len());
+        for consequence in &rule.consequences {
+            command_snapshots.push(match consequence { nucleus::karma::Consequence::InvokeCommand { command } => Some(self.command_snapshot(command, rule.actor_uid.as_deref()).await?), _ => None });
+        }
         let signer = self.signer.lock().await.clone();
         let mut tx = store::write_tx(&self.store.pool).await?;
         let inserted = store::sqlx::query("INSERT OR IGNORE INTO karma_rule_application(event_id, rule_uid, rule_revision, status, reason, at, intended_at, frequency_uid, attempt) VALUES (?, ?, ?, 'applied', NULL, ?, ?, ?, ?)")
@@ -625,6 +642,10 @@ impl Engine {
                         )),
                     };
                     queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "action", serde_json::json!({"action": action, "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision, "occurrence": occurrence}), &rule.record_uid, now).await?;
+                    None
+                }
+                Consequence::InvokeCommand { command } => {
+                    queue_effect_tx(&mut tx, &format!("{}:{}:{}:{position}", event.id, rule.uid, rule.revision), "saved-command", serde_json::json!({"saved_command": command, "command_snapshot": command_snapshots[position], "actor": rule.actor_uid, "rule": rule.uid, "revision": rule.revision, "occurrence": occurrence}), &rule.record_uid, now).await?;
                     None
                 }
                 Consequence::RunCommand { command } => {
@@ -719,6 +740,7 @@ impl Engine {
                     .map_err(|e| invalid(e.to_string()))?
                     .reads()
                 {
+                    if token.func == "query_command" { continue; }
                     if token.func == "freq" {
                         let uid = self.resolve_frequency_uid(&token.slug).await?;
                         index
@@ -807,7 +829,7 @@ impl Engine {
             index.records = expanded;
         }
         for signal in store::misc::list_signals(&self.store.pool).await? {
-            if !index.records.contains_key(&signal.record_uid) {
+            if signal.schedule.is_empty() || !index.records.contains_key(&signal.record_uid) {
                 continue;
             }
             let frequency = self.bind_signal_frequency(&signal).await?;

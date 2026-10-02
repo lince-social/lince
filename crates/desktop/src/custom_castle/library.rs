@@ -23,6 +23,7 @@ fn encode(castle: CustomCastle) -> Result<String, String> {
     if !castle.valid() {
         return Err("Invalid custom component".into());
     }
+    if let Some(composition) = &castle.composition { return nucleus::component::Document::encode(composition.clone()); }
     let body = serde_json::to_string(&Document {
         format: FORMAT.into(),
         castle,
@@ -40,6 +41,12 @@ fn decode(row: &Value) -> Result<CustomCastle, String> {
         .ok_or("Component contents are unavailable")?;
     if body.len() > MAX_BYTES || row["kind"] != "sand" {
         return Err("Invalid custom component".into());
+    }
+    if serde_json::from_str::<Value>(body).map_err(|_| "Invalid custom component")?.get("composition").is_some() {
+        let mut document = nucleus::component::Document::decode(body)?;
+        document.composition.name = row["head"].as_str().unwrap_or_default().into();
+        document.composition.validate()?;
+        return Ok(CustomCastle { name: document.composition.name.clone(), composition: Some(document.composition), parts: Vec::new() });
     }
     let mut document: Document =
         serde_json::from_str(body).map_err(|_| "Invalid custom component")?;

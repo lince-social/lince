@@ -622,6 +622,217 @@ async fn wait(host: &Host) {
     .unwrap();
 }
 
+#[tokio::test]
+async fn activations_coalesce_while_busy_and_keep_individual_causes() {
+    let (host, _, _root, record, manual) = fixture(true).await;
+    host.send(&manual, "Keep working until stopped")
+        .await
+        .unwrap()
+        .unwrap();
+    for (id, value) in [("one", "2"), ("two", "-3.5")] {
+        host.handle(Request::Activate {
+            record: record.clone(),
+            value: value.into(),
+            request_id: id.into(),
+        })
+        .await
+        .unwrap();
+    }
+    tokio::time::timeout(std::time::Duration::from_secs(5), host.activation_tick())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        host.engine
+            .fiote_activations(&record)
+            .await
+            .unwrap()
+            .iter()
+            .all(|request| request.state == "queued")
+    );
+    host.handle(Request::Stop { thread: manual }).await.unwrap();
+    wait(&host).await;
+    host.activation_tick().await.unwrap();
+    let requests = host.engine.fiote_activations(&record).await.unwrap();
+    assert_eq!(requests.len(), 2);
+    assert!(requests.iter().all(|request| request.state == "running"));
+    assert_eq!(requests[0].thread, requests[1].thread);
+    let thread = requests[0].thread.as_ref().unwrap();
+    let batch =
+        store::records::get_extension(&host.engine.store.pool, thread, "lince.fiote-activation")
+            .await
+            .unwrap()
+            .unwrap();
+    assert_eq!(batch["count"], 2);
+    assert_eq!(batch["sample"][0]["value"], "2");
+    assert_eq!(batch["sample"][1]["value"], "-3.5");
+    host.handle(Request::Activate {
+        record: record.clone(),
+        value: "7".into(),
+        request_id: "later".into(),
+    })
+    .await
+    .unwrap();
+    host.activation_tick().await.unwrap();
+    assert_eq!(
+        host.engine.fiote_activations(&record).await.unwrap()[0].state,
+        "queued"
+    );
+    host.handle(Request::CancelActivations {
+        record: record.clone(),
+    })
+    .await
+    .unwrap();
+    wait(&host).await;
+    host.activation_tick().await.unwrap();
+    assert!(
+        host.engine
+            .fiote_activations(&record)
+            .await
+            .unwrap()
+            .iter()
+            .all(|request| matches!(request.state.as_str(), "cancelled" | "interrupted"))
+    );
+}
+
+#[tokio::test]
+async fn activation_restart_preserves_pending_and_interrupts_running_without_replaying() {
+    let (host, _, _root, record, thread) = fixture(false).await;
+    for request_id in ["pending", "was-running"] {
+        host.handle(Request::Activate {
+            record: record.clone(),
+            value: "1".into(),
+            request_id: request_id.into(),
+        })
+        .await
+        .unwrap();
+    }
+    store::sqlx::query("UPDATE fiote_activation SET state = 'running', thread_uid = ? WHERE request_id = 'was-running'").bind(&thread).execute(&host.engine.store.pool).await.unwrap();
+    let reopened = Host::open(host.engine.clone(), host.directory.clone())
+        .await
+        .unwrap();
+    let requests = reopened.engine.fiote_activations(&record).await.unwrap();
+    assert_eq!(
+        requests
+            .iter()
+            .find(|request| request.request_id == "pending")
+            .unwrap()
+            .state,
+        "queued"
+    );
+    assert_eq!(
+        requests
+            .iter()
+            .find(|request| request.request_id == "was-running")
+            .unwrap()
+            .state,
+        "interrupted"
+    );
+    assert!(reopened.running.lock().await.is_empty());
+    reopened.activation_tick().await.unwrap();
+    assert_eq!(
+        reopened
+            .engine
+            .fiote_activations(&record)
+            .await
+            .unwrap()
+            .iter()
+            .find(|request| request.request_id == "pending")
+            .unwrap()
+            .state,
+        "waiting"
+    );
+    assert!(reopened.running.lock().await.is_empty());
+}
+
+#[tokio::test]
+async fn locked_activations_wait_and_context_inspection_links_reported_children() {
+    let (host, _, _root, record, thread) = fixture(false).await;
+    host.handle(Request::Lock {
+        record: record.clone(),
+    })
+    .await
+    .unwrap();
+    host.handle(Request::Activate {
+        record: record.clone(),
+        value: "1".into(),
+        request_id: "locked".into(),
+    })
+    .await
+    .unwrap();
+    host.activation_tick().await.unwrap();
+    assert_eq!(
+        host.engine.fiote_activations(&record).await.unwrap()[0].state,
+        "waiting"
+    );
+    host.handle(Request::Unlock {
+        record: record.clone(),
+        password: Secret("test-password".into()),
+    })
+    .await
+    .unwrap();
+    host.send(&thread, "A general conversation")
+        .await
+        .unwrap()
+        .unwrap();
+    wait(&host).await;
+    let child = host
+        .engine
+        .act(
+            Action::CreateThread {
+                target: record,
+                head: "Reported child".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    host.engine
+        .act(
+            Action::ReportFioteChild {
+                parent: thread.clone(),
+                thread: child.clone(),
+                task: "Check one option".into(),
+                state: "finished".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        host.engine
+            .act(
+                Action::ReportFioteChild {
+                    parent: child.clone(),
+                    thread: thread.clone(),
+                    task: "Cycle".into(),
+                    state: "waiting".into()
+                },
+                None
+            )
+            .await
+            .is_err()
+    );
+    let context = host.inspect_context(&thread).await.unwrap().unwrap();
+    assert!(
+        context["messages"]
+            .to_string()
+            .contains("A general conversation")
+    );
+    assert!(
+        context["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|tool| tool == "lince_action")
+    );
+    assert_eq!(context["children"][0]["thread"], child);
+    assert_eq!(context["children"][0]["state"], "finished");
+    assert!(!context.to_string().contains("secret-test-value"));
+}
+
 async fn rows(host: &Host, thread: &str) -> Vec<store::records::RecordRow> {
     let Some(predicate) = store::concepts::resolve(&host.engine.store.pool, "message-in")
         .await
@@ -886,6 +1097,143 @@ async fn changing_the_mentioned_agent_replaces_its_instructions_and_session() {
 
 struct NativeScript {
     target: String,
+}
+
+struct FactConversation {
+    target: String,
+}
+
+#[async_trait::async_trait]
+impl Provider for FactConversation {
+    async fn complete(
+        &self,
+        _: &str,
+        messages: &[Message],
+        _: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        let (name, arguments) = match messages.last().unwrap() {
+            Message::User(body) if body == "Record 42 reais for lunch" => {
+                ("lince_read_record", json!({"record_uid":self.target}))
+            }
+            Message::Tool { name, result, .. } if name == "lince_read_record" => {
+                assert_eq!(result["ok"], true, "{result}");
+                (
+                    "lince_action",
+                    json!({"request_id":"lunch-42","read_ids":[result["result"]["read_id"]],"action":{"action":"capture-entry","target":self.target,"amount":"42","concept":null,"note":"From this conversation: Record 42 reais for lunch","at":null,"request_id":"lunch-42"}}),
+                )
+            }
+            Message::Tool { result, .. } => {
+                assert_eq!(result["ok"], true, "{result}");
+                return Ok(Reply {
+                    usage: None,
+                    text: "Recorded the lunch expense through the normal Action.".into(),
+                    calls: vec![],
+                });
+            }
+            _ => {
+                return Ok(Reply {
+                    usage: None,
+                    text: "We can discuss other things without recording a Fact.".into(),
+                    calls: vec![],
+                });
+            }
+        };
+        Ok(Reply {
+            usage: None,
+            text: String::new(),
+            calls: vec![ToolCall {
+                id: format!("fact-call-{}", messages.len()),
+                name: name.into(),
+                arguments,
+                signatures: None,
+            }],
+        })
+    }
+}
+
+#[tokio::test]
+async fn ordinary_conversation_can_record_a_fact_then_discuss_without_recording() {
+    let (mut host, _, _root, _, thread) = fixture(false).await;
+    let target = host
+        .engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: "Lunch expenses in reais".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    Arc::get_mut(&mut host).unwrap().provider = Some(Arc::new(FactConversation {
+        target: target.clone(),
+    }));
+    host.send(&thread, "Record 42 reais for lunch")
+        .await
+        .unwrap()
+        .unwrap();
+    wait(&host).await;
+    assert_eq!(
+        host.record(&target).await.unwrap().quantity.to_string(),
+        "42"
+    );
+    let supplied = host.inspect_context(&thread).await.unwrap().unwrap();
+    assert!(
+        supplied["scope"]
+            .as_str()
+            .unwrap()
+            .contains("Latest model request")
+    );
+    assert!(supplied["messages"].to_string().contains("lunch-42"));
+    assert!(supplied["source_message"].as_str().is_some());
+    let count: i64 = store::sqlx::query_scalar("SELECT count(*) FROM fact WHERE record_uid = ?")
+        .bind(&target)
+        .fetch_one(&host.engine.store.pool)
+        .await
+        .unwrap();
+    host.send(&thread, "Record 42 reais for lunch")
+        .await
+        .unwrap()
+        .unwrap();
+    wait(&host).await;
+    assert_eq!(
+        store::sqlx::query_scalar::<_, i64>("SELECT count(*) FROM fact WHERE record_uid = ?")
+            .bind(&target)
+            .fetch_one(&host.engine.store.pool)
+            .await
+            .unwrap(),
+        count
+    );
+    host.send(&thread, "Let's talk about tomorrow")
+        .await
+        .unwrap()
+        .unwrap();
+    wait(&host).await;
+    assert_eq!(
+        host.record(&target).await.unwrap().quantity.to_string(),
+        "42"
+    );
+    assert_eq!(
+        store::sqlx::query_scalar::<_, i64>("SELECT count(*) FROM fact WHERE record_uid = ?")
+            .bind(&target)
+            .fetch_one(&host.engine.store.pool)
+            .await
+            .unwrap(),
+        count
+    );
+    let payload: String = store::sqlx::query_scalar("SELECT payload FROM fact WHERE record_uid = ? AND cause_kind = 'fiote' ORDER BY rowid DESC LIMIT 1").bind(&target).fetch_one(&host.engine.store.pool).await.unwrap();
+    let evidence = serde_json::from_str::<serde_json::Value>(&payload).unwrap();
+    assert_eq!(evidence["fiote"]["thread"], thread);
+    let original = host
+        .record(evidence["fiote"]["message"].as_str().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(original.body, "Record 42 reais for lunch");
 }
 
 struct StreamingScript {

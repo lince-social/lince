@@ -44,6 +44,26 @@ impl Engine {
         bindings.retain(|binding| !binding.reading.starts_with("consequence."));
         let mut result = Vec::with_capacity(effects.len());
         for (position, mut effect) in effects.into_iter().enumerate() {
+            if let Consequence::InvokeCommand { command } = &mut effect {
+                let reading = format!("consequence.command.{position}");
+                let old = previous.iter().find(|binding| binding.reading == reading && binding.authored == *command);
+                let uid = self.resolve(old.map_or(command.as_str(), |binding| binding.target.as_str())).await?;
+                bindings.push(ConditionBinding { reading, authored: command.clone(), target: TypedUid::new(ReferenceKind::Record, &uid).map_err(invalid)? });
+                *command = uid;
+            }
+            if let Consequence::ShowComponent { component } = &mut effect {
+                for (reference, authored) in component.records_mut().into_iter().enumerate() {
+                    let reading = if reference == 0 {
+                        format!("consequence.component.{position}")
+                    } else {
+                        format!("consequence.component.{position}.{reference}")
+                    };
+                    let old = previous.iter().find(|binding| binding.reading == reading && binding.authored == *authored);
+                    let uid = self.resolve(old.map_or(authored.as_str(), |binding| binding.target.as_str())).await?;
+                    bindings.push(ConditionBinding { reading, authored: authored.clone(), target: TypedUid::new(ReferenceKind::Record, &uid).map_err(invalid)? });
+                    *authored = uid;
+                }
+            }
             if let Some((transfer, person)) = effect.transfer_references_mut() {
                 for (name, authored, kind) in [
                     ("transfer", transfer, ReferenceKind::Transfer),

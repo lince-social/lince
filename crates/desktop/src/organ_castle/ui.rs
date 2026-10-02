@@ -731,6 +731,15 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
                 cell["capabilities"]
             ),
         );
+        let karma_enabled = cell["capabilities"].as_array().is_some_and(|capabilities| capabilities.iter().any(|capability| capability == "karma"));
+        label(world, parent, if karma_enabled { "Karma permission: enabled" } else { "Karma permission: disabled; definitions still sync for editing" });
+        if karma_enabled {
+            form(world, owner, parent, "Disable Karma on this device", json!({"action":"roster-set-karma-execution","cell_uid":cell["cell_uid"],"enabled":false,"additional":false,"expected_roster_version":roster["version"]}), vec![], None);
+        }
+        form(world, owner, parent, "Use this device as the only Karma executor", json!({"action":"roster-set-karma-execution","cell_uid":cell["cell_uid"],"enabled":true,"additional":false,"expected_roster_version":roster["version"]}), vec![], None);
+        if cells.len() > 1 && !karma_enabled {
+            form(world, owner, parent, "Allow this device to run Karma alongside the others", json!({"action":"roster-set-karma-execution","cell_uid":cell["cell_uid"],"enabled":true,"additional":true,"expected_roster_version":roster["version"]}), vec![], Some("Allow more than one Cell to run the synced Karma definitions? The same Rule can then fire on each enabled Cell."));
+        }
         if cell["sealing_key"].is_null() {
             label(world, parent, "No mail key yet.");
         } else {
@@ -761,6 +770,11 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn device_controls(world: &mut World, owner: Entity, parent: Entity) {
+    label(world, parent, "Local Karma running state is separate from the signed execution permission.");
+    for (caption, running) in [("Stop Karma on this Cell", false), ("Run permitted Karma on this Cell", true)] {
+        form(world, owner, parent, caption, json!({"action":"set-cell-config","namespace":"lince.karma-runtime","fds":{"running":running}}), vec![], None);
+    }
+
     request(
         world,
         owner,

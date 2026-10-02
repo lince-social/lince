@@ -430,13 +430,50 @@ pub async fn version_vector_for_organ(
         max_hlc: row.get("max_hlc"),
     })
     .collect();
-    let ours: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE slug = 'local-organ' AND uid = ?)").bind(organ_uid).fetch_one(pool).await?;
+    let ours: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM record WHERE slug = 'local-organ' AND uid = ?)",
+    )
+    .bind(organ_uid)
+    .fetch_one(pool)
+    .await?;
     if ours {
+        let roots = sqlx::query("SELECT s.replica_root,s.actor_cell,MAX(s.hlc) AS max_hlc FROM sync_op s JOIN record r ON r.uid=s.replica_root WHERE s.organ_uid=? AND r.kind IN ('conversation','message_draft') GROUP BY s.replica_root,s.actor_cell ORDER BY s.replica_root,s.actor_cell LIMIT 4097")
+            .bind(organ_uid).fetch_all(pool).await?;
+        if roots.len() + vector.len() > 4096 {
+            return Err(StoreError::Protocol("The retained own-conversation vector exceeds this device's 4096-entry sync limit".into()));
+        }
+        vector.extend(roots.iter().map(|row| VectorEntry {
+            actor_cell: format!(
+                "{}{}/{}",
+                nucleus::social::CONVERSATION_VECTOR_PREFIX,
+                row.get::<String, _>("replica_root"),
+                row.get::<String, _>("actor_cell")
+            ),
+            max_hlc: row.get("max_hlc"),
+        }));
         let rows = sqlx::query("SELECT cell_uid,MAX(sequence) AS sequence FROM transfer_sync_message WHERE organ_uid = ? GROUP BY cell_uid ORDER BY cell_uid")
             .bind(organ_uid).fetch_all(pool).await?;
-        vector.extend(rows.iter().map(|row| VectorEntry { actor_cell: format!("{}{}", crate::transfer_replication::VECTOR_PREFIX, row.get::<String,_>("cell_uid")), max_hlc: row.get("sequence") }));
+        vector.extend(rows.iter().map(|row| VectorEntry {
+            actor_cell: format!(
+                "{}{}",
+                crate::transfer_replication::VECTOR_PREFIX,
+                row.get::<String, _>("cell_uid")
+            ),
+            max_hlc: row.get("sequence"),
+        }));
     }
     Ok(vector)
+}
+
+pub async fn own_conversation_ops_after(
+    pool: &SqlitePool,
+    organ: &str,
+    root: &str,
+    actor: &str,
+    covered: i64,
+) -> Result<Vec<OpRow>, StoreError> {
+    Ok(sqlx::query("SELECT * FROM sync_op WHERE organ_uid=? AND replica_root=? AND actor_cell=? AND hlc>? ORDER BY hlc,seq LIMIT 200")
+        .bind(organ).bind(root).bind(actor).bind(covered).fetch_all(pool).await?.into_iter().map(map).collect())
 }
 
 fn uncovered_clause(theirs: &[VectorEntry]) -> String {
@@ -621,10 +658,21 @@ pub async fn sibling_ops_missing_from_vector(
     theirs: &[VectorEntry],
     limit: i64,
 ) -> Result<Vec<OpRow>, StoreError> {
-    let sql = format!("SELECT * FROM sync_op WHERE organ_uid = ? AND replica_root IS NULL AND NOT (kind = 'fact' AND EXISTS (SELECT 1 FROM fact f JOIN transfer_sync_journal j ON j.commit_sequence = f.commit_sequence WHERE f.uid = sync_op.uid AND j.cell_uid = sync_op.actor_cell AND j.organ_uid = sync_op.organ_uid)){} ORDER BY seq LIMIT ?", uncovered_clause(theirs));
+    let sql = format!(
+        "SELECT * FROM sync_op WHERE organ_uid = ? AND replica_root IS NULL AND NOT (kind = 'fact' AND EXISTS (SELECT 1 FROM fact f JOIN transfer_sync_journal j ON j.commit_sequence = f.commit_sequence WHERE f.uid = sync_op.uid AND j.cell_uid = sync_op.actor_cell AND j.organ_uid = sync_op.organ_uid)){} ORDER BY seq LIMIT ?",
+        uncovered_clause(theirs)
+    );
     let mut query = sqlx::query(&sql).bind(organ_uid);
-    for entry in theirs { query = query.bind(&entry.actor_cell).bind(entry.max_hlc); }
-    Ok(query.bind(limit.max(0)).fetch_all(pool).await?.into_iter().map(map).collect())
+    for entry in theirs {
+        query = query.bind(&entry.actor_cell).bind(entry.max_hlc);
+    }
+    Ok(query
+        .bind(limit.max(0))
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(map)
+        .collect())
 }
 
 pub async fn ops_missing_from_vector_in_root(

@@ -29,6 +29,9 @@ const MAX_PARTS: usize = 256;
 #[derive(Clone, Serialize, Deserialize)]
 struct CustomCastle {
     name: String,
+    #[serde(default)]
+    composition: Option<nucleus::component::Composition>,
+    #[serde(default)]
     parts: Vec<Part>,
 }
 
@@ -71,6 +74,11 @@ fn file_id() -> String {
 
 impl CustomCastle {
     fn valid(&self) -> bool {
+        if let Some(composition) = &self.composition {
+            return self.parts.is_empty()
+                && self.name == composition.name
+                && composition.validate().is_ok();
+        }
         if self.name.trim().is_empty()
             || self.name.chars().count() > 80
             || self.name.chars().any(char::is_control)
@@ -147,6 +155,21 @@ impl CustomCastle {
         }
         if selection.is_empty() {
             return Err("Select a group on the canvas first.".into());
+        }
+        if selection.len() == 1
+            && let Some(mut composition) =
+                crate::component_push::composition::capture(world, selection[0])
+        {
+            composition.name = name.trim().into();
+            let castle = Self {
+                name: composition.name.clone(),
+                composition: Some(composition),
+                parts: Vec::new(),
+            };
+            return castle
+                .valid()
+                .then_some(castle)
+                .ok_or("Invalid composition name".into());
         }
         let mut members: HashSet<_> = selection
             .into_iter()
@@ -282,6 +305,7 @@ impl CustomCastle {
         }
         let castle = Self {
             name: name.trim().into(),
+            composition: None,
             parts,
         };
         castle.valid().then_some(castle).ok_or_else(|| "Use a name of 1–80 characters and valid Sands with connected Areas in this workspace.".into())
@@ -290,6 +314,18 @@ impl CustomCastle {
     fn spawn(&self, world: &mut World, root: Entity) -> Result<Vec<Entity>, String> {
         if !self.valid() {
             return Err("This custom Castle file is invalid.".into());
+        }
+        if let Some(composition) = &self.composition {
+            return crate::component_push::present(
+                world,
+                nucleus::component::Presentation {
+                    slot: nucleus::new_uid("composition-copy"),
+                    component: nucleus::component::ComponentState::Composition {
+                        composition: composition.clone(),
+                    },
+                },
+            )
+            .map(|entity| vec![entity]);
         }
         let workspace = world
             .get::<crate::workspace::Workspaces>(root)

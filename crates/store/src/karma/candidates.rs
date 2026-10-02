@@ -35,7 +35,6 @@ pub struct RespondCandidateInput {
     pub expected_state_revision: u64,
     pub response: CandidateReviewAction,
     pub actor_person_uid: Option<String>,
-    pub authorizing_grant_uid: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -43,13 +42,10 @@ pub enum CandidateReviewCommit {
     Committed {
         state: KarmaCandidateStateRow,
         fact: Fact,
-        intent: Option<CanonicalHash>,
-        intent_fact: Option<Fact>,
     },
     Replayed {
         state: KarmaCandidateStateRow,
         fact: Fact,
-        intent: Option<CanonicalHash>,
     },
     Stale {
         current_state_revision: u64,
@@ -124,7 +120,6 @@ where
             expected_state_revision: input.expected_state_revision,
             response: &input.response,
             actor_person_uid: input.actor_person_uid.as_deref(),
-            authorizing_grant_uid: input.authorizing_grant_uid.as_deref(),
         },
     )
     .map_err(boundary)?;
@@ -158,12 +153,10 @@ where
         let fact = crate::facts::get_in_transaction(&mut tx, &fact_uid)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
-        let intent = intent_for_candidate_tx(&mut tx, &input.candidate_hash).await?;
         tx.rollback().await?;
         return Ok(CandidateReviewCommit::Replayed {
             state,
             fact,
-            intent,
         });
     }
     let candidate = get_candidate_tx(&mut tx, &input.candidate_hash)
@@ -308,64 +301,11 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    let (intent, intent_fact) = match &input.authorizing_grant_uid {
-        None => (None, None),
-        Some(grant_uid) => {
-            if status != CandidateStatus::Accepted {
-                return Err(protocol(
-                    "only an accepted candidate can name an authorizing Karma grant",
-                ));
-            }
-            let actor = input
-                .actor_person_uid
-                .as_deref()
-                .ok_or_else(|| protocol("authorizing a Karma intent requires an acting Person"))?;
-            let intent = crate::karma::intents::authorize_accepted_candidate_tx(
-                &mut tx,
-                &input.candidate_hash,
-                &candidate.proposal,
-                grant_uid,
-                &input.request_id,
-                actor,
-                now,
-                &at,
-            )
-            .await?;
-            let intent_hash = intent.intent_hash().map_err(boundary)?;
-            let intent_fact = crate::karma::intents::append_intent_fact(
-                &mut tx,
-                &candidate.proposal.program_uid,
-                &input.request_id,
-                actor,
-                &intent,
-                now,
-                &sign,
-            )
-            .await?;
-            (Some(intent_hash), Some(intent_fact))
-        }
-    };
     tx.commit().await?;
     Ok(CandidateReviewCommit::Committed {
         state,
         fact,
-        intent,
-        intent_fact,
     })
-}
-
-async fn intent_for_candidate_tx(
-    tx: &mut Transaction<'_, Sqlite>,
-    candidate_hash: &CanonicalHash,
-) -> Result<Option<CanonicalHash>, StoreError> {
-    let stored: Option<String> =
-        sqlx::query_scalar("SELECT intent_hash FROM karma_intent WHERE candidate_hash = ?")
-            .bind(candidate_hash.as_str())
-            .fetch_optional(&mut **tx)
-            .await?;
-    stored
-        .map(|value| CanonicalHash::parse(value).map_err(boundary))
-        .transpose()
 }
 
 pub(crate) async fn insert_tx(
@@ -433,8 +373,6 @@ struct CandidateReviewFingerprint<'a> {
     expected_state_revision: u64,
     response: &'a CandidateReviewAction,
     actor_person_uid: Option<&'a str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    authorizing_grant_uid: Option<&'a str>,
 }
 
 async fn get_candidate_tx(

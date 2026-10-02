@@ -72,7 +72,7 @@ mise run dev -- --directory /tmp/my-lince --port 6200
 ```
 When Nix is installed, `mise dev` enters the interface development shell on NixOS, other Linux systems, and macOS. Otherwise it uses the local Cargo toolchain. No `.env` file is needed.
 
-A headless server needs an admin account on first start. Give it a password file that only the service user can read. The NixOS module is imported as `inputs.lince.nixosModules.default`; set `services.lince.enable = true` and choose `services.lince.initialAdminPasswordFile`. The institute host at `institute/configuration.nix` chooses `/var/lib/lince/initial-admin-password` and listens on `127.0.0.1:6174`. Put the password file on that host before expecting the service to start. The host file assumes UEFI boot, an ext4 root filesystem labeled `nixos`, and a FAT boot filesystem labeled `ESP`. The deploy workflow checks those mounts before switching.
+A headless server needs an admin account on first start. Give it a password file that only the service user can read. The NixOS module is imported as `inputs.lince.nixosModules.default`; set `services.lince.enable = true` and choose `services.lince.initialAdminPasswordFile`. The institute host at `institute/server/configuration.nix` chooses `/var/lib/lince/initial-admin-password` and listens on `127.0.0.1:6174`. Put the password file on that host before expecting the service to start. The host file assumes UEFI boot, an ext4 root filesystem labeled `nixos`, and a FAT boot filesystem labeled `ESP`. The deploy workflow checks those mounts before switching.
 
 For the browser Facade, build with the `facade` feature, then give the public origin and local listen address. The origin can also be set with `LINCE_FACADE_ORIGIN`:
 ```bash
@@ -349,6 +349,8 @@ Everything up to here you do by hand. **Karma** is the part of Lince that does t
 It is useful without an LLM. People author exact rules visually, use transparent statistics and deterministic algorithms, and plan over their own goals. A model may be attached as an explicit Signal or author an inert candidate; **model access is optional and grants no special authority.** "Always on" means a supervised runtime keeps draining durable work — never always interrupting, always connected, or always authorized to act.
 
 A rule is one sentence long, and the parts below take that sentence apart: what it watches, when it counts as true, and what it does about it.
+
+> Deferred Karma work: let rules update existing board components and route presentations to selected devices and workspaces. Expand owner-authored Karma Trails and add automation suggestions based on recurring patterns.
 
 Ideas left to implement:
 1. **Real phone/laptop validation:** verify synced changes, concurrent edits, disconnects, restarts, and switching which Cell runs Karma. Automated device tests passed; physical-device checks remain.
@@ -650,6 +652,9 @@ Ideas (@ideas: 0) {
 Things that wont enter v1.0.0, maybe later minor versions. Good to keep saved, not needed to maintain next to other tasks more certain to be implemented.
 
 # Simulation:
+
+Other Simulation follow-ups: broader Lingua declarations; controlled external responses, disk failures and crashes; more varied seeds and concurrent actions; blob contents saved with runs; real direct-connection tests across NATs, relays and mailboxes; focused Cell/event editing and Calendar links to explanations. Projection follow-ups include additional filters and permitted viewers, time boundaries, larger workloads and replacing older approximations where the shared runtime has coverage. General Record proposals, versions, history and transclusion should reuse the document machinery. Restore during a run and finer cache invalidation remain deferred until needed.
+
 Simulation is the basis of controlling several Lince instances, each with their state. Karma runs on top of it, and the future changes of Records according to Karma's Rules are cached so we can display how a Record will recurringly have some state, like a quantity being some value, seen in a calendar.
 
 - [ ]  Simulation not only of a random db, but the user's. If i have an appointment to day X i should be able to simulate it happening in day X+1. If i then send a scenario to someone, they can run that diff (like git's diff) and simulate a scenario of their db+diff. If its affecting only me i can simulate some state, doesnt need to be my current one, can be with a diff applied. If it affects others i send the diff, they simulate and aprove or not, they can also send that diff and a chain of approvals (or hide it) and get the results back before aproving themselves (if not before).

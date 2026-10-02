@@ -65,7 +65,7 @@ pub(super) async fn runtime(
         thread: thread.into(),
     })
     .with_instructions(system.to_string());
-    let server = transport::mcp::Connection::open(external).await?;
+    let server = transport::mcp::Connection::open(external.clone()).await?;
     let saved: Option<Value> = std::fs::read(saved_session)
         .ok()
         .and_then(|bytes| serde_json::from_slice(&bytes).ok());
@@ -111,6 +111,7 @@ pub(super) async fn runtime(
         config: config.clone(),
         fresh: std::sync::atomic::AtomicBool::new(fresh),
         settings: Mutex::new(()),
+        tools: external,
         _server: server,
     });
     sessions.lock().await.insert(thread.into(), runtime.clone());

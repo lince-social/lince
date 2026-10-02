@@ -55,6 +55,9 @@ pub struct Reply {
 
 #[async_trait]
 pub trait TextOutput: Send + Sync {
+    async fn context(&self, _messages: &[Message]) -> Result<(), String> {
+        Ok(())
+    }
     async fn usage(&self, _usage: nucleus::operation::Usage) -> Result<(), String> {
         Ok(())
     }
@@ -128,8 +131,8 @@ impl GenaiProvider {
     }
 }
 
-fn message(value: &Message) -> ChatMessage {
-    match value {
+fn message(value: &Message) -> Result<ChatMessage, String> {
+    Ok(match value {
         Message::User(text) => ChatMessage::user(text.clone()),
         Message::RichUser { text, content } | Message::RichAssistant { text, content } => {
             let mut parts = vec![ContentPart::Text(text.clone())];
@@ -144,6 +147,15 @@ fn message(value: &Message) -> ChatMessage {
                     nucleus::message::MessagePart::Text { text } => ContentPart::Text(text.clone()),
                     nucleus::message::MessagePart::Reference { name, uri } => {
                         ContentPart::Text(format!("Resource reference: {name}\n{uri}"))
+                    }
+                    nucleus::message::MessagePart::Attachment {
+                        name,
+                        mime_type,
+                        data,
+                    } if mime_type.starts_with("text/") || mime_type == "application/json" => {
+                        let text = String::from_utf8(nucleus::message::decode(data)?)
+                            .map_err(|_| "The text attachment is not UTF-8.")?;
+                        ContentPart::Text(format!("Attached file: {name} ({mime_type})\n{text}"))
                     }
                     nucleus::message::MessagePart::Attachment {
                         name,
@@ -188,7 +200,7 @@ fn message(value: &Message) -> ChatMessage {
         Message::Tool { id, name, result } => {
             ChatMessage::tool(ToolResponse::new(id, result.to_string()).with_fn_name(name))
         }
-    }
+    })
 }
 
 #[async_trait]
@@ -196,11 +208,19 @@ impl Provider for GenaiProvider {
     fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> {
         nucleus::message::validate(content)?;
         for part in content {
-            if let nucleus::message::MessagePart::Attachment { mime_type, .. } = part {
+            if let nucleus::message::MessagePart::Attachment {
+                mime_type, data, ..
+            } = part
+            {
+                let text = mime_type.starts_with("text/") || mime_type == "application/json";
+                if text {
+                    String::from_utf8(nucleus::message::decode(data)?)
+                        .map_err(|_| "The text attachment is not UTF-8.")?;
+                }
                 let media = mime_type.starts_with("image/") || mime_type == "application/pdf";
                 let audio = mime_type.starts_with("audio/")
                     && self.target.model.adapter_kind == genai::adapter::AdapterKind::Gemini;
-                if !(media || audio) {
+                if !(text || media || audio) {
                     return Err("This direct provider does not support this file type. Use a capable ACP agent or a resource reference.".into());
                 }
             }
@@ -220,18 +240,23 @@ impl Provider for GenaiProvider {
                 self.validate_content(content)?;
             }
         }
-        let request = ChatRequest::new(messages.iter().map(message).collect())
-            .with_system(system)
-            .with_tools(
-                tools
-                    .iter()
-                    .map(|tool| {
-                        Tool::new(&tool.name)
-                            .with_description(&tool.description)
-                            .with_schema(tool.schema.clone())
-                    })
-                    .collect::<Vec<_>>(),
-            );
+        let request = ChatRequest::new(
+            messages
+                .iter()
+                .map(message)
+                .collect::<Result<Vec<_>, _>>()?,
+        )
+        .with_system(system)
+        .with_tools(
+            tools
+                .iter()
+                .map(|tool| {
+                    Tool::new(&tool.name)
+                        .with_description(&tool.description)
+                        .with_schema(tool.schema.clone())
+                })
+                .collect::<Vec<_>>(),
+        );
         let response = self.client.exec_chat(self.target.clone(), request, Some(&ChatOptions::default().with_max_tokens(4096))).await
             .map_err(|_| "Provider request failed. Check the endpoint, model, API key and provider availability.".to_string())?;
         if matches!(
@@ -276,18 +301,23 @@ impl Provider for GenaiProvider {
                 self.validate_content(content)?;
             }
         }
-        let request = ChatRequest::new(messages.iter().map(message).collect())
-            .with_system(system)
-            .with_tools(
-                tools
-                    .iter()
-                    .map(|tool| {
-                        Tool::new(&tool.name)
-                            .with_description(&tool.description)
-                            .with_schema(tool.schema.clone())
-                    })
-                    .collect::<Vec<_>>(),
-            );
+        let request = ChatRequest::new(
+            messages
+                .iter()
+                .map(message)
+                .collect::<Result<Vec<_>, _>>()?,
+        )
+        .with_system(system)
+        .with_tools(
+            tools
+                .iter()
+                .map(|tool| {
+                    Tool::new(&tool.name)
+                        .with_description(&tool.description)
+                        .with_schema(tool.schema.clone())
+                })
+                .collect::<Vec<_>>(),
+        );
         let options = ChatOptions::default()
             .with_max_tokens(4096)
             .with_capture_usage(true)
@@ -388,4 +418,84 @@ fn usage_report(
             .and_then(|value| value.try_into().ok()),
         usage.total_tokens.and_then(|value| value.try_into().ok()),
     )
+}
+
+#[cfg(test)]
+mod attachment_tests {
+    use super::*;
+    use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
+    use nucleus::message::MessagePart;
+
+    fn file(name: &str, mime: &str, bytes: &[u8]) -> MessagePart {
+        MessagePart::Attachment {
+            name: name.into(),
+            mime_type: mime.into(),
+            data: B64.encode(bytes),
+        }
+    }
+
+    fn provider() -> GenaiProvider {
+        GenaiProvider::new(
+            &Settings {
+                provider: crate::config::ProviderKind("openai".into()),
+                model: "fixture".into(),
+                endpoint: "https://api.openai.com/v1/".into(),
+                ..Default::default()
+            },
+            &Secret("fixture-key".into()),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn direct_text_and_csv_input_preserves_names_contents_and_accompanying_message() {
+        let files = vec![
+            file("note.txt", "text/plain", b"Marker 617"),
+            file("table.csv", "text/csv", b"item,value\na,2\nb,3\n"),
+        ];
+        provider().validate_content(&files).unwrap();
+        let supplied = message(&Message::RichUser {
+            text: "Analyze both files".into(),
+            content: files,
+        })
+        .unwrap();
+        assert_eq!(
+            supplied.content.texts(),
+            vec![
+                "Analyze both files",
+                "Attached file: note.txt (text/plain)\nMarker 617",
+                "Attached file: table.csv (text/csv)\nitem,value\na,2\nb,3\n",
+            ]
+        );
+    }
+
+    #[test]
+    fn direct_unsupported_media_and_invalid_text_refuse_the_whole_request() {
+        let provider = provider();
+        for (name, mime) in [("clip.mp4", "video/mp4"), ("voice.wav", "audio/wav")] {
+            assert!(
+                provider
+                    .validate_content(&[
+                        file("note.txt", "text/plain", b"Keep this input"),
+                        file(name, mime, b"bytes"),
+                    ])
+                    .unwrap_err()
+                    .contains("does not support")
+            );
+        }
+        let invalid = file("invalid.txt", "text/plain", &[0xff]);
+        assert!(
+            provider
+                .validate_content(std::slice::from_ref(&invalid))
+                .unwrap_err()
+                .contains("UTF-8")
+        );
+        assert!(
+            message(&Message::RichUser {
+                text: "Inspect".into(),
+                content: vec![invalid]
+            })
+            .is_err()
+        );
+    }
 }

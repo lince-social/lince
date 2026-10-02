@@ -44,7 +44,7 @@ async fn create(engine: &engine::Engine) -> String {
 
 #[tokio::test]
 async fn frequency_query_preserves_combined_cadence_weekdays_and_record_quantity() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let cadence = Cadence::every(CadenceStep {
         months: 1,
         days: 1,
@@ -100,7 +100,7 @@ async fn frequency_query_preserves_combined_cadence_weekdays_and_record_quantity
 
 #[tokio::test]
 async fn protein_tracks_saved_and_running_revisions_across_full_frequency_crud() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     engine
         .install_karma_runtime_config(
             engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host(
@@ -231,7 +231,7 @@ async fn protein_tracks_saved_and_running_revisions_across_full_frequency_crud()
 
 #[tokio::test]
 async fn referenced_frequency_delete_is_refused_until_rule_is_removed() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let uid = create(&engine).await;
     support::plain(&engine, "balance", 0.0).await;
     let rule = engine
@@ -277,7 +277,7 @@ async fn referenced_frequency_delete_is_refused_until_rule_is_removed() {
 
 #[tokio::test]
 async fn read_only_frequency_viewer_cannot_mutate_or_read_hidden_definitions() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let uid = create(&engine).await;
     let person = support::person(&engine, "frequency-reader").await;
     let role = store::auth::ensure_role(&engine.store.pool, "frequency-reader")
@@ -385,7 +385,7 @@ async fn daily_rule(engine: &engine::Engine) -> String {
 
 #[tokio::test]
 async fn daily_five_minutes_overdue_enacts_once_and_advances_the_real_date() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     engine
         .install_karma_runtime_config(
             engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("daily-test".into())
@@ -475,7 +475,7 @@ async fn daily_five_minutes_overdue_enacts_once_and_advances_the_real_date() {
 
 #[tokio::test]
 async fn editing_a_running_daily_to_the_past_applies_without_a_separate_activation() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     engine
         .install_karma_runtime_config(
             engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("daily-edit-test".into())
@@ -575,7 +575,7 @@ async fn editing_a_running_daily_to_the_past_applies_without_a_separate_activati
 
 #[tokio::test]
 async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied_beat() {
-    let engine = std::sync::Arc::new(support::engine().await);
+    let engine = std::sync::Arc::new(support::karma::engine().await);
     let runtime =
         engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("live-daily-test".into())
             .unwrap();
@@ -695,7 +695,7 @@ async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied
 #[tokio::test]
 async fn a_rule_edit_does_not_pick_up_an_older_queued_emission() {
     use store::karma::schedules::{self, CursorCompletion, ScheduleClaim};
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     engine
         .install_karma_runtime_config(
             engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host(

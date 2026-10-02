@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+pub mod karma;
+
 use engine::Engine;
 use engine::actions::{
     Action, TransferPromiseInput, TransferReservePoint, TransferSatiation, TransferVisibility,

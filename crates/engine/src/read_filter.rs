@@ -86,6 +86,10 @@ impl Engine {
     ) -> Result<Vec<String>, EngineError> {
         use crate::actions::Action;
         let named: Vec<&String> = match action {
+            Action::PresentComponent { target, component } => match component {
+                nucleus::component::ComponentState::Record { record, .. } => vec![target, record],
+                _ => vec![target],
+            },
             Action::AddQuantityGroupExact { changes } => changes.keys().collect(),
             Action::SetTransferPrivateApplicationPolicy { effects, .. } => effects.iter().map(|effect| &effect.record).collect(),
             Action::SetTransferChildRequirement { transfer, child, .. } => vec![transfer, child],
@@ -175,6 +179,13 @@ impl Engine {
         for name in named {
             if let Ok(uid) = self.resolve(name).await {
                 out.push(uid);
+            }
+        }
+        if let Action::PresentComponent { component, .. } = action {
+            for record in component.records() {
+                if let Ok(uid) = self.resolve(record).await {
+                    out.push(uid);
+                }
             }
         }
         match action {

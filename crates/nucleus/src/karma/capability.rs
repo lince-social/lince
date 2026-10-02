@@ -39,10 +39,6 @@ pub enum Capability {
     KarmaRun,
     #[serde(rename = "karma.manage")]
     KarmaManage,
-    #[serde(rename = "karma.grant.narrow")]
-    KarmaGrantNarrow,
-    #[serde(rename = "karma.grant.widen")]
-    KarmaGrantWiden,
     #[serde(rename = "record.set_quantity")]
     RecordSetQuantity,
     #[serde(rename = "record.add_quantity")]
@@ -124,9 +120,7 @@ impl Capability {
             Self::KarmaAuthor
             | Self::KarmaActivate
             | Self::KarmaRun
-            | Self::KarmaManage
-            | Self::KarmaGrantNarrow
-            | Self::KarmaGrantWiden => CapabilityFamily::ProgramMetaControl,
+            | Self::KarmaManage => CapabilityFamily::ProgramMetaControl,
             Self::ExternalHttp
             | Self::ExternalCommand
             | Self::ExternalFilesystem

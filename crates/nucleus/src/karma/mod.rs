@@ -1,5 +1,4 @@
 pub mod ast;
-pub mod authority;
 pub mod cadence;
 pub mod calendar;
 pub mod calendar_runtime;
@@ -15,7 +14,6 @@ pub mod exact;
 pub mod execution;
 pub mod failure;
 pub mod frequency;
-pub mod intent;
 pub mod occurrence;
 pub mod proof;
 pub mod reference;
@@ -36,14 +34,6 @@ pub use ast::{
     LateEventPolicy, NodeAst, NodeOperation, OutputRef, ParameterDefinition, ProgramAst,
     ProgramSchema, SimulationStatePolicy, StateContract, StateMigrationPolicy, StatePersistence,
     StateResetPolicy, ThresholdDirection, TriggerSource, UnaryOperator,
-};
-pub use authority::{
-    DelegationGrantRevision, DelegationGrantSchema, DelegationGrantSpec, DelegationSignature,
-    GRANT_AUTHORITY_REQUEST_HASH_DOMAIN, GRANT_REVISION_HASH_DOMAIN, GrantAuthorityDecision,
-    GrantAuthorityDenial, GrantAuthorityRequest, GrantBudget, GrantMutationAction,
-    GrantMutationEvidence, GrantMutationEvidenceSchema, GrantProgramRevisionScope,
-    GrantQuantityLimit, GrantRevisionChange, GrantStatus, GrantTarget, GrantTargetScope,
-    GrantTemplateScope, GrantWindowLimit,
 };
 pub use cadence::{
     Cadence, CadenceBound, CadenceError, CadenceStep, Derived, InvalidDay, MAX_DERIVED_OCCURRENCES,
@@ -106,12 +96,6 @@ pub use frequency::{
     FrequencyParameterDefinition, FrequencyParameterValue, FrequencySchema, FrequencyTimerAst,
     PositiveIntegerBinding,
 };
-pub use intent::{
-    BudgetDenial, BudgetSnapshot, BudgetUsage, INTENT_HASH_DOMAIN, IntentAmount,
-    IntentAuthorization, IntentAuthorizationOutcome, IntentTransition, IntentTransitionSchema,
-    K5_2_INTENT_STATES, KarmaIntent, KarmaIntentSchema, authorize_intent, proposal_amount,
-    proposal_target,
-};
 pub use occurrence::{
     CALENDAR_COALESCED_BATCH_HASH_DOMAIN, CalendarCoalescedBatch, CalendarCoalescedBatchSchema,
     KARMA_OCCURRENCE_HASH_DOMAIN, KarmaOccurrenceEnvelope, KarmaOccurrenceSchema,
@@ -131,7 +115,7 @@ pub use schedule::{
     ScheduleEmission, ScheduleReactivation, TimerPolicy,
 };
 pub use state::{
-    CandidateStatus, DatumState, DefinitionStatus, EngineMode, IntentStatus, KarmaActionKind,
+    CandidateStatus, DatumState, DefinitionStatus, EngineMode, KarmaActionKind,
     KarmaObjectKind, RunStatus, WorkflowStatus,
 };
 pub use time::{DurationMs, TimestampMs};

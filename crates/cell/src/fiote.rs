@@ -18,10 +18,12 @@ use std::{
 use tokio::sync::{Mutex, watch};
 use transport::fiote::Service;
 
+mod activations;
 mod agents;
 mod assignments;
 mod behavior;
 mod connections;
+mod context;
 mod mentions;
 mod output;
 #[cfg(test)]
@@ -61,6 +63,7 @@ pub struct Host {
     agents: agents::Agents,
     preparation: Mutex<()>,
     assignments: Mutex<assignments::Queue>,
+    activation_dispatch: Mutex<()>,
     engine: Arc<Engine>,
     directory: PathBuf,
     running: Arc<Mutex<HashMap<String, Running>>>,
@@ -85,6 +88,7 @@ impl Host {
             agents: Default::default(),
             preparation: Mutex::new(()),
             assignments: Mutex::new(assignments::Queue::load(&directory)?),
+            activation_dispatch: Mutex::new(()),
             vault: Arc::new(vault::Vault::new(engine.clone())),
             login: Mutex::new(None),
             adapter_turn: Arc::new(Mutex::new(())),
@@ -153,6 +157,20 @@ impl Host {
                 std::fs::remove_file(entry.path()).map_err(|e| e.to_string())?;
             }
         }
+        store::sqlx::query("UPDATE fiote_activation SET state = 'interrupted', detail = 'The Cell stopped. Inspect completed effects before requesting another run.' WHERE state = 'running'").execute(&host.engine.store.pool).await.map_err(|e| e.to_string())?;
+        let records: Vec<String> = store::sqlx::query_scalar(
+            "SELECT record_uid FROM record_extension WHERE namespace = 'lince.fiote'",
+        )
+        .fetch_all(&host.engine.store.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        for record in records {
+            host.engine.register_fiote_availability(
+                &record,
+                host.load(&record)?
+                    .is_some_and(|config| config.settings.enabled),
+            );
+        }
         Ok(host)
     }
 
@@ -183,6 +201,18 @@ impl Host {
     async fn status(&self, record: &str) -> Result<Status, String> {
         self.record(record).await?;
         let config = self.load(record)?;
+        self.engine.register_fiote_availability(
+            record,
+            config
+                .as_ref()
+                .is_some_and(|config| config.settings.enabled),
+        );
+        if config
+            .as_ref()
+            .is_none_or(|config| !config.settings.enabled)
+        {
+            store::sqlx::query("UPDATE fiote_activation SET state = 'cancelled', detail = 'Fiote disabled' WHERE fiote_uid = ? AND state IN ('queued','waiting')").bind(record).execute(&self.engine.store.pool).await.map_err(|e| e.to_string())?;
+        }
         let running = self
             .running
             .lock()
@@ -214,6 +244,14 @@ impl Host {
         });
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
+            activations: self
+                .engine
+                .fiote_activations(record)
+                .await
+                .map_err(|e| e.to_string())?
+                .into_iter()
+                .map(|activation| serde_json::to_value(activation).map_err(|e| e.to_string()))
+                .collect::<Result<_, _>>()?,
             questions: self.agents.questions(record).await,
             usage: Vec::new(),
             agent_session: None,
@@ -322,6 +360,9 @@ impl Host {
     }
 
     async fn stop_all_inner(&self) {
+        if let Err(error) = store::sqlx::query("UPDATE fiote_activation SET state = 'cancelled', detail = 'Stopped by the person' WHERE state IN ('queued','waiting')").execute(&self.engine.store.pool).await {
+            tracing::warn!(%error, "Could not stop pending activations");
+        }
         if let Err(error) = self.stop_queued_assignments().await {
             tracing::warn!(%error, "Could not stop queued assignments");
         }
@@ -481,6 +522,37 @@ impl Service for Host {
             }
 
             Request::InspectThread { thread } => self.thread_fiote(&thread).await?,
+            Request::Activate {
+                record,
+                value,
+                request_id,
+            } => {
+                self.engine
+                    .act(
+                        Action::ActivateFiote {
+                            target: record.clone(),
+                            value,
+                            request_id,
+                        },
+                        None,
+                    )
+                    .await
+                    .map_err(|e| e.to_string())?;
+                record
+            }
+            Request::CancelActivations { record } => {
+                store::sqlx::query("UPDATE fiote_activation SET state = 'cancelled', detail = 'Stopped before starting' WHERE fiote_uid = ? AND state IN ('queued','waiting')").bind(&record).execute(&self.engine.store.pool).await.map_err(|e| e.to_string())?;
+                for run in self
+                    .running
+                    .lock()
+                    .await
+                    .values()
+                    .filter(|run| run.record == record)
+                {
+                    let _ = run.stop.send(true);
+                }
+                record
+            }
             Request::Behavior {
                 record,
                 prompt_parent,
@@ -712,6 +784,7 @@ impl Service for Host {
                     serde_json::from_value(snapshot["sources"].clone())
                         .map_err(|e| e.to_string())?;
                 status.session = Some(fiote::config::PromptSession {
+                    context: self.inspect_context(&thread).await?,
                     thread,
                     changed: sources != status.instructions,
                     sources,
@@ -867,6 +940,8 @@ impl Host {
         })
         .with_instructions(system.clone());
         native.register(&mut tools);
+        self.save_context(thread, &record.uid, &messages, &tools)
+            .await?;
         let driver = self.catalog.driver(&config.settings.provider).cloned();
         let adapter_turn = if driver.is_some() {
             Some(self.adapter_turn.clone().try_lock_owned().map_err(|_| "Another provider adapter session is working. Wait for it to finish or stop it first.")?)
@@ -990,9 +1065,14 @@ impl Host {
         let slot = vault::slot(&config.settings);
         let attached = native.attach_message(&reply).await;
         let usage_path = usage::path(&self.directory, &thread);
+        let context_path = self.directory.join(format!("context-{thread}.json"));
+        let source_message = outcome.created.clone();
+        native.set_source_message(outcome.created.as_deref());
         tokio::spawn(async move {
             let _adapter_turn = adapter_turn;
             let output = output::Output {
+                context_path: Some(context_path),
+                source_message,
                 usage_path: Some(usage_path),
                 tools: &tools,
                 message: &reply,

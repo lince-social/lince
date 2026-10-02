@@ -9,6 +9,8 @@ pub mod fiote;
 pub mod speech;
 pub mod information;
 pub mod sync_runner;
+pub mod social_host;
+pub mod owner_backup;
 pub mod isolated;
 pub mod transfer;
 pub mod wire_supervisor;
@@ -113,6 +115,9 @@ pub struct Cell {
     tasks: Vec<tokio::task::JoinHandle<()>>,
 }
 
+#[cfg(test)]
+mod shutdown_tests;
+
 impl Cell {
     pub async fn open(options: CellOptions) -> Result<Cell, IoError> {
         Self::open_with_services(options, true).await
@@ -155,6 +160,7 @@ impl Cell {
             .ok_or_else(|| IoError::other("this Cell has no Cell Record"))?;
         let key_dir = utils::config::lince_data_dir()
             .ok_or_else(|| IoError::other("Cannot find the Lince data directory"))?;
+        social_host::configure(&engine).await?;
 
         if services {
             engine.initialize_blob_sync(&key_dir.join("blob-sync")).await.map_err(IoError::other)?;
@@ -222,6 +228,13 @@ impl Cell {
         if services { tasks.push(transfer::spawn_worker(runtime.clone())); }
         if services { tasks.push(blob_sync::spawn(runtime.clone())); }
         tasks.push(sync_runner::spawn_runner(runtime.clone()));
+        tasks.push(sync_runner::spawn_social(runtime.clone()));
+        tasks.push(sync_runner::spawn_mail_delivery(runtime.clone()));
+        tasks.push(sync_runner::spawn_private_send(runtime.clone()));
+        tasks.push(sync_runner::spawn_private_pickup(runtime.clone()));
+        tasks.push(sync_runner::spawn_gossip(runtime.clone()));
+        tasks.push(sync_runner::spawn_ask(runtime.clone()));
+        tasks.push(sync_runner::spawn_subscriptions(runtime.clone()));
         tasks.push(sync_runner::spawn_presence(runtime.clone()));
         tasks.push(wire_supervisor::spawn(runtime.clone(), key_dir));
 
@@ -234,22 +247,22 @@ impl Cell {
 
     pub async fn shutdown(mut self) {
         self.runtime.commands.shutdown().await;
+        for handle in self.supervisors.iter().chain(self.tasks.iter()) {
+            handle.abort();
+        }
+        for handle in self.supervisors.drain(..).chain(self.tasks.drain(..)) {
+            let _ = handle.await;
+        }
         if let Some(fiote) = &self.runtime.fiote {
             fiote.stop_all().await;
         }
         if let Some(wire) = self.runtime.wire.write().await.take() {
             wire.shutdown().await;
         }
-        for handle in self.supervisors.drain(..) {
-            handle.abort();
-        }
-        for handle in self.tasks.drain(..) {
-            handle.abort();
-            let _ = handle.await;
-        }
         if let Some(blobs) = self.runtime.engine.blobs.get() {
             if let Err(error) = blobs.shutdown().await { tracing::warn!(%error, "Could not close Blob Sync storage"); }
         }
+        self.runtime.store.pool.close().await;
     }
 
     pub async fn start_information(
@@ -399,6 +412,7 @@ async fn bind_wire(
         engine.clone(),
         lanes.clone(),
     ));
+    engine.attach_social_network(wire.clone());
     wire.serve_enrolment();
     let serving = wire.clone();
     tasks.push(tokio::spawn(async move { serving.serve().await }));
@@ -501,6 +515,8 @@ async fn publish_local_roster(
         .ok_or_else(|| {
             IoError::other("Cannot publish the Cell roster: the local signing key is missing")
         })?;
+    if held.as_ref().is_some_and(|held| !held.roster.cells.iter().any(|member| member.cell_uid == cell.uid)) { return Ok(()); }
+    let capabilities = held.as_ref().and_then(|held| held.roster.cells.iter().find(|member| member.cell_uid == cell.uid)).map(|member| member.capabilities.clone()).unwrap_or_else(engine::roster::full_capabilities);
     let mut cells: Vec<engine::roster::CellEntry> = held
         .as_ref()
         .map(|held| held.roster.cells.clone())
@@ -518,7 +534,7 @@ async fn publish_local_roster(
         label: cell.label.clone(),
         operational_key,
         sealing_key,
-        capabilities: engine::roster::full_capabilities(),
+        capabilities,
         front_door: wire.reach() != engine::wire::Reach::Local,
     });
     if engine::roster::needs_publishing(held.as_ref(), &root.public_key_b64(), &cells) {

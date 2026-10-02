@@ -91,6 +91,8 @@ pub(crate) fn project_canvas(
         &CanvasView,
         &ComputedUiRenderTargetInfo,
         Option<&crate::workspace::Workspaces>,
+        Option<&ComputedNode>,
+        Option<&crate::component_push::composition::GeneratedCanvas>,
     )>,
     mut items: Query<(
         Entity,
@@ -124,8 +126,10 @@ pub(crate) fn project_canvas(
         if surface.is_some() {
             if node.display != Display::Flex
                 || node.position_type != PositionType::Absolute
-                || node.left != px(0) || node.top != px(0)
-                || node.width != px(item.size.x) || node.height != px(item.size.y)
+                || node.left != px(0)
+                || node.top != px(0)
+                || node.width != px(item.size.x)
+                || node.height != px(item.size.y)
             {
                 node.display = Display::Flex;
                 node.position_type = PositionType::Absolute;
@@ -151,15 +155,20 @@ pub(crate) fn project_canvas(
                     .as_dvec2(),
         };
         let view = views.get(parent.parent()).ok();
-        let position = view.and_then(|(view, target, spaces)| {
+        let position = view.and_then(|(view, target, spaces, computed, generated)| {
             if spaces.is_some_and(|spaces| {
                 member.map_or(spaces.entries[0].id, |member| member.0) != spaces.active
             }) {
                 return None;
             }
+            let viewport = if generated.is_some() {
+                computed.map_or(Vec2::ZERO, |node| node.size() * node.inverse_scale_factor())
+            } else {
+                target.logical_size()
+            };
             pinned
-                .map_or(*view, |pin| pin.view(item, target.logical_size()))
-                .screen_position(&displayed, target.logical_size())
+                .map_or(*view, |pin| pin.view(item, viewport))
+                .screen_position(&displayed, viewport)
         });
         let display = if position.is_some() {
             Display::Flex
@@ -306,16 +315,37 @@ pub(crate) mod tests {
     #[test]
     fn spatial_sand_layout_stays_clean_until_resized() {
         let (mut app, camera, _, item) = fixture();
-        app.world_mut().entity_mut(item).insert(crate::topology::presentation::Surface {
-            camera, image: Handle::default(), visual: item, body: item, face: item,
-            size: Vec2::splat(100.0), pixels: UVec2::splat(100), density: 1.0,
-            material: Handle::default(), uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
-            visible: true,
-        });
+        app.world_mut()
+            .entity_mut(item)
+            .insert(crate::topology::presentation::Surface {
+                camera,
+                image: Handle::default(),
+                visual: item,
+                body: item,
+                face: item,
+                size: Vec2::splat(100.0),
+                pixels: UVec2::splat(100),
+                density: 1.0,
+                material: Handle::default(),
+                uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
+                visible: true,
+            });
         app.update();
-        let before = app.world().entity(item).get_ref::<Node>().unwrap().last_changed();
+        let before = app
+            .world()
+            .entity(item)
+            .get_ref::<Node>()
+            .unwrap()
+            .last_changed();
         app.update();
-        assert_eq!(app.world().entity(item).get_ref::<Node>().unwrap().last_changed(), before);
+        assert_eq!(
+            app.world()
+                .entity(item)
+                .get_ref::<Node>()
+                .unwrap()
+                .last_changed(),
+            before
+        );
         app.world_mut().get_mut::<CanvasItem>(item).unwrap().size = Vec2::new(200.0, 80.0);
         app.update();
         let node = app.world().get::<Node>(item).unwrap();

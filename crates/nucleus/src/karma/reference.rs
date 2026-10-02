@@ -30,12 +30,10 @@ pub enum ReferenceKind {
     Model,
     Objective,
     Workflow,
-    Grant,
     TrustScope,
     Run,
     Candidate,
     Decision,
-    Intent,
     Receipt,
     Simulation,
 }
@@ -63,12 +61,10 @@ impl ReferenceKind {
             Self::Model => "model",
             Self::Objective => "obj",
             Self::Workflow => "flow",
-            Self::Grant => "grant",
             Self::TrustScope => "trust",
             Self::Run => "run",
             Self::Candidate => "cand",
             Self::Decision => "dec",
-            Self::Intent => "intent",
             Self::Receipt => "receipt",
             Self::Simulation => "sim",
         }
@@ -95,12 +91,10 @@ impl ReferenceKind {
             | Self::Model
             | Self::Objective
             | Self::Workflow
-            | Self::Grant
             | Self::TrustScope
             | Self::Run
             | Self::Candidate
             | Self::Decision
-            | Self::Intent
             | Self::Receipt
             | Self::Simulation => "r",
         }

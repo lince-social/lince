@@ -56,7 +56,7 @@ async fn quantity(engine: &Engine, record: &str) -> String {
 
 #[tokio::test]
 async fn prices_wake_rules_without_quantity_changes_and_bind_to_the_original_record() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let stock = support::plain(&engine, "stock", 10.0).await;
     let total = support::plain(&engine, "total", 0.0).await;
     set(&engine, &stock, json!({"price":1.25,"label":"apples"})).await;
@@ -127,7 +127,7 @@ async fn prices_wake_rules_without_quantity_changes_and_bind_to_the_original_rec
 
 #[tokio::test]
 async fn unavailable_properties_fail_explicitly_and_leave_the_previous_result_unchanged() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let stock = support::plain(&engine, "stock", 1.0).await;
     let total = support::plain(&engine, "total", 9.0).await;
     let source = "extension(@stock, \"shop.inventory\", \"price\")";
@@ -169,7 +169,7 @@ async fn unavailable_properties_fail_explicitly_and_leave_the_previous_result_un
 
 #[tokio::test]
 async fn stored_json_numbers_keep_decimal_precision_and_support_exponents() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let record = support::plain(&engine, "numbers", 1.0).await;
     store::sqlx::query(
         "INSERT INTO record_extension (record_uid, namespace, fds) VALUES (?, 'precise', ?)",
@@ -212,7 +212,7 @@ async fn stored_json_numbers_keep_decimal_precision_and_support_exponents() {
 
 #[tokio::test]
 async fn private_properties_are_unavailable_in_previews_and_native_choices() {
-    let engine = support::engine().await;
+    let engine = support::karma::engine().await;
     let secret = support::plain(&engine, "secret", 0.0).await;
     set(&engine, &secret, json!({"price":17})).await;
     let person = support::person(&engine, "reader").await;
@@ -274,8 +274,8 @@ async fn private_properties_are_unavailable_in_previews_and_native_choices() {
 
 #[tokio::test]
 async fn received_extension_updates_wake_local_rules_once_after_sync() {
-    let source = support::engine().await;
-    let receiver = support::engine().await;
+    let source = support::karma::engine().await;
+    let receiver = support::karma::engine().await;
     let organ = store::organs::local(&source.store.pool)
         .await
         .unwrap()

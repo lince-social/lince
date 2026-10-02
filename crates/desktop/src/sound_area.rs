@@ -137,7 +137,7 @@ fn update(world: &mut World) {
         let members = sands
             .iter()
             .filter(|(_, _, parent, member)| *parent == root && *member == workspace)
-            .map(|(sand, item, _, _)| {
+            .filter_map(|(sand, item, _, _)| {
                 let record = world.get::<crate::area::RecordProperties>(*sand);
                 let matches = if area.filter.is_some() {
                     record.is_some_and(|record| {
@@ -163,7 +163,16 @@ fn update(world: &mut World) {
                     } else {
                         area.contains(item.position)
                     };
-                (*sand, inside)
+                let point = crate::topology::spatial(world, *sand).position(item.position);
+                let record = record.cloned();
+                let binding = world.get::<crate::protein_area::RecordBinding>(*sand).cloned();
+                if crate::topology::influence::blocked(
+                    world, root, workspace, entity, point, record.as_ref(), binding.as_ref(), false,
+                ) {
+                    None
+                } else {
+                    Some((*sand, inside))
+                }
             })
             .collect();
         for play in runtime

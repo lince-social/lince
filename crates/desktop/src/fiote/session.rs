@@ -125,6 +125,10 @@ pub(crate) fn field(world: &mut World, parent: Entity, title: &str, secret: bool
             ChildOf(entity),
         ));
     }
+    crate::accessibility::input(world, entity, title, false);
+    if secret {
+        crate::accessibility::secret(world, entity);
+    }
     entity
 }
 
@@ -156,6 +160,7 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding) {
         .id();
     let status =
         crate::edit_mode::label(world, owner, "Choose a Fiote and connect its agent.", 14.0);
+    crate::accessibility::status(world, status);
     crate::description::button(world, owner, owner, "Manage Fiote", management::Open);
     let content = world
         .spawn((
@@ -862,7 +867,7 @@ pub fn thread_controls(world: &mut World, parent: Entity, thread: &str, binding:
         world,
         details,
         owner,
-        "View session instructions",
+        "View instructions and context",
         management::ViewInstructions,
     );
     crate::description::button(
@@ -878,7 +883,8 @@ pub fn thread_controls(world: &mut World, parent: Entity, thread: &str, binding:
     let usage = crate::operation_view::create(world, details);
     let choices = live::create(world, details, owner);
     world.entity_mut(owner).insert(ThreadControl {
-        usage,        choices,
+        usage,
+        choices,
         area: binding.area,
         view_uid: binding.uid.clone(),
         record: binding.uid.clone(),
@@ -1119,9 +1125,20 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     {
         show(world, owner, next);
     }
-    if let Some(saved) = world.get::<Panel>(owner).and_then(|panel| panel.saved.clone()) {
+    if let Some(saved) = world
+        .get::<Panel>(owner)
+        .and_then(|panel| panel.saved.clone())
+    {
         questions::sync(world, &saved);
-        crate::terminal::login_view::sync(world, owner, &saved.record, saved.agent_info.as_ref().and_then(|info| info["terminalLogin"].as_str()));
+        crate::terminal::login_view::sync(
+            world,
+            owner,
+            &saved.record,
+            saved
+                .agent_info
+                .as_ref()
+                .and_then(|info| info["terminalLogin"].as_str()),
+        );
     }
     if browser {
         OpenBrowser.apply(world, owner);
@@ -1209,10 +1226,14 @@ fn receive(
             .map(|(entity, _)| entity)
             .collect();
         for owner in controls {
-            if result.is_err() { live::invalidate(world, owner); }
+            if result.is_err() {
+                live::invalidate(world, owner);
+            }
             if let Ok(saved) = &result {
                 live::update(world, owner, saved);
-                if let Some(control) = world.get::<ThreadControl>(owner) { crate::operation_view::usage(world, control.usage, &saved.usage); }
+                if let Some(control) = world.get::<ThreadControl>(owner) {
+                    crate::operation_view::usage(world, control.usage, &saved.usage);
+                }
             }
             let mut control = world.get_mut::<ThreadControl>(owner).unwrap();
             control.pending = None;
@@ -1366,8 +1387,8 @@ fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {
 }
 
 mod agent;
-mod management;
 mod live;
+mod management;
 mod questions;
 #[cfg(test)]
 mod tests;

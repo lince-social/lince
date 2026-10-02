@@ -449,6 +449,53 @@ pub struct Keyring {
     pub generation: u32,
 }
 
+pub fn validate_backup_keyring(bytes: &[u8], cell_uid: &str) -> std::io::Result<()> {
+    use zeroize::Zeroizing;
+    let invalid = || {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "The backup record keyring does not match its Cell or key material",
+        )
+    };
+    if bytes.len() > 64 * 1024 {
+        return Err(invalid());
+    }
+    let mut keyring: Keyring = serde_json::from_slice(bytes).map_err(|_| invalid())?;
+    let secrets: Vec<_> = keyring
+        .entries
+        .iter_mut()
+        .map(|entry| Zeroizing::new(std::mem::take(&mut entry.secret)))
+        .collect();
+    if keyring.entries.is_empty() || keyring.entries.len() > 128 {
+        return Err(invalid());
+    }
+    let prefix = format!("x25519:cell:{cell_uid}:");
+    let mut seen = std::collections::BTreeSet::new();
+    for (entry, secret) in keyring.entries.iter().zip(secrets) {
+        let generation = entry
+            .key_id
+            .strip_prefix(&prefix)
+            .and_then(|generation| generation.parse::<u32>().ok())
+            .ok_or_else(invalid)?;
+        let decoded = Zeroizing::new(b64().decode(&*secret).map_err(|_| invalid())?);
+        let raw: [u8; 32] = decoded.as_slice().try_into().map_err(|_| invalid())?;
+        let key = StaticSecret::from(raw);
+        let expiry =
+            chrono::DateTime::parse_from_rfc3339(&entry.not_after).map_err(|_| invalid())?;
+        let deletion =
+            chrono::DateTime::parse_from_rfc3339(&entry.delete_after).map_err(|_| invalid())?;
+        if generation == 0
+            || generation > keyring.generation
+            || !seen.insert(&entry.key_id)
+            || b64().encode(PublicKey::from(&key).as_bytes()) != entry.public
+            || deletion < expiry
+        {
+            return Err(invalid());
+        }
+    }
+    Ok(())
+}
+
 impl Keyring {
     pub fn current(&self) -> Option<SealingKey> {
         let moment = now();

@@ -1,11 +1,12 @@
 use std::io::{Error, Result};
 use store::Store;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Discovery {
     pub reach: engine::wire::Reach,
     pub local: bool,
     pub peer_port: u16,
+    pub relays: Vec<String>,
 }
 
 pub async fn config(store: &Store, organ_uid: &str) -> Result<Option<serde_json::Value>> {
@@ -52,6 +53,11 @@ fn settings(fields: Option<&serde_json::Value>, internet_allowed: bool) -> Resul
         },
         local,
         peer_port: engine::wire::DEFAULT_PEER_PORT,
+        relays: engine::wire::configured_relays(fields)
+            .map_err(Error::other)?
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
     })
 }
 
@@ -102,9 +108,36 @@ mod tests {
             json!({"local_until": "invalid"}),
             json!({"local": 1}),
             json!([]),
+            json!({"relays":["http://relay.example"]}),
+            json!({"relays":["https://relay.example", "https://RELAY.example:443"]}),
         ] {
             assert!(settings(Some(&fields), true).is_err());
         }
+    }
+
+    #[tokio::test]
+    async fn selected_relays_stay_device_local_and_local_reach_keeps_them_disabled() {
+        let first = Store::open_memory().await.unwrap();
+        let second = Store::open_memory().await.unwrap();
+        store::cells::set_config(
+            &first.pool,
+            "lince.discovery",
+            &json!({"internet":false,"relays":["https://RELAY.example:443"]}),
+        )
+        .await
+        .unwrap();
+        let first_config = of(&first).await.unwrap();
+        assert_eq!(first_config.reach, engine::wire::Reach::Local);
+        assert_eq!(first_config.relays, ["https://relay.example/"]);
+        assert!(of(&second).await.unwrap().relays.is_empty());
+        store::cells::set_config(
+            &first.pool,
+            "lince.discovery",
+            &json!({"relays":["https://relay.example#ignored"]}),
+        )
+        .await
+        .unwrap();
+        assert!(of(&first).await.is_err());
     }
 
     #[tokio::test]

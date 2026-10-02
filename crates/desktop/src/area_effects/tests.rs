@@ -313,6 +313,7 @@ fn independent_sorting_steers_existing_sands_and_immunity_stops_it() {
 }
 
 crate::laboratory_cases! {
+    isolation_blocks_both_crossings_and_preserves_internal_interaction,
     combined_simple_destinations_keep_their_individual_strengths,
     moving_targets_invalidates_destinations_and_newtonian_distance_uses_the_target,
     simple_forces_reuse_destinations_during_motion_and_invalidate_for_changes,
@@ -321,6 +322,30 @@ crate::laboratory_cases! {
     containment_limits_forces_without_blocking_record_transitions,
     size_effects_combine_restore_and_leave_authored_sizes_untouched,
     independent_sorting_steers_existing_sands_and_immunity_stops_it,
+}
+
+#[cfg_attr(test, test)]
+fn isolation_blocks_both_crossings_and_preserves_internal_interaction() {
+    let (mut world, root, owner, sand) = fixture();
+    let mut area = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(150.0));
+    area.immunity = Immunity::Isolation;
+    let shield = spawn_area(&mut world, root, 1, area).unwrap();
+    let record = world.get::<RecordProperties>(sand).unwrap().clone();
+    for (center, size, expected) in [(0.0, 150.0, true), (100.0, 80.0, true), (50.0, 300.0, false)] {
+        {
+            let mut area = world.get_mut::<InfluenceArea>(shield).unwrap();
+            area.center = [center, 0.0];
+            area.size = [size, size];
+        }
+        update(&mut world);
+        assert_eq!(world.get::<AreaForces>(sand).unwrap().total() == DVec2::ZERO, expected);
+        assert_eq!(blocked(&mut world, root, 1, owner, DVec2::new(100.0, 0.0), Some(&record), None), expected);
+        assert_eq!(crate::topology::influence::blocked(&mut world, root, 1, owner, bevy::math::DVec3::X * 100.0, Some(&record), None, false), expected);
+    }
+    assert!(!Immunity::Isolation.blocks(false, false));
+    assert!(!Immunity::Isolation.blocks(true, true));
+    assert!(Immunity::Isolation.blocks(false, true));
+    assert!(Immunity::Isolation.blocks(true, false));
 }
 
 #[cfg_attr(test, test)]

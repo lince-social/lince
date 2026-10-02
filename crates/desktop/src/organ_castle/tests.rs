@@ -359,3 +359,726 @@ fn roster_and_pairing_updates_keep_contact_drafts_and_guard_device_removal() {
         "Unfinished name"
     );
 }
+
+#[test]
+fn karma_controls_distinguish_exclusive_selection_explicit_addition_and_local_stop() {
+    let (mut app, owner) = fixture();
+    receive(
+        app.world_mut(),
+        &ServerMessage::Snapshot {
+            id: subscription(owner, "organs"),
+            rows: vec![json!({"uid":"local","slug":"local-organ","head":"Me"})],
+        },
+    );
+    receive(
+        app.world_mut(),
+        &ServerMessage::Snapshot {
+            id: subscription(owner, "roster"),
+            rows: vec![
+                json!({"uid":"local","slug":"local-organ","extension":{"version":7,"cells":[{"cell_uid":"a","label":"Laptop","capabilities":["karma"]},{"cell_uid":"b","label":"Phone","capabilities":[]}]}}),
+            ],
+        },
+    );
+    let forms: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .filter(|(_, form)| form.payload["action"] == "roster-set-karma-execution")
+        .map(|(entity, form)| (entity, form.payload.clone(), form.confirmation.clone()))
+        .collect();
+    let exclusive = forms
+        .iter()
+        .find(|(_, payload, _)| {
+            payload["cell_uid"] == "b"
+                && payload["enabled"] == true
+                && payload["additional"] == false
+        })
+        .unwrap();
+    assert!(exclusive.2.is_none());
+    let additional = forms
+        .iter()
+        .find(|(_, payload, _)| payload["additional"] == true)
+        .unwrap();
+    assert!(additional.2.is_some());
+    assert_eq!(additional.1["expected_roster_version"], 7);
+    let _: engine::actions::Action = serde_json::from_value(additional.1.clone()).unwrap();
+    forms::Submit.apply(app.world_mut(), additional.0);
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+    let local = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .filter(|form| form.payload["namespace"] == "lince.karma-runtime")
+        .map(|form| form.payload["fds"]["running"].as_bool().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(local, vec![false, true]);
+}
+
+#[test]
+fn social_composer_defaults_to_anonymous_and_preserves_exact_optional_fields() {
+    let (mut app, _) = fixture();
+    let form = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .find(|(_, form)| {
+            form.payload["action"] == "social" && form.payload["request"]["command"] == "save-draft"
+        })
+        .unwrap()
+        .0;
+    set(
+        app.world_mut(),
+        form,
+        "/request/draft/title",
+        "Bicycle repair",
+    );
+    set(app.world_mut(), form, "/request/draft/quantity", "1.250");
+    set(app.world_mut(), form, "/request/draft/unit", "hour");
+    let payload = forms::payload(app.world(), form).unwrap();
+    let action: engine::actions::Action = serde_json::from_value(payload.clone()).unwrap();
+    assert!(matches!(
+        action,
+        engine::actions::Action::Social {
+            request: nucleus::social::Command::SaveDraft { .. }
+        }
+    ));
+    assert_eq!(payload["request"]["draft"]["mode"], "anonymous");
+    assert_eq!(payload["request"]["draft"]["quantity"], "1.250");
+    assert_eq!(payload["request"]["draft"]["concept"], Value::Null);
+    assert_eq!(payload["request"]["draft"]["destinations"], json!([]));
+}
+
+#[test]
+fn publication_confirmation_keeps_the_exact_signed_preview() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn(Node::default()).id();
+    let preview = json!({"record":"private-post","preview_hash":"digest","document":{"title":"Bicycle repair","text":"Public text","mode":"anonymous","direction":"contribution","state":"active","redistribute":false,"expires_at":2000000000,"signature":"exact-signature","destinations":[]}});
+    social::result(app.world_mut(), owner, parent, &preview);
+    let form = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .find(|form| {
+            form.payload["action"] == "social" && form.payload["request"]["command"] == "publish"
+        })
+        .unwrap();
+    assert_eq!(form.payload["request"]["document"], preview["document"]);
+    assert_eq!(form.payload["request"]["preview_hash"], "digest");
+    assert!(form.confirmation.is_some());
+}
+
+#[test]
+fn social_profile_images_require_an_explicit_load_and_posts_have_typed_paging() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn(Node::default()).id();
+    let organ = nucleus::new_uid("r");
+    let hash = "a".repeat(64);
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"profile":{"authority":{"organ":organ},"fields":{"name":"Workshop","avatar":hash,"banner":null},"destinations":[]},"state":"active"}),
+    );
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+    let loads: Vec<_> = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .filter(|form| form.payload["request"]["command"] == "fetch-profile-image")
+        .map(|form| form.payload.clone())
+        .collect();
+    assert_eq!(loads.len(), 1);
+    let _: engine::actions::Action = serde_json::from_value(loads[0].clone()).unwrap();
+    let after = nucleus::new_uid("r");
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"posts":[],"next_posts_after":after,"profile":null,"jobs":[],"settings":nucleus::social::ServiceSettings::default()}),
+    );
+    let page = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .find(|form| form.payload["request"]["command"] == "post-page")
+        .unwrap();
+    let _: engine::actions::Action = serde_json::from_value(page.payload.clone()).unwrap();
+    assert_eq!(page.payload["request"]["after"], after);
+}
+
+#[test]
+fn social_profile_editing_buttons_are_disabled_for_a_viewing_device() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn(Node::default()).id();
+    social::profile(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"editor":{"can_edit":false,"can_rotate":false},"published":{"state":"active"},"destinations":[]}),
+    );
+    let forms: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .filter(|(entity, form)| {
+            app.world()
+                .get::<ChildOf>(*entity)
+                .is_some_and(|child| child.parent() == parent)
+                && matches!(
+                    form.payload["request"]["command"].as_str(),
+                    Some(
+                        "save-profile"
+                            | "rotate-profile-authority"
+                            | "withdraw-profile"
+                            | "import-profile-image-data"
+                    )
+                )
+        })
+        .map(|(entity, _)| entity)
+        .collect();
+    assert_eq!(forms.len(), 4);
+    for form in forms {
+        let buttons: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &crate::actions::ActionButton)>()
+            .iter(app.world())
+            .filter_map(|(entity, _)| {
+                let mut current = entity;
+                while let Some(child) = app.world().get::<ChildOf>(current) {
+                    current = child.parent();
+                    if current == form {
+                        return Some(entity);
+                    }
+                }
+                None
+            })
+            .collect();
+        assert!(!buttons.is_empty());
+        assert!(buttons.into_iter().all(|button| {
+            app.world()
+                .get::<bevy::ui::InteractionDisabled>(button)
+                .is_some()
+        }));
+    }
+}
+
+#[test]
+fn social_requests_offer_independent_reveal_connect_and_unblock_actions() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    let root = nucleus::new_uid("r");
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"requests":[{"record":root,"title":"Private conversation","messages":[],"state":{"state":"accepted","local_accepted":true},"reveal":{"local":{"profile":{}},"peer":{"profile":{"fields":{"name":"Friend"},"expires_at":1}},"local_connect":false}}],"blocks":[{"context":nucleus::new_uid("r"),"peer":"private-identity"}],"can_edit":true}),
+    );
+    let actions: Vec<Value> = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .map(|f| f.payload.clone())
+        .collect();
+    for command in [
+        "send-private",
+        "reveal-profile",
+        "connect-participant",
+        "unblock-participant",
+    ] {
+        let payload = actions
+            .iter()
+            .find(|a| a["request"]["command"] == command)
+            .unwrap();
+        assert!(matches!(
+            serde_json::from_value::<engine::actions::Action>(payload.clone()).unwrap(),
+            engine::actions::Action::Social { .. }
+        ));
+    }
+    assert!(
+        !actions
+            .iter()
+            .any(|a| a["request"]["decision"] == "accept" || a["request"]["decision"] == "decline")
+    );
+}
+
+#[test]
+fn social_request_write_controls_are_disabled_on_a_viewing_device() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"requests":[{"record":nucleus::new_uid("r"),"messages":[],"state":{"state":"pending","local_accepted":false}}],"blocks":[{"context":nucleus::new_uid("r"),"peer":"private-identity"}],"receive_failures":[{"context":nucleus::new_uid("r"),"service":"mailbox","envelope":"opaque","error":"Waiting for keys","discard":false}],"can_edit":false}),
+    );
+    let forms: Vec<Entity> = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .filter_map(|(e, f)| {
+            if f.payload["request"]["command"] == "requests" {
+                return None;
+            }
+            let mut node = e;
+            while let Some(child) = app.world().get::<ChildOf>(node) {
+                node = child.parent();
+                if node == parent {
+                    return Some(e);
+                }
+            }
+            None
+        })
+        .collect();
+    assert!(!forms.is_empty());
+    for form in forms {
+        let buttons: Vec<Entity> = app
+            .world_mut()
+            .query::<(Entity, &crate::actions::ActionButton)>()
+            .iter(app.world())
+            .filter_map(|(e, _)| {
+                let mut node = e;
+                while let Some(child) = app.world().get::<ChildOf>(node) {
+                    node = child.parent();
+                    if node == form {
+                        return Some(e);
+                    }
+                }
+                None
+            })
+            .collect();
+        assert!(!buttons.is_empty());
+        assert!(buttons.iter().all(|e| {
+            app.world()
+                .get::<bevy::ui::InteractionDisabled>(*e)
+                .is_some()
+        }));
+    }
+}
+
+#[test]
+fn social_ciphertext_discard_requires_review_and_refused_messages_cannot_resume() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({
+            "requests":[{"record":nucleus::new_uid("r"),"messages":[{"uid":nucleus::new_uid("r"),"body":"Saved text","delivery":{"stage":"recipient-refused"}}],"state":{"state":"closed"}}],
+            "receive_failures":[{"context":nucleus::new_uid("r"),"service":"mailbox","envelope":"opaque","error":"Waiting for keys","discard":false}],
+            "can_edit":true
+        }),
+    );
+    let actions: Vec<_> = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .collect();
+    let discard = actions
+        .iter()
+        .find(|form| form.payload["request"]["command"] == "discard-private")
+        .unwrap();
+    let action: engine::actions::Action = serde_json::from_value(discard.payload.clone()).unwrap();
+    assert!(matches!(
+        action,
+        engine::actions::Action::Social {
+            request: nucleus::social::Command::DiscardPrivate { .. }
+        }
+    ));
+    assert!(discard.confirmation.is_some());
+    assert!(
+        !actions
+            .iter()
+            .any(|form| form.payload["request"]["command"] == "resume-private")
+    );
+}
+
+#[test]
+fn social_publication_view_distinguishes_a_superseded_host_acknowledgement() {
+    for state in ["cancelled", "failed", "expired", "pending", "accepted"] {
+        let (mut app, owner) = fixture();
+        let parent = app.world_mut().spawn_empty().id();
+        social::result(
+            app.world_mut(),
+            owner,
+            parent,
+            &json!({"posts":[],"profile":null,"jobs":[{"kind":"profile","state":state,"destination":"selected host","receipt":{"accepted":true}}],"settings":nucleus::social::ServiceSettings::default()}),
+        );
+        assert_eq!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|text.0=="The host acknowledged this earlier version; it is no longer the current publication."),matches!(state,"cancelled"|"failed"|"expired"));
+        assert!(app.world().resource::<Requests>().actions.is_empty());
+    }
+}
+
+#[test]
+fn social_connect_waits_for_current_profile_proofs_and_shows_recovery() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    let recovery = "Ask this person to reveal their current reviewed profile again";
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({
+            "requests":[{"record":nucleus::new_uid("r"),"messages":[],"state":{"state":"accepted","local_accepted":true},"reveal":{"local":{"profile":{}},"peer":{"profile":{}},"local_connect":false},"verification":{"can_connect":false,"needs_fresh_proof":true,"recovery":recovery}}],"can_edit":true
+        }),
+    );
+    let connect = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .find(|(_, form)| form.payload["request"]["command"] == "connect-participant")
+        .unwrap()
+        .0;
+    let buttons: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &crate::actions::ActionButton)>()
+        .iter(app.world())
+        .filter_map(|(button, _)| {
+            let mut node = button;
+            while let Some(child) = app.world().get::<ChildOf>(node) {
+                node = child.parent();
+                if node == connect {
+                    return Some(button);
+                }
+            }
+            None
+        })
+        .collect();
+    assert!(!buttons.is_empty());
+    assert!(buttons.iter().all(|button| {
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(*button)
+            .is_some()
+    }));
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == recovery)
+    );
+}
+
+#[test]
+fn social_search_continuation_preserves_query_and_chosen_services() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    let after = nucleus::new_uid("post");
+    let query = json!({"text":"bicycles","direction":"need","language":"pt","area":"Recife","concept":"","unit":"","after":null});
+    let services = json!(["selected-directory"]);
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"results":[],"query":query,"services":services,"next_after":after}),
+    );
+    let form = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .find(|form| {
+            form.payload["request"]["command"] == "search"
+                && form.payload["request"]["query"]["after"] == after
+        })
+        .unwrap();
+    assert_eq!(form.payload["request"]["services"], services);
+    assert_eq!(form.payload["request"]["query"]["text"], "bicycles");
+    assert_eq!(form.payload["request"]["query"]["area"], "Recife");
+    let action: engine::actions::Action = serde_json::from_value(form.payload.clone()).unwrap();
+    assert!(matches!(
+        action,
+        engine::actions::Action::Social {
+            request: nucleus::social::Command::Search { .. }
+        }
+    ));
+}
+
+#[test]
+fn social_server_inspection_is_deliberate_and_hosting_controls_respect_permissions() {
+    let (mut app, owner) = fixture();
+    let inspector = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .find(|form| form.payload["request"]["command"] == "inspect-service")
+        .unwrap();
+    let action: engine::actions::Action =
+        serde_json::from_value(inspector.payload.clone()).unwrap();
+    assert!(matches!(
+        action,
+        engine::actions::Action::Social {
+            request: nucleus::social::Command::InspectService { .. }
+        }
+    ));
+    let parent = app.world_mut().spawn_empty().id();
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"posts":[],"profile":null,"jobs":[],"settings":nucleus::social::ServiceSettings::default(),"can_manage_services":false}),
+    );
+    let (entity, settings) = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .find(|(_, form)| form.payload["request"]["command"] == "configure-services")
+        .unwrap();
+    let _: engine::actions::Action = serde_json::from_value(settings.payload.clone()).unwrap();
+    let buttons: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &crate::actions::ActionButton)>()
+        .iter(app.world())
+        .filter_map(|(button, _)| {
+            let mut node = button;
+            while let Some(child) = app.world().get::<ChildOf>(node) {
+                node = child.parent();
+                if node == entity {
+                    return Some(button);
+                }
+            }
+            None
+        })
+        .collect();
+    assert!(!buttons.is_empty());
+    assert!(buttons.iter().all(|button| {
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(*button)
+            .is_some()
+    }));
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+}
+
+#[test]
+fn remembered_server_roles_fill_separate_native_actions_without_automatic_requests() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    let publication = "publication-endpoint";
+    let directory = "query-endpoint";
+    let mailbox = "mailbox-endpoint";
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"servers":[
+        {"endpoint":publication,"label":"Publisher","operator":"A","publication":true,"query":false,"mailbox":false},
+        {"endpoint":directory,"label":"Directory","operator":"B","publication":false,"query":true,"mailbox":false},
+        {"endpoint":mailbox,"label":"Mailbox","operator":"C","publication":false,"query":false,"mailbox":true}
+    ],"can_manage_services":true}),
+    );
+    let forms: Vec<_> = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .collect();
+    let query = forms
+        .iter()
+        .find(|form| {
+            form.payload["request"]["command"] == "search"
+                && form.payload["request"]["services"] == json!([directory])
+        })
+        .unwrap();
+    let draft = forms
+        .iter()
+        .find(|form| {
+            form.payload["request"]["command"] == "save-draft"
+                && form.payload["request"]["draft"]["destinations"] == json!([publication])
+        })
+        .unwrap();
+    let save = forms
+        .iter()
+        .find(|form| {
+            form.payload["request"]["command"] == "save-server"
+                && form.payload["request"]["choice"]["endpoint"] == directory
+        })
+        .unwrap();
+    let remove = forms
+        .iter()
+        .find(|form| {
+            form.payload["request"]["command"] == "remove-server"
+                && form.payload["request"]["endpoint"] == mailbox
+        })
+        .unwrap();
+    assert!(remove.confirmation.is_some());
+    for form in [query, draft, save, remove] {
+        let _: engine::actions::Action = serde_json::from_value(form.payload.clone()).unwrap();
+    }
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+    let result_parent = app.world_mut().spawn_empty().id();
+    social::result(
+        app.world_mut(),
+        owner,
+        result_parent,
+        &json!({"results":[{"document":{"id":nucleus::new_uid("post"),"title":"Help","reply":{},"state":"active"}}]}),
+    );
+    let intro = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .find(|form| form.payload["request"]["command"] == "open-request")
+        .unwrap();
+    assert_eq!(intro.payload["request"]["services"], json!([mailbox]));
+}
+
+#[test]
+fn deployment_managed_hosting_disables_role_edits_but_keeps_deliberate_operator_actions() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"posts":[],"settings":nucleus::social::ServiceSettings::default(),"can_manage_services":true,"services_managed":true}),
+    );
+    let controls: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .filter(|(_, form)| {
+            matches!(
+                form.payload["request"]["command"].as_str(),
+                Some("configure-services" | "service-health" | "rebuild-public-index")
+            )
+        })
+        .map(|(entity, form)| (entity, form.payload.clone(), form.confirmation.is_some()))
+        .collect();
+    assert_eq!(controls.len(), 3);
+    for (entity, payload, confirmation) in controls {
+        let _: engine::actions::Action = serde_json::from_value(payload.clone()).unwrap();
+        if payload["request"]["command"] == "rebuild-public-index" {
+            assert!(confirmation);
+        }
+        let buttons: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &crate::actions::ActionButton)>()
+            .iter(app.world())
+            .filter_map(|(button, _)| {
+                let mut node = button;
+                while let Some(child) = app.world().get::<ChildOf>(node) {
+                    node = child.parent();
+                    if node == entity {
+                        return Some(button);
+                    }
+                }
+                None
+            })
+            .collect();
+        assert!(!buttons.is_empty());
+        for button in buttons {
+            assert_eq!(
+                app.world()
+                    .get::<bevy::ui::InteractionDisabled>(button)
+                    .is_some(),
+                payload["request"]["command"] == "configure-services"
+            );
+        }
+    }
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+}
+
+#[test]
+fn gossip_controls_require_device_and_separate_contact_consent_without_private_sync_grants() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"gossip":{"enabled":false,"queued":0,"contacts":[{"name":"Friend","endpoint":null,"choice":{"organ":nucleus::new_uid("r"),"send":false,"receive":false}}]},"can_manage_services":false}),
+    );
+    let forms: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .filter(|(_, form)| {
+            matches!(
+                form.payload["request"]["command"].as_str(),
+                Some("configure-gossip" | "set-gossip-contact")
+            )
+        })
+        .map(|(entity, form)| (entity, form.payload.clone()))
+        .collect();
+    assert_eq!(forms.len(), 2);
+    for (entity, payload) in forms {
+        let _: engine::actions::Action = serde_json::from_value(payload.clone()).unwrap();
+        assert_ne!(payload["request"]["choice"]["send"], true);
+        let buttons: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &crate::actions::ActionButton)>()
+            .iter(app.world())
+            .filter_map(|(button, _)| {
+                let mut node = button;
+                while let Some(child) = app.world().get::<ChildOf>(node) {
+                    node = child.parent();
+                    if node == entity {
+                        return Some(button);
+                    }
+                }
+                None
+            })
+            .collect();
+        assert!(!buttons.is_empty());
+        assert!(buttons.iter().all(|button| {
+            app.world()
+                .get::<bevy::ui::InteractionDisabled>(*button)
+                .is_some()
+        }));
+    }
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+}
+
+#[test]
+fn contact_query_controls_are_typed_deliberate_and_disabled_for_a_viewing_device() {
+    let (mut app, owner) = fixture();
+    let parent = app.world_mut().spawn_empty().id();
+    let peer = nucleus::new_uid("r");
+    social::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"asks":{"enabled":true,"contacts":[{"name":"Friend","endpoint":"pinned-contact","choice":{"organ":peer,"ask":true,"answer":false,"forward":false}}],"queries":[{"id":nucleus::new_uid("ask"),"query":nucleus::social::Search::default(),"state":"pending","deadline":30,"count":0}]},"can_manage_services":false}),
+    );
+    let forms: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .filter(|(_, form)| {
+            matches!(
+                form.payload["request"]["command"].as_str(),
+                Some(
+                    "configure-ask" | "set-ask-contact" | "start-ask" | "cancel-ask" | "clear-asks"
+                )
+            )
+        })
+        .map(|(entity, form)| (entity, form.payload.clone(), form.confirmation.clone()))
+        .collect();
+    assert_eq!(forms.len(), 5);
+    for (entity, payload, confirmation) in forms {
+        let _: engine::actions::Action =
+            serde_json::from_value(forms::payload(app.world(), entity).unwrap()).unwrap();
+        if payload["request"]["command"] == "start-ask" {
+            assert_eq!(payload["request"]["contacts"], json!([peer]));
+            assert!(confirmation.as_deref().unwrap().contains("pass it onward"));
+        }
+        let buttons: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &crate::actions::ActionButton)>()
+            .iter(app.world())
+            .filter_map(|(button, _)| {
+                let mut node = button;
+                while let Some(child) = app.world().get::<ChildOf>(node) {
+                    node = child.parent();
+                    if node == entity {
+                        return Some(button);
+                    }
+                }
+                None
+            })
+            .collect();
+        assert!(!buttons.is_empty());
+        assert!(buttons.iter().all(|button| {
+            app.world()
+                .get::<bevy::ui::InteractionDisabled>(*button)
+                .is_some()
+        }));
+    }
+    assert!(app.world().resource::<Requests>().actions.is_empty());
+}

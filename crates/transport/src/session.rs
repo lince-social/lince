@@ -16,7 +16,9 @@ pub struct Session {
     subject: Option<String>,
     login: Option<engine::login::LoginSession>,
     connection_id: String,
+    workspace_participant: String,
     subscriptions: HashMap<String, Protein>,
+    workspace_subscriptions: HashMap<String, (String, engine::workspace_sync::Client)>,
     last_ephemeral: HashMap<String, Vec<serde_json::Value>>,
     joined_rooms: Vec<String>,
     collab_records: HashSet<String>,
@@ -33,6 +35,7 @@ pub struct Session {
 impl Drop for Session {
     fn drop(&mut self) {
         self.engine.presence.leave_cursor(None, &self.connection_id);
+        if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
     }
 }
 
@@ -49,7 +52,9 @@ impl Session {
             subject,
             login: None,
             connection_id: connection_id.into(),
+            workspace_participant: nucleus::new_uid("participant"),
             subscriptions: HashMap::new(),
+            workspace_subscriptions: HashMap::new(),
             last_ephemeral: HashMap::new(),
             joined_rooms: Vec::new(),
             collab_records: HashSet::new(),
@@ -167,6 +172,8 @@ impl Session {
 
     pub async fn handle(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.workspace_subscriptions.clear();
+            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
         }
         if let Some(login) = &self.login {
@@ -189,13 +196,14 @@ impl Session {
             msg,
             ClientMessage::Act { .. }
                 | ClientMessage::SignedAct { .. }
+                | ClientMessage::DescriptionAsset { request: nucleus::description_asset::Request::Put { .. }, .. }
                 | ClientMessage::CollabUpdate { .. }
                 | ClientMessage::SessionAuthenticate { .. }
                 | ClientMessage::Fiote { .. }
                 | ClientMessage::FioteTerminal { .. }
                 | ClientMessage::Speech { .. }
         );
-        let work = Box::pin(self.handle_inner(msg));
+        let work = self.handle_inner(msg);
         let operation = async { Ok(work.await) };
         let result = if let Some(login) = login {
             login.run(&engine, write, operation).await
@@ -205,8 +213,65 @@ impl Session {
         result.unwrap_or_else(|_| vec![session_expired()])
     }
 
-    async fn handle_inner(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
+    fn handle_inner(&mut self, msg: ClientMessage) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Vec<ServerMessage>> + Send + '_>,
+    > {
+        if matches!(
+            msg,
+            ClientMessage::Act { .. } | ClientMessage::SignedAct { .. }
+        ) {
+            Box::pin(self.handle_action(msg))
+        } else {
+            Box::pin(self.handle_protocol(msg))
+        }
+    }
+
+    async fn handle_action(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         match msg {
+            ClientMessage::Act { id, action } => {
+                if self.subject.is_some() {
+                    vec![ServerMessage::Error {
+                        id,
+                        message: "authenticated WebSocket Actions require a signed intent".into(),
+                        code: Some("action_intent_required".into()),
+                    }]
+                } else {
+                    vec![self.act(id, action).await]
+                }
+            }
+            ClientMessage::SignedAct {
+                id,
+                session_id,
+                session_challenge,
+                sequence,
+                action_base64,
+                signature,
+            } => {
+                vec![
+                    self.signed_act(SignedActionIntent {
+                        session_id,
+                        session_challenge,
+                        sequence,
+                        message_id: id,
+                        action_base64,
+                        signature,
+                    })
+                    .await,
+                ]
+            }
+            _ => vec![session_denied("Action required")],
+        }
+    }
+
+    async fn handle_protocol(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
+        match msg {
+            ClientMessage::WorkspaceSubscribe { id, workspace, client } => self.subscribe_workspace(id, workspace, client).await,
+            ClientMessage::DescriptionAsset { id, request } => {
+                vec![match self.engine.description_asset(self.subject.as_deref(), request).await {
+                    Ok(response) => ServerMessage::DescriptionAsset { id, response },
+                    Err(error) => ServerMessage::Error { id, message: error.to_string(), code: Some("description_asset".into()) },
+                }]
+            }
             ClientMessage::CallContext { id, thread } => {
                 vec![match self
                     .engine
@@ -317,19 +382,12 @@ impl Session {
             ClientMessage::SubscribeSaved { id, name } => self.subscribe_saved(id, name).await,
             ClientMessage::Unsubscribe { id } => {
                 self.subscriptions.remove(&id);
+                if let Some((workspace, _)) = self.workspace_subscriptions.remove(&id) && !self.workspace_subscriptions.values().any(|(other, _)| other == &workspace) && self.engine.workspace_presence.leave(Some(&workspace), &self.workspace_participant) { self.engine.notify_query_changed(); }
                 self.last_ephemeral.remove(&id);
                 vec![]
             }
-            ClientMessage::Act { id, action } => {
-                if self.subject.is_some() {
-                    vec![ServerMessage::Error {
-                        id,
-                        message: "authenticated WebSocket Actions require a signed intent".into(),
-                        code: Some("action_intent_required".into()),
-                    }]
-                } else {
-                    vec![self.act(id, action).await]
-                }
+            message @ (ClientMessage::Act { .. } | ClientMessage::SignedAct { .. }) => {
+                self.handle_action(message).await
             }
             ClientMessage::SessionAuthenticate {
                 id,
@@ -352,26 +410,6 @@ impl Session {
                             signature,
                         },
                     )
-                    .await,
-                ]
-            }
-            ClientMessage::SignedAct {
-                id,
-                session_id,
-                session_challenge,
-                sequence,
-                action_base64,
-                signature,
-            } => {
-                vec![
-                    self.signed_act(SignedActionIntent {
-                        session_id,
-                        session_challenge,
-                        sequence,
-                        message_id: id,
-                        action_base64,
-                        signature,
-                    })
                     .await,
                 ]
             }
@@ -590,6 +628,8 @@ impl Session {
 
     pub async fn on_sync_event(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.workspace_subscriptions.clear();
+            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
         }
         let engine = self.engine.clone();
@@ -645,7 +685,7 @@ impl Session {
         &self,
         protein: &Protein,
     ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
-        if protein.source == protein::Source::Calendar {
+        if matches!(protein.source, protein::Source::Calendar | protein::Source::Schedule) {
             let context = protein::calendar::context(protein, self.subject.as_deref())?;
             self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
         }
@@ -663,8 +703,32 @@ impl Session {
         .await
     }
 
+    async fn subscribe_workspace(&mut self, id: String, workspace: String, client: engine::workspace_sync::Client) -> Vec<ServerMessage> {
+        if id.len() > 512 || self.subscriptions.contains_key(&id) || self.workspace_subscriptions.len() >= 8 && !self.workspace_subscriptions.contains_key(&id) {
+            return vec![session_denied("Workspace subscription limit")];
+        }
+        match self.engine.workspace_view(self.subject.as_deref(), &workspace, &client, false).await {
+            Ok(mut snapshot) => {
+                match self.engine.workspace_presence.join(&workspace, &self.workspace_participant) {
+                    Ok(true) => self.engine.notify_query_changed(),
+                    Ok(false) => {},
+                    Err(error) => return vec![action_error(id, error)],
+                }
+                if let Some((old, _)) = self.workspace_subscriptions.get(&id) && old != &workspace && !self.workspace_subscriptions.iter().any(|(other_id,(other,_))| other_id != &id && other == old) && self.engine.workspace_presence.leave(Some(old), &self.workspace_participant) { self.engine.notify_query_changed(); }
+                snapshot["participants"] = serde_json::json!(self.engine.workspace_presence.participants(&workspace));
+                self.workspace_subscriptions.insert(id.clone(), (workspace, client));
+                vec![ServerMessage::Workspace { id, workspace: snapshot }]
+            }
+            Err(error) => {
+                if let Some((workspace, _)) = self.workspace_subscriptions.remove(&id) && !self.workspace_subscriptions.values().any(|(other, _)| other == &workspace) && self.engine.workspace_presence.leave(Some(&workspace), &self.workspace_participant) { self.engine.notify_query_changed(); }
+                vec![ServerMessage::Error { id, message: error.to_string(), code: error.code().map(str::to_owned) }]
+            }
+        }
+    }
+
     async fn subscribe(&mut self, id: String, protein: Protein) -> Vec<ServerMessage> {
         if id.len() > 512
+            || self.workspace_subscriptions.contains_key(&id)
             || (self.subscriptions.len() >= 64 && !self.subscriptions.contains_key(&id))
         {
             return vec![session_denied("subscription limit")];
@@ -697,9 +761,14 @@ impl Session {
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.workspace_subscriptions.clear();
+            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
         }
         let mut out = Vec::new();
+        for (id, (workspace, client)) in self.workspace_subscriptions.clone() {
+            out.extend(self.subscribe_workspace(id, workspace, client).await);
+        }
         for (id, protein) in self.subscriptions.clone() {
             out.extend(self.subscribe(id, protein).await);
         }
@@ -960,6 +1029,7 @@ impl Session {
 
     pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
         }
         let mut out = Vec::new();

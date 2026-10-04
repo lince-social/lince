@@ -21,6 +21,7 @@ pub(in crate::custom_castle) fn show(world: &mut World, root: Entity, parent: En
     if world.get::<Library>(root).is_none() {
         world.entity_mut(root).insert(Library::default());
     }
+    super::packages::show(world, root, parent);
     let body = panel::column(world, parent);
     crate::edit_mode::label(world, body, "Organ components", 18.0);
     let source = crate::edit_mode::label(world, body, "", 14.0);
@@ -75,7 +76,7 @@ pub(in crate::custom_castle) fn show(world: &mut World, root: Entity, parent: En
     let entries = panel::column(world, body);
     let controls = panel::row(world, body);
     for (caption, command) in [
-        ("Add to canvas", Command::Add),
+        ("Add independent local copy", Command::Add),
         ("Rename", Command::Rename(name)),
         ("Replace with selection", Command::Replace(name)),
         ("Delete component", Command::Delete),

@@ -30,7 +30,9 @@ enum Mutation {
     RenameRole,
     DeleteRole,
     Permission,
+    Policy,
     Assign,
+    Preview,
 }
 
 #[derive(Component)]
@@ -213,9 +215,13 @@ fn receive_message(world: &mut World, message: ServerMessage) {
     };
     match message {
         ServerMessage::ActionOk {
-            created, warnings, ..
+            created, warnings, data, ..
         } => {
             world.get_mut::<AccessControlSand>(owner).unwrap().pending = None;
+            if matches!(kind, Mutation::Preview) {
+                status(world, owner, &data.and_then(|data| serde_json::to_string_pretty(&data).ok()).unwrap_or_else(|| "Authority preview unavailable".into()));
+                return;
+            }
             if matches!(kind, Mutation::CreateUser) {
                 if let Some(mut form) = world.get_mut::<ui::UserForm>(owner) {
                     form.uid = created.clone();
@@ -227,7 +233,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                 let mut view = world.get_mut::<AccessControlSand>(owner).unwrap();
                 view.selected = created;
                 view.reload_editor = true;
-            } else if matches!(kind, Mutation::RenameRole) {
+            } else if matches!(kind, Mutation::RenameRole | Mutation::Policy | Mutation::Assign) {
                 world
                     .get_mut::<AccessControlSand>(owner)
                     .unwrap()
@@ -299,6 +305,7 @@ fn maintain(world: &mut World) {
         }
     }
     for owner in owners {
+        ui::policy_controls(world, owner);
         if world.resource::<Catalog>().ready {
             let label = world.get::<AccessControlSand>(owner).unwrap().status;
             if world

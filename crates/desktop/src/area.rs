@@ -148,6 +148,8 @@ pub struct InfluenceArea {
     pub id: String,
     pub name: String,
     pub enabled: bool,
+    #[serde(default)]
+    pub paused: bool,
     pub include_right_edge: bool,
     pub attraction_enabled: bool,
     pub changes_enabled: bool,
@@ -189,6 +191,7 @@ impl InfluenceArea {
             id: bytes.iter().map(|byte| format!("{byte:02x}")).collect(),
             name: "Area of influence".into(),
             enabled: true,
+            paused: false,
             include_right_edge: true,
             attraction_enabled: true,
             changes_enabled: true,
@@ -296,6 +299,7 @@ impl InfluenceArea {
 
     pub(crate) fn force_for_match(&self, point: DVec2, matches: bool) -> DVec2 {
         if !self.enabled
+            || self.paused
             || !self.attraction_enabled
             || self.strength == 0.0
             || !self.reaches(point)
@@ -601,9 +605,24 @@ impl Plugin for AreasPlugin {
         .add_systems(
             PostUpdate,
             forces
+                .after(crate::influence_report::track)
                 .after(sync_geometry)
+                .after(crate::area_mutation::ApplyAreaChanges)
                 .in_set(ComputeAreaForces)
                 .after(crate::actions::ApplyActions),
+        )
+        .add_systems(
+            PostUpdate,
+            crate::influence_report::track
+                .before(ComputeAreaForces)
+                .after(crate::actions::ApplyActions),
+        )
+        .add_systems(
+            PostUpdate,
+            crate::influence_report::ui::update
+                .after(ComputeAreaForces)
+                .after(crate::area_mutation::ApplyAreaChanges)
+                .before(bevy::ui::UiSystems::Layout),
         )
         .add_systems(
             PostUpdate,
@@ -793,6 +812,9 @@ pub(crate) mod tests {
             area.force(DVec2::new(50.0, 0.0), &record),
             DVec2::new(-50.0, 0.0)
         );
+        area.paused = true;
+        assert_eq!(area.force(DVec2::new(50.0, 0.0), &record), DVec2::ZERO);
+        area.paused = false;
         assert_eq!(
             area.force(DVec2::new(100.0, 0.0), &record),
             DVec2::new(-100.0, 0.0)

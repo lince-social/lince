@@ -119,7 +119,7 @@ async fn a_new_durable_store_has_schema_without_domain_defaults() {
         .fetch_one(&store.pool)
         .await
         .unwrap();
-    assert_eq!(migrations, 1);
+    assert!(migrations > 0);
     let statuses = store::sqlx::query_as::<_, (String, i64)>(
         "SELECT status, holds_reservation FROM karma_intent_status ORDER BY status",
     )

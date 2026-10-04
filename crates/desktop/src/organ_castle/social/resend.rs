@@ -19,6 +19,26 @@ pub(super) fn view(
     label(
         world,
         parent,
+        &delivery_label(
+            value["delivery"]["stage"].as_str().unwrap_or("Unknown"),
+            &value["destinations"],
+        ),
+    );
+    for host in value["destinations"].as_array().into_iter().flatten() {
+        if let Some(error) = host["error"].as_str() {
+            label(
+                world,
+                parent,
+                &format!(
+                    "Mailbox {}: {error}",
+                    host["service"].as_str().unwrap_or_default()
+                ),
+            );
+        }
+    }
+    label(
+        world,
+        parent,
         value["metadata"]["content"]["kind"]["text"]
             .as_str()
             .unwrap_or_default(),
@@ -27,10 +47,9 @@ pub(super) fn view(
         world,
         parent,
         &format!(
-            "Original creation: {} · current deadline: {} · stage: {}",
+            "Original creation: {} · current delivery deadline: {}",
             timestamp(&value["metadata"]["content"]["issued_at"]),
-            timestamp(&value["delivery"]["expires_at"]),
-            value["delivery"]["stage"].as_str().unwrap_or("Unknown")
+            timestamp(&value["delivery"]["expires_at"])
         ),
     );
     if let Some(error) = value["delivery"]["error"].as_str() {

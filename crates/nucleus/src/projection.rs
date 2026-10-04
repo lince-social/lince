@@ -5,6 +5,7 @@ use crate::simulation::{Cause, Quantity};
 
 pub const BUILD: &str = env!("LINCE_EXECUTION_BUILD_HASH");
 pub const MAX_SPANS: usize = 50_000;
+pub const MAX_CACHE_BYTES: usize = 16 * 1024 * 1024;
 pub const MAX_STEPS: u64 = 100_000;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -92,6 +93,20 @@ pub struct Span {
     pub until_ms: i64,
     pub quantity: Quantity,
     pub cause: Cause,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Scheduled {
+    pub id: String,
+    pub record: TypedUid,
+    pub time: crate::schedule::TimeRange,
+    pub quantity: Quantity,
+    pub cause: Cause,
+    pub head: String,
+    pub slug: Option<String>,
+    pub record_kind: String,
+    pub preview: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -108,6 +108,7 @@ impl Engine {
                 thread,
                 ..
             } => vec![conversation, thread],
+            Action::RecordExtensions { target, .. } => target.iter().collect(),
             Action::SetRecordStockLimit { record: target, .. }
             | Action::SetQuantity { target, .. }
             | Action::AddQuantityExact { target, .. }
@@ -130,6 +131,7 @@ impl Engine {
             | Action::DeleteMessageDraft { draft: target }
             | Action::SendMessageDraft { draft: target }
             | Action::DeleteRecord { target }
+            | Action::PreviewRecordMove { record: target, .. }
             | Action::MoveRecordTo { record: target, .. }
             | Action::CancelRecordMove { record: target } => vec![target],
             Action::PreviewAreaTransition {
@@ -160,8 +162,12 @@ impl Engine {
                 targets
             }
             Action::TransitionRecord { subject, .. }
-            | Action::SetIdentity { subject, .. }
-            | Action::RetractRecord { subject, .. } => vec![subject],
+            | Action::SetIdentity { subject, .. } => vec![subject],
+            Action::RetractRecord { subject, object, .. } => {
+                let mut targets = vec![subject];
+                targets.extend(object.iter());
+                targets
+            }
             Action::AssertRecord {
                 subject, object, ..
             } => {
@@ -177,18 +183,24 @@ impl Engine {
         };
         let mut out = Vec::new();
         for name in named {
-            if let Ok(uid) = self.resolve(name).await {
-                out.push(uid);
-            }
+            out.push(self.resolve(name).await?);
         }
         if let Action::PresentComponent { component, .. } = action {
             for record in component.records() {
-                if let Ok(uid) = self.resolve(record).await {
-                    out.push(uid);
-                }
+                out.push(self.resolve(record).await?);
             }
         }
         match action {
+            Action::SetRecurrencePaused { recurrence, .. }
+            | Action::ApplyRecurrenceOccurrence { recurrence, .. }
+            | Action::SkipRecurrenceOccurrence { recurrence, .. }
+            | Action::UnskipRecurrenceOccurrence { recurrence, .. }
+            | Action::ReviseRecurrence { recurrence, .. }
+            | Action::DeleteRecurrence { recurrence } => {
+                if let Some(rule) = store::recurrence::get(&self.store.pool, recurrence).await? {
+                    out.push(crate::karma_transfer_effects::target(&rule).into());
+                }
+            }
             Action::RetractAssertion { assertion } => {
                 if let Some(assertion) = store::assertions::get(&self.store.pool, assertion).await?
                 {
@@ -260,7 +272,7 @@ impl Engine {
         for target in targets {
             if !self.may_read_record(Some(actor), target).await? {
                 return Err(EngineError::Forbidden(
-                    "a Record is outside what this login may see, so it may not be changed either".into()
+                    "Record unavailable for this login".into()
                 ));
             }
         }

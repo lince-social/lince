@@ -2,6 +2,9 @@ use super::*;
 use std::{sync::Arc, time::Duration};
 use store::sqlx::Connection;
 
+#[path = "qualification/resource_tiers.rs"]
+mod resource_tiers;
+
 pub(super) fn publication(index: u32, endpoint: &str) -> (Snippet, Signer) {
     let now = nucleus::execution::now().timestamp();
     let mut owner_bytes = [222; 32];

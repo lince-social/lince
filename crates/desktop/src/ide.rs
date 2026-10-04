@@ -82,8 +82,13 @@ struct Document {
 #[derive(Resource, Default)]
 struct Documents(BTreeMap<PathBuf, Document>, BTreeSet<PathBuf>);
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 struct EditorFont(Handle<Font>);
+
+pub(crate) fn preview_font(world: &mut World, preview: &mut World) {
+    world.init_resource::<EditorFont>();
+    preview.insert_resource(world.resource::<EditorFont>().clone());
+}
 
 impl FromWorld for EditorFont {
     fn from_world(world: &mut World) -> Self {

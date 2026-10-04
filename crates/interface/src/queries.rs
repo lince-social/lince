@@ -240,6 +240,8 @@ pub const SOURCES: &[&str] = &[
     "karma",
     "karma_rule",
     "timeline",
+    "calendar",
+    "schedule",
     "entry",
     "frequency",
     "recurrence",

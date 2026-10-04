@@ -34,7 +34,7 @@ fn catalog(world: &mut World) {
         json!({"kind":"role", "id":"1", "name":"reader", "revision":1, "permissions":["record:read"]}),
         json!({"kind":"role", "id":"2", "name":"writer", "revision":1, "permissions":["record:read","record:update"]}),
         json!({"kind":"permission_catalog", "keys":["record:read","record:update"]}),
-        json!({"kind":"user", "id":"person-1", "username":"alice", "name":"Alice", "role":"reader", "active":true}),
+        json!({"kind":"user", "id":"person-1", "username":"alice", "name":"Alice", "role":"reader", "roles":["reader"], "access_revision":0, "active":true}),
     ];
 }
 
@@ -52,7 +52,7 @@ fn notice(world: &World, sand: Entity) -> &str {
 }
 
 #[test]
-fn user_details_and_role_replacement_are_separate_and_passwords_are_not_saved() {
+fn user_details_and_role_sets_are_separate_and_passwords_are_not_saved() {
     let (mut app, _, sand) = fixture();
     catalog(app.world_mut());
     Command::Select("person-1".into()).apply(app.world_mut(), sand);
@@ -68,7 +68,7 @@ fn user_details_and_role_replacement_are_separate_and_passwords_are_not_saved() 
     );
     let (action, _) = mutation(app.world(), sand, &Command::Assign).unwrap();
     assert!(
-        matches!(action, engine::actions::Action::AssignRole { user, role } if user == "person-1" && role == "writer")
+        matches!(action, engine::actions::Action::AssignRoles { person, roles, expected_revision:0 } if person == "person-1" && roles == vec!["reader".to_owned(),"writer".to_owned()])
     );
     assert!(crate::sand_text::snapshot(app.world(), sand).is_empty());
     assert_eq!(
@@ -310,7 +310,7 @@ async fn saved(app: &mut App, sand: Entity) {
 }
 
 #[tokio::test]
-async fn existing_backend_handles_user_lifecycle_role_replacement_and_permissions() {
+async fn existing_backend_handles_user_lifecycle_role_sets_and_permissions() {
     let (mut app, root, sand) = fixture();
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     let runtime = cell::CellRuntime {
@@ -319,7 +319,8 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(runtime))
@@ -395,7 +396,12 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
             .resource::<Catalog>()
             .rows
             .iter()
-            .any(|r| r["id"] == uid && r["name"] == "Alice updated" && r["role"] == "writer")
+            .any(|r| r["id"] == uid
+                && r["name"] == "Alice updated"
+                && r["roles"]
+                    .as_array()
+                    .is_some_and(|roles| roles.contains(&json!("reader"))
+                        && roles.contains(&json!("writer"))))
     );
     let writer = app
         .world()
@@ -421,13 +427,12 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
             .as_deref(),
         Some(writer.as_str())
     );
-    assert!(
-        app.world()
-            .resource::<Catalog>()
-            .rows
-            .iter()
-            .any(|row| row["id"] == uid && row["role"] == "contributors")
-    );
+    assert!(app.world().resource::<Catalog>().rows.iter().any(|row| {
+        row["id"] == uid
+            && row["roles"]
+                .as_array()
+                .is_some_and(|roles| roles.contains(&json!("contributors")))
+    }));
     Command::DeleteRole.apply(app.world_mut(), sand);
     Command::ConfirmDeleteRole.apply(app.world_mut(), sand);
     until(&mut app, |world| {
@@ -441,7 +446,7 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
     assert!(notice(app.world(), sand).contains("still assigned"));
     Command::Tab(Tab::Users).apply(app.world_mut(), sand);
     Command::Select(uid.clone()).apply(app.world_mut(), sand);
-    Command::ChooseRole("reader".into()).apply(app.world_mut(), sand);
+    Command::ChooseRole("contributors".into()).apply(app.world_mut(), sand);
     Command::Assign.apply(app.world_mut(), sand);
     saved(&mut app, sand).await;
     Command::Tab(Tab::Roles).apply(app.world_mut(), sand);
@@ -513,6 +518,18 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
         )
         .await
         .unwrap();
+    for key in store::person_roles::RECOVERY_PERMISSIONS {
+        engine
+            .act(
+                engine::actions::Action::GrantPermission {
+                    role: "admin".into(),
+                    permission: (*key).into(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
     let admin = engine
         .act(
             engine::actions::Action::CreateUser {
@@ -675,4 +692,41 @@ fn password_copy_and_cut_are_blocked_and_disconnect_clears_the_field() {
     );
     assert!(value(app.world(), password).unwrap().is_empty());
     assert!(!app.world().resource::<Catalog>().ready);
+}
+
+#[test]
+fn policy_controls_build_grants_and_assertion_rules_without_saving_them() {
+    let (mut app, _, sand) = fixture();
+    catalog(app.world_mut());
+    Command::Tab(Tab::Roles).apply(app.world_mut(), sand);
+    Command::Select("2".into()).apply(app.world_mut(), sand);
+    let field = app.world().get::<PolicyForm>(sand).unwrap().raw;
+    Command::AddGrant(protein::authority::Operation::Update).apply(app.world_mut(), sand);
+    Command::Property(0, protein::authority::Property::Body).apply(app.world_mut(), sand);
+    let predicate = input(app.world_mut(), sand, "Concept", &nucleus::new_uid("c"), 64);
+    let target = input(app.world_mut(), sand, "Target", "", 64);
+    Command::Assertion(0, false, predicate, target).apply(app.world_mut(), sand);
+    Command::AssertionProperty(0, false, 0, protein::authority::AssertionProperty::Quantity)
+        .apply(app.world_mut(), sand);
+    let policy: protein::authority::RolePolicy =
+        serde_json::from_str(&value(app.world(), field).unwrap()).unwrap();
+    assert_eq!(policy.grants.len(), 1);
+    assert!(
+        !policy.grants[0]
+            .properties
+            .contains(&protein::authority::Property::Body)
+    );
+    assert_eq!(policy.grants[0].assertions_add.len(), 1);
+    assert!(
+        policy.grants[0].assertions_add[0]
+            .properties
+            .contains(&protein::authority::AssertionProperty::Quantity)
+    );
+    assert!(
+        app.world()
+            .get::<AccessControlSand>(sand)
+            .unwrap()
+            .pending
+            .is_none()
+    );
 }

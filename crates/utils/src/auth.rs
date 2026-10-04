@@ -21,6 +21,11 @@ impl PermissionKey {
 }
 
 pub const ALL_PERMISSIONS: &[PermissionKey] = &[
+    PermissionKey::new("workspace", "create"),
+    PermissionKey::new("workspace", "read"),
+    PermissionKey::new("workspace", "update"),
+    PermissionKey::new("workspace", "delete"),
+    PermissionKey::new("workspace", "access_control"),
     PermissionKey::new("record", "create"),
     PermissionKey::new("record", "read"),
     PermissionKey::new("record", "update"),

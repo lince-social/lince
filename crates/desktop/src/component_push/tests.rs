@@ -21,6 +21,7 @@ fn generated_compositions_are_isolated_saved_and_reopened_as_independent_balloon
         origin: None,
         parts: vec![
             nucleus::component::Part {
+                settings: Default::default(),
                 id: "note".into(),
                 events: Vec::new(),
                 position: [0, 0],
@@ -30,6 +31,7 @@ fn generated_compositions_are_isolated_saved_and_reopened_as_independent_balloon
                 },
             },
             nucleus::component::Part {
+                settings: Default::default(),
                 id: "area".into(),
                 events: Vec::new(),
                 position: [200, 0],
@@ -207,6 +209,60 @@ fn generated_compositions_are_isolated_saved_and_reopened_as_independent_balloon
     );
 }
 
+#[test]
+fn nested_text_settings_are_validated_saved_and_restored() {
+    let (mut app, root) = setup();
+    let inner = nucleus::component::Composition {
+        name: "Note".into(),
+        origin: None,
+        parts: vec![nucleus::component::Part {
+            id: "text".into(),
+            position: [0, 0],
+            size: [480, 320],
+            events: Vec::new(),
+            settings: std::collections::BTreeMap::from([
+                ("wrap".into(), serde_json::json!(false)),
+                ("overflow".into(), serde_json::json!("Grow")),
+            ]),
+            component: ComponentState::Text {
+                text: "Nested note".into(),
+            },
+        }],
+    };
+    let mut outer = nucleus::component::Composition {
+        name: "Castle".into(),
+        origin: None,
+        parts: vec![nucleus::component::Part {
+            id: "nested".into(),
+            position: [0, 0],
+            size: [640, 480],
+            events: Vec::new(),
+            settings: Default::default(),
+            component: ComponentState::Composition { composition: inner },
+        }],
+    };
+    let entity = composition::spawn(app.world_mut(), root, 1, DVec2::ZERO, outer.clone()).unwrap();
+    app.world_mut().flush();
+    let captured = composition::capture(app.world(), entity).unwrap();
+    let ComponentState::Composition { composition: inner } = &captured.parts[0].component else {
+        panic!("nested")
+    };
+    assert_eq!(inner.parts[0].settings["wrap"], false);
+    assert_eq!(inner.parts[0].settings["overflow"], "Grow");
+    let entity = composition::spawn(app.world_mut(), root, 1, DVec2::ZERO, captured).unwrap();
+    app.world_mut().flush();
+    assert!(composition::capture(app.world(), entity).is_some());
+    let ComponentState::Composition { composition: inner } = &mut outer.parts[0].component else {
+        panic!("nested")
+    };
+    inner.parts[0]
+        .settings
+        .insert("wrap".into(), serde_json::json!(1));
+    let count = app.world().entities().len();
+    assert!(composition::spawn(app.world_mut(), root, 1, DVec2::ZERO, outer).is_err());
+    assert_eq!(app.world().entities().len(), count);
+}
+
 fn request(component: ComponentState) -> Presentation {
     Presentation {
         slot: "reminder:record".into(),
@@ -256,6 +312,7 @@ async fn generated_buttons_apply_actions_save_and_close_through_the_native_bridg
         name: "Interaction".into(),
         origin: None,
         parts: vec![nucleus::component::Part {
+            settings: Default::default(),
             id: "apply".into(),
             position: [0, 0],
             size: [300, 100],

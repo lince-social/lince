@@ -18,6 +18,102 @@ pub struct PhysicsSettings {
 #[serde(default, deny_unknown_fields)]
 pub struct WorkspaceConfig {
     pub physics: PhysicsSettings,
+    pub rules: RuleSettings,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct RuleSettings {
+    pub paused: bool,
+    pub max_pending: u16,
+    pub max_repeats: u16,
+}
+
+impl Default for RuleSettings {
+    fn default() -> Self {
+        Self {
+            paused: false,
+            max_pending: 64,
+            max_repeats: 4,
+        }
+    }
+}
+
+impl RuleSettings {
+    pub fn valid(self) -> bool {
+        (1..=64).contains(&self.max_pending) && (2..=16).contains(&self.max_repeats)
+    }
+}
+
+pub fn rules(world: &World, root: Entity, workspace: u64) -> RuleSettings {
+    world
+        .get::<WorkspaceSettings>(root)
+        .and_then(|settings| settings.0.get(&workspace))
+        .map_or_else(RuleSettings::default, |setting| {
+            let mut rules = setting.config.rules;
+            if setting.error.is_some() || !rules.valid() {
+                rules.paused = true;
+            }
+            rules
+        })
+}
+
+pub fn rules_enabled(world: &World, root: Entity, workspace: u64) -> bool {
+    !crate::laboratory::suspended(world, root) && !rules(world, root, workspace).paused
+}
+
+pub fn set_rules(world: &mut World, root: Entity, workspace: u64, rules: RuleSettings) -> bool {
+    if !rules.valid()
+        || !world
+            .get::<Workspaces>(root)
+            .is_some_and(|spaces| spaces.entries.iter().any(|entry| entry.id == workspace))
+    {
+        return false;
+    }
+    let current = world
+        .get::<WorkspaceSettings>(root)
+        .and_then(|settings| settings.0.get(&workspace))
+        .map(|s| s.config)
+        .unwrap_or_default();
+    let result = if let Some(path) = path(world, workspace).filter(|_| {
+        world
+            .get::<crate::laboratory::LaboratoryRoot>(root)
+            .is_none()
+    }) {
+        load(&path).and_then(|mut config| {
+            config.rules = rules;
+            save(&path, config)?;
+            Ok(config)
+        })
+    } else {
+        Ok(WorkspaceConfig { rules, ..current })
+    };
+    world
+        .entity_mut(root)
+        .entry::<WorkspaceSettings>()
+        .or_default();
+    let succeeded = result.is_ok();
+    let setting = match result {
+        Ok(config) => WorkspaceSetting {
+            config,
+            error: None,
+        },
+        Err(error) => WorkspaceSetting {
+            config: current,
+            error: Some(format!(
+                "Rules paused. Could not save workspace settings: {error}"
+            )),
+        },
+    };
+    world
+        .get_mut::<WorkspaceSettings>(root)
+        .unwrap()
+        .0
+        .insert(workspace, setting);
+    if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
+        wake.ring();
+    }
+    succeeded
 }
 
 #[derive(Clone, Debug, Default)]
@@ -30,6 +126,10 @@ pub struct WorkspaceSetting {
 pub struct WorkspaceSettings(pub BTreeMap<u64, WorkspaceSetting>);
 
 pub fn enabled(world: &World, root: Entity, workspace: u64) -> bool {
+    physics_configured(world, root, workspace) && rules_enabled(world, root, workspace)
+}
+
+pub fn physics_configured(world: &World, root: Entity, workspace: u64) -> bool {
     if crate::laboratory::suspended(world, root) {
         return false;
     }
@@ -98,7 +198,7 @@ pub fn reload(world: &mut World, root: Entity, workspace: u64) {
         Err(error) => WorkspaceSetting {
             config: WorkspaceConfig::default(),
             error: Some(format!(
-                "Physics is off. Could not read {}: {error}",
+                "Physics is off and rules are paused. Could not read {}: {error}",
                 path.display()
             )),
         },
@@ -130,6 +230,11 @@ pub fn set_physics(world: &mut World, root: Entity, workspace: u64, enabled: boo
     } else {
         Ok(WorkspaceConfig {
             physics: PhysicsSettings { enabled },
+            ..world
+                .get::<WorkspaceSettings>(root)
+                .and_then(|settings| settings.0.get(&workspace))
+                .map(|setting| setting.config)
+                .unwrap_or_default()
         })
     };
     if world.get::<WorkspaceSettings>(root).is_none() {
@@ -144,7 +249,7 @@ pub fn set_physics(world: &mut World, root: Entity, workspace: u64, enabled: boo
         Err(error) => WorkspaceSetting {
             config: WorkspaceConfig::default(),
             error: Some(format!(
-                "Physics is off. Could not save workspace settings: {error}"
+                "Physics is off and rules are paused. Could not save workspace settings: {error}"
             )),
         },
     };
@@ -214,7 +319,11 @@ fn load(path: &Path) -> io::Result<WorkspaceConfig> {
     if source.len() > 8192 {
         return Err(io::Error::other("workspace settings exceed 8 KiB"));
     }
-    toml::from_str(&source).map_err(io::Error::other)
+    let config: WorkspaceConfig = toml::from_str(&source).map_err(io::Error::other)?;
+    if !config.rules.valid() {
+        return Err(io::Error::other("invalid rule processing limits"));
+    }
+    Ok(config)
 }
 
 fn save(path: &Path, config: WorkspaceConfig) -> io::Result<()> {
@@ -265,7 +374,7 @@ pub(crate) fn next_id(world: &World, root: Entity, mut id: u64) -> Option<u64> {
 
 pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
     let active = world.get::<Workspaces>(root).unwrap().active;
-    let enabled = enabled(world, root, active);
+    let enabled = physics_configured(world, root, active);
     crate::edit_mode::label(world, panel, "Physics", 14.0);
     let row = crate::area_panel::row(world, panel);
     let toggle = crate::edit_mode::control(
@@ -303,6 +412,58 @@ pub(crate) mod tests {
     use super::*;
 
     #[cfg_attr(test, test)]
+    fn rule_pauses_and_limits_persist_and_invalid_limits_leave_settings_unchanged() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut world = World::new();
+        crate::laboratory::isolate(&mut world);
+        world.insert_resource(WorkspaceFile::new(directory.path().join("interface.json")));
+        let root = world.spawn(Workspaces::default()).id();
+        initialize(&mut world, root);
+        assert!(set_physics(&mut world, root, 1, true));
+        let expected = RuleSettings {
+            paused: true,
+            max_pending: 8,
+            max_repeats: 2,
+        };
+        assert!(set_rules(&mut world, root, 1, expected));
+        assert!(!enabled(&world, root, 1));
+        reload(&mut world, root, 1);
+        assert_eq!(rules(&world, root, 1), expected);
+        assert!(
+            world.get::<WorkspaceSettings>(root).unwrap().0[&1]
+                .config
+                .physics
+                .enabled
+        );
+        assert!(!set_rules(
+            &mut world,
+            root,
+            1,
+            RuleSettings {
+                max_pending: 65,
+                ..expected
+            }
+        ));
+        assert!(!set_rules(&mut world, root, 2, expected));
+        assert_eq!(rules(&world, root, 1), expected);
+        assert!(physics_configured(&world, root, 1));
+        assert!(set_physics(&mut world, root, 1, false));
+        assert_eq!(rules(&world, root, 1), expected);
+        assert!(!physics_configured(&world, root, 1));
+        assert!(set_physics(&mut world, root, 1, true));
+        assert!(set_rules(
+            &mut world,
+            root,
+            1,
+            RuleSettings {
+                paused: false,
+                ..expected
+            }
+        ));
+        assert!(enabled(&world, root, 1));
+    }
+
+    #[cfg_attr(test, test)]
     fn each_workspace_has_a_private_toml_and_restores_its_own_physics_choice() {
         let directory = tempfile::tempdir().unwrap();
         let first = directory.path().join("workspaces/1/workspace.toml");
@@ -313,6 +474,7 @@ pub(crate) mod tests {
             &first,
             WorkspaceConfig {
                 physics: PhysicsSettings { enabled: true },
+                ..Default::default()
             },
         )
         .unwrap();
@@ -320,7 +482,7 @@ pub(crate) mod tests {
         assert!(!load(&second).unwrap().physics.enabled);
         assert_eq!(
             fs::read_to_string(&first).unwrap(),
-            "[physics]\nenabled = true\n"
+            "[physics]\nenabled = true\n\n[rules]\npaused = false\nmax_pending = 64\nmax_repeats = 4\n"
         );
         #[cfg(unix)]
         {
@@ -407,6 +569,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        rule_pauses_and_limits_persist_and_invalid_limits_leave_settings_unchanged,
         each_workspace_has_a_private_toml_and_restores_its_own_physics_choice,
         malformed_unknown_and_oversized_settings_are_rejected_and_kept,
         reload_applies_manual_changes_and_failed_toggle_turns_physics_off,

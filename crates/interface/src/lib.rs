@@ -2,6 +2,10 @@ pub mod credits;
 #[cfg(feature = "images")]
 pub mod images;
 pub mod blob_sync;
+pub mod settings;
+
+#[cfg(feature = "models")]
+pub mod presentation;
 
 #[cfg(feature = "ui")]
 pub mod controls;
@@ -16,6 +20,8 @@ pub mod wake;
 
 #[cfg(feature = "models")]
 pub mod calendar;
+#[cfg(feature = "models")]
+pub mod time_castle;
 #[cfg(feature = "models")]
 pub mod frequency;
 #[cfg(feature = "models")]

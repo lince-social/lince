@@ -87,12 +87,16 @@ struct View {
 
 pub struct DocumentViewerPlugin;
 
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct RenderDocuments;
+
 impl Plugin for DocumentViewerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<worker::Worker>()
             .add_systems(
                 PostUpdate,
                 runtime::update
+                    .in_set(RenderDocuments)
                     .after(crate::actions::ApplyActions)
                     .before(bevy::ui::UiSystems::Layout),
             )
@@ -231,5 +235,20 @@ fn status(world: &mut World, owner: Entity, message: &str) {
         if text.0 != message {
             text.0 = message.into();
         }
+    }
+}
+
+pub(crate) fn preview_status(world: &World, owner: Entity) -> Option<Result<(), String>> {
+    let view = world.get::<View>(owner)?;
+    if view.failed {
+        Some(Err(world
+            .get::<Text>(view.status)
+            .map_or("Cannot read this document.".into(), |text| {
+                text.0.clone()
+            })))
+    } else if !view.tiles.is_empty() {
+        Some(Ok(()))
+    } else {
+        None
     }
 }

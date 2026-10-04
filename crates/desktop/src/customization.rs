@@ -29,6 +29,7 @@ pub struct GlobalCustomizationPanelToggle {
 pub enum CustomizationAction {
     Scope(Scope),
     Scheme(ColorScheme),
+    ScopedScheme(Option<ColorScheme>),
     ClearOverrides,
     Reset(Token),
     ResetPattern,
@@ -48,6 +49,22 @@ impl Action for CustomizationAction {
             }
             Self::Scheme(scheme) => {
                 world.resource_mut::<ThemeSettings>().scheme = scheme;
+            }
+            Self::ScopedScheme(scheme) => {
+                let kind = match scope {
+                    Scope::Sand(entity) => token_style::inherited_kind(world, entity),
+                    Scope::Kind(kind) => Some(kind),
+                    _ => return,
+                };
+                let preset = scheme.map(|scheme| ThemeSettings { scheme, ..default() });
+                for definition in TOKENS {
+                    let token = definition.token;
+                    if token.is_canvas() || matches!(token, Token::Width | Token::Height) {
+                        continue;
+                    }
+                    let value = preset.as_ref().map(|preset| preset.resolve(token, kind, &TokenOverrides::default()).0);
+                    edit(world, scope, token, value);
+                }
             }
             Self::ClearOverrides => {
                 let scheme = world.resource::<ThemeSettings>().scheme;
@@ -234,7 +251,11 @@ fn edit(world: &mut World, scope: Scope, token: Token, value: Option<TokenValue>
             .cloned()
             .unwrap_or_default(),
         Scope::Sand(entity) => {
-            if token_style::kind(world, entity).is_none() {
+            if token_style::kind(world, entity).is_none()
+                && world
+                    .get::<crate::sand_settings::Declaration>(entity)
+                    .is_none()
+            {
                 return;
             }
             token_style::overrides(world, entity)
@@ -414,6 +435,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     let mut scope = world.get::<Scope>(root).copied().unwrap_or_default();
     if let Scope::Sand(entity) = scope
         && token_style::kind(world, entity).is_none()
+        && world
+            .get::<crate::sand_settings::Declaration>(entity)
+            .is_none()
     {
         scope = Scope::All;
         world.entity_mut(root).insert(scope);
@@ -496,6 +520,36 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             ));
         }
     }
+    let mut pending = vec![root];
+    while let Some(entity) = pending.pop() {
+        if entity != root
+            && (world
+                .get::<crate::inspection::InspectionExcluded>(entity)
+                .is_some()
+                || world
+                    .get::<WorkspaceMember>(entity)
+                    .is_some_and(|member| member.0 != active))
+        {
+            continue;
+        }
+        if let Some(declaration) = world.get::<crate::sand_settings::Declaration>(entity)
+            && !sands.contains(&entity)
+        {
+            if world.get::<crate::canvas::CanvasItem>(entity).is_none() {
+                if let Some(children) = world.get::<Children>(entity) {
+                    pending.extend(children.iter().rev());
+                }
+                continue;
+            }
+            choices.push((
+                format!("{} ({})", declaration.name, entity.index()),
+                crate::actions![CustomizationAction::Scope(Scope::Sand(entity))],
+            ));
+        }
+        if let Some(children) = world.get::<Children>(entity) {
+            pending.extend(children.iter().rev());
+        }
+    }
     let scope_name = match scope {
         Scope::Workspace(..) => "Workspace".into(),
         Scope::All => "All Sands".to_string(),
@@ -508,11 +562,52 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
                     index + 1
                 )
             } else {
-                "Selected text area".into()
+                world
+                    .get::<crate::sand_settings::Declaration>(entity)
+                    .map(|declaration| declaration.name.clone())
+                    .unwrap_or_else(|| "Selected Sand".into())
             }
         }
     };
     crate::dropdown::spawn(world, panel, root, "Overrides", &scope_name, choices);
+    if matches!(scope, Scope::Sand(_) | Scope::Kind(_)) {
+        let mut choices = vec![("Inherit global theme".into(), crate::actions![CustomizationAction::ScopedScheme(None)])];
+        choices.extend(ColorScheme::ALL.into_iter().map(|scheme| (
+            scheme.name().into(), crate::actions![CustomizationAction::ScopedScheme(Some(scheme))]
+        )));
+        crate::dropdown::spawn(world, panel, root, "Theme for this selection", "Inherit or apply a preset", choices);
+    }
+    if let Scope::Sand(entity) = scope {
+        let mut descendants = vec![entity];
+        let mut parts = Vec::new();
+        while let Some(part) = descendants.pop() {
+            if part != entity
+                && let Some(declaration) = world.get::<crate::sand_settings::Declaration>(part)
+            {
+                parts.push((
+                    format!("{} ({})", declaration.name, parts.len() + 1),
+                    crate::actions![CustomizationAction::Scope(Scope::Sand(part))],
+                ));
+            }
+            if let Some(children) = world.get::<Children>(part) {
+                descendants.extend(children.iter().rev());
+            }
+        }
+        if !parts.is_empty() {
+            crate::dropdown::spawn(
+                world,
+                panel,
+                root,
+                "Parts inside this Sand or Castle",
+                "Choose a part",
+                parts,
+            );
+        }
+        crate::sand_settings::render(world, root, panel, entity);
+    }
+    if crate::protein_area::presentation::panel(world, root, panel) {
+        return;
+    }
     if scope == Scope::All {
         pattern_control(world, root, panel);
     }
@@ -526,21 +621,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         {
             continue;
         }
-        if matches!(scope, Scope::Kind(_) | Scope::Sand(_))
-            && !matches!(
-                token,
-                Token::SandBackground
-                    | Token::SandBorder
-                    | Token::SandInk
-                    | Token::Accent
-                    | Token::Width
-                    | Token::Height
-                    | Token::Roundness
-                    | Token::BorderWidth
-                    | Token::Spacing
-                    | Token::Padding
-                    | Token::FontSize
-            )
+        if matches!(scope, Scope::Kind(_) | Scope::Sand(_)) && token.is_canvas()
         {
             continue;
         }
@@ -783,6 +864,40 @@ pub(crate) mod tests {
         workspace::WorkspacePlugin,
     };
     use bevy::math::DVec2;
+
+    #[test]
+    fn scoped_clock_presets_preserve_global_theme_other_sands_and_explicit_dimensions() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>().add_plugins((ThemePlugin, WorkspacePlugin, EditModePlugin));
+        let root = app.world_mut().spawn(BoxRoot).id();
+        app.update();
+        let clock = spawn_sand(app.world_mut(), root, 1, SandKind::WorkTimer, "", DVec2::ZERO);
+        let other = spawn_sand(app.world_mut(), root, 1, SandKind::Square, "", DVec2::ZERO);
+        let mut overrides = TokenOverrides::default();
+        overrides.set(Token::Width, TokenValue::Number(451.0));
+        token_style::set_overrides(app.world_mut(), clock, overrides);
+        app.world_mut().trigger(GlobalCustomizationPanelToggle { entity: root });
+        app.update();
+        let global = app.world().resource::<ThemeSettings>().clone();
+        let other_before = token_style::resolve(app.world(), other, Token::SandBackground).0;
+        CustomizationAction::Scope(Scope::Sand(clock)).apply(app.world_mut(), root);
+        CustomizationAction::ScopedScheme(Some(ColorScheme::ComfyPink)).apply(app.world_mut(), root);
+        assert_eq!(app.world().resource::<ThemeSettings>(), &global);
+        assert_eq!(token_style::resolve(app.world(), other, Token::SandBackground).0, other_before);
+        assert_eq!(token_style::resolve(app.world(), clock, Token::SandBackground).0, Token::SandBackground.default_value(ColorScheme::ComfyPink));
+        assert_eq!(token_style::resolve(app.world(), clock, Token::Width).0, TokenValue::Number(451.0));
+        edit(app.world_mut(), Scope::Sand(clock), Token::ClockEvent, Some(TokenValue::Color([1, 2, 3, 255])));
+        assert_eq!(token_style::resolve(app.world(), clock, Token::ClockEvent).0, TokenValue::Color([1, 2, 3, 255]));
+        CustomizationAction::ScopedScheme(None).apply(app.world_mut(), root);
+        assert_eq!(token_style::resolve(app.world(), clock, Token::SandBackground).0, global.resolve(Token::SandBackground, Some(SandStyleKind::TimeCastle), &TokenOverrides::default()).0);
+        assert_eq!(token_style::overrides(app.world(), clock).0.len(), 1);
+        assert_eq!(token_style::resolve(app.world(), clock, Token::Width).0, TokenValue::Number(451.0));
+        CustomizationAction::Scope(Scope::Kind(SandStyleKind::TimeCastle)).apply(app.world_mut(), root);
+        CustomizationAction::ScopedScheme(Some(ColorScheme::Moss)).apply(app.world_mut(), root);
+        assert_eq!(token_style::resolve(app.world(), clock, Token::ClockEvent).0, Token::ClockEvent.default_value(ColorScheme::Moss));
+        assert_eq!(token_style::resolve(app.world(), other, Token::SandBackground).0, other_before);
+    }
 
     #[test]
     fn theme_choices_apply_colors_geometry_and_export_controls() {

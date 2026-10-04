@@ -11,66 +11,8 @@ impl Engine {
         Box::pin(async move {
             let mut outcome = ActionOutcome::default();
             match action {
-                Action::SetAssertionOrder {
-                    predicate,
-                    ordered,
-                    reverse,
-                } => {
-                    let kind_uid = store::concepts::resolve(&self.store.pool, &predicate)
-                        .await?
-                        .ok_or_else(|| EngineError::UnknownRecord(predicate.clone()))?;
-                    let mut resolved = Vec::new();
-                    for token in ordered {
-                        let uid = self.resolve(&token).await?;
-                        if !resolved.iter().any(|existing| existing == &uid) {
-                            resolved.push(uid);
-                        }
-                    }
-                    if resolved.len() < 2 {
-                        return Err(EngineError::Consequence(
-                            "set-assertion-order needs at least two records".into(),
-                        ));
-                    }
-                    store::assertions::retract_predicate_within_set(
-                        &self.store.pool,
-                        &kind_uid,
-                        &resolved,
-                        actor.as_deref(),
-                    )
-                    .await?;
-                    for pair in resolved.windows(2) {
-                        let (from, to) = if reverse {
-                            (&pair[1], &pair[0])
-                        } else {
-                            (&pair[0], &pair[1])
-                        };
-                        store::assertions::assert(
-                            &self.store.pool,
-                            store::assertions::NewAssertion {
-                                subject_uid: from,
-                                predicate_uid: &kind_uid,
-                                object_uid: Some(to),
-                                role: store::assertions::AssertionRole::Ordinary,
-                                quantity: None,
-                                unit_uid: None,
-                                asserted_by: actor.as_deref(),
-                            },
-                        )
-                        .await?;
-                    }
-                    outcome.facts = self
-                        .annotate_many(
-                            resolved.clone(),
-                            actor,
-                            serde_json::json!({
-                                "action": "set-assertion-order",
-                                "predicate": predicate,
-                                "ordered": resolved,
-                                "reverse": reverse,
-                            }),
-                            now,
-                        )
-                        .await?;
+                action @ Action::SetAssertionOrder { .. } => {
+                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
                 }
                 Action::CreateThread { target, head } => {
                     let _thread_guard = self.thread_creation_lock.lock().await;

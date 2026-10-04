@@ -407,6 +407,7 @@ fn record_castle_scrolls_and_moves_with_its_source_without_layout_drift() {
 
 #[test]
 fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
+    use bevy::ecs::system::RunSystemOnce;
     use bevy::text::EditableText;
     let (mut app, _, owner) = fixture();
     let config = Config {
@@ -441,6 +442,16 @@ fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
         .editor
         .set_text("first");
     rows::commit_edits(app.world_mut());
+    app.world_mut()
+        .run_system_once(rows::save_indicators)
+        .unwrap();
+    crate::save_feedback::borders(app.world_mut());
+    assert_eq!(
+        app.world().get::<BorderColor>(editor).unwrap().top,
+        crate::tokens::Token::Accent
+            .default_value(Default::default())
+            .color()
+    );
     assert_eq!(
         app.world().resource::<Runtime>().areas[&owner]
             .pending
@@ -468,6 +479,16 @@ fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
         2
     );
     rows::action_finished(app.world_mut(), editor, Some("Permission denied".into()));
+    app.world_mut()
+        .run_system_once(rows::save_indicators)
+        .unwrap();
+    crate::save_feedback::borders(app.world_mut());
+    assert_eq!(
+        app.world().get::<BorderColor>(editor).unwrap().top,
+        crate::tokens::Token::Error
+            .default_value(Default::default())
+            .color()
+    );
     for _ in 0..10 {
         rows::commit_edits(app.world_mut());
     }
@@ -491,6 +512,16 @@ fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
         .editor
         .set_text("third");
     rows::commit_edits(app.world_mut());
+    app.world_mut()
+        .run_system_once(rows::save_indicators)
+        .unwrap();
+    crate::save_feedback::borders(app.world_mut());
+    assert_eq!(
+        app.world().get::<BorderColor>(editor).unwrap().top,
+        crate::tokens::Token::Accent
+            .default_value(Default::default())
+            .color()
+    );
     assert_eq!(
         app.world().resource::<Runtime>().areas[&owner]
             .pending

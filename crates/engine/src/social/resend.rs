@@ -75,8 +75,11 @@ impl Engine {
             .is_some_and(|content| eligible(&participant, content, &metadata, &delivery, now))
             && !blocked
             && !terminal;
+        let destinations: Vec<(String, i64, i64, Option<String>)> = store::sqlx::query_as("SELECT d.service,SUM(d.state='stored'),SUM(d.state='pending'),MAX(d.error) FROM social_private_destination d JOIN social_private_outbox o ON o.id=d.envelope WHERE o.record_uid=? AND o.state IN ('pending','stored') GROUP BY d.service ORDER BY d.service LIMIT 8")
+            .bind(message).fetch_all(&self.store.pool).await?;
+        let destinations: Vec<Value> = destinations.into_iter().map(|(service, stored, pending, error)| json!({"service":service,"stored":stored,"pending":pending,"error":error})).collect();
         Ok(
-            json!({"private_delivery":{"message":message,"conversation":root,"metadata":metadata,"delivery":delivery,"can_resend":can_resend,"observed_at":now,"new_expires_at":now+30*86400},"can_edit":can_edit,"status":"An expired outgoing message can be deliberately resent only in an accepted, open conversation. Its Message, attachments and original creation time stay the same; new copies receive a new delivery deadline"}),
+            json!({"private_delivery":{"message":message,"conversation":root,"metadata":metadata,"delivery":delivery,"destinations":destinations,"can_resend":can_resend,"observed_at":now,"new_expires_at":now+30*86400},"can_edit":can_edit,"status":"An expired outgoing message can be deliberately resent only in an accepted, open conversation. Its Message, attachments and original creation time stay the same; new copies receive a new delivery deadline"}),
         )
     }
 

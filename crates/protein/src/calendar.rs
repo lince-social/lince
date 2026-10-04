@@ -47,6 +47,13 @@ pub(super) async fn execute(
         .filter
         .retain(|predicate| !matches!(predicate, Predicate::ProjectionWindow(_)));
     let mut rows = crate::execute_records(store, &manual_query, visible, actor).await?;
+    for row in &mut rows {
+        for property in ["start_date", "due_date"] {
+            if let Some(value) = row[property].as_str() {
+                row[property] = json!(nucleus::schedule::timezone_date(value, &context.window.timezone).map(|date| date.to_string()));
+            }
+        }
+    }
     let from = context
         .window
         .date(context.window.from_ms)
@@ -169,7 +176,7 @@ pub(super) async fn execute(
     Ok(rows)
 }
 
-fn split(
+pub(crate) fn split(
     predicate: &Predicate,
     filters: &mut Vec<Predicate>,
     quantities: &mut Vec<Predicate>,
@@ -201,7 +208,7 @@ fn split(
     }
 }
 
-fn matches_quantity(predicate: &Predicate, value: nucleus::DecimalValue) -> bool {
+pub(crate) fn matches_quantity(predicate: &Predicate, value: nucleus::DecimalValue) -> bool {
     let expected = match predicate {
         Predicate::QuantityLt(value)
         | Predicate::QuantityLte(value)

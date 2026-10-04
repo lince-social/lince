@@ -72,6 +72,10 @@ impl Settings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    Connections {
+        record: String,
+        request: crate::connection::Request,
+    },
     Activate {
         record: String,
         value: String,
@@ -214,6 +218,8 @@ pub enum Request {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Status {
+    #[serde(default)]
+    pub connections: crate::connection::Status,
     #[serde(default)]
     pub activations: Vec<serde_json::Value>,
     #[serde(default)]

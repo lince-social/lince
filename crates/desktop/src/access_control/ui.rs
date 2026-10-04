@@ -13,8 +13,11 @@ pub(super) struct UserForm {
     name: Entity,
     password: Entity,
     role: String,
+    roles: Vec<String>,
+    expected_revision: i64,
     role_label: Entity,
     chooser: Entity,
+    preview_record: Entity,
 }
 
 #[derive(Component)]
@@ -40,6 +43,65 @@ struct RoleEdit {
 #[derive(Component)]
 struct PasswordMask(Entity);
 
+#[derive(Component)]
+struct PolicyForm {
+    role: String,
+    revision: i64,
+    raw: Entity,
+    controls: Entity,
+    signature: String,
+}
+
+#[derive(Clone)]
+struct AcceptSelector {
+    target: Entity,
+    grant: Option<usize>,
+}
+
+impl Action for AcceptSelector {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(castle) = world.get::<crate::protein_castle::ProteinCastle>(owner) else {
+            return;
+        };
+        let Ok(query) = castle.draft.compile() else {
+            return;
+        };
+        if query.source != protein::Source::Record {
+            return;
+        }
+        let Some(form) = world.get::<PolicyForm>(self.target) else {
+            return;
+        };
+        let field = form.raw;
+        let Ok(text) = value(world, field) else {
+            return;
+        };
+        let Ok(mut policy) = serde_json::from_str::<protein::authority::RolePolicy>(&text) else {
+            return;
+        };
+        let selector = protein::Predicate::All(query.filter);
+        if let Some(index) = self.grant {
+            let Some(grant) = policy.grants.get_mut(index) else {
+                return;
+            };
+            grant.selector = selector;
+        } else {
+            policy.read = selector;
+        }
+        if let Ok(raw) = serde_json::to_string_pretty(&policy) {
+            let mut text = crate::sand::editable(&raw);
+            text.visible_lines = Some(8.0);
+            text.max_characters = Some(65536);
+            *world.get_mut::<EditableText>(field).unwrap() = text;
+            status(
+                world,
+                self.target,
+                "Selector updated. Save the policy to apply it.",
+            );
+        }
+    }
+}
+
 #[derive(Clone)]
 enum Command {
     Tab(Tab),
@@ -49,6 +111,7 @@ enum Command {
     Page(bool),
     ChooseRole(String),
     SaveUser,
+    Preview,
     Assign,
     Delete,
     ConfirmDelete,
@@ -60,6 +123,14 @@ enum Command {
     ConfirmDeleteRole,
     CancelDeleteRole,
     Permission(String, bool),
+    SavePolicy,
+    Selector(Option<usize>),
+    AddGrant(protein::authority::Operation),
+    RemoveGrant(usize),
+    Property(usize, protein::authority::Property),
+    Assertion(usize, bool, Entity, Entity),
+    RemoveAssertion(usize, bool, usize),
+    AssertionProperty(usize, bool, usize, protein::authority::AssertionProperty),
 }
 
 impl Action for Command {
@@ -72,6 +143,15 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::AddGrant(_)
+            | Self::RemoveGrant(_)
+            | Self::Property(_, _)
+            | Self::Assertion(..)
+            | Self::RemoveAssertion(..)
+            | Self::AssertionProperty(..) => {
+                edit_grant(world, owner, self);
+            }
+            Self::Selector(grant) => open_selector(world, owner, *grant),
             Self::Refresh => {
                 world.resource_mut::<Catalog>().refresh = true;
                 world.resource_mut::<Catalog>().ready = false;
@@ -118,8 +198,21 @@ impl Action for Command {
                     return;
                 };
                 form.role = role.clone();
+                if let Some(index) = form.roles.iter().position(|selected| selected == role) {
+                    form.roles.remove(index);
+                } else {
+                    form.roles.push(role.clone());
+                }
+                if form.uid.is_none() {
+                    form.roles.retain(|selected| selected == role);
+                }
                 let caption = form.role_label;
-                world.get_mut::<Text>(caption).unwrap().0 = role.clone();
+                let names = form.roles.join(", ");
+                world.get_mut::<Text>(caption).unwrap().0 = if names.is_empty() {
+                    "No Roles".into()
+                } else {
+                    names
+                };
             }
             Self::Delete | Self::CancelDelete => {
                 let Some(form) = world.get::<StandingEditor>(owner) else {
@@ -180,6 +273,36 @@ fn mutation(
 ) -> Result<(engine::actions::Action, Mutation), String> {
     use engine::actions::Action as Backend;
     match command {
+        Command::Preview => {
+            let form = world
+                .get::<UserForm>(owner)
+                .ok_or("Select an Actor first.")?;
+            let person = form.uid.clone().ok_or("Create the Actor first.")?;
+            let record_uid = value(world, form.preview_record)?.trim().to_owned();
+            if !nucleus::valid_uid(&record_uid, "r") {
+                return Err("Choose an existing Record UID to preview its authority.".into());
+            }
+            Ok((
+                Backend::InspectRecordAuthority { person, record_uid },
+                Mutation::Preview,
+            ))
+        }
+        Command::SavePolicy => {
+            let form = world
+                .get::<PolicyForm>(owner)
+                .ok_or("Select a Role first.")?;
+            let policy: protein::authority::RolePolicy =
+                serde_json::from_str(&value(world, form.raw)?)
+                    .map_err(|error| error.to_string())?;
+            Ok((
+                Backend::SetRolePolicy {
+                    role: form.role.clone(),
+                    policy: serde_json::to_value(policy).map_err(|error| error.to_string())?,
+                    expected_revision: form.revision,
+                },
+                Mutation::Policy,
+            ))
+        }
         Command::ConfirmDelete | Command::Restore => {
             let person = world
                 .get::<UserForm>(owner)
@@ -227,13 +350,11 @@ fn mutation(
             match command {
                 Command::Assign => {
                     let user = form.uid.clone().ok_or("Create the user first.")?;
-                    if form.role.is_empty() {
-                        return Err("Choose a Role first.".into());
-                    }
                     Ok((
-                        Backend::AssignRole {
-                            user,
-                            role: form.role.clone(),
+                        Backend::AssignRoles {
+                            person: user,
+                            roles: form.roles.clone(),
+                            expected_revision: form.expected_revision,
                         },
                         Mutation::Assign,
                     ))
@@ -550,7 +671,15 @@ pub(super) fn list(world: &mut World, owner: Entity) {
             format!(
                 "{name} · {} · {}{}",
                 entry["username"].as_str().unwrap_or_default(),
-                entry["role"].as_str().unwrap_or("No Role"),
+                &entry["roles"]
+                    .as_array()
+                    .map(|roles| roles
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .collect::<Vec<_>>()
+                        .join(", "))
+                    .filter(|roles| !roles.is_empty())
+                    .unwrap_or_else(|| "No Roles".into()),
                 if entry["active"] == false {
                     " · soft-deleted"
                 } else {
@@ -597,7 +726,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
     let selected = view.selected.clone();
     world
         .entity_mut(owner)
-        .remove::<(UserForm, StandingEditor, RoleForm, RoleEdit)>();
+        .remove::<(UserForm, StandingEditor, RoleForm, RoleEdit, PolicyForm)>();
     world.entity_mut(parent).despawn_children();
     if !world.resource::<Catalog>().ready {
         label(
@@ -693,45 +822,105 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             },
             ChildOf(password),
         ));
-        label(world, parent, "One assigned Role", 14.0);
+        label(
+            world,
+            parent,
+            "Assigned Roles — select to add or remove",
+            14.0,
+        );
         let role = entry
             .and_then(|entry| entry["role"].as_str())
             .unwrap_or_default()
             .to_owned();
-        let role_label = label(
-            world,
-            parent,
-            if role.is_empty() {
-                "Choose a Role"
-            } else {
-                &role
-            },
-            14.0,
-        );
+        let roles: Vec<String> = entry
+            .and_then(|entry| entry["roles"].as_array())
+            .map(|roles| {
+                roles
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect()
+            })
+            .unwrap_or_default();
+        let caption = if roles.is_empty() {
+            "No Roles".into()
+        } else {
+            roles.join(", ")
+        };
+        let role_label = label(world, parent, &caption, 14.0);
         let chooser = column(world, parent);
         role_choices(world, owner, chooser);
         let controls = row(world, parent);
-        button(
+        let preview_record = input(
             world,
-            controls,
-            owner,
-            if entry.is_some() {
-                "Save user details"
-            } else {
-                "Create user"
-            },
-            Command::SaveUser,
+            parent,
+            "Record UID for effective authority preview",
+            "",
+            128,
         );
+        if entry.is_some() {
+            button(
+                world,
+                parent,
+                owner,
+                "Preview this Actor's Record authority",
+                Command::Preview,
+            );
+        }
+
+        if entry.is_none_or(|entry| entry["has_credentials"] == true) {
+            button(
+                world,
+                controls,
+                owner,
+                if entry.is_some() {
+                    "Save user details"
+                } else {
+                    "Create user"
+                },
+                Command::SaveUser,
+            );
+        } else {
+            label(
+                world,
+                parent,
+                "This Actor signs in through an Organ grant. Manage its Roles and standing here; password fields do not apply.",
+                14.0,
+            );
+        }
         if entry.is_some() {
             button(
                 world,
                 controls,
                 owner,
-                "Replace assigned Role",
+                "Save assigned Roles",
                 Command::Assign,
             );
         }
         if let Some(entry) = entry {
+            for grant in entry["effective_permissions"]
+                .as_array()
+                .into_iter()
+                .flatten()
+            {
+                let roles = grant["roles"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str)
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                label(
+                    world,
+                    parent,
+                    &format!(
+                        "{} · supplied by {}",
+                        grant["permission"].as_str().unwrap_or(""),
+                        roles
+                    ),
+                    13.0,
+                );
+            }
             let standing = column(world, parent);
             standing_editor(world, owner, standing, standing_state(entry));
         }
@@ -741,20 +930,18 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             name,
             password,
             role,
+            roles,
+            expected_revision: entry
+                .and_then(|entry| entry["access_revision"].as_i64())
+                .unwrap_or(0),
             role_label,
             chooser,
+            preview_record,
         });
     } else if let Some(entry) = entry {
         let name = entry["name"].as_str().unwrap_or_default();
         label(world, parent, "Edit Role", 18.0);
-        if name == "admin" {
-            label(
-                world,
-                parent,
-                "admin · protected to preserve recovery access",
-                14.0,
-            );
-        } else if let (Some(role), Some(revision)) = (
+        if let (Some(role), Some(revision)) = (
             entry["id"].as_str().and_then(|id| id.parse::<i64>().ok()),
             entry["revision"].as_i64(),
         ) {
@@ -791,6 +978,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
                 },
             ));
             role_permissions(world, owner, permissions, entry);
+            policy_editor(world, owner, parent, entry);
             return;
         }
         role_permissions(world, owner, parent, entry);
@@ -806,6 +994,416 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             14.0,
         );
     }
+}
+
+fn policy_editor(world: &mut World, owner: Entity, parent: Entity, entry: &Value) {
+    label(world, parent, "Record policy", 18.0);
+    label(
+        world,
+        parent,
+        "Role grants add together. Each grant names its operation, selector, properties and assertion changes.",
+        14.0,
+    );
+    let policy = entry
+        .get("policy")
+        .filter(|value| !value.is_null())
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({"read":{"all":[]},"grants":[]}));
+    let raw = input(
+        world,
+        parent,
+        "Policy",
+        &serde_json::to_string_pretty(&policy).unwrap_or_default(),
+        65536,
+    );
+    world.get_mut::<EditableText>(raw).unwrap().allow_newlines = true;
+    world.get_mut::<EditableText>(raw).unwrap().visible_lines = Some(8.0);
+    let controls = column(world, parent);
+    world.entity_mut(owner).insert(PolicyForm {
+        role: entry["name"].as_str().unwrap_or_default().into(),
+        revision: entry["policy_revision"].as_i64().unwrap_or(0),
+        raw,
+        controls,
+        signature: String::new(),
+    });
+    policy_controls(world, owner);
+    button(
+        world,
+        parent,
+        owner,
+        "Save Record policy",
+        Command::SavePolicy,
+    );
+}
+
+fn open_selector(world: &mut World, owner: Entity, grant: Option<usize>) {
+    let Some(form) = world.get::<PolicyForm>(owner) else {
+        return;
+    };
+    let Ok(raw) = value(world, form.raw) else {
+        return;
+    };
+    let Ok(policy) = serde_json::from_str::<protein::authority::RolePolicy>(&raw) else {
+        status(world, owner, "Fix the policy before editing its selector.");
+        return;
+    };
+    let selector = if let Some(index) = grant {
+        let Some(grant) = policy.grants.get(index) else {
+            return;
+        };
+        grant.selector.clone()
+    } else {
+        policy.read
+    };
+    let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+        return;
+    };
+    let workspace = world
+        .get::<crate::workspace::WorkspaceMember>(owner)
+        .map_or(1, |member| member.0);
+    let position = world
+        .get::<crate::canvas::CanvasItem>(owner)
+        .map_or(bevy::math::DVec2::ZERO, |item| {
+            item.position + bevy::math::DVec2::new(80.0, 40.0)
+        });
+    let query = protein::Protein {
+        source: protein::Source::Record,
+        filter: vec![selector],
+        fields: None,
+        include: Default::default(),
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    let castle = crate::protein_castle::spawn(
+        world,
+        root,
+        workspace,
+        position,
+        crate::protein_castle::ProteinDraft::from_protein(
+            "Authority selector".into(),
+            String::new(),
+            query,
+        ),
+    );
+    let control = world
+        .spawn((
+            Button,
+            Node::default(),
+            ChildOf(castle),
+            ActionButton::new(
+                castle,
+                crate::actions![AcceptSelector {
+                    target: owner,
+                    grant
+                }],
+            ),
+        ))
+        .id();
+    label(world, control, "Use this selector in the policy", 16.0);
+}
+
+fn edit_grant(world: &mut World, owner: Entity, command: &Command) {
+    use protein::authority::{MutationGrant, Operation, Property};
+    let Some(form) = world.get::<PolicyForm>(owner) else {
+        return;
+    };
+    let field = form.raw;
+    let Ok(raw) = value(world, field) else {
+        return;
+    };
+    let Ok(mut policy) = serde_json::from_str::<protein::authority::RolePolicy>(&raw) else {
+        status(
+            world,
+            owner,
+            "Fix the policy draft before changing its grants.",
+        );
+        return;
+    };
+    match command {
+        Command::AddGrant(operation) if policy.grants.len() < 128 => {
+            let properties = match operation {
+                Operation::Create | Operation::Restore => std::collections::BTreeSet::from([
+                    Property::Kind,
+                    Property::Organ,
+                    Property::Head,
+                    Property::Body,
+                    Property::Quantity,
+                ]),
+                Operation::Update => std::collections::BTreeSet::from([
+                    Property::Head,
+                    Property::Body,
+                    Property::Quantity,
+                ]),
+                Operation::Delete => std::collections::BTreeSet::from([Property::Slug]),
+            };
+            policy.grants.push(MutationGrant {
+                operation: *operation,
+                selector: protein::Predicate::KindEq("plain".into()),
+                properties,
+                assertions_add: vec![],
+                assertions_remove: vec![],
+            });
+        }
+        Command::RemoveGrant(index) if *index < policy.grants.len() => {
+            policy.grants.remove(*index);
+        }
+        Command::Property(index, property) => {
+            let Some(grant) = policy.grants.get_mut(*index) else {
+                return;
+            };
+            if !grant.properties.remove(property) {
+                grant.properties.insert(property.clone());
+            }
+        }
+        Command::Assertion(index, remove, predicate, target) => {
+            let Some(grant) = policy.grants.get_mut(*index) else {
+                return;
+            };
+            let predicate_uid = value(world, *predicate)
+                .unwrap_or_default()
+                .trim()
+                .to_owned();
+            let target = value(world, *target).unwrap_or_default().trim().to_owned();
+            if !nucleus::valid_uid(&predicate_uid, "c")
+                || (!target.is_empty() && target != "*" && !nucleus::valid_uid(&target, "r"))
+            {
+                status(
+                    world,
+                    owner,
+                    "Use a Concept UID and an optional Record UID, or * for any readable Record.",
+                );
+                return;
+            }
+            let rule = protein::authority::AssertionGrant {
+                predicate_uid,
+                target: if target.is_empty() {
+                    protein::authority::AssertionTarget::Unary
+                } else if target == "*" {
+                    protein::authority::AssertionTarget::AnyReadableRecord
+                } else {
+                    protein::authority::AssertionTarget::Record(target)
+                },
+                role: protein::authority::AssertionRole::Ordinary,
+                properties: Default::default(),
+            };
+            let rules = if *remove {
+                &mut grant.assertions_remove
+            } else {
+                &mut grant.assertions_add
+            };
+            if rules.len() >= 128 {
+                status(world, owner, "Keep each grant within 128 assertion rules.");
+                return;
+            }
+            rules.push(rule);
+        }
+        Command::RemoveAssertion(index, remove, rule) => {
+            let Some(grant) = policy.grants.get_mut(*index) else {
+                return;
+            };
+            let rules = if *remove {
+                &mut grant.assertions_remove
+            } else {
+                &mut grant.assertions_add
+            };
+            if *rule >= rules.len() {
+                return;
+            }
+            rules.remove(*rule);
+        }
+        Command::AssertionProperty(index, remove, rule, property) => {
+            let Some(grant) = policy.grants.get_mut(*index) else {
+                return;
+            };
+            let rules = if *remove {
+                &mut grant.assertions_remove
+            } else {
+                &mut grant.assertions_add
+            };
+            let Some(rule) = rules.get_mut(*rule) else {
+                return;
+            };
+            if !rule.properties.remove(property) {
+                rule.properties.insert(*property);
+            }
+        }
+        _ => return,
+    }
+    let mut field_value = crate::sand::editable(&serde_json::to_string_pretty(&policy).unwrap());
+    field_value.visible_lines = Some(8.0);
+    field_value.max_characters = Some(65536);
+    *world.get_mut::<EditableText>(field).unwrap() = field_value;
+    policy_controls(world, owner);
+    status(
+        world,
+        owner,
+        "Policy draft updated. Save it to apply these grants.",
+    );
+}
+
+pub(super) fn policy_controls(world: &mut World, owner: Entity) {
+    use protein::authority::{Operation, Property};
+    let Some(form) = world.get::<PolicyForm>(owner) else {
+        return;
+    };
+    let parent = form.controls;
+    let field = form.raw;
+    let Ok(raw) = value(world, form.raw) else {
+        return;
+    };
+    if raw == form.signature {
+        return;
+    }
+    let Ok(policy) = serde_json::from_str::<protein::authority::RolePolicy>(&raw) else {
+        return;
+    };
+    world.get_mut::<PolicyForm>(owner).unwrap().signature = raw;
+    crate::sand_panel::clear(world, parent);
+    button(
+        world,
+        parent,
+        owner,
+        "Edit read selector with Protein",
+        Command::Selector(None),
+    );
+    let add = row(world, parent);
+    for (name, operation) in [
+        ("Add creation grant", Operation::Create),
+        ("Add update grant", Operation::Update),
+        ("Add deletion grant", Operation::Delete),
+        ("Add restoration grant", Operation::Restore),
+    ] {
+        button(world, add, owner, name, Command::AddGrant(operation));
+    }
+    for (index, grant) in policy.grants.iter().enumerate() {
+        let controls = column(world, parent);
+        label(
+            world,
+            controls,
+            &format!("Grant {} · {:?}", index + 1, grant.operation),
+            16.0,
+        );
+        button(
+            world,
+            controls,
+            owner,
+            "Edit selector with Protein",
+            Command::Selector(Some(index)),
+        );
+        {
+            let fields = row(world, controls);
+            for (name, property) in [
+                ("Kind", Property::Kind),
+                ("Owner Organ", Property::Organ),
+                ("Head", Property::Head),
+                ("Body", Property::Body),
+                ("Quantity", Property::Quantity),
+                ("Slug", Property::Slug),
+                ("Unit", Property::Unit),
+                ("Place", Property::Place),
+            ] {
+                button(
+                    world,
+                    fields,
+                    owner,
+                    &format!(
+                        "{} {}",
+                        if grant.properties.contains(&property) {
+                            "✓"
+                        } else {
+                            "+"
+                        },
+                        name
+                    ),
+                    Command::Property(index, property),
+                );
+            }
+        }
+        let predicate = input(world, controls, "Assertion Concept UID", "", 64);
+        let target = input(
+            world,
+            controls,
+            "Assertion target (empty for tag, Record UID, or *)",
+            "",
+            64,
+        );
+        let assertion_controls = row(world, controls);
+        button(
+            world,
+            assertion_controls,
+            owner,
+            "Allow adding this assertion",
+            Command::Assertion(index, false, predicate, target),
+        );
+        button(
+            world,
+            assertion_controls,
+            owner,
+            "Allow removing this assertion",
+            Command::Assertion(index, true, predicate, target),
+        );
+        for (remove, rules) in [
+            (false, &grant.assertions_add),
+            (true, &grant.assertions_remove),
+        ] {
+            for (rule_index, rule) in rules.iter().enumerate() {
+                let entry = row(world, controls);
+                label(
+                    world,
+                    entry,
+                    &format!(
+                        "{} {} · {:?} · {:?}",
+                        if remove { "Remove" } else { "Add" },
+                        rule.predicate_uid,
+                        rule.target,
+                        rule.role
+                    ),
+                    14.0,
+                );
+                for (name, property) in [
+                    (
+                        "Assertion quantity",
+                        protein::authority::AssertionProperty::Quantity,
+                    ),
+                    (
+                        "Assertion unit",
+                        protein::authority::AssertionProperty::Unit,
+                    ),
+                ] {
+                    button(
+                        world,
+                        entry,
+                        owner,
+                        &format!(
+                            "{} {name}",
+                            if rule.properties.contains(&property) {
+                                "✓"
+                            } else {
+                                "+"
+                            }
+                        ),
+                        Command::AssertionProperty(index, remove, rule_index, property),
+                    );
+                }
+                button(
+                    world,
+                    entry,
+                    owner,
+                    "Remove rule",
+                    Command::RemoveAssertion(index, remove, rule_index),
+                );
+            }
+        }
+        button(
+            world,
+            controls,
+            owner,
+            "Remove this grant",
+            Command::RemoveGrant(index),
+        );
+    }
+    crate::workspace_sync::policy::mount(world, parent, owner, field, false);
 }
 
 fn standing_state(entry: &Value) -> Value {
@@ -930,6 +1528,7 @@ fn role_permissions(world: &mut World, owner: Entity, parent: Entity, entry: &Va
         "Permissions · changes save immediately for everyone with this Role",
         14.0,
     );
+    label(world, parent, "Managing Record visibility and Concepts requires permission:assign. Workspace editing grants no Record authority. Manual and resumed Rules execute as the person invoking them.", 12.0);
     let keys: Vec<String> = world
         .resource::<Catalog>()
         .rows
@@ -948,17 +1547,13 @@ fn role_permissions(world: &mut World, owner: Entity, parent: Entity, entry: &Va
                 .any(|permission| permission.as_str() == Some(key))
         });
         let title = format!("{} {key}", if granted { "On" } else { "Off" });
-        if entry["name"] == "admin" {
-            label(world, controls, &title, 14.0);
-        } else {
-            button(
-                world,
-                controls,
-                owner,
-                &title,
-                Command::Permission(key.clone(), !granted),
-            );
-        }
+        button(
+            world,
+            controls,
+            owner,
+            &title,
+            Command::Permission(key.clone(), !granted),
+        );
     }
     if keys.is_empty() {
         label(world, parent, "Permission catalog unavailable.", 14.0);

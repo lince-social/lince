@@ -24,6 +24,13 @@ impl Drop for Joining<'_> {
 
 #[async_trait::async_trait]
 pub trait CellTransport: Send + Sync {
+    async fn sand_packages(
+        &self,
+        _organ: &str,
+        _query: nucleus::sand_package::Query,
+    ) -> Result<nucleus::sand_package::Response, EngineError> {
+        Err(EngineError::Consequence("Package exchange is unavailable on this transport".into()))
+    }
     async fn pairing_invite(&self) -> Result<Option<crate::pairing::PairingInvite>, EngineError> {
         Ok(None)
     }
@@ -41,6 +48,9 @@ pub trait CellTransport: Send + Sync {
     }
     fn peer_network(&self) -> Option<serde_json::Value> {
         None
+    }
+    async fn reconnect_contact(&self, _organ: &str) -> Result<(), EngineError> {
+        Err(EngineError::Consequence("Reconnect is unavailable on this transport".into()))
     }
     async fn enrol(&self, invite: &EnrolmentInvite) -> Result<SignedRoster, EngineError>;
     async fn audit_against(

@@ -81,12 +81,15 @@ pub async fn grant_on(
 }
 
 pub async fn revoke(pool: &SqlitePool, role_id: i64, permission_id: i64) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    let recoverable = !crate::person_roles::recovery_people_on(&mut tx).await?.is_empty();
     sqlx::query("DELETE FROM role_permission WHERE role_id = ? AND permission_id = ?")
         .bind(role_id)
         .bind(permission_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
-    Ok(())
+    crate::person_roles::require_recovery_on(&mut tx, recoverable).await?;
+    tx.commit().await
 }
 
 pub async fn role_by_name(pool: &SqlitePool, name: &str) -> Result<Option<i64>, StoreError> {
@@ -558,29 +561,19 @@ pub async fn list_users(
     })
 }
 
+pub async fn list_actors(pool: &SqlitePool) -> Result<Vec<(String, String, String, String)>, StoreError> {
+    let rows = sqlx::query_as::<_, (String, String, String, String)>("SELECT p.uid, COALESCE(c.username, ''), p.head, COALESCE(r.name, '') FROM record p LEFT JOIN person_credential c ON c.person_uid = p.uid LEFT JOIN person_access a ON a.person_uid = p.uid LEFT JOIN role r ON r.id = a.role_id WHERE p.kind = 'person' AND p.deleted_at IS NULL ORDER BY p.head LIMIT 4097")
+        .fetch_all(pool).await?;
+    if rows.len() > 4096 { return Err(sqlx::Error::Protocol("Actor catalogue exceeds its bounds".into())); }
+    Ok(rows)
+}
+
 pub async fn admin_exists(pool: &SqlitePool) -> Result<bool, StoreError> {
-    let count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(1) FROM person_access a
-         JOIN record p ON p.uid = a.person_uid
-         WHERE a.role_id = (SELECT id FROM role WHERE name = ?)
-           AND p.kind = 'person' AND p.deleted_at IS NULL",
-    )
-    .bind(ADMIN_ROLE)
-    .fetch_one(pool)
-    .await?;
-    Ok(count > 0)
+    Ok(!admins(pool).await?.is_empty())
 }
 
 pub async fn admins(pool: &SqlitePool) -> Result<Vec<String>, StoreError> {
-    sqlx::query_scalar::<_, String>(
-        "SELECT a.person_uid FROM person_access a
-         JOIN record p ON p.uid = a.person_uid
-         WHERE a.role_id = (SELECT id FROM role WHERE name = ?)
-           AND p.kind = 'person' AND p.deleted_at IS NULL",
-    )
-    .bind(ADMIN_ROLE)
-    .fetch_all(pool)
-    .await
+    crate::person_roles::recovery_people_on(&mut *pool.acquire().await?).await
 }
 
 fn validate_credential_input(username: &str, password_hash: &str) -> Result<(), StoreError> {
@@ -1020,7 +1013,7 @@ pub async fn assigned_role_on(
     let Some(role) = role else {
         return Ok(None);
     };
-    let permissions = role_permission_keys_by_id_on(connection, role_id).await?;
+    let permissions = crate::person_roles::permissions_on(connection, person).await?;
     Ok(Some(Principal {
         uid: person.into(),
         role_id,
@@ -1058,7 +1051,7 @@ async fn credential_row(
     let permissions = if role_id == 0 {
         Vec::new()
     } else {
-        role_permission_keys_by_id(pool, role_id).await?
+        crate::person_roles::permissions_on(&mut *pool.acquire().await?, &uid).await?
     };
 
     Ok(Some(AuthUser {

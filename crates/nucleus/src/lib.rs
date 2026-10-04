@@ -1,5 +1,9 @@
+pub mod sand_package;
 pub mod action_intent;
+pub mod description_asset;
+pub mod drawing;
 pub mod component;
+pub mod canvas;
 pub mod blob_sync;
 pub mod error;
 pub mod execution;
@@ -15,10 +19,12 @@ pub mod message;
 pub mod place;
 pub mod promise;
 pub mod record;
+pub mod record_extension;
 pub mod sync;
 pub mod social;
 pub mod simulation;
 pub mod projection;
+pub mod schedule;
 pub mod transfer;
 pub mod transfer_delivery;
 

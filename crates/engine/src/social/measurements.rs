@@ -74,6 +74,9 @@ async fn load(engine: &Engine, prototype: &Snippet, signer: &Signer, source: &st
         )
         .unwrap();
         document.title = format!("Bicycle repair item {index}");
+        if index % 1000 == 0 {
+            document.text.push_str(" Rare orchids");
+        }
         document.signature = signer.sign_bytes(&signing_bytes("snippet", &document).unwrap());
         if index % 10_000 == 0 {
             validate_snippet(&document, nucleus::execution::now().timestamp()).unwrap();
@@ -110,19 +113,23 @@ async fn load(engine: &Engine, prototype: &Snippet, signer: &Signer, source: &st
     tx.commit().await.unwrap();
 }
 
-async fn search_samples(engine: &Engine, endpoint: &str, public: bool) -> Value {
+async fn search_samples(
+    engine: &Engine,
+    endpoint: &str,
+    public: bool,
+    query: Search,
+    expected: usize,
+    expected_next: usize,
+) -> Value {
     let mut samples = Vec::new();
     let mut first = Vec::new();
-    let query = Search {
-        text: "bicycle repair".into(),
-        ..Default::default()
-    };
+    let reader = iroh::SecretKey::from_bytes(&[214; 32]).public().to_string();
     for iteration in 0..60 {
         let start = Instant::now();
         let response = if public {
             engine
                 .social_public_request(
-                    "measurement-reader",
+                    &reader,
                     endpoint,
                     PublicRequest::Search {
                         query: query.clone(),
@@ -149,7 +156,7 @@ async fn search_samples(engine: &Engine, endpoint: &str, public: bool) -> Value 
             );
         }
         let rows = response["results"].as_array().unwrap();
-        assert_eq!(rows.len(), 50);
+        assert_eq!(rows.len(), expected);
         assert!(serde_json::to_vec(&response).unwrap().len() <= MAX_FRAME_BYTES);
         if iteration == 0 {
             first = rows
@@ -192,8 +199,8 @@ async fn search_samples(engine: &Engine, endpoint: &str, public: bool) -> Value 
             samples.push(elapsed);
         }
     }
-    let mut next = query;
-    next.after = first.last().cloned();
+    let mut next = query.clone();
+    next.after = first.iter().max().cloned();
     let page = store::social::search(
         &engine.store.pool,
         &next,
@@ -201,12 +208,62 @@ async fn search_samples(engine: &Engine, endpoint: &str, public: bool) -> Value 
     )
     .await
     .unwrap();
-    assert_eq!(page.len(), 50);
+    assert_eq!(page.len(), expected_next);
     assert!(
         page.iter()
             .all(|row| !first.iter().any(|id| row["document"]["id"] == *id))
     );
-    timings(samples)
+    let mut report = timings(samples);
+    report["query"] = serde_json::to_value(query).unwrap();
+    report["results_per_sample"] = json!(expected);
+    report["continuation_results"] = json!(expected_next);
+    report
+}
+
+async fn search_workloads(engine: &Engine, endpoint: &str, public: bool, entries: i64) -> Value {
+    let broad = Search {
+        text: "bicycle repair".into(),
+        ..Default::default()
+    };
+    let broad_report = search_samples(engine, endpoint, public, broad.clone(), 50, 50).await;
+    let sparse: i64 = store::sqlx::query_scalar(
+        "SELECT COUNT(*) FROM social_document WHERE kind='snippet' AND text LIKE '%Rare orchids%'",
+    )
+    .fetch_one(&engine.store.pool)
+    .await
+    .unwrap();
+    let sparse_report = search_samples(
+        engine,
+        endpoint,
+        public,
+        Search {
+            text: "rare orchids".into(),
+            ..Default::default()
+        },
+        sparse.min(50) as usize,
+        (sparse - 50).clamp(0, 50) as usize,
+    )
+    .await;
+    let after: String = store::sqlx::query_scalar(
+        "SELECT id FROM social_document WHERE kind='snippet' ORDER BY id LIMIT 1 OFFSET ?",
+    )
+    .bind(entries - 51)
+    .fetch_one(&engine.store.pool)
+    .await
+    .unwrap();
+    let late_report = search_samples(
+        engine,
+        endpoint,
+        public,
+        Search {
+            after: Some(after),
+            ..broad
+        },
+        50,
+        0,
+    )
+    .await;
+    json!({"search":broad_report,"selective_search":sparse_report,"late_cursor_search":late_report})
 }
 
 #[tokio::test]
@@ -230,7 +287,7 @@ async fn disk_backed_directory_and_local_cache_search_baseline() {
         let loading_seconds = loading.elapsed().as_secs_f64();
         let listings:i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM social_document WHERE kind='snippet'").fetch_one(&engine.store.pool).await.unwrap();
         assert_eq!(listings,100_000);
-        let directory_search = search_samples(&engine,&endpoint,true).await;
+        let directory_search = search_workloads(&engine,&endpoint,true,listings).await;
         let directory_storage = storage(&engine,&path).await;
         let mut tx = store::write_tx(&engine.store.pool).await.unwrap();
         store::sqlx::query("DELETE FROM social_document WHERE id NOT IN (SELECT id FROM social_document ORDER BY id LIMIT 10000)").execute(&mut *tx).await.unwrap();
@@ -240,9 +297,10 @@ async fn disk_backed_directory_and_local_cache_search_baseline() {
         command(&engine,Command::ConfigureServices {settings:ServiceSettings {cache_entries:10_000,..Default::default()}}).await;
         let cached:i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM social_document WHERE kind='snippet'").fetch_one(&engine.store.pool).await.unwrap();
         assert_eq!(cached,10_000);
-        let local_search = search_samples(&engine,&endpoint,false).await;
-        let report = json!({"measured_at":nucleus::execution::now().to_rfc3339(),"machine":machine(),"storage_medium":"Temporary directory on the shared workspace filesystem","loading_seconds":loading_seconds,"directory":{"entries":listings,"search":directory_search,"storage":directory_storage},"local":{"entries":cached,"search":local_search,"storage":storage(&engine,&path).await},"scope":"Single process, text-only, deliberately shared fixture author; bulk loading excludes admission/verification throughput; deleting rows does not compact SQLite allocation; no connection churn, power loss or media load"});
+        let local_search = search_workloads(&engine,&endpoint,false,cached).await;
+        let report = json!({"measured_at":nucleus::execution::now().to_rfc3339(),"machine":machine(),"storage_medium":"Temporary directory on the shared workspace filesystem","loading_seconds":loading_seconds,"directory":{"entries":listings,"search":directory_search["search"],"selective_search":directory_search["selective_search"],"late_cursor_search":directory_search["late_cursor_search"],"storage":directory_storage},"local":{"entries":cached,"search":local_search["search"],"selective_search":local_search["selective_search"],"late_cursor_search":local_search["late_cursor_search"],"storage":storage(&engine,&path).await},"scope":"Single process, text-only, deliberately shared fixture author; broad, one-in-a-thousand selective and last-page cursor workloads; bulk loading excludes admission/verification throughput; deleting rows does not compact SQLite allocation; no connection churn, power loss or media load"});
         eprintln!("LINCE_SOCIAL_MEASUREMENT {report}");
         assert!(report["local"]["search"]["p95_ms"].as_f64().unwrap()<250.0,"{report}");
+        assert!(report["directory"]["search"]["p95_ms"].as_f64().unwrap()<250.0,"{report}");
     })).await.unwrap();
 }

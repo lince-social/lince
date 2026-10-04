@@ -278,6 +278,9 @@ fn toolbar_visibility(
 }
 
 pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data: &Value) {
+    if super::presentation::current(world, row).is_some() {
+        return;
+    }
     let mut sections = sections.clone();
     sections.presentation = world
         .get::<crate::record_presentation::RecordPresentation>(row)
@@ -373,6 +376,13 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
             Display::None
         };
     toolbar_visibility(world, row, sections.toolbar, sections.presentation);
+    super::presentation::refresh_fields(world, row);
+}
+
+pub(super) fn restore(world: &mut World, row: Entity) {
+    if let Some(sections) = world.get::<Sections>(row).cloned() {
+        arrange(world, row, &sections, &sections.observed);
+    }
 }
 
 #[cfg(test)]
@@ -621,7 +631,19 @@ mod tests {
                 }
             );
         }
-        let children: Vec<_> = app.world().get::<Children>(row).unwrap().iter().collect();
+        let children: Vec<_> = app
+            .world()
+            .get::<Children>(row)
+            .unwrap()
+            .iter()
+            .filter(|entity| {
+                app.world().get::<ActionButton>(*entity).is_none()
+                    && app
+                        .world()
+                        .get::<super::super::presentation::Controls>(*entity)
+                        .is_none()
+            })
+            .collect();
         assert_eq!(
             children,
             [

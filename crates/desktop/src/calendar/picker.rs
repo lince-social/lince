@@ -64,10 +64,11 @@ impl Action for OpenDate {
             .map(|t| t.value().to_string())
             .unwrap_or_default();
         let mut calendar = Calendar::default();
-        if let Some(date) = model::parse(&current) {
+        calendar.timezone = crate::schedule_editor::local_timezone().unwrap_or_else(|| "UTC".into());
+        if let Some(date) = nucleus::schedule::timezone_date(&current, &calendar.timezone) {
             calendar.year = date.year();
             calendar.month = date.month();
-            calendar.start = Some(current);
+            calendar.start = Some(date.to_string());
         }
         let existing = world
             .query::<(Entity, &Picker)>()
@@ -132,7 +133,7 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> String {
         let value = text.value().to_string();
         key.push_str(&value);
         key.push('|');
-        let date = model::parse(&value).map(|_| value);
+        let date = nucleus::schedule::timezone_date(&value, &world.get::<CalendarSand>(owner).unwrap().0.timezone).map(|date| date.to_string());
         if field.property == "start_date" {
             start = date;
         } else {
@@ -171,7 +172,10 @@ fn selected(event: On<SandEvent>, mut commands: Commands) {
             .get::<Picker>(source)
             .is_some_and(|p| p.editor == editor)
         {
-            if let Err(error) = crate::protein_area::save_date(world, editor, &date) {
+            let current = world.get::<EditableText>(editor).map(|text| text.value().to_string()).unwrap_or_default();
+            let timezone = world.get::<CalendarSand>(source).unwrap().0.timezone.clone();
+            let result = if current.is_empty() { Ok(date.clone()) } else { nucleus::schedule::on_date(&current, &date, &timezone) };
+            if let Err(error) = result.and_then(|value| crate::protein_area::save_date(world, editor, &value)) {
                 world.get_mut::<View>(source).unwrap().error = Some(error);
             }
             sync(world, source);

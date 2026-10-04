@@ -235,6 +235,7 @@ impl Engine {
         }
         let key = self.social_storage_key().await?;
         let mut tx = self.social_write_tx().await?;
+        self.social_require_local_write_on(&mut tx).await?;
         let retained:bool=store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE uid=? AND kind='message' AND deleted_at IS NULL)").bind(record).fetch_one(&mut *tx).await?;
         if !retained {
             return Err(invalid(
@@ -264,6 +265,13 @@ impl Engine {
         let metadata = owner::extension_on(&mut tx, record, MESSAGE_NAMESPACE).await?;
         let content = conversation::load_content_on(&mut tx, record, &metadata).await?;
         conversation::validate_content(&content)?;
+        if content.kind.purpose() != EnvelopePurpose::Control
+            && admission::map_on(&mut tx, &p.context).await?[&p.peer_owner]["blocked"] == true
+        {
+            return Err(invalid(
+                "This participant is blocked; ciphertext preparation stopped",
+            ));
+        }
         if p.token != content.conversation
             || p.context != context
             || p.local_owner != content.author_owner

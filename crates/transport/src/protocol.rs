@@ -18,6 +18,8 @@ impl ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
+    WorkspaceSubscribe { id: String, workspace: String, client: engine::workspace_sync::Client },
+    DescriptionAsset { id: String, request: nucleus::description_asset::Request },
     Speech { id: String, request: crate::speech::Request },
     FioteTerminal { id: String, request: fiote::acp::terminal::TerminalRequest },
     Command { id: String, request: crate::command::Request },
@@ -139,6 +141,8 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    Workspace { id: String, workspace: Value },
+    DescriptionAsset { id: String, response: nucleus::description_asset::Response },
     PresentComponent { presentation: nucleus::component::Presentation },
     Speech { id: String, status: crate::speech::Status },
     FioteTerminal { id: String, frame: fiote::acp::terminal::TerminalFrame },

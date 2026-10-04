@@ -32,7 +32,7 @@ pub struct PreparationMeasurements {
 #[derive(Component)]
 pub struct MeshCollider {
     shape: Collider,
-    key: (String, String, u32),
+    key: (String, String, u32, bool),
 }
 
 impl MeshCollider {
@@ -46,7 +46,7 @@ impl MeshCollider {
 }
 
 #[derive(Resource, Default)]
-struct GeometryCache(HashMap<(String, String, u32), Weak<dyn avian3d::parry::shape::Shape>>);
+struct GeometryCache(HashMap<(String, String, u32, bool), Weak<dyn avian3d::parry::shape::Shape>>);
 
 #[derive(Resource, Default)]
 pub struct Runtime;
@@ -62,14 +62,21 @@ pub(crate) fn imported_shape(
     let asset = world
         .get::<super::assets::ImportedAsset>(entity)
         .ok_or("Imported asset is unavailable")?;
+    let centered = world.get::<super::assets::CenteredAsset>(entity).is_some();
     if let Some(collider) = world.get::<MeshCollider>(entity)
         && collider.key.0 == asset.id
         && collider.key.1 == asset.file
         && collider.key.2 == scale.to_bits()
+        && collider.key.3 == centered
     {
         return Ok(Some(collider.shape.clone()));
     }
-    let key = (asset.id.clone(), asset.file.clone(), scale.to_bits());
+    let key = (
+        asset.id.clone(),
+        asset.file.clone(),
+        scale.to_bits(),
+        centered,
+    );
     let started = world
         .contains_resource::<PreparationMeasurements>()
         .then(std::time::Instant::now);
@@ -190,9 +197,10 @@ pub fn synchronize(world: &mut World) -> bool {
         )>()
         .iter(world)
         .filter(|(e, _, root, member)| {
-            world
-                .get::<crate::workspace::Workspaces>(root.parent())
-                .is_some_and(|s| s.active == member.0)
+            world.get::<crate::external_drop::Preview>(*e).is_none()
+                && world
+                    .get::<crate::workspace::Workspaces>(root.parent())
+                    .is_some_and(|s| s.active == member.0)
                 && world.get::<crate::sand_placement::Pinned>(*e).is_none()
                 && world.get::<crate::arrow_sand::ArrowSand>(*e).is_none()
                 && world
@@ -499,7 +507,12 @@ mod tests {
     fn shared_geometry_is_released_after_the_last_instance() {
         let mut world = World::new();
         let shape = Collider::cuboid(10.0, 20.0, 30.0);
-        let key = ("a".repeat(32), "source.gltf".into(), 1.0_f32.to_bits());
+        let key = (
+            "a".repeat(32),
+            "source.gltf".into(),
+            1.0_f32.to_bits(),
+            false,
+        );
         let weak = Arc::downgrade(&shape.shape().0);
         world.insert_resource(GeometryCache(HashMap::from([(key.clone(), weak.clone())])));
         let first = world
@@ -536,7 +549,12 @@ mod tests {
         );
         let mesh = MeshCollider {
             shape,
-            key: ("asset".into(), "source.gltf".into(), 1.0_f32.to_bits()),
+            key: (
+                "asset".into(),
+                "source.gltf".into(),
+                1.0_f32.to_bits(),
+                false,
+            ),
         };
         for side in [-1.0, 1.0] {
             assert_eq!(
@@ -737,6 +755,26 @@ mod tests {
         }
         let point = super::super::position(app.world(), sand).unwrap();
         assert!(point.x > 0.0 && point.y > 0.0, "{point:?}");
+        crate::actions::Action::apply(
+            &crate::influence_report::Control::Workspace,
+            app.world_mut(),
+            root,
+        );
+        for _ in 0..10 {
+            app.update();
+        }
+        assert_eq!(super::super::position(app.world(), sand).unwrap(), point);
+        crate::actions::Action::apply(
+            &crate::influence_report::Control::Workspace,
+            app.world_mut(),
+            root,
+        );
+        for _ in 0..20 {
+            app.update();
+        }
+        let resumed = super::super::position(app.world(), sand).unwrap();
+        assert!(resumed.x > point.x && resumed.y > point.y, "{resumed:?}");
+        let point = resumed;
         let offset = super::super::position(app.world(), companion).unwrap() - point;
         assert!((offset - DVec3::new(-60.0, 0.0, 0.0)).length() < 1e-9);
     }

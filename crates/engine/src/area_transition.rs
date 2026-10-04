@@ -243,7 +243,7 @@ async fn state(
 }
 
 impl Engine {
-    async fn canonical_area_changes(
+    pub(crate) async fn canonical_area_changes(
         &self,
         mut changes: RecordChanges,
     ) -> Result<RecordChanges, EngineError> {
@@ -362,6 +362,7 @@ impl Engine {
                 ..Default::default()
             });
         }
+        let checkpoint = self.record_checkpoint_on(&mut tx, actor.as_deref(), vec![preview.target.clone()], protein::authority::Operation::Update).await?;
         let current = state(&mut tx, &preview.target, &changes).await?;
         if current != preview.expected {
             return Err(EngineError::Conflict {
@@ -438,6 +439,7 @@ impl Engine {
         store::sqlx::query("INSERT INTO interface_area_transition (request_id, actor_uid, payload, created_at) VALUES (?, ?, ?, ?)")
             .bind(request_id).bind(actor.as_deref().unwrap_or_default()).bind(payload).bind(now.to_rfc3339())
             .execute(&mut *tx).await?;
+        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
         tx.commit().await?;
         let mut outcome = ActionOutcome::default();
         if let Some(fact) = fact {

@@ -222,7 +222,10 @@ fn synchronize(world: &mut World) -> bool {
         )>()
         .iter(world)
         .filter(|(entity, item, parent, member, pin)| {
-            world.get::<crate::area::InfluenceArea>(*entity).is_none()
+            world
+                .get::<crate::external_drop::Preview>(*entity)
+                .is_none()
+                && world.get::<crate::area::InfluenceArea>(*entity).is_none()
                 && world.get::<crate::arrow_sand::ArrowSand>(*entity).is_none()
                 && world
                     .get::<crate::protein_area::placement::Pending>(*entity)
@@ -871,6 +874,27 @@ pub(crate) mod tests {
         advance(&mut app, 120);
         let moved = app.world().get::<CanvasItem>(sand).unwrap().position;
         assert!(moved.x < start.x - 50.0 && moved.x > 0.0, "{moved:?}");
+        crate::actions::Action::apply(
+            &crate::influence_report::Control::Workspace,
+            app.world_mut(),
+            root,
+        );
+        advance(&mut app, 30);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, moved);
+        assert!(crate::workspace_config::physics_configured(
+            app.world(),
+            root,
+            1
+        ));
+        crate::actions::Action::apply(
+            &crate::influence_report::Control::Workspace,
+            app.world_mut(),
+            root,
+        );
+        advance(&mut app, 10);
+        let resumed = app.world().get::<CanvasItem>(sand).unwrap().position;
+        assert!(resumed.x < moved.x, "{resumed:?}");
+        let moved = resumed;
         crate::workspace_config::set_physics(app.world_mut(), root, 1, false);
         advance(&mut app, 30);
         assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, moved);

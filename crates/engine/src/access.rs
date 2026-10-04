@@ -15,10 +15,23 @@ use store::access_snapshot::{
 use store::session_access::{self, DeviceAdmission};
 use store::sqlx::{Sqlite, Transaction};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AccessLimits {
     pub snapshot: AccessSnapshotLimits,
     pub authority: authority::Limits,
+}
+
+impl Default for AccessLimits {
+    fn default() -> Self {
+        Self {
+            snapshot: Default::default(),
+            authority: authority::Limits {
+                grants: 8192,
+                predicate_nodes: 65536,
+                ..Default::default()
+            },
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,8 +105,9 @@ impl BatchDecision {
 
 struct AuthoritySource {
     person: store::auth::PersonAccess,
-    policy: store::role_policies::RolePolicyRow,
+    policies: Vec<store::role_policies::RolePolicyRow>,
     permissions: BTreeSet<String>,
+    unrestricted: BTreeSet<String>,
 }
 
 struct Snapshot {
@@ -166,24 +180,28 @@ async fn authority_on(
         store::auth::person_access_on(transaction, admission.authentication().person_uid())
             .await?
             .ok_or(AccessError::MissingAuthority)?;
-    let role = person.role_id.ok_or(AccessError::MissingAuthority)?;
-    let policy = store::role_policies::get_on(transaction, role)
-        .await?
-        .ok_or(AccessError::MissingAuthority)?;
-    if policy.policy.is_none() {
-        return Err(AccessError::MissingAuthority);
+    let mut policies = Vec::new();
+    let mut permissions = BTreeSet::new();
+    let mut unrestricted = BTreeSet::new();
+    for role in store::person_roles::ids_on(transaction, &person.person_uid).await? {
+        let keys = store::auth::role_permission_keys_by_id_on(transaction, role).await?;
+        let row = store::role_policies::get_on(transaction, role).await?;
+        if row.as_ref().is_none_or(|row| row.policy.is_none()) {
+            unrestricted.extend(keys.iter().cloned());
+        }
+        permissions.extend(keys);
+        if let Some(row) = row {
+            policies.push(row);
+        }
     }
-    let permissions = store::auth::role_permission_keys_by_id_on(transaction, role)
-        .await?
-        .into_iter()
-        .collect::<BTreeSet<_>>();
     if !permissions.contains("record:read") {
         return Err(AuthorityError::Denied.into());
     }
     Ok(AuthoritySource {
         person,
-        policy,
+        policies,
         permissions,
+        unrestricted,
     })
 }
 
@@ -209,24 +227,49 @@ pub async fn load_on<'operation, 'database>(
         return Err(AccessError::InvalidMutation);
     }
     let source = authority_on(transaction, admission).await?;
-    let mut policy: RolePolicy = serde_json::from_value(
-        source
-            .policy
-            .policy
-            .clone()
-            .ok_or(AccessError::MissingAuthority)?,
-    )
-    .map_err(|_| AccessError::InvalidAuthority)?;
+    let mut policy = RolePolicy {
+        read: Predicate::Any(vec![]),
+        grants: Vec::new(),
+    };
+    let mut reads = Vec::new();
+    for row in &source.policies {
+        let permissions =
+            store::auth::role_permission_keys_by_id_on(transaction, row.role_id).await?;
+        if let Some(raw) = &row.policy {
+            let role: RolePolicy =
+                serde_json::from_value(raw.clone()).map_err(|_| AccessError::InvalidAuthority)?;
+            if permissions.iter().any(|key| key == "record:read") {
+                reads.push(role.read);
+            }
+            policy
+                .grants
+                .extend(role.grants.into_iter().filter(|grant| {
+                    permissions.iter().any(|key| {
+                        key == match grant.operation {
+                            Operation::Create => "record:create",
+                            Operation::Update | Operation::Restore => "record:update",
+                            Operation::Delete => "record:delete",
+                        }
+                    })
+                }));
+        }
+    }
+    policy.read = if source.unrestricted.contains("record:read") {
+        Predicate::All(vec![])
+    } else {
+        Predicate::Any(reads)
+    };
     if let Some(raw) = &source.person.read_filter {
         let filter: Predicate =
             serde_json::from_str(raw).map_err(|_| AccessError::InvalidAuthority)?;
         policy.read = Predicate::All(vec![policy.read, filter]);
     }
+    let roles = store::person_roles::ids_on(transaction, &source.person.person_uid).await?;
     let current = snapshot_on(
         transaction,
         admission,
         hosted_organ,
-        source.person.role_id.ok_or(AccessError::MissingAuthority)?,
+        &roles,
         &policy,
         &targets,
         &limits,
@@ -282,10 +325,7 @@ impl<'operation, 'database> Access<'operation, 'database> {
     }
 
     pub fn readable_target(&self, uid: &str) -> Option<&TargetRecordContent> {
-        self.current
-            .readable
-            .records
-            .contains(uid)
+        (self.targets.contains(uid) && self.current.readable.records.contains(uid))
             .then(|| self.current.content.get(uid))
             .flatten()
     }
@@ -325,8 +365,9 @@ impl<'operation, 'database> Access<'operation, 'database> {
         }
         let source = authority_on(self.transaction, &self.admission).await?;
         if source.person != self.source.person
-            || source.policy != self.source.policy
+            || source.policies != self.source.policies
             || source.permissions != self.source.permissions
+            || source.unrestricted != self.source.unrestricted
         {
             return Err(AccessError::AuthorityChanged);
         }
@@ -336,11 +377,13 @@ impl<'operation, 'database> Access<'operation, 'database> {
         {
             return Err(AccessError::AuthorityChanged);
         }
+        let roles =
+            store::person_roles::ids_on(self.transaction, &source.person.person_uid).await?;
         let proposed = snapshot_on(
             self.transaction,
             &self.admission,
             &self.hosted_organ,
-            source.person.role_id.ok_or(AccessError::MissingAuthority)?,
+            &roles,
             &self.policy,
             &self.targets,
             &self.limits,
@@ -353,9 +396,96 @@ impl<'operation, 'database> Access<'operation, 'database> {
             assertion_intents,
             &self.hosted_organ,
         )?;
+        let mut policy = self.policy.clone();
+        let mut properties = BTreeSet::from([
+            authority::Property::Kind,
+            authority::Property::Slug,
+            authority::Property::Head,
+            authority::Property::Body,
+            authority::Property::Quantity,
+            authority::Property::Unit,
+            authority::Property::Place,
+            authority::Property::Organ,
+        ]);
+        properties.extend(
+            targets
+                .iter()
+                .flat_map(|target| target.touched_properties.iter().cloned()),
+        );
+        for record in self
+            .current
+            .graph
+            .records
+            .iter()
+            .chain(&proposed.graph.records)
+        {
+            if let Some(content) = &record.content {
+                properties.extend(
+                    content
+                        .extensions
+                        .keys()
+                        .cloned()
+                        .map(authority::Property::Extension),
+                );
+            }
+        }
+        let assertions = self
+            .current
+            .graph
+            .concepts
+            .iter()
+            .chain(&proposed.graph.concepts)
+            .map(|concept| concept.uid.clone())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .flat_map(|predicate_uid| {
+                vec![
+                    authority::AssertionGrant {
+                        predicate_uid: predicate_uid.clone(),
+                        target: authority::AssertionTarget::Unary,
+                        role: authority::AssertionRole::Ordinary,
+                        properties: BTreeSet::from([
+                            authority::AssertionProperty::Quantity,
+                            authority::AssertionProperty::Unit,
+                        ]),
+                    },
+                    authority::AssertionGrant {
+                        predicate_uid: predicate_uid.clone(),
+                        target: authority::AssertionTarget::AnyReadableRecord,
+                        role: authority::AssertionRole::Ordinary,
+                        properties: BTreeSet::from([
+                            authority::AssertionProperty::Quantity,
+                            authority::AssertionProperty::Unit,
+                        ]),
+                    },
+                    authority::AssertionGrant {
+                        predicate_uid,
+                        target: authority::AssertionTarget::Unary,
+                        role: authority::AssertionRole::Identity,
+                        properties: BTreeSet::new(),
+                    },
+                ]
+            })
+            .collect::<Vec<_>>();
+        for (key, operation) in [
+            ("record:create", Operation::Create),
+            ("record:update", Operation::Update),
+            ("record:update", Operation::Restore),
+            ("record:delete", Operation::Delete),
+        ] {
+            if source.unrestricted.contains(key) {
+                policy.grants.push(authority::MutationGrant {
+                    operation,
+                    selector: Predicate::All(vec![]),
+                    properties: properties.clone(),
+                    assertions_add: assertions.clone(),
+                    assertions_remove: assertions.clone(),
+                });
+            }
+        }
         let records = match assertion_intents {
             Some(intents) => authority::authorize_record_changes_with_assertion_intents(
-                Some(&self.policy),
+                Some(&policy),
                 &self.current.graph,
                 &proposed.graph,
                 &self.current.ceiling,
@@ -365,7 +495,7 @@ impl<'operation, 'database> Access<'operation, 'database> {
                 &self.limits.authority,
             ),
             None => authority::authorize_record_changes(
-                Some(&self.policy),
+                Some(&policy),
                 &self.current.graph,
                 &proposed.graph,
                 &self.current.ceiling,
@@ -425,7 +555,11 @@ impl<'operation, 'database> Access<'operation, 'database> {
         Ok(BatchDecision {
             records,
             readable: proposed.readable,
-            target_content: proposed.content,
+            target_content: proposed
+                .content
+                .into_iter()
+                .filter(|(uid, _)| self.targets.contains(uid))
+                .collect(),
             revisions,
         })
     }
@@ -441,7 +575,11 @@ impl<'operation, 'database> PreparedChanges<'operation, 'database> {
     }
 
     pub fn current_target(&self, uid: &str) -> Option<&TargetRecordContent> {
-        self.access.current.content.get(uid)
+        self.access
+            .targets
+            .contains(uid)
+            .then(|| self.access.current.content.get(uid))
+            .flatten()
     }
 
     pub fn current_assertion(&self, uid: &str) -> Option<&access_snapshot::AssertionMetadata> {
@@ -450,7 +588,9 @@ impl<'operation, 'database> PreparedChanges<'operation, 'database> {
             .metadata
             .assertions
             .iter()
-            .find(|assertion| assertion.uid == uid)
+            .find(|assertion| {
+                assertion.uid == uid && self.access.targets.contains(&assertion.subject_uid)
+            })
     }
 
     pub async fn finish_changes(
@@ -515,7 +655,7 @@ async fn snapshot_on(
     transaction: &mut Transaction<'_, Sqlite>,
     admission: &DeviceAdmission,
     hosted_organ: &str,
-    role: i64,
+    roles: &[i64],
     policy: &RolePolicy,
     targets: &BTreeSet<String>,
     limits: &AccessLimits,
@@ -529,16 +669,19 @@ async fn snapshot_on(
     let existing_targets: Vec<String> = metadata
         .records
         .iter()
-        .filter(|record| targets.contains(&record.uid))
         .map(|record| record.uid.clone())
         .collect();
+    let content_limits = AccessSnapshotLimits {
+        targets: limits.authority.records,
+        ..limits.snapshot.clone()
+    };
     let content =
-        access_snapshot::content_on(transaction, &existing_targets, &limits.snapshot).await?;
+        access_snapshot::content_on(transaction, &existing_targets, &content_limits).await?;
     if content.len() != existing_targets.len() {
         return Err(AccessError::InvalidMutation);
     }
     let graph = graph(&metadata, &content)?;
-    let (ceiling, linguas) = ceilings(&metadata, admission, hosted_organ, role);
+    let (ceiling, linguas) = ceilings(&metadata, admission, hosted_organ, roles);
     let records = authority::readable_records(Some(policy), &graph, &ceiling, &limits.authority)?;
     let readable = readable_sets(&metadata, &ceiling, records, linguas);
     let mut revisions = BTreeMap::new();
@@ -556,6 +699,27 @@ async fn snapshot_on(
         readable,
         revisions,
     })
+}
+
+pub(crate) async fn policy_graph_on(
+    transaction: &mut Transaction<'_, Sqlite>,
+    targets: &[String],
+) -> Result<GraphSnapshot, AccessError> {
+    let limits = AccessSnapshotLimits {
+        targets: 4096,
+        ..Default::default()
+    };
+    let metadata = access_snapshot::metadata_on(transaction, &limits).await?;
+    if targets.len() > 256 {
+        return Err(AccessError::InvalidMutation);
+    }
+    let records = metadata
+        .records
+        .iter()
+        .map(|record| record.uid.clone())
+        .collect::<Vec<_>>();
+    let content = access_snapshot::content_on(transaction, &records, &limits).await?;
+    graph(&metadata, &content)
 }
 
 fn graph(
@@ -659,6 +823,24 @@ impl Restriction {
 }
 
 fn ceilings(
+    metadata: &AccessMetadataSnapshot,
+    admission: &DeviceAdmission,
+    hosted_organ: &str,
+    roles: &[i64],
+) -> (VisibilityCeiling, BTreeSet<String>) {
+    let mut result = VisibilityCeiling::default();
+    let mut linguas = BTreeSet::new();
+    for role in roles {
+        let (ceiling, visible) = role_ceilings(metadata, admission, hosted_organ, *role);
+        result.records.extend(ceiling.records);
+        result.concepts.extend(ceiling.concepts);
+        result.places.extend(ceiling.places);
+        linguas.extend(visible);
+    }
+    (result, linguas)
+}
+
+fn role_ceilings(
     metadata: &AccessMetadataSnapshot,
     admission: &DeviceAdmission,
     hosted_organ: &str,

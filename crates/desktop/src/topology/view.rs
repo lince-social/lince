@@ -61,21 +61,19 @@ pub fn synchronize(world: &mut World) {
     }
     let mut view = *world.get::<View>(root).unwrap();
     let before = DVec3::from_array(view.position);
-    let focus = world
-        .get_resource::<bevy::input_focus::InputFocus>()
-        .and_then(|f| f.get());
-    if view.spatial && focus.is_none_or(|e| world.get::<bevy::text::EditableText>(e).is_none()) {
+    if view.spatial && !crate::shortcuts::editing_text(world) {
+        use crate::shortcuts::{Shortcut, pressed};
         let keys = world.resource::<ButtonInput<KeyCode>>();
         let mut direction = Vec3::ZERO;
         for (key, delta) in [
-            (KeyCode::KeyW, -Vec3::Z),
-            (KeyCode::KeyS, Vec3::Z),
-            (KeyCode::KeyA, -Vec3::X),
-            (KeyCode::KeyD, Vec3::X),
-            (KeyCode::KeyQ, -Vec3::Y),
-            (KeyCode::KeyE, Vec3::Y),
+            (Shortcut::Forward, -Vec3::Z),
+            (Shortcut::Backward, Vec3::Z),
+            (Shortcut::Left, -Vec3::X),
+            (Shortcut::Right, Vec3::X),
+            (Shortcut::Down, -Vec3::Y),
+            (Shortcut::Up, Vec3::Y),
         ] {
-            if keys.pressed(key) {
+            if pressed(world, key, keys) {
                 direction += delta;
             }
         }
@@ -83,13 +81,13 @@ pub fn synchronize(world: &mut World) {
             .get_resource::<Time>()
             .map_or(0.0, |t| t.delta_secs().min(0.05));
         let turn = dt * 1.5;
-        for (key, sign) in [(KeyCode::ArrowLeft, 1.0), (KeyCode::ArrowRight, -1.0)] {
-            if keys.pressed(key) {
+        for (key, sign) in [(Shortcut::TurnLeft, 1.0), (Shortcut::TurnRight, -1.0)] {
+            if pressed(world, key, keys) {
                 view.yaw += sign * turn;
             }
         }
-        for (key, sign) in [(KeyCode::ArrowUp, 1.0), (KeyCode::ArrowDown, -1.0)] {
-            if keys.pressed(key) {
+        for (key, sign) in [(Shortcut::LookUp, 1.0), (Shortcut::LookDown, -1.0)] {
+            if pressed(world, key, keys) {
                 view.pitch = (view.pitch + sign * turn).clamp(-1.5, 1.5);
             }
         }
@@ -99,12 +97,14 @@ pub fn synchronize(world: &mut World) {
         view.position = (position + delta).to_array();
         if delta != DVec3::ZERO
             || turn != 0.0
-                && keys.any_pressed([
-                    KeyCode::ArrowLeft,
-                    KeyCode::ArrowRight,
-                    KeyCode::ArrowUp,
-                    KeyCode::ArrowDown,
-                ])
+                && [
+                    Shortcut::TurnLeft,
+                    Shortcut::TurnRight,
+                    Shortcut::LookUp,
+                    Shortcut::LookDown,
+                ]
+                .into_iter()
+                .any(|shortcut| pressed(world, shortcut, keys))
         {
             if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
                 wake.ring();

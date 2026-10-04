@@ -23,6 +23,7 @@ mod agents;
 mod assignments;
 mod behavior;
 mod connections;
+mod profiles;
 mod context;
 mod mentions;
 mod output;
@@ -30,7 +31,7 @@ mod output;
 mod tests;
 mod timeline;
 mod usage;
-mod vault;
+pub(crate) mod vault;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Configuration {
@@ -62,6 +63,7 @@ struct Login {
 pub struct Host {
     agents: agents::Agents,
     preparation: Mutex<()>,
+    profile_lock: Mutex<()>,
     assignments: Mutex<assignments::Queue>,
     activation_dispatch: Mutex<()>,
     engine: Arc<Engine>,
@@ -76,6 +78,8 @@ pub struct Host {
 }
 
 impl Host {
+    pub(crate) fn shared_vault(&self) -> Arc<vault::Vault> { self.vault.clone() }
+
     async fn cancel_login(&self) {
         if let Some(login) = self.login.lock().await.take() {
             login.task.abort();
@@ -87,6 +91,7 @@ impl Host {
         let host = Self {
             agents: Default::default(),
             preparation: Mutex::new(()),
+            profile_lock: Mutex::new(()),
             assignments: Mutex::new(assignments::Queue::load(&directory)?),
             activation_dispatch: Mutex::new(()),
             vault: Arc::new(vault::Vault::new(engine.clone())),
@@ -244,6 +249,7 @@ impl Host {
         });
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
+            connections: self.profile_status(record)?,
             activations: self
                 .engine
                 .fiote_activations(record)
@@ -598,6 +604,7 @@ impl Service for Host {
             }
             Request::AgentConfigure { record, config } => {
                 self.configure_agent(&record, config).await?;
+                self.remember_connection_configuration(&record).await?;
                 record
             }
             Request::AgentCheck { record, config } => {
@@ -610,6 +617,7 @@ impl Service for Host {
             }
             Request::AgentOptions { record, config } => {
                 self.agent_options(&record, config).await?;
+                self.remember_connection_configuration(&record).await?;
                 record
             }
             Request::AgentSetOption {
@@ -618,6 +626,7 @@ impl Service for Host {
                 value,
             } => {
                 self.set_agent_option(&record, &option, &value).await?;
+                self.remember_connection_configuration(&record).await?;
                 record
             }
             Request::AgentLogout { record } => {
@@ -630,6 +639,7 @@ impl Service for Host {
             }
             Request::AgentProvider { record, provider } => {
                 self.select_agent_provider(&record, &provider).await?;
+                self.remember_connection_configuration(&record).await?;
                 record
             }
             Request::AgentProviderLogin {
@@ -756,6 +766,9 @@ impl Service for Host {
                 self.cancel_login().await;
                 record
             }
+            Request::Connections { record, request } => {
+                return self.connection_request(&record, request).await;
+            }
             Request::Inspect { record } => record,
             Request::Configure {
                 record,
@@ -764,6 +777,7 @@ impl Service for Host {
                 password,
             } => {
                 self.configure(&record, settings, api_key, password).await?;
+                self.remember_connection_configuration(&record).await?;
                 record
             }
             Request::Stop { thread } => {

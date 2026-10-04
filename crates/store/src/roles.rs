@@ -76,7 +76,7 @@ pub async fn name_exists_on(
 }
 
 pub async fn assigned_on(connection: &mut SqliteConnection, id: i64) -> Result<bool, StoreError> {
-    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM person_access WHERE role_id = ?)")
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM person_access WHERE role_id = ?1 UNION SELECT 1 FROM person_role WHERE role_id = ?1)")
         .bind(id)
         .fetch_one(connection)
         .await

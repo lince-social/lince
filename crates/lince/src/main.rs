@@ -11,6 +11,10 @@ use utils::logging::{init, set_quiet};
 fn main() -> Result<(), Error> {
     utils::build_info::set_revision(option_env!("LINCE_REVISION").unwrap_or("unknown"));
     let args = env::args().collect::<Vec<String>>();
+    if has_arg(&args, "--mcp-stdio") {
+        return tokio::runtime::Builder::new_current_thread().enable_all().build()?
+            .block_on(cell::bridge_stdio()).map_err(Error::other);
+    }
     if has_arg(&args, "--fiote-provider") {
         return cell::serve_provider_adapter();
     }

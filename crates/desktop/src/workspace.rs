@@ -32,6 +32,9 @@ pub struct Workspace {
 
 #[derive(Component)]
 pub struct Workspaces {
+    pub(crate) canvas_id: String,
+    pub(crate) hidden_records: HashSet<String>,
+    pub(crate) canvas_state: Option<nucleus::canvas::State>,
     pub active: u64,
     pub entries: Vec<Workspace>,
     pub error: Option<String>,
@@ -41,6 +44,9 @@ pub struct Workspaces {
 impl Default for Workspaces {
     fn default() -> Self {
         Self {
+            canvas_id: nucleus::new_uid("canvas"),
+            hidden_records: HashSet::new(),
+            canvas_state: None,
             active: 1,
             entries: vec![Workspace {
                 topology: Default::default(),
@@ -70,7 +76,7 @@ pub(crate) struct SavedRecord {
     uid: String,
     #[serde(default)]
     pub(crate) tokens: crate::tokens::TokenOverrides,
-    workspace: u64,
+    pub(crate) workspace: u64,
     position: [f64; 2],
     size: [f32; 2],
 }
@@ -89,11 +95,19 @@ struct SavedSand {
     #[serde(default)]
     timer: Option<crate::work_timer::LocalTimer>,
     #[serde(default)]
+    time_castle: Option<lince_interface::time_castle::Settings>,
+    #[serde(default)]
     todo: Option<crate::todo::SavedTodo>,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Document {
+    #[serde(default)]
+    canvas_id: Option<String>,
+    #[serde(default)]
+    hidden_records: HashSet<String>,
+    #[serde(default)]
+    canvas_state: Option<nucleus::canvas::State>,
     #[serde(skip)]
     recovery: recovery::Report,
     #[serde(default)]
@@ -108,6 +122,8 @@ struct Document {
     theme: crate::tokens::ThemeSettings,
     #[serde(default)]
     controls: crate::canvas_controls::ControlsSettings,
+    #[serde(default)]
+    shortcuts: crate::shortcuts::Settings,
     active: u64,
     workspaces: Vec<Workspace>,
     sands: Vec<SavedSand>,
@@ -129,6 +145,12 @@ struct Document {
     #[serde(default)]
     documents: Vec<crate::document_viewer::SavedDocumentViewer>,
     #[serde(default)]
+    media: Vec<crate::media_sand::SavedMedia>,
+    #[serde(default)]
+    drawings: Vec<crate::drawing::SavedDrawing>,
+    #[serde(default)]
+    extension_sands: Vec<crate::record_extensions::SavedExtensions>,
+    #[serde(default)]
     editors: Vec<crate::ide::SavedIde>,
     #[serde(default)]
     explorers: Vec<crate::file_explorer::SavedExplorer>,
@@ -144,8 +166,14 @@ impl Document {
     fn validate(&self) -> bool {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
-        self.theme.validate()
-            && self.simulations.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
+        self.canvas_id.as_ref().is_none_or(|id| nucleus::valid_uid(id, "canvas"))
+            && self.canvas_state.as_ref().is_none_or(|state| state.validate().is_ok())
+            && self.theme.validate()
+            && self.shortcuts.validate().is_ok()
+            && self
+                .simulations
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .assertions
                 .iter()
@@ -174,6 +202,12 @@ impl Document {
                 .documents
                 .iter()
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .media
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self.drawings.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self.extension_sands.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .frequency_castles
                 .iter()
@@ -249,6 +283,7 @@ impl SavedSand {
                 .timer
                 .as_ref()
                 .is_none_or(|timer| self.kind == SandKind::WorkTimer && timer.valid())
+            && self.time_castle.as_ref().is_none_or(|settings| self.kind == SandKind::WorkTimer && settings.valid())
             && self
                 .todo
                 .as_ref()
@@ -307,6 +342,7 @@ pub struct WorkspacePlugin;
 impl Plugin for WorkspacePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<crate::tokens::ThemeSettings>()
+            .init_resource::<crate::shortcuts::Settings>()
             .add_message::<AppExit>()
             .add_systems(
                 Update,
@@ -359,11 +395,15 @@ fn initialize(world: &mut World) {
                         Some(serde_json::to_vec_pretty(&document).unwrap());
                 }
                 restored = true;
+                if let Some(id) = document.canvas_id { spaces.canvas_id = id; }
+                spaces.canvas_state = document.canvas_state;
+                spaces.hidden_records = document.hidden_records;
                 world
                     .entity_mut(root)
                     .insert(crate::layout::records::SavedLayouts(document.layouts));
                 world.insert_resource(document.theme);
                 world.insert_resource(document.controls);
+                world.insert_resource(document.shortcuts);
                 spaces.active = document.active;
                 spaces.entries = document.workspaces;
                 spaces.saved_records = document
@@ -390,7 +430,9 @@ fn initialize(world: &mut World) {
                 for saved in document.karma_castles {
                     saved.restore(world, root);
                 }
-                for saved in document.simulations { saved.restore(world, root); }
+                for saved in document.simulations {
+                    saved.restore(world, root);
+                }
                 for saved in document.recorders {
                     saved.restore(world, root);
                 }
@@ -401,6 +443,15 @@ fn initialize(world: &mut World) {
                     saved.restore(world, root);
                 }
                 for saved in document.documents {
+                    saved.restore(world, root);
+                }
+                for saved in document.media {
+                    saved.restore(world, root);
+                }
+                for saved in document.drawings {
+                    saved.restore(world, root);
+                }
+                for saved in document.extension_sands {
                     saved.restore(world, root);
                 }
                 for saved in document.transfer_castles {
@@ -426,6 +477,11 @@ fn initialize(world: &mut World) {
                         DVec2::from_array(saved.position),
                         saved.asset,
                     );
+                    if saved.centered {
+                        world
+                            .entity_mut(entity)
+                            .insert(crate::topology::assets::CenteredAsset);
+                    }
                     world.get_mut::<CanvasItem>(entity).unwrap().size =
                         Vec2::from_array(saved.size);
                     saved.placement.restore(world, entity);
@@ -487,6 +543,7 @@ fn initialize(world: &mut World) {
                     if let Some(timer) = sand.timer {
                         world.entity_mut(entity).insert(timer);
                     }
+                    if let Some(settings) = sand.time_castle { world.entity_mut(entity).insert(crate::time_castle::TimeSettings(settings)); }
                     world.entity_mut(entity).insert(StoredSand {
                         kind: sand.kind,
                         content,
@@ -622,10 +679,12 @@ pub fn create(world: &mut World, root: Entity) {
     else {
         return;
     };
+    let id = id.max(spaces.canvas_state.as_ref().map_or(id, nucleus::canvas::State::next_workspace_id));
     let Some(id) = crate::workspace_config::next_id(world, root, id) else {
         return;
     };
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    if let Some(state) = &mut spaces.canvas_state { if state.reserve_workspace_id(id).is_err() { return; } }
     spaces.entries.push(Workspace {
         topology: Default::default(),
         id,
@@ -719,6 +778,9 @@ pub(crate) fn place_record(world: &mut World, root: Entity, card: Entity, uid: &
 fn snapshot(world: &mut World, root: Entity) -> Document {
     let spaces = world.get::<Workspaces>(root).unwrap();
     let active = spaces.active;
+    let canvas_id = spaces.canvas_id.clone();
+    let hidden_records = spaces.hidden_records.clone();
+    let canvas_state = spaces.canvas_state.clone();
     let mut workspaces = spaces.entries.clone();
     let camera = world.get::<CanvasView>(root).unwrap();
     let current = workspaces
@@ -742,7 +804,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         Option<&RecordPlacement>,
     )>();
     for (entity, parent, item, member, sand, record) in items.iter(world) {
-        if parent.parent() != root {
+        if parent.parent() != root || world.get::<crate::external_drop::Preview>(entity).is_some() {
             continue;
         }
         if let Some(record) = record {
@@ -765,6 +827,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 kind: sand.kind,
                 texts: sand_text::snapshot(world, entity),
                 timer: world.get::<crate::work_timer::LocalTimer>(entity).cloned(),
+                time_castle: world.get::<crate::time_castle::TimeSettings>(entity).map(|settings| settings.0.clone()),
                 todo: crate::todo::snapshot(world, entity),
                 workspace: member.0,
                 position: item.position.to_array(),
@@ -791,6 +854,9 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .collect();
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));
     Document {
+        canvas_id: Some(canvas_id),
+        hidden_records,
+        canvas_state,
         recovery: Default::default(),
         layouts: crate::layout::records::snapshot(world, root),
         imports: crate::topology::assets::snapshot(world, root),
@@ -799,6 +865,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
             .get_resource::<crate::canvas_controls::ControlsSettings>()
             .copied()
             .unwrap_or_default(),
+        shortcuts: world.resource::<crate::shortcuts::Settings>().clone(),
         active,
         workspaces,
         sands,
@@ -813,12 +880,23 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         transfer_castles: crate::transfer_castle::snapshot(world, root),
         recorders: crate::recorder_castle::snapshot(world, root),
         documents: crate::document_viewer::snapshot(world, root),
+        media: crate::media_sand::snapshot(world, root),
+        drawings: crate::drawing::snapshot(world, root),
+        extension_sands: crate::record_extensions::snapshot(world, root),
         editors: crate::ide::snapshot(world, root),
         explorers: crate::file_explorer::snapshot(world, root),
         calendars: crate::calendar::snapshot(world, root),
         kanbans: crate::kanban::snapshot(world, root),
         instincts: crate::instinct::snapshot(world, root),
     }
+}
+
+pub(crate) fn request_save(world: &World) {
+    if let Some(writer) = world.get_resource::<WorkspaceFile>().and_then(|file| file.writer.as_ref()) { writer.request_save(); }
+}
+
+pub(crate) fn saved_canvas_revision(world: &World, root: Entity) -> u64 {
+    world.get::<Workspaces>(root).and_then(|spaces| world.get_resource::<WorkspaceFile>().and_then(|file| file.writer.as_ref()).map(|writer| writer.saved_revision(&spaces.canvas_id))).unwrap_or(0)
 }
 
 pub(crate) fn persist(world: &mut World) {
@@ -838,7 +916,11 @@ pub(crate) fn persist(world: &mut World) {
         return;
     }
     let Some(root) = world
-        .query_filtered::<Entity, (With<Workspaces>, Without<crate::laboratory::LaboratoryRoot>, Without<crate::component_push::composition::GeneratedCanvas>)>()
+        .query_filtered::<Entity, (
+            With<Workspaces>,
+            Without<crate::laboratory::LaboratoryRoot>,
+            Without<crate::component_push::composition::GeneratedCanvas>,
+        )>()
         .iter(world)
         .next()
     else {
@@ -970,6 +1052,24 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn drawings_restore_native_strokes_from_disk_after_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        let drawing = nucleus::drawing::Drawing { strokes: vec![nucleus::drawing::Stroke {
+            points: vec![[20.0, 30.0], [160.0, 90.0]], color: [25, 80, 170, 255], width: 4.0,
+        }], ..Default::default() };
+        crate::drawing::spawn(app.world_mut(), root, 1, DVec2::new(90.0, 140.0), drawing.clone());
+        flush(&mut app);
+        drop(app);
+        let (mut app, root) = fixture(Some(path));
+        let document = snapshot(app.world_mut(), root);
+        assert_eq!(document.drawings.len(), 1);
+        assert_eq!(app.world_mut().query::<&crate::drawing::NativeDrawing>().single(app.world()).unwrap().0, drawing);
+        assert!(document.validate());
+    }
+
+    #[cfg_attr(test, test)]
     fn document_viewers_restore_progress_from_disk_after_restart() {
         use crate::document_viewer::{DocumentViewer, spawn};
         use lince_document::{Mode, Position};
@@ -1016,6 +1116,67 @@ pub(crate) mod tests {
             (epub.section, epub.mode, epub.fraction),
             (3, Mode::Scroll, 0.625)
         );
+    }
+
+    #[test]
+    fn displayed_images_links_and_centered_models_survive_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        for sand in [
+            crate::media_sand::MediaSand::Image {
+                path: "/images/picture.png".into(),
+            },
+            crate::media_sand::MediaSand::Link {
+                url: "https://example.com/book.pdf".into(),
+            },
+        ] {
+            let entity =
+                crate::media_sand::spawn(app.world_mut(), root, 1, DVec2::new(30.0, 40.0), sand);
+            app.world_mut()
+                .entity_mut(entity)
+                .insert(crate::topology::Spatial {
+                    elevation: 50.0,
+                    ..default()
+                });
+        }
+        let model = crate::topology::assets::spawn(
+            app.world_mut(),
+            root,
+            1,
+            DVec2::new(60.0, 70.0),
+            crate::topology::assets::ImportedAsset {
+                id: "a".repeat(32),
+                name: "Model".into(),
+                file: "source.glb".into(),
+                scale: 250.0,
+            },
+        );
+        app.world_mut()
+            .entity_mut(model)
+            .insert(crate::topology::assets::CenteredAsset);
+        let before = snapshot(app.world_mut(), root);
+        assert!(before.sands.is_empty() && before.records.is_empty());
+        assert_eq!(before.media.len(), 2);
+        flush(&mut app);
+        drop(app);
+        let (mut app, root) = fixture(Some(path));
+        let after = snapshot(app.world_mut(), root);
+        let media = |document: &Document| {
+            let mut media: Vec<_> = document
+                .media
+                .iter()
+                .map(|media| serde_json::to_string(media).unwrap())
+                .collect();
+            media.sort();
+            media
+        };
+        assert_eq!(media(&before), media(&after));
+        assert_eq!(
+            serde_json::to_value(&before.imports).unwrap(),
+            serde_json::to_value(&after.imports).unwrap()
+        );
+        assert!(after.sands.is_empty() && after.records.is_empty());
     }
 
     #[cfg_attr(test, test)]
@@ -1102,6 +1263,8 @@ pub(crate) mod tests {
             {"id":"work.log:running", "start":"2026-09-19T11:00:00Z", "end":null}
         ]})).unwrap();
         app.world_mut().entity_mut(sand).insert(timer.clone());
+        let settings = lince_interface::time_castle::Settings { aperture_ms: 7_200_000, horizon_ms: 36_000_000, timezone: "America/Sao_Paulo".into(), mode: lince_interface::time_castle::Mode::Straight, ..default() };
+        app.world_mut().entity_mut(sand).insert(crate::time_castle::TimeSettings(settings.clone()));
         flush(&mut app);
         drop(app);
         let (mut app, _) = fixture(Some(path));
@@ -1112,6 +1275,8 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(restored, &timer);
         assert!(restored.valid());
+        let restored_settings = app.world_mut().query::<&crate::time_castle::TimeSettings>().single(app.world()).unwrap();
+        assert_eq!(restored_settings.0, settings);
     }
 
     #[test]
@@ -1350,6 +1515,7 @@ pub(crate) mod tests {
                 .unwrap();
         area.direction = Direction::Repel;
         area.strength = 42.5;
+        area.paused = true;
         area.reach = crate::area::Reach {
             mode: crate::area::ReachMode::Unlimited,
             shape: crate::area::ReachShape::Square,
@@ -1546,6 +1712,14 @@ pub(crate) mod tests {
         create(world, root);
         rename(world, root, "Writing");
         world.insert_resource(crate::canvas_controls::ControlsSettings { always_show: true });
+        world
+            .resource_mut::<crate::shortcuts::Settings>()
+            .set(crate::shortcuts::Shortcut::DeleteSand, "Ctrl+Shift+D")
+            .unwrap();
+        world
+            .resource_mut::<crate::shortcuts::Settings>()
+            .set(crate::shortcuts::Shortcut::LookUp, "Unbound")
+            .unwrap();
         let colors = crate::canvas_background::CanvasColors {
             background: [16, 32, 48],
             grid: [64, 80, 96],
@@ -1594,6 +1768,18 @@ pub(crate) mod tests {
         let (mut loaded, root) = fixture(Some(path));
         let world = loaded.world_mut();
         assert_eq!(world.get::<Workspaces>(root).unwrap().active, 2);
+        assert_eq!(
+            world
+                .resource::<crate::shortcuts::Settings>()
+                .text(crate::shortcuts::Shortcut::DeleteSand),
+            "Ctrl+Shift+D"
+        );
+        assert!(
+            world
+                .resource::<crate::shortcuts::Settings>()
+                .chord(crate::shortcuts::Shortcut::LookUp)
+                .is_none()
+        );
         assert!(
             world
                 .resource::<crate::canvas_controls::ControlsSettings>()
@@ -1922,6 +2108,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        drawings_restore_native_strokes_from_disk_after_restart,
         document_viewers_restore_progress_from_disk_after_restart,
         instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way,
         protein_group_settings_are_saved_without_generated_areas,

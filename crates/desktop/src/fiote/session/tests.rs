@@ -1,23 +1,8 @@
 use super::*;
 
-#[test]
-fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
-    let mut app = App::new();
-    app.init_resource::<Assets<Font>>()
-        .init_resource::<crate::theme::Typography>()
-        .init_resource::<ButtonInput<KeyCode>>()
-        .add_message::<crate::cell_bridge::CellMessage>()
-        .add_plugins(Plugin);
-    let world = app.world_mut();
-    let owner = world.spawn_empty().id();
-    let status = world.spawn(Text::default()).id();
-    let content = world.spawn((Node::default(), ChildOf(owner))).id();
-    let binding = RecordBinding {
-        area: owner,
-        uid: nucleus::new_uid("r"),
-        source: Source::Local,
-    };
-    let saved = FioteStatus {
+pub(super) fn fixture_status(record: &str) -> FioteStatus {
+    FioteStatus {
+        connections: Default::default(),
         activations: Vec::new(),
         questions: Vec::new(),
         usage: Vec::new(),
@@ -42,7 +27,7 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
             serde_json::json!({"providers":[{"providerId":"a","name":"First"},{"providerId":"b","name":"Second"}],"selectedProvider":{"fields":[{"key":"KEY","label":"Key","secret":true}]}}),
         ),
         agent_activity: vec![],
-        record: binding.uid.clone(),
+        record: record.into(),
         settings: FioteSettings {
             enabled: true,
             ..Default::default()
@@ -56,7 +41,57 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
         providers: vec![],
         requires_credential: false,
         tool_connections: vec![],
+    }
+}
+
+#[test]
+fn disconnected_fiote_login_and_send_offer_generic_routes() {
+    let mut app = App::new();
+    app.init_resource::<Assets<Font>>()
+        .init_resource::<crate::theme::Typography>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<crate::cell_bridge::CellMessage>()
+        .add_plugins(Plugin);
+    let world = app.world_mut();
+    let parent = world.spawn(Node::default()).id();
+    let binding = RecordBinding { area: parent, uid: nucleus::new_uid("r"), source: Source::Local };
+    populate(world, parent, binding.clone());
+    let owner = world.query::<(Entity, &Panel)>().iter(world).next().unwrap().0;
+    let mut saved = fixture_status(&binding.uid);
+    saved.agent = None;
+    saved.agent_info = None;
+    saved.settings.enabled = false;
+    let mut panel = world.get_mut::<Panel>(owner).unwrap();
+    panel.automatic = true;
+    panel.saved = Some(saved);
+    assert!(command(world, &binding, "/login"));
+    assert!(world.get::<Panel>(owner).unwrap().step == Step::Connections);
+    show(world, owner, Step::Closed);
+    assert!(!ready(world, &binding));
+    assert!(world.get::<Panel>(owner).unwrap().step == Step::Connections);
+    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "New harness connection"));
+    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "New local/API model"));
+    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "External AI tools"));
+}
+
+#[test]
+fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
+    let mut app = App::new();
+    app.init_resource::<Assets<Font>>()
+        .init_resource::<crate::theme::Typography>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<crate::cell_bridge::CellMessage>()
+        .add_plugins(Plugin);
+    let world = app.world_mut();
+    let owner = world.spawn_empty().id();
+    let status = world.spawn(Text::default()).id();
+    let content = world.spawn((Node::default(), ChildOf(owner))).id();
+    let binding = RecordBinding {
+        area: owner,
+        uid: nucleus::new_uid("r"),
+        source: Source::Local,
     };
+    let saved = fixture_status(&binding.uid);
     world.entity_mut(owner).insert(Panel {
         view_uid: binding.uid.clone(),
         pending_command: None,
@@ -149,7 +184,7 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Agent);
 }
 
-async fn deliver(app: &mut App) {
+pub(super) async fn deliver(app: &mut App) {
     loop {
         let bridge = app
             .world_mut()
@@ -201,7 +236,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
             .unwrap(),
     );
     let runtime = cell::CellRuntime {
-            speech: None,
+        speech: None,
         commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
@@ -232,8 +267,10 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         .query_filtered::<Entity, With<Panel>>()
         .single(app.world())
         .unwrap();
-    assert!(app.world().get::<Panel>(owner).unwrap().step == Step::Agent);
-    show(app.world_mut(), owner, Step::Providers);
+    assert!(app.world().get::<Panel>(owner).unwrap().step == Step::Connections);
+    deliver(&mut app).await;
+    let login = app.world_mut().query::<(&crate::actions::ActionButton, &bevy::a11y::AccessibilityNode)>().iter(app.world()).find(|(_, node)| node.label() == Some("Model login options")).map(|(button, _)| button.clone()).unwrap();
+    login.actions.run(app.world_mut(), login.target);
     assert!(app.world().get::<Panel>(owner).unwrap().step == Step::Providers);
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
@@ -266,6 +303,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
         .reset_all();
+    assert_eq!(app.world().get::<Panel>(owner).unwrap().selection, 1);
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
         .press(KeyCode::Enter);
@@ -273,8 +311,10 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
         .reset_all();
-    assert_eq!(app.world().get::<Panel>(owner).unwrap().selection, 1);
     assert!(app.world().get::<Panel>(owner).unwrap().provider.is_some());
+    if app.world().get::<Panel>(owner).unwrap().step == Step::Methods {
+        Choose(0).apply(app.world_mut(), owner);
+    }
     let fields = app.world().get::<Panel>(owner).unwrap().fields.clone();
     for (index, value) in [
         (0, "test-model"),
@@ -461,7 +501,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         .find(|panel| panel.view_uid == task)
         .unwrap();
     assert_eq!(task_panel.binding.uid, record);
-    assert!(task_panel.step == Step::Agent);
+    assert!(task_panel.step == Step::Connections);
     let query = serde_json::from_value(serde_json::json!({"source":"record","where":[{"uid_eq":task}],"fields":["kind"],"limit":1})).unwrap();
     let rows = protein::execute(&engine.store, &query).await.unwrap();
     assert_eq!(rows[0]["kind"], "plain");

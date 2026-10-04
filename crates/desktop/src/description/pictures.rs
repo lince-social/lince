@@ -60,7 +60,7 @@ fn url(source: &str) -> Result<reqwest::Url, String> {
     Ok(url)
 }
 
-fn decode(bytes: Vec<u8>) -> Pixels {
+pub(super) fn decode(bytes: Vec<u8>) -> Pixels {
     if bytes.len() > MAX_BYTES {
         return Err("Image exceeds 8 MB.".into());
     }

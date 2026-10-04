@@ -54,15 +54,26 @@ async fn a_credential_free_person_can_receive_authority() {
 }
 
 #[tokio::test]
-async fn a_credential_free_admin_prevents_bootstrap_replacement() {
+async fn a_credential_free_recovery_actor_prevents_bootstrap_replacement() {
     let store = Store::open_memory().await.unwrap();
-    let uid = person(&store, "Credential-free admin").await;
-    let admin = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE)
+    let uid = person(&store, "Credential-free recovery Actor").await;
+    let admin = store::auth::ensure_role(&store.pool, "Recovery steward")
         .await
         .unwrap();
     store::auth::compare_and_set_role(&store.pool, &uid, Some(admin), 0)
         .await
         .unwrap();
+
+    assert!(!store::auth::admin_exists(&store.pool).await.unwrap());
+    for key in store::person_roles::RECOVERY_PERMISSIONS {
+        let (subject, operation) = key.split_once(':').unwrap();
+        let permission = store::auth::ensure_permission(&store.pool, subject, operation)
+            .await
+            .unwrap();
+        store::auth::grant(&store.pool, admin, permission)
+            .await
+            .unwrap();
+    }
 
     assert!(store::auth::admin_exists(&store.pool).await.unwrap());
     assert_eq!(

@@ -69,7 +69,14 @@ fn six_file_formats_keep_bytes_remove_selection_and_survive_failed_sends() {
     ];
     let mut parts = Vec::new();
     for (index, (name, mime_type)) in fixtures.into_iter().enumerate() {
-        let bytes = vec![index as u8; 32 + index];
+        let bytes = [
+            include_bytes!("../../tests/fixtures/fiote/note.txt").as_slice(),
+            include_bytes!("../../tests/fixtures/fiote/table.csv").as_slice(),
+            include_bytes!("../../tests/fixtures/fiote/document.pdf").as_slice(),
+            include_bytes!("../../tests/fixtures/fiote/photo.png").as_slice(),
+            include_bytes!("../../tests/fixtures/fiote/audio.wav").as_slice(),
+            include_bytes!("../../tests/fixtures/fiote/video.mp4").as_slice(),
+        ][index].to_vec();
         let path = directory.path().join(name);
         std::fs::write(&path, &bytes).unwrap();
         let part = read_file(path, false).unwrap();
@@ -94,4 +101,71 @@ fn six_file_formats_keep_bytes_remove_selection_and_survive_failed_sends() {
     assert_eq!(contents(&world, owner).unwrap(), parts);
     sent(&mut world, owner, true);
     assert!(contents(&world, owner).unwrap().is_empty());
+}
+
+#[test]
+fn box_drops_do_not_attach_to_a_focused_composer_and_stale_hover_does_not_block_them() {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::picking::{backend::HitData, hover::HoverMap, pointer::PointerId};
+    let (world, owner) = composer(true);
+    let mut app = App::new();
+    *app.world_mut() = world;
+    app.init_resource::<bevy::ecs::schedule::Schedules>();
+    app.add_plugins(crate::external_drop::ExternalDropPlugin);
+    let world = app.world_mut();
+    let root = world
+        .spawn((
+            crate::container::BoxRoot,
+            crate::workspace::Workspaces::default(),
+            crate::canvas::CanvasView::default(),
+            ComputedNode {
+                size: Vec2::new(800.0, 600.0),
+                ..default()
+            },
+            UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::new(
+                400.0, 300.0,
+            ))),
+        ))
+        .id();
+    world.entity_mut(owner).insert(ChildOf(root));
+    let input = world.get::<Draft>(owner).unwrap().input;
+    world.entity_mut(input).insert((
+        ChildOf(owner),
+        ComputedNode {
+            size: Vec2::new(200.0, 100.0),
+            ..default()
+        },
+        UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::new(
+            150.0, 150.0,
+        ))),
+    ));
+    world.init_resource::<bevy::input_focus::InputFocus>();
+    world
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(input, bevy::input_focus::FocusCause::Pressed);
+    world.init_resource::<HoverMap>();
+    let mut window = Window::default();
+    window.set_cursor_position(Some(Vec2::new(500.0, 350.0)));
+    let window = world.spawn(window).id();
+    let event = bevy::window::FileDragAndDrop::DroppedFile {
+        window,
+        path_buf: "/tmp/box-image.png".into(),
+    };
+    world.write_message(event.clone());
+    world.run_system_once(dropped).unwrap();
+    assert!(world.get::<Picking>(owner).is_none());
+    world
+        .resource_mut::<HoverMap>()
+        .entry(PointerId::Mouse)
+        .or_default()
+        .insert(input, HitData::new(root, 0.0, None, None));
+    assert!(crate::external_drop::receives(world, window));
+    world
+        .get_mut::<Window>(window)
+        .unwrap()
+        .set_cursor_position(Some(Vec2::new(150.0, 150.0)));
+    assert!(!crate::external_drop::receives(world, window));
+    world.write_message(event);
+    world.run_system_once(dropped).unwrap();
+    assert!(world.get::<Picking>(owner).is_some());
 }

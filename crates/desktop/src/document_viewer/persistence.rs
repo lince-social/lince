@@ -51,7 +51,12 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedDocumentView
             &DocumentViewer,
         )>()
         .iter(world)
-        .filter(|(_, parent, _, _, _)| parent.parent() == root)
+        .filter(|(entity, parent, _, _, _)| {
+            parent.parent() == root
+                && world
+                    .get::<crate::external_drop::Preview>(*entity)
+                    .is_none()
+        })
         .map(|(entity, _, member, item, castle)| SavedDocumentViewer {
             workspace: member.0,
             castle: castle.clone(),

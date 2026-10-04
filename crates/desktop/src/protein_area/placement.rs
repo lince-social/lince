@@ -58,7 +58,8 @@ pub(super) fn initial(
             *e != source
                 && parent.parent() == root
                 && member.0 == workspace
-                && area.enabled
+                && crate::influence_report::activity(world, *e, area, root, workspace)
+                    == crate::influence_report::Outcome::Active
                 && (config.spawn_targets.is_empty() || config.spawn_targets.contains(&area.id))
         })
         .map(|(e, area, _, _)| (e, area.clone()))

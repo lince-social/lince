@@ -15,6 +15,9 @@ pub use lince_interface::style::{
 pub(crate) struct AppliedSize(pub Vec2);
 
 pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
+    if world.get::<crate::time_castle::TimeSettings>(entity).is_some() {
+        return Some(SandStyleKind::TimeCastle);
+    }
     if let Some(preview) = world.get::<crate::sand_store::PreviewKind>(entity) {
         return Some(preview.0);
     }
@@ -29,7 +32,6 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
         return Some(match sand.kind {
             SandKind::Square
             | SandKind::Operation
-            | SandKind::WorkTimer
             | SandKind::AccessControl
             | SandKind::Sync
             | SandKind::Freedoom
@@ -38,6 +40,7 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
             | SandKind::Configuration
             | SandKind::Ontology
             | SandKind::Todo => SandStyleKind::Square,
+            SandKind::WorkTimer => SandStyleKind::TimeCastle,
             SandKind::Text => SandStyleKind::Text,
             SandKind::EditableText => SandStyleKind::EditableText,
         });
@@ -45,6 +48,17 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
     world
         .get::<RecordPlacement>(entity)
         .map(|_| SandStyleKind::Record)
+        .or_else(|| {
+            (world.get::<CanvasItem>(entity).is_some()
+                && world
+                    .get::<crate::protein_area::RecordBinding>(entity)
+                    .is_some())
+            .then_some(if world.get::<crate::castle::Castle>(entity).is_some() {
+                SandStyleKind::Record
+            } else {
+                SandStyleKind::Square
+            })
+        })
 }
 
 pub fn overrides(world: &World, entity: Entity) -> TokenOverrides {
@@ -60,6 +74,7 @@ pub fn overrides(world: &World, entity: Entity) -> TokenOverrides {
 }
 
 pub fn set_overrides(world: &mut World, entity: Entity, values: TokenOverrides) {
+    let changed = overrides(world, entity) != values;
     if let Some(mut text) = world.get_mut::<SandText>(entity) {
         if text.tokens != values {
             text.tokens = values;
@@ -68,6 +83,9 @@ pub fn set_overrides(world: &mut World, entity: Entity, values: TokenOverrides) 
         current.set_if_neq(values);
     } else {
         world.entity_mut(entity).insert(values);
+    }
+    if changed {
+        crate::protein_area::presentation::styles_changed(world, entity);
     }
 }
 
@@ -183,8 +201,9 @@ fn apply(world: &mut World) {
         let border = resolve(world, entity, Token::SandBorder).0.color();
         let radius = resolve(world, entity, Token::Roundness).0.number();
         let width = resolve(world, entity, Token::BorderWidth).0.number();
+        let clock = world.get::<crate::time_castle::TimeSettings>(entity).is_some();
         if let Some(mut color) = world.get_mut::<BackgroundColor>(entity) {
-            color.set_if_neq(BackgroundColor(background));
+            color.set_if_neq(BackgroundColor(if clock { Color::NONE } else { background }));
         }
         if let Some(mut color) = world.get_mut::<BorderColor>(entity) {
             color.set_if_neq(BorderColor::all(border));
@@ -193,7 +212,7 @@ fn apply(world: &mut World) {
         }
         if let Some(mut node) = world.get_mut::<Node>(entity) {
             let next_radius = BorderRadius::all(px(radius));
-            let next_border = UiRect::all(px(width));
+            let next_border = UiRect::all(px(if clock { 0.0 } else { width }));
             if node.border_radius != next_radius || node.border != next_border {
                 node.border_radius = next_radius;
                 node.border = next_border;

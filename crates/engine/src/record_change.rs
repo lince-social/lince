@@ -60,6 +60,7 @@ pub enum WorkField {
     Start,
     Due,
     Estimate,
+    Occurrence,
 }
 
 impl WorkField {
@@ -68,6 +69,7 @@ impl WorkField {
             Self::Start => "start",
             Self::Due => "due",
             Self::Estimate => "estimate_min",
+            Self::Occurrence => "projection_occurrence",
         }
     }
 }
@@ -286,7 +288,7 @@ pub(crate) async fn apply_register(
                 }
             }
         }
-        "work.start" | "work.due" | "work.estimate_min" => {
+        "work.start" | "work.due" | "work.estimate_min" | "work.projection_occurrence" => {
             let mut work = work_on(tx, uid).await?;
             let field = property.strip_prefix("work.").expect("work field");
             if register.value.is_null() {
@@ -317,7 +319,7 @@ pub(crate) async fn apply_register(
 impl Engine {
     pub(crate) async fn project_work_registers(&self, uid: &str) -> Result<(), EngineError> {
         let mut tx = store::write_tx(&self.store.pool).await?;
-        let rows: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property IN ('work.start', 'work.due', 'work.estimate_min')").bind(uid).fetch_all(&mut *tx).await?;
+        let rows: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property IN ('work.start', 'work.due', 'work.estimate_min', 'work.projection_occurrence')").bind(uid).fetch_all(&mut *tx).await?;
         let mut work = work_on(&mut tx, uid).await?;
         for (property, raw) in &rows {
             let field = property.strip_prefix("work.").expect("work field");
@@ -502,8 +504,8 @@ impl Engine {
                 ));
             }
         }
-        if matches!(request.mutation, Mutation::WorkMetadata { .. }) {
-            let required: std::collections::BTreeSet<_> = ["start", "due", "estimate_min", "logs"]
+        if let Mutation::WorkMetadata { value } = &request.mutation {
+            let mut required: std::collections::BTreeSet<_> = ["start", "due", "estimate_min", "logs"]
                 .into_iter()
                 .map(|field| {
                     Property::Extension(ExtensionProperty {
@@ -512,6 +514,9 @@ impl Engine {
                     })
                 })
                 .collect();
+            if value.get("projection_occurrence").is_some() {
+                required.insert(Property::Extension(ExtensionProperty { namespace: "work".into(), field: "projection_occurrence".into() }));
+            }
             if self
                 .record_property_permissions(actor, uid, required.clone())
                 .await?
@@ -550,6 +555,7 @@ impl Engine {
         let signer = self.signer.lock().await.clone();
         let _serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
+        let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], protein::authority::Operation::Update).await?;
         let prior: Option<(String, String)> = store::sqlx::query_as(
             "SELECT payload, result FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
         )
@@ -575,6 +581,9 @@ impl Engine {
                 seed_logs(&mut tx, uid).await?;
                 for field in ["start", "due", "estimate_min"] {
                     related.push((format!("work.{field}"), value[field].clone()));
+                }
+                if let Some(link) = value.get("projection_occurrence") {
+                    related.push(("work.projection_occurrence".into(), link.clone()));
                 }
                 let mut existing: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY property").bind(uid).fetch_all(&mut *tx).await?;
                 for (index, log) in value["logs"].as_array().into_iter().flatten().enumerate() {
@@ -713,6 +722,7 @@ impl Engine {
         let data = json!({"change_id":request.id,"state":"saved","changed":changed});
         store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)")
             .bind(actor.unwrap_or("")).bind(&request.id).bind(uid).bind(payload).bind(data.to_string()).execute(&mut *tx).await?;
+        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
         tx.commit().await?;
         drop(_serial);
         let mut outcome = ActionOutcome {
@@ -838,19 +848,11 @@ impl Engine {
             self.validate_fiote_parent(uid, Some(parent), actor).await?;
         }
         if let Some(actor) = actor {
-            if let Some(role) = store::auth::person_access(&self.store.pool, actor)
-                .await?
-                .and_then(|person| person.role_id)
-            {
-                if let Some(policy) = store::role_policies::get(&self.store.pool, role)
-                    .await?
-                    .and_then(|row| row.policy)
+            if let Some(policy) = protein::role_authority::policy_for(&self.store, actor, Some(protein::authority::Operation::Update)).await? {
                 {
                     use protein::authority::{
-                        AssertionProperty, AssertionRole, AssertionTarget, Operation, RolePolicy,
+                        AssertionProperty, AssertionRole, AssertionTarget, Operation,
                     };
-                    let policy: RolePolicy =
-                        serde_json::from_value(policy).map_err(EngineError::Json)?;
                     let role = if let Some(assertion) = &retract {
                         if store::assertions::get(&self.store.pool, assertion)
                             .await?
@@ -930,6 +932,7 @@ impl Engine {
         let signer = self.signer.lock().await.clone();
         let serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
+        let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], protein::authority::Operation::Update).await?;
         let prior: Option<(String, String)> = store::sqlx::query_as(
             "SELECT payload, result FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
         )
@@ -1036,6 +1039,7 @@ impl Engine {
                 }
             }
         }
+        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
         tx.commit().await?;
         drop(serial);
         let mut outcome = ActionOutcome {

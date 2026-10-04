@@ -1,5 +1,59 @@
 use super::*;
+use n0_future::{BufferedStreamExt, StreamExt};
+use nucleus::social::requests::EnvelopePurpose;
+use std::borrow::Cow;
 use store::sqlx::Row;
+
+#[derive(serde::Deserialize)]
+struct RequestHint<'a> {
+    #[serde(borrow)]
+    request: Cow<'a, str>,
+}
+
+#[derive(serde::Deserialize)]
+struct DocumentHint<T> {
+    document: T,
+}
+
+#[derive(serde::Deserialize)]
+struct StateHint {
+    state: PostState,
+}
+
+#[derive(serde::Deserialize)]
+struct EnvelopeHint {
+    envelope: PurposeHint,
+}
+
+#[derive(serde::Deserialize)]
+struct PurposeHint {
+    purpose: EnvelopePurpose,
+}
+
+fn hinted_budget_class(bytes: &[u8], verb: &str) -> store::social::BudgetClass {
+    let control = match verb {
+        "publish-snippet" | "end-reply-post" if bytes.len() <= MAX_FRAME_BYTES => {
+            serde_json::from_slice::<DocumentHint<StateHint>>(bytes)
+                .is_ok_and(|hint| hint.document.state != PostState::Active)
+        }
+        "publish-authority"
+        | "publish-posting-authority"
+        | "update-reply-authority"
+        | "admit-private-sender"
+        | "collect-private"
+        | "acknowledge-private"
+        | "discard-private"
+        | "inspect-private" => true,
+        "deliver-private" => serde_json::from_slice::<DocumentHint<EnvelopeHint>>(bytes)
+            .is_ok_and(|hint| hint.document.envelope.purpose == EnvelopePurpose::Control),
+        _ => false,
+    };
+    if control {
+        store::social::BudgetClass::Control
+    } else {
+        store::social::BudgetClass::Ordinary
+    }
+}
 
 fn optional_rows<'a>(data: &'a Value, key: &str) -> Result<&'a [Value], EngineError> {
     data.get(key)
@@ -12,6 +66,46 @@ fn optional_rows<'a>(data: &'a Value, key: &str) -> Result<&'a [Value], EngineEr
         })
         .transpose()
         .map(|rows| rows.unwrap_or_default())
+}
+
+fn budget_class(request: &PublicRequest) -> store::social::BudgetClass {
+    let control = match request {
+        PublicRequest::PublishSnippet { document } => document.state != PostState::Active,
+        PublicRequest::EndReplyPost { document } => document.state != PostState::Active,
+        PublicRequest::PublishAuthority { .. }
+        | PublicRequest::PublishPostingAuthority { .. }
+        | PublicRequest::UpdateReplyAuthority { .. }
+        | PublicRequest::AdmitPrivateSender { .. }
+        | PublicRequest::CollectPrivate { .. }
+        | PublicRequest::AcknowledgePrivate { .. }
+        | PublicRequest::DiscardPrivate { .. }
+        | PublicRequest::InspectPrivate { .. } => true,
+        PublicRequest::DeliverPrivate { document } => {
+            document.envelope.purpose == EnvelopePurpose::Control
+        }
+        _ => false,
+    };
+    if control {
+        store::social::BudgetClass::Control
+    } else {
+        store::social::BudgetClass::Ordinary
+    }
+}
+
+async fn directory_search(
+    network: Option<std::sync::Arc<dyn Network>>,
+    service: String,
+    request: PublicRequest,
+) -> (String, Result<Value, EngineError>) {
+    let response = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        network
+            .ok_or_else(|| invalid("Waiting for the network connection"))?
+            .request(&service, request)
+            .await
+    })
+    .await
+    .unwrap_or_else(|_| Err(invalid("The directory search deadline ended")));
+    (service, response)
 }
 
 impl Engine {
@@ -97,16 +191,34 @@ impl Engine {
         if request_bytes > MAX_PRIVATE_FRAME_BYTES {
             return Err(invalid("The social request is too large"));
         }
-        store::social::spend(
+        let hint = serde_json::from_slice::<RequestHint<'_>>(bytes);
+        let class = hint
+            .as_ref()
+            .map(|hint| hinted_budget_class(bytes, &hint.request))
+            .unwrap_or(store::social::BudgetClass::Ordinary);
+        store::social::spend_class(
             &self.store.pool,
             source,
             "in",
             request_bytes,
             settings.incoming_bytes_per_minute,
             now,
+            class,
         )
         .await?;
+        let allowed = match hint.as_ref().map(|hint| hint.request.as_ref()) {
+            Ok("deliver-private" | "inspect-private" | "collect-private") => {
+                MAX_PRIVATE_FRAME_BYTES
+            }
+            _ => MAX_FRAME_BYTES,
+        };
+        if request_bytes > allowed {
+            return Err(invalid(
+                "The social request exceeds its operation size limit",
+            ));
+        }
         let request: PublicRequest = serde_json::from_slice(bytes)?;
+        let class = budget_class(&request);
         let frame_limit = request.frame_limit();
         if request_bytes > frame_limit {
             return Err(invalid(
@@ -380,13 +492,14 @@ impl Engine {
         if response_bytes > frame_limit - 1024 {
             return Err(invalid("The social response is too large"));
         }
-        store::social::spend(
+        store::social::spend_class(
             &self.store.pool,
             source,
             "out",
             response_bytes,
             settings.outgoing_bytes_per_minute,
             now,
+            class,
         )
         .await?;
         Ok(response)
@@ -607,23 +720,29 @@ impl Engine {
             service
                 .parse::<iroh::EndpointId>()
                 .map_err(|_| invalid("Choose a valid directory endpoint ID"))?;
-            let response = match self.social_network() {
-                Ok(network) => {
-                    network
-                        .request(
-                            service,
-                            PublicRequest::Search {
-                                query: query.clone(),
-                                known: known.clone(),
-                            },
-                        )
-                        .await
-                }
-                Err(error) => Err(error),
-            };
+        }
+        let network = self.social_network().ok();
+        let searches: Vec<_> = services
+            .iter()
+            .cloned()
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .map(|service| {
+                directory_search(
+                    network.clone(),
+                    service,
+                    PublicRequest::Search {
+                        query: query.clone(),
+                        known: known.clone(),
+                    },
+                )
+            })
+            .collect();
+        let mut requests = n0_future::stream::iter(searches).buffered_unordered(3);
+        while let Some((service, response)) = requests.next().await {
             let accepted = match response {
                 Ok(data) => {
-                    let result = self.social_cache_search(service, &data, now).await;
+                    let result = self.social_cache_search(&service, &data, now).await;
                     if result.is_ok() && data["refresh_incomplete"] == true {
                         failures.push(json!({"service":service,"error":"This service returned a bounded partial page; cached results may be missing newer revisions or authority controls"}));
                     }

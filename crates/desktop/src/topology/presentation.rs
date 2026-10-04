@@ -109,7 +109,9 @@ fn request(
         .copied()
         .unwrap_or_default();
     let placement = spatial(world, entity);
-    let depth = if world.get::<crate::area::InfluenceArea>(entity).is_some() {
+    let depth = if let Some(settings) = world.get::<crate::time_castle::TimeSettings>(entity) {
+        (f64::from(item.size.min_element()) * 0.18 * settings.0.horizon_ms as f64 / settings.0.aperture_ms.max(1000) as f64).min(100_000.0) * f64::from(scale)
+    } else if world.get::<crate::area::InfluenceArea>(entity).is_some() {
         0.0
     } else {
         placement.depth(item.size) * f64::from(scale)
@@ -447,7 +449,8 @@ pub fn synchronize(world: &mut World) {
                 .set_alpha(opacity);
         }
         let arrow = world.get::<crate::arrow_sand::ArrowSand>(entity).is_some();
-        let flat = area
+        let flat = world.get::<crate::time_castle::TimeSettings>(entity).is_some()
+            || area
             || arrow
             || !world
                 .get::<super::view::View>(root)
@@ -468,7 +471,7 @@ pub fn synchronize(world: &mut World) {
         let clipped_size = clip.size();
         let clipped_center = clip.center() - item.size * 0.5;
         let uv = Rect::from_corners(clip.min / item.size, clip.max / item.size);
-        if world.get::<Surface>(entity).unwrap().uv != uv {
+        if world.get::<Surface>(entity).unwrap().uv != uv && world.get::<crate::time_castle::TimeSettings>(entity).is_none() {
             let handle = world.get::<Mesh3d>(face).unwrap().0.clone();
             if let Some(mut mesh) = world.resource_mut::<Assets<Mesh>>().get_mut(&handle) {
                 mesh.insert_attribute(

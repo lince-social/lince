@@ -5,8 +5,11 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::thread_castle::tests::laboratory_cases(&mut cases);
     crate::tutorial::tests::laboratory_cases(&mut cases);
     crate::actions::tests::laboratory_cases(&mut cases);
+    crate::shortcuts::tests::laboratory_cases(&mut cases);
     crate::area::tests::laboratory_cases(&mut cases);
     crate::area_effects::tests::laboratory_cases(&mut cases);
+    crate::influence_report::tests::laboratory_cases(&mut cases);
+    crate::external_drop::tests::laboratory_cases(&mut cases);
     crate::area_effects::ui::laboratory_cases(&mut cases);
     crate::area_drawing::tests::laboratory_cases(&mut cases);
     crate::area_input::tests::laboratory_cases(&mut cases);

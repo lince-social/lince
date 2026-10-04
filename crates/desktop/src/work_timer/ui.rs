@@ -40,6 +40,7 @@ fn entry(world: &mut World, list: Entity, owner: Entity, value: Option<&Entry>) 
         .spawn((
             Node {
                 width: percent(100),
+                max_width: px(344),
                 min_width: px(0),
                 flex_direction: FlexDirection::Column,
                 flex_shrink: 0.0,

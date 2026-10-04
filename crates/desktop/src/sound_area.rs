@@ -109,8 +109,9 @@ fn update(world: &mut World) {
     let areas: Vec<_> = world
         .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
         .iter(world)
-        .filter(|(_, area, parent, member)| {
-            area.enabled
+        .filter(|(entity, area, parent, member)| {
+            crate::influence_report::activity(world, *entity, area, parent.parent(), member.0)
+                == crate::influence_report::Outcome::Active
                 && area.sound.is_some()
                 && area.validate()
                 && world
@@ -165,9 +166,18 @@ fn update(world: &mut World) {
                     };
                 let point = crate::topology::spatial(world, *sand).position(item.position);
                 let record = record.cloned();
-                let binding = world.get::<crate::protein_area::RecordBinding>(*sand).cloned();
+                let binding = world
+                    .get::<crate::protein_area::RecordBinding>(*sand)
+                    .cloned();
                 if crate::topology::influence::blocked(
-                    world, root, workspace, entity, point, record.as_ref(), binding.as_ref(), false,
+                    world,
+                    root,
+                    workspace,
+                    entity,
+                    point,
+                    record.as_ref(),
+                    binding.as_ref(),
+                    false,
                 ) {
                     None
                 } else {

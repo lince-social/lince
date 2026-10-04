@@ -324,13 +324,18 @@ async fn search_scoped(
     now: i64,
     host: Option<&str>,
 ) -> Result<Vec<serde_json::Value>, StoreError> {
-    let text = query
+    let words = query
         .text
         .split_whitespace()
         .take(12)
         .map(|word| format!("\"{}\"", word.replace('"', "\"\"")))
         .collect::<Vec<_>>()
         .join(" AND ");
+    let text = if words.is_empty() {
+        String::new()
+    } else {
+        format!("{{title text}} : ({words})")
+    };
     let direction = query
         .direction
         .map(|d| {
@@ -341,33 +346,43 @@ async fn search_scoped(
                 .to_owned()
         })
         .unwrap_or_default();
-    let sql = if text.is_empty() {
-        "SELECT d.body,d.source,d.hash FROM social_document d WHERE d.kind='snippet' AND d.state='active' AND d.expires_at>? AND NOT EXISTS(SELECT 1 FROM social_listing_removal WHERE post=d.id) AND (?='' OR d.direction=?) AND (?='' OR d.language=?) AND (?='' OR d.area=?) AND (?='' OR d.concept=?) AND (?='' OR d.unit=?) AND d.id>? AND (? IS NULL OR EXISTS(SELECT 1 FROM json_each(d.body,'$.destinations') WHERE value=?) OR (json_extract(d.body,'$.redistribute')=1 AND json_array_length(d.body,'$.destinations')>0)) ORDER BY d.id LIMIT 50"
-    } else {
-        "SELECT d.body,d.source,d.hash FROM social_document d WHERE d.id IN (SELECT id FROM social_search WHERE social_search MATCH ?) AND d.kind='snippet' AND d.state='active' AND d.expires_at>? AND NOT EXISTS(SELECT 1 FROM social_listing_removal WHERE post=d.id) AND (?='' OR d.direction=?) AND (?='' OR d.language=?) AND (?='' OR d.area=?) AND (?='' OR d.concept=?) AND (?='' OR d.unit=?) AND d.id>? AND (? IS NULL OR EXISTS(SELECT 1 FROM json_each(d.body,'$.destinations') WHERE value=?) OR (json_extract(d.body,'$.redistribute')=1 AND json_array_length(d.body,'$.destinations')>0)) ORDER BY d.id LIMIT 50"
-    };
-    let mut request = sqlx::query(sql);
-    if !text.is_empty() {
-        request = request.bind(&text);
+    let filters = "d.kind='snippet' AND d.state='active' AND d.expires_at>?2 AND NOT EXISTS(SELECT 1 FROM social_listing_removal WHERE post=d.id) AND (?3='' OR d.direction=?3) AND (?4='' OR d.language=?4) AND (?5='' OR d.area=?5) AND (?6='' OR d.concept=?6) AND (?7='' OR d.unit=?7) AND d.id>?8";
+    let visibility = "(?9 IS NULL OR EXISTS(SELECT 1 FROM json_each(d.body,'$.destinations') WHERE value=?9) OR (json_extract(d.body,'$.redistribute')=1 AND json_array_length(d.body,'$.destinations')>0))";
+    let mut statements = Vec::with_capacity(2);
+    let probe = !text.is_empty()
+        && sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM social_document INDEXED BY social_discovery_conflict_page WHERE kind='snippet' AND state='active' LIMIT 1 OFFSET 10000)")
+            .fetch_one(pool)
+            .await?;
+    if probe {
+        statements.push(format!("WITH candidates AS MATERIALIZED (SELECT d.id FROM social_document d INDEXED BY social_discovery_conflict_page WHERE d.kind='snippet' AND d.state='active' AND d.id>?8 ORDER BY d.id LIMIT 256) SELECT d.body,d.source,d.hash FROM social_document d INDEXED BY social_discovery_conflict_page WHERE {filters} AND d.id<=(SELECT MAX(id) FROM candidates) AND {visibility} AND EXISTS(SELECT 1 FROM social_search WHERE social_search MATCH ?1 AND id MATCH ('\"' || replace(substr(d.id,6),'\"','\"\"') || '\"')) ORDER BY d.id LIMIT 50"));
     }
-    request = request
-        .bind(now)
-        .bind(&direction)
-        .bind(&direction)
-        .bind(&query.language)
-        .bind(&query.language)
-        .bind(&query.area)
-        .bind(&query.area)
-        .bind(&query.concept)
-        .bind(&query.concept)
-        .bind(&query.unit)
-        .bind(&query.unit)
-        .bind(query.after.as_deref().unwrap_or_default())
-        .bind(host)
-        .bind(host);
+    let matching = if text.is_empty() {
+        "?1=''"
+    } else {
+        "d.id IN (SELECT id FROM social_search WHERE social_search MATCH ?1)"
+    };
+    statements.push(format!("SELECT d.body,d.source,d.hash FROM social_document d WHERE {filters} AND {visibility} AND {matching} ORDER BY d.id LIMIT 50"));
+    let mut rows = Vec::new();
+    for sql in &statements {
+        rows = sqlx::query(sql)
+            .bind(&text)
+            .bind(now)
+            .bind(&direction)
+            .bind(&query.language)
+            .bind(&query.area)
+            .bind(&query.concept)
+            .bind(&query.unit)
+            .bind(query.after.as_deref().unwrap_or_default())
+            .bind(host)
+            .fetch_all(pool)
+            .await?;
+        if rows.len() == 50 {
+            break;
+        }
+    }
     let mut result = Vec::new();
     let mut bytes = 0;
-    for row in request.fetch_all(pool).await? {
+    for row in rows {
         let body: String = row.get("body");
         bytes += body.len() + 256;
         if bytes > nucleus::social::MAX_FRAME_BYTES - 1024 {
@@ -410,6 +425,48 @@ pub async fn spend_on(
     limit: u64,
     now: i64,
 ) -> Result<(), StoreError> {
+    spend_class_on(
+        tx,
+        source,
+        direction,
+        bytes,
+        limit,
+        now,
+        BudgetClass::Ordinary,
+    )
+    .await
+}
+
+#[derive(Clone, Copy)]
+pub enum BudgetClass {
+    Ordinary,
+    Control,
+}
+
+pub async fn spend_class(
+    pool: &SqlitePool,
+    source: &str,
+    direction: &str,
+    bytes: usize,
+    limit: u64,
+    now: i64,
+    class: BudgetClass,
+) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    spend_class_on(&mut tx, source, direction, bytes, limit, now, class).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+pub async fn spend_class_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    source: &str,
+    direction: &str,
+    bytes: usize,
+    limit: u64,
+    now: i64,
+    class: BudgetClass,
+) -> Result<(), StoreError> {
     if source.len() > 128 || !matches!(direction, "in" | "out") {
         return Err(StoreError::Protocol(
             "Invalid service accounting scope".into(),
@@ -423,12 +480,17 @@ pub async fn spend_on(
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM social_service_budget")
         .fetch_one(&mut **tx)
         .await?;
-    if count >= 8192 {
-        return Err(StoreError::Protocol(
-            "The service source budget is full".into(),
-        ));
-    }
+    let mut updates = Vec::with_capacity(2);
+    let mut additions = 0;
     for (key, ceiling, work_limit) in [("*", limit, 2048u64), (source, limit / 4, 256)] {
+        let ceiling = match class {
+            BudgetClass::Ordinary => ceiling * 3 / 4,
+            BudgetClass::Control => ceiling,
+        };
+        let work_limit = match class {
+            BudgetClass::Ordinary => work_limit * 3 / 4,
+            BudgetClass::Control => work_limit,
+        };
         let row: Option<(i64, i64, i64)> = sqlx::query_as(
             "SELECT window,bytes,work FROM social_service_budget WHERE source=? AND direction=?",
         )
@@ -436,6 +498,7 @@ pub async fn spend_on(
         .bind(direction)
         .fetch_optional(&mut **tx)
         .await?;
+        additions += i64::from(row.is_none());
         let (old_bytes, old_work) = row
             .filter(|(held, _, _)| *held == window)
             .map(|(_, b, w)| (b as u64, w as u64))
@@ -446,8 +509,16 @@ pub async fn spend_on(
                 "The service limited requests; try later".into(),
             ));
         }
+        updates.push((key, next, old_work + 1));
+    }
+    if count + additions > 8192 {
+        return Err(StoreError::Protocol(
+            "The service source budget is full".into(),
+        ));
+    }
+    for (key, next, work) in updates {
         sqlx::query("INSERT INTO social_service_budget(source,direction,window,bytes,work) VALUES (?,?,?,?,?) ON CONFLICT(source,direction) DO UPDATE SET window=excluded.window,bytes=excluded.bytes,work=excluded.work")
-            .bind(key).bind(direction).bind(window).bind(next as i64).bind((old_work+1) as i64).execute(&mut **tx).await?;
+            .bind(key).bind(direction).bind(window).bind(next as i64).bind(work as i64).execute(&mut **tx).await?;
     }
     Ok(())
 }
@@ -737,7 +808,7 @@ pub async fn fail_publication_on(
 
 pub async fn prune(pool: &SqlitePool, now: i64) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
-    sqlx::query("DELETE FROM social_search WHERE id IN (SELECT id FROM social_document WHERE kind='snippet' AND expires_at<=?)")
+    sqlx::query("DELETE FROM social_search WHERE rowid IN (SELECT f.rowid FROM social_document d INDEXED BY social_document_expiry CROSS JOIN social_search f WHERE d.kind='snippet' AND d.expires_at<=? AND f.id MATCH ('\"' || replace(substr(d.id,6),'\"','\"\"') || '\"') AND f.id=d.id)")
         .bind(now).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM social_revision WHERE expires_at<? AND hash NOT IN (SELECT hash FROM social_document)")
         .bind(now - 600).execute(&mut *tx).await?;

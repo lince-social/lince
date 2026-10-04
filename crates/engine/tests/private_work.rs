@@ -35,8 +35,8 @@ fn exact_calendar_dates_and_estimate_are_typed() {
         "estimate_min": 90.5,
     }))
     .unwrap();
-    assert_eq!(work.start().copied(), NaiveDate::from_ymd_opt(2024, 2, 29));
-    assert_eq!(work.due().copied(), NaiveDate::from_ymd_opt(2026, 12, 31));
+    assert_eq!(work.start(), NaiveDate::from_ymd_opt(2024, 2, 29));
+    assert_eq!(work.due(), NaiveDate::from_ymd_opt(2026, 12, 31));
     assert_eq!(work.estimate_minutes(), Some(90.5));
 }
 
@@ -64,9 +64,16 @@ fn malformed_or_noncanonical_calendar_dates_refuse() {
 }
 
 #[test]
-fn work_can_start_after_its_due_date() {
-    let work = parse(json!({"start": "2026-09-07", "due": "2026-09-01"})).unwrap();
-    assert!(work.start().unwrap() > work.due().unwrap());
+fn work_cannot_start_after_its_due_date() {
+    assert_eq!(parse(json!({"start": "2026-09-07", "due": "2026-09-01"})).unwrap_err(), WorkError::EndBeforeStart);
+}
+
+#[test]
+fn scheduled_timestamps_compare_by_absolute_instant() {
+    let work = parse(json!({"start": "2026-10-03T11:02:00+02:00", "due": "2026-10-03T09:12:00Z"})).unwrap();
+    assert_eq!(work.due_ms().unwrap() - work.start_ms().unwrap(), 600_000);
+    assert!(parse(json!({"start": "2026-10-03T11:02:00"})).is_err());
+    assert!(parse(json!({"start": "2026-10-03T11:02:00Z", "due": "2026-10-03T10:00:00Z"})).is_err());
 }
 
 #[test]
@@ -255,4 +262,17 @@ fn try_from_uses_the_same_validator() {
         parsed.logs()[0].start(),
         &DateTime::parse_from_rfc3339("2026-09-07T08:00:00-03:00").unwrap()
     );
+}
+
+#[test]
+fn materialized_occurrence_links_are_typed_and_validated() {
+    let record = nucleus::new_uid("r");
+    let rule = nucleus::new_uid("rec");
+    let record = nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Record, record).unwrap();
+    let value = json!({"projection_occurrence":{"record":record,"occurrence":{"rule_uid":rule,"revision":1,"event_id":"tick","frequency":null,"intended_at_ms":1000},"consequence":0}});
+    let parsed = parse(value.clone()).unwrap();
+    assert!(parsed.occurrence().is_some());
+    let mut invalid = value;
+    invalid["projection_occurrence"]["occurrence"]["rule_uid"] = json!("arbitrary");
+    assert_eq!(parse(invalid).unwrap_err(), WorkError::InvalidOccurrenceLink);
 }

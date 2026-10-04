@@ -152,6 +152,7 @@ mod tests {
                 }
             }
             for message in messages {
+                crate::description::receive_live(world, &Source::Local, &message);
                 receive(world, Source::Local, message);
             }
             update(world);
@@ -161,6 +162,30 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(2)).await;
         }
         panic!("Record bindings did not settle");
+    }
+
+    #[tokio::test]
+    async fn drawing_insertion_keeps_local_drafts_and_stores_only_a_reference_in_the_description() {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        assert!(can_edit(&world, first));
+        world.get_mut::<EditableText>(first).unwrap().editor.set_text("Local draft 👩‍💻");
+        let panel = world.spawn_empty().id();
+        let drawing = nucleus::drawing::Drawing { strokes: vec![nucleus::drawing::Stroke {
+            points: vec![[10.0, 20.0], [30.0, 50.0]], color: [40, 100, 180, 255], width: 3.0,
+        }], ..Default::default() };
+        let bytes = serde_json::to_vec(&drawing).unwrap();
+        crate::description::insert_asset(&mut world, panel, first, nucleus::description_asset::Kind::Drawing, bytes, None).unwrap();
+        pump(&mut world, |world| {
+            world.get::<EditableText>(second).unwrap().value().to_string().contains("asset:")
+                && world.resource::<Bindings>().documents.values().all(|document| document.pending.is_empty() && !document.saving)
+        }).await;
+        let body = engine.doc_text(&uid).await.unwrap().1;
+        assert!(body.starts_with("Local draft 👩‍💻"));
+        assert!(body.contains("![Native drawing](asset:"));
+        assert!(!body.contains("strokes"));
+        let row: (String, Vec<u8>) = store::sqlx::query_as("SELECT kind, bytes FROM description_assets WHERE record_uid = ?").bind(uid).fetch_one(&engine.store.pool).await.unwrap();
+        assert_eq!(row.0, "drawing");
+        assert_eq!(serde_json::from_slice::<nucleus::drawing::Drawing>(&row.1).unwrap(), drawing);
     }
 
     #[tokio::test]
@@ -240,6 +265,14 @@ mod tests {
             .editor
             .set_text("Draft");
         update(&mut world);
+        world.init_resource::<crate::tokens::ThemeSettings>();
+        crate::save_feedback::borders(&mut world);
+        assert_eq!(
+            world.get::<BorderColor>(first).unwrap().top,
+            crate::tokens::Token::Accent
+                .default_value(Default::default())
+                .color()
+        );
         let mut bindings = world.resource_mut::<Bindings>();
         fail(
             bindings.documents.get_mut(&key(&record)).unwrap(),
@@ -248,6 +281,19 @@ mod tests {
         update(&mut world);
         assert!(world.get::<TextBinding>(first).unwrap().unsaved("Draft"));
         assert!(!world.get::<TextBinding>(title).unwrap().unsaved("Title"));
+        crate::save_feedback::borders(&mut world);
+        assert_eq!(
+            world.get::<BorderColor>(first).unwrap().top,
+            crate::tokens::Token::Error
+                .default_value(Default::default())
+                .color()
+        );
+        assert_eq!(
+            world.get::<BorderColor>(title).unwrap().top,
+            crate::tokens::Token::Accent
+                .default_value(Default::default())
+                .color()
+        );
     }
 
     #[tokio::test]
@@ -472,6 +518,7 @@ mod tests {
 type Key = (String, String);
 
 #[derive(Component, Clone)]
+#[require(crate::sand::Unsaved(false))]
 pub struct TextBinding {
     pub record: RecordBinding,
     pub property: String,
@@ -534,6 +581,18 @@ pub(crate) fn status(world: &World, record: &RecordBinding) -> Option<String> {
         .documents
         .get(&key(record))
         .map(|document| document.status.clone())
+}
+
+pub(crate) fn failed(world: &World, record: &RecordBinding) -> bool {
+    world
+        .get_resource::<Bindings>()
+        .and_then(|bindings| bindings.documents.get(&key(record)))
+        .is_some_and(|document| document.failed)
+}
+
+pub(crate) fn pending(world: &World, record: &RecordBinding) -> bool {
+    world.get_resource::<Bindings>().and_then(|bindings| bindings.documents.get(&key(record)))
+        .is_some_and(|document| document.saving || !document.pending.is_empty())
 }
 
 #[derive(Serialize, Deserialize)]
@@ -669,6 +728,12 @@ impl Plugin for RecordBindingPlugin {
                 paint_cursors.after(bevy::ui::UiSystems::PostLayout),
             );
     }
+}
+
+pub(crate) fn can_edit(world: &World, entity: Entity) -> bool {
+    let Some(binding) = world.get::<TextBinding>(entity) else { return false; };
+    world.get_resource::<Bindings>().and_then(|bindings| bindings.documents.get(&key(&binding.record)))
+        .is_some_and(|document| document.joined && document.writable.contains(&binding.property) && !document.failed)
 }
 
 fn gate(bindings: Res<Bindings>, mut fields: Query<(&TextBinding, &mut EditableText)>) {

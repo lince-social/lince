@@ -162,6 +162,13 @@ fn values(world: &World, form: &Form) -> Vec<String> {
         .collect()
 }
 
+pub(super) fn selection_pending(world: &mut World, owner: Entity) -> bool {
+    world.query::<&Form>().iter(world).any(|form| form.binding.area == owner && (
+        form.pending.is_some() || form.fields.iter().any(|(entity, initial)| world.get::<EditableText>(*entity)
+            .is_some_and(|text| text.value() != initial || text.is_composing() || text.pending_paste.is_some()))
+    ))
+}
+
 fn current(world: &World, form: &Form) -> Option<Value> {
     world
         .resource::<Runtime>()

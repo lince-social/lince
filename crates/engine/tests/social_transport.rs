@@ -11,6 +11,9 @@ use std::{sync::Arc, time::Duration};
 #[path = "social_transport/sharing.rs"]
 mod sharing;
 
+#[path = "social_transport/churn.rs"]
+mod churn;
+
 async fn fetch(connection: &iroh::endpoint::Connection) -> Option<Value> {
     let request = WireRequest::FetchOpsSince {
         vector: Default::default(),
@@ -98,7 +101,10 @@ async fn private_own_history_is_refused_on_existing_and_new_connections_after_de
     )
     .await
     .unwrap();
-    let grants: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM replica_grant").fetch_one(&owner.store.pool).await.unwrap();
+    let grants: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM replica_grant")
+        .fetch_one(&owner.store.pool)
+        .await
+        .unwrap();
     let server = Arc::new(
         Wire::bind_with_discovery(owner.clone(), owner_node, Reach::Local, None, false)
             .await

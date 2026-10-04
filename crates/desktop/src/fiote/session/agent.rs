@@ -87,8 +87,8 @@ pub(super) fn show(
         .unwrap_or_else(|| cell::FioteAgentConfig {
             require_vault: false,
             additional_directories: Vec::new(),
-            command: "goose".into(),
-            args: vec!["acp".into()],
+            command: Default::default(),
+            args: Vec::new(),
             directory: std::env::current_dir().unwrap_or_default(),
             environment: Default::default(),
             session_meta: Default::default(),
@@ -202,7 +202,7 @@ pub(super) fn show(
         }
     }
     let login = info.get("loginAgent").unwrap_or(info);
-    if login["agentInfo"]["name"] != "goose" {
+    if !cell::fiote_communication::extensions::provider_setup_available(login) {
         if let Some(methods) = login["authMethods"].as_array() {
             for method in methods {
                 let (Some(id), Some(name)) = (method["id"].as_str(), method["name"].as_str())
@@ -292,7 +292,7 @@ pub(super) fn show(
     crate::edit_mode::label(
         world,
         content,
-        "Goose or the selected agent stores and refreshes your login.",
+        "The selected agent stores and refreshes its own login.",
         14.0,
     );
     options::show(world, owner, content, saved);

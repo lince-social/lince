@@ -235,6 +235,7 @@ pub struct Feed {
     pub hidden: HashSet<String>,
     pub held: HashSet<String>,
     pub moving_to_them: HashSet<String>,
+    pub awaiting_moves: HashSet<String>,
 }
 
 impl Feed {
@@ -261,6 +262,7 @@ pub async fn open_feed(
         hidden: store::visibility::hidden_from_organ(pool, &contact.record_uid).await?,
         held: store::contact_share::held(pool, &contact.record_uid).await?,
         moving_to_them: store::record_move::to_contact(pool, &contact.record_uid).await?,
+        awaiting_moves: store::record_move::waiting_for_contact(pool, &contact.record_uid).await?,
     })
 }
 
@@ -277,11 +279,12 @@ pub async fn feed_carries(
     let carried: Vec<String> = records
         .into_iter()
         .filter(|record| {
+            if feed.awaiting_moves.contains(record) { return false; }
             if removes {
                 (feed.held.contains(record) || feed.sends(record))
                     && !feed.moving_to_them.contains(record)
             } else {
-                feed.sends(record) || feed.moving_to_them.contains(record)
+                feed.sends(record)
             }
         })
         .collect();
@@ -289,42 +292,4 @@ pub async fn feed_carries(
         return Ok(None);
     }
     Ok(Some(carried))
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct Moved {
-    pub handed_over: Vec<String>,
-}
-
-pub async fn settle_moves(engine: &Engine) -> Result<Moved, EngineError> {
-    let pool = &engine.store.pool;
-    let mut moved = Moved::default();
-    for pending in store::record_move::pending(pool).await? {
-        let Some(contact) = store::organs::contact(pool, &pending.contact_organ).await? else {
-            store::record_move::forget(pool, &pending.record_uid).await?;
-            continue;
-        };
-        if store::records::get(pool, &pending.record_uid)
-            .await?
-            .is_none()
-        {
-            store::record_move::forget(pool, &pending.record_uid).await?;
-            continue;
-        }
-        if store::record_move::still_queued(pool, &pending.contact_organ, &pending.record_uid)
-            .await?
-        {
-            continue;
-        }
-        let last = store::record_move::last_op_seq(pool, &pending.record_uid).await?;
-        if last == 0 || contact.peer_acked_seq < last {
-            continue;
-        }
-        store::records::mark_deleted(pool, &pending.record_uid).await?;
-        store::contact_share::forget(pool, &pending.contact_organ, &pending.record_uid).await?;
-        store::record_move::mark_handed_over(pool, &pending.record_uid).await?;
-        moved.handed_over.push(pending.record_uid);
-    }
-    moved.handed_over.sort();
-    Ok(moved)
 }

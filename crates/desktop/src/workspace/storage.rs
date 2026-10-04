@@ -24,6 +24,7 @@ pub(super) struct Writer {
     sender: Option<mpsc::SyncSender<Request>>,
     status: Arc<Mutex<Option<SaveResult>>>,
     due: Arc<AtomicBool>,
+    saved_revision: Arc<Mutex<Option<(String, u64)>>>,
     task: Option<thread::JoinHandle<()>>,
 }
 
@@ -39,6 +40,8 @@ impl Writer {
         let result = status.clone();
         let due = Arc::new(AtomicBool::new(true));
         let pending = due.clone();
+        let saved_revision = Arc::new(Mutex::new(None));
+        let revision = saved_revision.clone();
         let task = thread::Builder::new()
             .name("workspace-storage".into())
             .spawn(move || {
@@ -47,9 +50,12 @@ impl Writer {
                 let mut next = Instant::now() + interval;
                 loop {
                     match receiver.recv_timeout(next.saturating_duration_since(Instant::now())) {
-                        Ok(request) => {
+                        Ok(mut request) => {
+                            let saved_canvas_revision = request.document.canvas_state.as_ref().map_or(0, |state| state.snapshot.revision);
+                            if let Some(state) = &mut request.document.canvas_state { state.mark_saved_through(saved_canvas_revision); }
                             let saved =
                                 timestamp().and_then(|now| storage.save(&request.document, now));
+                            if saved.is_ok() { *revision.lock().unwrap() = request.document.canvas_id.clone().map(|id| (id, saved_canvas_revision)); }
                             *result.lock().unwrap() = Some(saved.clone());
                             if let Some(finished) = request.finished {
                                 let _ = finished.send(saved);
@@ -73,8 +79,15 @@ impl Writer {
             sender: Some(sender),
             status,
             due,
+            saved_revision,
             task: Some(task),
         })
+    }
+
+    pub(super) fn request_save(&self) { self.due.store(true, Ordering::Release); }
+
+    pub(super) fn saved_revision(&self, canvas: &str) -> u64 {
+        self.saved_revision.lock().unwrap().as_ref().filter(|(id, _)| id == canvas).map_or(0, |(_, revision)| *revision)
     }
 
     pub(super) fn due(&self) -> bool {
@@ -104,7 +117,7 @@ impl Writer {
                 finished: None,
             }) {
                 Ok(()) => Ok(()),
-                Err(mpsc::TrySendError::Full(_)) => Ok(()),
+                Err(mpsc::TrySendError::Full(_)) => { self.request_save(); Ok(()) },
                 Err(mpsc::TrySendError::Disconnected(_)) => Err("Workspace saving stopped".into()),
             }
         }
@@ -280,6 +293,9 @@ pub(crate) mod tests {
         let mut workspaces = super::super::Workspaces::default().entries;
         workspaces[0].name = name.into();
         Document {
+            canvas_id: None,
+            hidden_records: Default::default(),
+            canvas_state: None,
             recovery: Default::default(),
             assertions: Vec::new(),
             shaders: Vec::new(),
@@ -293,6 +309,9 @@ pub(crate) mod tests {
             transfer_castles: Vec::new(),
             recorders: Vec::new(),
             documents: Vec::new(),
+            media: Vec::new(),
+            drawings: Vec::new(),
+            extension_sands: Vec::new(),
             editors: Vec::new(),
             explorers: Vec::new(),
             calendars: Vec::new(),
@@ -300,6 +319,7 @@ pub(crate) mod tests {
             instincts: Vec::new(),
             theme: Default::default(),
             controls: Default::default(),
+            shortcuts: Default::default(),
             active: 1,
             workspaces,
             sands: Vec::new(),

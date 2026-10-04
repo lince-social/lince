@@ -87,10 +87,30 @@ pub(super) fn unsubscribe(world: &mut World, organ: &str, id: String) {
 }
 
 pub(super) fn subscribed(world: &mut World, organ: &str, message: &ClientMessage) {
-    if let ClientMessage::Subscribe { id, .. } = message {
-        if let Some(session) = world.resource_mut::<Runtime>().sessions.get_mut(organ) {
-            session.subscriptions.insert(id.clone());
+    if let Some(session) = world.resource_mut::<Runtime>().sessions.get_mut(organ) {
+        match message {
+            ClientMessage::Subscribe { id, .. } | ClientMessage::WorkspaceSubscribe { id, .. } => { session.subscriptions.insert(id.clone()); }
+            ClientMessage::Unsubscribe { id } => { session.subscriptions.remove(id); }
+            _ => {}
         }
+    }
+}
+
+pub(super) fn ensure_auxiliary(world: &mut World, organ: &str) {
+    if !world.resource::<Runtime>().sessions.contains_key(organ) {
+        let session = Session::open(world, organ);
+        world.resource_mut::<Runtime>().sessions.insert(organ.into(), session);
+    }
+}
+
+pub(super) fn logout(world: &mut World, organ: &str) {
+    disconnected(world, organ);
+    if let Some(session) = world.resource_mut::<Runtime>().sessions.get_mut(organ) {
+        session.remote = None;
+        session.retry_at = None;
+        session.pending.clear();
+        session.subscriptions.clear();
+        session.status = "Signed out. Reconnect explicitly to sign in again.".into();
     }
 }
 
@@ -245,7 +265,7 @@ pub(super) fn disconnected(world: &mut World, organ: &str) {
 }
 
 pub(super) fn update(world: &mut World) {
-    let retained: HashSet<_> = world
+    let mut retained: HashSet<_> = world
         .resource::<Runtime>()
         .areas
         .values()
@@ -256,6 +276,8 @@ pub(super) fn update(world: &mut World) {
             },
         )
         .collect();
+    retained.extend(crate::workspace_sync::organs(world));
+    retained.extend(crate::time_castle::organs(world));
     world
         .resource_mut::<Runtime>()
         .sessions

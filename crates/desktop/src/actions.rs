@@ -70,7 +70,7 @@ impl ActionButton {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Modifiers {
     pub alt: bool,
     pub control: bool,
@@ -94,7 +94,7 @@ impl Modifiers {
         ..Self::NONE
     };
 
-    fn pressed(keys: &ButtonInput<KeyCode>) -> Self {
+    pub(crate) fn pressed(keys: &ButtonInput<KeyCode>) -> Self {
         Self {
             alt: keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight]),
             control: keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]),
@@ -110,6 +110,7 @@ pub struct KeyBinding {
     pub modifiers: Modifiers,
     pub actions: ActionSequence,
     pub repeat: bool,
+    pub outside_text: bool,
 }
 
 impl KeyBinding {
@@ -119,7 +120,13 @@ impl KeyBinding {
             modifiers,
             actions,
             repeat: false,
+            outside_text: false,
         }
+    }
+
+    pub fn outside_text(mut self) -> Self {
+        self.outside_text = true;
+        self
     }
 }
 
@@ -187,7 +194,15 @@ fn activate(
 fn keyboard(
     mut event: On<FocusedInput<KeyboardInput>>,
     keys: Option<Res<ButtonInput<KeyCode>>>,
-    scopes: Query<&KeyBindings, Without<InteractionDisabled>>,
+    scopes: Query<
+        (
+            Option<&KeyBindings>,
+            Option<&crate::shortcuts::ConfiguredBindings>,
+        ),
+        Without<InteractionDisabled>,
+    >,
+    parents: Query<&ChildOf>,
+    editors: Query<(), With<bevy::text::EditableText>>,
     windows: Query<(&Window, Option<&WindowActionTarget>)>,
     mut pending: ResMut<PendingActions>,
 ) {
@@ -207,16 +222,29 @@ fn keyboard(
         }
         target = default_target.0;
     }
-    let Ok(bindings) = scopes.get(target) else {
+    let Ok((bindings, configured)) = scopes.get(target) else {
         return;
     };
     let modifiers = keys.as_deref().map(Modifiers::pressed).unwrap_or_default();
     if let Some(binding) = bindings
-        .0
-        .iter()
-        .rev()
+        .into_iter()
+        .flat_map(|bindings| bindings.0.iter().rev())
+        .chain(
+            configured
+                .into_iter()
+                .flat_map(|bindings| bindings.0.iter()),
+        )
         .find(|binding| binding.key == event.input.key_code && binding.modifiers == modifiers)
     {
+        if binding.outside_text {
+            let mut cursor = Some(event.original_event_target());
+            while let Some(entity) = cursor {
+                if editors.contains(entity) {
+                    return;
+                }
+                cursor = parents.get(entity).ok().map(ChildOf::parent);
+            }
+        }
         if !event.input.repeat || binding.repeat {
             pending.0.push_back(Request {
                 target,

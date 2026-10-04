@@ -499,6 +499,7 @@ struct Script {
 
 #[async_trait::async_trait]
 impl Provider for Script {
+    fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> { nucleus::message::validate(content) }
     async fn complete(
         &self,
         prompt: &str,
@@ -743,6 +744,68 @@ async fn activation_restart_preserves_pending_and_interrupts_running_without_rep
         "waiting"
     );
     assert!(reopened.running.lock().await.is_empty());
+}
+
+#[tokio::test]
+async fn activations_refuse_persisted_remote_actors_even_with_record_authority() {
+    let (host, _, _root, record, _) = fixture(false).await;
+    let person = host
+        .engine
+        .act(
+            Action::CreateRecord {
+                slug: Some("remote-automation-editor".into()),
+                kind: nucleus::RecordKind::Person,
+                head: "Remote editor".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let role = store::auth::ensure_role(&host.engine.store.pool, "automation-editor")
+        .await
+        .unwrap();
+    for operation in ["read", "update"] {
+        let permission =
+            store::auth::ensure_permission(&host.engine.store.pool, "record", operation)
+                .await
+                .unwrap();
+        store::auth::grant(&host.engine.store.pool, role, permission)
+            .await
+            .unwrap();
+    }
+    host.engine
+        .act(
+            Action::AssignRoles {
+                person: person.clone(),
+                roles: vec!["automation-editor".into()],
+                expected_revision: 0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    host.handle(Request::Activate {
+        record: record.clone(),
+        value: "1".into(),
+        request_id: "persisted-remote-activation".into(),
+    })
+    .await
+    .unwrap();
+    store::sqlx::query("UPDATE fiote_activation SET actor_uid = ? WHERE request_id = 'persisted-remote-activation'")
+        .bind(&person)
+        .execute(&host.engine.store.pool)
+        .await
+        .unwrap();
+    host.activation_tick().await.unwrap();
+    let requests = host.engine.fiote_activations(&record).await.unwrap();
+    assert_eq!(requests[0].state, "refused");
+    assert!(requests[0].detail.contains("local interface session"));
+    assert!(requests[0].thread.is_none());
+    assert!(host.running.lock().await.is_empty());
 }
 
 #[tokio::test]
@@ -2709,4 +2772,38 @@ async fn fiote_parent_is_an_assertion_and_native_edits_reject_cycles() {
             .prompt_parent
             .is_none()
     );
+}
+
+#[tokio::test]
+async fn six_valid_media_files_are_retained_in_ordinary_and_fiote_conversations() {
+    use base64::Engine as _;
+    use nucleus::message::MessagePart;
+    let (host, script, _root, _agent, fiote_thread) = fixture(false).await;
+    let target = host.engine.act(Action::CreateRecord { slug: None, kind: RecordKind::Plain, head: "Ordinary conversation".into(), body: String::new(), quantity: 0.0 }, None).await.unwrap().created.unwrap();
+    let ordinary_thread = host.engine.act(Action::CreateThread { target, head: "Files".into() }, None).await.unwrap().created.unwrap();
+    let files: [(&str, &str, &[u8]); 6] = [
+        ("note.txt", "text/plain", include_bytes!("../../../desktop/tests/fixtures/fiote/note.txt")),
+        ("table.csv", "text/csv", include_bytes!("../../../desktop/tests/fixtures/fiote/table.csv")),
+        ("document.pdf", "application/pdf", include_bytes!("../../../desktop/tests/fixtures/fiote/document.pdf")),
+        ("photo.png", "image/png", include_bytes!("../../../desktop/tests/fixtures/fiote/photo.png")),
+        ("audio.wav", "audio/wav", include_bytes!("../../../desktop/tests/fixtures/fiote/audio.wav")),
+        ("video.mp4", "video/mp4", include_bytes!("../../../desktop/tests/fixtures/fiote/video.mp4")),
+    ];
+    for (name, mime_type, bytes) in files {
+        let content = vec![MessagePart::Attachment { name: name.into(), mime_type: mime_type.into(), data: base64::engine::general_purpose::STANDARD.encode(bytes) }];
+        for thread in [&ordinary_thread, &fiote_thread] {
+            let reply = local(&host).handle(ClientMessage::Act { id: nucleus::new_uid("send"), action: Action::CreateMessage { thread: thread.clone(), body: format!("Inspect {name}"), author: None, state: MessageState::Finished, parent: None, references: vec![], content: content.clone() } }).await;
+            assert!(matches!(reply.first(), Some(ServerMessage::ActionOk { .. })), "{reply:?}");
+            wait(&host).await;
+            let message = rows(&host, thread).await.into_iter().find(|row| row.body == format!("Inspect {name}")).unwrap();
+            let loaded = store::message_content::load(&host.engine.store.pool, &message.uid).await.unwrap();
+            assert_eq!(loaded, content);
+            let MessagePart::Attachment { data, .. } = &loaded[0] else { panic!("attachment"); };
+            assert_eq!(nucleus::message::digest(&nucleus::message::decode(data).unwrap()), nucleus::message::digest(bytes));
+        }
+        assert!(script.observed.lock().unwrap().iter().any(|(_, messages)| messages.iter().any(|message| matches!(message, Message::RichUser { content: delivered, .. } if delivered == &content))));
+    }
+    assert_eq!(rows(&host, &ordinary_thread).await.len(), 6);
+    assert_eq!(rows(&host, &fiote_thread).await.len(), 12);
+    assert!(!host.running.lock().await.contains_key(&ordinary_thread));
 }

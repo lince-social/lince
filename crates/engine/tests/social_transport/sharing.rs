@@ -49,90 +49,90 @@ async fn known(engine: &Engine, other: &Engine, organ: &str, wire: &Wire) {
 #[tokio::test]
 async fn permissive_general_and_explicit_root_sharing_never_export_or_import_private_social_fields()
 {
+    let (owner, organ, server) = peer(214).await;
+    let (foreign, contact, client) = peer(215).await;
+    known(&owner, &foreign, &contact, &client).await;
+    known(&foreign, &owner, &organ, &server).await;
+    let public = store::records::create(
+        &owner.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: nucleus::RecordKind::Plain,
+            head: "Permitted note",
+            body: "PERMITTED_GENERAL_TEXT",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap();
+    store::records::set_extension(
+        &owner.store.pool,
+        &public.uid,
+        "lince.social.future-private-state",
+        &json!({"secret":"PRIVATE_GENERAL_SENTINEL"}),
+    )
+    .await
+    .unwrap();
+    let (root, thread) = owner
+        .start_conversation(&contact, "Explicitly shared history")
+        .await
+        .unwrap();
+    let message = owner
+        .send_message(&thread, "Owner", "PERMITTED_GRANTED_TEXT")
+        .await
+        .unwrap();
+    store::records::set_extension(
+        &owner.store.pool,
+        &root,
+        nucleus::social::requests::PARTICIPANTS_NAMESPACE,
+        &json!({"mapping":"PRIVATE_PARTICIPANT_SENTINEL"}),
+    )
+    .await
+    .unwrap();
+    store::records::set_extension(
+        &owner.store.pool,
+        &root,
+        "lince.social.future-private-state",
+        &json!({"secret":"PRIVATE_ROOT_SENTINEL"}),
+    )
+    .await
+    .unwrap();
+    store::records::set_extension(
+        &owner.store.pool,
+        &root,
+        "ordinary.metadata",
+        &json!({"label":"PERMITTED_ROOT_METADATA"}),
+    )
+    .await
+    .unwrap();
+    owner.accept_conversation(&root, &contact).await.unwrap();
+    store::replica::offer(&foreign.store.pool, &root, &organ)
+        .await
+        .unwrap();
+    foreign.accept_conversation(&root, &organ).await.unwrap();
+    let own = owner.export_sync_page(&organ, &[], 2000).await.unwrap();
+    let own_bytes = serde_json::to_string(&own.batch).unwrap();
+    for marker in [
+        "PRIVATE_GENERAL_SENTINEL",
+        "PRIVATE_PARTICIPANT_SENTINEL",
+        "PRIVATE_ROOT_SENTINEL",
+    ] {
+        assert!(own_bytes.contains(marker));
+    }
+    let port = server
+        .endpoint()
+        .bound_sockets()
+        .into_iter()
+        .find(|addr| addr.is_ipv4())
+        .unwrap()
+        .port();
+    let addr =
+        iroh::EndpointAddr::new(server.node_id()).with_ip_addr(([127, 0, 0, 1], port).into());
+    let serving = {
+        let wire = server.clone();
+        tokio::spawn(async move { wire.serve().await })
+    };
     tokio::time::timeout(std::time::Duration::from_secs(20), async {
-        let (owner, organ, server) = peer(214).await;
-        let (foreign, contact, client) = peer(215).await;
-        known(&owner, &foreign, &contact, &client).await;
-        known(&foreign, &owner, &organ, &server).await;
-        let public = store::records::create(
-            &owner.store.pool,
-            store::records::NewRecord {
-                slug: None,
-                kind: nucleus::RecordKind::Plain,
-                head: "Permitted note",
-                body: "PERMITTED_GENERAL_TEXT",
-                quantity: store::exact::zero(),
-            },
-        )
-        .await
-        .unwrap();
-        store::records::set_extension(
-            &owner.store.pool,
-            &public.uid,
-            "lince.social.future-private-state",
-            &json!({"secret":"PRIVATE_GENERAL_SENTINEL"}),
-        )
-        .await
-        .unwrap();
-        let (root, thread) = owner
-            .start_conversation(&contact, "Explicitly shared history")
-            .await
-            .unwrap();
-        let message = owner
-            .send_message(&thread, "Owner", "PERMITTED_GRANTED_TEXT")
-            .await
-            .unwrap();
-        store::records::set_extension(
-            &owner.store.pool,
-            &root,
-            nucleus::social::requests::PARTICIPANTS_NAMESPACE,
-            &json!({"mapping":"PRIVATE_PARTICIPANT_SENTINEL"}),
-        )
-        .await
-        .unwrap();
-        store::records::set_extension(
-            &owner.store.pool,
-            &root,
-            "lince.social.future-private-state",
-            &json!({"secret":"PRIVATE_ROOT_SENTINEL"}),
-        )
-        .await
-        .unwrap();
-        store::records::set_extension(
-            &owner.store.pool,
-            &root,
-            "ordinary.metadata",
-            &json!({"label":"PERMITTED_ROOT_METADATA"}),
-        )
-        .await
-        .unwrap();
-        owner.accept_conversation(&root, &contact).await.unwrap();
-        store::replica::offer(&foreign.store.pool, &root, &organ)
-            .await
-            .unwrap();
-        foreign.accept_conversation(&root, &organ).await.unwrap();
-        let own = owner.export_sync_page(&organ, &[], 2000).await.unwrap();
-        let own_bytes = serde_json::to_string(&own.batch).unwrap();
-        for marker in [
-            "PRIVATE_GENERAL_SENTINEL",
-            "PRIVATE_PARTICIPANT_SENTINEL",
-            "PRIVATE_ROOT_SENTINEL",
-        ] {
-            assert!(own_bytes.contains(marker));
-        }
-        let port = server
-            .endpoint()
-            .bound_sockets()
-            .into_iter()
-            .find(|addr| addr.is_ipv4())
-            .unwrap()
-            .port();
-        let addr =
-            iroh::EndpointAddr::new(server.node_id()).with_ip_addr(([127, 0, 0, 1], port).into());
-        let serving = {
-            let wire = server.clone();
-            tokio::spawn(async move { wire.serve().await })
-        };
         let general = client
             .request(
                 addr.clone(),
@@ -253,10 +253,10 @@ async fn permissive_general_and_explicit_root_sharing_never_export_or_import_pri
         ] {
             assert!(!bytes.contains(marker));
         }
-        serving.abort();
-        client.shutdown().await;
-        server.shutdown().await;
     })
     .await
     .unwrap();
+    serving.abort();
+    client.shutdown().await;
+    server.shutdown().await;
 }

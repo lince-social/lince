@@ -7,6 +7,9 @@ pub mod communication;
 pub mod app;
 
 #[cfg(feature = "native-runtime")]
+pub mod drawing;
+
+#[cfg(feature = "native-runtime")]
 pub mod owner_backup;
 
 #[cfg(feature = "native-runtime")]
@@ -28,6 +31,11 @@ pub mod icons;
 pub mod castle;
 
 #[cfg(feature = "native-runtime")]
+pub mod schedule_editor;
+#[cfg(feature = "native-runtime")]
+pub mod time_castle;
+
+#[cfg(feature = "native-runtime")]
 mod castle_feed;
 
 #[cfg(feature = "native-runtime")]
@@ -47,6 +55,7 @@ pub mod frequency_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod access_control;
+pub mod workspace_sync;
 
 #[cfg(feature = "native-runtime")]
 pub mod sync_castle;
@@ -56,6 +65,9 @@ pub mod color_picker;
 
 #[cfg(feature = "native-runtime")]
 pub mod canvas;
+
+#[cfg(feature = "native-runtime")]
+pub mod canvas_host;
 
 #[cfg(feature = "native-runtime")]
 pub mod topology;
@@ -109,6 +121,9 @@ pub mod physics;
 pub mod area_effects;
 
 #[cfg(feature = "native-runtime")]
+pub(crate) mod influence_report;
+
+#[cfg(feature = "native-runtime")]
 pub mod sand_store;
 
 #[cfg(feature = "native-runtime")]
@@ -150,6 +165,8 @@ pub mod time_limit;
 
 #[cfg(feature = "native-runtime")]
 pub mod sand;
+#[cfg(feature = "native-runtime")]
+mod save_feedback;
 
 #[cfg(feature = "native-runtime")]
 pub mod slider;
@@ -180,6 +197,7 @@ pub mod record_view;
 
 #[cfg(feature = "native-runtime")]
 pub mod record_binding;
+pub(crate) mod record_extensions;
 
 #[cfg(feature = "native-runtime")]
 pub mod work_timer;
@@ -249,6 +267,8 @@ pub mod token_style;
 
 #[cfg(feature = "native-runtime")]
 pub mod customization;
+#[cfg(feature = "native-runtime")]
+pub mod sand_settings;
 
 #[cfg(feature = "native-runtime")]
 pub mod area;
@@ -307,6 +327,10 @@ pub mod recorder_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod document_viewer;
+#[cfg(feature = "native-runtime")]
+pub mod external_drop;
+#[cfg(feature = "native-runtime")]
+pub mod media_sand;
 #[cfg(feature = "native-runtime")]
 pub mod file_explorer;
 #[cfg(feature = "native-runtime")]

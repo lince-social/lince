@@ -8,14 +8,20 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
+        if let Action::ChangeRecord { request } = action {
+            return Box::pin(async move {
+                let outcome = self.change_record(request, actor.as_deref()).await?;
+                Ok(ControlFlow::Continue(outcome))
+            });
+        }
         Box::pin(async move {
             let mut outcome = ActionOutcome::default();
             match action {
+                Action::SandPackage { request } => {
+                    outcome = self.sand_package_command(request, actor.as_deref()).await?;
+                }
                 Action::Social { request } => {
                     outcome = self.social_command(request, actor.as_deref(), now).await?;
-                }
-                Action::ChangeRecord { request } => {
-                    outcome = self.change_record(request, actor.as_deref()).await?;
                 }
                 Action::CreateRecordWithTags {
                     head,
@@ -40,31 +46,7 @@ impl Engine {
                     body,
                     quantity,
                 } => {
-                    let rec = store::records::create(
-                        &self.store.pool,
-                        store::records::NewRecord {
-                            slug: slug.as_deref(),
-                            kind,
-                            head: &head,
-                            body: &body,
-                            quantity: store::exact::zero(),
-                        },
-                    )
-                    .await?;
-                    outcome.facts = self
-                        .append(
-                            NewFact {
-                                actor_uid: actor,
-                                ..NewFact::quantity_f64(
-                                    rec.uid.clone(),
-                                    quantity,
-                                    Cause::user_edit(),
-                                )
-                            },
-                            now,
-                        )
-                        .await?;
-                    outcome.created = Some(rec.uid);
+                    outcome = self.create_record_draft_kind(crate::record_creation::Draft { head, body, slug, quantity: store::exact::from_f64(quantity).to_string(), ..Default::default() }, kind, actor, now).await?;
                 }
                 Action::PreviewAreaTransition {
                     target,
@@ -256,6 +238,7 @@ impl Engine {
 
                     let signer = self.signer.lock().await.clone();
                     let mut tx = store::write_tx(&self.store.pool).await?;
+                    let checkpoint = self.record_checkpoint_on(&mut tx, actor.as_deref(), vec![subject_uid.clone()], protein::authority::Operation::Update).await?;
                     store::assertions::transition_unary(
                         &mut tx,
                         &subject_uid,
@@ -288,6 +271,7 @@ impl Engine {
                     } else {
                         None
                     };
+                    if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
                     tx.commit().await?;
                     if let Some(fact) = fact {
                         outcome.facts = self.observe_committed_fact(fact, now).await?;
@@ -776,6 +760,11 @@ impl Engine {
                     request_id,
                     paused,
                 } => {
+                    if !paused {
+                        let rule = store::recurrence::get(&self.store.pool, &recurrence).await?.ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
+                        Box::pin(self.validate_automatic_rule(&rule.consequences, rule.condition.as_ref(), actor.as_deref())).await?;
+                        self.authorize_karma_rule(&rule, actor.as_deref()).await?;
+                    }
                     store::recurrence::set_state(
                         &self.store.pool,
                         &recurrence,
@@ -823,6 +812,7 @@ impl Engine {
                     if let Some(note) = note {
                         rule.note = Some(note);
                     }
+                    rule.actor_uid = actor.clone();
                     outcome.facts = Box::pin(self.apply_rule_occurrence(
                         &rule,
                         parse_instant_field(&due_at)?,
@@ -1112,49 +1102,18 @@ impl Engine {
                             payload: None,
                         });
                     }
-                    let signer = self.signer.lock().await.clone();
-                    let facts =
-                        crate::append::append_all(&self.store, facts, now, signer.as_ref()).await?;
-                    for fact in facts {
-                        outcome
-                            .facts
-                            .extend(self.observe_committed_fact(fact, now).await?);
-                    }
+                    outcome.facts = self.append_record_changes_as(facts, actor.as_deref(), now).await?;
                 }
                 Action::AddQuantityExact { target, delta } => {
                     let uid = self.resolve(&target).await?;
                     self.reject_direct_transfer_record_mutation(&uid).await?;
                     if delta.mantissa() != 0 {
-                        outcome.facts = self
-                            .append(
-                                NewFact {
-                                    uid: None,
-                                    record_uid: uid,
-                                    delta,
-                                    at: None,
-                                    actor_uid: actor,
-                                    cause: Cause::user_edit(),
-                                    payload: None,
-                                },
-                                now,
-                            )
-                            .await?;
+                        outcome.facts = self.append_record_changes_as(vec![NewFact { uid:None, record_uid:uid, delta, at:None, actor_uid:actor.clone(), cause:Cause::user_edit(), payload:None }], actor.as_deref(), now).await?;
                     }
                 }
                 Action::AddQuantity { target, delta } => {
-                    let uid = self.resolve(&target).await?;
-                    self.reject_direct_transfer_record_mutation(&uid).await?;
-                    if delta != 0.0 {
-                        outcome.facts = self
-                            .append(
-                                NewFact {
-                                    actor_uid: actor,
-                                    ..NewFact::quantity_f64(uid, delta, Cause::user_edit())
-                                },
-                                now,
-                            )
-                            .await?;
-                    }
+                    if !delta.is_finite() { return Err(EngineError::Consequence("Quantity must be finite".into())); }
+                    return Box::pin(self.act(Action::AddQuantityExact { target, delta:store::exact::from_f64(delta) }, actor)).await.map(ControlFlow::Break);
                 }
                 Action::Activate { target } => {
                     return Box::pin(self.act(Action::SetQuantity { target, value: 1.0 }, actor))
@@ -1182,18 +1141,7 @@ impl Engine {
                             })?;
                         return Ok(ControlFlow::Break(outcome));
                     }
-                    let old_slug = store::records::get(&self.store.pool, &uid)
-                        .await?
-                        .and_then(|r| r.slug);
-                    outcome.facts = self
-                        .annotate(
-                            uid.clone(),
-                            actor,
-                            serde_json::json!({ "deleted": true, "slug": old_slug }),
-                            now,
-                        )
-                        .await?;
-                    store::records::mark_deleted(&self.store.pool, &uid).await?;
+                    outcome.facts = self.change_record_scalar_as(&uid, crate::record_policy::ScalarChange::Delete, actor.as_deref(), now).await?;
                 }
                 Action::EditRecordText { target, head, body } => {
                     let uid = self.resolve(&target).await?;
@@ -1223,10 +1171,7 @@ impl Engine {
                 Action::SetUnit { target, unit } => {
                     let uid = self.resolve(&target).await?;
                     let unit_uid = self.resolve_concept_opt(unit).await?;
-                    store::records::set_unit(&self.store.pool, &uid, unit_uid.as_deref()).await?;
-                    outcome.facts = self
-                        .annotate(uid, actor, serde_json::json!({ "unit": unit_uid }), now)
-                        .await?;
+                    outcome.facts = self.change_record_scalar_as(&uid, crate::record_policy::ScalarChange::Unit(unit_uid.as_deref()), actor.as_deref(), now).await?;
                 }
                 _ => {
                     return Err(EngineError::Consequence(

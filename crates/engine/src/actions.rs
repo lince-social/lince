@@ -42,6 +42,11 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
+    Workspace { request: crate::workspace_sync::Request },
+    InspectRecordAuthority { person: String, record_uid: String },
+    SandPackage {
+        request: nucleus::sand_package::Command,
+    },
     Social {
         request: nucleus::social::Command,
     },
@@ -205,6 +210,8 @@ pub enum Action {
         fields: [nucleus::karma::rule_field::RuleFieldInput; 3],
         request_id: String,
     },
+    InspectCanvases,
+    Canvas { canvas: Option<String>, request: nucleus::canvas::Request },
     PresentComponent {
         target: String,
         component: nucleus::component::ComponentState,
@@ -318,6 +325,10 @@ pub enum Action {
         namespace: String,
         fds: serde_json::Value,
     },
+    RecordExtensions {
+        target: Option<String>,
+        request: nucleus::record_extension::Request,
+    },
     AddKnownOrgan {
         invite: String,
         name: String,
@@ -331,6 +342,13 @@ pub enum Action {
         sync_out: bool,
         sync_in: bool,
     },
+    SetContactDelivery {
+        target: String,
+        mode: String,
+    },
+    ReconnectContact {
+        target: String,
+    },
     SetContactScope {
         target: String,
         fields: Option<Vec<String>>,
@@ -339,9 +357,24 @@ pub enum Action {
         target: String,
         protein: Option<serde_json::Value>,
     },
+    PreviewRecordMove {
+        record: String,
+        target: String,
+    },
+    PendingOffers,
+    CancelReplicaOffer {
+        root: String,
+        target: String,
+    },
+    AnswerRecordMove {
+        offer: String,
+        accept: bool,
+    },
     MoveRecordTo {
         record: String,
         target: String,
+        #[serde(default)]
+        expected_preview: Option<String>,
     },
     CancelRecordMove {
         record: String,
@@ -1247,6 +1280,11 @@ pub enum Action {
         user: String,
         role: String,
     },
+    AssignRoles {
+        person: String,
+        roles: Vec<String>,
+        expected_revision: i64,
+    },
     SetPersonStanding {
         person: String,
         active: bool,
@@ -1261,6 +1299,11 @@ pub enum Action {
     SetRoleReadRules {
         role: String,
         rules: protein::read_rules::ReadRules,
+        expected_revision: i64,
+    },
+    SetRolePolicy {
+        role: String,
+        policy: serde_json::Value,
         expected_revision: i64,
     },
     CreateRecordWithTags {
@@ -1966,7 +2009,7 @@ impl Engine {
             | Action::SetSlug { .. } | Action::CreateRecord { .. }
             | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. } | Action::ImportKarmaHabit { .. }
         );
-        let preview = matches!(&action, Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. });
+        let preview = matches!(&action, Action::PendingOffers | Action::PreviewRecordMove { .. } | Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. });
         let _rule_guard = if matches!(&action,
             Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
@@ -2137,13 +2180,21 @@ impl Engine {
         if let Some(actor) = actor {
             self.actor_user(actor).await?;
         }
+        if actor.is_some() && matches!(action, Action::CreateAgent { .. } | Action::ConfigureFiote { .. } | Action::ActivateFiote { .. } | Action::ReportFioteChild { .. }) {
+            return Err(EngineError::Forbidden("Fiote automation requires the local interface session".into()));
+        }
         if let Some(permission) = Self::generic_write_permission(action) {
             self.require_permission(actor, permission).await?;
         }
-        let touched = self.record_targets_of(action).await?;
+        let touched = self.record_targets_of(action).await.map_err(|error| {
+            if actor.is_some() && matches!(error, EngineError::UnknownRecord(_)) {
+                EngineError::Forbidden("Record unavailable for this login".into())
+            } else { error }
+        })?;
         self.refuse_unreadable(actor, &touched).await?;
+        self.authorize_record_policy(action, actor).await?;
         let edited = match action {
-            Action::AssertRecord { subject, .. } | Action::RefineAssertion { subject, .. } => {
+            Action::AssertRecord { subject, .. } | Action::RefineAssertion { subject, .. } | Action::RetractRecord { subject, .. } => {
                 vec![self.resolve(subject).await?]
             }
             Action::CreateThread { .. }
@@ -2175,6 +2226,52 @@ impl Engine {
             }
         }
         match action {
+            Action::CreateRecord { kind, .. } if actor.is_some() => {
+                match kind {
+                    RecordKind::Plain => {}
+                    RecordKind::Person => self.require_permission(actor, "user:create").await?,
+                    RecordKind::Signal => self.require_permission(actor, "organ:update").await?,
+                    _ => return Err(EngineError::Forbidden("Use the dedicated editor to create this managed Record kind".into())),
+                }
+            }
+            Action::GrantVisibility { subject_kind, subject, .. } => {
+                self.require_permission(actor, "permission:assign").await?;
+                match (subject_kind.as_str(), subject.as_deref()) {
+                    ("public", None) => {}
+                    ("actor", Some(uid)) => {
+                        let uid = self.resolve(uid).await?;
+                        if store::records::get(&self.store.pool, &uid).await?.is_none_or(|record| record.kind != "person") {
+                            return Err(EngineError::Consequence("Choose an existing Person".into()));
+                        }
+                        self.require_manageable_person(actor, &uid).await?;
+                    }
+                    ("role", Some(id)) => {
+                        let id: i64 = id.parse().map_err(|_| EngineError::Consequence("Choose an existing Role".into()))?;
+                        let name: String = store::sqlx::query_scalar("SELECT name FROM role WHERE id=?").bind(id).fetch_optional(&self.store.pool).await?.ok_or_else(|| EngineError::Consequence("Choose an existing Role".into()))?;
+                        self.require_assignable_role(actor, &name).await?;
+                    }
+                    ("organ", Some(uid)) => {
+                        if self.resolve(uid).await? != self.resolve("local-organ").await? {
+                            return Err(EngineError::Forbidden("Visibility grants require this Organ".into()));
+                        }
+                    }
+                    _ => return Err(EngineError::Consequence("Choose a public, Person, Role or local Organ visibility recipient".into())),
+                }
+            }
+            Action::CreateConcept { .. }
+            | Action::DeleteConcept { .. }
+            | Action::DeclareEquivalence { .. }
+            | Action::RenameConcept { .. }
+            | Action::AdoptConcept { .. }
+            | Action::AdoptConcepts { .. }
+            | Action::RemoveConceptFromLingua { .. }
+            | Action::AddConceptParent { .. }
+            | Action::RemoveConceptParent { .. }
+            | Action::CreateLingua { .. }
+            | Action::DeleteLingua { .. }
+            | Action::RenameLingua { .. } => {
+                self.require_permission(actor, "permission:assign").await?;
+            }
             Action::CreateUser {
                 username,
                 name,
@@ -2219,21 +2316,23 @@ impl Engine {
                 self.require_assignable_role(actor, role).await?;
                 let uid = self.resolve(user).await?;
                 self.require_manageable_person(actor, &uid).await?;
-                if let Some(target) = store::auth::principal(&self.store.pool, &uid).await?
-                    && target.role == "admin"
-                    && role != "admin"
-                {
-                    self.require_other_admin(&uid).await?;
+            }
+            Action::AssignRoles { person, roles, .. } => {
+                self.require_permission(actor, "user:assign_role").await?;
+                self.require_manageable_person(actor, &self.resolve(person).await?).await?;
+                if roles.len() > store::person_roles::MAX_ROLES {
+                    return Err(EngineError::Consequence("Assign at most 64 Roles".into()));
                 }
+                for role in roles { self.require_assignable_role(actor, role).await?; }
             }
             Action::GrantPermission { role, permission }
             | Action::RevokePermission { role, permission } => {
                 self.require_permission(actor, "permission:assign").await?;
                 self.require_permission(actor, permission).await?;
                 self.require_assignable_role(actor, role).await?;
-                if role == "admin" || !utils::auth::all_permission_keys().contains(permission) {
+                if !utils::auth::all_permission_keys().contains(permission) {
                     return Err(EngineError::Forbidden(
-                        "Admin permissions are fixed; choose an existing permission".into(),
+                        "Choose an existing permission".into(),
                     ));
                 }
             }
@@ -2243,17 +2342,10 @@ impl Engine {
                 self.require_manageable_person(actor, &self.resolve(person).await?)
                     .await?;
             }
-            Action::SetRoleReadRules { role, .. } => {
+            Action::SetRoleReadRules { role, .. } | Action::SetRolePolicy { role, .. } => {
                 self.require_permission(actor, "role:update").await?;
                 self.require_permission(actor, "permission:assign").await?;
                 self.require_assignable_role(actor, role).await?;
-                if role == "admin"
-                    || (actor.is_some() && self.actor_user(actor.unwrap()).await?.role != "admin")
-                {
-                    return Err(EngineError::Forbidden(
-                        "Only admins may change non-admin role rules".into(),
-                    ));
-                }
             }
             Action::DeleteRecord { target } | Action::DeleteMessageDraft { draft: target } => {
                 let uid = self.resolve(target).await?;
@@ -2266,7 +2358,7 @@ impl Engine {
                     self.require_manageable_person(actor, &uid).await?;
                     if store::auth::principal(&self.store.pool, &uid)
                         .await?
-                        .is_some_and(|user| user.role == "admin")
+                        .is_some_and(|user| store::person_roles::has_recovery(&user.permissions))
                     {
                         self.require_other_admin(&uid).await?;
                     }
@@ -2287,9 +2379,7 @@ impl Engine {
         };
         let viewer = self.actor_user(actor).await?;
         let permissions = store::auth::role_permission_keys(&self.store.pool, role).await?;
-        if (role == "admin" && viewer.role != "admin")
-            || permissions.iter().any(|key| !viewer.permits(key))
-        {
+        if permissions.iter().any(|key| !viewer.permits(key)) {
             return Err(EngineError::Forbidden(
                 "You cannot manage permissions beyond your own access".into(),
             ));
@@ -2311,8 +2401,7 @@ impl Engine {
             store::auth::assigned_role_on(&mut connection, person).await?
         };
         if let Some(target) = target
-            && ((target.role == "admin" && viewer.role != "admin")
-                || target.permissions.iter().any(|key| !viewer.permits(key)))
+            && target.permissions.iter().any(|key| !viewer.permits(key))
         {
             return Err(EngineError::Forbidden(
                 "You cannot manage a person with greater access".into(),
@@ -3987,10 +4076,18 @@ impl Engine {
         ))
     }
 
-    fn generic_write_permission(action: &Action) -> Option<&'static str> {
+    pub(crate) fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
             Action::Social { request } => request.permission(),
+            Action::SandPackage { request } => request.permission(),
             Action::DiscardTransferDraft { .. } => "transfer:update",
+            Action::InspectCanvases => "record:read",
+            Action::RecordExtensions { request, .. } => match request {
+                nucleus::record_extension::Request::Inspect { .. } => "record:read",
+                nucleus::record_extension::Request::Create { .. } => "record:create",
+                _ => "record:update",
+            },
+            Action::Canvas { request, .. } => if request.is_mutation() { "record:update" } else { "record:read" },
             Action::InspectFioteActivations { .. } => "record:read",
             Action::CreateRecord { .. }
             | Action::CreateCustomComponent { .. }
@@ -4073,6 +4170,8 @@ impl Engine {
             Action::DeleteFrequency { .. } | Action::DeleteRecurrence { .. } => "frequency:delete",
 
             Action::AuditContact { .. }
+            | Action::PreviewRecordMove { .. }
+            | Action::PendingOffers
             | Action::SyncNow
             | Action::RosterStatus
             | Action::MailboxStatus
@@ -4086,6 +4185,10 @@ impl Engine {
             Action::AddKnownOrgan { .. } => "organ:create",
             Action::RenameOrganContact { .. }
             | Action::SetSyncPolicy { .. }
+            | Action::CancelReplicaOffer { .. }
+            | Action::AnswerRecordMove { .. }
+            | Action::SetContactDelivery { .. }
+            | Action::ReconnectContact { .. }
             | Action::SetContactScope { .. }
             | Action::SetContactShare { .. }
             | Action::MoveRecordTo { .. }
@@ -4202,9 +4305,13 @@ impl Engine {
             | Action::UpdateUser { .. }
             | Action::DeleteUser { .. }
             | Action::AssignRole { .. }
+            | Action::AssignRoles { .. }
             | Action::SetPersonStanding { .. }
             | Action::SetPersonReadFilter { .. }
             | Action::SetRoleReadRules { .. }
+            | Action::Workspace { .. }
+            | Action::InspectRecordAuthority { .. }
+            | Action::SetRolePolicy { .. }
             | Action::GrantPermission { .. }
             | Action::RevokePermission { .. } => return None,
         })
@@ -4646,7 +4753,7 @@ impl Engine {
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
     }
 
-    async fn resolve_concept_opt(
+    pub(crate) async fn resolve_concept_opt(
         &self,
         token: Option<String>,
     ) -> Result<Option<String>, EngineError> {

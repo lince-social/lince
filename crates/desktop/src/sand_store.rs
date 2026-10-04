@@ -65,7 +65,7 @@ impl SandKind {
             Self::Text => "A simple text label.",
             Self::EditableText => "A note you can write in.",
             Self::Operation => "Run commands or set a Record quantity to zero by slug.",
-            Self::WorkTimer => "A standalone stopwatch or a Record’s editable work log.",
+            Self::WorkTimer => "A quiet clock for upcoming work. Unfold the timeline or open its scheduling and stopwatch controls.",
             Self::AccessControl => "Manage local users, Roles and permissions.",
             Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
             Self::Freedoom => "Play Freedoom locally with keyboard controls.",
@@ -168,7 +168,6 @@ pub(crate) fn entry(
     let style_kind = match kind {
         SandKind::Square
         | SandKind::Operation
-        | SandKind::WorkTimer
         | SandKind::AccessControl
         | SandKind::Sync
         | SandKind::Freedoom
@@ -177,6 +176,7 @@ pub(crate) fn entry(
         | SandKind::Configuration
         | SandKind::Ontology
         | SandKind::Todo => crate::tokens::SandStyleKind::Square,
+        SandKind::WorkTimer => crate::tokens::SandStyleKind::TimeCastle,
         SandKind::Text => crate::tokens::SandStyleKind::Text,
         SandKind::EditableText => crate::tokens::SandStyleKind::EditableText,
     };
@@ -296,6 +296,11 @@ pub(crate) fn entry(
             .get::<Children>(source)
             .and_then(|children| children.first().copied());
         crate::work_timer::populate(&mut scene, source, None, &serde_json::Value::Null, input);
+        if let Some((viewport, image)) = crate::time_castle::preview(&scene, source) {
+            world.init_resource::<Assets<Image>>();
+            let handle = world.resource_mut::<Assets<Image>>().add(image);
+            scene.entity_mut(viewport).insert(ImageNode::new(handle));
+        }
     }
     let miniature = preview::snapshot(&scene, source, world, preview);
     preview::fit(world, miniature, size);
@@ -494,7 +499,7 @@ pub fn spawn_sand(
                 ) {
                     Vec2::new(520.0, 540.0)
                 } else if kind == SandKind::WorkTimer {
-                    Vec2::new(360.0, 520.0)
+                    Vec2::splat(420.0)
                 } else {
                     Vec2::new(248.0, 184.0)
                 },

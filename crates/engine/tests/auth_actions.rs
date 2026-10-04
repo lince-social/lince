@@ -457,11 +457,20 @@ async fn standing_is_refused_over_a_record_that_is_not_a_person() {
 }
 
 #[tokio::test]
-async fn the_last_active_admin_cannot_be_deactivated() {
+async fn the_last_active_recovery_actor_cannot_be_deactivated() {
     let e = engine().await;
     let admin_role = store::auth::ensure_role(&e.store.pool, store::auth::ADMIN_ROLE)
         .await
         .unwrap();
+    for key in store::person_roles::RECOVERY_PERMISSIONS {
+        let (subject, operation) = key.split_once(':').unwrap();
+        let permission = store::auth::ensure_permission(&e.store.pool, subject, operation)
+            .await
+            .unwrap();
+        store::auth::grant(&e.store.pool, admin_role, permission)
+            .await
+            .unwrap();
+    }
     let first =
         store::auth::create_person_login(&e.store.pool, "First", "first", "hash", admin_role)
             .await
@@ -493,7 +502,11 @@ async fn the_last_active_admin_cannot_be_deactivated() {
         )
         .await
         .expect_err("the last active admin stays");
-    assert!(err.to_string().contains("last active admin"), "{err}");
+    assert!(
+        err.to_string()
+            .contains("last active Actor with recovery capabilities"),
+        "{err}"
+    );
     assert!(
         store::people::is_active(&e.store.pool, &first)
             .await

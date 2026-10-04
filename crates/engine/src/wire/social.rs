@@ -107,3 +107,123 @@ impl Wire {
         result.map_err(|_| EngineError::Consequence("Social request timed out".into()))?
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{sync::Arc, time::Duration};
+
+    async fn slots(wire: &Wire, available: usize) {
+        tokio::time::timeout(Duration::from_secs(3), async {
+            while wire.connection_slots.available_permits() != available {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .unwrap();
+    }
+
+    #[tokio::test]
+    async fn public_social_connection_flood_enforces_peer_and_global_caps_then_recovers() {
+        tokio::time::timeout(Duration::from_secs(30), async {
+            let engine = Arc::new(crate::Engine::open_memory().await.unwrap());
+            let server = Arc::new(
+                Wire::bind_with_discovery(
+                    engine,
+                    SecretKey::from_bytes(&[200; 32]),
+                    Reach::Local,
+                    None,
+                    false,
+                )
+                .await
+                .unwrap(),
+            );
+            let serving = server.clone();
+            let task = tokio::spawn(async move { serving.serve().await });
+            let port = server
+                .endpoint
+                .bound_sockets()
+                .into_iter()
+                .find(|addr| addr.is_ipv4())
+                .unwrap()
+                .port();
+            let address =
+                EndpointAddr::new(server.node_id()).with_ip_addr(([127, 0, 0, 1], port).into());
+            let mut clients = Vec::new();
+            let mut connections = Vec::new();
+            for peer in 0..8u8 {
+                let client = Endpoint::builder(iroh::endpoint::presets::Minimal)
+                    .clear_address_lookup()
+                    .secret_key(SecretKey::from_bytes(&[201 + peer; 32]))
+                    .bind()
+                    .await
+                    .unwrap();
+                for _ in 0..8 {
+                    connections.push(client.connect(address.clone(), ALPN_SOCIAL).await.unwrap());
+                }
+                slots(&server, 64 - (peer as usize + 1) * 8).await;
+                if peer == 0 {
+                    if let Ok(excess) = client.connect(address.clone(), ALPN_SOCIAL).await {
+                        tokio::time::timeout(Duration::from_secs(3), excess.closed())
+                            .await
+                            .unwrap();
+                    }
+                    slots(&server, 56).await;
+                    assert_eq!(
+                        server
+                            .open_per_peer
+                            .lock()
+                            .unwrap()
+                            .values()
+                            .copied()
+                            .sum::<usize>(),
+                        8
+                    );
+                }
+                clients.push(client);
+            }
+            assert_eq!(
+                server
+                    .open_per_peer
+                    .lock()
+                    .unwrap()
+                    .values()
+                    .copied()
+                    .sum::<usize>(),
+                64
+            );
+            let stranger = Endpoint::builder(iroh::endpoint::presets::Minimal)
+                .clear_address_lookup()
+                .bind()
+                .await
+                .unwrap();
+            assert!(
+                stranger
+                    .connect(address.clone(), ALPN_SOCIAL)
+                    .await
+                    .is_err()
+            );
+            connections
+                .pop()
+                .unwrap()
+                .close(0u32.into(), b"release a slot");
+            slots(&server, 1).await;
+            let replacement = stranger.connect(address, ALPN_SOCIAL).await.unwrap();
+            slots(&server, 0).await;
+            replacement.close(0u32.into(), b"done");
+            for connection in connections {
+                connection.close(0u32.into(), b"done");
+            }
+            slots(&server, 64).await;
+            assert!(server.open_per_peer.lock().unwrap().is_empty());
+            task.abort();
+            for client in clients {
+                client.close().await;
+            }
+            stranger.close().await;
+            server.endpoint.close().await;
+        })
+        .await
+        .unwrap();
+    }
+}

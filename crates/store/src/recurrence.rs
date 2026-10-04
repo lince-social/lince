@@ -164,7 +164,7 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Recurrence>, Sto
 }
 
 pub async fn all(pool: &SqlitePool) -> Result<Vec<Recurrence>, StoreError> {
-    let rows = sqlx::query("SELECT * FROM recurrence ORDER BY created_at DESC")
+    let rows = sqlx::query("SELECT recurrence.* FROM recurrence JOIN record ON record.uid=recurrence.record_uid WHERE record.deleted_at IS NULL ORDER BY recurrence.created_at DESC")
         .fetch_all(pool)
         .await?;
     rows.iter().map(map_recurrence).collect()
@@ -457,12 +457,14 @@ pub async fn set_state(
 
     let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
-        "UPDATE recurrence SET state = ?, revision = ?, updated_at = ?
+        "UPDATE recurrence SET state = ?, revision = ?, updated_at = ?, actor_uid = CASE WHEN ? THEN actor_uid ELSE ? END
           WHERE uid = ? AND revision = ?",
     )
     .bind(next_state)
     .bind(revision)
     .bind(&at)
+    .bind(paused)
+    .bind(actor_uid)
     .bind(recurrence_uid)
     .bind(expected_revision)
     .execute(&mut *tx)

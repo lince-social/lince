@@ -21,8 +21,34 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
+        if let Action::InspectRecordAuthority { person, record_uid } = action {
+            return Box::pin(async move { self.inspect_record_authority(actor.as_deref(), &person, &record_uid).await.map(ControlFlow::Continue) });
+        }
+        if let Action::Workspace { request } = action {
+            return Box::pin(async move { self.workspace_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
+        if let Action::SetRolePolicy { role, policy, expected_revision } = action {
+            return Box::pin(async move { self.set_role_policy(actor.as_deref(), &role, policy, expected_revision).await.map(ControlFlow::Continue) });
+        }
+        if let Action::AssignRoles { person, roles, expected_revision } = action {
+            return Box::pin(async move { self.assign_roles(actor.as_deref(), &person, &roles, expected_revision).await.map(ControlFlow::Continue) });
+        }
+        if let Action::RecordExtensions { target, request } = action {
+            return Box::pin(async move { self.record_extensions(target, request, actor.as_deref(), now).await.map(ControlFlow::Continue) });
+        }
+        if let Action::Canvas { canvas, request } = action {
+            return Box::pin(async move { self.canvas_action(canvas, request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
+        if matches!(action, Action::InspectCanvases) {
+            return Box::pin(async move {
+                if actor.is_some() { return Err(EngineError::Forbidden("Canvas inspection currently requires the local interface session.".into())); }
+                Ok(ControlFlow::Continue(ActionOutcome { data: Some(serde_json::json!({"canvases":self.connected_canvases()})), ..Default::default() }))
+            });
+        }
         match &action {
+            Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
             Action::Social { .. }
+            | Action::SandPackage { .. }
             | Action::ChangeRecord { .. }
             | Action::CreateRecordWithTags { .. }
             | Action::CreateRecordDraft { .. }
@@ -78,12 +104,18 @@ impl Engine {
             Action::SetExtension { .. }
             | Action::RenameOrganContact { .. }
             | Action::SetSyncPolicy { .. }
+            | Action::SetContactDelivery { .. }
+            | Action::ReconnectContact { .. }
             | Action::SetContactAcceptScope { .. }
             | Action::DeleteConversation { .. }
             | Action::SendRecordCopy { .. }
             | Action::HideRecordFromContact { .. }
             | Action::SetContactScope { .. }
             | Action::SetContactShare { .. }
+            | Action::PreviewRecordMove { .. }
+            | Action::CancelReplicaOffer { .. }
+            | Action::PendingOffers
+            | Action::AnswerRecordMove { .. }
             | Action::MoveRecordTo { .. }
             | Action::CancelRecordMove { .. }
             | Action::ForgetOrganContact { .. }

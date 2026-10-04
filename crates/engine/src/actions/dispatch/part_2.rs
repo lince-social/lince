@@ -913,87 +913,14 @@ impl Engine {
                         )
                         .await?;
                 }
-                Action::RefineAssertion {
-                    subject,
-                    predicate,
-                    object,
-                } => {
-                    let subject_uid = self.resolve(&subject).await?;
-                    let object_uid = self.resolve(&object).await?;
-                    let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
-                        .await?
-                        .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
-                    outcome.created = Some(
-                        store::assertions::refine(
-                            &self.store.pool,
-                            &subject_uid,
-                            &predicate_uid,
-                            &object_uid,
-                            actor.as_deref(),
-                        )
-                        .await?,
-                    );
-                    outcome.facts = self
-                        .annotate_many(
-                            vec![subject_uid, object_uid],
-                            actor,
-                            serde_json::json!({ "assertion_refined": outcome.created }),
-                            now,
-                        )
-                        .await?;
+                action @ Action::RefineAssertion { .. } => {
+                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
                 }
-                Action::RetractRecord {
-                    subject,
-                    predicate,
-                    object,
-                } => {
-                    let subject_uid = self.resolve(&subject).await?;
-                    let object_uid = match object {
-                        Some(object) => Some(self.resolve(&object).await?),
-                        None => None,
-                    };
-                    let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
-                        .await?
-                        .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
-                    store::assertions::retract_tuple(
-                        &self.store.pool,
-                        &subject_uid,
-                        &predicate_uid,
-                        object_uid.as_deref(),
-                        actor.as_deref(),
-                    )
-                    .await?;
-                    let mut targets = vec![subject_uid];
-                    targets.extend(object_uid);
-                    outcome.facts = self
-                        .annotate_many(
-                            targets,
-                            actor,
-                            serde_json::json!({ "assertion_retracted": {
-                                "predicate": predicate_uid
-                            }}),
-                            now,
-                        )
-                        .await?;
+                action @ Action::RetractRecord { .. } => {
+                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
                 }
-                Action::SetIdentity { subject, predicate } => {
-                    let subject_uid = self.resolve(&subject).await?;
-                    let predicate_uid = self.resolve_concept_opt(predicate).await?;
-                    outcome.created = store::assertions::set_identity(
-                        &self.store.pool,
-                        &subject_uid,
-                        predicate_uid.as_deref(),
-                        actor.as_deref(),
-                    )
-                    .await?;
-                    outcome.facts = self
-                        .annotate(
-                            subject_uid,
-                            actor,
-                            serde_json::json!({ "identity": predicate_uid }),
-                            now,
-                        )
-                        .await?;
+                action @ Action::SetIdentity { .. } => {
+                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
                 }
                 _ => {
                     return Err(EngineError::Consequence(

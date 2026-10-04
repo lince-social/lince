@@ -3,6 +3,33 @@
 use lince_interface::markup;
 
 #[test]
+fn transclusion_is_distinct_from_links_images_and_literal_code() {
+    let blocks = markup::parse(
+        "before ![[Title|r_example]] after [[link]]\n\n`![[literal]]`\n\n```text\n![[code]]\n```\n\n![Image](asset:r_test/hash)\n\n\\![[escaped]]",
+    );
+    assert_eq!(
+        blocks
+            .iter()
+            .filter_map(|block| block.transclusion.as_deref())
+            .collect::<Vec<_>>(),
+        vec!["r_example"]
+    );
+    assert!(
+        blocks
+            .iter()
+            .flat_map(|block| &block.runs)
+            .any(|run| run.link.as_deref() == Some("link"))
+    );
+    assert!(
+        blocks
+            .iter()
+            .any(|block| block.image.as_deref() == Some("asset:r_test/hash"))
+    );
+    let mixed = markup::parse("\\![[literal]] and ![[included]]");
+    assert_eq!(mixed.iter().filter_map(|block| block.transclusion.as_deref()).collect::<Vec<_>>(), vec!["included"]);
+}
+
+#[test]
 fn rich_text_preserves_code_and_resolves_record_link_targets() {
     let blocks = markup::parse(
         "## Heading\n\nText **bold** and _italic_, [[Record title|r_example]].\n\n```mermaid\ngraph LR\n A --> B\n```\n\n`[[not a link|uid]]`",

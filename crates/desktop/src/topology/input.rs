@@ -64,9 +64,10 @@ pub fn pointer(
         ),
         With<SpatialRoot>,
     >,
-    (surfaces, arrows): (
+    (surfaces, arrows, schedule_picks): (
         Query<&Surface>,
         Query<(), With<crate::arrow_sand::ArrowSand>>,
+        Query<(), With<crate::time_castle::SchedulePick>>,
     ),
     owners: Query<(&VisualOwner, &GlobalTransform)>,
     parents: Query<&ChildOf>,
@@ -162,6 +163,7 @@ pub fn pointer(
         state.zoom = None;
     }
     let mut hit_owner = None;
+    let mut hit_mesh = None;
     let mut location = None;
     if !overlay {
         let render_origin = DVec3::new(canvas.center.x, 0.0, canvas.center.y);
@@ -210,6 +212,7 @@ pub fn pointer(
             && let Ok((owner, _)) = owners.get(*mesh)
         {
             hit_owner = Some((owner.0, hit.point));
+            if !mode.enabled && schedule_picks.contains(*mesh) { hit_mesh = Some(*mesh); }
         }
     }
     if !overlay {
@@ -251,11 +254,12 @@ pub fn pointer(
                     + bevy::math::DVec2::new(local.x, local.z),
             ) {
                 hit_owner = Some((entity, point.as_vec3()));
+                hit_mesh = None;
             }
         }
     }
     if let Some((owner, hit)) = hit_owner {
-        if (!mode.enabled || areas.contains(owner))
+        if hit_mesh.is_none() && (!mode.enabled || areas.contains(owner))
             && let Ok(surface) = surfaces.get(owner)
             && let Ok((_, transform)) = owners.get(surface.face)
         {
@@ -279,7 +283,7 @@ pub fn pointer(
     let entity = if location.is_some() {
         root
     } else {
-        hit_owner.map_or(root, |(e, _)| e)
+        hit_mesh.unwrap_or_else(|| hit_owner.map_or(root, |(e, _)| e))
     };
     hits.write(PointerHits::new(
         PointerId::Mouse,

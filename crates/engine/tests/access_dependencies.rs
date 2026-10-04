@@ -713,7 +713,7 @@ async fn unsupported_dependency_selector_refuses_even_when_unmatched() {
     let fixture = Fixture::new().await;
     fixture
         .dependency_policy(RolePolicy {
-            read: Predicate::SlugEq("unmatched".into()),
+            read: Predicate::RevisionEq(1),
             grants: Vec::new(),
         })
         .await;

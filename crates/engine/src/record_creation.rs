@@ -47,29 +47,34 @@ fn invalid(message: impl Into<String>) -> EngineError {
 }
 
 impl Draft {
-    fn matches(
+    pub(crate) fn matches(&self, predicate: &protein::Predicate, family: &HashSet<String>, quantity: DecimalValue) -> Option<bool> {
+        self.matches_kind(predicate, family, quantity, RecordKind::Plain)
+    }
+
+    fn matches_kind(
         &self,
         predicate: &protein::Predicate,
         family: &HashSet<String>,
         quantity: DecimalValue,
+        kind: RecordKind,
     ) -> Option<bool> {
         use protein::Predicate;
         Some(match predicate {
             Predicate::All(children) => children
                 .iter()
-                .map(|child| self.matches(child, family, quantity))
+                .map(|child| self.matches_kind(child, family, quantity, kind))
                 .collect::<Option<Vec<_>>>()?
                 .into_iter()
                 .all(|value| value),
             Predicate::Any(children) => children
                 .iter()
-                .map(|child| self.matches(child, family, quantity))
+                .map(|child| self.matches_kind(child, family, quantity, kind))
                 .collect::<Option<Vec<_>>>()?
                 .into_iter()
                 .any(|value| value),
-            Predicate::Not(child) => !self.matches(child, family, quantity)?,
+            Predicate::Not(child) => !self.matches_kind(child, family, quantity, kind)?,
             Predicate::ConceptIn(uid) => family.contains(uid),
-            Predicate::KindEq(kind) => kind == "plain",
+            Predicate::KindEq(value) => value == kind.as_str(),
             Predicate::UidEq(uid) => uid == &self.uid,
             Predicate::SlugEq(slug) => self.slug.as_ref() == Some(slug),
             Predicate::TextContains(text) => {
@@ -118,12 +123,17 @@ impl Draft {
 impl Engine {
     pub(crate) async fn create_record_draft(
         &self,
-        mut draft: Draft,
+        draft: Draft,
         actor: Option<String>,
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
+        self.create_record_draft_kind(draft, RecordKind::Plain, actor, now).await
+    }
+
+    pub(crate) async fn create_record_draft_kind(&self, mut draft: Draft, kind: RecordKind, actor: Option<String>, now: DateTime<Utc>) -> Result<ActionOutcome, EngineError> {
+        self.require_permission(actor.as_deref(), "record:create").await?;
         let quantity = draft.validate()?;
-        let payload = serde_json::to_string(&draft).map_err(EngineError::Json)?;
+        let payload = serde_json::to_string(&(kind, &draft)).map_err(EngineError::Json)?;
         let mut family = HashSet::new();
         for assertion in &mut draft.assertions {
             assertion.predicate = store::concepts::resolve(&self.store.pool, &assertion.predicate)
@@ -151,7 +161,7 @@ impl Engine {
         }
         if let Some(actor) = actor.as_deref() {
             let matches = |predicate: &protein::Predicate| {
-                draft.matches(predicate, &family, quantity) == Some(true)
+                draft.matches_kind(predicate, &family, quantity, kind) == Some(true)
             };
             if let Some(filter) =
                 protein::read_rules::effective_predicate(&self.store, actor).await?
@@ -162,20 +172,12 @@ impl Engine {
                     ));
                 }
             }
-            if let Some(role) = store::auth::person_access(&self.store.pool, actor)
-                .await?
-                .and_then(|person| person.role_id)
-            {
-                if let Some(policy) = store::role_policies::get(&self.store.pool, role)
-                    .await?
-                    .and_then(|row| row.policy)
+            if let Some(policy) = protein::role_authority::policy_for(&self.store, actor, Some(protein::authority::Operation::Create)).await? {
                 {
                     use protein::authority::{
                         AssertionProperty, AssertionRole, AssertionTarget, ExtensionProperty,
-                        Operation, Property, RolePolicy,
+                        Operation, Property,
                     };
-                    let policy: RolePolicy =
-                        serde_json::from_value(policy).map_err(EngineError::Json)?;
                     let grants: Vec<_> = policy
                         .grants
                         .iter()
@@ -237,6 +239,7 @@ impl Engine {
             .ok_or_else(|| invalid("The local Organ is unavailable"))?;
         let signer = self.signer.lock().await.clone();
         let mut tx = store::write_tx(&self.store.pool).await?;
+        let checkpoint = self.record_checkpoint_on(&mut tx, actor.as_deref(), vec![draft.uid.clone()], protein::authority::Operation::Create).await?;
         let previous: Option<(String, String)> = store::sqlx::query_as("SELECT payload, record_uid FROM record_change_receipt WHERE actor = ? AND change_uid = ?")
             .bind(actor.as_deref().unwrap_or("")).bind(&draft.uid).fetch_optional(&mut *tx).await?;
         if let Some((previous, uid)) = previous {
@@ -255,7 +258,7 @@ impl Engine {
             &draft.uid,
             store::records::NewRecord {
                 slug: draft.slug.as_deref(),
-                kind: RecordKind::Plain,
+                kind,
                 head: &draft.head,
                 body: &draft.body,
                 quantity: store::exact::zero(),
@@ -298,6 +301,7 @@ impl Engine {
         .await?;
         store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)")
             .bind(actor.as_deref().unwrap_or("")).bind(&draft.uid).bind(&draft.uid).bind(payload).bind(json!({"created":draft.uid}).to_string()).execute(&mut *tx).await?;
+        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
         tx.commit().await?;
         let facts = if let Some(fact) = fact {
             self.observe_committed_fact(fact, now).await?

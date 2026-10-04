@@ -858,6 +858,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         );
     }
     let Some(entity) = selected else { return };
+    crate::influence_report::ui::panel(world, root, panel, Some(entity));
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     for (action, title, enabled) in [
         (

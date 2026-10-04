@@ -560,7 +560,7 @@ async fn access_assertion_intent_canceled_real_insert_retract_retains_attempted_
 }
 
 #[tokio::test]
-async fn access_assertion_intent_scalar_and_noop_assertion_cannot_borrow_grants() {
+async fn access_assertion_intent_scalar_and_noop_assertion_union_only_matching_grants() {
     let f = Fixture::new().await;
     let mut split = f.policy();
     let mut assertion_only = split.grants[0].clone();
@@ -568,33 +568,45 @@ async fn access_assertion_intent_scalar_and_noop_assertion_cannot_borrow_grants(
     split.grants[0].assertions_add.clear();
     split.grants[0].assertions_remove.clear();
     split.grants.push(assertion_only);
-    f.set_policy(split).await;
     let revision = f.revision().await;
-    let mut tx = store::write_tx(&f.store.pool).await.unwrap();
-    let mut access = f.prepare(&mut tx, std::slice::from_ref(&f.record)).await;
-    let before = captured(access.current_assertion(&f.assertion).unwrap());
-    store::records::set_authoring_text_on(
-        access.transaction_for_staging(),
-        &f.record,
-        None,
-        Some("Changed"),
-    )
-    .await
-    .unwrap();
-    assert!(matches!(
-        access
+    for matching in [true, false] {
+        split.grants.last_mut().unwrap().selector = if matching {
+            all()
+        } else {
+            Predicate::UidEq(f.other.clone())
+        };
+        f.set_policy(split.clone()).await;
+        let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+        let mut access = f.prepare(&mut tx, std::slice::from_ref(&f.record)).await;
+        let before = captured(access.current_assertion(&f.assertion).unwrap());
+        store::records::set_authoring_text_on(
+            access.transaction_for_staging(),
+            &f.record,
+            None,
+            Some("Changed"),
+        )
+        .await
+        .unwrap();
+        let result = access
             .finish_changes_with_assertion_intents(
                 &[target(&f.record, &[Property::Body])],
                 &[intent(
                     Some(before.clone()),
                     Some(before),
-                    &[AssertionProperty::Unit]
-                )]
+                    &[AssertionProperty::Unit],
+                )],
             )
-            .await,
-        Err(AccessError::Policy(AuthorityError::Denied))
-    ));
-    tx.rollback().await.unwrap();
+            .await;
+        if matching {
+            assert!(result.is_ok());
+        } else {
+            assert!(matches!(
+                result,
+                Err(AccessError::Policy(AuthorityError::Denied))
+            ));
+        }
+        tx.rollback().await.unwrap();
+    }
     assert_eq!(
         store::records::get(&f.store.pool, &f.record)
             .await
@@ -649,6 +661,24 @@ async fn access_assertion_intent_new_cross_record_reference_is_validated_in_actu
 #[tokio::test]
 async fn access_assertion_intent_captured_targets_are_readonly_not_disclosure_grants() {
     let f = Fixture::new().await;
+    let other_assertion = nucleus::new_uid("a");
+    let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+    store::assertions::insert_tx(
+        &mut tx,
+        &other_assertion,
+        store::assertions::NewAssertion {
+            subject_uid: &f.other,
+            predicate_uid: &f.classification,
+            object_uid: None,
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: Some(&f.person),
+        },
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
     sqlx::query("INSERT INTO visibility_rule (uid, subject_kind, target_uid, grant_level) VALUES (?, 'public', ?, 'hidden')")
         .bind(nucleus::new_uid("v")).bind(&f.record).execute(&f.store.pool).await.unwrap();
     for deleted in [false, true] {
@@ -662,12 +692,14 @@ async fn access_assertion_intent_captured_targets_are_readonly_not_disclosure_gr
         assert_eq!(access.current_target(&f.record).unwrap().deleted, deleted);
         assert_eq!(access.current_target(&f.record).unwrap().body, "Body");
         assert!(access.current_target(&f.other).is_none());
+        assert!(access.readable_target(&f.other).is_none());
         assert!(access.readable_target(&f.record).is_none());
         assert_eq!(
             access.current_assertion(&f.assertion).unwrap().subject_uid,
             f.record
         );
         assert!(access.current_assertion(&nucleus::new_uid("a")).is_none());
+        assert!(access.current_assertion(&other_assertion).is_none());
         drop(access);
         tx.rollback().await.unwrap();
     }

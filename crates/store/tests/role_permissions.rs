@@ -487,17 +487,19 @@ async fn role_permissions_savepoint_failure_preserves_set_and_earlier_caller_wri
         .execute(&mut *tx)
         .await
         .unwrap();
-    assert!(
-        role_permissions::compare_and_set_on(&mut tx, role_id, before.revision, &[second])
-            .await
-            .is_err()
-    );
+    let renamed = role_permissions::get_on(&mut tx, role_id).await.unwrap();
+    assert_eq!(renamed.permissions, before.permissions);
+    assert!(renamed.revision > before.revision);
+    let error = role_permissions::compare_and_set_on(&mut tx, role_id, renamed.revision, &[second])
+        .await
+        .unwrap_err();
+    assert!(error.to_string().contains("injected insert refusal"));
     assert_eq!(
         role_permissions::get_on(&mut tx, role_id).await.unwrap(),
-        before
+        renamed
     );
     tx.commit().await.unwrap();
-    assert_eq!(read(&store, role_id).await, before);
+    assert_eq!(read(&store, role_id).await, renamed);
     assert_eq!(
         store::auth::role_by_name(&store.pool, "earlier caller write")
             .await
@@ -516,6 +518,9 @@ async fn role_permissions_cancellation_after_delete_restores_savepoint_only() {
         .execute(&mut *tx)
         .await
         .unwrap();
+    let renamed = role_permissions::get_on(&mut tx, role_id).await.unwrap();
+    assert_eq!(renamed.permissions, before.permissions);
+    assert!(renamed.revision > before.revision);
     let (deleted_sender, deleted_receiver) = tokio::sync::oneshot::channel();
     let (release_sender, release_receiver) = std::sync::mpsc::channel();
     let mut deleted_sender = Some(deleted_sender);
@@ -538,7 +543,7 @@ async fn role_permissions_cancellation_after_delete_restores_savepoint_only() {
     let mut replacing = Box::pin(role_permissions::compare_and_set_on(
         &mut tx,
         role_id,
-        before.revision,
+        renamed.revision,
         &proposed,
     ));
     let reached_delete = tokio::select! {
@@ -551,11 +556,11 @@ async fn role_permissions_cancellation_after_delete_restores_savepoint_only() {
     released.unwrap();
     assert_eq!(
         role_permissions::get_on(&mut tx, role_id).await.unwrap(),
-        before
+        renamed
     );
     tx.lock_handle().await.unwrap().remove_update_hook();
     tx.commit().await.unwrap();
-    assert_eq!(read(&store, role_id).await, before);
+    assert_eq!(read(&store, role_id).await, renamed);
     assert_eq!(
         store::auth::role_by_name(&store.pool, "before cancelled replacement")
             .await
@@ -574,7 +579,8 @@ async fn role_permissions_outer_rollback_restores_other_writes_and_revision() {
         .execute(&mut *tx)
         .await
         .unwrap();
-    role_permissions::compare_and_set_on(&mut tx, role_id, before.revision, &[second])
+    let renamed = role_permissions::get_on(&mut tx, role_id).await.unwrap();
+    role_permissions::compare_and_set_on(&mut tx, role_id, renamed.revision, &[second])
         .await
         .unwrap();
     tx.rollback().await.unwrap();

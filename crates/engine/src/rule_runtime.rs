@@ -245,8 +245,10 @@ impl Engine {
         if crate::already_firing() {
             return Ok(Vec::new());
         }
-        let _guard = self.rule_execution.lock().await;
-        crate::as_one_firing(self.run_rule_reactions(changed, event_id, now)).await
+        self.access_scope(true, async {
+            let _guard = self.rule_execution.lock().await;
+            crate::as_one_firing(self.run_rule_reactions(changed, event_id, now)).await
+        }).await
     }
 
     pub(crate) async fn run_rule_reactions(
@@ -326,8 +328,10 @@ impl Engine {
         &self,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
-        let _guard = self.rule_execution.lock().await;
-        crate::as_one_firing(self.process_rule_occurrences_inner(now)).await
+        self.access_scope(true, async {
+            let _guard = self.rule_execution.lock().await;
+            crate::as_one_firing(self.process_rule_occurrences_inner(now)).await
+        }).await
     }
 
     async fn process_rule_occurrences_inner(
@@ -597,6 +601,11 @@ impl Engine {
         }
         let signer = self.signer.lock().await.clone();
         let mut tx = store::write_tx(&self.store.pool).await?;
+        let changes_quantity = rule.consequences.iter().any(|consequence| matches!(consequence, nucleus::karma::Consequence::SetQuantity { .. } | nucleus::karma::Consequence::AddQuantity { .. }));
+        let checkpoint = if changes_quantity {
+            self.require_permission_on(&mut tx, rule.actor_uid.as_deref(), "record:update").await?;
+            self.record_checkpoint_on(&mut tx, rule.actor_uid.as_deref(), vec![rule.record_uid.clone()], protein::authority::Operation::Update).await?
+        } else { None };
         let inserted = store::sqlx::query("INSERT OR IGNORE INTO karma_rule_application(event_id, rule_uid, rule_revision, status, reason, at, intended_at, frequency_uid, attempt) VALUES (?, ?, ?, 'applied', NULL, ?, ?, ?, ?)")
             .bind(&event.id).bind(&rule.uid).bind(rule.revision).bind(now.to_rfc3339()).bind(event.at.to_rfc3339()).bind(&event.frequency).bind(event.attempt).execute(&mut *tx).await?;
         if inserted.rows_affected() == 0 {
@@ -699,6 +708,7 @@ impl Engine {
             }
         }
         crate::karma_history::persist(&mut tx, rule, event).await?;
+        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, BTreeSet::from([protein::authority::Property::Quantity])).await?; }
         tx.commit().await?;
         if let Some(control) = control && let Some(cell) = execution.as_ref().and_then(|execution| execution.cell()) {
             let consequences = rule.consequences.iter().map(|consequence| serde_json::to_value(consequence).map(|value| value["kind"].as_str().unwrap_or("consequence").to_owned())).collect::<Result<Vec<_>, _>>().map_err(EngineError::Json)?;

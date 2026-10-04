@@ -4,6 +4,7 @@ mod discovery;
 mod siblings;
 mod social;
 mod mail_delivery;
+mod record_moves;
 mod relays;
 
 use std::collections::HashMap;
@@ -239,11 +240,24 @@ impl Nearby {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum WireRequest {
+    SandPackages { query: nucleus::sand_package::Query },
     Presence {
         records: Vec<String>,
         entries: Vec<crate::presence::Entry>,
     },
+    MoveOffer {
+        uid: String,
+        preview: store::record_move::offers::Preview,
+    },
+    MoveBundle {
+        uid: String,
+        bundle: store::record_move::offers::Bundle,
+    },
+    MoveCancel {
+        uid: String,
+    },
     Introduction,
+    OrganAccessStatus,
     Introduce {
         intro: Introduction,
     },
@@ -383,6 +397,9 @@ pub struct SuccessionCert {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ok", rename_all = "snake_case")]
 pub enum WireResponse {
+    OrganAccessStatus { status: store::organ_access::Status },
+    SandPackages { response: nucleus::sand_package::Response },
+    MoveStatus { state: String, receipt: Option<String> },
     Call { snapshot: crate::calls::Snapshot },
     Group {
         group: crate::groups::SignedMembership,
@@ -1685,7 +1702,41 @@ impl Wire {
     }
 
     async fn handle(&self, authenticated: &str, peer: &str, request: WireRequest) -> WireResponse {
+        if matches!(&request, WireRequest::MoveOffer {..} | WireRequest::MoveBundle {..} | WireRequest::MoveCancel {..}) && !self.may_represent().await {
+            return WireResponse::Refused {code:"owner_device_required".into(),message:"Move offers require a device authorized to represent this Organ".into()};
+        }
+        if matches!(&request, WireRequest::MoveOffer {..} | WireRequest::MoveBundle {..} | WireRequest::MoveCancel {..}) {
+            let authorized = self.engine.roster_of(authenticated).await.ok().flatten().is_some_and(|r|crate::roster::roster_signature_is_valid(&r) && r.roster.cells.iter().any(|c|c.node_id==peer && c.may(crate::roster::CAP_WRITE)));
+            if !authorized {return WireResponse::Refused {code:"move_device_required".into(),message:"Reconnect to refresh the sender's authorized device list".into()};}
+        }
         match request {
+            WireRequest::SandPackages { query } => {
+                match self.engine.public_sand_packages(authenticated, query).await {
+                    Ok(response) => WireResponse::SandPackages { response },
+                    Err(error) => WireResponse::Error { message: error.to_string() },
+                }
+            }
+            WireRequest::MoveOffer { uid, preview } => {
+                match self.engine.receive_move_offer(authenticated, &uid, preview).await {
+                    Ok(state) => {
+                        let receipt = if state == "received" { store::record_move::offers::get(&self.engine.store.pool, &uid).await.ok().flatten().map(|o|o.preview.hash) } else { None };
+                        WireResponse::MoveStatus { state, receipt }
+                    }
+                    Err(error) => WireResponse::Error { message:error.to_string() },
+                }
+            }
+            WireRequest::MoveBundle { uid, bundle } => {
+                match self.engine.receive_move_bundle(authenticated, &uid, bundle).await {
+                    Ok(hash) => WireResponse::MoveStatus { state:"received".into(), receipt:Some(hash) },
+                    Err(error) => WireResponse::Error { message:error.to_string() },
+                }
+            }
+            WireRequest::MoveCancel { uid } => {
+                match self.engine.receive_move_cancel(authenticated, &uid).await {
+                    Ok(()) => WireResponse::Applied { applied:0 },
+                    Err(error) => WireResponse::Error { message:error.to_string() },
+                }
+            }
             WireRequest::Presence { records, entries } => {
                 match self.engine.exchange_presence(authenticated, &records, entries).await {
                     Ok(entries) => WireResponse::Presence { entries },
@@ -1698,6 +1749,12 @@ impl Wire {
                     Err(error) => WireResponse::Error {
                         message: error.to_string(),
                     },
+                }
+            }
+            WireRequest::OrganAccessStatus => {
+                match store::organ_access::for_peer(&self.engine.store.pool, authenticated).await {
+                    Ok(status) => WireResponse::OrganAccessStatus { status },
+                    Err(error) => WireResponse::Error { message: error.to_string() },
                 }
             }
             WireRequest::PushOps { batch } => {
@@ -2369,7 +2426,8 @@ impl Wire {
         if let Err(error) = self.reconcile_pending().await {
             tracing::debug!(%error, "pending introductions not reconciled this pass");
         }
-        let pushed = self.push_outbox().await?;
+        let moved = self.sync_record_moves().await?;
+        let pushed = self.push_outbox().await? + moved;
         let mut pulled = self.pull_catch_up().await? + self.pull_siblings().await?;
         match self.collect_own_mail().await {
             Ok(count) => pulled += count,
@@ -2477,6 +2535,34 @@ impl Wire {
             reconciled += 1;
         }
         Ok(reconciled)
+    }
+
+    pub async fn reconnect_contact(&self, organ: &str) -> Result<(), EngineError> {
+        let pool = &self.engine.store.pool;
+        let contact = store::organs::contact(pool, organ).await?.ok_or_else(|| EngineError::Consequence("Choose an existing contact".into()))?;
+        if contact.trust == "blocked" {
+            return Err(EngineError::Forbidden("This contact is blocked".into()));
+        }
+        let connection = self.dial(&contact).await.ok_or_else(|| EngineError::Consequence("Contact unreachable. Ask them to open Lince, then reconnect.".into()))?;
+        let ours = self.engine.introduction().await?;
+        match self.exchange(&connection, &WireRequest::Introduce { intro: ours }).await? {
+            WireResponse::Introduction { intro } if intro.organ_uid == organ => { self.engine.adopt_introduction(&intro, contact.proximity).await?; }
+            _ => return Err(EngineError::Forbidden("Reconnect returned a different contact identity".into())),
+        }
+        self.refresh_roster(&connection, organ).await;
+        self.refresh_organ_access(&connection, organ).await;
+        let roster = self.engine.roster_of(organ).await?.ok_or_else(|| EngineError::Consequence("The contact has no device list yet. Ask them to create or renew it, then reconnect.".into()))?;
+        if !crate::roster::roster_signature_is_valid(&roster) {
+            return Err(EngineError::Consequence("The contact's device list has expired. Ask them to renew it, then reconnect.".into()));
+        }
+        let eligible = |cell: &&crate::roster::CellEntry| cell.may(crate::roster::CAP_WRITE) && cell.may(crate::roster::CAP_REPRESENT);
+        if !roster.roster.cells.iter().filter(eligible).any(|cell|cell.node_id == connection.remote_id().to_string()) && let Some(cell) = roster.roster.cells.iter().find(eligible) {
+            store::organs::set_node_id(pool, organ, Some(&cell.node_id)).await?;
+        }
+        store::organs::clear_awaiting_roster(pool, organ).await?;
+        store::mailbox::outbox::retry_recipient(pool, organ).await?;
+        self.engine.notify_query_changed();
+        Ok(())
     }
 
     pub async fn dial(&self, contact: &store::organs::Contact) -> Option<Connection> {
@@ -2888,6 +2974,15 @@ impl Wire {
         Ok(())
     }
 
+    async fn refresh_organ_access(&self, connection: &Connection, organ: &str) {
+        if let Ok(WireResponse::OrganAccessStatus { status }) = self.exchange(connection, &WireRequest::OrganAccessStatus).await {
+            match store::organ_access::observe(&self.engine.store.pool, organ, &status).await {
+                Ok(()) => self.engine.notify_query_changed(),
+                Err(error) => tracing::debug!(%error, "Organ access refresh refused"),
+            }
+        }
+    }
+
     async fn refresh_roster(&self, connection: &Connection, organ_uid: &str) {
         if let Ok(WireResponse::Roster {
             roster: Some(roster),
@@ -2924,6 +3019,9 @@ impl Wire {
                 continue;
             };
             self.refresh_roster(&connection, &contact.record_uid).await;
+            if contact.trust == "known" {
+                self.refresh_organ_access(&connection, &contact.record_uid).await;
+            }
             if contact.trust == "known" && contact.sync_in {
                 let vector =
                     store::sync_ops::version_vector_for_organ(pool, &contact.record_uid).await?;
@@ -3436,6 +3534,30 @@ impl Wire {
 
 #[async_trait::async_trait]
 impl crate::enrolment::CellTransport for Wire {
+    async fn sand_packages(
+        &self,
+        organ: &str,
+        query: nucleus::sand_package::Query,
+    ) -> Result<nucleus::sand_package::Response, EngineError> {
+        self.engine.require_package_contact(organ).await?;
+        let contact = store::organs::contact(&self.engine.store.pool, organ)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("Organ contact is unavailable".into()))?;
+        let connection = self.dial(&contact).await
+            .ok_or_else(|| EngineError::Consequence("Organ contact is unreachable".into()))?;
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.exchange(&connection, &WireRequest::SandPackages { query }),
+        ).await;
+        connection.close(0u32.into(), b"package exchange done");
+        match result.map_err(|_| EngineError::Consequence("Package exchange timed out".into()))?? {
+            WireResponse::SandPackages { response } => Ok(response),
+            WireResponse::Error { message } | WireResponse::Refused { message, .. } => {
+                Err(EngineError::Consequence(message))
+            }
+            _ => Err(EngineError::Consequence("Invalid package response".into())),
+        }
+    }
     async fn pairing_invite(&self) -> Result<Option<crate::pairing::PairingInvite>, EngineError> {
         Wire::pairing_invite(self).await.map(Some)
     }
@@ -3459,6 +3581,10 @@ impl crate::enrolment::CellTransport for Wire {
     fn peer_network(&self) -> Option<serde_json::Value> { Some(self.network_status()) }
     async fn enrol(&self, invite: &EnrolmentInvite) -> Result<SignedRoster, EngineError> {
         Wire::enrol(self, invite).await
+    }
+
+    async fn reconnect_contact(&self, organ: &str) -> Result<(), EngineError> {
+        Wire::reconnect_contact(self, organ).await
     }
 
     async fn audit_against(

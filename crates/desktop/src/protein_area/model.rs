@@ -13,6 +13,10 @@ pub enum SpawnPlacement {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
+    pub listen_record_selection: bool,
+    #[serde(default)]
+    pub presentation: Option<lince_interface::presentation::Presentation>,
+    #[serde(default)]
     pub hide_filled: bool,
     #[serde(default)]
     pub relations: bool,
@@ -51,6 +55,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            listen_record_selection: false,
+            presentation: None,
             hide_filled: false,
             relations: false,
             motion: None,
@@ -111,9 +117,13 @@ impl Config {
     }
 
     pub fn valid(&self) -> bool {
-        self.command
+        self.presentation
             .as_ref()
-            .is_none_or(|settings| settings.cwd.len() <= 4096 && !settings.cwd.contains('\0'))
+            .is_none_or(lince_interface::presentation::Presentation::valid)
+            && self
+                .command
+                .as_ref()
+                .is_none_or(|settings| settings.cwd.len() <= 4096 && !settings.cwd.contains('\0'))
             && self
                 .motion
                 .as_ref()
@@ -158,6 +168,7 @@ impl Config {
         let mut fields: Vec<String> = self
             .bindings
             .iter()
+            .filter(|binding| nucleus::record_extension::column_binding(&binding.property).is_none())
             .map(|binding| binding.property.clone())
             .collect();
         fields.extend(["uid", "kind", "organ"].map(str::to_string));

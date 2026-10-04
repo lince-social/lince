@@ -6,6 +6,7 @@ mod history;
 mod login;
 mod model;
 pub(crate) mod placement;
+pub(crate) mod presentation;
 mod property_actions;
 mod record_layout;
 mod rows;
@@ -236,6 +237,7 @@ impl Plugin for ProteinAreaPlugin {
                 PostUpdate,
                 (
                     ui::inputs,
+                    presentation::inputs,
                     history::update,
                     rows::commit_edits,
                     property_actions::commit_edits,
@@ -421,7 +423,45 @@ fn retry_wake(world: &World) {
     }
 }
 
+pub(crate) fn auxiliary_sender(world: &World, source: &Source) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+    match source {
+        Source::Local => world.get_non_send::<CellBridge>().map(|bridge| bridge.outgoing.clone()),
+        Source::Organ(organ) => sessions::sender(world, organ),
+    }
+}
+
+pub(crate) fn ensure_auxiliary(world: &mut World, source: &Source) {
+    if let Source::Organ(organ) = source { sessions::ensure_auxiliary(world, organ); }
+}
+
+pub(crate) fn logout_organ(world: &mut World, organ: &str) { sessions::logout(world, organ); }
+pub(crate) fn reconnect_auxiliary(world: &mut World, organ: &str) { sessions::ensure_auxiliary(world, organ); sessions::reconnect(world, organ); }
+
+pub(crate) fn auxiliary_login(world: &mut World, organ: &str, username: String, password: String) -> Result<(), String> { sessions::login(world, organ, username, password) }
+
+pub(crate) fn row_entities(world: &World, owner: Entity) -> Vec<Entity> {
+    world.get_resource::<Runtime>().and_then(|runtime| runtime.areas.get(&owner))
+        .map(|state| state.row_entities.values().copied().collect()).unwrap_or_default()
+}
+
+pub(crate) fn selection_pending(world: &mut World, owner: Entity) -> bool {
+    world.get_resource::<Runtime>().and_then(|runtime| runtime.areas.get(&owner))
+        .is_some_and(|state| !state.actions.is_empty()) || property_actions::selection_pending(world, owner)
+}
+
+pub(crate) fn auxiliary_subscribed(world: &mut World, source: &Source, message: &ClientMessage) {
+    if let Source::Organ(organ) = source { sessions::subscribed(world, organ, message); }
+}
+
+pub(crate) fn auxiliary_unsubscribe(world: &mut World, organ: &str, id: String) {
+    sessions::unsubscribe(world, organ, id);
+}
+
 fn observe(world: &mut World, source: &Source, message: &ServerMessage) {
+    if matches!(source, Source::Organ(_)) { crate::workspace_sync::receive(world, source, message); }
+    if matches!(source, Source::Organ(_)) { crate::time_castle::receive(world, source, message); }
+    if matches!(source, Source::Organ(_)) { crate::record_extensions::receive(world, source, message); }
+    if matches!(source, Source::Organ(_)) { crate::description::receive_live(world, source, message); }
     #[cfg(feature = "native-media")]
     crate::communication::calls::receive(world, message);
     crate::work_timer::receive(world, message);
@@ -748,6 +788,17 @@ pub fn execute(
     editor: Entity,
     action: engine::actions::Action,
 ) -> Result<(), String> {
+    let result = execute_action(world, binding, editor, action);
+    crate::save_feedback::set_failed(world, editor, result.is_err());
+    result
+}
+
+fn execute_action(
+    world: &mut World,
+    binding: &RecordBinding,
+    editor: Entity,
+    action: engine::actions::Action,
+) -> Result<(), String> {
     if crate::laboratory::suspended(world, editor) {
         return Err("Workspace is suspended".into());
     }
@@ -772,7 +823,14 @@ pub fn execute(
         return Err("Wait for pending changes".into());
     }
     let target = match &action {
-        engine::actions::Action::DeleteRecord { target } | engine::actions::Action::SetExtension { target, namespace: _, .. } if matches!(&action, engine::actions::Action::DeleteRecord { .. }) || matches!(&action, engine::actions::Action::SetExtension { namespace, .. } if namespace == "lince.message-content") => {
+        engine::actions::Action::DeleteRecord { target }
+        | engine::actions::Action::SetExtension {
+            target,
+            namespace: _,
+            ..
+        } if matches!(&action, engine::actions::Action::DeleteRecord { .. })
+            || matches!(&action, engine::actions::Action::SetExtension { namespace, .. } if namespace == "lince.message-content") =>
+        {
             let attached = state
                 .data
                 .iter()
@@ -982,7 +1040,7 @@ fn mirror_editor(world: &mut World, owner: Entity) {
     }
 }
 
-fn configuration(world: &World, entity: Entity) -> Option<Config> {
+pub(crate) fn configuration(world: &World, entity: Entity) -> Option<Config> {
     if let Some(filter) = world.get::<filter::Subscription>(entity) {
         let area = world.get::<InfluenceArea>(filter.0)?;
         if filter.1 {
@@ -995,7 +1053,7 @@ fn configuration(world: &World, entity: Entity) -> Option<Config> {
     }
 }
 
-fn set_configuration(world: &mut World, entity: Entity, config: Option<Config>) {
+pub(crate) fn set_configuration(world: &mut World, entity: Entity, config: Option<Config>) {
     let filter = world
         .get::<filter::Subscription>(entity)
         .map(|filter| (filter.0, filter.1));

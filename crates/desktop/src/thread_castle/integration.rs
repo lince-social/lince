@@ -17,25 +17,30 @@ pub(super) async fn setup(
 ) {
     let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
     let root = tempfile::tempdir().unwrap();
-    let record = engine
-        .act(
-            engine::actions::Action::CreateAgent {
-                head: "Conversation test".into(),
-                operated_by: None,
-            },
-            None,
-        )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
+    let creating = engine.clone();
+    let record = tokio::spawn(async move {
+        creating
+            .act(
+                engine::actions::Action::CreateAgent {
+                    head: "Conversation test".into(),
+                    operated_by: None,
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap()
+    })
+    .await
+    .unwrap();
     let host = Arc::new(
         cell::fiote::Host::open(engine.clone(), root.path().join("settings"))
             .await
             .unwrap(),
     );
     let runtime = cell::CellRuntime {
-            speech: None,
+        speech: None,
         commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
@@ -52,33 +57,61 @@ pub(super) async fn setup(
         )
         .unwrap();
         config.directory = root.path().into();
-        bridge
-            .outgoing
-            .send(cell::ClientMessage::Fiote {
-                id: "configure-live".into(),
-                request: cell::FioteRequest::AgentConfigure {
-                    record: record.clone(),
-                    config,
+        let requests = [
+            (
+                "save-live",
+                cell::fiote_connection::Request::Save {
+                    profile: cell::fiote_connection::Profile {
+                        id: "live-test".into(),
+                        name: "Existing AI runtime".into(),
+                        connection: cell::fiote_connection::Connection::Harness { config },
+                    },
                 },
+            ),
+            (
+                "connect-live",
+                cell::fiote_connection::Request::Select {
+                    id: "live-test".into(),
+                    api_key: None,
+                    password: None,
+                },
+            ),
+        ];
+        for (identity, request) in requests {
+            bridge
+                .outgoing
+                .send(cell::ClientMessage::Fiote {
+                    id: identity.into(),
+                    request: cell::FioteRequest::Connections {
+                        record: record.clone(),
+                        request,
+                    },
+                })
+                .await
+                .unwrap();
+            tokio::time::timeout(Duration::from_secs(60), async {
+                loop {
+                    match bridge.incoming.recv().await.unwrap() {
+                        cell::ServerMessage::Fiote { id, status } if id == identity => {
+                            if identity == "connect-live" {
+                                assert!(status.settings.enabled);
+                                assert_eq!(
+                                    status.connections.profiles.selected.as_deref(),
+                                    Some("live-test")
+                                );
+                            }
+                            break;
+                        }
+                        cell::ServerMessage::Error { id, message, .. } if id == identity => {
+                            panic!("{message}")
+                        }
+                        _ => {}
+                    }
+                }
             })
             .await
             .unwrap();
-        tokio::time::timeout(Duration::from_secs(60), async {
-            loop {
-                match bridge.incoming.recv().await.unwrap() {
-                    cell::ServerMessage::Fiote { id, status } if id == "configure-live" => {
-                        assert!(status.settings.enabled);
-                        break;
-                    }
-                    cell::ServerMessage::Error { id, message, .. } if id == "configure-live" => {
-                        panic!("{message}")
-                    }
-                    _ => {}
-                }
-            }
-        })
-        .await
-        .unwrap();
+        }
     }
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
@@ -325,6 +358,79 @@ async fn installed_agent_replies_to_enter_in_record_castle() {
         controls::Add.apply(app.world_mut(), castle);
     }
     pump(&mut app, |world| composer(world).is_some()).await;
+    let load = app
+        .world_mut()
+        .query::<(
+            &crate::actions::ActionButton,
+            &bevy::a11y::AccessibilityNode,
+        )>()
+        .iter(app.world())
+        .find(|(_, node)| node.label() == Some("Load conversation choices · no tokens"))
+        .map(|(button, _)| button.clone())
+        .unwrap();
+    load.actions.run(app.world_mut(), load.target);
+    pump(&mut app, |world| {
+        world
+            .query::<(&crate::dropdown::Dropdown, &bevy::a11y::AccessibilityNode)>()
+            .iter(world)
+            .any(|(_, node)| node.label() == Some("Model"))
+    })
+    .await;
+    for (name, choice) in [
+        ("Model", "6.1 Sol"),
+        ("Reasoning effort", "Medium"),
+        ("Reasoning effort", "Low"),
+        ("Fast mode", "Off"),
+        ("Fast mode", "On"),
+    ] {
+        let (toggle, menu) = app
+            .world_mut()
+            .query::<(
+                Entity,
+                &crate::dropdown::Dropdown,
+                &bevy::a11y::AccessibilityNode,
+            )>()
+            .iter(app.world())
+            .find(|(_, _, node)| node.label() == Some(name))
+            .map(|(entity, dropdown, _)| (entity, dropdown.menu))
+            .unwrap();
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: toggle });
+        let option = app
+            .world_mut()
+            .query::<(
+                &crate::actions::ActionButton,
+                &bevy::a11y::AccessibilityNode,
+                &ChildOf,
+            )>()
+            .iter(app.world())
+            .find(|(_, node, parent)| parent.parent() == menu && node.label() == Some(choice))
+            .map(|(button, _, _)| button.clone())
+            .unwrap();
+        option.actions.run(app.world_mut(), option.target);
+        pump(&mut app, |world| {
+            !world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0 == "Updating conversation settings…")
+                && world
+                    .query::<(
+                        &crate::dropdown::Dropdown,
+                        &bevy::a11y::AccessibilityNode,
+                        &Children,
+                    )>()
+                    .iter(world)
+                    .filter(|(_, node, _)| node.label() == Some(name))
+                    .any(|(_, _, children)| {
+                        children.iter().any(|child| {
+                            world
+                                .get::<Text>(child)
+                                .is_some_and(|text| text.0 == choice)
+                        })
+                    })
+        })
+        .await;
+    }
     let (form, input, _) = composer(app.world_mut()).unwrap();
     app.world_mut().get_mut::<EditableText>(input).unwrap().editor.set_text("Hello. This is a UI connection test. Reply with exactly: Hello from the real agent. Do not use tools or change files or records.");
     app.world_mut()
@@ -354,4 +460,293 @@ async fn installed_agent_replies_to_enter_in_record_castle() {
             .is_empty()
     );
     host.stop_all().await;
+}
+
+#[tokio::test]
+#[ignore = "Requires an authenticated ACP harness and consumes a live model turn"]
+async fn installed_agent_analyzes_files_dropped_into_the_native_composer() {
+    let (mut app, _engine, host, _directory, _record) = setup(true).await;
+    app.init_resource::<Assets<Image>>()
+        .add_message::<bevy::window::FileDragAndDrop>();
+    if composer(app.world_mut()).is_none() {
+        let castle = app
+            .world_mut()
+            .query_filtered::<Entity, With<ThreadCastle>>()
+            .single(app.world())
+            .unwrap();
+        controls::Add.apply(app.world_mut(), castle);
+    }
+    pump(&mut app, |world| composer(world).is_some()).await;
+    let (form, input, _) = composer(app.world_mut()).unwrap();
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(input, FocusCause::Navigated);
+    let window = app.world_mut().spawn(Window::default()).id();
+    let fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fiote");
+    for name in [
+        "note.txt",
+        "table.csv",
+        "document.pdf",
+        "photo.png",
+        "video.mp4",
+    ] {
+        app.world_mut()
+            .write_message(bevy::window::FileDragAndDrop::DroppedFile {
+                window,
+                path_buf: fixtures.join(name),
+            });
+    }
+    pump(&mut app, |world| {
+        crate::message_content::contents(world, form).is_ok_and(|parts| parts.len() == 5)
+    })
+    .await;
+    app.world_mut().get_mut::<EditableText>(input).unwrap().editor.set_text("Analyze these attachments without using tools or changing files or Records. Reply only with a JSON object: text_marker is the marker phrase in note.txt; csv_total is the numeric sum of the value column in table.csv; image_color is the color of the square in photo.png; pdf_marker is the marker phrase in document.pdf; video_understood is true only if you can actually see the video content. Do not infer video content from the image.");
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Enter);
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    pump(&mut app, |world| {
+        world
+            .query::<&crate::description::Description>()
+            .iter(world)
+            .any(|description| {
+                serde_json::from_str::<serde_json::Value>(description.source.trim())
+                    .is_ok_and(|value| value["csv_total"] == 22)
+            })
+    })
+    .await;
+    let result = app
+        .world_mut()
+        .query::<&crate::description::Description>()
+        .iter(app.world())
+        .find_map(|description| {
+            serde_json::from_str::<serde_json::Value>(description.source.trim())
+                .ok()
+                .filter(|value| value["csv_total"] == 22)
+        })
+        .unwrap();
+    assert!(
+        result["text_marker"]
+            .as_str()
+            .unwrap()
+            .to_lowercase()
+            .contains("seven blue birds")
+    );
+    assert_eq!(
+        result["image_color"].as_str().unwrap().to_lowercase(),
+        "red"
+    );
+    assert!(
+        result["pdf_marker"]
+            .as_str()
+            .unwrap()
+            .to_lowercase()
+            .contains("seven blue birds")
+    );
+    assert!(
+        crate::message_content::contents(app.world(), form)
+            .unwrap()
+            .is_empty()
+    );
+    println!("Live native attachment analysis: {result}");
+    host.stop_all().await;
+}
+
+#[tokio::test]
+#[ignore = "Requires an authenticated ACP harness and consumes a live model turn"]
+async fn installed_agent_sets_up_actual_native_habits_workspace() {
+    fn contains(component: &nucleus::canvas::Component, kind: &str, text: Option<&str>) -> bool {
+        match component {
+            nucleus::canvas::Component::Native {
+                kind: actual,
+                settings,
+                ..
+            } => actual == kind && text.is_none_or(|text| settings["text"] == text),
+            nucleus::canvas::Component::Builtin {
+                state: nucleus::component::ComponentState::Text { text: actual },
+            } => kind == "text" && text.is_none_or(|text| actual == text),
+            nucleus::canvas::Component::Composition { composition } => composition
+                .parts
+                .iter()
+                .any(|part| contains(&part.component, kind, text)),
+            _ => false,
+        }
+    }
+    let (mut app, engine, host, _directory, record) = setup(true).await;
+    app.init_resource::<Assets<Image>>().add_plugins((
+        crate::canvas_host::Plugin,
+        crate::component_push::ComponentPushPlugin,
+    ));
+    let root = app
+        .world_mut()
+        .query_filtered::<Entity, (
+            With<crate::container::BoxRoot>,
+            With<crate::workspace::Workspaces>,
+        )>()
+        .single(app.world())
+        .unwrap();
+    app.world_mut()
+        .entity_mut(root)
+        .insert(crate::canvas::CanvasView::default());
+    app.update();
+    if composer(app.world_mut()).is_none() {
+        let castle = app
+            .world_mut()
+            .query_filtered::<Entity, With<ThreadCastle>>()
+            .single(app.world())
+            .unwrap();
+        controls::Add.apply(app.world_mut(), castle);
+    }
+    pump(&mut app, |world| composer(world).is_some()).await;
+    let (_, input, _) = composer(app.world_mut()).unwrap();
+    app.world_mut().get_mut::<EditableText>(input).unwrap().editor.set_text("This is an isolated native canvas acceptance test. Use the normal Lince MCP tools to inspect the connected canvas and supported component registry. Create a workspace named Fiote acceptance habits. Add one reusable composition containing a Todo component and a text component; the text must say Walk daily. Use valid registry settings and fresh request IDs/revisions. Preserve existing workspaces and components. Do not edit files or other Records. Briefly confirm the actual applied result.");
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(input, FocusCause::Navigated);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Enter);
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    pump(&mut app, |world| {
+        let snapshot = crate::canvas_host::capture(world, root).unwrap();
+        let workspace = snapshot
+            .workspaces
+            .iter()
+            .find(|workspace| workspace.name == "Fiote acceptance habits");
+        workspace.is_some_and(|workspace| {
+            let placements = snapshot
+                .placements
+                .iter()
+                .filter(|placement| placement.workspace == workspace.id)
+                .collect::<Vec<_>>();
+            placements
+                .iter()
+                .any(|placement| contains(&placement.component, "todo", None))
+                && placements
+                    .iter()
+                    .any(|placement| contains(&placement.component, "text", Some("Walk daily")))
+        })
+    })
+    .await;
+    let snapshot = crate::canvas_host::capture(app.world_mut(), root).unwrap();
+    let (generated, composition) = app
+        .world_mut()
+        .query::<(Entity, &crate::canvas_host::composition::Generated)>()
+        .iter(app.world())
+        .find(|(_, generated)| {
+            generated
+                .composition
+                .parts
+                .iter()
+                .any(|part| contains(&part.component, "todo", None))
+                && generated
+                    .composition
+                    .parts
+                    .iter()
+                    .any(|part| contains(&part.component, "text", Some("Walk daily")))
+        })
+        .map(|(entity, generated)| (entity, generated.composition.clone()))
+        .unwrap();
+    assert_eq!(composition.origin.as_ref().unwrap().agent, record);
+    assert_eq!(
+        app.world()
+            .get::<crate::area::InfluenceArea>(generated)
+            .unwrap()
+            .immunity,
+        crate::area_effects::Immunity::Isolation
+    );
+    let stopping = tokio::spawn(async move { host.stop_all().await });
+    pump(&mut app, |_| stopping.is_finished()).await;
+    stopping.await.unwrap();
+    let save = app
+        .world_mut()
+        .query::<(
+            &crate::actions::ActionButton,
+            &bevy::a11y::AccessibilityNode,
+        )>()
+        .iter(app.world())
+        .find(|(button, node)| button.target == generated && node.label() == Some("Save component"))
+        .map(|(button, _)| button.clone())
+        .unwrap();
+    save.actions.run(app.world_mut(), save.target);
+    pump(&mut app, |world| {
+        let status = world
+            .get::<crate::canvas_host::composition::Generated>(generated)
+            .unwrap()
+            .status;
+        world
+            .get::<Text>(status)
+            .is_some_and(|text| text.0.starts_with("Saved component "))
+    })
+    .await;
+    let status = app
+        .world()
+        .get::<crate::canvas_host::composition::Generated>(generated)
+        .unwrap()
+        .status;
+    let saved = app
+        .world()
+        .get::<Text>(status)
+        .unwrap()
+        .0
+        .split_whitespace()
+        .last()
+        .unwrap()
+        .to_owned();
+    let saved = store::records::get(&engine.store.pool, &saved)
+        .await
+        .unwrap()
+        .unwrap();
+    let document = nucleus::canvas::Document::decode(&saved.body).unwrap();
+    let nucleus::canvas::Component::Composition {
+        composition: restored,
+    } = document.component
+    else {
+        panic!("Saved Fiote output is not a composition");
+    };
+    assert_eq!(restored.origin, composition.origin);
+    let workspace = snapshot
+        .workspaces
+        .iter()
+        .find(|workspace| workspace.name == "Fiote acceptance habits")
+        .unwrap()
+        .id;
+    let reopened = crate::canvas_host::spawn(
+        app.world_mut(),
+        root,
+        workspace,
+        bevy::math::DVec2::ONE,
+        &nucleus::canvas::Component::Composition {
+            composition: restored,
+        },
+    )
+    .unwrap();
+    assert_ne!(
+        app.world()
+            .get::<crate::canvas_host::Identity>(generated)
+            .unwrap()
+            .0,
+        app.world()
+            .get::<crate::canvas_host::Identity>(reopened)
+            .unwrap()
+            .0
+    );
+    assert_eq!(
+        app.world()
+            .get::<crate::area::InfluenceArea>(reopened)
+            .unwrap()
+            .immunity,
+        crate::area_effects::Immunity::Isolation
+    );
+    println!(
+        "Live canvas result: {} workspaces, {} placements",
+        snapshot.workspaces.len(),
+        snapshot.placements.len()
+    );
 }

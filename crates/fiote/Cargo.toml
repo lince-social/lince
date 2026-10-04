@@ -29,7 +29,7 @@ futures = { workspace = true }
 cap-std = "=4.0.3"
 genai = "=0.6.5"
 modelbridge = "=0.5.2"
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["multipart"] }
 tempfile = "=3.27.0"
 url = "2.5.8"
 serde = { workspace = true }

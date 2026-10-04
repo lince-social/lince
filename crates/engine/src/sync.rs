@@ -1216,7 +1216,6 @@ impl Engine {
                 }
             }
         }
-        crate::share::settle_moves(self).await?;
         Ok(sent)
     }
 

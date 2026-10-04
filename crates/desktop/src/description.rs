@@ -2,6 +2,9 @@ mod diagram;
 mod markup;
 mod pictures;
 mod shader;
+mod assets;
+mod live;
+mod transclusion;
 pub(crate) mod tests;
 
 pub const SHADER_EXAMPLE: &str = shader::BALL;
@@ -36,6 +39,16 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
         name: "base64",
         author: "The base64 contributors",
         license: include_str!("../licenses/base64-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "PNG codec",
+        author: "nwin and image-rs contributors",
+        license: include_str!("../licenses/png-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "image-webp",
+        author: "The image-rs developers",
+        license: include_str!("../licenses/image-webp-MIT.txt"),
     },
     crate::credits::Attribution {
         name: "pulldown-cmark",
@@ -98,7 +111,7 @@ pub struct DescriptionPlugin;
 impl Plugin for DescriptionPlugin {
     fn build(&self, app: &mut App) {
         shader::install(app);
-        app.add_systems(Update, (sync_editors, diagram::update, pictures::update));
+        app.add_systems(Update, (sync_editors, diagram::update, pictures::update, live::update, assets::expire));
     }
 }
 
@@ -203,6 +216,10 @@ fn attach(
     ] {
         button(world, controls, parent, title, mode);
     }
+    if editable {
+        button(world, controls, parent, "Draw…", crate::drawing::DrawDescription(input));
+        button(world, controls, parent, "Transclude…", InsertTransclusion(input));
+    }
     let panes = world
         .spawn((
             Node {
@@ -228,6 +245,52 @@ fn attach(
     }
     set_mode(world, parent, Mode::Split);
 }
+
+pub(crate) fn receive_live(world: &mut World, source: &Source, message: &cell::ServerMessage) {
+    live::receive(world, source, message);
+}
+
+pub(crate) fn insert_asset(world: &mut World, panel: Entity, input: Entity, kind: nucleus::description_asset::Kind, bytes: Vec<u8>, replace: Option<String>) -> Result<(), String> {
+    assets::insert(world, panel, input, kind, bytes, replace)
+}
+
+#[derive(Clone, Copy)]
+struct InsertTransclusion(Entity);
+
+impl Action for InsertTransclusion {
+    fn apply(&self, world: &mut World, parent: Entity) {
+        if !crate::record_binding::can_edit(world, self.0) { return; }
+        let panel = world.spawn((Node { flex_direction: FlexDirection::Column, row_gap: px(6), ..default() }, Rendered, ChildOf(parent))).id();
+        crate::edit_mode::label(world, panel, "Transclude a Record by UID or slug. Its current description appears read only.", 14.0);
+        let bundle = crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0);
+        let input = world.spawn((bundle, ChildOf(panel))).id();
+        world.get_mut::<EditableText>(input).unwrap().max_characters = Some(256);
+        button(world, panel, panel, "Insert transclusion", ConfirmTransclusion { input, destination: self.0 });
+        button(world, panel, panel, "Cancel", CloseInsertion);
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ConfirmTransclusion { input: Entity, destination: Entity }
+
+impl Action for ConfirmTransclusion {
+    fn apply(&self, world: &mut World, panel: Entity) {
+        let Some(text) = world.get::<EditableText>(self.input) else { return; };
+        let reference = text.value().to_string();
+        let reference = reference.trim().trim_start_matches(['@', '#']);
+        if reference.is_empty() || reference.contains(['[', ']', '|', '\n', '\r', ':', '/', '\\']) {
+            crate::edit_mode::label(world, panel, "Enter a Record UID or slug.", 14.0); return;
+        }
+        match assets::append(world, self.destination, &format!("![[{reference}]]")) {
+            Ok(()) => { world.despawn(panel); },
+            Err(error) => { crate::edit_mode::label(world, panel, &error, 14.0); }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct CloseInsertion;
+impl Action for CloseInsertion { fn apply(&self, world: &mut World, panel: Entity) { world.despawn(panel); } }
 
 pub(crate) fn set_mode(world: &mut World, parent: Entity, mode: Mode) {
     let Some(editor) = world.get::<Editor>(parent).copied() else {

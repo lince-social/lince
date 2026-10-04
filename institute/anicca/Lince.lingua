@@ -491,6 +491,12 @@ For most of the month the Frequency is `0`, so the whole equation is `0`, so the
 
 With #fruit, a rule keeps catching Records asserted after it was written — you don't revisit the rule. Renaming a concept is free: rules keep working and show the new name at once. #fruta and #Frucht write the same rule — each person reads it in their own name for it, and naming two aliases of one concept twice in one rule is refused as the duplicate it is. Writing a rule with a name that means two concepts is refused there and then, so you say which. (And: reusing a deleted @slug points old rules at the new Record.)
 }
+Fiote (@fiote: 1) {
+- [ ] Extend component support so Fiote can create, configure, combine and undo changes for the remaining specialized Sands and Castles.
+- [ ] Test real speech recognition with a chosen local transcriber or compatible service. Recording and upload work; recognition accuracy remains untested. A Codex subscription alone does not provide transcription.
+- [ ] Test another local AI or API using the user's own setup. Generic connections work, but real use beyond Codex remains untested. Reuse compatible connections or existing bridges without requiring a particular AI product.
+- [ ] Test audio and video understanding with a model supporting them. The tested Codex connection lacks audio input and did not understand video. Optionally test real photographs; image analysis has only been checked with a synthetic picture.
+}
 
 Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
 Alexandria was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful for those meeting Needs.
@@ -580,6 +586,7 @@ We might only make a Transfer when we reach a certain state: if Record less than
 That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
 
 On Trust: When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
+2. [ ] **Public Transfer history / trust portfolio:** let people inspect a party's permitted completed Transfer history with verifiable identity, preserving private fields. This comes from the broader Transfer Record and was outside the implementation plan.
 
 "The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
 
@@ -599,6 +606,12 @@ The defaults are flat, quiet and mostly black and white, with the purple palette
  Lince's default visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC. Other themes are available in interface.
 
 Here are the ideas that are not planned to be executed for now, but are fun to maintain:
+
+- [/] Being able to put a shader per task, the tasks left to do are dimmed versions of themselves, instead of a glowing spinning ball of energy it is a gray stopped ball, two wgsls, doing the tasks is what makes them glow or vice versa, evil versions of themselves saying you need to do something, and calm when they arent negative. Needs to pass through rust their quantities. So maybe we see the component lying down in 3d with the shaders floating above. Maybe we can do a gaussian splatting of a room, and add a shader to it, passing record quantities. If it needs cleaning it will put on top of the gaussian a lot of black goo or mut on the floors. Your room can be given coordinates, in the canvas (which is the world) and your stuff can have coordinates inside that room, so moving the room around doesnt change anything. The tasks you need to do may appear with some sand and some wgsl outside of the record's description. So you can have ambient effects on your room when you look at it, and inside it some floating stuff to do that is more computer focused so they float around your pc. And you can also have a kanban board on your wall digitally, and then when you take a 3d hologram projector it can take the room of your Lince and project to the real world, so you see the kanban, and if a camera is pointing at you and seeing your gestures you can move the sands on lince and projection, connecting the worlds.
+	- [/] What if we could put shaders in the sand? We have wgpu, shouldnt be too hard to slap a custom WGSL into the surface of the sand, maybe even making the sand be the actual body and the wgsl going out of it, if it glowed it could show as a light outside of the sand. If we are using compute/vertex shaders in the interface, putting something custom to make it pretty should be fairly straightforward to the users.
+		- [/] Add shader presets and a supported WGSL editor for Sand surfaces, including bounded outward glow. Keep text readable, preserve the last working effect and provide Reset and Disable outside the customized content.
+	- [ ] Add shader to my Interface, to be able to put light source and shadows over the sands, and texture to them.
+> Comment: This group contains several projects. For v1, finish a small supported shader input contract containing quantity and task state, Sand surface presets, editing, last-working-effect recovery, and accessible Reset/Disable controls. Keep text readable and bound outward glow, active surfaces and render resolution. Handle lighting, shadows and material textures as a distinct stage. Room-wide effects, holographic projection and gesture control should have their own later milestones; they should not prevent finishing the usable Sand effects.
 
 portals between stacked workspaces;
 production, stock, logistics and ordering views and public commerce.
@@ -667,6 +680,26 @@ Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K
 Ontology in Lince can be a castle, it is for managing the content of your database. The meaning of records through Lingua Vocabulary, in the tasks it is referred as the central point for guaranteeing you have the data you want, dealing with sync and organ discovery, it is the vibe of several features in Lince. These are the remaining tasks of several features related to this Ontology vibe:
 
  [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
+
+ **Validation outside the local test environment:**
+   - Android APK packaging and actual phone/emulator execution; library compilation already passes.
+   - Actual screen-reader and visual review.
+   - Internet deployment with always-online mailboxes and relays.
+   - Power-loss durability; process interruption and SQLite rollback are already tested.
+
+The agreed social Ontology features are implemented, including anonymous or identified Needs and Contributions, public profiles, conversation synchronization, introductions, contacts, discovery, consented gossip, saved searches, and offline mailboxes. The simple Karma correction and basic search optimization are also complete. The remaining work consists of practical validation, deferred features, and optional improvements.
+
+Practical validation still needs to cover Android APK packaging and execution on a phone or emulator; Android library compilation already passes. The native interface needs visual review and actual screen-reader testing. Always-online mailboxes and Iroh relays need deployment and testing across real internet connections, including offline recipients, reconnection, and delivery after interruptions. Durability also needs testing against physical power loss; process interruption and SQLite rollback have already been tested locally. An optional live ACP-agent integration test remains unrun because it requires an installed, authenticated agent and a real model interaction.
+
+LoRa remains a deferred implementation task. It needs its own transport adapter designed around radio’s limited bandwidth, small messages, and intermittent connections. This would provide another way for Cells to communicate where ordinary internet access is unavailable.
+
+Broader work excluded from the completed social packages remains separate: Vocabulary publishing and importing, expanded Ontology and Relations exploration, completion of general file synchronization, Trail packages, Calendar export, and Blood integrations with other applications. Existing functionality in these areas should be reviewed before defining their remaining implementation tasks.
+
+System push notifications while Lince is closed remain deferred; the implemented notification scope uses the existing in-app feed. A separate protocol for Lince servers to forward messages between one another also remains outside the chosen scope. Current communication uses Iroh for live connections and Lince mailboxes for asynchronous delivery. Dedicated backup development was removed from the plan: copying or archiving the complete Lince data directory while Lince is stopped remains the chosen approach.
+
+Further search improvements are optional proposals. Large directory Organs could divide their collections by topic, language, or region while preserving publication consent, withdrawals, and security limits. In dispersed networks, consenting Organs could publish signed, expiring summaries of their collections to help people choose which sources to search. These summaries would guide searches without requiring a central registry or promising complete network coverage. Additional indexes should follow measurements showing expensive filter combinations. Progressive result display could make searches feel faster while slower selected sources are still answering. Current search already works locally and through explicitly selected helper Organs.
+
+Other possible later social additions include group features, public comments, engagement ranking, and stronger protection against identifying people through connection metadata. Anonymous posting currently separates the public post from the person’s main Organ identity; stronger network anonymity would require additional design. These possibilities are not outstanding requirements of the completed six packages.
 } r_S8PQ17MQ3WBWM53ZN700K89V9F
 
 

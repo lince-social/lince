@@ -1,0 +1,4 @@
+{
+  "codex-acp": { "native": "codex", "native_variable": "CODEX_PATH" },
+  "claude-acp": { "native": "claude" }
+}

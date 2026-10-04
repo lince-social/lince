@@ -66,34 +66,103 @@ fn private_social_threads_keep_plain_composition_participants_delivery_and_retai
     data["threads"][0]["messages"][0]["social"] = json!({"author_owner":"anonymous-peer"});
     data["threads"][0]["messages"][0]["author"] = json!("anonymous-peer");
     data["threads"][0]["messages"][0]["author_name"] = json!("Bicycle neighbour");
-    data["threads"][0]["messages"][0]["social_delivery"] = json!({"stage":"recipient-durable","error":null});
+    data["threads"][0]["messages"][0]["social_delivery"] =
+        json!({"stage":"recipient-durable","error":null});
     let castle = world.spawn(Node::default()).id();
     populate(&mut world, castle, binding, &data);
     let page = world.get::<ThreadCastle>(castle).unwrap().pages["thread-a"];
     let message = world.get::<Page>(page).unwrap().messages["message-a"];
-    let (composer, input, social) = world.query::<(Entity,&ThreadForm)>().iter(&world).find(|(_,form)|form.thread.as_deref()==Some("thread-a")).map(|(entity,form)|(entity,form.input,form.social)).unwrap();
+    let (composer, input, social) = world
+        .query::<(Entity, &ThreadForm)>()
+        .iter(&world)
+        .find(|(_, form)| form.thread.as_deref() == Some("thread-a"))
+        .map(|(entity, form)| (entity, form.input, form.social))
+        .unwrap();
     assert!(social);
-    assert!(world.get::<crate::message_content::Draft>(composer).is_some());
-    assert_eq!(world.get::<EditableText>(input).unwrap().max_characters, Some(8000));
-    world.get_mut::<EditableText>(input).unwrap().editor.set_text("@record and /command are ordinary private text");
-    let body = world.get::<EditableText>(input).unwrap().value().to_string();
-    assert_eq!(mentions::body(&mut world,input,&body), body);
+    assert!(
+        world
+            .get::<crate::message_content::Draft>(composer)
+            .is_some()
+    );
+    assert_eq!(
+        world.get::<EditableText>(input).unwrap().max_characters,
+        Some(8000)
+    );
+    world
+        .get_mut::<EditableText>(input)
+        .unwrap()
+        .editor
+        .set_text("@record and /command are ordinary private text");
+    let body = world
+        .get::<EditableText>(input)
+        .unwrap()
+        .value()
+        .to_string();
+    assert_eq!(mentions::body(&mut world, input, &body), body);
     let record = world.get::<Message>(message).unwrap();
-    assert_eq!(world.get::<Text>(record.author_name).unwrap().0, "Bicycle neighbour");
-    assert!(world.get::<Text>(record.status).unwrap().0.contains("recipient-durable"));
-    let edits:Vec<_> = world.query::<(Entity,&crate::icons::Tooltip)>().iter(&world).filter(|(_,tooltip)|tooltip.0 == "Edit message").filter_map(|(entity,_)| { let mut parent = entity; while let Some(child) = world.get::<ChildOf>(parent) { parent=child.parent(); if parent==message {return Some(entity);} } None }).collect();
+    assert_eq!(
+        world.get::<Text>(record.author_name).unwrap().0,
+        "Bicycle neighbour"
+    );
+    assert!(
+        world
+            .get::<Text>(record.status)
+            .unwrap()
+            .0
+            .contains("The recipient saved this Message")
+    );
+    let edits: Vec<_> = world
+        .query::<(Entity, &crate::icons::Tooltip)>()
+        .iter(&world)
+        .filter(|(_, tooltip)| tooltip.0 == "Edit message")
+        .filter_map(|(entity, _)| {
+            let mut parent = entity;
+            while let Some(child) = world.get::<ChildOf>(parent) {
+                parent = child.parent();
+                if parent == message {
+                    return Some(entity);
+                }
+            }
+            None
+        })
+        .collect();
     assert!(edits.is_empty());
-    Switch("thread-b".into()).apply(&mut world,castle);
-    Switch("thread-a".into()).apply(&mut world,castle);
-    data["threads"][0]["messages"][0]["social_delivery"] = json!({"stage":"recipient-refused","error":"Recipient discarded this encrypted copy"});
-    refresh(&mut world,castle,&data);
-    assert_eq!(world.get::<Page>(page).unwrap().messages["message-a"],message);
-    assert_eq!(world.get::<EditableText>(input).unwrap().value().to_string(),body);
-    assert!(world.get::<Text>(world.get::<Message>(message).unwrap().status).unwrap().0.contains("recipient-refused"));
-    AskDelete(true).apply(&mut world,message);
+    Switch("thread-b".into()).apply(&mut world, castle);
+    Switch("thread-a".into()).apply(&mut world, castle);
+    data["threads"][0]["messages"][0]["social_delivery"] =
+        json!({"stage":"recipient-refused","error":"Recipient discarded this encrypted copy"});
+    refresh(&mut world, castle, &data);
+    assert_eq!(
+        world.get::<Page>(page).unwrap().messages["message-a"],
+        message
+    );
+    assert_eq!(
+        world
+            .get::<EditableText>(input)
+            .unwrap()
+            .value()
+            .to_string(),
+        body
+    );
+    assert!(
+        world
+            .get::<Text>(world.get::<Message>(message).unwrap().status)
+            .unwrap()
+            .0
+            .contains("The recipient declined this Message")
+    );
+    AskDelete(true).apply(&mut world, message);
     let confirmation = world.get::<Message>(message).unwrap().confirmation;
-    assert_eq!(world.get::<Node>(confirmation).unwrap().display, Display::Flex);
-    assert!(world.query::<&Text>().iter(&world).any(|text|text.0.contains("cannot erase the other person's copy")));
+    assert_eq!(
+        world.get::<Node>(confirmation).unwrap().display,
+        Display::Flex
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(&world)
+            .any(|text| text.0.contains("cannot erase the other person's copy"))
+    );
 }
 
 #[cfg_attr(test, test)]

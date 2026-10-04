@@ -573,14 +573,14 @@ fn dropped(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<bevy::window::FileDragAndDrop>>,
 ) {
-    let paths: Vec<_> = world
+    let files: Vec<_> = world
         .get_resource::<Messages<bevy::window::FileDragAndDrop>>()
         .map(|messages| {
             cursor
                 .read(messages)
                 .filter_map(|event| {
-                    if let bevy::window::FileDragAndDrop::DroppedFile { path_buf, .. } = event {
-                        Some(path_buf.clone())
+                    if let bevy::window::FileDragAndDrop::DroppedFile { path_buf, window } = event {
+                        Some((*window, path_buf.clone()))
                     } else {
                         None
                     }
@@ -589,6 +589,11 @@ fn dropped(
                 .collect()
         })
         .unwrap_or_default();
+    let paths: Vec<_> = files
+        .into_iter()
+        .filter(|(window, _)| !crate::external_drop::receives(world, *window))
+        .map(|(_, path)| path)
+        .collect();
     if paths.is_empty() {
         return;
     }

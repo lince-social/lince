@@ -49,6 +49,23 @@ impl Engine {
             let uid = self.resolve(record).await?;
             self.refuse_unreadable_karma_inputs(actor, &[uid]).await?;
         }
+        let mut actions = Vec::new();
+        let mut origins = Vec::new();
+        component.visit(&mut |component| {
+            match component {
+                ComponentState::Button { action, .. } => actions.push(serde_json::from_value::<crate::actions::Action>(action.clone()).map_err(|error| error.to_string())?),
+                ComponentState::Composition { composition } => {
+                    for binding in composition.parts.iter().flat_map(|part| &part.events) {
+                        actions.push(serde_json::from_value::<crate::actions::Action>(binding.action.clone()).map_err(|error| error.to_string())?);
+                    }
+                    if let Some(origin) = &composition.origin { origins.extend([origin.agent.clone(), origin.thread.clone()]); }
+                }
+                _ => {}
+            }
+            Ok(())
+        }).map_err(EngineError::Consequence)?;
+        self.refuse_unreadable(actor, &origins).await?;
+        for action in actions { self.authorize_action(&action, actor).await?; }
         let mut calls = Vec::new();
         component
             .visit(&mut |component| {
@@ -116,6 +133,22 @@ impl Engine {
             .await?;
         let component = self.resolve_component(component).await?;
         self.authorize_component(&component, actor).await?;
+        if actor.is_some() {
+            let mut passive = true;
+            component.visit(&mut |component| {
+                passive &= match component {
+                    ComponentState::Text { .. } => true,
+                    ComponentState::Composition { composition } => composition.parts.iter().all(|part| part.events.is_empty()),
+                    _ => false,
+                };
+                Ok(())
+            }).map_err(EngineError::Consequence)?;
+            if !passive {
+                return Err(EngineError::Forbidden(
+                    "Native controls require the local interface session. Use a shared workspace for controls executed under your login.".into(),
+                ));
+            }
+        }
         let slot = format!("{target}:{}", component.kind());
         let mut component = if crate::operation_origin::is_fiote()
             && !matches!(component, ComponentState::Composition { .. })
@@ -125,6 +158,7 @@ impl Engine {
                     name: "Fiote interaction".into(),
                     origin: None,
                     parts: vec![nucleus::component::Part {
+                        settings: Default::default(),
                         id: "content".into(),
                         events: Vec::new(),
                         position: [0, 0],

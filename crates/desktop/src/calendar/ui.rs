@@ -367,7 +367,7 @@ pub(super) fn records(
     let mut hidden = 0;
     for (index, record) in data.iter().enumerate() {
         if record["kind"] == "projection-status" { continue; }
-        let Some((start, end)) = model::span(record) else {
+        let Some((start, end)) = model::span_in(record, &calendar.timezone) else {
             hidden += 1;
             continue;
         };

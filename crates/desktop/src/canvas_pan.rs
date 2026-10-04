@@ -79,8 +79,9 @@ fn pan(
     window_cursors: Query<(Entity, &Window, Option<&CursorIcon>)>,
     mut cursor: ResMut<ResizeCursor>,
     mut commands: Commands,
-    text_areas: Query<(&crate::sand_text::SandText, &ChildOf, &Node)>,
+    surfaces: (Query<(&crate::sand_text::SandText, &ChildOf, &Node)>, Query<&crate::drawing::DrawingSurface>),
 ) {
+    let (text_areas, drawings) = surfaces;
     for event in windows.read() {
         if matches!(event, WindowEvent::WindowFocused(event) if !event.focused)
             || matches!(event, WindowEvent::CursorLeft(_))
@@ -116,6 +117,7 @@ fn pan(
                 let mut candidate = hit;
                 let mut sand = None;
                 loop {
+                    if button == PointerButton::Primary && !control && drawings.contains(candidate) { break; }
                     if items.contains(candidate) {
                         sand = Some(candidate);
                     }

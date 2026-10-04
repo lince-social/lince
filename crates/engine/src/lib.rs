@@ -1,10 +1,13 @@
 #![recursion_limit = "256"]
+pub mod sand_packages;
 
 mod fiote_config;
 pub mod fiote_activation;
 mod transfer_discard;
 
 pub mod access;
+mod record_policy;
+pub mod workspace_sync;
 pub mod action_intent;
 pub mod actions;
 pub mod append;
@@ -17,6 +20,7 @@ pub mod collab_guard;
 pub mod custom_component;
 pub mod presence;
 pub mod record_change;
+pub mod record_extensions;
 pub mod record_creation;
 #[allow(dead_code)]
 pub mod communication;
@@ -65,6 +69,7 @@ pub mod private_password;
 pub mod private_requests;
 pub mod private_work;
 pub mod read_filter;
+pub mod record_moves;
 pub mod rebuild;
 pub mod roster;
 pub mod seal;
@@ -72,6 +77,7 @@ pub mod senses;
 pub mod social;
 pub mod share;
 pub mod component_presentation;
+pub mod canvas;
 pub mod sync;
 pub mod sync_service;
 mod tagged_record;
@@ -124,8 +130,10 @@ pub struct Engine {
     login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
     pub sync_service: sync_service::SyncService,
     pub presence: presence::Presence,
+    pub workspace_presence: workspace_sync::Presence,
     bus: broadcast::Sender<Fact>,
     component_presentations: broadcast::Sender<nucleus::component::Presentation>,
+    canvas: canvas::Broker,
     fiote_availability: std::sync::RwLock<std::collections::HashMap<String, bool>>,
     query_changed: watch::Sender<u64>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
@@ -199,8 +207,10 @@ impl Engine {
             login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
             sync_service: sync_service::SyncService::default(),
             presence: presence::Presence::default(),
+            workspace_presence: Default::default(),
             bus,
             component_presentations,
+            canvas: Default::default(),
             fiote_availability: Default::default(),
             query_changed,
             signer: Mutex::new(None),
@@ -424,3 +434,4 @@ impl Engine {
         })
     }
 }
+pub mod description_assets;

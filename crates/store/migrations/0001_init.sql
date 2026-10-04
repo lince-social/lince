@@ -1787,13 +1787,6 @@ CREATE TABLE contact_share (
     PRIMARY KEY (contact_organ, record_uid)
 );
 
-CREATE TABLE record_move (
-    record_uid     TEXT PRIMARY KEY,
-    contact_organ  TEXT NOT NULL,
-    started_at     TEXT NOT NULL,
-    handed_over_at TEXT
-);
-
 CREATE TABLE record_change (
     seq             INTEGER PRIMARY KEY AUTOINCREMENT,
     record_uid      TEXT NOT NULL,
@@ -3352,8 +3345,6 @@ CREATE INDEX mailbox_expiry_notice_pending ON mailbox_expiry_notice (from_node, 
 CREATE INDEX contact_share_by_record ON contact_share (record_uid);
 
 CREATE UNIQUE INDEX idx_recurrence_slug ON recurrence(slug);
-
-CREATE INDEX record_move_by_contact ON record_move (contact_organ);
 
 CREATE INDEX idx_record_change_record ON record_change(record_uid, seq DESC);
 

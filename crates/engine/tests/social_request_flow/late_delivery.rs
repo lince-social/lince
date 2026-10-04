@@ -28,6 +28,12 @@ mod process_faults;
 #[path = "late_delivery/consent_races.rs"]
 mod consent_races;
 
+#[path = "late_delivery/transport_faults.rs"]
+mod transport_faults;
+
+#[path = "late_delivery/preparation_faults.rs"]
+mod preparation_faults;
+
 struct Accepted {
     sender: Arc<Engine>,
     receiver: Arc<Engine>,
@@ -36,6 +42,7 @@ struct Accepted {
     context: String,
     conversation: String,
     _directories: [tempfile::TempDir; 2],
+    _host_directories: Vec<tempfile::TempDir>,
 }
 
 async fn accepted() -> Accepted {
@@ -44,8 +51,15 @@ async fn accepted() -> Accepted {
 
 async fn accepted_with_storage(disk: bool) -> Accepted {
     let mut nodes = BTreeMap::new();
+    let mut host_directories = Vec::new();
     for secret in [235, 236] {
-        let host = Arc::new(Engine::open_memory().await.unwrap());
+        let host = if disk {
+            let (host, directory) = faults::person_on_disk(secret).await;
+            host_directories.push(directory);
+            host
+        } else {
+            Arc::new(Engine::open_memory().await.unwrap())
+        };
         command(
             &host,
             Command::ConfigureServices {
@@ -186,6 +200,7 @@ async fn accepted_with_storage(disk: bool) -> Accepted {
         context,
         conversation: requests["requests"][0]["record"].as_str().unwrap().into(),
         _directories: [receiver_dir, sender_dir],
+        _host_directories: host_directories,
     }
 }
 

@@ -129,6 +129,7 @@ impl NativeTools {
 
     pub async fn close(&self) {
         self.closed.store(true, Ordering::Release);
+        self.engine.revoke_canvas_requests(&self.context.agent, &self.context.thread);
         let result = engine::operation_origin::fiote(
             &self.context.agent,
             &self.context.thread,

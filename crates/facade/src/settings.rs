@@ -17,7 +17,7 @@ pub(crate) fn general_defaults() -> Value {
 }
 
 pub(crate) fn administrator(user: Option<&store::auth::AuthUser>) -> bool {
-    user.is_some_and(|user| user.role == "admin")
+    user.is_some_and(|user| user.permits("configuration:update"))
 }
 
 pub(crate) async fn general(state: &State) -> Result<Value, Failure> {
@@ -68,24 +68,12 @@ pub(crate) async fn ensure(state: &State) -> Result<(), Failure> {
             )
             .await
             .map_err(internal)?;
-        if let Some(uid) = created.created
-            && let Some(role) = store::auth::role_by_name(&state.cell.store.pool, "admin")
-                .await
-                .map_err(internal)?
-        {
-            state
-                .cell
-                .engine
-                .act(
-                    Action::GrantVisibility {
-                        subject_kind: "role".into(),
-                        subject: Some(role.to_string()),
-                        target: uid,
-                    },
-                    None,
-                )
-                .await
-                .map_err(internal)?;
+        if let Some(uid) = created.created {
+            for role in store::roles::catalog(&state.cell.store.pool, true).await.map_err(internal)? {
+                if role.permissions.iter().any(|key| key == "configuration:update") {
+                    state.cell.engine.act(Action::GrantVisibility { subject_kind:"role".into(), subject:Some(role.id.to_string()), target:uid.clone() }, None).await.map_err(internal)?;
+                }
+            }
         }
     }
     if let Some(record) = store::records::resolve(&state.cell.store.pool, SLUG)

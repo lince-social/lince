@@ -800,17 +800,8 @@ impl Engine {
                     self.require_permission(actor.as_deref(), "user:assign_role")
                         .await?;
                     let person = self.resolve(&user).await?;
-                    let role_id = store::auth::role_by_name(&self.store.pool, &role)
-                        .await?
-                        .ok_or_else(|| {
-                            EngineError::Consequence(format!("unknown role `{role}`"))
-                        })?;
-                    if !store::people::is_active(&self.store.pool, &person).await? {
-                        return Err(EngineError::Consequence(format!(
-                            "`{user}` is not an active Person"
-                        )));
-                    }
-                    store::auth::set_user_role(&self.store.pool, &person, role_id).await?;
+                    let expected = store::auth::person_access(&self.store.pool, &person).await?.map_or(0, |access| access.revision);
+                    self.assign_roles(actor.as_deref(), &person, &[role], expected).await?;
                 }
                 Action::SetPersonReadFilter { person, filter } => {
                     self.require_permission(actor.as_deref(), "user:update")
@@ -838,18 +829,6 @@ impl Engine {
                         .await?;
                     self.require_permission(actor.as_deref(), "permission:assign")
                         .await?;
-                    if let Some(actor) = actor.as_deref()
-                        && self.actor_user(actor).await?.role != "admin"
-                    {
-                        return Err(EngineError::Forbidden(
-                            "Only admins may change role read rules".into(),
-                        ));
-                    }
-                    if role == "admin" {
-                        return Err(EngineError::Forbidden(
-                            "Admin access cannot be restricted here".into(),
-                        ));
-                    }
                     rules.validate()?;
                     let mut pending = vec![&rules.allow, &rules.block];
                     while let Some(predicate) = pending.pop() {
@@ -930,7 +909,7 @@ impl Engine {
                             }
                             if others == 0 {
                                 return Err(EngineError::Consequence(
-                                "this is the last active admin — make someone else an admin first"
+                                "This is the last active Actor with recovery capabilities. Assign those capabilities to another active Actor first."
                                     .into(),
                             ));
                             }

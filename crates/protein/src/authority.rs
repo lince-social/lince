@@ -555,6 +555,7 @@ enum Selector {
     Not(Box<Selector>),
     Members(BTreeSet<String>),
     Kind(String),
+    Content(Predicate),
 }
 
 impl Selector {
@@ -584,6 +585,20 @@ impl Selector {
             Self::Not(child) => !child.matches(record, budget)?,
             Self::Members(members) => members.contains(&record.uid),
             Self::Kind(kind) => kind == record.kind.as_str(),
+            Self::Content(predicate) => {
+                let content = record.content.as_ref().ok_or(AuthorityError::IncompleteRecord)?;
+                match predicate {
+                    Predicate::QuantityLt(value) => content.quantity.exact_numeric_cmp(*value).is_lt(),
+                    Predicate::QuantityLte(value) => !content.quantity.exact_numeric_cmp(*value).is_gt(),
+                    Predicate::QuantityGt(value) => content.quantity.exact_numeric_cmp(*value).is_gt(),
+                    Predicate::QuantityGte(value) => !content.quantity.exact_numeric_cmp(*value).is_lt(),
+                    Predicate::QuantityEq(value) => content.quantity.exact_numeric_cmp(*value).is_eq(),
+                    Predicate::SlugEq(value) => content.slug.as_ref() == Some(value),
+                    Predicate::UnitEq(value) => content.unit_uid.as_ref() == Some(value),
+                    Predicate::TextContains(value) => content.head.to_lowercase().contains(&value.to_lowercase()) || content.body.to_lowercase().contains(&value.to_lowercase()),
+                    _ => return Err(AuthorityError::UnsupportedPredicate),
+                }
+            }
         })
     }
 
@@ -598,6 +613,9 @@ impl Selector {
         within(depth, budget.limits.predicate_depth)?;
         within(budget.predicates, budget.limits.predicate_nodes)?;
         match predicate {
+            Predicate::QuantityLt(_) | Predicate::QuantityLte(_) | Predicate::QuantityGt(_) | Predicate::QuantityGte(_) | Predicate::QuantityEq(_) => Ok(Self::Content(predicate.clone())),
+            Predicate::SlugEq(value) | Predicate::TextContains(value) => { budget.text(value)?; Ok(Self::Content(predicate.clone())) }
+            Predicate::UnitEq(value) => { budget.text(value)?; graph.concept(value)?; Ok(Self::Content(predicate.clone())) }
             Predicate::All(children) | Predicate::Any(children) => {
                 within(
                     children.len(),
@@ -1328,44 +1346,25 @@ fn authorize_prepared_record_change(
             return Err(AuthorityError::Denied);
         }
     }
+    let mut first = None;
+    let mut combined = MutationGrant { operation, selector: Predicate::All(vec![]), properties: BTreeSet::new(), assertions_add: vec![], assertions_remove: vec![] };
     for (index, grant) in policy.grants.iter().enumerate() {
         budget.step()?;
-        if grant.operation != operation
-            || operation != Operation::Delete && !proposed.grants[index].matches(after, budget)?
-        {
-            continue;
-        }
-        if let Some(before) = before
-            && !current.grants[index].matches(before, budget)?
-        {
-            continue;
-        }
-        let mut properties_allowed = true;
-        for property in &properties {
-            budget.step()?;
-            if !grant.properties.contains(property) {
-                properties_allowed = false;
-                break;
-            }
-        }
-        if properties_allowed
-            && assertions_allowed(&added, &grant.assertions_add, proposed, budget)?
-            && assertions_allowed(&removed, &grant.assertions_remove, current, budget)?
-            && assertion_intents_allowed(intents, grant, current, proposed, budget)?
-        {
-            return Ok(RecordDecision {
-                operation,
-                grant_index: index,
-                properties,
-                assertions_added: added
-                    .iter()
-                    .map(|assertion| assertion.uid.clone())
-                    .collect(),
-                assertions_removed: removed
-                    .iter()
-                    .map(|assertion| assertion.uid.clone())
-                    .collect(),
-            });
+        if grant.operation != operation || operation != Operation::Delete && !proposed.grants[index].matches(after, budget)? { continue; }
+        if let Some(before) = before && !current.grants[index].matches(before, budget)? { continue; }
+        first.get_or_insert(index);
+        combined.properties.extend(grant.properties.iter().cloned());
+        combined.assertions_add.extend(grant.assertions_add.iter().cloned());
+        combined.assertions_remove.extend(grant.assertions_remove.iter().cloned());
+    }
+    if let Some(index) = first {
+        if properties.is_subset(&combined.properties)
+            && assertions_allowed(&added, &combined.assertions_add, proposed, budget)?
+            && assertions_allowed(&removed, &combined.assertions_remove, current, budget)?
+            && assertion_intents_allowed(intents, &combined, current, proposed, budget)? {
+            return Ok(RecordDecision { operation, grant_index: index, properties,
+                assertions_added: added.iter().map(|assertion| assertion.uid.clone()).collect(),
+                assertions_removed: removed.iter().map(|assertion| assertion.uid.clone()).collect() });
         }
     }
     Err(AuthorityError::Denied)
@@ -1397,26 +1396,8 @@ fn assertion_intents_allowed(
             ),
         ] {
             if let Some(state) = state {
-                let mut permitted = false;
-                for rule in rules {
-                    budget.step()?;
-                    let mut covers = true;
-                    if state.role != AssertionRole::Identity {
-                        for property in &checked.intent.touched_properties {
-                            budget.step()?;
-                            if !rule.properties.contains(property) {
-                                covers = false;
-                            }
-                        }
-                    }
-                    if covers
-                        && assertion_allowed(state, std::slice::from_ref(rule), evaluation, budget)?
-                    {
-                        permitted = true;
-                        break;
-                    }
-                }
-                if !permitted {
+                let Some(properties) = assertion_properties(state, rules, evaluation, budget)? else { return Ok(false); };
+                if state.role != AssertionRole::Identity && !checked.intent.touched_properties.is_subset(&properties) {
                     return Ok(false);
                 }
             }
@@ -1446,29 +1427,28 @@ fn assertion_allowed(
     evaluation: &Evaluation<'_>,
     budget: &mut Budget<'_>,
 ) -> Result<bool, AuthorityError> {
-    if !evaluation
-        .ceiling
-        .concepts
-        .contains(&assertion.predicate_uid)
-        || assertion
-            .unit_uid
-            .as_ref()
-            .is_some_and(|uid| !evaluation.ceiling.concepts.contains(uid))
+    Ok(assertion_properties(assertion, grants, evaluation, budget)?.is_some())
+}
+
+fn assertion_properties(
+    assertion: &AssertionState,
+    grants: &[AssertionGrant],
+    evaluation: &Evaluation<'_>,
+    budget: &mut Budget<'_>,
+) -> Result<Option<BTreeSet<AssertionProperty>>, AuthorityError> {
+    if !evaluation.ceiling.concepts.contains(&assertion.predicate_uid)
+        || assertion.unit_uid.as_ref().is_some_and(|uid| !evaluation.ceiling.concepts.contains(uid))
     {
-        return Ok(false);
+        return Ok(None);
     }
     if let Some(uid) = &assertion.object_uid {
-        if !evaluation.reference_readable(uid, budget)? {
-            return Ok(false);
-        }
+        if !evaluation.reference_readable(uid, budget)? { return Ok(None); }
     }
+    let mut matched = false;
+    let mut properties = BTreeSet::new();
     for grant in grants {
         budget.step()?;
-        if grant.predicate_uid == assertion.predicate_uid
-            && grant.role == assertion.role
-            && (assertion.quantity.is_none()
-                || grant.properties.contains(&AssertionProperty::Quantity))
-            && (assertion.unit_uid.is_none() || grant.properties.contains(&AssertionProperty::Unit))
+        if grant.predicate_uid == assertion.predicate_uid && grant.role == assertion.role
             && match (&grant.target, &assertion.object_uid) {
                 (AssertionTarget::Unary, None) => true,
                 (AssertionTarget::Record(expected), Some(actual)) => expected == actual,
@@ -1476,10 +1456,12 @@ fn assertion_allowed(
                 _ => false,
             }
         {
-            return Ok(true);
+            matched = true;
+            properties.extend(grant.properties.iter().copied());
         }
     }
-    Ok(false)
+    Ok((matched && (assertion.quantity.is_none() || properties.contains(&AssertionProperty::Quantity))
+        && (assertion.unit_uid.is_none() || properties.contains(&AssertionProperty::Unit))).then_some(properties))
 }
 
 fn changed_properties(

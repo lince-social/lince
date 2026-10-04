@@ -95,8 +95,8 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         world,
         content,
         owner,
-        "Provider, model and settings",
-        Connection,
+        "AI connections",
+        super::connections::Open,
     );
     crate::description::button(
         world,
@@ -291,7 +291,7 @@ impl Action for ToggleAssignments {
 }
 
 #[derive(Clone)]
-struct Connection;
+pub(super) struct Connection;
 impl Action for Connection {
     fn apply(&self, world: &mut World, owner: Entity) {
         super::show(world, owner, Step::Agent);

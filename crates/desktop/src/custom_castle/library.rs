@@ -1,3 +1,4 @@
+mod packages;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -23,6 +24,7 @@ fn encode(castle: CustomCastle) -> Result<String, String> {
     if !castle.valid() {
         return Err("Invalid custom component".into());
     }
+    if let Some(component) = &castle.canvas_component { return nucleus::canvas::Document::encode(castle.name.clone(), component.clone()); }
     if let Some(composition) = &castle.composition { return nucleus::component::Document::encode(composition.clone()); }
     let body = serde_json::to_string(&Document {
         format: FORMAT.into(),
@@ -42,11 +44,17 @@ fn decode(row: &Value) -> Result<CustomCastle, String> {
     if body.len() > MAX_BYTES || row["kind"] != "sand" {
         return Err("Invalid custom component".into());
     }
+    if serde_json::from_str::<Value>(body).map_err(|_| "Invalid custom component")?["format"] == nucleus::canvas::Document::FORMAT {
+        let mut document = nucleus::canvas::Document::decode(body)?;
+        if let nucleus::canvas::Component::Composition { composition } = &mut document.component { composition.name = row["head"].as_str().unwrap_or(&document.name).into(); }
+        document.component.validate(&crate::canvas_host::registry(), false)?;
+        return Ok(CustomCastle { name: row["head"].as_str().unwrap_or(&document.name).into(), canvas_component: Some(document.component), composition: None, parts: Vec::new() });
+    }
     if serde_json::from_str::<Value>(body).map_err(|_| "Invalid custom component")?.get("composition").is_some() {
         let mut document = nucleus::component::Document::decode(body)?;
         document.composition.name = row["head"].as_str().unwrap_or_default().into();
         document.composition.validate()?;
-        return Ok(CustomCastle { name: document.composition.name.clone(), composition: Some(document.composition), parts: Vec::new() });
+        return Ok(CustomCastle { name: document.composition.name.clone(), composition: Some(document.composition), canvas_component: None, parts: Vec::new() });
     }
     let mut document: Document =
         serde_json::from_str(body).map_err(|_| "Invalid custom component")?;
@@ -60,7 +68,7 @@ fn decode(row: &Value) -> Result<CustomCastle, String> {
 fn query(target: Option<&str>) -> protein::Protein {
     serde_json::from_value(match target {
         Some(uid) => json!({"source":"record", "where":[{"uid_eq":uid},{"kind_eq":"sand"}], "fields":["uid","head","body","kind"], "limit":1}),
-        None => json!({"source":"record", "where":[{"kind_eq":"sand"},{"text_contains":FORMAT}], "fields":["uid","head"], "order":[{"asc":"head"}], "limit":null}),
+        None => json!({"source":"record", "where":[{"kind_eq":"sand"},{"any":[{"text_contains":FORMAT},{"text_contains":nucleus::canvas::Document::FORMAT}]}], "fields":["uid","head"], "order":[{"asc":"head"}], "limit":null}),
     }).unwrap()
 }
 
@@ -289,8 +297,9 @@ impl Action for Command {
                         .clone()
                         .ok_or("Select a component first")?;
                     castle.spawn(world, root)?;
+                    let remote = world.get::<Library>(root).unwrap().organ.is_some();
                     world.get_mut::<Library>(root).unwrap().status =
-                        format!("Added {} to your canvas", castle.name);
+                        if remote { format!("Added {} as an independent local copy. Its controls use your local Organ authority.", castle.name) } else { format!("Added {} to your canvas", castle.name) };
                 }
                 Self::Login(username, password) => {
                     let username = panel::value(world, *username)?;
@@ -516,6 +525,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             }
         }
         ui::refresh(world, root);
+        packages::update(world, root, &messages);
     }
     ui::password_masks(world);
 }

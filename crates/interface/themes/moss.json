@@ -5,6 +5,8 @@
     "Surface": "#29251E",
     "Ink": "#E0E8CE",
     "Accent": "#95C77D",
+    "Warning": "#FACC15",
+    "Error": "#F87171",
     "CanvasBackground": "#1A1712",
     "CanvasGrid": "#3A3D2C",
     "TableGrid": "#4B553F",
@@ -12,6 +14,13 @@
     "SandBackground": "#24291F",
     "SandBorder": "#5B7547",
     "SandInk": "#DFE8CC",
+    "ClockTrack": "#5B7547",
+    "ClockEvent": "#8DD5AC",
+    "ClockOverlap": "#CFB58E",
+    "ClockPresent": "#E2C071",
+    "ClockMuted": "#ADB99B",
+    "ClockRangeWidth": 4,
+    "ClockLabelGap": 8,
     "Connections": "#8DD5AC",
     "ConnectionFill": "#67AF8430",
     "Width": 264,
@@ -37,6 +46,7 @@
   "kinds": {
     "Text": { "SandBackground": "#00000000" },
     "EditableText": { "SandBackground": "#00000000" },
-    "Record": { "Width": 248, "Height": 192 }
+    "Record": { "Width": 248, "Height": 192 },
+    "TimeCastle": { "Width": 420, "Height": 420 }
   }
 }

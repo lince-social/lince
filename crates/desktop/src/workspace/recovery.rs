@@ -252,7 +252,11 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         "Karma Castles",
         crate::karma_castle::SavedKarmaCastle
     );
-    let simulations = castles!("simulations", "Simulations", crate::simulation_castle::SavedSimulation);
+    let simulations = castles!(
+        "simulations",
+        "Simulations",
+        crate::simulation_castle::SavedSimulation
+    );
     let recorders = castles!(
         "recorders",
         "Recorder Castles",
@@ -269,6 +273,9 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         "Document Viewer Castles",
         crate::document_viewer::SavedDocumentViewer
     );
+    let media = castles!("media", "Media Sands", crate::media_sand::SavedMedia);
+    let drawings = castles!("drawings", "Drawing Sands", crate::drawing::SavedDrawing);
+    let extension_sands = castles!("extension_sands", "Extension Sands", crate::record_extensions::SavedExtensions);
     let transfer_castles = castles!(
         "transfer_castles",
         "Transfer Castles",
@@ -313,10 +320,30 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
             }
         }
     };
+    let shortcuts = match values.remove("shortcuts") {
+        None => Default::default(),
+        Some(value) => match serde_json::from_value::<crate::shortcuts::Settings>(value) {
+            Ok(settings) if settings.validate().is_ok() => settings,
+            _ => {
+                report
+                    .notes
+                    .push("Shortcut settings could not be restored; using defaults".into());
+                Default::default()
+            }
+        },
+    };
+    let canvas_state = match values.remove("canvas_state").filter(|value| !value.is_null()) {
+        Some(value) => match serde_json::from_value::<nucleus::canvas::State>(value) { Ok(state) if state.validate().is_ok() => Some(state), _ => { report.notes.push("Canvas recovery receipts were invalid; keeping the readable layout and preserving the original snapshot".into()); None } }, None => None,
+    };
+    let canvas_id = match values.remove("canvas_id").filter(|value| !value.is_null()) { Some(value) => match value.as_str() { Some(id) if nucleus::valid_uid(id, "canvas") => Some(id.into()), _ => { report.notes.push("Canvas identity was invalid; assigning a new local identity".into()); None } }, None => None };
     let document = Document {
+        hidden_records: values.get("hidden_records").and_then(|value| serde_json::from_value(value.clone()).ok()).unwrap_or_default(),
+        canvas_id,
+        canvas_state,
         recovery: report,
         theme,
         controls,
+        shortcuts,
         active,
         workspaces,
         sands,
@@ -332,6 +359,9 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         transfer_castles,
         recorders,
         documents,
+        media,
+        drawings,
+        extension_sands,
         editors,
         explorers,
         calendars,
@@ -363,6 +393,29 @@ mod tests {
 
     fn load(value: &Value) -> Document {
         decode(&serde_json::to_vec(value).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn invalid_shortcuts_restore_defaults_without_losing_canvas_contents() {
+        for overrides in [
+            json!({"delete-sand": "W"}),
+            json!({"delete-sand": "Escape"}),
+            json!({"delete-sand": "Unknown"}),
+        ] {
+            let mut value = scene();
+            value["sands"] = json!([sand("Keep this note")]);
+            value["shortcuts"] = json!({"overrides": overrides});
+            let restored = load(&value);
+            assert_eq!(restored.shortcuts, crate::shortcuts::Settings::default());
+            assert_eq!(restored.sands[0].texts[0].text, "Keep this note");
+            assert!(
+                restored
+                    .recovery
+                    .notes
+                    .iter()
+                    .any(|note| note.contains("Shortcut"))
+            );
+        }
     }
 
     #[test]

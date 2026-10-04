@@ -82,6 +82,10 @@ impl Wire {
                     .into(),
             ));
         }
+        let stored_policy: Option<String> = store::sqlx::query_scalar("SELECT policy_hash FROM mailbox_outbox_authority WHERE uid = ?").bind(&queued.uid).fetch_optional(&self.engine.store.pool).await?;
+        if stored_policy.as_deref() != Some(self.engine.outgoing_mail_policy_hash(&queued.to_organ).await?.as_str()) {
+            return Err(EngineError::Forbidden("Saved mail is held because current sharing permissions differ. Review the content and resend it with current permissions.".into()));
+        }
         let Some(roster) = self.engine.roster_of(&queued.to_organ).await? else {
             return Ok(MailLeft::NoRoster);
         };
@@ -142,6 +146,10 @@ impl Wire {
         }
         let mut refusals = Vec::new();
         for point in roster.roster.pickup.iter().take(8) {
+            let current = self.engine.roster_of(&queued.to_organ).await?;
+            if current.as_ref().is_none_or(|r|r.roster.version != roster.roster.version || !crate::roster::roster_signature_is_valid(r)) || stored_policy.as_deref() != Some(self.engine.outgoing_mail_policy_hash(&queued.to_organ).await?.as_str()) {
+                return Err(EngineError::Forbidden("Saved mail is held because device or sharing permissions changed during delivery".into()));
+            }
             if receipts.len() >= queued.requested_copies as usize {
                 break;
             }

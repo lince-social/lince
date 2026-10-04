@@ -33,6 +33,7 @@ struct Rectangle {
     start: Location,
     end: Vec2,
     previous: Vec<Entity>,
+    clicked: Option<Entity>,
 }
 
 #[derive(Resource, Default)]
@@ -306,7 +307,7 @@ fn input(
         .iter(world)
         .collect();
     for root in roots {
-        if escape || !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled) {
+        if escape {
             clear(world, root);
         } else {
             let selection = selected(world, root);
@@ -322,9 +323,6 @@ fn input(
                 || world
                     .get::<Workspaces>(gesture.root)
                     .is_some_and(|spaces| spaces.active != gesture.workspace)
-                || !world
-                    .get::<EditMode>(gesture.root)
-                    .is_some_and(|mode| mode.enabled)
         })
         && let Some(gesture) = world.resource_mut::<SelectionGesture>().0.take()
     {
@@ -358,11 +356,17 @@ fn input(
                 continue;
             }
             gesture.end = event.location.position;
-            let entities = inside(
-                world,
-                gesture.root,
-                Rect::from_corners(gesture.start.position, gesture.end),
-            );
+            let entities = if gesture.start.position.distance(gesture.end) < 4.0 {
+                gesture
+                    .clicked
+                    .map_or_else(Vec::new, |sand| group_members(world, gesture.root, sand))
+            } else {
+                inside(
+                    world,
+                    gesture.root,
+                    Rect::from_corners(gesture.start.position, gesture.end),
+                )
+            };
             set_selection(world, gesture.root, entities);
             let finished = matches!(
                 event.action,
@@ -378,9 +382,7 @@ fn input(
         let Some((root, sand)) = hit(world) else {
             continue;
         };
-        if !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled) {
-            continue;
-        }
+        let editing = world.get::<EditMode>(root).is_some_and(|mode| mode.enabled);
         if control
             && matches!(event.action, PointerAction::Press(PointerButton::Secondary))
             && event.location.position.is_finite()
@@ -395,8 +397,12 @@ fn input(
                 start: event.location.clone(),
                 end: event.location.position,
                 previous,
+                clicked: sand.filter(|sand| eligible(world, root, *sand)),
             });
-            set_selection(world, root, Vec::new());
+            let entities = sand
+                .filter(|sand| eligible(world, root, *sand))
+                .map_or_else(Vec::new, |sand| group_members(world, root, sand));
+            set_selection(world, root, entities);
             world
                 .resource_mut::<bevy::input_focus::InputFocus>()
                 .clear();
@@ -405,10 +411,12 @@ fn input(
             }
             event.action = PointerAction::Cancel;
             consumed = true;
-        } else if matches!(
-            event.action,
-            PointerAction::Press(PointerButton::Primary | PointerButton::Secondary)
-        ) {
+        } else if editing
+            && matches!(
+                event.action,
+                PointerAction::Press(PointerButton::Primary | PointerButton::Secondary)
+            )
+        {
             let entities = sand
                 .filter(|sand| eligible(world, root, *sand))
                 .map_or_else(Vec::new, |sand| {
@@ -420,6 +428,8 @@ fn input(
                     }
                 });
             set_selection(world, root, entities);
+        } else if matches!(event.action, PointerAction::Press(PointerButton::Primary)) {
+            set_selection(world, root, Vec::new());
         }
     }
     world.insert_resource(events);
@@ -557,10 +567,8 @@ pub(crate) fn detach(world: &mut World, target: Entity) {
 
 fn draw(world: &mut World) {
     let roots: Vec<_> = world
-        .query::<(Entity, &EditMode)>()
+        .query_filtered::<Entity, With<SandSelection>>()
         .iter(world)
-        .filter(|(_, mode)| mode.enabled)
-        .map(|(root, _)| root)
         .collect();
     let mut marks = Vec::new();
     for root in roots {
@@ -784,6 +792,96 @@ pub(crate) mod tests {
             action,
         ));
         app.update();
+    }
+
+    #[cfg_attr(test, test)]
+    fn selection_and_group_deletion_work_outside_edit_mode() {
+        let (mut app, root, first, second) = fixture();
+        app.world_mut().entity_mut(first).insert(SandGroup([3; 16]));
+        app.world_mut()
+            .entity_mut(second)
+            .insert(SandGroup([3; 16]));
+        crate::edit_mode::EditAction::Close.apply(app.world_mut(), root);
+        app.world_mut()
+            .resource_mut::<HoverMap>()
+            .get_mut(&PointerId::Mouse)
+            .unwrap()
+            .insert(first, HitData::new(root, -1.0, None, None));
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ControlLeft);
+        send(
+            &mut app,
+            PointerAction::Press(PointerButton::Secondary),
+            Vec2::new(-80.0, 0.0),
+        );
+        send(
+            &mut app,
+            PointerAction::Release(PointerButton::Secondary),
+            Vec2::new(-80.0, 0.0),
+        );
+        app.update();
+        let mut expected = vec![first, second];
+        expected.sort();
+        assert_eq!(selected(app.world(), root), expected);
+        assert_eq!(app.world().resource::<Drawing>().0.len(), 2);
+        assert!(!app.world().get::<EditMode>(root).unwrap().enabled);
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        assert!(app.world().get_entity(first).is_ok());
+        crate::deletion::Decision(false).apply(app.world_mut(), root);
+        assert_eq!(selected(app.world(), root), expected);
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
+        assert!(app.world().get_entity(first).is_err());
+        assert!(app.world().get_entity(second).is_err());
+    }
+
+    #[cfg_attr(test, test)]
+    fn rectangle_selection_outside_edit_mode_preserves_text_and_workspace_boundaries() {
+        let (mut app, root, first, second) = fixture();
+        crate::edit_mode::EditAction::Close.apply(app.world_mut(), root);
+        app.world_mut()
+            .get_mut::<WorkspaceMember>(second)
+            .unwrap()
+            .0 = 2;
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ControlLeft);
+        send(
+            &mut app,
+            PointerAction::Press(PointerButton::Secondary),
+            Vec2::new(-110.0, -30.0),
+        );
+        send(
+            &mut app,
+            PointerAction::Move {
+                delta: Vec2::new(230.0, 60.0),
+            },
+            Vec2::new(120.0, 30.0),
+        );
+        send(
+            &mut app,
+            PointerAction::Release(PointerButton::Secondary),
+            Vec2::new(120.0, 30.0),
+        );
+        assert_eq!(selected(app.world(), root), vec![first]);
+        let text = app
+            .world_mut()
+            .spawn((crate::sand::editable("draft"), ChildOf(first)))
+            .id();
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(text, bevy::input_focus::FocusCause::Pressed);
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
+        assert!(app.world().get_entity(first).is_ok());
+        assert!(app.world().get_entity(second).is_ok());
+        send(
+            &mut app,
+            PointerAction::Press(PointerButton::Primary),
+            Vec2::ZERO,
+        );
+        assert!(selected(app.world(), root).is_empty());
     }
 
     #[cfg_attr(test, test)]
@@ -1082,6 +1180,8 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        selection_and_group_deletion_work_outside_edit_mode,
+        rectangle_selection_outside_edit_mode_preserves_text_and_workspace_boundaries,
         selection_uses_zoomed_bounds_and_screen_pins_and_retains_overlay_entities,
         rectangle_includes_areas_and_ignores_other_workspaces_and_hidden_sands,
         right_drag_selects_live_closes_on_release_and_escape_clears_the_selection,

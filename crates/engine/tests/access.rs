@@ -278,7 +278,8 @@ async fn access_boundary_credential_free_person_reads_local_records_without_fact
 }
 
 #[tokio::test]
-async fn access_boundary_missing_role_or_policy_and_invalid_policy_grant_nothing() {
+async fn access_boundary_permissions_apply_without_policy_but_missing_roles_and_invalid_policies_deny()
+ {
     let f = Fixture::new().await;
     let assignment = store::auth::person_access(&f.store.pool, &f.person)
         .await
@@ -287,7 +288,10 @@ async fn access_boundary_missing_role_or_policy_and_invalid_policy_grant_nothing
     store::auth::compare_and_set_role(&f.store.pool, &f.person, None, assignment.revision)
         .await
         .unwrap();
-    assert!(matches!(f.read().await, Err(AccessError::MissingAuthority)));
+    assert!(matches!(
+        f.read().await,
+        Err(AccessError::Policy(AuthorityError::Denied))
+    ));
     let assignment = store::auth::person_access(&f.store.pool, &f.person)
         .await
         .unwrap()
@@ -326,7 +330,7 @@ async fn access_boundary_missing_role_or_policy_and_invalid_policy_grant_nothing
     store::role_policies::clear(&f.store.pool, f.role, previous.revision)
         .await
         .unwrap();
-    assert!(matches!(f.read().await, Err(AccessError::MissingAuthority)));
+    assert!(f.read().await.unwrap().records.contains(&f.record));
 }
 
 #[tokio::test]
@@ -737,7 +741,7 @@ async fn access_boundary_hidden_policy_operand_is_valid_but_missing_not_operand_
         Err(AccessError::Policy(AuthorityError::MissingDependency))
     ));
     let mut invalid = policy();
-    invalid.read = Predicate::Any(vec![all(), Predicate::SlugEq("not-authority".into())]);
+    invalid.read = Predicate::Any(vec![all(), Predicate::RevisionEq(1)]);
     f.set_policy(invalid).await;
     assert!(matches!(
         f.read().await,
@@ -772,6 +776,7 @@ async fn access_boundary_actual_staged_body_change_returns_final_state_before_co
         "Accepted candidate"
     );
     assert!(decision.revision(&f.record).unwrap() > 1);
+    assert!(decision.target_content(&f.hosted).is_none());
     let staged: String = sqlx::query_scalar("SELECT body FROM record WHERE uid = ?")
         .bind(&f.record)
         .fetch_one(&mut *tx)
@@ -851,7 +856,7 @@ async fn access_boundary_create_absent_uid_checks_complete_state_and_hosted_orig
 }
 
 #[tokio::test]
-async fn access_boundary_creation_cannot_add_excluded_assertion_or_borrow_another_grant() {
+async fn access_boundary_read_exclusions_hold_and_properties_union_only_matching_grants() {
     let f = Fixture::new().await;
     let excluded = store::concepts::create(&f.store.pool, "Owner-selected-sensitive", &[])
         .await
@@ -893,25 +898,37 @@ async fn access_boundary_creation_cannot_add_excluded_assertion_or_borrow_anothe
     let mut head = divided.grants[0].clone();
     head.properties = BTreeSet::from([Property::Head]);
     divided.grants.push(head);
-    f.set_policy(divided).await;
-    let mut tx = store::write_tx(&f.store.pool).await.unwrap();
-    let mut access = access::prepare_changes_on(
-        &mut tx,
-        &f.admission,
-        &f.hosted,
-        &[f.record.clone()],
-        AccessLimits::default(),
-    )
-    .await
-    .unwrap();
-    body(&mut access, &f.record, "Changed body").await;
-    assert!(matches!(
-        access
+    for matching in [true, false] {
+        divided.grants[1].selector = if matching {
+            all()
+        } else {
+            Predicate::UidEq(f.other.clone())
+        };
+        f.set_policy(divided.clone()).await;
+        let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+        let mut access = access::prepare_changes_on(
+            &mut tx,
+            &f.admission,
+            &f.hosted,
+            std::slice::from_ref(&f.record),
+            AccessLimits::default(),
+        )
+        .await
+        .unwrap();
+        body(&mut access, &f.record, "Changed body").await;
+        let result = access
             .finish_changes(&[target(&f.record, &[Property::Head])])
-            .await,
-        Err(AccessError::Policy(AuthorityError::Denied))
-    ));
-    tx.rollback().await.unwrap();
+            .await;
+        if matching {
+            assert!(result.is_ok());
+        } else {
+            assert!(matches!(
+                result,
+                Err(AccessError::Policy(AuthorityError::Denied))
+            ));
+        }
+        tx.rollback().await.unwrap();
+    }
 }
 
 #[tokio::test]
@@ -1685,4 +1702,63 @@ async fn access_boundary_concept_origin_control_cannot_hide_in_graph_projection(
         Err(AccessError::AuthorityChanged)
     ));
     tx.rollback().await.unwrap();
+}
+
+#[tokio::test]
+async fn access_boundary_explicit_generic_permissions_work_without_a_scoped_role_policy() {
+    let f = Fixture::new().await;
+    let concept = store::concepts::ensure(&f.store.pool, "Vocabulary")
+        .await
+        .unwrap();
+    let row = store::role_policies::get(&f.store.pool, f.role)
+        .await
+        .unwrap()
+        .unwrap();
+    store::role_policies::clear(&f.store.pool, f.role, row.revision)
+        .await
+        .unwrap();
+    let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+    let mut access = access::prepare_changes_on(
+        &mut tx,
+        &f.admission,
+        &f.hosted,
+        std::slice::from_ref(&f.record),
+        AccessLimits::default(),
+    )
+    .await
+    .unwrap();
+    body(&mut access, &f.record, "Unscoped edit").await;
+    let assertion_uid = nucleus::new_uid("a");
+    store::assertions::insert_tx(
+        access.transaction_for_staging(),
+        &assertion_uid,
+        store::assertions::NewAssertion {
+            subject_uid: &f.record,
+            predicate_uid: &concept,
+            object_uid: None,
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: Some(&f.person),
+        },
+    )
+    .await
+    .unwrap();
+    let decision = access
+        .finish_changes(&[target(&f.record, &[Property::Body])])
+        .await
+        .unwrap();
+    assert_eq!(
+        decision.records[&f.record].assertions_added,
+        BTreeSet::from([assertion_uid])
+    );
+    tx.commit().await.unwrap();
+    assert_eq!(
+        store::records::get(&f.store.pool, &f.record)
+            .await
+            .unwrap()
+            .unwrap()
+            .body,
+        "Unscoped edit"
+    );
 }

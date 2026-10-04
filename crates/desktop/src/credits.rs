@@ -7,6 +7,18 @@ pub const LORO_LICENSE: &str = include_str!("../licenses/loro-MIT.txt");
 pub const ACCESSKIT_LICENSE: &str = include_str!("../licenses/accesskit-MIT.txt");
 
 pub const ATTRIBUTIONS: &[Attribution] = &[
+    #[cfg(target_os = "linux")]
+    Attribution {
+        name: "x11rb",
+        author: "Uli Schlachter and the x11rb contributors",
+        license: include_str!("../licenses/x11rb-MIT.txt"),
+    },
+    #[cfg(target_os = "linux")]
+    Attribution {
+        name: "raw-window-handle",
+        author: "The Rust Windowing contributors",
+        license: include_str!("../licenses/raw-window-handle-MIT.txt"),
+    },
     Attribution {
         name: "CPAL",
         author: "The CPAL contributors",

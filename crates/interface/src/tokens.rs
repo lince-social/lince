@@ -96,6 +96,8 @@ tokens! {
     Surface, "Panel background", Rgba([18,18,20,255]), Rgba([248,250,252,255]), None;
     Ink, "Interface text and icons", Rgba([248,250,252,255]), Rgba([18,18,20,255]), None;
     Accent, "Accent and focus", Rgba([99,102,241,255]), Rgba([55,48,163,255]), None;
+    Warning, "Warning", Rgba([250,204,21,255]), Rgba([161,98,7,255]), None;
+    Error, "Error", Rgba([248,113,113,255]), Rgba([185,28,28,255]), None;
     CanvasBackground, "Canvas background", Rgba([18,18,20,255]), Rgba([248,250,252,255]), None;
     CanvasGrid, "Canvas grid", Rgba([44,44,49,255]), Rgba([210,214,222,255]), None;
     TableGrid, "Table grid", Rgba([65,65,72,255]), Rgba([198,204,214,255]), None;
@@ -103,6 +105,13 @@ tokens! {
     SandBackground, "Sand background", Rgba([18,18,20,255]), Rgba([248,250,252,255]), None;
     SandBorder, "Sand border", Rgba([99,102,241,255]), Rgba([55,48,163,255]), None;
     SandInk, "Sand text", Rgba([248,250,252,255]), Rgba([18,18,20,255]), None;
+    ClockTrack, "Clock track", Rgba([48,73,86,255]), Rgba([173,196,205,255]), None;
+    ClockEvent, "Clock events", Rgba([131,201,183,255]), Rgba([14,100,86,255]), None;
+    ClockOverlap, "Clock overlapping events", Rgba([180,166,238,255]), Rgba([98,70,154,255]), None;
+    ClockPresent, "Clock present marker", Rgba([237,198,138,255]), Rgba([155,94,18,255]), None;
+    ClockMuted, "Clock secondary text", Rgba([146,168,179,255]), Rgba([90,107,113,255]), None;
+    ClockRangeWidth, "Clock range thickness", Number(4.0), Number(4.0), Some((1.0,12.0));
+    ClockLabelGap, "Clock event spacing", Number(8.0), Number(8.0), Some((4.0,32.0));
     Connections, "Edit mode connections", Rgba([77,217,230,255]), Rgba([0,105,120,255]), None;
     ConnectionFill, "Edit mode connection fill", Rgba([77,217,230,31]), Rgba([0,105,120,31]), None;
     Width, "Sand width", Number(248.0), Number(248.0), Some((48.0,100_000.0));
@@ -203,10 +212,11 @@ pub enum SandStyleKind {
     Text,
     EditableText,
     Record,
+    TimeCastle,
 }
 
 impl SandStyleKind {
-    pub const ALL: [Self; 4] = [Self::Square, Self::Text, Self::EditableText, Self::Record];
+    pub const ALL: [Self; 5] = [Self::Square, Self::Text, Self::EditableText, Self::Record, Self::TimeCastle];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -214,6 +224,7 @@ impl SandStyleKind {
             Self::Text => "Plain text",
             Self::EditableText => "Editable text",
             Self::Record => "Records",
+            Self::TimeCastle => "Time Castles",
         }
     }
 }
@@ -266,6 +277,12 @@ impl ThemeSettings {
             match token {
                 Token::Width => return (Number(232.0), "Default"),
                 Token::Height => return (Number(176.0), "Default"),
+                _ => {}
+            }
+        }
+        if kind == Some(SandStyleKind::TimeCastle) {
+            match token {
+                Token::Width | Token::Height => return (Number(420.0), "Default"),
                 _ => {}
             }
         }

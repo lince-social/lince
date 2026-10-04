@@ -3,6 +3,9 @@ use crate::sand_panel::tests::{app, connect, settle};
 use bevy::text::EditableText;
 use image::ImageEncoder;
 
+#[path = "tests/social_journey.rs"]
+mod social_journey;
+
 fn fixture() -> (App, Entity) {
     let mut app = app();
     app.add_plugins(OrganCastlePlugin);
@@ -69,7 +72,7 @@ fn pairing_and_enrolment_qr_round_trip_with_a_quiet_border() {
 #[test]
 fn all_contact_controls_use_typed_actions_and_do_not_persist_secrets() {
     let (mut app, owner) = fixture();
-    let row = json!({"uid":"peer","head":"Friend","body":"","contact":{"trust":"known","proximity":1,"node_id":"abc","sync_out":true,"sync_in":false,"scope_fields":null,"accept_fields":[],"hidden_records":[{"uid":"hidden","head":"Private"}],"quarantined":[]},"extension":{"enabled":false,"path":"/tmp/notes","filter":"","formats":["lingua"]}});
+    let row = json!({"uid":"peer","head":"Friend","body":"","contact":{"delivery":"auto","trust":"known","proximity":1,"node_id":"abc","sync_out":true,"sync_in":false,"scope_fields":null,"accept_fields":[],"hidden_records":[{"uid":"hidden","head":"Private"}],"quarantined":[]},"extension":{"enabled":false,"path":"/tmp/notes","filter":"","formats":["lingua"]}});
     receive(
         app.world_mut(),
         &ServerMessage::Snapshot {
@@ -83,6 +86,8 @@ fn all_contact_controls_use_typed_actions_and_do_not_persist_secrets() {
         "set-contact-trust",
         "set-contact-proximity",
         "set-sync-policy",
+        "set-contact-delivery",
+        "reconnect-contact",
         "set-contact-scope",
         "set-contact-accept-scope",
         "hide-record-from-contact",
@@ -707,6 +712,71 @@ fn social_publication_view_distinguishes_a_superseded_host_acknowledgement() {
         assert_eq!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|text.0=="The host acknowledged this earlier version; it is no longer the current publication."),matches!(state,"cancelled"|"failed"|"expired"));
         assert!(app.world().resource::<Requests>().actions.is_empty());
     }
+}
+
+#[test]
+fn social_delivery_distinguishes_single_mailbox_storage_waiting_and_recipient_receipt() {
+    let single = social::delivery_label(
+        "mailbox-stored",
+        &json!([{"service":"a","stored":1},{"service":"b","pending":1,"error":"Offline"}]),
+    );
+    assert!(single.contains("One mailbox"));
+    assert!(single.contains("not confirmed receipt"));
+    let multiple = social::delivery_label("mailbox-stored", &json!([{"stored":1},{"stored":2}]));
+    assert!(multiple.contains("2 mailboxes"));
+    assert!(social::delivery_label("waiting", &Value::Null).contains("waiting for keys"));
+    assert_eq!(
+        social::delivery_label("recipient-durable", &Value::Null),
+        "The recipient saved this Message"
+    );
+    assert_eq!(
+        social::delivery_label("recipient-refused", &Value::Null),
+        "The recipient declined this Message"
+    );
+}
+
+#[test]
+fn unchanged_roster_refresh_keeps_an_open_device_confirmation() {
+    let (mut app, owner) = fixture();
+    let id = subscription(owner, "roster");
+    receive(
+        app.world_mut(),
+        &ServerMessage::Snapshot {
+            id: id.clone(),
+            rows: vec![json!({"slug":"local-organ","extension":null})],
+        },
+    );
+    let create = find(app.world_mut(), "roster-create-organ");
+    forms::Submit.apply(app.world_mut(), create);
+    let output = app.world().get::<forms::Form>(create).unwrap().output;
+    let children = app.world().get::<Children>(output).unwrap().to_vec();
+    receive(
+        app.world_mut(),
+        &ServerMessage::Update {
+            id: id.clone(),
+            rows: vec![json!({"slug":"local-organ","extension":null})],
+        },
+    );
+    receive(
+        app.world_mut(),
+        &ServerMessage::Update {
+            id,
+            rows: vec![
+                json!({"slug":"local-organ","extension":null}),
+                json!({"slug":"contact","extension":null}),
+            ],
+        },
+    );
+    assert!(app.world().get::<forms::Form>(create).is_some());
+    assert_eq!(
+        app.world().get::<Children>(output).unwrap().to_vec(),
+        children
+    );
+    assert!(children.iter().any(|child| {
+        app.world()
+            .get::<crate::icons::Tooltip>(*child)
+            .is_some_and(|tooltip| tooltip.0 == "Confirm")
+    }));
 }
 
 #[test]

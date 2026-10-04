@@ -59,9 +59,90 @@ pub struct Loading(pub Handle<Gltf>);
 pub struct ImportedScene(pub Entity);
 
 #[derive(Component, Clone, Copy)]
+pub struct CenteredAsset;
+
+#[derive(Component, Clone, Copy)]
+struct AssetCenter(Vec3);
+
+#[derive(Component)]
+struct CenteredScene;
+
+#[derive(Component)]
+pub(crate) struct FitOnLoad;
+
+#[derive(Component, Clone, Copy)]
 pub struct Bounds {
     pub min: Vec3,
     pub max: Vec3,
+}
+
+fn center_scene(world: &mut World, entity: Entity) {
+    if world.get::<CenteredAsset>(entity).is_none() {
+        return;
+    }
+    let Some(scene) = world.get::<ImportedScene>(entity).map(|scene| scene.0) else {
+        return;
+    };
+    let Some(bounds) = world.get::<Bounds>(entity).copied() else {
+        return;
+    };
+    let center = if let Some(center) = world.get::<AssetCenter>(entity) {
+        center.0
+    } else {
+        let center = bounds.min * 0.5 + bounds.max * 0.5;
+        world.entity_mut(entity).insert((
+            AssetCenter(center),
+            Bounds {
+                min: bounds.min - center,
+                max: bounds.max - center,
+            },
+        ));
+        center
+    };
+    if world.get::<CenteredScene>(scene).is_none() {
+        if super::splats::is_splat(world.get::<ImportedAsset>(entity).unwrap()) {
+            let mut transform = world.get::<Transform>(scene).copied().unwrap_or_default();
+            transform.translation -= center;
+            world.entity_mut(scene).insert(transform);
+        } else {
+            let children = world
+                .get::<Children>(scene)
+                .map(|children| children.iter().collect::<Vec<_>>())
+                .unwrap_or_default();
+            for child in children {
+                let nodes = world
+                    .get::<Children>(child)
+                    .map(|children| children.iter().collect::<Vec<_>>())
+                    .unwrap_or_default();
+                if nodes.is_empty() {
+                    if let Some(mut transform) = world.get_mut::<Transform>(child) {
+                        transform.translation -= center;
+                    }
+                } else {
+                    let offset = world
+                        .get::<Transform>(child)
+                        .copied()
+                        .unwrap_or_default()
+                        .compute_affine()
+                        .inverse()
+                        .transform_vector3(center);
+                    for node in nodes {
+                        if let Some(mut transform) = world.get_mut::<Transform>(node) {
+                            transform.translation -= offset;
+                        }
+                    }
+                }
+            }
+        }
+        world.entity_mut(scene).insert(CenteredScene);
+    }
+    if world.entity_mut(entity).take::<FitOnLoad>().is_some() {
+        let extent = (bounds.max - bounds.min).max_element();
+        if extent.is_finite() && extent > 0.0 {
+            world.get_mut::<ImportedAsset>(entity).unwrap().scale =
+                (300.0 / extent).clamp(0.00001, 100_000.0);
+        }
+    }
 }
 
 pub fn mesh_parts(
@@ -303,7 +384,7 @@ fn check_cancelled(cancelled: &AtomicBool) -> io::Result<()> {
     }
 }
 
-fn copy_package(
+pub(crate) fn copy_package(
     source: &Path,
     directory: &Path,
     cancelled: &AtomicBool,
@@ -621,9 +702,9 @@ pub fn update(world: &mut World) {
             &WorkspaceMember,
         )>()
         .iter(world)
-        .map(|(e, a, item, p, m)| (e, a.scale, *item, p.parent(), m.0))
+        .map(|(e, _, item, p, m)| (e, *item, p.parent(), m.0))
         .collect();
-    for (entity, scale, item, root, workspace) in imports {
+    for (entity, item, root, workspace) in imports {
         if world.get::<Bounds>(entity).is_none()
             && let Some(parts) = mesh_parts(world, entity)
         {
@@ -668,7 +749,9 @@ pub fn update(world: &mut World) {
                 continue;
             }
         }
+        center_scene(world, entity);
         if let Some(bounds) = world.get::<Bounds>(entity) {
+            let scale = world.get::<ImportedAsset>(entity).unwrap().scale;
             let size = (bounds.max - bounds.min) * scale;
             let size = Vec2::new(size.x.max(1.0), size.z.max(1.0));
             if world.get::<CanvasItem>(entity).unwrap().size != size {
@@ -825,6 +908,12 @@ pub fn duplicate(world: &mut World, entity: Entity) -> Option<Entity> {
         asset,
     );
     world.entity_mut(copy).insert(placement);
+    if world.get::<CenteredAsset>(entity).is_some() {
+        world.entity_mut(copy).insert(CenteredAsset);
+    }
+    if let Some(center) = world.get::<AssetCenter>(entity).copied() {
+        world.entity_mut(copy).insert(center);
+    }
     world.get_mut::<CanvasItem>(copy).unwrap().size = item.size;
     if let Some(bounds) = world.get::<Bounds>(entity).copied() {
         world.entity_mut(copy).insert(bounds);
@@ -835,6 +924,71 @@ pub fn duplicate(world: &mut World, entity: Entity) -> Option<Entity> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn centered_models_fit_once_and_keep_their_center_when_duplicated() {
+        let mut world = World::new();
+        let root = world.spawn(crate::workspace::Workspaces::default()).id();
+        let asset = ImportedAsset {
+            id: "a".repeat(32),
+            name: "Model".into(),
+            file: "source.glb".into(),
+            scale: 100.0,
+        };
+        let owner = spawn(
+            &mut world,
+            root,
+            1,
+            bevy::math::DVec2::new(12.0, 25.0),
+            asset,
+        );
+        let center = Vec3::new(6_378_140.5, 24.0, -4_199_987.5);
+        let bounds = Bounds {
+            min: center - Vec3::new(0.5, 0.0, 0.5),
+            max: center + Vec3::new(0.5, 0.0, 0.5),
+        };
+        let scene = world.spawn((Transform::default(), ChildOf(owner))).id();
+        let node = world
+            .spawn((Transform::from_translation(center), ChildOf(scene)))
+            .id();
+        world
+            .entity_mut(owner)
+            .insert((CenteredAsset, FitOnLoad, ImportedScene(scene), bounds));
+        center_scene(&mut world, owner);
+        assert_eq!(
+            world.get::<Transform>(node).unwrap().translation,
+            Vec3::ZERO
+        );
+        assert_eq!(world.get::<ImportedAsset>(owner).unwrap().scale, 300.0);
+        assert_eq!(
+            world.get::<Bounds>(owner).unwrap().min,
+            Vec3::new(-0.5, 0.0, -0.5)
+        );
+        world.get_mut::<ImportedAsset>(owner).unwrap().scale = 40.0;
+        center_scene(&mut world, owner);
+        assert_eq!(world.get::<ImportedAsset>(owner).unwrap().scale, 40.0);
+        let copy = duplicate(&mut world, owner).unwrap();
+        let copied_scene = world.spawn((Transform::default(), ChildOf(copy))).id();
+        let copied_node = world
+            .spawn((Transform::from_translation(center), ChildOf(copied_scene)))
+            .id();
+        world.entity_mut(copy).insert(ImportedScene(copied_scene));
+        center_scene(&mut world, copy);
+        assert_eq!(
+            world.get::<Transform>(copied_node).unwrap().translation,
+            Vec3::ZERO
+        );
+        assert_eq!(
+            world.get::<Bounds>(copy).unwrap().min,
+            Vec3::new(-0.5, 0.0, -0.5)
+        );
+        let saved = snapshot(&mut world, root);
+        assert!(
+            saved
+                .iter()
+                .all(|asset| asset.centered && asset.asset.scale == 40.0)
+        );
+    }
 
     #[test]
     fn cancellation_discards_completed_packages_without_spawning() {
@@ -947,6 +1101,8 @@ pub struct SavedAsset {
     pub position: [f64; 2],
     pub size: [f32; 2],
     pub placement: crate::sand_placement::Placement,
+    #[serde(default)]
+    pub centered: bool,
 }
 
 pub fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAsset> {
@@ -959,13 +1115,19 @@ pub fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAsset> {
             &ChildOf,
         )>()
         .iter(world)
-        .filter(|(_, _, _, _, p)| p.parent() == root)
+        .filter(|(entity, _, _, _, p)| {
+            p.parent() == root
+                && world
+                    .get::<crate::external_drop::Preview>(*entity)
+                    .is_none()
+        })
         .map(|(e, asset, item, member, _)| SavedAsset {
             asset: asset.clone(),
             workspace: member.0,
             position: item.position.to_array(),
             size: item.size.to_array(),
             placement: crate::sand_placement::Placement::capture(world, e),
+            centered: world.get::<CenteredAsset>(e).is_some(),
         })
         .collect()
 }

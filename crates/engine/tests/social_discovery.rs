@@ -5,6 +5,9 @@ use nucleus::social::{
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 
+#[path = "social_discovery/search_execution.rs"]
+mod search_execution;
+
 struct DescriptorHost {
     engine: Arc<Engine>,
     change: Mutex<Option<(&'static str, Value)>>,

@@ -8,6 +8,12 @@ use nucleus::social::{PublicRequest, ServiceSettings, requests::*};
 use serde_json::{Value, json};
 use vodozemac::olm::{Session, SessionConfig};
 
+#[path = "social_private_mailbox/protocol.rs"]
+mod protocol;
+
+#[path = "social_private_mailbox/stranger_flood.rs"]
+mod stranger_flood;
+
 fn certified(
     owner: &Signer,
     account: &session::AccountState,
@@ -1770,6 +1776,23 @@ async fn full_mailbox_reserves_acknowledgements_and_immediate_revocation() {
         }
     }
     assert!(full);
+    let mut limited = false;
+    for index in 0..1600 {
+        let result = host
+            .social_public_request(
+                &format!("ordinary-flood-{index}"),
+                &node,
+                PublicRequest::DescribeService,
+                now,
+            )
+            .await;
+        if let Err(error) = result {
+            assert!(error.to_string().contains("limited"), "{error}");
+            limited = true;
+            break;
+        }
+    }
+    assert!(limited);
     let mut receipt = RecipientReceipt {
         envelope: first.envelope.id.clone(),
         envelope_hash: document_hash("private-envelope", &first.envelope).unwrap(),

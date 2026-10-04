@@ -85,6 +85,9 @@ impl Host {
                             .refuse_unreadable(actor, std::slice::from_ref(&record))
                             .await,
                     );
+                if actor.is_some() {
+                    allowed = Err(engine::EngineError::Forbidden("Fiote execution requires the local interface session".into()));
+                }
                 if cause["kind"] == "karma" {
                     let uid = cause["rule"].as_str().unwrap_or_default();
                     let rule = store::recurrence::get(&self.engine.store.pool, uid)

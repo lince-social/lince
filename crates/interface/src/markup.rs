@@ -8,14 +8,16 @@ pub struct Run {
     pub code: bool,
     pub strike: bool,
     pub link: Option<String>,
+    pub literal: bool,
 }
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Block {
     pub runs: Vec<Run>,
     pub heading: u8,
     pub code: Option<String>,
     pub quote: bool,
     pub image: Option<String>,
+    pub transclusion: Option<String>,
 }
 
 pub fn parse(source: &str) -> Vec<Block> {
@@ -36,6 +38,7 @@ pub fn parse(source: &str) -> Vec<Block> {
             && last.code == style.code
             && last.strike == style.strike
             && last.link == style.link
+            && last.literal == style.literal
         {
             last.text.push_str(value);
         } else {
@@ -45,10 +48,12 @@ pub fn parse(source: &str) -> Vec<Block> {
             });
         }
     };
-    for event in Parser::new_ext(
+    for (event, range) in Parser::new_ext(
         source,
         Options::ENABLE_TABLES | Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH,
-    ) {
+    )
+    .into_offset_iter()
+    {
         match event {
             Event::Start(Tag::Image { dest_url, .. }) => {
                 flush(&mut blocks, &mut block);
@@ -114,7 +119,19 @@ pub fn parse(source: &str) -> Vec<Block> {
             ) => flush(&mut blocks, &mut block),
             Event::End(TagEnd::TableCell) => push(&mut block, &style, "   │   "),
             Event::Text(text) | Event::Html(text) | Event::InlineHtml(text) => {
-                push(&mut block, &style, &text)
+                let escaped = source.as_bytes()[..range.start].iter().rev().take_while(|byte| **byte == b'\\').count() % 2 == 1;
+                if escaped || source[range].starts_with('\\') {
+                    push(
+                        &mut block,
+                        &Run {
+                            literal: true,
+                            ..style.clone()
+                        },
+                        &text,
+                    );
+                } else {
+                    push(&mut block, &style, &text);
+                }
             }
             Event::Code(text) => push(
                 &mut block,
@@ -138,6 +155,7 @@ pub fn parse(source: &str) -> Vec<Block> {
         }
     }
     flush(&mut blocks, &mut block);
+    let mut blocks: Vec<_> = blocks.into_iter().flat_map(transclusions).collect();
     for block in &mut blocks {
         if block.code.is_none() {
             block.runs = std::mem::take(&mut block.runs)
@@ -151,7 +169,7 @@ pub fn parse(source: &str) -> Vec<Block> {
 }
 
 fn links(run: Run) -> Vec<Run> {
-    if run.code || run.link.is_some() {
+    if run.code || run.literal || run.link.is_some() {
         return vec![run];
     }
     let mut out = Vec::new();
@@ -186,7 +204,7 @@ fn links(run: Run) -> Vec<Run> {
 }
 
 fn slugs(run: Run) -> Vec<Run> {
-    if run.code || run.link.is_some() {
+    if run.code || run.literal || run.link.is_some() {
         return vec![run];
     }
     let mut out = Vec::new();
@@ -229,4 +247,58 @@ fn slugs(run: Run) -> Vec<Run> {
         });
     }
     out
+}
+
+fn transclusions(mut block: Block) -> Vec<Block> {
+    if block.code.is_some() || block.image.is_some() {
+        return vec![block];
+    }
+    let mut output = Vec::new();
+    let template = Block {
+        runs: Vec::new(),
+        ..block.clone()
+    };
+    let runs = std::mem::take(&mut block.runs);
+    for run in runs {
+        if run.code || run.literal || run.link.is_some() {
+            block.runs.push(run);
+            continue;
+        }
+        let mut rest = run.text.as_str();
+        while let Some(start) = rest.find("![[") {
+            let Some(end) = rest[start + 3..].find("]]").map(|end| end + start + 3) else {
+                break;
+            };
+            if start > 0 {
+                block.runs.push(Run {
+                    text: rest[..start].into(),
+                    ..run.clone()
+                });
+            }
+            if !block.runs.is_empty() {
+                output.push(std::mem::replace(&mut block, template.clone()));
+            }
+            let value = rest[start + 3..end].trim();
+            let (title, reference) = value.split_once('|').unwrap_or((value, value));
+            output.push(Block {
+                transclusion: Some(reference.trim().into()),
+                runs: vec![Run {
+                    text: title.into(),
+                    ..Run::default()
+                }],
+                ..Block::default()
+            });
+            rest = &rest[end + 2..];
+        }
+        if !rest.is_empty() {
+            block.runs.push(Run {
+                text: rest.into(),
+                ..run
+            });
+        }
+    }
+    if !block.runs.is_empty() {
+        output.push(block);
+    }
+    output
 }

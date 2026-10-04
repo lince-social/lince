@@ -28,10 +28,13 @@ pub use transport::protocol::CollabCursor;
 pub use transport::native::Context as FioteContext;
 pub use ::fiote::adapters::{Descriptor as FioteProvider, AuthKind as FioteAuthKind, AuthMethod as FioteAuthMethod};
 pub use ::fiote::tools::Registry as FioteTools;
+pub use ::fiote::connection as fiote_connection;
+pub use ::fiote::communication as fiote_communication;
 pub use ::fiote::acp::Config as FioteAgentConfig;
 pub use ::fiote::acp::terminal::TerminalRequest as FioteTerminalRequest;
 pub use ::fiote::adapters::register_bundled as register_provider_adapter;
 pub use ::fiote::provider_adapter::serve as serve_provider_adapter;
+pub use transport::mcp::bridge_stdio;
 pub use ::fiote::config::{
     Request as FioteRequest, Secret as FioteSecret,
     Settings as FioteSettings, Status as FioteStatus, ToolConnection as FioteToolConnection,
@@ -188,19 +191,16 @@ impl Cell {
         let mut tasks = Vec::new();
         let lanes = Arc::new(LaneHub::new());
         let wire = bind_wire(&engine, &store, &local_organ, &key_dir, &lanes, &mut tasks).await;
+        let fiote = if services { Some(Arc::new(fiote::Host::open(engine.clone(), key_dir.join("fiote")).await.map_err(IoError::other)?)) } else { None };
         let runtime = CellRuntime {
-            speech: if services { Some(Arc::new(speech::Host::open(key_dir.join("speech.json")).map_err(IoError::other)?)) } else { None },
+            speech: if services { Some(Arc::new(speech::Host::open_with_vault(key_dir.join("speech.json"), fiote.as_ref().map(|host| host.shared_vault())).map_err(IoError::other)?)) } else { None },
             commands: Default::default(),
             engine: engine.clone(),
             store: store.clone(),
             lanes,
             wire: Arc::new(tokio::sync::RwLock::new(wire.clone())),
             information: None,
-            fiote: if services { Some(Arc::new(
-                fiote::Host::open(engine.clone(), key_dir.join("fiote"))
-                    .await
-                    .map_err(IoError::other)?,
-            )) } else { None },
+            fiote,
         };
 
         if let Some(wire) = wire.clone()

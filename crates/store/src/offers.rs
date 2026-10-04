@@ -65,7 +65,7 @@ pub async fn pending(pool: &SqlitePool) -> Result<Vec<Offer>, StoreError> {
         out.push(Offer {
             kind: OfferKind::ThreadInvite,
             direction: Direction::Incoming,
-            subject_uid: invite.root,
+            subject_uid: invite.record_uid,
             title: invite.title,
             other_party: invite.from_organ,
             created_at: invite.created_at,
@@ -96,20 +96,9 @@ pub async fn pending(pool: &SqlitePool) -> Result<Vec<Offer>, StoreError> {
         });
     }
 
-    for moving in crate::record_move::pending(pool).await? {
-        let title: Option<String> = sqlx::query_scalar("SELECT head FROM record WHERE uid = ?")
-            .bind(&moving.record_uid)
-            .fetch_optional(pool)
-            .await?;
-        out.push(Offer {
-            kind: OfferKind::RecordMove,
-            direction: Direction::Outgoing,
-            subject_uid: moving.record_uid,
-            title: title.unwrap_or_default(),
-            other_party: moving.contact_organ,
-            created_at: moving.started_at,
-            previously_refused: false,
-        });
+    for moving in crate::record_move::offers::list(pool).await? {
+        if !matches!(moving.state.as_str(), "offered" | "accepted" | "transferring" | "changed") { continue; }
+        out.push(Offer {kind: OfferKind::RecordMove, direction: if moving.direction == "incoming" {Direction::Incoming} else {Direction::Outgoing}, subject_uid: moving.uid, title: moving.preview.records.iter().find(|r|r.uid==moving.root).map(|r|r.title.clone()).unwrap_or_default(), other_party: moving.peer, created_at: moving.created_at, previously_refused:false});
     }
 
     let transfers = sqlx::query(
@@ -127,7 +116,7 @@ pub async fn pending(pool: &SqlitePool) -> Result<Vec<Offer>, StoreError> {
         out.push(Offer {
             kind: OfferKind::Transfer,
             direction: Direction::Incoming,
-            subject_uid: row.get("transfer_uid"),
+            subject_uid: row.get("uid"),
             title: row.get("head"),
             other_party: row.get("addressee"),
             created_at: row.get("created_at"),
@@ -259,4 +248,14 @@ pub async fn forget_refusal(
     .execute(pool)
     .await?;
     Ok(())
+}
+
+pub async fn remember_outcome(pool: &SqlitePool, kind: OfferKind, subject: &str, party: &str, outcome: &str) -> Result<(), StoreError> {
+    sqlx::query("INSERT INTO offer_local_outcome(kind,subject_uid,other_party,outcome,at) VALUES (?,?,?,?,?) ON CONFLICT(kind,subject_uid,other_party) DO UPDATE SET outcome=excluded.outcome,at=excluded.at")
+        .bind(kind.as_str()).bind(subject).bind(party).bind(outcome).bind(nucleus::execution::now().to_rfc3339()).execute(pool).await?;
+    Ok(())
+}
+
+pub async fn local_outcomes(pool: &SqlitePool) -> Result<Vec<serde_json::Value>, StoreError> {
+    Ok(sqlx::query("SELECT * FROM offer_local_outcome ORDER BY at DESC LIMIT 100").fetch_all(pool).await?.into_iter().map(|r|serde_json::json!({"kind":r.get::<String,_>("kind"),"subject_uid":r.get::<String,_>("subject_uid"),"other_party":r.get::<String,_>("other_party"),"outcome":r.get::<String,_>("outcome"),"at":r.get::<String,_>("at")})).collect())
 }

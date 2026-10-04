@@ -60,7 +60,7 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
             crate::edit_mode::label(
                 world,
                 content,
-                "Direct-provider settings are changed in Fiote setup. Live session choices and agent commands require an ACP agent. Image/PDF input depends on the chosen model; audio input is available only through the Gemini adapter. Other adapters may accept text only.",
+                "Direct-model settings are changed in Fiote setup. Live session choices and agent commands are advertised by ACP agents. Attachment support depends on the connection and model; unsupported media is reported before sending.",
                 13.0,
             );
         }

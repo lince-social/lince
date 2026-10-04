@@ -36,7 +36,8 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
         engine: engine.clone(),
         lanes: Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     let mut app = App::new();
@@ -157,10 +158,10 @@ async fn appearance_changes_keep_record_transitions_armed() {
 
 #[cfg(test)]
 #[tokio::test]
-async fn grant_survives_more_than_128_successful_crossings() {
+async fn repeated_boundary_cycles_pause_the_area_before_another_record_change() {
     let (mut app, engine, root, area, sand, uid) = fixture().await;
     enable(&mut app, root, area);
-    for _ in 0..70 {
+    for _ in 0..4 {
         move_to(&mut app, sand, 0.0);
         pump(&mut app).await;
         assert_eq!(quantity(&engine, &uid).await, "-3");
@@ -169,12 +170,33 @@ async fn grant_survives_more_than_128_successful_crossings() {
         assert_eq!(quantity(&engine, &uid).await, "1");
         assert!(armed(app.world(), area));
     }
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "1");
+    assert!(!armed(app.world(), area));
+    assert!(app.world().get::<InfluenceArea>(area).unwrap().paused);
+    assert!(
+        app.world()
+            .get::<MutationStatus>(area)
+            .unwrap()
+            .0
+            .contains("repeated boundary cycle")
+    );
 }
 
 #[cfg(test)]
 #[tokio::test]
 async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() {
     let (mut app, engine, root, area, sand, uid) = fixture().await;
+    crate::workspace_config::set_rules(
+        app.world_mut(),
+        root,
+        1,
+        crate::workspace_config::RuleSettings {
+            max_pending: 8,
+            ..Default::default()
+        },
+    );
     let mut records = vec![(sand, uid)];
     for _ in 0..69 {
         let uid = engine
@@ -222,12 +244,14 @@ async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() 
     }
     app.update();
     assert!(armed(app.world(), area));
+    assert!(explanation(app.world(), area, records[0].0).contains("waiting for request capacity"));
     drop(reserved);
     tokio::time::timeout(std::time::Duration::from_secs(20), async {
         loop {
             app.update();
             assert!(armed(app.world(), area));
             let state = app.world().resource::<Mutations>();
+            assert!(state.pending.len() <= 8);
             if state.pending.is_empty()
                 && state.grants[&area]
                     .visits
@@ -243,6 +267,86 @@ async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() 
     .unwrap();
     for (_, uid) in records {
         assert_eq!(quantity(&engine, &uid).await, "-3");
+    }
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn pauses_cancel_preview_submission_and_resume_from_current_positions() {
+    use crate::actions::Action as InterfaceAction;
+    for workspace_pause in [false, true] {
+        let (mut app, engine, root, area, sand, uid) = fixture().await;
+        enable(&mut app, root, area);
+        move_to(&mut app, sand, 0.0);
+        app.update();
+        assert!(
+            app.world()
+                .resource::<Mutations>()
+                .pending
+                .values()
+                .all(|pending| !pending.applying)
+        );
+        let control = if workspace_pause {
+            crate::influence_report::Control::Workspace
+        } else {
+            crate::influence_report::Control::Area(area)
+        };
+        InterfaceAction::apply(&control, app.world_mut(), root);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "0");
+        assert!(!armed(app.world(), area));
+        InterfaceAction::apply(&control, app.world_mut(), root);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "0");
+        move_to(&mut app, sand, 100.0);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "1");
+        move_to(&mut app, sand, 0.0);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "-3");
+    }
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn pauses_keep_submitted_requests_counted_until_confirmation() {
+    use crate::actions::Action as InterfaceAction;
+    for workspace_pause in [false, true] {
+        let (mut app, engine, root, area, sand, uid) = fixture().await;
+        enable(&mut app, root, area);
+        move_to(&mut app, sand, 0.0);
+        for _ in 0..100 {
+            app.update();
+            if app
+                .world()
+                .resource::<Mutations>()
+                .pending
+                .values()
+                .any(|pending| pending.applying)
+            {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+        }
+        assert!(
+            app.world()
+                .resource::<Mutations>()
+                .pending
+                .values()
+                .any(|pending| pending.applying)
+        );
+        let control = if workspace_pause {
+            crate::influence_report::Control::Workspace
+        } else {
+            crate::influence_report::Control::Area(area)
+        };
+        InterfaceAction::apply(&control, app.world_mut(), root);
+        assert_eq!(app.world().resource::<Mutations>().pending.len(), 1);
+        assert!(pending(app.world(), sand));
+        assert!(!armed(app.world(), area));
+        InterfaceAction::apply(&control, app.world_mut(), root);
+        assert_eq!(app.world().resource::<Mutations>().pending.len(), 1);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "-3");
+        assert!(!pending(app.world(), sand));
     }
 }
 
@@ -462,6 +566,8 @@ async fn entering_a_conflicting_area_later_keeps_the_first_change() {
 }
 
 crate::laboratory_cases! {
+    async pauses_keep_submitted_requests_counted_until_confirmation,
+    async pauses_cancel_preview_submission_and_resume_from_current_positions,
     async crossing_assigns_and_unassigns_people,
     async depth_only_crossings_change_records_in_a_rotated_area,
     async immunity_suppresses_record_transitions_and_cancels_pending_previews,

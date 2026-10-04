@@ -73,6 +73,7 @@ impl Plugin for CanvasPlugin {
             crate::canvas_selection::CanvasSelectionPlugin,
             crate::canvas_background::CanvasBackgroundPlugin,
             crate::sand_placement::PlacementPlugin,
+            crate::canvas_host::Plugin,
         ))
         .register_type::<CanvasView>()
         .register_type::<CanvasItem>()

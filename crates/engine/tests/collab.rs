@@ -39,10 +39,10 @@ async fn pair_both_ways(a: &Engine, a_organ: &str, b: &Engine, b_organ: &str) {
     let b_intro = b.introduction().await.unwrap();
     b.adopt_introduction(&a_intro, 1).await.unwrap();
     a.adopt_introduction(&b_intro, 1).await.unwrap();
-    store::organs::set_sync_policy(&a.store.pool, b_organ, true, false)
+    store::organs::set_sync_policy(&a.store.pool, b_organ, true, true)
         .await
         .unwrap();
-    store::organs::set_sync_policy(&b.store.pool, a_organ, true, false)
+    store::organs::set_sync_policy(&b.store.pool, a_organ, true, true)
         .await
         .unwrap();
 }

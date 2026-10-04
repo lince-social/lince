@@ -99,13 +99,17 @@ impl Calendar {
 fn default_timezone() -> String { "UTC".into() }
 
 pub fn span(row: &serde_json::Value) -> Option<(NaiveDate, NaiveDate)> {
+    span_in(row, "UTC")
+}
+
+pub fn span_in(row: &serde_json::Value, timezone: &str) -> Option<(NaiveDate, NaiveDate)> {
     for property in ["start_date", "due_date"] {
-        if !row[property].is_null() && row[property].as_str().and_then(parse).is_none() {
+        if !row[property].is_null() && row[property].as_str().and_then(|value| nucleus::schedule::timezone_date(value, timezone)).is_none() {
             return None;
         }
     }
-    let start = row["start_date"].as_str().and_then(parse);
-    let end = row["due_date"].as_str().and_then(parse);
+    let start = row["start_date"].as_str().and_then(|value| nucleus::schedule::timezone_date(value, timezone));
+    let end = row["due_date"].as_str().and_then(|value| nucleus::schedule::timezone_date(value, timezone));
     match (start, end) {
         (Some(a), Some(b)) if a <= b => Some((a, b)),
         (Some(date), None) | (None, Some(date)) => Some((date, date)),

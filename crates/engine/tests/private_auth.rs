@@ -330,20 +330,13 @@ async fn private_auth_disabled_deleted_and_malformed_accounts_do_not_enroll() {
 }
 
 #[tokio::test]
-async fn private_auth_missing_policy_and_role_roll_back_provisional_device() {
+async fn private_auth_missing_role_rolls_back_provisional_device() {
     let fixture = Fixture::new(true).await;
     let peer = Peer::new(2).await;
     let auth = fixture.authenticator(true);
     store::role_policies::clear(&fixture.store.pool, fixture.role, 1)
         .await
         .unwrap();
-    assert_eq!(
-        auth.password(&peer.accepted, "person", password(PASSWORD))
-            .await
-            .unwrap_err(),
-        AuthenticationError::Refused
-    );
-    assert_eq!(fixture.device_count().await, 0);
     let access = store::auth::person_access(&fixture.store.pool, &fixture.person)
         .await
         .unwrap()
@@ -358,6 +351,35 @@ async fn private_auth_missing_policy_and_role_roll_back_provisional_device() {
         AuthenticationError::Refused
     );
     assert_eq!(fixture.device_count().await, 0);
+    peer.close().await;
+}
+
+#[tokio::test]
+async fn private_auth_unrestricted_role_still_requires_its_positive_read_permission() {
+    let fixture = Fixture::new(true).await;
+    let peer = Peer::new(2).await;
+    let auth = fixture.authenticator(true);
+    store::role_policies::clear(&fixture.store.pool, fixture.role, 1)
+        .await
+        .unwrap();
+    let admitted = auth
+        .password(&peer.accepted, "person", password(PASSWORD))
+        .await
+        .unwrap();
+    assert_eq!(admitted.authentication().person_uid(), fixture.person);
+    assert_eq!(fixture.device_count().await, 1);
+    store::auth::revoke(&fixture.store.pool, fixture.role, fixture.permission)
+        .await
+        .unwrap();
+    let other = Peer::new(3).await;
+    assert_eq!(
+        auth.password(&other.accepted, "person", password(PASSWORD))
+            .await
+            .unwrap_err(),
+        AuthenticationError::Refused
+    );
+    assert_eq!(fixture.device_count().await, 1);
+    other.close().await;
     peer.close().await;
 }
 

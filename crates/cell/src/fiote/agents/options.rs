@@ -141,12 +141,7 @@ impl Host {
             }
         });
         if option == "provider"
-            && preview
-                .connection
-                .info
-                .agent_info
-                .as_ref()
-                .is_some_and(|info| info.name == "goose")
+            && fiote::communication::extensions::preserves_provider_metadata(&preview.connection)
         {
             if let Some(provider) = current.get(option) {
                 preview

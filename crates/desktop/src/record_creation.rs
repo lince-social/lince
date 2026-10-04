@@ -255,6 +255,9 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
             }
         };
         let entity = input(world, parent, field.title, "", field.key == "body");
+        if matches!(field.key, "start_date" | "due_date") {
+            crate::schedule_editor::attach(world, parent, entity);
+        }
         fields.push((field.key, entity));
     }
     crate::assertion_editor::spawn(

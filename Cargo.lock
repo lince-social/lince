@@ -397,7 +397,7 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 
 [[package]]
 name = "anicca"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "cc",
  "postcard",
@@ -4706,7 +4706,7 @@ checksum = "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099"
 
 [[package]]
 name = "engine"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anicca",
  "argon2",
@@ -7605,7 +7605,7 @@ dependencies = [
 
 [[package]]
 name = "lince"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "dirs",
  "lince-cell",
@@ -7624,9 +7624,10 @@ dependencies = [
 
 [[package]]
 name = "lince-cell"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "async-trait",
+ "base64 0.23.1",
  "chrono",
  "crossterm",
  "engine",
@@ -7647,9 +7648,10 @@ dependencies = [
 
 [[package]]
 name = "lince-desktop"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "accesskit",
+ "async-trait",
  "avian3d",
  "base64 0.23.1",
  "bevy",
@@ -7661,7 +7663,9 @@ dependencies = [
  "flexbuffers",
  "getrandom 0.4.3",
  "hound",
+ "iana-time-zone",
  "image",
+ "iroh",
  "ksni",
  "lince-cell",
  "lince-document",
@@ -7678,6 +7682,7 @@ dependencies = [
  "protein",
  "pulldown-cmark",
  "qrcode",
+ "raw-window-handle",
  "reqwest",
  "resvg",
  "rfd",
@@ -7691,11 +7696,12 @@ dependencies = [
  "toml",
  "tray-icon",
  "wasmi",
+ "x11rb",
 ]
 
 [[package]]
 name = "lince-document"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyrender",
  "anyrender_vello_cpu",
@@ -7717,7 +7723,7 @@ dependencies = [
 
 [[package]]
 name = "lince-editor"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "cap-std",
  "icu_segmenter",
@@ -7740,7 +7746,7 @@ dependencies = [
 
 [[package]]
 name = "lince-facade"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -7764,7 +7770,7 @@ dependencies = [
 
 [[package]]
 name = "lince-fiote"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -7788,7 +7794,7 @@ dependencies = [
 
 [[package]]
 name = "lince-interface"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "base64 0.23.1",
  "bevy",
@@ -7808,7 +7814,7 @@ dependencies = [
 
 [[package]]
 name = "lince-media"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "cpal 0.16.0",
  "flexaudio",
@@ -7832,7 +7838,7 @@ dependencies = [
 
 [[package]]
 name = "lince-mobile"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "base64 0.23.1",
  "bevy",
@@ -7857,7 +7863,7 @@ dependencies = [
 
 [[package]]
 name = "lince-simulation"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -7878,7 +7884,7 @@ dependencies = [
 
 [[package]]
 name = "lince-utils"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "argon2",
  "base64 0.23.1",
@@ -9059,7 +9065,7 @@ dependencies = [
 
 [[package]]
 name = "nucleus"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -10917,7 +10923,7 @@ dependencies = [
 
 [[package]]
 name = "protein"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -11531,6 +11537,7 @@ dependencies = [
  "js-sys",
  "log",
  "mime",
+ "mime_guess",
  "percent-encoding",
  "pin-project-lite",
  "quinn",
@@ -11657,6 +11664,7 @@ dependencies = [
  "pastey 0.2.3",
  "pin-project-lite",
  "rand 0.10.2",
+ "reqwest",
  "schemars 1.2.2",
  "serde",
  "serde_json",
@@ -12266,7 +12274,7 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "sensei"
-version = "0.7.0"
+version = "0.8.0"
 
 [[package]]
 name = "serde"
@@ -13174,7 +13182,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "store"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -14387,7 +14395,7 @@ dependencies = [
 
 [[package]]
 name = "transport"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "axum",
@@ -16446,7 +16454,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "base64 0.23.1",
  "serde_json",

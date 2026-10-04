@@ -490,15 +490,12 @@ fn authority_impact_later_invalid_selector_never_returns_partial_changes() {
 fn authority_impact_unsupported_short_circuit_branch_refuses() {
     let graph = graph();
     for selector in [
-        Predicate::Any(vec![
-            Predicate::All(Vec::new()),
-            Predicate::TextContains("secret".into()),
-        ]),
+        Predicate::Any(vec![Predicate::All(Vec::new()), Predicate::RevisionEq(1)]),
         Predicate::All(vec![
             Predicate::Any(Vec::new()),
-            Predicate::QuantityEq(store::exact::zero()),
+            Predicate::StatusIn(vec!["active".into()]),
         ]),
-        Predicate::Not(Box::new(Predicate::SlugEq("task".into()))),
+        Predicate::Not(Box::new(Predicate::RecordEq(r(3)))),
     ] {
         assert_eq!(
             selector_membership_changes(&[selector], &graph, &graph, &Limits::default()),

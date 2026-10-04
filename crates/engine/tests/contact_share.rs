@@ -1,3 +1,5 @@
+mod support;
+
 use engine::Engine;
 use engine::actions::Action;
 use engine::sync::{Delivery, OpBatch};
@@ -14,6 +16,7 @@ async fn cell() -> (Engine, String) {
     e.set_signer(Signer::generate(&organ, "k1"))
         .await
         .expect("signer");
+    support::karma::authorize(&e).await;
     (e, organ)
 }
 
@@ -34,6 +37,42 @@ async fn plain(e: &Engine, slug: &str) -> String {
 }
 
 async fn wire_push(from: &Engine, to: &Engine) -> usize {
+    let ours = store::organs::local(&from.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    for moving in store::record_move::offers::list(&from.store.pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .filter(|m| {
+            m.direction == "outgoing" && matches!(m.state.as_str(), "offered" | "transferring")
+        })
+    {
+        let state = to
+            .receive_move_offer(&ours, &moving.uid, moving.preview.clone())
+            .await
+            .unwrap();
+        if moving.state == "offered"
+            && state == "accepted"
+            && from.claim_record_move(&moving.uid).await.unwrap()
+        {
+            let bundle = serde_json::from_str(
+                &store::record_move::offers::payload(&from.store.pool, &moving.uid)
+                    .await
+                    .unwrap(),
+            )
+            .unwrap();
+            let receipt = to
+                .receive_move_bundle(&ours, &moving.uid, bundle)
+                .await
+                .unwrap();
+            from.finish_record_move(&moving.uid, &receipt)
+                .await
+                .unwrap();
+        }
+    }
     from.drain_outbox(|_contact, root, batch| async move {
         match root {
             Some(root) => to.import_grant_batch(&root, &batch).await,
@@ -49,7 +88,22 @@ async fn pair_push(a: &Engine, b: &Engine, b_organ: &str) {
     let a_intro = a.introduction().await.unwrap();
     let b_intro = b.introduction().await.unwrap();
     b.adopt_introduction(&a_intro, 1).await.unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &a_intro.organ_uid, false, true)
+        .await
+        .unwrap();
     a.adopt_introduction(&b_intro, 1).await.unwrap();
+    store::organs::set_trust(&a.store.pool, b_organ, "known")
+        .await
+        .unwrap();
+    store::organs::set_trust(&b.store.pool, &a_intro.organ_uid, "known")
+        .await
+        .unwrap();
+    a.adopt_roster(&b.roster_of(b_organ).await.unwrap().unwrap())
+        .await
+        .unwrap();
+    b.adopt_roster(&a.roster_of(&a_intro.organ_uid).await.unwrap().unwrap())
+        .await
+        .unwrap();
     store::organs::set_sync_policy(&a.store.pool, b_organ, true, false)
         .await
         .unwrap();
@@ -712,10 +766,12 @@ async fn reconciling_reads_only_what_changed_since_the_last_pass() {
 }
 
 async fn move_to(e: &Engine, record: &str, contact: &str) -> Result<(), engine::EngineError> {
+    let (preview, _) = e.preview_record_move(record, contact).await?;
     e.act(
         Action::MoveRecordTo {
             record: record.to_string(),
             target: contact.to_string(),
+            expected_preview: Some(preview.hash),
         },
         None,
     )
@@ -741,6 +797,14 @@ async fn a_move_hands_the_record_over_and_then_lets_go_of_it() {
         "nothing is given up before it has landed"
     );
 
+    wire_push(&a, &b).await;
+    let incoming = store::record_move::offers::list(&b.store.pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|m| m.root == deed)
+        .unwrap();
+    b.answer_record_move(&incoming.uid, true).await.unwrap();
     wire_push(&a, &b).await;
 
     assert!(
@@ -798,6 +862,14 @@ async fn the_person_receiving_a_move_is_never_told_it_was_deleted() {
 
     let deed = plain(&a, "the.deed").await;
     move_to(&a, &deed, &b_organ).await.expect("move starts");
+    wire_push(&a, &b).await;
+    let incoming = store::record_move::offers::list(&b.store.pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|m| m.root == deed)
+        .unwrap();
+    b.answer_record_move(&incoming.uid, true).await.unwrap();
     wire_push(&a, &b).await;
     wire_push(&a, &b).await;
 

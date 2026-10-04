@@ -173,3 +173,33 @@ fn calendar_input_rejects_invalid_dates_and_reversed_ranges() {
     calendar.select("2026-09-27").unwrap();
     assert!(calendar.valid());
 }
+
+#[test]
+fn calendar_places_timed_work_on_dates_in_its_own_timezone() {
+    let timed = json!({
+        "start_date": "2026-10-03T01:30:00Z",
+        "due_date": "2026-10-04T00:30:00Z"
+    });
+    assert_eq!(
+        calendar::span_in(&timed, "America/Sao_Paulo"),
+        Some((
+            calendar::parse("2026-10-02").unwrap(),
+            calendar::parse("2026-10-03").unwrap()
+        ))
+    );
+    assert_eq!(
+        calendar::span(&timed),
+        Some((
+            calendar::parse("2026-10-03").unwrap(),
+            calendar::parse("2026-10-04").unwrap()
+        ))
+    );
+    let all_day = json!({"due_date": "2026-10-03"});
+    assert_eq!(
+        calendar::span_in(&all_day, "America/Sao_Paulo"),
+        calendar::span(&all_day)
+    );
+    assert!(
+        calendar::span_in(&json!({"start_date": "2026-10-03T01:30:00"}), "UTC").is_none()
+    );
+}

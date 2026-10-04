@@ -325,7 +325,7 @@ fn authority_policy_protected_concept_create_add_remove_survive_renames() {
 }
 
 #[test]
-fn authority_policy_property_grants_cannot_be_borrowed_across_scopes_or_grants() {
+fn authority_policy_property_grants_add_only_across_matching_scopes() {
     let before = fixture();
     let mut after = before.clone();
     content(&mut after, 3).body = "Body".into();
@@ -341,12 +341,12 @@ fn authority_policy_property_grants_cannot_be_borrowed_across_scopes_or_grants()
         Err(AuthorityError::Denied)
     );
     policy.grants[1].selector = ordinary();
+    assert!(change(&policy, &before, &after, 3).is_ok());
+    policy.grants[1].operation = Operation::Create;
     assert_eq!(
         change(&policy, &before, &after, 3),
         Err(AuthorityError::Denied)
     );
-    policy.grants[0].properties.insert(Property::Head);
-    assert!(change(&policy, &before, &after, 3).is_ok());
 }
 
 #[test]
@@ -516,10 +516,10 @@ fn authority_policy_unused_grant_and_assertion_dependency_are_validated() {
 fn authority_policy_refuses_unsupported_predicates_and_magic_identities() {
     let graph = fixture();
     for predicate in [
-        Predicate::TextContains("Original".into()),
-        Predicate::QuantityEq(store::exact::zero()),
+        Predicate::RevisionEq(1),
+        Predicate::RecordEq(r(3)),
         Predicate::StateIn(vec![]),
-        Predicate::SlugEq("anything".into()),
+        Predicate::StatusIn(vec!["active".into()]),
         Predicate::Near {
             of: r(3),
             meters: 1.0,
@@ -1665,7 +1665,7 @@ fn authority_policy_duplicate_and_canceled_footprints_still_require_the_property
 }
 
 #[test]
-fn authority_policy_actual_changes_and_footprints_cannot_borrow_different_grants() {
+fn authority_policy_actual_changes_and_footprints_use_matching_additive_grants() {
     let before = fixture();
     let mut after = before.clone();
     content(&mut after, 3).body = "Changed body".into();
@@ -1674,30 +1674,29 @@ fn authority_policy_actual_changes_and_footprints_cannot_borrow_different_grants
         .grants
         .push(grant(Operation::Update, ordinary(), [Property::Head]));
     let targets = [target(3, [Property::Head])];
+    let decision = batch(&policy, &before, &after, &targets).unwrap();
     assert_eq!(
-        batch(&policy, &before, &after, &targets),
-        Err(AuthorityError::Denied)
+        decision[&r(3)].properties,
+        BTreeSet::from([Property::Body, Property::Head])
     );
-    assert_eq!(
+    assert!(
         batch(
             &policy,
             &before,
             &before,
             &[target(3, [Property::Head, Property::Body])]
-        ),
-        Err(AuthorityError::Denied)
+        )
+        .is_ok()
     );
-    policy.grants[0].properties.insert(Property::Head);
-    let decision = batch(&policy, &before, &after, &targets).unwrap();
-    assert_eq!(decision[&r(3)].grant_index, 0);
+    policy.grants[1].selector = Predicate::UidEq(r(5));
     assert_eq!(
-        decision[&r(3)].properties,
-        BTreeSet::from([Property::Body, Property::Head])
+        batch(&policy, &before, &after, &targets),
+        Err(AuthorityError::Denied)
     );
 }
 
 #[test]
-fn authority_policy_assertion_delta_and_footprint_must_share_one_grant() {
+fn authority_policy_assertion_delta_and_footprint_use_matching_additive_grants() {
     let before = fixture();
     let mut after = before.clone();
     after.assertions.push(assertion(3, 3, 4, None));
@@ -1706,14 +1705,13 @@ fn authority_policy_assertion_delta_and_footprint_must_share_one_grant() {
     separate.assertions_add.push(unary(4));
     policy.grants.push(separate);
     let targets = [target(3, [Property::Body])];
+    let decision = batch(&policy, &before, &after, &targets).unwrap();
+    assert_eq!(decision[&r(3)].assertions_added, BTreeSet::from([a(3)]));
+    policy.grants[1].selector = Predicate::UidEq(r(5));
     assert_eq!(
         batch(&policy, &before, &after, &targets),
         Err(AuthorityError::Denied)
     );
-    policy.grants[0].assertions_add.push(unary(4));
-    let decision = batch(&policy, &before, &after, &targets).unwrap();
-    assert_eq!(decision[&r(3)].grant_index, 0);
-    assert_eq!(decision[&r(3)].assertions_added, BTreeSet::from([a(3)]));
 }
 
 #[test]
@@ -1918,6 +1916,77 @@ fn authority_policy_record_batch_does_not_invent_concept_or_place_control_grants
         assert_eq!(
             batch(&policy(), &before, &after, &[target(3, [])]),
             Err(AuthorityError::InvalidMutation)
+        );
+    }
+}
+
+#[test]
+fn matching_assertion_grants_union_properties_without_borrowing_other_targets() {
+    let before = fixture();
+    let mut after = before.clone();
+    let mut added = assertion(3, 3, 3, None);
+    added.quantity = Some(quantity("2"));
+    added.unit_uid = Some(c(4));
+    after.assertions.push(added);
+    let mut policy = policy();
+    let mut quantity_grant = unary(3);
+    quantity_grant
+        .properties
+        .insert(AssertionProperty::Quantity);
+    let mut unit_grant = unary(3);
+    unit_grant.properties.insert(AssertionProperty::Unit);
+    policy.grants[0].assertions_add.push(quantity_grant);
+    let mut second = grant(Operation::Update, ordinary(), []);
+    second.assertions_add.push(unit_grant);
+    policy.grants.push(second);
+    assert!(batch(&policy, &before, &after, &[target(3, [])]).is_ok());
+    policy.grants[1].assertions_add[0].target = AssertionTarget::Record(r(5));
+    assert_eq!(
+        batch(&policy, &before, &after, &[target(3, [])]),
+        Err(AuthorityError::Denied)
+    );
+    policy.grants[1].assertions_add[0].target = AssertionTarget::Unary;
+    policy.grants[1].selector = Predicate::UidEq(r(5));
+    assert_eq!(
+        batch(&policy, &before, &after, &[target(3, [])]),
+        Err(AuthorityError::Denied)
+    );
+}
+
+#[test]
+fn authority_policy_content_filters_track_changed_record_classification() {
+    let before = fixture();
+    let mut after = before.clone();
+    let changed = content(&mut after, 3);
+    changed.body = "Special token".into();
+    changed.slug = Some("private".into());
+    changed.unit_uid = Some(c(4));
+    changed.quantity = quantity("3");
+    for selector in [
+        Predicate::SlugEq("private".into()),
+        Predicate::UnitEq(c(4)),
+        Predicate::TextContains("Special".into()),
+        Predicate::QuantityGt(quantity("0")),
+        Predicate::QuantityLte(quantity("0")),
+        Predicate::QuantityEq(quantity("0")),
+    ] {
+        let policy = RolePolicy {
+            read: selector.clone(),
+            grants: vec![],
+        };
+        assert_ne!(
+            read(&policy, &before, 3).unwrap(),
+            read(&policy, &after, 3).unwrap()
+        );
+        assert_eq!(
+            protein::authority::selector_membership_changes(
+                &[selector],
+                &before,
+                &after,
+                &Limits::default()
+            )
+            .unwrap(),
+            BTreeSet::from([r(3)])
         );
     }
 }

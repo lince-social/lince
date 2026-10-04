@@ -17,6 +17,7 @@ use engine::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+mod cycles;
 #[path = "area_mutation_tests.rs"]
 pub(crate) mod tests;
 
@@ -63,6 +64,8 @@ pub(crate) struct StatusLabel(pub Entity);
 struct Visit {
     inside: bool,
     eligible: bool,
+    immune: bool,
+    deferred: bool,
 }
 
 struct Grant {
@@ -86,12 +89,13 @@ struct Mutations {
     previews: HashMap<Entity, InfluenceArea>,
     grants: HashMap<Entity, Grant>,
     pending: HashMap<String, Pending>,
+    cycles: cycles::Cycles,
 }
 
 pub struct AreaMutationPlugin;
 
 #[derive(SystemSet, Clone, Debug, PartialEq, Eq, Hash)]
-struct ApplyAreaChanges;
+pub(crate) struct ApplyAreaChanges;
 
 impl Plugin for AreaMutationPlugin {
     fn build(&self, app: &mut App) {
@@ -152,6 +156,7 @@ fn status(world: &mut World, entity: Entity, value: &str) {
 pub fn disarm(world: &mut World, entity: Entity, message: &str) {
     let mut affected = HashSet::from([entity]);
     if let Some(mut state) = world.get_resource_mut::<Mutations>() {
+        state.cycles.forget(entity);
         let canceled: Vec<_> = state
             .pending
             .iter()
@@ -159,9 +164,14 @@ pub fn disarm(world: &mut World, entity: Entity, message: &str) {
             .map(|(id, _)| id.clone())
             .collect();
         for id in canceled {
-            if let Some(pending) = state.pending.remove(&id) {
-                for (area, _) in pending.areas {
+            if let Some(pending) = state.pending.get(&id) {
+                let areas = pending.areas.clone();
+                if !pending.applying {
+                    state.pending.remove(&id);
+                }
+                for (area, _) in areas {
                     affected.insert(area);
+                    state.cycles.forget(area);
                     state.grants.remove(&area);
                     state.previews.remove(&area);
                 }
@@ -182,7 +192,13 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
     disarm(world, entity, "Property changes inactive");
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     if world.get::<Preparing>(entity).is_some()
-        || !area.enabled
+        || crate::influence_report::activity(
+            world,
+            entity,
+            &area,
+            root,
+            world.get::<WorkspaceMember>(entity).map_or(1, |m| m.0),
+        ) != crate::influence_report::Outcome::Active
         || !area.changes_enabled
         || !area.validate()
         || area.changes.is_empty()
@@ -216,6 +232,15 @@ pub fn arm(world: &mut World, root: Entity, entity: Entity) {
     if !crate::area_panel::owns(world, root, entity)
         || !previewed(world, entity)
         || armed(world, entity)
+        || world.get::<InfluenceArea>(entity).is_none_or(|area| {
+            crate::influence_report::activity(
+                world,
+                entity,
+                area,
+                root,
+                world.get::<WorkspaceMember>(entity).map_or(1, |m| m.0),
+            ) != crate::influence_report::Outcome::Active
+        })
     {
         return;
     }
@@ -375,12 +400,19 @@ fn baseline(grant: &mut Grant, records: &[Record]) {
             Visit {
                 inside,
                 eligible: inside && record.matches(grant),
+                immune: record.immune.contains(&grant.entity),
+                deferred: false,
             },
         );
     }
 }
 
 fn valid_grant(world: &World, entity: Entity, grant: &Grant) -> bool {
+    if crate::influence_report::activity(world, entity, &grant.area, grant.root, grant.workspace)
+        != crate::influence_report::Outcome::Active
+    {
+        return false;
+    }
     world.get::<InfluenceArea>(entity).is_some_and(|area| {
         if area == &grant.area {
             return true;
@@ -652,6 +684,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             let next = Visit {
                 inside,
                 eligible: inside && record.matches(grant),
+                immune: record.immune.contains(entity),
+                deferred: false,
             };
             if record.immune.contains(entity) {
                 grant.visits.insert(
@@ -659,6 +693,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                     Visit {
                         inside,
                         eligible: false,
+                        immune: true,
+                        deferred: false,
                     },
                 );
                 continue;
@@ -669,6 +705,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             };
             if previous.inside == inside {
                 previous.eligible |= next.eligible;
+                previous.immune = next.immune;
+                previous.deferred = false;
                 continue;
             }
             let eligible = if inside {
@@ -719,7 +757,12 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 involved.push(*entity);
             }
         }
-        let exhausted = state.pending.len() >= 64;
+        let settings = involved
+            .first()
+            .and_then(|area| state.grants.get(area))
+            .map(|grant| crate::workspace_config::rules(world, grant.root, grant.workspace))
+            .unwrap_or_default();
+        let exhausted = state.pending.len() >= usize::from(settings.max_pending);
         if exhausted && !conflict {
             for (entity, inside, _) in &contributions {
                 if let Some(grant) = state.grants.get_mut(entity) {
@@ -728,6 +771,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                         Visit {
                             inside: !inside,
                             eligible: !inside,
+                            immune: false,
+                            deferred: true,
                         },
                     );
                 }
@@ -743,6 +788,32 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             }
             continue;
         }
+        let cycle = contributions.iter().find_map(|(area, inside, _)| {
+            let grant = state.grants.get(area)?;
+            state
+                .cycles
+                .check(
+                    grant.root,
+                    grant.workspace,
+                    *area,
+                    &uid,
+                    *inside,
+                    settings.max_repeats,
+                )
+                .err()
+        }).or_else(|| {
+            (contributions.iter().filter(|(area, _, _)| !state.cycles.has(*area, &uid)).count() > state.cycles.available())
+                .then_some("Area paused: the bounded crossing history is full. Resume after reviewing the rules.")
+        });
+        if let Some(message) = cycle {
+            for area in involved {
+                if let Some(mut source) = world.get_mut::<InfluenceArea>(area) {
+                    source.paused = true;
+                }
+                stopped.push((area, message));
+            }
+            continue;
+        }
         let id = request_id();
         if send(
             world,
@@ -753,6 +824,13 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 constraints,
             },
         ) {
+            for (area, inside, _) in &contributions {
+                if let Some(grant) = state.grants.get(area) {
+                    state
+                        .cycles
+                        .record(grant.root, grant.workspace, *area, &uid, *inside);
+                }
+            }
             state.pending.insert(
                 id,
                 Pending {
@@ -776,6 +854,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                         Visit {
                             inside: !inside,
                             eligible: !inside,
+                            immune: false,
+                            deferred: true,
                         },
                     );
                 }
@@ -862,7 +942,8 @@ fn activate_configured(world: &mut World) {
         .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
         .iter(world)
         .filter(|(entity, area, parent, member)| {
-            area.enabled
+            crate::influence_report::activity(world, *entity, area, parent.parent(), member.0)
+                == crate::influence_report::Outcome::Active
                 && area.changes_enabled
                 && !area.changes.is_empty()
                 && !armed(world, *entity)
@@ -886,4 +967,58 @@ fn suspend(world: &mut World, entity: Entity, message: &str) {
     if let Some(area) = world.get::<InfluenceArea>(entity).cloned() {
         world.entity_mut(entity).insert(Suspended(area));
     }
+}
+
+pub(crate) fn explanation(world: &World, area: Entity, sand: Entity) -> String {
+    let Some(source) = world.get::<InfluenceArea>(area) else {
+        return "Area removed.".into();
+    };
+    if world.get::<Pinned>(sand).is_some() {
+        return "Boundary changes suppressed: Sand pinned to the screen.".into();
+    }
+    if world
+        .get::<crate::protein_area::RemoteRecord>(sand)
+        .is_some()
+    {
+        return "Boundary changes suppressed: this Record belongs to another Organ.".into();
+    }
+    if !source.changes_enabled {
+        return "Boundary changes switched off.".into();
+    }
+    if let Some(state) = world.get_resource::<Mutations>() {
+        let uid = world
+            .get::<RecordProperties>(sand)
+            .and_then(|record| record.0["uid"].as_str());
+        if let Some(uid) = uid {
+            if state.pending.values().any(|pending| {
+                pending.target == uid && pending.areas.iter().any(|(entity, _)| *entity == area)
+            }) {
+                return "Boundary change pending; submitted changes may still finish when paused."
+                    .into();
+            }
+            if let Some(visit) = state
+                .grants
+                .get(&area)
+                .and_then(|grant| grant.visits.get(uid))
+            {
+                return if visit.deferred {
+                    "Boundary crossing waiting for request capacity.".into()
+                } else if visit.immune {
+                    "Boundary changes suppressed by immunity.".into()
+                } else if visit.inside && visit.eligible {
+                    "At least one copy of this Record is inside and eligible for future exit changes.".into()
+                } else if visit.inside {
+                    "At least one copy of this Record is inside; it does not match the change filter.".into()
+                } else {
+                    "All copies of this Record are outside; an eligible entry can trigger configured changes.".into()
+                };
+            }
+        } else {
+            return "Boundary changes require a local Record.".into();
+        }
+    }
+    world.get::<MutationStatus>(area).map_or_else(
+        || "Boundary changes inactive.".into(),
+        |status| status.0.clone(),
+    )
 }

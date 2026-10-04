@@ -25,6 +25,7 @@ pub use lince_interface::controls::{BUTTON_BORDER_WIDTH, button, editable, text_
 pub(crate) struct Borderless;
 
 #[derive(Component, PartialEq)]
+#[require(crate::save_feedback::SaveFeedback)]
 pub(crate) struct Unsaved(pub bool);
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -54,10 +55,12 @@ impl Plugin for SandPlugin {
             )
             .add_systems(
                 PostUpdate,
-                unsaved_borders
+                crate::save_feedback::borders
                     .in_set(StyleSaveState)
                     .after(StyleButtons)
                     .after(bevy::text::EditableTextSystems)
+                    .after(crate::record_binding::SyncBindings)
+                    .after(crate::actions::ApplyActions)
                     .before(bevy::ui::UiSystems::Layout),
             )
             .add_observer(
@@ -161,91 +164,8 @@ fn button_roundness(world: &mut World) {
     }
 }
 
-fn unsaved_borders(world: &mut World) {
-    let fields: Vec<_> = world
-        .query::<(Entity, &Unsaved, Option<&crate::token_style::BorderToken>)>()
-        .iter(world)
-        .map(|(entity, unsaved, token)| (entity, unsaved.0, token.copied()))
-        .collect();
-    for (entity, unsaved, token) in fields {
-        let color = if unsaved {
-            Color::srgb_u8(230, 55, 55)
-        } else {
-            crate::token_style::resolve(
-                world,
-                entity,
-                token.map_or(crate::tokens::Token::Accent, |token| token.0),
-            )
-            .0
-            .color()
-        };
-        if unsaved && let Some(mut node) = world.get_mut::<Node>(entity) {
-            let border = &mut node.border;
-            for side in [
-                &mut border.left,
-                &mut border.right,
-                &mut border.top,
-                &mut border.bottom,
-            ] {
-                if matches!(*side, Val::Auto | Val::Px(0.0) | Val::Percent(0.0)) {
-                    *side = px(1);
-                }
-            }
-        }
-        let border = BorderColor::all(color);
-        if world.get::<BorderColor>(entity) != Some(&border) {
-            world.entity_mut(entity).insert(border);
-        }
-    }
-}
-
 pub(crate) mod tests {
     use super::*;
-
-    #[test]
-    fn unsaved_fields_stay_visible_without_borders_and_restore_theme_after_saving() {
-        let mut app = App::new();
-        crate::laboratory::isolate(app.world_mut());
-        app.add_plugins(SandPlugin);
-        app.world_mut()
-            .resource_mut::<crate::tokens::ThemeSettings>()
-            .global
-            .0
-            .insert(
-                crate::tokens::Token::ControlBorder,
-                crate::tokens::TokenValue::Number(0.0),
-            );
-        let field = app
-            .world_mut()
-            .spawn((editable("Draft"), Node::default(), Unsaved(true)))
-            .id();
-        let toggle = app
-            .world_mut()
-            .spawn((button(0), Node::default(), Borderless))
-            .id();
-        app.update();
-        assert_eq!(
-            app.world().get::<Node>(toggle).unwrap().border,
-            UiRect::ZERO
-        );
-        assert_eq!(
-            app.world().get::<Node>(field).unwrap().border,
-            UiRect::all(px(1))
-        );
-        assert_eq!(
-            app.world().get::<BorderColor>(field).unwrap().top,
-            Color::srgb_u8(230, 55, 55)
-        );
-        app.world_mut().get_mut::<Unsaved>(field).unwrap().0 = false;
-        app.update();
-        assert_eq!(app.world().get::<Node>(field).unwrap().border, UiRect::ZERO);
-        assert_eq!(
-            app.world().get::<BorderColor>(field).unwrap().top,
-            crate::tokens::Token::Accent
-                .default_value(Default::default())
-                .color()
-        );
-    }
 
     #[cfg_attr(test, test)]
     fn every_action_button_uses_the_shared_border_without_resizing_its_content() {

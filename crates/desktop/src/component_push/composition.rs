@@ -18,6 +18,12 @@ struct PendingInteractions(std::collections::BTreeMap<String, Entity>);
 #[derive(Component)]
 struct Events(Vec<(String, engine::actions::Action)>);
 
+pub(crate) fn bind_events(world: &mut World, entity: Entity, bindings: &[nucleus::component::EventBinding]) -> Result<(), String> {
+    let actions = bindings.iter().map(|binding| Ok((binding.event.clone(), serde_json::from_value::<engine::actions::Action>(binding.action.clone()).map_err(|error| error.to_string())?))).collect::<Result<Vec<_>, String>>()?;
+    if !actions.is_empty() { world.entity_mut(entity).insert((crate::scoped_events::EventListener(actions.iter().map(|(name, _)| name.clone()).collect()), Events(actions))).observe(event); }
+    Ok(())
+}
+
 pub(super) fn parts(world: &World, entity: Entity) -> Vec<Entity> {
     world
         .get::<Generated>(entity)
@@ -77,6 +83,7 @@ pub(crate) fn populate(
     if world.get::<Generated>(host).is_some() {
         return Ok(());
     }
+    validate_settings(&composition)?;
     let state = ComponentState::Composition {
         composition: composition.clone(),
     };
@@ -87,7 +94,6 @@ pub(crate) fn populate(
         }
         Ok(())
     })?;
-    let mut minimum = DVec2::splat(f64::INFINITY);
     state.visit(&mut |component| {
         if let ComponentState::Composition { composition } = component {
             for binding in composition.parts.iter().flat_map(|part| &part.events) {
@@ -97,6 +103,36 @@ pub(crate) fn populate(
         }
         Ok(())
     })?;
+    populate_validated(world, host, composition)
+}
+
+fn validate_settings(composition: &Composition) -> Result<(), String> {
+    for part in &composition.parts {
+        if let ComponentState::Composition { composition } = &part.component {
+            validate_settings(composition)?;
+        }
+        if part.settings.is_empty() {
+            continue;
+        }
+        let settings: crate::sand_settings::Values = serde_json::from_value(
+            serde_json::to_value(&part.settings).map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        if !matches!(part.component, ComponentState::Text { .. })
+            || !settings.valid(&crate::sand_settings::text_definitions())
+        {
+            return Err(format!("Unsupported settings in {}", part.id));
+        }
+    }
+    Ok(())
+}
+
+fn populate_validated(
+    world: &mut World,
+    host: Entity,
+    composition: Composition,
+) -> Result<(), String> {
+    let mut minimum = DVec2::splat(f64::INFINITY);
     let mut maximum = DVec2::splat(f64::NEG_INFINITY);
     for part in &composition.parts {
         let position = DVec2::new(f64::from(part.position[0]), f64::from(part.position[1]));
@@ -159,6 +195,19 @@ pub(crate) fn populate(
         let position = DVec2::new(f64::from(part.position[0]), f64::from(part.position[1]));
         match super::spawn(world, canvas, 1, position, &part.component) {
             Ok(entity) => {
+                if let Some(text) = world
+                    .get::<Children>(entity)
+                    .into_iter()
+                    .flatten()
+                    .copied()
+                    .find(|child| world.get::<crate::sand_text::SandText>(*child).is_some())
+                {
+                    for (id, value) in &part.settings {
+                        let value = serde_json::from_value(value.clone())
+                            .map_err(|error| error.to_string())?;
+                        crate::sand_settings::set(world, text, id, Some(value));
+                    }
+                }
                 let size = Vec2::new(part.size[0] as f32, part.size[1] as f32);
                 world.get_mut::<CanvasItem>(entity).unwrap().size = size;
                 if let Some(mut area) = world.get_mut::<InfluenceArea>(entity) {
@@ -225,6 +274,7 @@ impl crate::actions::Action for Invoke {
                 status = Some(generated.status);
                 break;
             }
+            if let Some(generated) = world.get::<crate::canvas_host::composition::Generated>(ancestor) { status = Some(generated.status); break; }
             let Some(parent) = world.get::<ChildOf>(ancestor) else {
                 break;
             };
@@ -325,7 +375,7 @@ impl crate::actions::Action for Close {
 }
 
 #[derive(Clone)]
-struct OpenOrigin(String);
+pub(crate) struct OpenOrigin(pub String);
 
 impl crate::actions::Action for OpenOrigin {
     fn apply(&self, world: &mut World, _owner: Entity) {
@@ -405,10 +455,12 @@ pub(crate) fn capture(world: &World, entity: Entity) -> Option<Composition> {
         part.size = [item.size.x.round() as u32, item.size.y.round() as u32];
         match &mut part.component {
             ComponentState::Text { text } => {
-                *text = crate::sand_text::snapshot(world, *entity)
-                    .first()?
-                    .text
-                    .clone()
+                let texts = crate::sand_text::snapshot(world, *entity);
+                let saved = texts.first()?;
+                *text = saved.text.clone();
+                part.settings =
+                    serde_json::from_value(serde_json::to_value(&saved.area.settings.0).ok()?)
+                        .ok()?;
             }
             ComponentState::Karma { search } => {
                 *search = world

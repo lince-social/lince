@@ -11,11 +11,33 @@ impl Engine {
         Box::pin(async move {
             let mut outcome = ActionOutcome::default();
             match action {
+                Action::SetContactDelivery { target, mode } => {
+                    let uid = self.resolve(&target).await?;
+                    if !matches!(mode.as_str(), "direct" | "mailbox" | "auto") {
+                        return Err(EngineError::Consequence("Choose direct, mailbox or auto delivery".into()));
+                    }
+                    if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                        return Err(EngineError::Consequence("Choose an existing contact".into()));
+                    }
+                    store::organs::set_mode(&self.store.pool, &uid, &mode).await?;
+                    outcome.facts = self.annotate(uid, actor, serde_json::json!({"delivery":mode}), now).await?;
+                }
+                Action::ReconnectContact { target } => {
+                    let uid = self.resolve(&target).await?;
+                    self.transport_for("reconnect a contact")?.reconnect_contact(&uid).await?;
+                    outcome.data = Some(serde_json::json!({"status":"Device list refreshed. Queued work will recheck current permissions before delivery."}));
+                }
                 Action::SetExtension {
                     target,
                     namespace,
                     fds,
                 } => {
+                    if namespace == store::people::NAMESPACE {
+                        return Err(EngineError::Forbidden("Use Person access controls to change standing or authentication metadata".into()));
+                    }
+                    if matches!(namespace.as_str(), nucleus::record_extension::SCHEMA_NAMESPACE | nucleus::record_extension::VALUES_NAMESPACE) {
+                        return Err(EngineError::Forbidden("Use the extension editor to change schemas or field values".into()));
+                    }
                     if namespace == "lince.command"
                         && !crate::commands::COMMAND_AUTHORING
                             .try_with(|allowed| *allowed)
@@ -114,21 +136,7 @@ impl Engine {
                             .await
                             .map(ControlFlow::Break);
                     }
-                    if let Some(expected) = expected_content {
-                        store::message_content::replace(&self.store.pool, &uid, &expected, &fds)
-                            .await?;
-                    } else {
-                        store::records::set_extension(&self.store.pool, &uid, &namespace, &fds)
-                            .await?;
-                    }
-                    outcome.facts = self
-                        .annotate(
-                            uid,
-                            actor,
-                            serde_json::json!({ "extension": namespace }),
-                            now,
-                        )
-                        .await?;
+                    outcome.facts = self.change_record_scalar_as(&uid, crate::record_policy::ScalarChange::Extension { namespace:&namespace, value:&fds, expected:expected_content.as_ref() }, actor.as_deref(), now).await?;
                 }
                 Action::RenameOrganContact { target, name } => {
                     let uid = self.resolve(&target).await?;
@@ -374,72 +382,34 @@ impl Engine {
                         .annotate(uid, actor, serde_json::json!({ "share": protein }), now)
                         .await?;
                 }
-                Action::MoveRecordTo { record, target } => {
-                    let record_uid = self.resolve(&record).await?;
-                    let contact_uid = self.resolve(&target).await?;
-                    if store::organs::contact(&self.store.pool, &contact_uid)
-                        .await?
-                        .is_none()
-                    {
-                        return Err(EngineError::Consequence(
-                            "a Record can only be handed to a contact".into(),
-                        ));
-                    }
-                    if store::records::get(&self.store.pool, &record_uid)
-                        .await?
-                        .is_none()
-                    {
-                        return Err(EngineError::Consequence("no such Record".into()));
-                    }
-                    if let Some(existing) =
-                        store::record_move::of_record(&self.store.pool, &record_uid).await?
-                    {
-                        if existing.contact_organ != contact_uid {
-                            return Err(EngineError::Consequence(
-                                "this Record is already on its way to somebody else — cancel that \
-                             move first"
-                                    .into(),
-                            ));
-                        }
-                    }
-                    store::record_move::begin(&self.store.pool, &record_uid, &contact_uid).await?;
-                    store::sync_ops::enqueue_record_for_contact(
-                        &self.store.pool,
-                        &contact_uid,
-                        &record_uid,
-                    )
-                    .await?;
-                    outcome.facts = self
-                        .annotate(
-                            record_uid,
-                            actor,
-                            serde_json::json!({ "moving_to": contact_uid }),
-                            now,
-                        )
-                        .await?;
+                Action::PreviewRecordMove { record, target } => {
+                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can preview Organ moves".into())); }
+                    let (preview, _) = self.preview_record_move(&record, &target).await?;
+                    outcome.data = Some(serde_json::to_value(preview)?);
+                }
+                Action::CancelReplicaOffer { root, target } => {
+                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can cancel replica offers".into())); }
+                    if store::replica::state(&self.store.pool, &root, &target).await?.as_deref() != Some(store::replica::OFFERED) { return Err(EngineError::Consequence("This replica offer is no longer pending".into())); }
+                    store::replica::revoke(&self.store.pool, &root, &target).await?;
+                    store::offers::remember_outcome(&self.store.pool, store::offers::OfferKind::ReplicaGrant, &root, &target, "cancelled").await?;
+                    self.notify_query_changed();
+                }
+                Action::PendingOffers => {
+                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can inspect pending Organ offers".into())); }
+                    outcome.data = Some(self.pending_offer_status().await?);
+                }
+                Action::AnswerRecordMove { offer, accept } => {
+                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can answer Organ moves".into())); }
+                    self.answer_record_move(&offer, accept).await?;
+                }
+                Action::MoveRecordTo { record, target, expected_preview } => {
+                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can move Organ data".into())); }
+                    let uid = self.offer_record_move(&record, &target, expected_preview.as_deref()).await?;
+                    outcome.data = Some(serde_json::json!({"offer":uid,"status":"Awaiting explicit acceptance. Source retained locally."}));
                 }
                 Action::CancelRecordMove { record } => {
-                    let record_uid = self.resolve(&record).await?;
-                    if let Some(moving) =
-                        store::record_move::of_record(&self.store.pool, &record_uid).await?
-                    {
-                        store::offers::refuse(
-                            &self.store.pool,
-                            store::offers::OfferKind::RecordMove,
-                            &record_uid,
-                            &moving.contact_organ,
-                        )
-                        .await?;
-                    }
-                    store::record_move::forget(&self.store.pool, &record_uid).await?;
-                    outcome.facts = self
-                        .annotate(
-                            record_uid,
-                            actor,
-                            serde_json::json!({ "moving_to": null }),
-                            now,
-                        )
-                        .await?;
+                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can cancel Organ moves".into())); }
+                    self.cancel_record_move(&record).await?;
                 }
                 Action::ForgetOrganContact { target } => {
                     let uid = self.resolve(&target).await?;
@@ -592,6 +562,10 @@ impl Engine {
                         return Err(EngineError::Consequence(
                             "only a known contact may be given a login".into(),
                         ));
+                    }
+                    if let Some(person) = store::logins::person_for_organ(&self.store.pool, &organ_uid).await? {
+                        outcome.created = Some(person);
+                        return Ok(ControlFlow::Continue(outcome));
                     }
                     let person_name = person_name.trim();
                     if person_name.is_empty() {

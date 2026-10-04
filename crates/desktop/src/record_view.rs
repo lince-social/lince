@@ -16,7 +16,7 @@ use engine::actions::Action;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Component)]
-#[require(AutoSave)]
+#[require(AutoSave, crate::sand::Unsaved(false))]
 pub struct RecordEditor {
     pub uid: String,
     pub confirmed: String,
@@ -46,6 +46,7 @@ impl Plugin for RecordViewPlugin {
             .add_systems(
                 PostUpdate,
                 save.after(bevy::text::EditableTextSystems)
+                    .before(crate::sand::StyleSaveState)
                     .run_if(crate::laboratory::normal),
             );
     }
@@ -63,7 +64,12 @@ fn setup(world: &mut World) {
 
 fn save(
     mut editors: Query<
-        (&EditableText, &mut RecordEditor, &mut AutoSave),
+        (
+            &EditableText,
+            &mut RecordEditor,
+            &mut AutoSave,
+            &mut crate::save_feedback::SaveFeedback,
+        ),
         Without<crate::record_binding::TextBinding>,
     >,
     mut labels: Query<&mut Text>,
@@ -71,7 +77,7 @@ fn save(
     bridge: NonSend<CellBridge>,
     wake: Option<Res<crate::wake::WakeSignal>>,
 ) {
-    for (text, mut record, mut automatic) in &mut editors {
+    for (text, mut record, mut automatic, mut feedback) in &mut editors {
         if text.is_composing() || pending_text(text) {
             continue;
         }
@@ -100,6 +106,7 @@ fn save(
         };
         let message = match bridge.outgoing.try_send(request) {
             Ok(()) => {
+                feedback.set_failed(false);
                 automatic.0 = Some(head.clone());
                 record.pending = Some((id, head));
                 "Saving…"
@@ -111,6 +118,7 @@ fn save(
                 "Waiting to send…"
             }
             Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
+                feedback.set_failed(true);
                 automatic.0 = Some(head);
                 "Connection closed. Your draft is here; reopen Lince to reconnect."
             }
@@ -137,11 +145,14 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             ServerMessage::Error { id, message, .. } => {
                 if id == crate::cell_bridge::CONNECTION {
                     let pending: Vec<_> = world
-                        .query::<&mut RecordEditor>()
+                        .query::<(Entity, &mut RecordEditor)>()
                         .iter_mut(world)
-                        .filter_map(|mut record| record.pending.take().map(|_| record.status))
+                        .filter_map(|(entity, mut record)| {
+                            record.pending.take().map(|_| (entity, record.status))
+                        })
                         .collect();
-                    for status in pending {
+                    for (entity, status) in pending {
+                        crate::save_feedback::set_failed(world, entity, true);
                         if let Some(mut text) = world.get_mut::<Text>(status) {
                             text.0 = "Save was not confirmed. Your draft is still here.".into();
                         }
@@ -166,9 +177,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
 }
 
 fn acknowledge(world: &mut World, id: &str, result: Result<Vec<String>, String>) {
-    let mut editors = world.query::<(&mut RecordEditor, &mut AutoSave)>();
+    let mut editors = world.query::<(Entity, &mut RecordEditor, &mut AutoSave)>();
     let mut label = None;
-    for (mut record, mut automatic) in editors.iter_mut(world) {
+    for (entity, mut record, mut automatic) in editors.iter_mut(world) {
         if record
             .pending
             .as_ref()
@@ -187,12 +198,13 @@ fn acknowledge(world: &mut World, id: &str, result: Result<Vec<String>, String>)
                 }
                 Err(message) => format!("Not saved: {message}"),
             };
-            label = Some((record.status, text));
+            label = Some((entity, record.status, text));
             break;
         }
     }
-    if let Some((entity, text)) = label {
-        world.get_mut::<Text>(entity).unwrap().0 = text;
+    if let Some((editor, status, text)) = label {
+        crate::save_feedback::set_failed(world, editor, result.is_err());
+        world.get_mut::<Text>(status).unwrap().0 = text;
     }
 }
 
@@ -212,6 +224,17 @@ pub(crate) fn pending_text(input: &EditableText) -> bool {
                     | TextEdit::ImeCommit { .. }
             )
         })
+}
+
+pub(crate) fn hide_placement(world: &mut World, root: Entity, entity: Entity) {
+    if let Some(uid) = world.get::<crate::workspace::RecordPlacement>(entity).map(|placement| placement.0.clone()) {
+        if let Some(mut view) = world.get_resource_mut::<RecordsView>() {
+            if view.root == root && view.records.get(&uid).is_some_and(|(card, _)| *card == entity) {
+                view.records.remove(&uid);
+            }
+        }
+        if let Some(mut spaces) = world.get_mut::<crate::workspace::Workspaces>(root) { spaces.saved_records.remove(&uid); spaces.hidden_records.insert(uid); }
+    }
 }
 
 fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
@@ -238,6 +261,7 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
         if !seen.insert(uid.to_string()) {
             continue;
         }
+        if world.get::<crate::workspace::Workspaces>(view.root).is_some_and(|spaces| spaces.hidden_records.contains(uid)) { continue; }
         if let Some((card, editor)) = view.records.get(uid) {
             let properties = crate::area::RecordProperties(row.clone());
             if world.get::<crate::area::RecordProperties>(*card) != Some(&properties) {
@@ -385,6 +409,26 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
 
 pub(crate) mod tests {
     use super::*;
+
+    #[cfg(test)]
+    #[test]
+    fn hidden_canvas_record_does_not_respawn_on_updates_or_remove_other_records() {
+        let mut world = fixture();
+        let root = world.resource::<RecordsView>().root;
+        world.entity_mut(root).insert(crate::workspace::Workspaces::default());
+        let (card, _) = world.resource::<RecordsView>().records["record-a"];
+        hide_placement(&mut world, root, card);
+        world.despawn(card);
+        let rows = vec![
+            serde_json::json!({"uid": "record-a", "head": "Still retained"}),
+            serde_json::json!({"uid": "record-b", "head": "Visible"}),
+        ];
+        snapshot(&mut world, rows.clone());
+        snapshot(&mut world, rows);
+        assert!(!world.resource::<RecordsView>().records.contains_key("record-a"));
+        assert!(world.resource::<RecordsView>().records.contains_key("record-b"));
+        assert!(world.get::<crate::workspace::Workspaces>(root).unwrap().hidden_records.contains("record-a"));
+    }
 
     #[cfg_attr(test, test)]
     fn records_keep_their_workspace_and_draft_while_receiving_live_updates() {

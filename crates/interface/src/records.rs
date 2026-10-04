@@ -107,9 +107,10 @@ impl Binding {
         }
     }
     pub fn valid(&self) -> bool {
-        protein::record_schema::fields()
-            .iter()
-            .any(|field| field.key == self.property && (!self.editable || field.editable))
+        (nucleus::record_extension::column_binding(&self.property).is_some()
+            || protein::record_schema::fields()
+                .iter()
+                .any(|field| field.key == self.property && (!self.editable || field.editable)))
             && [self.width, self.height]
                 .iter()
                 .all(|v| v.is_finite() && (24.0..=4000.0).contains(v))

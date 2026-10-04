@@ -49,28 +49,10 @@ impl Host {
         let connection = acp::Connection::open(&config).await?;
         check.agent = "Connected".into();
         let mut info = serde_json::to_value(&connection.info).map_err(|error| error.to_string())?;
-        if info["agentInfo"]["name"] == "goose" {
-            let catalog = connection
-                .extension("_goose/unstable/providers/setup/catalog/list", json!({}))
-                .await?;
-            if catalog.to_string().len() > 262_144 {
-                return Err("The agent provider catalog exceeds its size limit.".into());
-            }
-            info["providers"] = catalog["providers"].clone();
-            if let Some(provider) = config
-                .options
-                .get("provider")
-                .or_else(|| config.session_meta.get("provider"))
-            {
-                info["selectedProvider"] = info["providers"]
-                    .as_array()
-                    .and_then(|providers| {
-                        providers
-                            .iter()
-                            .find(|entry| entry["providerId"] == *provider)
-                    })
-                    .cloned()
-                    .unwrap_or(Value::Null);
+        if let Some(providers) = fiote::communication::extensions::provider_catalog(&connection).await? {
+            info["providers"] = providers;
+            if let Some(provider) = config.options.get("provider").or_else(|| config.session_meta.get("provider")) {
+                info["selectedProvider"] = info["providers"].as_array().and_then(|entries| entries.iter().find(|entry| entry["providerId"] == *provider)).cloned().unwrap_or(Value::Null);
             }
         }
         self.agents.clear_options(record).await;

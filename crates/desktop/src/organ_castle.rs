@@ -32,8 +32,25 @@ struct Requests {
     actions: HashMap<String, (Entity, std::time::Instant)>,
 }
 
-pub(crate) fn social_delivery_controls(world: &mut World, owner: Entity, parent: Entity, message: &str) {
-    forms::form(world, owner, parent, "Review private delivery", json!({"action":"social","request":{"command":"private-delivery-status","message":message}}), vec![], None);
+pub(crate) fn social_delivery_label(stage: &str) -> String {
+    social::delivery_label(stage, &Value::Null)
+}
+
+pub(crate) fn social_delivery_controls(
+    world: &mut World,
+    owner: Entity,
+    parent: Entity,
+    message: &str,
+) {
+    forms::form(
+        world,
+        owner,
+        parent,
+        "Review private delivery",
+        json!({"action":"social","request":{"command":"private-delivery-status","message":message}}),
+        vec![],
+        None,
+    );
 }
 
 #[derive(Component)]
@@ -121,10 +138,15 @@ fn label(world: &mut World, parent: Entity, text: &str) -> Entity {
     crate::edit_mode::label(world, parent, text, 14.0)
 }
 
+fn notice(world: &mut World, parent: Entity, text: &str) {
+    let notice = label(world, parent, text);
+    crate::accessibility::status(world, notice);
+}
+
 fn report(world: &mut World, output: Entity, text: &str) {
     if world.get_entity(output).is_ok() {
         panel::clear(world, output);
-        label(world, output, text);
+        notice(world, output, text);
     }
 }
 
@@ -135,6 +157,8 @@ enum Command {
     Reload,
     Reconnect,
     Open(String, bool),
+    Logout(String),
+    Workspaces(String),
 }
 impl Action for Command {
     fn apply(&self, world: &mut World, owner: Entity) {
@@ -142,6 +166,11 @@ impl Action for Command {
             return;
         };
         match self {
+            Self::Logout(organ) => crate::protein_area::logout_organ(world, organ),
+            Self::Workspaces(organ) => {
+                let root = view.root;
+                crate::workspace_sync::open_organ(world, root, organ);
+            }
             Self::Page(index) => {
                 let pages = view.pages;
                 for (i, page) in pages.into_iter().enumerate() {
@@ -334,10 +363,36 @@ fn finish(world: &mut World, entity: Entity, result: Result<Value, String>) {
         Ok(value) => {
             if value["karma"].is_object() {
                 let karma = &value["karma"];
-                label(world, output, &format!("Karma permission: {} · local state: {} · {}", if karma["permitted"] == true { "enabled" } else { "disabled" }, if karma["local_running"] == true { "running" } else { "stopped" }, if karma["executing"] == true { "may execute" } else { "will not execute" }));
-                if let Some(reason) = karma["reason"].as_str() { label(world, output, reason); }
+                label(
+                    world,
+                    output,
+                    &format!(
+                        "Karma permission: {} · local state: {} · {}",
+                        if karma["permitted"] == true {
+                            "enabled"
+                        } else {
+                            "disabled"
+                        },
+                        if karma["local_running"] == true {
+                            "running"
+                        } else {
+                            "stopped"
+                        },
+                        if karma["executing"] == true {
+                            "may execute"
+                        } else {
+                            "will not execute"
+                        }
+                    ),
+                );
+                if let Some(reason) = karma["reason"].as_str() {
+                    label(world, output, reason);
+                }
             }
-            if world.get::<forms::Form>(entity).is_some_and(|form| form.payload["action"] == "social") {
+            if world
+                .get::<forms::Form>(entity)
+                .is_some_and(|form| form.payload["action"] == "social")
+            {
                 social::result(world, owner, output, &value);
                 return;
             }
@@ -358,7 +413,7 @@ fn finish(world: &mut World, entity: Entity, result: Result<Value, String>) {
             ui::result(world, owner, output, &value);
         }
         Err(error) => {
-            label(world, output, &error);
+            report(world, output, &error);
         }
     }
 }
@@ -419,6 +474,17 @@ fn receive(world: &mut World, message: &ServerMessage) {
                         continue;
                     }
                     let mut view = world.get_mut::<OrganCastle>(owner).unwrap();
+                    let changed = view.rows.get(topic) != Some(rows);
+                    let local_roster_changed = view.rows.get(topic).is_none_or(|previous| {
+                        previous
+                            .iter()
+                            .find(|row| row["slug"] == "local-organ")
+                            .map(|row| &row["extension"])
+                            != rows
+                                .iter()
+                                .find(|row| row["slug"] == "local-organ")
+                                .map(|row| &row["extension"])
+                    });
                     view.rows.insert(topic, rows.clone());
                     let status = view.status;
                     panel::status(
@@ -426,11 +492,16 @@ fn receive(world: &mut World, message: &ServerMessage) {
                         status,
                         "Connected · drafts change only when you select or reload an Organ",
                     );
+                    if !changed {
+                        continue;
+                    }
                     match topic {
                         "organs" => ui::organ_list(world, owner),
                         "nearby" => ui::nearby(world, owner),
                         "roster" => {
-                            ui::devices(world, owner);
+                            if local_roster_changed {
+                                ui::devices(world, owner);
+                            }
                             ui::pairings(world, owner);
                         }
                         "pairing" => ui::pairings(world, owner),

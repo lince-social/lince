@@ -39,6 +39,10 @@ impl Pinned {
 #[derive(Component, Clone, Default, Serialize, Deserialize)]
 pub struct Placement {
     #[serde(default)]
+    pub identity: Option<String>,
+    #[serde(default)]
+    pub canvas_component: Option<nucleus::canvas::Component>,
+    #[serde(default)]
     pub backend_component: Option<crate::component_push::Placed>,
     #[serde(default)]
     pub layout: Option<crate::layout::LayoutBox>,
@@ -65,6 +69,8 @@ impl Placement {
             component.component = nucleus::component::ComponentState::Composition { composition };
         }
         Self {
+            identity: world.get::<crate::canvas_host::Identity>(entity).map(|id| id.0.clone()),
+            canvas_component: crate::canvas_host::composition::capture(world, entity).map(|composition| nucleus::canvas::Component::Composition { composition }).or_else(|| world.get::<crate::canvas_host::Content>(entity).map(|content| content.0.clone())),
             backend_component,
             layout: world.get::<crate::layout::LayoutBox>(entity).copied(),
             events: world
@@ -85,6 +91,11 @@ impl Placement {
     }
 
     pub(crate) fn restore(self, world: &mut World, entity: Entity) {
+        if let Some(identity) = self.identity { world.entity_mut(entity).insert(crate::canvas_host::Identity(identity)); }
+        if let Some(component) = self.canvas_component {
+            if let Err(error) = crate::canvas_host::restore_content(world, entity, &component) { crate::notifications::report(world, "interface::canvas", &error); }
+            world.entity_mut(entity).insert(crate::canvas_host::Content(component));
+        }
         if let Some(component) = self.backend_component {
             if let nucleus::component::ComponentState::Composition { composition } = &component.component {
                 if let Err(error) = crate::component_push::composition::populate(world, entity, composition.clone()) {
@@ -117,7 +128,9 @@ impl Placement {
     }
 
     pub(crate) fn valid(&self) -> bool {
-        self.backend_component.as_ref().is_none_or(crate::component_push::Placed::valid)
+        self.identity.as_ref().is_none_or(|id| nucleus::valid_uid(id, "placement"))
+            && self.canvas_component.as_ref().is_none_or(|component| component.validate_snapshot(&crate::canvas_host::registry()).is_ok())
+            && self.backend_component.as_ref().is_none_or(crate::component_push::Placed::valid)
             && self.pinned.is_none_or(|pin| pin.valid())
             && self.layout.is_none_or(|layout| layout.valid())
             && self.events.valid()

@@ -17,6 +17,8 @@ pub enum TextOverflow {
 #[derive(Component, Clone, Debug, Serialize, Deserialize)]
 pub struct SandText {
     #[serde(default)]
+    pub settings: lince_interface::settings::Values,
+    #[serde(default)]
     pub layout: Option<crate::layout::Rules>,
     #[serde(default)]
     pub order: i32,
@@ -31,6 +33,7 @@ pub struct SandText {
 impl SandText {
     pub fn new(editable: bool) -> Self {
         Self {
+            settings: Default::default(),
             layout: None,
             order: 0,
             tokens: Default::default(),
@@ -42,7 +45,9 @@ impl SandText {
     }
 
     pub fn validate(&self) -> bool {
-        self.tokens.validate()
+        self.settings
+            .valid(&crate::sand_settings::text_definitions())
+            && self.tokens.validate()
             && self.layout.is_none_or(|layout| layout.valid())
             && self
                 .offset
@@ -131,6 +136,7 @@ pub fn spawn(world: &mut World, sand: Entity, saved: SavedText) -> Entity {
             },
         ))
         .observe(scroll);
+    crate::sand_settings::text(world, entity);
     if world.get::<TextScroll>(entity).is_none() {
         world.entity_mut(entity).insert(TextScroll::default());
     }
@@ -234,7 +240,6 @@ fn grow(
     for (area, parent, layout, computed, mut node, scroll) in &mut texts {
         if area.layout.is_some()
             || area.overflow != TextOverflow::Grow
-            || !area.editable
             || !sands.contains(parent.parent())
         {
             continue;

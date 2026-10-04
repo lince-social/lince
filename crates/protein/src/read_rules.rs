@@ -84,17 +84,7 @@ pub async fn effective_predicate(
         return Ok(None);
     };
     let mut filters = Vec::new();
-    if let Some(role) = access.role_id {
-        if let Some(row) = store::role_policies::get(&store.pool, role).await? {
-            if let Some(value) = row.policy {
-                let policy: crate::authority::RolePolicy =
-                    serde_json::from_value(value).map_err(|_| {
-                        store::sqlx::Error::Protocol("Invalid role read policy.".into())
-                    })?;
-                filters.push(policy.read);
-            }
-        }
-    }
+    if let Some(policy) = crate::role_authority::policy_for(store, person, None).await? { filters.push(policy.read); }
     if let Some(raw) = access.read_filter {
         filters.push(
             serde_json::from_str(&raw).map_err(|_| {

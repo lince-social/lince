@@ -1,3 +1,4 @@
+pub mod sand_packages;
 pub mod access_snapshot;
 pub mod action_intents;
 pub mod assertions;
@@ -31,7 +32,9 @@ pub mod misc;
 pub mod offers;
 pub mod operation_receipts;
 pub mod organs;
+pub mod organ_access;
 pub mod people;
+pub mod person_roles;
 pub mod places;
 pub mod private_contacts;
 pub mod projection;

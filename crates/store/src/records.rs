@@ -418,6 +418,11 @@ pub async fn restore_on(
     slug: Option<&str>,
 ) -> Result<(), StoreError> {
     validate_record_uid(uid)?;
+    let moved: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_move_member m JOIN record_move_offer o ON o.uid=m.offer_uid WHERE m.record_uid=? AND o.direction='outgoing' AND o.state='complete')")
+        .bind(uid).fetch_one(&mut **tx).await?;
+    if moved {
+        return Err(protocol("This Record moved to another Organ and cannot be restored from its source"));
+    }
     if let Some(slug) = slug {
         if !nucleus::valid_slug(slug) {
             return Err(protocol(format!("invalid slug `{slug}`")));

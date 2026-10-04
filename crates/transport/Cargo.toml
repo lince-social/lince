@@ -9,7 +9,7 @@ description = "Lince first-party channel: multiplexed Protein subscriptions, typ
 
 [features]
 default = []
-mcp = ["dep:axum", "dep:rmcp", "dep:tokio-util", "dep:getrandom"]
+mcp = ["dep:axum", "dep:rmcp", "dep:tokio-util", "dep:getrandom", "dep:reqwest"]
 # The reference websocket driver over axum. Off by default so pure consumers
 # (and tests) don't pull axum.
 axum = ["dep:axum", "dep:futures", "terminal"]
@@ -17,7 +17,8 @@ terminal = ["dep:dirs", "dep:portable-pty", "dep:libc"]
 
 [dependencies]
 sha2 = { workspace = true }
-rmcp = { version = "=3.4.0", default-features = false, features = ["server", "transport-streamable-http-server"], optional = true }
+reqwest = { workspace = true, optional = true }
+rmcp = { version = "=3.4.0", default-features = false, features = ["server", "client", "transport-io", "transport-streamable-http-server", "transport-streamable-http-client-reqwest"], optional = true }
 tokio-util = { workspace = true, optional = true }
 getrandom = { workspace = true, optional = true }
 loro = { workspace = true }

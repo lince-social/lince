@@ -15,6 +15,7 @@ use cell::{
 #[derive(Clone, Copy, PartialEq)]
 enum Step {
     Manage,
+    Connections,
     Agent,
     Closed,
     Providers,
@@ -226,6 +227,17 @@ fn open_setup(world: &mut World, owner: Entity) -> bool {
     false
 }
 
+fn connection_setup(world: &mut World, owner: Entity) {
+    let saved = world.get::<Panel>(owner).and_then(|panel| panel.saved.as_ref());
+    if saved.is_some_and(|saved| saved.agent.is_some()) {
+        show(world, owner, Step::Agent);
+    } else if saved.is_some_and(|saved| saved.settings.enabled && saved.requires_credential && saved.locked && saved.has_key) {
+        show(world, owner, Step::Unlock);
+    } else {
+        connections::Open.apply(world, owner);
+    }
+}
+
 fn send(world: &World, entity: Entity, request: FioteRequest) -> Result<String, String> {
     if crate::laboratory::suspended(world, entity) {
         return Err("Workspace is suspended.".into());
@@ -354,6 +366,7 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             }
         }
         Step::Manage => management::show(world, owner, content, saved.as_ref()),
+        Step::Connections => connections::show(world, owner, content, saved.as_ref()),
         Step::Agent => {
             agent::show(
                 world,
@@ -503,7 +516,7 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             world,
             content,
             owner,
-            if matches!(step, Step::Agent | Step::Manage) {
+            if matches!(step, Step::Agent | Step::Manage | Step::Connections) {
                 "Close"
             } else {
                 "Cancel"
@@ -759,8 +772,7 @@ pub fn command(world: &mut World, binding: &RecordBinding, text: &str) -> bool {
         }
         let panel = world.get::<Panel>(owner).unwrap();
         if panel.pending.is_none() {
-            let step = Step::Agent;
-            show(world, owner, step);
+            connection_setup(world, owner);
         }
         return true;
     }
@@ -793,7 +805,7 @@ pub fn ready(world: &mut World, binding: &RecordBinding) -> bool {
                 || (saved.settings.enabled && (!saved.locked || !saved.requires_credential))
         });
     if !ready && panel.pending.is_none() && !open_setup(world, owner) {
-        show(world, owner, Step::Agent);
+        connection_setup(world, owner);
     }
     ready
 }
@@ -1066,7 +1078,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         .as_ref()
         .is_none_or(|previous| previous.agent_info != saved.agent_info);
     let label = panel.status;
-    let next = if matches!(step, Step::Agent | Step::Manage) {
+    let next = if matches!(step, Step::Agent | Step::Manage | Step::Connections) {
         step
     } else if saved.login_pending {
         Step::Browser
@@ -1119,9 +1131,10 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     };
     panel.saved = Some(saved);
     if next != step
-        || first
+        || (first && !connections::editing(world, owner))
         || (step == Step::Agent && (agent_changed || refreshed))
         || step == Step::Manage
+        || (step == Step::Connections && !connections::editing(world, owner))
     {
         show(world, owner, next);
     }
@@ -1387,6 +1400,7 @@ fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {
 }
 
 mod agent;
+mod connections;
 mod live;
 mod management;
 mod questions;

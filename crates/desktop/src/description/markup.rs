@@ -11,6 +11,10 @@ pub(super) fn render(
     world.init_resource::<Fonts>();
     let mut shaders = shaders.into_iter();
     for block in parse(source) {
+        if let Some(reference) = &block.transclusion {
+            super::transclusion::spawn(world, parent, reference, context);
+            continue;
+        }
         if block
             .code
             .as_deref()
@@ -29,6 +33,10 @@ pub(super) fn render(
             continue;
         }
         if let Some(source) = &block.image {
+            if source.starts_with("asset:") {
+                super::assets::spawn(world, parent, source, context);
+                continue;
+            }
             pictures::spawn(
                 world,
                 parent,

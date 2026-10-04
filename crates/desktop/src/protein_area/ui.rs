@@ -17,6 +17,7 @@ enum Command {
     SpawnTarget(String),
     Records,
     ClosestDate,
+    ListenRecord,
     Enable,
     Remove,
     Query,
@@ -184,6 +185,10 @@ impl Action for Command {
             }
             return;
         }
+        if let Self::Records = self {
+            super::presentation::choose_record(world, owner);
+            return;
+        }
         let mut configuration = configuration(world, owner);
         if matches!(self, Self::Enable) {
             configuration = Some(Config::default());
@@ -220,11 +225,7 @@ impl Action for Command {
                     };
                 }
                 Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
-                Self::Records => {
-                    config.record_cards = true;
-                    config.show_labels = true;
-                    config.bindings = Config::records().bindings;
-                }
+                Self::ListenRecord => config.listen_record_selection = !config.listen_record_selection,
                 Self::Source(remote) => {
                     config.source = if *remote {
                         Source::Organ(String::new())
@@ -477,6 +478,22 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         return;
     };
     if !filtering {
+        if !config.fiote && config.command.is_none() && !config.relations {
+            crate::sand_panel::button(
+                world,
+                panel,
+                owner,
+                "Change presentation…",
+                super::presentation::Open(owner),
+            );
+            crate::sand_panel::button(
+                world,
+                panel,
+                owner,
+                "Undo presentation",
+                super::presentation::Undo(owner),
+            );
+        }
         if config.record_cards {
             text_button(
                 world,
@@ -701,6 +718,11 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         }
         login::form(world, panel, owner, organ, false);
     }
+    if config.record_cards {
+        text_button(world, panel, owner, Command::ListenRecord,
+            if config.listen_record_selection { "Record selected listener: on" } else { "Record selected listener: off" },
+            "Receive Time Castle selections in this event scope. Pending edits must finish before switching Records.");
+    }
     label(world, panel, "End date order", 14.0);
     button(
         world,
@@ -763,9 +785,8 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
     for (index, binding) in config.bindings.iter().enumerate() {
         let field = protein::record_schema::fields()
             .into_iter()
-            .find(|field| field.key == binding.property)
-            .unwrap();
-        label(world, panel, field.title, 16.0);
+            .find(|field| field.key == binding.property);
+        label(world, panel, field.as_ref().map_or("Extension field", |field| field.title), 16.0);
         let row = crate::area_panel::row(world, panel);
         button(
             world,
@@ -779,7 +800,7 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
             },
             "Switch between Square and text",
         );
-        if field.editable {
+        if field.is_none_or(|field| field.editable) {
             button(
                 world,
                 row,
@@ -845,6 +866,7 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         );
     }
     label(world, panel, "Add property", 14.0);
+    crate::sand_panel::button(world, panel, panel, "Add extension column…", crate::record_extensions::AddColumn(owner));
     let toggle = crate::dropdown::spawn(
         world,
         panel,

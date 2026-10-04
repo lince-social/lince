@@ -40,28 +40,22 @@ pub async fn visible_targets(
     Ok(sqlx::query(
         "SELECT target_uid AS uid FROM visibility_rule
           WHERE grant_level = 'visible' AND (subject_kind = 'public'
-             OR (subject_kind = 'actor' AND subject_uid = ?)
-             OR (subject_kind = 'role' AND subject_uid = CAST((SELECT role_id FROM person_access WHERE person_uid = ?) AS TEXT))
+             OR (subject_kind = 'actor' AND subject_uid = ?1)
+             OR (subject_kind = 'role' AND subject_uid IN (SELECT CAST(role_id AS TEXT) FROM person_access WHERE person_uid = ?1 UNION SELECT CAST(role_id AS TEXT) FROM person_role WHERE person_uid = ?1))
              OR (subject_kind = 'organ' AND subject_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ' AND deleted_at IS NULL)
                  AND EXISTS (SELECT 1 FROM person_access a JOIN record p ON p.uid = a.person_uid
-                             WHERE a.person_uid = ? AND a.role_id IS NOT NULL AND p.deleted_at IS NULL)))
+                             WHERE a.person_uid = ?1 AND a.role_id IS NOT NULL AND p.deleted_at IS NULL)))
          UNION
-         SELECT DISTINCT record_uid AS uid FROM fact WHERE actor_uid = ?
+         SELECT DISTINCT record_uid AS uid FROM fact WHERE actor_uid = ?1
          UNION
-         SELECT r.uid FROM record r JOIN record_extension e ON e.record_uid = ?
+         SELECT r.uid FROM record r JOIN record_extension e ON e.record_uid = ?1
           WHERE e.namespace = 'lince.call-admission' AND r.deleted_at IS NULL
             AND json_extract(e.fds, '$.' || r.replica_root) = 1
             AND NOT EXISTS (SELECT 1 FROM visibility_rule v WHERE v.target_uid = r.uid
                  AND (v.field IS NOT NULL OR (v.grant_level = 'hidden'
-                      AND (v.subject_kind = 'public' OR (v.subject_kind = 'actor' AND v.subject_uid = ?)
-                           OR (v.subject_kind = 'role' AND v.subject_uid = CAST((SELECT role_id FROM person_access WHERE person_uid = ?) AS TEXT))))))",
+                      AND (v.subject_kind = 'public' OR (v.subject_kind = 'actor' AND v.subject_uid = ?1)
+                           OR (v.subject_kind = 'role' AND v.subject_uid IN (SELECT CAST(role_id AS TEXT) FROM person_access WHERE person_uid = ?1 UNION SELECT CAST(role_id AS TEXT) FROM person_role WHERE person_uid = ?1))))))",
     )
-    .bind(subject_uid)
-    .bind(subject_uid)
-    .bind(subject_uid)
-    .bind(subject_uid)
-    .bind(subject_uid)
-    .bind(subject_uid)
     .bind(subject_uid)
     .fetch_all(pool)
     .await?
@@ -99,6 +93,14 @@ pub async fn role_targets(
     subject_uid: &str,
     role_id: i64,
 ) -> Result<HashSet<String>, StoreError> {
+    role_targets_on(&mut *pool.acquire().await?, subject_uid, role_id).await
+}
+
+pub async fn role_targets_on(
+    connection: &mut sqlx::SqliteConnection,
+    subject_uid: &str,
+    role_id: i64,
+) -> Result<HashSet<String>, StoreError> {
     Ok(sqlx::query_scalar::<_, String>(
         "WITH local AS (
              SELECT uid FROM record WHERE slug = ? AND kind = 'organ' AND deleted_at IS NULL
@@ -126,7 +128,7 @@ pub async fn role_targets(
     .bind(subject_uid)
     .bind(role_id)
     .bind(subject_uid)
-    .fetch_all(pool)
+    .fetch_all(connection)
     .await?
     .into_iter()
     .collect())

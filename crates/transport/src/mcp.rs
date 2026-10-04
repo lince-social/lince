@@ -1,3 +1,6 @@
+mod stdio;
+pub use stdio::bridge_stdio;
+
 use std::sync::Arc;
 
 use axum::{
@@ -166,7 +169,7 @@ impl Connection {
         };
         let mut config = StreamableHttpServerConfig::default()
             .with_cancellation_token(closed.clone())
-            .with_max_request_body_bytes(256 * 1024);
+            .with_max_request_body_bytes(8 * 1024 * 1024);
         config.legacy_session_mode = false;
         config.json_response = true;
         let service = StreamableHttpService::new(
@@ -229,5 +232,66 @@ impl Drop for Connection {
                 native.close().await;
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod stdio_tests {
+    use super::*;
+    use rmcp::ServiceExt;
+
+    #[tokio::test]
+    #[ignore = "Requires LINCE_MCP_TEST_BIN pointing to the current Lince executable"]
+    async fn separate_stdio_process_forwards_http_actions_and_enforces_revocation() {
+        let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
+        let native = crate::Session::local(engine, Arc::new(crate::LaneHub::new()), nucleus::new_uid("agent-tools")).into_native_tools(crate::native::Context { agent:nucleus::new_uid("r"), record:nucleus::new_uid("r"), thread:nucleus::new_uid("r") });
+        let connection = Connection::open(native).await.unwrap();
+        let denied = reqwest::Client::new().post(&connection.url).bearer_auth("invalid-token").send().await.unwrap();
+        assert_eq!(denied.status(), reqwest::StatusCode::UNAUTHORIZED);
+        let mut child = tokio::process::Command::new(std::env::var("LINCE_MCP_TEST_BIN").expect("LINCE_MCP_TEST_BIN"))
+            .arg("--mcp-stdio").env("LINCE_MCP_URL", &connection.url).env("LINCE_MCP_TOKEN", &connection.token.0)
+            .stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::null()).kill_on_drop(true).spawn().unwrap();
+        let client = ().serve((child.stdout.take().unwrap(), child.stdin.take().unwrap())).await.unwrap();
+        assert!(client.list_tools(None).await.unwrap().tools.iter().any(|tool| tool.name == "lince_action"));
+        let action = engine::actions::Action::CreateRecord { slug:Some("stdio-acceptance".into()), kind:nucleus::RecordKind::Plain, head:"Actual stdio action".into(), body:"Committed through the proxy".into(), quantity:1.0 };
+        let request = serde_json::from_value(serde_json::json!({"name":"lince_action","arguments":{"request_id":"create-stdio-record","action":serde_json::to_string(&action).unwrap(),"read_ids":[]}})).unwrap();
+        let result = client.call_tool(request).await.unwrap();
+        assert!(!result.is_error.unwrap_or(false), "{result:?}");
+        let protein = serde_json::json!({"source":"record","where":[{"slug_eq":"stdio-acceptance"}],"fields":["head","body"],"limit":1});
+        let request = serde_json::from_value(serde_json::json!({"name":"lince_query","arguments":{"protein":protein.to_string()}})).unwrap();
+        let result = client.call_tool(request).await.unwrap();
+        assert!(!result.is_error.unwrap_or(false));
+        assert!(serde_json::to_string(&result).unwrap().contains("Committed through the proxy"));
+        connection.close().await;
+        let request = serde_json::from_value(serde_json::json!({"name":"lince_describe","arguments":{}})).unwrap();
+        let closed = tokio::time::timeout(std::time::Duration::from_secs(5), client.call_tool(request)).await.unwrap();
+        assert!(closed.is_err() || closed.unwrap().is_error.unwrap_or(false));
+        let _ = client.cancel().await;
+        let _ = child.kill().await;
+        let _ = child.wait().await;
+    }
+
+    #[tokio::test]
+    async fn stdio_sdk_serves_normal_tools_and_enforces_revocation_without_sockets() {
+        let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
+        let native = crate::Session::local(engine, Arc::new(crate::LaneHub::new()), nucleus::new_uid("agent-tools")).into_native_tools(crate::native::Context { agent: nucleus::new_uid("r"), record: nucleus::new_uid("r"), thread: nucleus::new_uid("r") });
+        let mut tools = Registry::default();
+        native.register(&mut tools);
+        let closed = CancellationToken::new();
+        let handler = Handler { tools: Arc::new(tools), closed: closed.clone() };
+        let (server_io, client_io) = tokio::io::duplex(256 * 1024);
+        let server = tokio::spawn(async move { handler.serve(server_io).await.unwrap().waiting().await.unwrap(); });
+        let client = ().serve(client_io).await.unwrap();
+        let tools = client.list_tools(None).await.unwrap();
+        assert!(tools.tools.iter().any(|tool| tool.name == "lince_action"));
+        let request = serde_json::from_value(serde_json::json!({"name":"lince_describe","arguments":{}})).unwrap();
+        let result = client.call_tool(request).await.unwrap();
+        assert!(!result.is_error.unwrap_or(false));
+        closed.cancel();
+        let request = serde_json::from_value(serde_json::json!({"name":"lince_describe","arguments":{}})).unwrap();
+        let result = client.call_tool(request).await.unwrap();
+        assert!(result.is_error.unwrap_or(false));
+        client.cancel().await.unwrap();
+        server.await.unwrap();
     }
 }

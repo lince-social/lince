@@ -56,6 +56,111 @@ pub fn encode_update(document: &LoroDoc, before: &VersionVector) -> Result<Strin
 }
 
 impl crate::Engine {
+    pub(crate) fn invalidate_record_doc(&self, uid: &str) {
+        self.collab_docs
+            .lock()
+            .expect("document registry")
+            .docs
+            .remove(uid);
+    }
+
+    pub(crate) async fn stage_record_text_on(
+        &self,
+        tx: &mut store::sqlx::Transaction<'_, store::sqlx::Sqlite>,
+        uid: &str,
+        head: Option<&str>,
+        body: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let (previous_head, previous_body): (String, String) = store::sqlx::query_as(
+            "SELECT head,body FROM record WHERE uid=? AND deleted_at IS NULL",
+        )
+        .bind(uid)
+        .fetch_one(&mut **tx)
+        .await?;
+        if body.is_some()
+            && (nucleus::component::Document::decode(&previous_body).is_ok()
+                || nucleus::canvas::Document::decode(&previous_body).is_ok())
+        {
+            return Err(refused(
+                "Use the composition editor to change an executable document",
+            ));
+        }
+        let stored: Option<(Vec<u8>, i64)> =
+            store::sqlx::query_as("SELECT snapshot,through_seq FROM record_doc WHERE record_uid=?")
+                .bind(uid)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let through = stored.as_ref().map_or(0, |row| row.1);
+        let tail: Vec<String> = store::sqlx::query_scalar("SELECT value FROM sync_op WHERE tbl='record' AND uid=? AND kind IN ('crdt','snapshot') AND seq>? AND value IS NOT NULL ORDER BY seq").bind(uid).bind(through).fetch_all(&mut **tx).await?;
+        let has_history = stored.is_some() || !tail.is_empty();
+        let mut accepted = if let Some((snapshot, _)) = stored {
+            AcceptedDoc::from_trusted_snapshot(&snapshot, &limits()).map_err(refused)?
+        } else if tail.is_empty() {
+            let doc = LoroDoc::new();
+            doc.set_peer_id(seed_peer_id(uid, &previous_head, &previous_body))
+                .map_err(refused)?;
+            doc.get_text("head")
+                .insert(0, &previous_head)
+                .map_err(refused)?;
+            doc.get_text("body")
+                .insert(0, &previous_body)
+                .map_err(refused)?;
+            doc.commit();
+            AcceptedDoc::from_trusted_snapshot(
+                &doc.export(ExportMode::Snapshot).map_err(refused)?,
+                &limits(),
+            )
+            .map_err(refused)?
+        } else {
+            AcceptedDoc::empty(&limits()).map_err(refused)?
+        };
+        for encoded in tail {
+            accepted = accepted
+                .prepare_replica(&B64.decode(encoded).map_err(refused)?, &limits())
+                .map_err(refused)?
+                .into_accepted_after_commit();
+        }
+        let cell: String = store::sqlx::query_scalar(
+            "SELECT uid FROM record WHERE slug='local-cell' AND kind='device'",
+        )
+        .fetch_one(&mut **tx)
+        .await?;
+        let prepared = accepted
+            .prepare_text(seed_peer_id(&cell, "author", uid), head, body, &limits())
+            .map_err(refused)?;
+        let beginning = VersionVector::default();
+        let delta = prepared
+            .export_updates(if has_history {
+                prepared.base_version()
+            } else {
+                &beginning
+            })
+            .map_err(refused)?;
+        store::sqlx::query(
+            "UPDATE record SET head=?,body=?,updated_at=? WHERE uid=? AND deleted_at IS NULL",
+        )
+        .bind(prepared.head())
+        .bind(prepared.body())
+        .bind(nucleus::execution::now().to_rfc3339())
+        .bind(uid)
+        .execute(&mut **tx)
+        .await?;
+        store::sync_ops::log_local_tx(
+            tx,
+            "record",
+            uid,
+            "",
+            store::sync_ops::OpKind::Crdt,
+            Some(B64.encode(delta)),
+        )
+        .await?;
+        let seq: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(seq),0) FROM sync_op")
+            .fetch_one(&mut **tx)
+            .await?;
+        store::record_docs::put_on(tx, uid, prepared.snapshot(), seq).await?;
+        Ok(())
+    }
+
     fn cache_doc(&self, uid: &str, doc: Arc<AcceptedDoc>) {
         let mut registry = self.collab_docs.lock().expect("document registry");
         registry.tick = registry.tick.wrapping_add(1);
@@ -146,7 +251,14 @@ impl crate::Engine {
         actor: Option<&str>,
         uid: &str,
     ) -> Result<BTreeSet<Property>, EngineError> {
-        if store::records::get_extension(&self.store.pool,uid,nucleus::social::requests::MESSAGE_NAMESPACE).await?.is_some() {
+        if store::records::get_extension(
+            &self.store.pool,
+            uid,
+            nucleus::social::requests::MESSAGE_NAMESPACE,
+        )
+        .await?
+        .is_some()
+        {
             return Ok(BTreeSet::new());
         }
         self.record_property_permissions(
@@ -163,6 +275,10 @@ impl crate::Engine {
         uid: &str,
         requested: BTreeSet<Property>,
     ) -> Result<BTreeSet<Property>, EngineError> {
+        if actor.is_some() && store::sqlx::query_scalar::<_, bool>(crate::record_policy::LOCAL_AUTOMATION_RECORD_QUERY)
+            .bind(uid).bind(uid).fetch_one(&self.store.pool).await? {
+            return Ok(BTreeSet::new());
+        }
         self.authorize_action(
             &crate::actions::Action::EditRecordText {
                 target: uid.into(),
@@ -196,20 +312,15 @@ impl crate::Engine {
         let Some(actor) = actor else {
             return Ok(both);
         };
-        let Some(person) = store::auth::person_access(&self.store.pool, actor).await? else {
-            return Ok(both);
-        };
-        let Some(role) = person.role_id else {
-            return Ok(both);
-        };
-        let Some(policy) = store::role_policies::get(&self.store.pool, role)
-            .await?
-            .and_then(|row| row.policy)
+        let Some(policy) = protein::role_authority::policy_for(
+            &self.store,
+            actor,
+            Some(protein::authority::Operation::Update),
+        )
+        .await?
         else {
             return Ok(both);
         };
-        let policy: protein::authority::RolePolicy =
-            serde_json::from_value(policy).map_err(EngineError::Json)?;
         let mut allowed = BTreeSet::new();
         for grant in policy.grants {
             if grant.operation != protein::authority::Operation::Update {
@@ -307,8 +418,12 @@ impl crate::Engine {
         {
             let document =
                 nucleus::component::Document::decode(candidate.body()).map_err(refused)?;
-            if previous.composition.origin.is_some() && previous.composition.origin != document.composition.origin {
-                return Err(refused("A saved generated composition must retain its origin"));
+            if previous.composition.origin.is_some()
+                && previous.composition.origin != document.composition.origin
+            {
+                return Err(refused(
+                    "A saved generated composition must retain its origin",
+                ));
             }
             let component = nucleus::component::ComponentState::Composition {
                 composition: document.composition,
@@ -317,6 +432,26 @@ impl crate::Engine {
             if publish {
                 self.authorize_component(&component, actor).await?;
             }
+        }
+        if let Some(record) = store::records::get(&self.store.pool, uid).await?
+            && let Ok(previous) = nucleus::canvas::Document::decode(&record.body)
+        {
+            let mut document =
+                nucleus::canvas::Document::decode(candidate.body()).map_err(refused)?;
+            if previous.component.origin().is_some()
+                && previous.component.origin() != document.component.origin()
+            {
+                return Err(refused(
+                    "A saved generated composition must retain its origin",
+                ));
+            }
+            let registry = self.canvas_registry()?;
+            document
+                .component
+                .validate(&registry, false)
+                .map_err(refused)?;
+            self.resolve_canvas_component(&mut document.component, actor)
+                .await?;
         }
         let has_history: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind IN ('crdt', 'snapshot'))").bind(uid).fetch_one(&self.store.pool).await?;
         let beginning = VersionVector::default();
@@ -342,6 +477,14 @@ impl crate::Engine {
         let signer = self.signer.lock().await.clone();
         let now = nucleus::execution::now();
         let mut tx = store::write_tx(&self.store.pool).await?;
+        let checkpoint = self
+            .record_checkpoint_on(
+                &mut tx,
+                actor,
+                vec![uid.into()],
+                protein::authority::Operation::Update,
+            )
+            .await?;
         if let Some((id, payload)) = receipt {
             let original: Option<String> = store::sqlx::query_scalar(
                 "SELECT payload FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
@@ -414,6 +557,9 @@ impl crate::Engine {
         } else {
             None
         };
+        if let Some(checkpoint) = checkpoint {
+            checkpoint.finish(&mut tx, Default::default()).await?;
+        }
         tx.commit().await?;
         self.cache_doc(uid, Arc::new(prepared.into_accepted_after_commit()));
         Ok(fact)

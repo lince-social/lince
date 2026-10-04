@@ -1,4 +1,4 @@
-use nucleus::projection::{Context, Incomplete, MAX_SPANS, Span, Status};
+use nucleus::projection::{Context, Incomplete, MAX_SPANS, Scheduled, Span, Status};
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -6,10 +6,18 @@ use crate::StoreError;
 pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
     let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND substr(name, 1, 7) <> 'sqlite_' AND substr(name, 1, 5) <> '_sqlx' AND substr(name, 1, 11) <> 'projection_' ORDER BY name").fetch_all(pool).await?;
     let mut tx = crate::write_tx(pool).await?;
+    for operation in ["INSERT", "UPDATE", "DELETE"] {
+        sqlx::query(&format!(
+            "DROP TRIGGER IF EXISTS projection_{operation}_commit_sequence"
+        ))
+        .execute(&mut *tx)
+        .await?;
+    }
     for table in tables {
         if table.starts_with("interface_")
             || table.starts_with("sync_activity")
             || table == "karma_deadline_lease"
+            || table == "commit_sequence"
         {
             continue;
         }
@@ -91,6 +99,7 @@ pub async fn set_runtime(pool: &SqlitePool, runtime: &str) -> Result<(), StoreEr
 pub struct Cached {
     pub status: Status,
     pub spans: Vec<Span>,
+    pub schedule: Vec<Scheduled>,
     pub expires_ms: i64,
 }
 
@@ -129,10 +138,17 @@ pub async fn read(
             Ok::<Span, StoreError>(span)
         })
         .collect::<Result<Vec<Span>, _>>()?;
+    let rows: Vec<String> = sqlx::query_scalar("SELECT payload FROM projection_schedule WHERE from_ms < ? AND ((until_ms IS NULL AND from_ms >= ?) OR until_ms > ?) ORDER BY from_ms, id LIMIT ?")
+        .bind(context.window.until_ms).bind(context.window.from_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
+    let schedule = rows
+        .iter()
+        .map(|row| serde_json::from_str(row).map_err(protocol))
+        .collect::<Result<Vec<Scheduled>, StoreError>>()?;
     tx.rollback().await?;
     Ok(Some(Cached {
         status,
         spans,
+        schedule,
         expires_ms: row.get("expires_ms"),
     }))
 }
@@ -156,7 +172,30 @@ pub async fn publish(
     incomplete: Option<&Incomplete>,
     spans: &[Span],
 ) -> Result<bool, StoreError> {
-    if spans.len() > MAX_SPANS {
+    publish_schedule(
+        pool,
+        context,
+        source,
+        base_ms,
+        expires_ms,
+        incomplete,
+        spans,
+        &[],
+    )
+    .await
+}
+
+pub async fn publish_schedule(
+    pool: &SqlitePool,
+    context: &Context,
+    source: i64,
+    base_ms: i64,
+    expires_ms: i64,
+    incomplete: Option<&Incomplete>,
+    spans: &[Span],
+    schedule: &[Scheduled],
+) -> Result<bool, StoreError> {
+    if spans.len() > MAX_SPANS || schedule.len() > MAX_SPANS {
         return Err(protocol("projection span budget exceeded"));
     }
     let encoded = spans
@@ -164,7 +203,18 @@ pub async fn publish(
         .map(serde_json::to_string)
         .collect::<Result<Vec<_>, _>>()
         .map_err(protocol)?;
-    if encoded.iter().map(String::len).sum::<usize>() > 16 * 1024 * 1024 {
+    let encoded_schedule = schedule
+        .iter()
+        .map(serde_json::to_string)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(protocol)?;
+    if encoded
+        .iter()
+        .chain(&encoded_schedule)
+        .map(String::len)
+        .sum::<usize>()
+        > nucleus::projection::MAX_CACHE_BYTES
+    {
         return Err(protocol("projection byte budget exceeded"));
     }
     let key = context.key().map_err(protocol)?;
@@ -179,12 +229,25 @@ pub async fn publish(
     sqlx::query("DELETE FROM projection_span")
         .execute(&mut *tx)
         .await?;
+    sqlx::query("DELETE FROM projection_schedule")
+        .execute(&mut *tx)
+        .await?;
     for (span, payload) in spans.iter().zip(encoded) {
         sqlx::query("INSERT INTO projection_span VALUES (?, ?, ?, ?, ?)")
             .bind(&span.id)
             .bind(span.record.as_str())
             .bind(span.from_ms)
             .bind(span.until_ms)
+            .bind(payload)
+            .execute(&mut *tx)
+            .await?;
+    }
+    for (entry, payload) in schedule.iter().zip(encoded_schedule) {
+        sqlx::query("INSERT INTO projection_schedule VALUES (?, ?, ?, ?, ?)")
+            .bind(&entry.id)
+            .bind(entry.record.as_str())
+            .bind(entry.time.from_ms)
+            .bind(entry.time.until_ms)
             .bind(payload)
             .execute(&mut *tx)
             .await?;

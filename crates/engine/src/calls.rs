@@ -181,7 +181,7 @@ impl Engine {
         } else {
             store::sqlx::query_as::<_, (String, String)>("SELECT uid, head FROM record WHERE kind = 'person' AND deleted_at IS NULL ORDER BY head LIMIT 256").fetch_all(&self.store.pool).await?
         };
-        let organs = if self
+        let mut organs = if self
             .require_permission(actor, "record:create")
             .await
             .is_ok()
@@ -190,6 +190,11 @@ impl Engine {
         } else {
             Vec::new()
         };
+        let mut permitted_organs = Vec::new();
+        for (uid, name) in organs.drain(..) {
+            if self.may_read_record(actor, &uid).await? { permitted_organs.push((uid, name)); }
+        }
+        let organs = permitted_organs;
         let mut admitted = Vec::new();
         for (person, _) in &people {
             if self.group_person_admitted(&root, person).await? {

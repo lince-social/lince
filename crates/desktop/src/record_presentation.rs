@@ -10,14 +10,18 @@ pub struct RecordPresentation {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Saved {
+    #[serde(default)]
+    pub(crate) state: crate::protein_area::presentation::State,
     pub presentation: RecordPresentation,
     pub offset: Option<[f64; 3]>,
 }
 
 impl Saved {
     pub fn valid(&self) -> bool {
-        self.offset
-            .is_none_or(|offset| DVec3::from_array(offset).is_finite())
+        self.state.valid()
+            && self
+                .offset
+                .is_none_or(|offset| DVec3::from_array(offset).is_finite())
     }
 }
 
@@ -25,7 +29,7 @@ pub(crate) fn restore(world: &mut World, row: Entity, hide_filled: bool) {
     if world.get::<RecordPresentation>(row).is_some() {
         return;
     }
-    let state = world
+    let saved = world
         .get::<RecordBinding>(row)
         .and_then(|binding| {
             world
@@ -33,14 +37,17 @@ pub(crate) fn restore(world: &mut World, row: Entity, hide_filled: bool) {
                 .records
                 .get(&binding.uid)
         })
-        .map_or(
-            RecordPresentation {
-                hide_filled,
-                expanded: false,
-            },
-            |saved| saved.presentation,
-        );
-    world.entity_mut(row).insert(state);
+        .cloned();
+    let state = saved.as_ref().map_or(
+        RecordPresentation {
+            hide_filled,
+            expanded: false,
+        },
+        |saved| saved.presentation,
+    );
+    world
+        .entity_mut(row)
+        .insert((state, saved.map(|saved| saved.state).unwrap_or_default()));
 }
 
 pub(crate) fn save(world: &mut World, row: Entity) {
@@ -50,8 +57,11 @@ pub(crate) fn save(world: &mut World, row: Entity) {
     let Some(presentation) = world.get::<RecordPresentation>(row).copied() else {
         return;
     };
+    let state = crate::protein_area::presentation::capture(world, row);
     if let Some(mut area) = world.get_mut::<InfluenceArea>(binding.area) {
-        area.records.entry(binding.uid).or_default().presentation = presentation;
+        let saved = area.records.entry(binding.uid).or_default();
+        saved.presentation = presentation;
+        saved.state = state;
     }
 }
 
@@ -82,6 +92,7 @@ pub(crate) fn capture(world: &World, owner: Entity, mut area: InfluenceArea) -> 
                 binding.uid.clone(),
                 Saved {
                     presentation,
+                    state: crate::protein_area::presentation::capture(world, entity),
                     offset,
                 },
             );

@@ -9,6 +9,9 @@ impl Engine {
         run_assigned: bool,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
+        if actor.is_some() {
+            return Err(EngineError::Forbidden("Fiote configuration requires the local interface session".into()));
+        }
         let _guard = self.fiote_config_lock.lock().await;
         self.refuse_unreadable(actor, &[target.to_string()]).await?;
         let row = store::records::get(&self.store.pool, target)

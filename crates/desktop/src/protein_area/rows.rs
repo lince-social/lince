@@ -12,10 +12,10 @@ use lince_interface::records::baseline;
 pub(super) use lince_interface::records::display;
 
 #[derive(Component)]
-struct Row {
-    area: Entity,
-    data: Value,
-    config: std::sync::Arc<Config>,
+pub(super) struct Row {
+    pub(super) area: Entity,
+    pub(super) data: Value,
+    pub(super) config: std::sync::Arc<Config>,
     index: usize,
 }
 
@@ -35,6 +35,10 @@ struct EditorSize {
 pub(super) struct PropertyContainer(pub(super) String);
 
 #[derive(Component)]
+pub(super) struct PropertyLabel;
+
+#[derive(Component)]
+#[require(crate::sand::Unsaved(false))]
 pub(super) struct PropertyEditor {
     property: String,
     observed: String,
@@ -105,13 +109,66 @@ pub(super) fn content(
         }
         return;
     }
-    let sections = config.record_cards.then(|| {
-        crate::record_presentation::restore(world, row, config.hide_filled);
-        super::record_layout::create(world, row)
-    });
+    crate::record_presentation::restore(world, row, config.hide_filled);
+    let sections = config
+        .record_cards
+        .then(|| super::record_layout::create(world, row));
     if config.record_cards {
         world.entity_mut(row).insert(crate::full_record::RecordCard);
     }
+    fields(world, row, config, data, binding.clone(), sections.as_ref());
+    if let Some(sections) = sections {
+        super::record_layout::arrange(world, row, &sections, data);
+    }
+    if config.record_cards
+        && let Some(binding) = binding.clone()
+        && matches!(binding.source, Source::Local)
+    {
+        let button = world
+            .spawn((
+                Square,
+                ActionButton::new(row, crate::actions![crate::full_record::Simulate(binding)]),
+                ChildOf(row),
+            ))
+            .id();
+        crate::edit_mode::label(world, button, "Simulate", 14.0);
+    }
+    if !config.record_cards
+        && let Some(binding) = binding.clone()
+    {
+        let button = world
+            .spawn((
+                Square,
+                ActionButton::new(row, crate::actions![crate::full_record::Open(binding)]),
+                ChildOf(row),
+            ))
+            .id();
+        crate::edit_mode::label(world, button, "Open Record", 14.0);
+    }
+    super::presentation::controls(world, row);
+    if config.record_cards && let Some(binding) = binding.clone() {
+        crate::sand_panel::button(world, row, row, "Extensions…", crate::record_extensions::Open(binding));
+    }
+    if config.delete_button {
+        if let Some(binding) = binding {
+            world.spawn((
+                Square,
+                ActionButton::new(row, crate::actions![Delete(binding.clone())]),
+                IconButton::new(Icon::Delete, "Delete this Record"),
+                ChildOf(row),
+            ));
+        }
+    }
+}
+
+pub(super) fn fields(
+    world: &mut World,
+    row: Entity,
+    config: &Config,
+    data: &Value,
+    binding: Option<RecordBinding>,
+    sections: Option<&super::record_layout::Sections>,
+) {
     for property in &config.bindings {
         let parent = sections
             .as_ref()
@@ -178,6 +235,12 @@ pub(super) fn content(
         }
         let text = display(&data[&property.property]);
         let editable = property.editable && binding.is_some();
+        if let Some((schema, field)) = nucleus::record_extension::column_binding(&property.property) {
+            if let Some(binding) = binding.clone() {
+                crate::record_extensions::field(world, container, binding, schema, field, editable);
+            }
+            continue;
+        }
         if config.show_labels
             && !(config.record_cards && matches!(property.property.as_str(), "head" | "body"))
             && !matches!(
@@ -192,7 +255,7 @@ pub(super) fn content(
             let label = crate::edit_mode::label(world, container, &label, 13.0);
             world
                 .entity_mut(label)
-                .insert(crate::record_binding::BindingStatus);
+                .insert((crate::record_binding::BindingStatus, PropertyLabel));
         }
         if let Some(binding) = binding.clone() {
             if property.property == "work_timer" {
@@ -254,9 +317,6 @@ pub(super) fn content(
                 },
                 binding.clone().unwrap(),
             ));
-            if config.record_cards {
-                world.entity_mut(entity).insert(crate::sand::Unsaved(false));
-            }
             if matches!(property.property.as_str(), "head" | "body")
                 && crate::record_binding::enabled(world)
             {
@@ -353,37 +413,8 @@ pub(super) fn content(
                 let button =
                     crate::calendar::date_button(world, row, text_entity, &property.property);
                 world.entity_mut(button).insert(ChildOf(container));
+                crate::schedule_editor::attach(world, container, text_entity);
             }
-        }
-    }
-    if let Some(sections) = sections {
-        super::record_layout::arrange(world, row, &sections, data);
-    }
-    if config.record_cards && let Some(binding) = binding.clone()
-        && matches!(binding.source, Source::Local) {
-        let button = world.spawn((Square, ActionButton::new(row, crate::actions![crate::full_record::Simulate(binding)]), ChildOf(row))).id();
-        crate::edit_mode::label(world, button, "Simulate", 14.0);
-    }
-    if !config.record_cards
-        && let Some(binding) = binding.clone()
-    {
-        let button = world
-            .spawn((
-                Square,
-                ActionButton::new(row, crate::actions![crate::full_record::Open(binding)]),
-                ChildOf(row),
-            ))
-            .id();
-        crate::edit_mode::label(world, button, "Open Record", 14.0);
-    }
-    if config.delete_button {
-        if let Some(binding) = binding {
-            world.spawn((
-                Square,
-                ActionButton::new(row, crate::actions![Delete(binding.clone())]),
-                IconButton::new(Icon::Delete, "Delete this Record"),
-                ChildOf(row),
-            ));
         }
     }
 }
@@ -520,6 +551,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                 .is_none_or(|row| !row.config.same_template(&config))
                 || state.template_dirty;
             if template_changed {
+                super::presentation::rebuilding(world, entity);
                 if let Some(children) = world.get::<Children>(entity) {
                     let children: Vec<_> = children.iter().collect();
                     for child in children {
@@ -562,6 +594,49 @@ fn descendants(world: &World, entity: Entity) -> Vec<Entity> {
     out
 }
 
+pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Draft> {
+    let uid = world
+        .get::<RecordBinding>(row)
+        .map(|binding| binding.uid.clone())
+        .unwrap_or_default();
+    descendants(world, row)
+        .into_iter()
+        .filter_map(|entity| {
+            let text = world.get::<EditableText>(entity)?;
+            let mut cursor = Some(entity);
+            let mut property = None;
+            while let Some(entity) = cursor {
+                if let Some(container) = world.get::<PropertyContainer>(entity) {
+                    property = Some(container.0.clone());
+                    break;
+                }
+                cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+            }
+            let value = text.value().to_string();
+            let dirty = world
+                .get::<crate::record_binding::TextBinding>(entity)
+                .map(|binding| binding.unsaved(&value))
+                .or_else(|| {
+                    world
+                        .get::<PropertyEditor>(entity)
+                        .map(|editor| editor.pending.is_some() || value != editor.observed)
+                })
+                .unwrap_or_else(|| {
+                    world
+                        .get::<crate::sand::Unsaved>(entity)
+                        .is_some_and(|state| state.0)
+                });
+            Some(super::presentation::Draft {
+                uid: uid.clone(),
+                field: property?,
+                text: value,
+                dirty,
+                busy: text.is_composing() || text.pending_paste.is_some(),
+            })
+        })
+        .collect()
+}
+
 fn refresh(world: &mut World, row: Entity, data: &Value) {
     let children: Vec<_> = descendants(world, row)
         .into_iter()
@@ -572,6 +647,9 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
         })
         .collect();
     for (container, property) in children {
+        if nucleus::record_extension::column_binding(&property).is_some() {
+            continue;
+        }
         if crate::work_timer::refresh(world, container, data)
             || crate::thread_castle::refresh(world, container, data)
         {
@@ -594,6 +672,7 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
             if world
                 .get::<crate::record_binding::BindingStatus>(entity)
                 .is_some()
+                || world.get::<PropertyLabel>(entity).is_some()
             {
                 continue;
             }
@@ -632,6 +711,7 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
 }
 
 pub(super) fn action_finished(world: &mut World, entity: Entity, error: Option<String>) {
+    crate::save_feedback::set_failed(world, entity, error.is_some());
     if crate::assertion_editor::finished(world, entity, error.clone()) {
         return;
     }
@@ -748,10 +828,12 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
                 Value::Null
             } else if matches!(field, engine::record_change::WorkField::Estimate) {
                 let Ok(number) = value.trim().parse::<f64>() else {
+                    crate::save_feedback::set_failed(world, entity, true);
                     status(world, binding.area, "Estimate must be a number");
                     return;
                 };
                 if !number.is_finite() {
+                    crate::save_feedback::set_failed(world, entity, true);
                     status(world, binding.area, "Estimate must be finite");
                     return;
                 }
@@ -801,12 +883,13 @@ pub(super) fn commit_edits(world: &mut World) {
         save_field(world, entity);
     }
     super::record_layout::update(world);
+    super::presentation::update(world);
 }
 
 pub(super) fn layout(world: &mut World) {
     super::placement::begin_frame(world);
     let mut resized = false;
-    for (text, layout, computed, mut size, mut node, mut wrapping, scroll) in world
+    for (text, layout, computed, mut size, mut node, mut wrapping, scroll, settings) in world
         .query::<(
             &EditableText,
             &bevy::text::TextLayoutInfo,
@@ -815,10 +898,15 @@ pub(super) fn layout(world: &mut World) {
             &mut Node,
             &mut TextLayout,
             Option<&mut bevy::ui::widget::TextScroll>,
+            Option<&super::presentation::EditorSettings>,
         )>()
         .iter_mut(world)
     {
-        if size.mode == OverflowMode::GrowRight {
+        let settings = settings.map(|settings| &settings.0.0);
+        let fixed_width = settings.is_some_and(|settings| settings.contains_key("width"));
+        let fixed_height = settings.is_some_and(|settings| settings.contains_key("height"));
+        let fixed_wrap = settings.is_some_and(|settings| settings.contains_key("wrap"));
+        if size.mode == OverflowMode::GrowRight && !fixed_width && !fixed_wrap {
             let content = text.value().to_string();
             if size.observed != content {
                 size.observed = content;
@@ -840,11 +928,11 @@ pub(super) fn layout(world: &mut World) {
         let inset = (computed.size().y - computed.content_box().height()).max(0.0)
             * computed.inverse_scale_factor();
         let height = (measured.y + inset).ceil().max(size.minimum.y);
-        if height.is_finite() && node.height != px(height) {
+        if !fixed_height && height.is_finite() && node.height != px(height) {
             node.height = px(height);
             resized = true;
         }
-        if size.mode == OverflowMode::ScrollRight || size.measuring {
+        if !fixed_width && (size.mode == OverflowMode::ScrollRight || size.measuring) {
             let maximum = if size.mode == OverflowMode::GrowRight {
                 size.maximum_width
             } else {
@@ -858,7 +946,9 @@ pub(super) fn layout(world: &mut World) {
         }
         if size.measuring {
             size.measuring = false;
-            wrapping.linebreak = bevy::text::LineBreak::WordBoundary;
+            if !fixed_wrap {
+                wrapping.linebreak = bevy::text::LineBreak::WordBoundary;
+            }
             resized = true;
         }
     }

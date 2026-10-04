@@ -338,12 +338,7 @@ impl Host {
                 .into_iter()
                 .map(|(key, value)| json!({"key":key,"value":value}))
                 .collect();
-            let result = connection
-                .extension(
-                    "_goose/unstable/providers/config/save",
-                    json!({"providerId":provider,"fields":updates}),
-                )
-                .await?;
+            let result = fiote::communication::extensions::save_provider_fields(&connection, &provider, updates).await?;
             if !oauth && result["status"]["isConfigured"] != true {
                 return Err(
                     "The provider still needs required settings before it can sign in.".into(),
@@ -363,10 +358,7 @@ impl Host {
             tokio::spawn(async move {
                 let result = tokio::time::timeout(
                     std::time::Duration::from_secs(600),
-                    connection.extension_wait(
-                        "_goose/unstable/providers/config/authenticate",
-                        json!({"providerId":provider}),
-                    ),
+                    fiote::communication::extensions::authenticate_provider(&connection, &provider),
                 )
                 .await
                 .map_err(|_| "Sign-in timed out. Try again.".to_string())
@@ -514,19 +506,10 @@ impl Host {
         }
         let connection = acp::Connection::open(&config).await?;
         let mut info = serde_json::to_value(&connection.info).map_err(|error| error.to_string())?;
-        if info["agentInfo"]["name"] == "goose" {
-            match connection
-                .extension("_goose/unstable/providers/setup/catalog/list", json!({}))
-                .await
-            {
-                Ok(catalog) if catalog.to_string().len() <= 262_144 => {
-                    info["providers"] = catalog["providers"].clone()
-                }
-                Ok(_) => {
-                    info["setupError"] = "The agent provider catalog exceeds its size limit.".into()
-                }
-                Err(error) => info["setupError"] = error.into(),
-            }
+        match fiote::communication::extensions::provider_catalog(&connection).await {
+            Ok(Some(providers)) => info["providers"] = providers,
+            Ok(None) => {},
+            Err(error) => info["setupError"] = error.into(),
         }
         self.agents.info.lock().await.insert(record.into(), info);
         if let Some((_, previous)) = self
@@ -670,14 +653,7 @@ impl Host {
                 .start_terminal_login(record, config, method.clone())
                 .await;
         }
-        if connection
-            .info
-            .agent_info
-            .as_ref()
-            .is_some_and(|info| info.name == "goose")
-        {
-            return Err("Choose a provider from Goose's connections. Goose's generic authenticate method does not perform login.".into());
-        }
+        fiote::communication::extensions::validate_standard_auth(&connection)?;
         let method = method.id().to_string();
         let info = self.agents.info.clone();
         let login_id = login::start(&self.agents, record).await?;

@@ -70,6 +70,8 @@ pub(super) fn organ_list(world: &mut World, owner: Entity) {
                 fingerprint(&text(contact, "node_id")),
                 if contact["pending_introduction"] == true {
                     " · awaiting introduction"
+                } else if contact["organ_access"]["granted"] == true {
+                    " · login available"
                 } else {
                     ""
                 }
@@ -191,6 +193,13 @@ pub(super) fn pairings(world: &mut World, owner: Entity) {
 fn contact(world: &mut World, owner: Entity, parent: Entity, row: &Value) {
     let uid = text(row, "uid");
     let c = &row["contact"];
+    label(world, parent, match c["organ_access"]["granted"].as_bool() {
+        Some(true) => "This Organ has granted you login access. Open live Organ to connect.",
+        Some(false) => "This Organ has no current login grant for you. A password login may still be available.",
+        None => "Login access has not been checked. Reconnect to refresh it.",
+    });
+    panel::button(world, parent, owner, "Shared workspaces", Command::Workspaces(uid.clone()));
+    panel::button(world, parent, owner, "Sign out of live Organ", Command::Logout(uid.clone()));
     label(
         world,
         parent,
@@ -259,6 +268,12 @@ fn contact(world: &mut World, owner: Entity, parent: Entity, row: &Value) {
         ],
         None,
     );
+    label(world, parent, "Direct sends Record changes and conversations while a device is reachable. File copies, calls, moves and interactive invitations need a direct connection.");
+    label(world, parent, "Mailbox carries sealed Record changes and conversation messages. It needs a current device list and pickup points; envelopes are limited to 1 MiB; carrier quota and expiry limits also apply. Files and calls cannot use it. Auto tries direct first, then mailbox after 10 minutes offline (conversations fall back immediately).");
+    form(world, owner, parent, "Save delivery choice", json!({"action":"set-contact-delivery","target":uid,"mode":"auto"}), vec![Field("/mode", "Delivery route", Kind::Choice(vec![("Direct".into(),json!("direct")),("Mailbox".into(),json!("mailbox")),("Automatic".into(),json!("auto"))]), c["delivery"].clone())], None);
+    label(world, parent, &format!("Saved locally: {} queued operations / {} mail envelopes · Mailbox storage confirmed: {} envelopes (last {}) · Recipient receipt: last acknowledged operation {}", c["delivery_status"]["queued_operations"].as_i64().unwrap_or(0), c["delivery_status"]["saved_mail"].as_i64().unwrap_or(0), c["delivery_status"]["mailbox_stored"].as_i64().unwrap_or(0), c["delivery_status"]["last_mailbox_storage"].as_str().unwrap_or("none"), c["peer_acked_seq"].as_i64().unwrap_or(0)));
+    label(world, parent, "Mailbox acceptance confirms carrier storage. Recipient receipt is shown separately; mailbox copies can expire or be collected. Reconnect to refresh a missing or expired device list; queued work checks current sharing and device permissions again.");
+    form(world, owner, parent, "Reconnect and refresh device list", json!({"action":"reconnect-contact","target":uid}), vec![], None);
     for (key, broken, action, caption, explanation) in [
         (
             "scope_fields",

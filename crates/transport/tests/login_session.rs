@@ -57,7 +57,7 @@ async fn fixture() -> (Arc<Engine>, engine::login::LoginSession, String) {
 }
 
 fn query() -> ClientMessage {
-    serde_json::from_value(serde_json::json!({"type":"subscribe", "id":"records", "protein":{"source":"record", "where":[]}})).unwrap()
+    serde_json::from_value(serde_json::json!({"type":"subscribe", "id":"records", "protein":{"source":"record", "where":[{"kind_eq":"plain"}]}})).unwrap()
 }
 
 #[tokio::test]

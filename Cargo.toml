@@ -31,28 +31,28 @@ members = [
 default-members = ["crates/lince"]
 
 [workspace.package]
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/lince-social/lince"
 homepage = "https://lince.social"
 
 [workspace.dependencies]
-lince = { version = "=0.7.0", path = "crates/lince" }
-utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
-cell = { version = "=0.7.0", path = "crates/cell", package = "lince-cell" }
-simulation = { version = "=0.7.0", path = "crates/simulation", package = "lince-simulation" }
-lince-desktop = { version = "=0.7.0", path = "crates/desktop" }
-lince-interface = { version = "=0.7.0", path = "crates/interface", default-features = false }
-lince-media = { version = "=0.7.0", path = "crates/media" }
-lince-facade = { version = "=0.7.0", path = "crates/facade" }
-anicca = { version = "=0.7.0", path = "crates/anicca" }
-nucleus = { version = "=0.7.0", path = "crates/nucleus" }
-store = { version = "=0.7.0", path = "crates/store" }
-engine = { version = "=0.7.0", path = "crates/engine" }
-protein = { version = "=0.7.0", path = "crates/protein" }
-transport = { version = "=0.7.0", path = "crates/transport" }
-fiote = { version = "=0.7.0", path = "crates/fiote", package = "lince-fiote" }
+lince = { version = "=0.8.0", path = "crates/lince" }
+utils = { version = "=0.8.0", path = "crates/utils", package = "lince-utils" }
+cell = { version = "=0.8.0", path = "crates/cell", package = "lince-cell" }
+simulation = { version = "=0.8.0", path = "crates/simulation", package = "lince-simulation" }
+lince-desktop = { version = "=0.8.0", path = "crates/desktop" }
+lince-interface = { version = "=0.8.0", path = "crates/interface", default-features = false }
+lince-media = { version = "=0.8.0", path = "crates/media" }
+lince-facade = { version = "=0.8.0", path = "crates/facade" }
+anicca = { version = "=0.8.0", path = "crates/anicca" }
+nucleus = { version = "=0.8.0", path = "crates/nucleus" }
+store = { version = "=0.8.0", path = "crates/store" }
+engine = { version = "=0.8.0", path = "crates/engine" }
+protein = { version = "=0.8.0", path = "crates/protein" }
+transport = { version = "=0.8.0", path = "crates/transport" }
+fiote = { version = "=0.8.0", path = "crates/fiote", package = "lince-fiote" }
 
 argon2 = "0.6.0"
 async-stream = "0.3.6"
@@ -110,7 +110,7 @@ semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"
-sensei = { version = "=0.7.0", path = "crates/sensei" }
+sensei = { version = "=0.8.0", path = "crates/sensei" }
 rust-sitter = "0.4.5"
 rust-sitter-tool = "0.4.5"
 hkdf = "0.13.0"

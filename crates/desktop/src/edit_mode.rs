@@ -125,7 +125,12 @@ impl Plugin for EditModePlugin {
             app.add_plugins(crate::color_picker::ColorPickerPlugin);
         }
         app.init_resource::<crate::tokens::ThemeSettings>()
+            .init_resource::<crate::shortcuts::Settings>()
             .add_observer(crate::customization::toggle)
+            .add_systems(
+                PreUpdate,
+                crate::sand_settings::select.after(crate::inspection::InspectInput),
+            )
             .add_systems(
                 Update,
                 (
@@ -134,6 +139,7 @@ impl Plugin for EditModePlugin {
                         .after(crate::canvas_controls::create_controls),
                     expand_tabs,
                     crate::sand_store::refresh.after(setup),
+                    crate::shortcuts::synchronize.after(setup),
                 ),
             )
             .add_systems(
@@ -522,33 +528,17 @@ pub(crate) fn setup(world: &mut World) {
             customization: false,
             areas: false,
         });
-        let bindings = [
-            KeyBinding::new(
-                KeyCode::Delete,
-                Modifiers::NONE,
-                crate::actions![crate::deletion::DeleteSelected],
-            ),
-            KeyBinding::new(
-                KeyCode::KeyK,
-                Modifiers::CONTROL,
-                crate::actions![crate::operation::OpenOperation],
-            ),
-            KeyBinding::new(
-                KeyCode::KeyE,
-                Modifiers::ALT,
-                crate::actions![EditAction::Toggle],
-            ),
-            KeyBinding::new(
-                KeyCode::Escape,
-                Modifiers::NONE,
-                crate::actions![crate::inspection::Deselect],
-            ),
-        ];
+        let bindings = [KeyBinding::new(
+            KeyCode::Escape,
+            Modifiers::NONE,
+            crate::actions![crate::inspection::Deselect],
+        )];
         if let Some(mut existing) = world.get_mut::<KeyBindings>(root) {
             existing.0.splice(0..0, bindings);
         } else {
             world.entity_mut(root).insert(KeyBindings(bindings.into()));
         }
+        crate::shortcuts::install(world, root);
         if let Ok(window) = world
             .query_filtered::<Entity, (
                 With<bevy::window::PrimaryWindow>,
@@ -653,7 +643,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         }
         EditAction::TogglePhysics => {
             let active = world.get::<Workspaces>(root).unwrap().active;
-            let enabled = crate::workspace_config::enabled(world, root, active);
+            let enabled = crate::workspace_config::physics_configured(world, root, active);
             crate::workspace_config::set_physics(world, root, active, !enabled);
         }
         EditAction::ReloadWorkspaceSettings => {
@@ -844,7 +834,24 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
     }
 }
 
+pub(crate) fn customizing(world: &World, root: Entity) -> bool {
+    world
+        .get::<EditMode>(root)
+        .is_some_and(|mode| mode.enabled && mode.customization)
+}
+
+pub(crate) fn show_customization(world: &mut World, root: Entity) {
+    if !customizing(world, root) {
+        toggle_customization(world, root);
+    } else {
+        render_panel(world, root);
+    }
+}
+
 fn set_open(world: &mut World, root: Entity, enabled: bool) {
+    if !enabled {
+        crate::protein_area::presentation::cancel(world, root);
+    }
     let Some(mut mode) = world.get_mut::<EditMode>(root) else {
         return;
     };
@@ -1110,7 +1117,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
         );
         control(world, root, tabs, EditAction::Workspaces, "Workspaces");
         control(world, root, tabs, EditAction::Information, "Information");
-        control(world, root, tabs, EditAction::Shortcuts, "Cheat sheet");
+        control(world, root, tabs, EditAction::Shortcuts, "Shortcuts");
         control(world, root, tabs, EditAction::Areas, "Areas of influence");
         control(
             world,
@@ -1148,6 +1155,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
         );
         crate::workspace_config::controls(world, root, panel);
         crate::inspection::controls(world, root, panel);
+        crate::influence_report::ui::panel(world, root, panel, None);
         crate::deletion::controls(world, root, panel);
         return;
     }
@@ -1310,6 +1318,12 @@ fn render_panel_content(world: &mut World, root: Entity) {
         let castles_heading = label(world, panel, "Castles", 18.0);
         let castles_group = store_group(world, panel);
         let mut castle_entries = Vec::new();
+        let entry = store_group(world, castles_group);
+        crate::drawing::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::record_extensions::store_entry(world, root, entry);
+        castle_entries.push(entry);
         let entry = store_group(world, castles_group);
         crate::sand_store::entry(world, root, entry, SandKind::Sync, None);
         castle_entries.push(entry);

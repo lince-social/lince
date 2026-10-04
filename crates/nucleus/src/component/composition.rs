@@ -21,6 +21,8 @@ pub enum Immunity {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Part {
+    #[serde(default)]
+    pub settings: std::collections::BTreeMap<String, serde_json::Value>,
     pub id: String,
     #[serde(default)]
     pub position: [i32; 2],
@@ -80,6 +82,25 @@ impl Composition {
         }
         let mut ids = std::collections::BTreeSet::new();
         for part in &self.parts {
+            if part.settings.len() > 32
+                || part.settings.iter().any(|(id, value)| {
+                    id.is_empty()
+                        || id.len() > 80
+                        || !id
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+                        || match value {
+                            serde_json::Value::Bool(_) | serde_json::Value::Number(_) => false,
+                            serde_json::Value::String(value) => value.chars().count() > 4096,
+                            _ => true,
+                        }
+                })
+            {
+                return Err(
+                    "A part supports at most 32 settings with boolean, numeric or text values"
+                        .into(),
+                );
+            }
             if part.events.len() > 32
                 || part.events.iter().any(|binding| {
                     binding.event.trim().is_empty()

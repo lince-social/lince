@@ -23,12 +23,62 @@ impl Engine {
         }
         let value: serde_json::Value = serde_json::from_str(&body)
             .map_err(|_| EngineError::Consequence("Invalid custom component".into()))?;
-        if crate::operation_origin::is_fiote() && value.get("composition").is_none() {
+        if value["format"] == nucleus::canvas::Document::FORMAT {
+            let mut document =
+                nucleus::canvas::Document::decode(&body).map_err(EngineError::Consequence)?;
+            if document.name != head {
+                return Err(EngineError::Consequence(
+                    "Component name does not match its document".into(),
+                ));
+            }
+            let registry = self.canvas_registry()?;
+            document
+                .component
+                .validate(&registry, false)
+                .map_err(EngineError::Consequence)?;
+            self.resolve_canvas_component(&mut document.component, actor.as_deref())
+                .await?;
+            if let Some(origin) = crate::operation_origin::component_origin() {
+                if !matches!(
+                    document.component,
+                    nucleus::canvas::Component::Composition { .. }
+                ) {
+                    document.component = nucleus::canvas::Component::Composition {
+                        composition: nucleus::canvas::Composition {
+                            name: head.clone(),
+                            origin: None,
+                            parts: vec![nucleus::canvas::Part {
+                                id: "content".into(),
+                                geometry: nucleus::canvas::Geometry {
+                                    position: [0.0, 0.0],
+                                    size: [840.0, 680.0],
+                                },
+                                component: document.component,
+                                events: vec![],
+                            }],
+                        },
+                    };
+                }
+                if let nucleus::canvas::Component::Composition { composition } =
+                    &mut document.component
+                {
+                    composition.origin = Some(origin);
+                }
+            }
+            document
+                .component
+                .validate(&registry, false)
+                .map_err(EngineError::Consequence)?;
+            body = nucleus::canvas::Document::encode(document.name, document.component)
+                .map_err(EngineError::Consequence)?;
+        } else if crate::operation_origin::is_fiote() && value.get("composition").is_none() {
             return Err(EngineError::Consequence(
                 "Fiote creates components through the shared typed composition format".into(),
             ));
         }
-        if value.get("composition").is_some() {
+        if value["format"] != nucleus::canvas::Document::FORMAT
+            && value.get("composition").is_some()
+        {
             let mut document =
                 nucleus::component::Document::decode(&body).map_err(EngineError::Consequence)?;
             if let Some(origin) = crate::operation_origin::component_origin() {
@@ -50,13 +100,14 @@ impl Engine {
                 body = nucleus::component::Document::encode(composition)
                     .map_err(EngineError::Consequence)?;
             }
-        } else if value["format"] != FORMAT
-            || value["castle"]["name"] != head
-            || !value["castle"]["parts"].as_array().is_some_and(|parts| {
-                !parts.is_empty()
-                    && parts.len() <= 256
-                    && parts.iter().all(serde_json::Value::is_object)
-            })
+        } else if value["format"] != nucleus::canvas::Document::FORMAT
+            && (value["format"] != FORMAT
+                || value["castle"]["name"] != head
+                || !value["castle"]["parts"].as_array().is_some_and(|parts| {
+                    !parts.is_empty()
+                        && parts.len() <= 256
+                        && parts.iter().all(serde_json::Value::is_object)
+                }))
         {
             return Err(EngineError::Consequence("Invalid custom component".into()));
         }

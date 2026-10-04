@@ -181,7 +181,7 @@ impl Engine {
         let actor = payload.get("actor").and_then(|value| value.as_str());
         let rule = if let Some(uid) = payload.get("rule").and_then(|value| value.as_str()) {
             let current = store::recurrence::get(&self.store.pool, uid).await?;
-            let Some(current) = current.filter(|current| {
+            let Some(mut current) = current.filter(|current| {
                 !current.is_paused()
                     && Some(current.revision)
                         == payload.get("revision").and_then(|value| value.as_i64())
@@ -203,6 +203,8 @@ impl Engine {
             self.require_karma_execution(Some(&current.record_uid)).await?;
             self.refuse_unreadable_karma_inputs(actor, &[crate::karma_transfer_effects::target(&current).into()])
                 .await?;
+            current.actor_uid = actor.map(str::to_owned);
+            self.authorize_karma_rule(&current, actor).await?;
             Some(current)
         } else {
             None
@@ -246,7 +248,9 @@ impl Engine {
                     .get("target")
                     .and_then(|value| value.as_str())
                     .unwrap_or("");
-                let rows = protein::execute_saved(&self.store, target, None).await?;
+                let uid = self.resolve(target).await?;
+                self.refuse_unreadable(actor, std::slice::from_ref(&uid)).await?;
+                let rows = protein::execute_saved(&self.store, &uid, actor).await?;
                 Ok((true, format!("{} rows", rows.len())))
             }
             "consequence" => {

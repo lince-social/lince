@@ -512,7 +512,11 @@ async fn connection_check_requires_login_and_never_sends_a_prompt() {
     let mut check = fiote::acp::ConnectionCheck::default();
     assert!(
         connection
-            .check(&config, &[], &mut check)
+            .check(
+                &config,
+                &[serde_json::json!({"providerId":"one","acp":false})],
+                &mut check
+            )
             .await
             .err()
             .unwrap()
@@ -529,7 +533,14 @@ async fn connection_check_requires_login_and_never_sends_a_prompt() {
     connection.close();
     let connection = Connection::open(&config).await.unwrap();
     let mut check = fiote::acp::ConnectionCheck::default();
-    let session = connection.check(&config, &[], &mut check).await.unwrap();
+    let session = connection
+        .check(
+            &config,
+            &[serde_json::json!({"providerId":"one","acp":false})],
+            &mut check,
+        )
+        .await
+        .unwrap();
     assert!(check.ready);
     assert_eq!(session.values()["model"], "large");
     assert!(check.model.contains("listed by provider"));
@@ -554,7 +565,11 @@ async fn connection_check_rejects_invalid_credentials_and_expired_provider_login
     let mut check = fiote::acp::ConnectionCheck::default();
     assert!(
         connection
-            .check(&config, &[], &mut check)
+            .check(
+                &config,
+                &[serde_json::json!({"providerId":"one","acp":false})],
+                &mut check
+            )
             .await
             .err()
             .unwrap()
@@ -575,22 +590,22 @@ async fn connection_check_rejects_invalid_credentials_and_expired_provider_login
 }
 
 #[tokio::test]
-async fn connection_check_rejects_agents_without_lince_tool_transport() {
+async fn connection_check_distinguishes_chat_from_unavailable_tool_bridge() {
     let (_root, mut config, connection) = fixture().await;
     connection.close();
     config.environment.insert("TEST_NO_HTTP".into(), "1".into());
     let connection = Connection::open(&config).await.unwrap();
     let mut check = fiote::acp::ConnectionCheck::default();
+    connection.check(&config, &[], &mut check).await.unwrap();
+    assert!(check.ready);
+    assert_eq!(check.session, "Opened successfully");
     assert!(
         connection
-            .check(&config, &[], &mut check)
+            .session(&config, tools(), None)
             .await
-            .err()
-            .unwrap()
-            .contains("HTTP MCP")
+            .unwrap_err()
+            .contains("stdio tool bridge")
     );
-    assert!(!check.ready);
-    assert_eq!(check.session, "Not checked");
     connection.close();
 }
 
@@ -791,4 +806,26 @@ fn settings_validate_directory_and_option_values() {
     assert!(config.validate().is_err());
     config.directory = root.path().into();
     config.validate().unwrap();
+}
+
+#[tokio::test]
+async fn non_http_harness_check_uses_standard_acp_without_inference() {
+    let (root, mut config, connection) = fixture().await;
+    connection.close();
+    let log = root.path().join("requests");
+    config.environment.insert("TEST_NO_HTTP".into(), "1".into());
+    config
+        .environment
+        .insert("TEST_REQUEST_LOG".into(), log.display().to_string());
+    let connection = Connection::open(&config).await.unwrap();
+    let mut check = fiote::acp::ConnectionCheck::default();
+    let options = connection.check(&config, &[], &mut check).await.unwrap();
+    assert!(check.ready);
+    assert!(!options.options.is_empty());
+    assert!(
+        !std::fs::read_to_string(log)
+            .unwrap()
+            .contains("session/prompt")
+    );
+    connection.close();
 }

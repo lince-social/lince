@@ -483,7 +483,7 @@ function renderUsers(users, roles, permissions) {
   const roleSelect = (form, selected) => {
     const label = element('label', t("Role")), select = element('select'); select.name = 'role';
     select.replaceChildren(...roles.map(role => new Option(role.name, role.name)));
-    select.value = selected || roles.find(role => role.name !== 'admin')?.name || ''; label.append(select); form.append(label); return select;
+    select.value = selected || roles[0]?.name || ''; label.append(select); form.append(label); return select;
   };
   if (root.canusercreate && root.canassign) {
     const form = element('form'); form.append(element('h2', t("New user")));
@@ -508,7 +508,6 @@ function renderUsers(users, roles, permissions) {
   }
   for (const role of roles) {
     const section = element('details'); section.append(element('summary', t('{name} permissions', {name:role.name})));
-    if (role.name === 'admin') section.append(element('p',t("Admins have all permissions.")));
     else {
       section.append(element('p',t("Changes apply to every user with this role. Create a separate role for individual access.")));
       const list = element('div',null,'permission-list');
@@ -516,7 +515,7 @@ function renderUsers(users, roles, permissions) {
         input.onchange = () => { const checked = input.checked; work(async () => { try { await act({action:checked ? 'grant-permission' : 'revoke-permission',role:role.name,permission:key}); refresh(); } catch(error) { input.checked = !checked; throw error; } }); }; label.prepend(input); list.append(label); }
       section.append(list);
     }
-    if (root.canrules && role.name !== 'admin') {
+    if (root.canrules) {
       const form = element('form'); form.className = 'role-rules';
       try {
         const editor = readRulesEditor(role.rules || {allow:{all:[]},block:{any:[]}},root.filterconcepts || []);

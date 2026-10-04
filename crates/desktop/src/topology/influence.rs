@@ -40,14 +40,13 @@ pub fn update(world: &mut World) {
             &InfluenceArea,
             &ChildOf,
             &crate::workspace::WorkspaceMember,
-        ), Without<crate::component_push::composition::Generated>>()
+        ), (Without<crate::component_push::composition::Generated>, Without<crate::canvas_host::composition::Generated>)>()
         .iter(world)
         .filter(|(e, a, _, _)| {
-            a.enabled
-                && (a.validate()
-                    || world
-                        .get::<crate::protein_area::grouping::GeneratedGroup>(*e)
-                        .is_some())
+            a.validate()
+                || world
+                    .get::<crate::protein_area::grouping::GeneratedGroup>(*e)
+                    .is_some()
         })
         .map(|(e, a, p, m)| {
             (
@@ -81,7 +80,10 @@ pub fn update(world: &mut World) {
             &crate::canvas::CanvasItem,
             &ChildOf,
             &crate::workspace::WorkspaceMember,
-        ), Without<InfluenceArea>>()
+        ), (
+            Without<InfluenceArea>,
+            Without<crate::external_drop::Preview>,
+        )>()
         .iter(world)
         .map(|(e, i, p, m)| (e, *i, p.parent(), m.0))
         .collect();
@@ -106,6 +108,34 @@ pub fn update(world: &mut World) {
                 .get::<crate::workspace::Workspaces>(root)
                 .is_some_and(|spaces| spaces.active == workspace)
         {
+            if crate::influence_report::tracked(world, entity) {
+                let entries = areas
+                    .iter()
+                    .filter(|(_, _, area_root, member, _, _)| {
+                        *area_root == root && *member == workspace
+                    })
+                    .map(|(id, area, _, _, placement, _)| {
+                        let mut entry = crate::influence_report::Evaluation::new(*id);
+                        entry.inside = contains(
+                            area,
+                            *placement,
+                            spatial(world, entity).position(item.position),
+                        );
+                        entry.motion = crate::influence_report::Outcome::Pinned;
+                        entry.size = entry.motion.clone();
+                        entry
+                    })
+                    .collect();
+                crate::influence_report::store(
+                    world,
+                    entity,
+                    crate::influence_report::Report {
+                        entries,
+                        total: DVec3::ZERO,
+                        scale: 1.0,
+                    },
+                );
+            }
             world
                 .entity_mut(entity)
                 .remove::<(crate::area_effects::AreaScale, crate::area::AreaForces)>();
@@ -131,17 +161,34 @@ pub fn update(world: &mut World) {
         let mut total = DVec3::ZERO;
         let mut displayed = crate::area::AreaForces::default();
         let mut scale = 1.0f64;
+        let mut trace = crate::influence_report::tracked(world, entity).then(Vec::new);
         for (id, area, area_root, member, placement, area_group) in &areas {
             if *area_root != root || *member != workspace {
                 continue;
             }
+            let mut evaluation = crate::influence_report::Evaluation::new(*id);
+            evaluation.inside = contains(area, *placement, point);
+            let activity = crate::influence_report::activity(world, *id, area, root, workspace);
+            if activity != crate::influence_report::Outcome::Active {
+                evaluation.motion = activity.clone();
+                evaluation.size = activity;
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
+                continue;
+            }
             let mut force_blocked = false;
+            let mut shield_hit = None;
+            let mut containment_hit = None;
             let blocked = areas.iter().any(
                 |(shield_id, shield, shield_root, shield_member, shield_placement, _)| {
                     if shield_id == id
                         || shield.immunity == crate::area_effects::Immunity::None
                         || *shield_root != root
                         || *shield_member != workspace
+                        || crate::influence_report::activity(
+                            world, *shield_id, shield, root, workspace,
+                        ) != crate::influence_report::Outcome::Active
                         || !matches(*shield_id, shield, true)
                     {
                         return false;
@@ -156,19 +203,41 @@ pub fn update(world: &mut World) {
                         .blocks(source_inside, contains(shield, *shield_placement, point));
                     if shield.immunity == crate::area_effects::Immunity::Containment {
                         force_blocked |= blocks;
+                        if blocks {
+                            containment_hit = Some(*shield_id);
+                        }
                         false
                     } else {
+                        if blocks {
+                            shield_hit = Some(*shield_id);
+                        }
                         blocks
                     }
                 },
             );
             if blocked {
+                evaluation.motion = crate::influence_report::Outcome::Immune(shield_hit.unwrap());
+                evaluation.size = evaluation.motion.clone();
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
                 continue;
             }
-            if area.scale != 1.0 && contains(area, *placement, point) && matches(*id, area, true) {
+            if evaluation.inside && matches(*id, area, true) {
                 scale *= f64::from(area.scale);
+                evaluation.scale = area.scale;
+                evaluation.size = crate::influence_report::Outcome::Active;
+            } else if evaluation.inside {
+                evaluation.size = crate::influence_report::Outcome::Filter;
             }
             if force_blocked || group.is_some() && group == *area_group {
+                evaluation.motion = containment_hit.map_or(
+                    crate::influence_report::Outcome::Group,
+                    crate::influence_report::Outcome::Immune,
+                );
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
                 continue;
             }
             let relative = local(area, *placement, point);
@@ -176,6 +245,10 @@ pub fn update(world: &mut World) {
             if area.reach.mode == ReachMode::Limited
                 && (relative.y < -area.depth - 1e-7 || relative.y > 1e-7 || !area.reaches(planar))
             {
+                evaluation.motion = crate::influence_report::Outcome::Reach;
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
                 continue;
             }
             let before = total;
@@ -193,6 +266,10 @@ pub fn update(world: &mut World) {
             {
                 let target = target - DVec2::from_array(area.center);
                 let delta = DVec3::new(target.x, 0.0, target.y) - relative;
+                evaluation.slot = Some(
+                    placement.position(DVec2::from_array(area.center))
+                        + placement.rotation() * DVec3::new(target.x, 0.0, target.y),
+                );
                 total += placement.rotation()
                     * delta.normalize_or_zero()
                     * crate::area_effects::simple_strength(
@@ -206,10 +283,23 @@ pub fn update(world: &mut World) {
                 let force = generated.force(area, entity, planar);
                 total += placement.rotation() * DVec3::new(force.x, 0.0, force.y);
                 display_force(&mut displayed, *id, total - before);
+                evaluation.force = total - before;
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
                 continue;
             }
             if !matches(*id, area, false) {
                 display_force(&mut displayed, *id, total - before);
+                evaluation.motion = if evaluation.slot.is_some() {
+                    crate::influence_report::Outcome::Active
+                } else {
+                    crate::influence_report::Outcome::Filter
+                };
+                evaluation.force = total - before;
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
                 continue;
             }
             let sign = if area.direction == crate::area::Direction::Attract {
@@ -253,6 +343,14 @@ pub fn update(world: &mut World) {
             };
             total += force;
             display_force(&mut displayed, *id, total - before);
+            evaluation.force = if (total - before).is_finite() {
+                total - before
+            } else {
+                DVec3::ZERO
+            };
+            if let Some(trace) = &mut trace {
+                trace.push(evaluation);
+            }
         }
         if world.get::<crate::area::AreaForces>(entity) != Some(&displayed) {
             world.entity_mut(entity).insert(displayed);
@@ -266,6 +364,18 @@ pub fn update(world: &mut World) {
             },
         );
         let scale = scale.clamp(0.05, 20.0) as f32;
+        if let Some(entries) = trace {
+            let total = forces.totals[&entity];
+            crate::influence_report::store(
+                world,
+                entity,
+                crate::influence_report::Report {
+                    entries,
+                    total,
+                    scale,
+                },
+            );
+        }
         if scale == 1.0 {
             world
                 .entity_mut(entity)
@@ -618,10 +728,11 @@ pub(crate) fn blocked(
             &ChildOf,
             &crate::workspace::WorkspaceMember,
             Option<&crate::protein_area::filter::Matches>,
-        ), Without<crate::component_push::composition::Generated>>()
+        ), (Without<crate::component_push::composition::Generated>, Without<crate::canvas_host::composition::Generated>)>()
         .iter(world)
         .any(|(entity, shield, parent, member, filter)| {
-            if !shield.enabled
+            if crate::influence_report::activity(world, entity, shield, root, workspace)
+                != crate::influence_report::Outcome::Active
                 || shield.immunity == crate::area_effects::Immunity::None
                 || entity == source
                 || parent.parent() != root
@@ -644,7 +755,7 @@ pub(crate) fn blocked(
 }
 
 pub(crate) fn attraction_force(area: &InfluenceArea, placement: Spatial, point: DVec3) -> DVec3 {
-    if !area.enabled || !area.attraction_enabled || area.strength == 0.0 {
+    if !area.enabled || area.paused || !area.attraction_enabled || area.strength == 0.0 {
         return DVec3::ZERO;
     }
     let relative = local(area, placement, point);

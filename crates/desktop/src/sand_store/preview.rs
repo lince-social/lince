@@ -3,6 +3,7 @@ use bevy::{prelude::*, text::EditableText};
 pub(crate) fn scene(world: &mut World) -> (World, Entity) {
     let mut scene = World::new();
     crate::description::preview_fonts(world, &mut scene);
+    crate::ide::preview_font(world, &mut scene);
     scene.insert_resource(crate::theme::Typography(
         world.resource::<crate::theme::Typography>().0.clone(),
     ));

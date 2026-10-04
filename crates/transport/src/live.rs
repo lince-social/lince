@@ -252,7 +252,7 @@ async fn drive(
                             ClientMessage::LaneJoin { room } => Some(room.clone()),
                             _ => None,
                         };
-                        let write = matches!(message, ClientMessage::Act { .. } | ClientMessage::SignedAct { .. } | ClientMessage::CollabUpdate { .. } | ClientMessage::SessionAuthenticate { .. });
+                        let write = matches!(message, ClientMessage::Act { .. } | ClientMessage::SignedAct { .. } | ClientMessage::CollabUpdate { .. } | ClientMessage::SessionAuthenticate { .. } | ClientMessage::DescriptionAsset { request: nucleus::description_asset::Request::Put { .. }, .. });
                         let preview = message.runs_karma_preview();
                         let operation = async {
                             for reply in session.handle(message).await {

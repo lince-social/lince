@@ -35,6 +35,7 @@ pub struct WorkTimer {
 pub struct WorkTimerPlugin;
 impl Plugin for WorkTimerPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(crate::time_castle::TimeCastlePlugin);
         app.add_systems(
             Update,
             update
@@ -62,23 +63,6 @@ pub fn populate(
         world.entity_mut(parent).insert(LocalTimer::default());
     }
     if let Some(input) = input {
-        let caption = crate::edit_mode::label(world, parent, "Record (optional)", 12.0);
-        world.entity_mut(caption).insert(Node {
-            position_type: PositionType::Absolute,
-            left: px(8),
-            top: px(6),
-            ..default()
-        });
-        if let Some(mut area) = world.get_mut::<crate::sand_text::SandText>(input) {
-            area.offset = [8.0, 24.0];
-            area.size = [344.0, 32.0];
-        }
-        if let Some(mut node) = world.get_mut::<Node>(input) {
-            node.left = px(8);
-            node.top = px(24);
-            node.width = percent(95);
-            node.height = px(32);
-        }
         if let Some(mut text) = world.get_mut::<EditableText>(input) {
             text.visible_lines = Some(1.0);
             text.allow_newlines = false;
@@ -89,18 +73,14 @@ pub fn populate(
                 "Optional Record slug or identity. Leave blank for a standalone stopwatch.".into(),
             ),
         ));
-        if let Some(mut node) = world.get_mut::<Node>(parent) {
-            node.padding = UiRect {
-                top: px(64),
-                left: px(8),
-                right: px(8),
-                bottom: px(8),
-            };
-            node.flex_direction = FlexDirection::Column;
-            node.row_gap = px(6);
-        }
     }
-    let label = crate::edit_mode::label(world, parent, "Total 00:00:00", 24.0);
+    let ui_parent = if let Some(input) = input {
+        crate::time_castle::populate(world, parent);
+        crate::time_castle::stopwatch_panel(world, parent, input)
+    } else {
+        parent
+    };
+    let label = crate::edit_mode::label(world, ui_parent, "Total 00:00:00", 24.0);
     let button = world
         .spawn((
             crate::sand::Square,
@@ -115,13 +95,13 @@ pub fn populate(
                 ..default()
             },
             ActionButton::new(parent, crate::actions![Toggle]),
-            ChildOf(parent),
+            ChildOf(ui_parent),
         ))
         .id();
     let control = crate::edit_mode::label(world, button, "Start", 16.0);
     let status = crate::edit_mode::label(
         world,
-        parent,
+        ui_parent,
         if binding.is_some() {
             ""
         } else {
@@ -142,7 +122,7 @@ pub fn populate(
                     ..default()
                 },
                 ScrollPosition::default(),
-                ChildOf(parent),
+                ChildOf(ui_parent),
             ))
             .id();
         crate::scroll_sand::attach(world, entity);

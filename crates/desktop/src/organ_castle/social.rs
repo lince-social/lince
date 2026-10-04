@@ -8,6 +8,37 @@ mod reports;
 mod resend;
 mod subscriptions;
 
+pub(super) fn delivery_label(stage: &str, destinations: &Value) -> String {
+    match stage {
+        "recipient-durable" => "The recipient saved this Message".into(),
+        "recipient-refused" => "The recipient declined this Message".into(),
+        "mailbox-stored" => {
+            let hosts = destinations
+                .as_array()
+                .map(Vec::as_slice)
+                .unwrap_or_default();
+            let stored = hosts
+                .iter()
+                .filter(|host| host["stored"].as_i64().unwrap_or(0) > 0)
+                .count();
+            if stored == 1 {
+                "One mailbox confirmed storage. The recipient has not confirmed receipt".into()
+            } else if stored > 1 {
+                format!(
+                    "{stored} mailboxes confirmed storage. The recipient has not confirmed receipt"
+                )
+            } else {
+                "Mailbox storage was confirmed. The recipient has not confirmed receipt".into()
+            }
+        }
+        "queued" | "waiting" => "Saved on this device; waiting for keys or mailbox delivery".into(),
+        "held" => "Delivery paused; review current device keys and permissions".into(),
+        "expired" => "Delivery time ended; the retained Message is still available".into(),
+        "cancelled" => "Delivery stopped; the retained Message is still available".into(),
+        _ => stage.into(),
+    }
+}
+
 pub(super) const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::Attribution {
         name: "image",
@@ -102,11 +133,11 @@ pub(super) fn populate(world: &mut World, owner: Entity, parent: Entity) {
         world,
         owner,
         parent,
-        "Reset live private messaging keys after restore",
+        "Reset this device's live private messaging keys",
         action(json!({"command":"reset-private-sessions"})),
         vec![],
         Some(
-            "Reset live private keys on this Cell? History and owner authority remain, but old encrypted queues are held and fresh messaging keys need owner authorization. Use this after restoring a backup; it affects this device's private social sessions.",
+            "Reset live private keys on this Cell? History and owner authority remain, but old encrypted queues are held and fresh messaging keys need owner authorization.",
         ),
     );
     form(
@@ -712,7 +743,7 @@ pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &V
                         .as_str()
                         .unwrap_or_default(),
                 );
-                label(world,parent,request["state"]["error"].as_str().unwrap_or("Saved introduction waiting for owner authorization and selected mailbox registration"));
+                notice(world,parent,request["state"]["error"].as_str().unwrap_or("Saved introduction waiting for owner authorization and selected mailbox registration"));
                 let resume = form(
                     world,
                     owner,
@@ -749,7 +780,11 @@ pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &V
             for message in request["messages"].as_array().into_iter().flatten().rev() {
                 label(world, parent, message["body"].as_str().unwrap_or_default());
                 if let Some(stage) = message["delivery"]["stage"].as_str() {
-                    label(world, parent, stage);
+                    label(
+                        world,
+                        parent,
+                        &delivery_label(stage, &message["destinations"]),
+                    );
                 }
                 if let Some(error) = message["delivery"]["error"].as_str() {
                     label(world, parent, error);
@@ -845,7 +880,7 @@ pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &V
                             },
                         );
                     } else if request["reveal"]["local_connect"] == true {
-                        label(
+                        notice(
                             world,
                             parent,
                             "You chose Connect; waiting for the other person's consent.",
@@ -871,7 +906,7 @@ pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &V
                         );
                     }
                     if let Some(recovery) = request["verification"]["recovery"].as_str() {
-                        label(world, parent, recovery);
+                        notice(world, parent, recovery);
                     }
                 }
                 for (name, decision) in [

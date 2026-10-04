@@ -334,6 +334,20 @@ fn run(world: &mut World, owner: Entity) {
     status(world, owner, "Loading…");
 }
 
+pub(crate) fn stop_results(world: &mut World, owner: Entity) {
+    cancel(world, owner, Some(RequestKind::Results));
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.subscription = None;
+    }
+    if let Some(mut result) = world.get_mut::<ProteinResults>(owner) {
+        result.current = false;
+    }
+}
+
+pub(crate) fn resume_results(world: &mut World, owner: Entity) {
+    run(world, owner);
+}
+
 fn library(world: &mut World, owner: Entity) {
     if world.get::<View>(owner).is_none() {
         return;

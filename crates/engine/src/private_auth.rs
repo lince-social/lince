@@ -438,10 +438,15 @@ mod tests {
                         .unwrap();
                     }
                 }
-                Change::PolicyClear => {
-                    store::role_policies::clear(&store.pool, self.role, 1)
-                        .await
-                        .unwrap();
+                Change::PolicyInvalid => {
+                    store::role_policies::set(
+                        &store.pool,
+                        self.role,
+                        &serde_json::json!({"read":{"unsupported":true},"grants":[]}),
+                        1,
+                    )
+                    .await
+                    .unwrap();
                 }
                 Change::PermissionRevoke => {
                     store::auth::revoke(&store.pool, self.role, self.permission)
@@ -499,7 +504,7 @@ mod tests {
         ContactBlock,
         GrantAba,
         RoleRemove,
-        PolicyClear,
+        PolicyInvalid,
         FilterInvalid,
         PermissionRevoke,
         DeviceRevoke,
@@ -514,7 +519,7 @@ mod tests {
         Change::ContactAba,
         Change::ContactBlock,
         Change::RoleRemove,
-        Change::PolicyClear,
+        Change::PolicyInvalid,
         Change::FilterInvalid,
         Change::PermissionRevoke,
         Change::DeviceRevoke,
@@ -575,7 +580,7 @@ mod tests {
             Change::ContactBlock,
             Change::PersonDisable,
             Change::RoleRemove,
-            Change::PolicyClear,
+            Change::PolicyInvalid,
             Change::FilterInvalid,
             Change::DeviceRevoke,
         ] {

@@ -165,7 +165,7 @@ async fn deletion_cascades_and_old_requests_cannot_change_recreated_roles() {
 }
 
 #[tokio::test]
-async fn names_recovery_role_and_permission_revision_are_checked() {
+async fn names_and_permission_revisions_are_checked_without_special_role_names() {
     let e = Engine::open_memory().await.unwrap();
     let original = create(&e, "staff").await;
     create(&e, "occupied").await;
@@ -187,8 +187,10 @@ async fn names_recovery_role_and_permission_revision_are_checked() {
             "{name:?}"
         );
     }
-    assert!(e.act(rename(&admin, "recovery"), None).await.is_err());
-    assert!(e.act(delete(&admin), None).await.is_err());
+    e.act(rename(&admin, "recovery"), None).await.unwrap();
+    let renamed = role(&e, "recovery").await;
+    assert_eq!(renamed.permissions, admin.permissions);
+    e.act(delete(&renamed), None).await.unwrap();
     e.act(
         Action::GrantPermission {
             role: "staff".into(),

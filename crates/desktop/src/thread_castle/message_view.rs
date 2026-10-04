@@ -141,7 +141,9 @@ pub(super) fn spawn(
         crate::organ_castle::social_delivery_controls(world, entity, content, uid);
     }
     for (title, action) in [("Edit", true), ("Delete", false)] {
-        if action && !data["social"].is_null() { continue; }
+        if action && !data["social"].is_null() {
+            continue;
+        }
         let button = if action {
             control(world, actions, entity, title, Edit)
         } else {
@@ -175,7 +177,16 @@ pub(super) fn spawn(
             ChildOf(content),
         ))
         .id();
-    crate::edit_mode::label(world, confirmation, if data["social"].is_null() { "Delete this message Record?" } else { "Delete this retained Message on your devices? This cannot erase the other person's copy." }, 14.0);
+    crate::edit_mode::label(
+        world,
+        confirmation,
+        if data["social"].is_null() {
+            "Delete this message Record?"
+        } else {
+            "Delete this retained Message on your devices? This cannot erase the other person's copy."
+        },
+        14.0,
+    );
     control(world, confirmation, entity, "Delete Record", Delete);
     control(world, confirmation, entity, "Cancel", AskDelete(false));
     world.entity_mut(entity).insert(Message {
@@ -237,10 +248,15 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous:
         .or(author)
         .unwrap_or("Unknown author");
     world.get_mut::<Text>(author_name).unwrap().0 = name.into();
-    if let Some(stage)=data["social_delivery"]["stage"].as_str() {
-        let status=world.get::<Message>(entity).unwrap().status;
-        let detail=data["social_delivery"]["error"].as_str().unwrap_or_default();
-        world.get_mut::<Text>(status).unwrap().0=format!("{stage} {detail}");
+    if let Some(stage) = data["social_delivery"]["stage"].as_str() {
+        let status = world.get::<Message>(entity).unwrap().status;
+        let detail = data["social_delivery"]["error"]
+            .as_str()
+            .unwrap_or_default();
+        world.get_mut::<Text>(status).unwrap().0 = format!(
+            "{} {detail}",
+            crate::organ_castle::social_delivery_label(stage)
+        );
     }
     if world.get::<Node>(input).unwrap().display == Display::None
         && !world

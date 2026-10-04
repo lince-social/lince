@@ -6,10 +6,12 @@ use std::sync::{
 
 use nucleus::execution::Execution;
 use nucleus::karma::{ReferenceKind, TypedUid};
-use nucleus::projection::{Context, Incomplete, MAX_SPANS, MAX_STEPS, Span};
+use nucleus::projection::{Context, Incomplete, MAX_SPANS, MAX_STEPS, Scheduled, Span};
 use nucleus::simulation::{Cause, Quantity, RuleOccurrence};
 
 use crate::{Engine, EngineError};
+
+mod schedule;
 
 #[derive(Clone, PartialEq, Eq)]
 struct Request {
@@ -143,7 +145,7 @@ impl Engine {
                 match computed {
                     Ok(calculated) => {
                         if calculated.source_revision == request.revision {
-                            match store::projection::publish(
+                            match store::projection::publish_schedule(
                                 &store.pool,
                                 &request.context,
                                 calculated.source_revision,
@@ -151,6 +153,7 @@ impl Engine {
                                 calculated.expires_ms,
                                 calculated.incomplete.as_ref(),
                                 &calculated.spans,
+                                &calculated.schedule,
                             )
                             .await
                             {
@@ -220,6 +223,7 @@ pub struct Calculated {
     pub expires_ms: i64,
     pub incomplete: Option<Incomplete>,
     pub spans: Vec<Span>,
+    pub schedule: Vec<Scheduled>,
 }
 
 fn arm_expiry(
@@ -270,6 +274,7 @@ pub async fn calculate(
         expires_ms: base_ms + 86_400_000,
         incomplete: None,
         spans: Vec::new(),
+        schedule: Vec::new(),
     };
     if context.actor.is_some() {
         result.incomplete = Some(Incomplete::UnavailableRuntime {});
@@ -312,6 +317,9 @@ pub async fn calculate(
         engine.install_karma_runtime_config(config)?;
         let mut position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM fact").fetch_one(&private.pool).await?;
         let application_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_rule_application").fetch_one(&private.pool).await?;
+        let mut schedule_position = application_position;
+        let existing_records: std::collections::HashSet<String> = store::sqlx::query_scalar("SELECT uid FROM record WHERE deleted_at IS NULL").fetch_all(&private.pool).await?.into_iter().collect();
+        schedule::manual(&private.pool, context, &existing_records, &mut result.schedule, &std::collections::HashMap::new()).await?;
         let program_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_run").fetch_one(&private.pool).await?;
         let mut active = BTreeMap::new();
         let mut changed = std::collections::BTreeSet::new();
@@ -330,9 +338,12 @@ pub async fn calculate(
         let mut complete = false;
         for _ in 0..MAX_STEPS {
             execution.set_time(now).map_err(|error| EngineError::Consequence(error.into()))?;
+            if !engine.karma_device_execution().await?.executing { result.incomplete = Some(Incomplete::UnavailableRuntime {}); break; }
             metrics.steps.fetch_add(1, Ordering::Relaxed);
             let step = engine.step_karma_time(execution.now(), 1).await?;
             let database_effects = engine.run_database_effects().await?;
+            schedule_position = schedule::occurrences(&private.pool, context, schedule_position, &existing_records, &mut result.schedule).await?;
+            if result.schedule.len() >= MAX_SPANS { result.incomplete = Some(Incomplete::Budget {}); break; }
             loop {
                 let facts = store::facts::after_position(&private.pool, position, 256).await?;
                 if facts.is_empty() { break; }
@@ -391,16 +402,58 @@ pub async fn calculate(
             }
         }
         if !complete && result.incomplete.is_none() { result.incomplete = Some(Incomplete::Budget {}); }
+        let schedule_origins = active.iter().filter(|(uid, _)| !existing_records.contains(*uid)).map(|(uid, span)| (uid.clone(), span.cause.clone())).collect();
         for mut span in active.into_values() {
             if !complete { span.until_ms = now; }
             if span.from_ms < span.until_ms && result.spans.len() < MAX_SPANS { result.spans.push(span); }
         }
         result.spans.retain(|span| changed.contains(span.record.as_str()));
+        schedule::manual(&private.pool, context, &existing_records, &mut result.schedule, &schedule_origins).await?;
+        result.schedule.sort_by(|a, b| a.id.cmp(&b.id));
+        result.schedule.dedup_by(|a, b| a.id == b.id);
         Ok::<_, EngineError>(())
     }).await;
     private.pool.close().await;
     outcome?;
+    result.spans.sort_by(|a, b| a.from_ms.cmp(&b.from_ms).then_with(|| a.id.cmp(&b.id)));
+    result.schedule.sort_by(|a, b| a.time.from_ms.cmp(&b.time.from_ms).then_with(|| a.id.cmp(&b.id)));
+    let mut bytes = 0;
+    let spans_limited = retain_payload_budget(&mut result.spans, &mut bytes)?;
+    let schedule_limited = retain_payload_budget(&mut result.schedule, &mut bytes)?;
+    if spans_limited || schedule_limited { result.incomplete = Some(Incomplete::Budget {}); }
     Ok(result)
+}
+
+fn retain_payload_budget<T: serde::Serialize>(entries: &mut Vec<T>, bytes: &mut usize) -> Result<bool, EngineError> {
+    let mut limited = false;
+    let mut error = None;
+    entries.retain(|entry| {
+        match serde_json::to_vec(entry) {
+            Ok(encoded) if encoded.len() <= nucleus::projection::MAX_CACHE_BYTES.saturating_sub(*bytes) => { *bytes += encoded.len(); true }
+            Ok(_) => { limited = true; false }
+            Err(failure) => { error = Some(failure); false }
+        }
+    });
+    if let Some(error) = error { return Err(EngineError::Json(error)); }
+    Ok(limited)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn projection_budget_counts_json_escaping_and_preserves_entries_that_fit() {
+        let mut entries = vec!["\\".repeat(nucleus::projection::MAX_CACHE_BYTES / 2), "available".into()];
+        let mut bytes = 0;
+        assert!(retain_payload_budget(&mut entries, &mut bytes).unwrap());
+        assert_eq!(entries, vec!["available"]);
+        assert_eq!(bytes, serde_json::to_vec("available").unwrap().len());
+        let mut entries = vec!["fits".to_owned()];
+        assert!(!retain_payload_budget(&mut entries, &mut bytes).unwrap());
+        assert_eq!(entries, vec!["fits"]);
+        assert!(bytes <= nucleus::projection::MAX_CACHE_BYTES);
+    }
 }
 
 #[derive(serde::Deserialize)]

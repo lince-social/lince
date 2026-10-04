@@ -188,34 +188,15 @@ impl Engine {
                         .await?;
                     outcome.facts = self.settle_all_local(&transfer, &person, now).await?;
                 }
-                Action::SetPlace {
-                    target,
-                    lat,
-                    lon,
-                    address,
-                } => {
-                    let target = self.resolve(&target).await?;
-                    let place =
-                        store::places::create(&self.store.pool, lat, lon, address.as_deref())
-                            .await?;
-                    store::places::set_record_place(&self.store.pool, &target, &place).await?;
-                    outcome.created = Some(place);
+                action @ Action::SetPlace { .. } => {
+                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
                 }
                 Action::GrantVisibility {
                     subject_kind,
                     subject,
                     target,
                 } => {
-                    let target = self.resolve(&target).await?;
-                    outcome.created = Some(
-                        store::visibility::grant(
-                            &self.store.pool,
-                            &subject_kind,
-                            subject.as_deref(),
-                            &target,
-                        )
-                        .await?,
-                    );
+                    outcome = self.grant_record_visibility_as(&subject_kind, subject.as_deref(), &target, actor.as_deref(), now).await?;
                 }
                 Action::SaveProtein { slug, head, ast } => {
                     validate_saved_protein_shape(&ast)?;

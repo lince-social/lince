@@ -401,10 +401,10 @@ async fn pair(a: &Engine, ao: &str, b: &Engine, bo: &str) {
     a.adopt_introduction(&b.introduction().await.unwrap(), 1)
         .await
         .unwrap();
-    store::organs::set_sync_policy(&a.store.pool, bo, true, false)
+    store::organs::set_sync_policy(&a.store.pool, bo, true, true)
         .await
         .unwrap();
-    store::organs::set_sync_policy(&b.store.pool, ao, true, false)
+    store::organs::set_sync_policy(&b.store.pool, ao, true, true)
         .await
         .unwrap();
 }

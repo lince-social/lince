@@ -227,7 +227,7 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<String, EngineError> {
         self.access_scope(true, async {
-            let current = store::recurrence::get(&self.store.pool, &rule.uid)
+            let mut current = store::recurrence::get(&self.store.pool, &rule.uid)
                 .await?
                 .ok_or_else(|| invalid("Transfer Rule was deleted"))?;
             if current.is_paused() || current.revision != rule.revision {
@@ -235,6 +235,7 @@ impl Engine {
                     "Transfer Rule changed or paused before its effect ran",
                 ));
             }
+            current.actor_uid = rule.actor_uid.clone();
             self.authorize_karma_rule(&current, current.actor_uid.as_deref())
                 .await?;
             if let Some(condition) = &current.condition {

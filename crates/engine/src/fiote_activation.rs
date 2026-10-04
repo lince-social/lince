@@ -28,6 +28,9 @@ impl Engine {
         cause: serde_json::Value,
         actor: Option<&str>,
     ) -> Result<ActionOutcome, EngineError> {
+        if actor.is_some() {
+            return Err(EngineError::Forbidden("Fiote execution requires the local interface session; a workspace or Record grant cannot delegate the host's automation authority".into()));
+        }
         let target = self.resolve(&target).await?;
         self.require_permission(actor, "record:update").await?;
         self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&target))

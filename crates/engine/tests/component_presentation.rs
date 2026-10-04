@@ -87,6 +87,7 @@ async fn fiote_presentations_are_wrapped_and_typed_saved_components_cannot_drop_
         name: "Invalid".into(),
         origin: None,
         parts: vec![nucleus::component::Part {
+            settings: Default::default(),
             id: "action".into(),
             events: Vec::new(),
             position: [0, 0],
@@ -345,6 +346,7 @@ async fn hidden_bound_records_cannot_be_pushed_by_an_actor() {
                             name: "Nested restricted view".into(),
                             origin: None,
                             parts: vec![nucleus::component::Part {
+                                settings: Default::default(),
                                 id: "secret".into(),
                                 position: [0, 0],
                                 size: [480, 320],

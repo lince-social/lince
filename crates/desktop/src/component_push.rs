@@ -46,6 +46,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .collect();
     for message in presentations {
         composition::receive(world, &message);
+        crate::canvas_host::composition::receive(world, &message);
         if let ServerMessage::PresentComponent { presentation } = message {
             if let Err(message) = present(world, presentation) {
                 crate::notifications::report(world, "interface::components", &message);
@@ -166,7 +167,7 @@ fn start_calls(
     }
 }
 
-fn spawn(
+pub(crate) fn spawn(
     world: &mut World,
     root: Entity,
     workspace: u64,
@@ -275,7 +276,7 @@ fn spawn(
     })
 }
 
-fn rectangle() -> AreaShape {
+pub(crate) fn rectangle() -> AreaShape {
     AreaShape::Polygon(vec![
         [-0.5, -0.5],
         [0.5, -0.5],

@@ -1,0 +1,10 @@
+pub mod acp;
+pub mod adapters;
+pub mod check;
+pub mod connection;
+pub mod discovery;
+pub mod driver;
+pub mod extensions;
+pub mod provider;
+pub mod provider_adapter;
+pub mod speech;

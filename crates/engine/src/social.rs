@@ -625,7 +625,7 @@ impl Engine {
     ) -> std::pin::Pin<
         Box<dyn std::future::Future<Output = Result<ActionOutcome, EngineError>> + Send + 'a>,
     > {
-        Box::pin(self.social_authorized(actor, command.permission(), async move {
+        Box::pin(self.social_authorized(actor, command.permission(), Box::pin(async move {
             self.require_permission(actor, command.permission()).await?;
             if command.permission() != "view:stream" {
                 self.social_require_local_write().await?;
@@ -793,7 +793,7 @@ impl Engine {
                     self.social_own_record(&record, actor).await?;
                     outcome.data = Some(self.social_reply_key_status(&record).await?);
                 }
-                Command::ArchivePost { record } => {
+                Command::ArchivePost { record } => Box::pin(async {
                     let state = self.social_post(&record, actor).await?;
                     if let Some(document) = state.get("published").filter(|value| !value.is_null())
                     {
@@ -848,7 +848,8 @@ impl Engine {
                     outcome.data = Some(
                         json!({"status":"Ended announcement archived on your devices. Public copies and separately accepted conversations are unaffected"}),
                     );
-                }
+                    Ok::<(), EngineError>(())
+                }).await?,
                 Command::ImportProfileImage { path } => {
                     outcome.data = Some(self.social_import_image(path, actor).await?);
                 }
@@ -917,7 +918,7 @@ impl Engine {
                 Command::AskResults { id } => {
                     outcome.data = Some(self.social_ask_results(&id, actor).await?);
                 }
-                Command::Overview | Command::PostPage { .. } => {
+                Command::Overview | Command::PostPage { .. } => Box::pin(async {
                     self.social_refresh_sources().await?;
                     let states = self.social_publications().await?;
                     let mut posts = Vec::new();
@@ -958,12 +959,12 @@ impl Engine {
                     let organ = store::organs::local(&self.store.pool)
                         .await?
                         .ok_or_else(|| invalid("No local Organ"))?;
-                    let mut profile = store::records::get_extension(
+                    let mut profile = Some(store::records::get_extension(
                         &self.store.pool,
                         &organ.uid,
                         PROFILE_NAMESPACE,
                     )
-                    .await?;
+                    .await?.unwrap_or_else(|| json!({})));
                     if let Some(state) = &mut profile {
                         for (key,draft) in state.as_object_mut().into_iter().flatten() {
                             if key.starts_with("pending_profile_") {
@@ -1009,12 +1010,13 @@ impl Engine {
                     outcome.data = Some(
                         json!({"posts":posts,"next_posts_after":next_posts_after,"profile":profile,"jobs":store::social::jobs(&self.store.pool).await?,"settings":self.social_settings().await?,"services_managed":self.social_services_managed(),"servers":self.social_servers().await?,"gossip":self.social_gossip_view(actor).await?["gossip"],"asks":self.social_ask_view(actor).await?["asks"],"can_manage_services":self.require_permission(actor,"organ:update").await.is_ok() && self.social_require_local_write().await.is_ok()}),
                     );
-                }
+                    Ok::<(), EngineError>(())
+                }).await?,
                 Command::SaveDraft {
                     record,
                     source,
                     mut draft,
-                } => {
+                } => Box::pin(async {
                     draft.validate().map_err(invalid)?;
                     if let Some(amount) = &draft.quantity {
                         draft.quantity = Some(
@@ -1202,20 +1204,23 @@ impl Engine {
                     outcome.facts.extend(fact);
                     outcome.data =
                         Some(json!({"record":uid,"status":"draft","draft":state["draft"]}));
-                }
-                Command::Preview { record, state } => {
+                    Ok::<(), EngineError>(())
+                }).await?,
+                Command::Preview { record, state } => Box::pin(async {
                     let doc = self
                         .social_preview(&record, actor, state, now.timestamp())
                         .await?;
                     outcome.data = Some(
                         json!({"record":record,"preview_hash":document_hash("snippet",&doc)?,"document":doc}),
                     );
-                }
+                    Ok::<(), EngineError>(())
+                }).await?,
                 Command::Publish {
                     record,
                     preview_hash,
                     document,
                 } => {
+                    return Box::pin(async move {
                     validate_snippet(&document, now.timestamp())?;
                     let held = self.social_post(&record, actor).await?;
                     if held["published"] == serde_json::to_value(&document)?
@@ -1317,6 +1322,9 @@ impl Engine {
                     outcome.data = Some(
                         json!({"record":record,"document":document,"status":if document.destinations.is_empty() { "Saved in your local discovery cache; no publication hosts selected" } else { "Saved and queued for the selected services" }}),
                     );
+                    self.notify_query_changed();
+                    Ok(outcome)
+                    }).await;
                 }
                 Command::SaveProfile {
                     fields,
@@ -1381,6 +1389,6 @@ impl Engine {
             }
             self.notify_query_changed();
             Ok(outcome)
-        }))
+        })))
     }
 }

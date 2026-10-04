@@ -22,6 +22,7 @@ pub enum WorkError {
     TimestampTooLong,
     InvalidTimestamp,
     EndBeforeStart,
+    InvalidOccurrenceLink,
 }
 
 impl fmt::Display for WorkError {
@@ -30,7 +31,7 @@ impl fmt::Display for WorkError {
             Self::NotObject => "work metadata is not an object",
             Self::TooLarge => "work metadata exceeds its byte limit",
             Self::UnknownField => "work metadata contains an unknown field",
-            Self::InvalidDate => "work metadata contains an invalid calendar date",
+            Self::InvalidDate => "work metadata contains an invalid date or scheduled timestamp",
             Self::InvalidEstimate => "work metadata contains an invalid estimate",
             Self::InvalidLogs => "work metadata logs are not an array",
             Self::TooManyLogs => "work metadata exceeds its log limit",
@@ -38,7 +39,10 @@ impl fmt::Display for WorkError {
             Self::UnknownLogField => "work metadata log contains an unknown field",
             Self::TimestampTooLong => "work metadata timestamp exceeds its byte limit",
             Self::InvalidTimestamp => "work metadata contains an invalid timestamp",
-            Self::EndBeforeStart => "work metadata log ends before it starts",
+            Self::EndBeforeStart => "work metadata range ends before it starts",
+            Self::InvalidOccurrenceLink => {
+                "work metadata contains an invalid projection occurrence link"
+            }
         })
     }
 }
@@ -63,10 +67,11 @@ impl WorkLog {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorkMetadata {
-    start: Option<NaiveDate>,
-    due: Option<NaiveDate>,
+    start: Option<nucleus::schedule::TimeValue>,
+    due: Option<nucleus::schedule::TimeValue>,
     estimate_minutes: Option<f64>,
     logs: Vec<WorkLog>,
+    occurrence: Option<nucleus::projection::OccurrenceLink>,
 }
 
 impl WorkMetadata {
@@ -76,7 +81,19 @@ impl WorkMetadata {
         encoded_size(value)?;
         let start = optional_date(object.get("start"))?;
         let due = optional_date(object.get("due"))?;
+        nucleus::schedule::validate_endpoints(
+            object.get("start").and_then(Value::as_str),
+            object.get("due").and_then(Value::as_str),
+        )
+        .map_err(|_| WorkError::EndBeforeStart)?;
         let estimate_minutes = optional_estimate(object.get("estimate_min"))?;
+        nucleus::schedule::range(
+            object.get("start").and_then(Value::as_str),
+            object.get("due").and_then(Value::as_str),
+            estimate_minutes,
+            None,
+        )
+        .map_err(|_| WorkError::InvalidTimestamp)?;
         let logs = match object.get("logs") {
             None => Vec::new(),
             Some(Value::Array(entries)) => {
@@ -84,20 +101,57 @@ impl WorkMetadata {
             }
             Some(_) => return Err(WorkError::InvalidLogs),
         };
+        let occurrence = match object.get("projection_occurrence") {
+            None | Some(Value::Null) => None,
+            Some(value) => {
+                let link: nucleus::projection::OccurrenceLink =
+                    serde_json::from_value(value.clone())
+                        .map_err(|_| WorkError::InvalidOccurrenceLink)?;
+                if link.record.kind() != nucleus::karma::ReferenceKind::Record
+                    || !nucleus::valid_uid(&link.occurrence.rule_uid, "rec")
+                    || link.occurrence.event_id.is_empty()
+                    || link.occurrence.event_id.len() > 1024
+                    || link.occurrence.revision > i64::MAX as u64
+                    || link.occurrence.intended_at_ms.is_some_and(|time| {
+                        !(0..=nucleus::schedule::MAX_INSTANT_MS).contains(&time)
+                    })
+                {
+                    return Err(WorkError::InvalidOccurrenceLink);
+                }
+                Some(link)
+            }
+        };
         Ok(Self {
             start,
             due,
             estimate_minutes,
             logs,
+            occurrence,
         })
     }
 
-    pub fn start(&self) -> Option<&NaiveDate> {
-        self.start.as_ref()
+    pub fn start(&self) -> Option<NaiveDate> {
+        self.start
+            .as_ref()
+            .map(nucleus::schedule::TimeValue::stored_date)
     }
 
-    pub fn due(&self) -> Option<&NaiveDate> {
-        self.due.as_ref()
+    pub fn due(&self) -> Option<NaiveDate> {
+        self.due
+            .as_ref()
+            .map(nucleus::schedule::TimeValue::stored_date)
+    }
+
+    pub fn start_ms(&self) -> Option<i64> {
+        self.start
+            .as_ref()
+            .and_then(nucleus::schedule::TimeValue::instant_ms)
+    }
+
+    pub fn due_ms(&self) -> Option<i64> {
+        self.due
+            .as_ref()
+            .and_then(nucleus::schedule::TimeValue::instant_ms)
     }
 
     pub fn estimate_minutes(&self) -> Option<f64> {
@@ -106,6 +160,10 @@ impl WorkMetadata {
 
     pub fn logs(&self) -> &[WorkLog] {
         &self.logs
+    }
+
+    pub fn occurrence(&self) -> Option<&nucleus::projection::OccurrenceLink> {
+        self.occurrence.as_ref()
     }
 }
 
@@ -118,10 +176,12 @@ impl TryFrom<&Value> for WorkMetadata {
 }
 
 fn validate_shape(object: &Map<String, Value>) -> Result<(), WorkError> {
-    if object
-        .keys()
-        .any(|key| !matches!(key.as_str(), "start" | "due" | "estimate_min" | "logs"))
-    {
+    if object.keys().any(|key| {
+        !matches!(
+            key.as_str(),
+            "start" | "due" | "estimate_min" | "logs" | "projection_occurrence"
+        )
+    }) {
         return Err(WorkError::UnknownField);
     }
     let Some(logs) = object.get("logs") else {
@@ -154,7 +214,7 @@ fn validate_shape(object: &Map<String, Value>) -> Result<(), WorkError> {
     Ok(())
 }
 
-fn optional_date(value: Option<&Value>) -> Result<Option<NaiveDate>, WorkError> {
+fn optional_date(value: Option<&Value>) -> Result<Option<nucleus::schedule::TimeValue>, WorkError> {
     let Some(value) = value else {
         return Ok(None);
     };
@@ -164,19 +224,15 @@ fn optional_date(value: Option<&Value>) -> Result<Option<NaiveDate>, WorkError> 
         }
         return Err(WorkError::InvalidDate);
     };
-    if value.len() != 10
-        || value.as_bytes()[4] != b'-'
-        || value.as_bytes()[7] != b'-'
-        || value
-            .bytes()
-            .enumerate()
-            .any(|(index, byte)| index != 4 && index != 7 && !byte.is_ascii_digit())
-    {
-        return Err(WorkError::InvalidDate);
-    }
-    NaiveDate::parse_from_str(value, "%Y-%m-%d")
+    nucleus::schedule::TimeValue::parse(value)
         .map(Some)
-        .map_err(|_| WorkError::InvalidDate)
+        .map_err(|_| {
+            if value.contains('T') {
+                WorkError::InvalidTimestamp
+            } else {
+                WorkError::InvalidDate
+            }
+        })
 }
 
 fn optional_estimate(value: Option<&Value>) -> Result<Option<f64>, WorkError> {

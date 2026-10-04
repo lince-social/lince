@@ -127,6 +127,7 @@ impl Engine {
         } else {
             self.accept_conversation(&invite.root, &invite.from_organ).await?;
         }
+        store::offers::remember_outcome(&self.store.pool, store::offers::OfferKind::ThreadInvite, invite_uid, &invite.from_organ, "accepted").await?;
         store::invites::clear(&self.store.pool, invite_uid).await?;
         self.notify_notifications_changed();
         Ok(invite.root)
@@ -144,6 +145,7 @@ impl Engine {
             &invite.from_organ,
         )
         .await?;
+        store::offers::remember_outcome(&self.store.pool, store::offers::OfferKind::ThreadInvite, invite_uid, &invite.from_organ, "declined").await?;
         store::invites::clear(&self.store.pool, invite_uid).await?;
         self.notify_notifications_changed();
         Ok(())

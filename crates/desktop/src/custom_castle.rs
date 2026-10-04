@@ -32,6 +32,8 @@ struct CustomCastle {
     #[serde(default)]
     composition: Option<nucleus::component::Composition>,
     #[serde(default)]
+    canvas_component: Option<nucleus::canvas::Component>,
+    #[serde(default)]
     parts: Vec<Part>,
 }
 
@@ -51,6 +53,8 @@ enum Content {
         texts: Vec<SavedText>,
         #[serde(default)]
         timer: Option<crate::work_timer::LocalTimer>,
+        #[serde(default)]
+        time_castle: Option<lince_interface::time_castle::Settings>,
     },
     Calendar(Calendar),
     Instinct(crate::instinct::Instinct),
@@ -74,6 +78,7 @@ fn file_id() -> String {
 
 impl CustomCastle {
     fn valid(&self) -> bool {
+        if let Some(component) = &self.canvas_component { return self.parts.is_empty() && self.composition.is_none() && component.validate(&crate::canvas_host::registry(), false).is_ok(); }
         if let Some(composition) = &self.composition {
             return self.parts.is_empty()
                 && self.name == composition.name
@@ -104,12 +109,13 @@ impl CustomCastle {
                 return false;
             }
             let valid = match &part.content {
-                Content::Sand { texts, timer, kind } => {
+                Content::Sand { texts, timer, kind, time_castle } => {
                     texts.len() <= 256
                         && texts.iter().all(SavedText::validate)
                         && timer
                             .as_ref()
                             .is_none_or(|timer| *kind == SandKind::WorkTimer && timer.valid())
+                        && time_castle.as_ref().is_none_or(|settings| *kind == SandKind::WorkTimer && settings.valid())
                 }
                 Content::Calendar(calendar) => calendar.valid(),
                 Content::Instinct(instinct) => instinct.valid(),
@@ -135,6 +141,7 @@ impl CustomCastle {
             }
         }
         self.parts.iter().all(|part| match &part.content {
+            Content::Sand { time_castle: Some(settings), .. } => settings.area.as_ref().is_none_or(|id| areas.contains(id)),
             Content::Calendar(calendar) => {
                 calendar.area.as_ref().is_none_or(|id| areas.contains(id))
             }
@@ -156,6 +163,11 @@ impl CustomCastle {
         if selection.is_empty() {
             return Err("Select a group on the canvas first.".into());
         }
+        if selection.len() == 1 && let Some(mut composition) = crate::canvas_host::composition::capture(world, selection[0]) {
+            composition.name = name.trim().into();
+            let castle = Self { name: composition.name.clone(), canvas_component: Some(nucleus::canvas::Component::Composition { composition }), composition: None, parts: Vec::new() };
+            return castle.valid().then_some(castle).ok_or("Invalid composition name".into());
+        }
         if selection.len() == 1
             && let Some(mut composition) =
                 crate::component_push::composition::capture(world, selection[0])
@@ -163,6 +175,7 @@ impl CustomCastle {
             composition.name = name.trim().into();
             let castle = Self {
                 name: composition.name.clone(),
+                canvas_component: None,
                 composition: Some(composition),
                 parts: Vec::new(),
             };
@@ -187,6 +200,7 @@ impl CustomCastle {
             let mut layouts = HashSet::new();
             let mut groups = HashSet::new();
             for entity in &members {
+                if let Some(settings) = world.get::<crate::time_castle::TimeSettings>(*entity) { linked_areas.extend(settings.0.area.iter().cloned()); }
                 if let Some(calendar) = world.get::<CalendarSand>(*entity)
                     && let Some(id) = &calendar.0.area
                 {
@@ -268,6 +282,7 @@ impl CustomCastle {
                     kind: sand.kind,
                     texts: crate::sand_text::snapshot(world, entity),
                     timer: world.get::<crate::work_timer::LocalTimer>(entity).cloned(),
+                    time_castle: world.get::<crate::time_castle::TimeSettings>(entity).map(|settings| settings.0.clone()),
                 }
             } else if let Some(calendar) = world.get::<CalendarSand>(entity) {
                 Content::Calendar(calendar.0.clone())
@@ -306,6 +321,7 @@ impl CustomCastle {
         let castle = Self {
             name: name.trim().into(),
             composition: None,
+            canvas_component: None,
             parts,
         };
         castle.valid().then_some(castle).ok_or_else(|| "Use a name of 1–80 characters and valid Sands with connected Areas in this workspace.".into())
@@ -314,6 +330,12 @@ impl CustomCastle {
     fn spawn(&self, world: &mut World, root: Entity) -> Result<Vec<Entity>, String> {
         if !self.valid() {
             return Err("This custom Castle file is invalid.".into());
+        }
+        if let Some(component) = &self.canvas_component {
+            let spaces = world.get::<crate::workspace::Workspaces>(root).ok_or("Open a workspace first.")?;
+            let workspace = spaces.active;
+            let position = world.get::<crate::canvas::CanvasView>(root).copied().unwrap_or_default().center;
+            return crate::canvas_host::spawn(world, root, workspace, position, component).map(|entity| vec![entity]);
         }
         if let Some(composition) = &self.composition {
             return crate::component_push::present(
@@ -385,7 +407,7 @@ impl CustomCastle {
         for part in &self.parts {
             let position = origin + DVec2::from_array(part.position);
             let entity = match &part.content {
-                Content::Sand { kind, texts, timer } => {
+                Content::Sand { kind, texts, timer, time_castle } => {
                     let entity = crate::sand_store::spawn_sand(
                         world,
                         root,
@@ -407,6 +429,11 @@ impl CustomCastle {
                     }
                     if let Some(timer) = timer {
                         world.entity_mut(entity).insert(timer.clone());
+                    }
+                    if let Some(settings) = time_castle {
+                        let mut settings = settings.clone();
+                        settings.area = settings.area.as_ref().and_then(|id| areas.get(id).cloned());
+                        world.entity_mut(entity).insert(crate::time_castle::TimeSettings(settings));
                     }
                     world.entity_mut(entity).insert(StoredSand {
                         kind: *kind,
@@ -459,6 +486,7 @@ impl CustomCastle {
                 }
             };
             let mut placement = part.placement.clone();
+            placement.identity = Some(nucleus::new_uid("placement"));
             placement.group = Some(group);
             placement.attachment = None;
             placement.group_pose = None;

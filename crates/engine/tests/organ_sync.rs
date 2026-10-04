@@ -123,6 +123,9 @@ async fn pair_push(a: &Engine, b: &Engine, b_organ: &str) {
     store::organs::set_sync_policy(&a.store.pool, b_organ, true, false)
         .await
         .unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &a_intro.organ_uid, false, true)
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -268,6 +271,9 @@ async fn tampered_facts_are_quarantined_on_import() {
     b.adopt_introduction(&a.introduction().await.unwrap(), 1)
         .await
         .unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, false, true)
+        .await
+        .unwrap();
 
     let apples = plain(&a, "apples.stock", 10.0).await;
     let (mut ops, _) = a.ops_after(0, 100_000).await.unwrap();
@@ -337,7 +343,10 @@ async fn different_field_edits_converge_both_ways() {
     let (a, a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
     pair_push(&a, &b, &b_organ).await;
-    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, false)
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, true)
+        .await
+        .unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, true)
         .await
         .unwrap();
 
@@ -538,7 +547,7 @@ async fn imported_ops_are_not_pushed_onward() {
     let (a, a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
     pair_push(&a, &b, &b_organ).await;
-    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, false)
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, true)
         .await
         .unwrap();
     store::organs::add_contact(&b.store.pool, "organ-c", None, "C", "http://cell-c", 1)
@@ -576,7 +585,10 @@ async fn extension_keys_merge_across_cells() {
     let (a, a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
     pair_push(&a, &b, &b_organ).await;
-    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, false)
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, true)
+        .await
+        .unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, true)
         .await
         .unwrap();
 

@@ -10,6 +10,10 @@ use tokio::sync::watch;
 use crate::private_password::{PasswordHash, PasswordInput};
 use crate::{Engine, EngineError};
 
+#[path = "login_workspace.rs"]
+mod workspace;
+pub(crate) use workspace::{capture_workspace_origin, require_workspace_origin_on};
+
 const DUMMY_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 pub const SESSION_TTL: Duration = Duration::from_secs(8 * 60 * 60);
 const IDLE_TTL: Duration = Duration::from_secs(30 * 60);
@@ -216,7 +220,7 @@ impl Engine {
                     "You cannot delete your own login".into(),
                 ));
             }
-            if target.role == "admin" {
+            if store::person_roles::has_recovery(&target.permissions) {
                 self.require_other_admin(&uid).await?;
             }
         }
@@ -254,10 +258,9 @@ impl Engine {
                 .ok_or_else(refused)?;
             let target = store::auth::assigned_role_on(&mut tx, &uid).await?;
             if !viewer.permits(permission)
-                || target.as_ref().is_some_and(|target| {
-                    target.permissions.iter().any(|key| !viewer.permits(key))
-                        || (target.role == "admin" && viewer.role != "admin")
-                })
+                || target
+                    .as_ref()
+                    .is_some_and(|target| target.permissions.iter().any(|key| !viewer.permits(key)))
             {
                 return Err(refused());
             }

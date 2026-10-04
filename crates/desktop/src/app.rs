@@ -134,8 +134,9 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         crate::description::DescriptionPlugin,
         crate::instinct::InstinctPlugin,
         crate::thread_castle::ThreadCastlePlugin,
-        crate::tutorial::TutorialPlugin,
     ))
+    .add_plugins(crate::workspace_sync::WorkspaceSyncPlugin)
+    .add_plugins(crate::tutorial::TutorialPlugin)
     .add_plugins(crate::karma_castle::KarmaCastlePlugin)
     .add_plugins(crate::accessibility::AccessibilityPlugin)
     .add_plugins(crate::component_push::ComponentPushPlugin)
@@ -144,6 +145,10 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     .add_plugins(crate::sound_area::SoundAreaPlugin)
     .add_plugins(crate::recorder_castle::RecorderCastlePlugin)
     .add_plugins(crate::document_viewer::DocumentViewerPlugin)
+    .add_plugins(crate::media_sand::MediaSandPlugin)
+    .add_plugins(crate::drawing::DrawingPlugin)
+    .add_plugins(crate::record_extensions::ExtensionPlugin)
+    .add_plugins(crate::external_drop::ExternalDropPlugin)
     .add_plugins(crate::file_explorer::FileExplorerPlugin)
     .add_plugins(crate::ide::IdePlugin)
     .add_plugins(crate::frequency_castle::FrequencyCastlePlugin)

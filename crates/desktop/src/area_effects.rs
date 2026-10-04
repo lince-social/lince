@@ -73,6 +73,7 @@ struct Field {
     root: Entity,
     workspace: u64,
     area: InfluenceArea,
+    activity: crate::influence_report::Outcome,
     filter: Option<Arc<Matches>>,
     filter_tick: Option<u32>,
     group: Option<GeneratedGroup>,
@@ -170,6 +171,7 @@ struct Cached {
     forces: AreaForces,
     total: DVec2,
     spatial: bool,
+    trace: Option<Vec<crate::influence_report::Evaluation>>,
 }
 
 #[derive(Resource, Default)]
@@ -179,6 +181,7 @@ pub(crate) struct Influences {
     cache: HashMap<Entity, Cached>,
     evaluations: u64,
     shields: Vec<usize>,
+    tracked: std::collections::HashSet<Entity>,
 }
 
 pub(crate) fn blocked(
@@ -201,13 +204,14 @@ pub(crate) fn blocked(
             &ChildOf,
             &WorkspaceMember,
             Option<&Matches>,
-        ), Without<crate::component_push::composition::Generated>>()
+        ), (Without<crate::component_push::composition::Generated>, Without<crate::canvas_host::composition::Generated>)>()
         .iter(world)
         .any(|(entity, shield, parent, member, filter)| {
             entity != source
                 && parent.parent() == root
                 && member.0 == workspace
-                && shield.enabled
+                && crate::influence_report::activity(world, entity, shield, root, workspace)
+                    == crate::influence_report::Outcome::Active
                 && shield.validate()
                 && shield.immunity != Immunity::Containment
                 && shield
@@ -233,13 +237,20 @@ pub(crate) fn refresh(world: &mut World) {
             &WorkspaceMember,
             Option<Ref<Matches>>,
             Option<&GeneratedGroup>,
-        ), Without<crate::component_push::composition::Generated>>()
+        ), (Without<crate::component_push::composition::Generated>, Without<crate::canvas_host::composition::Generated>)>()
         .iter(world)
-        .filter(|(_, area, _, _, _, group)| area.enabled && (area.validate() || group.is_some()))
+        .filter(|(_, area, _, _, _, group)| area.validate() || group.is_some())
         .map(|(entity, area, parent, member, filter, group)| Field {
             entity,
             root: parent.parent(),
             workspace: member.0,
+            activity: crate::influence_report::activity(
+                world,
+                entity,
+                area,
+                parent.parent(),
+                member.0,
+            ),
             area: {
                 let mut area = area.clone();
                 if !area.attraction_enabled {
@@ -266,6 +277,9 @@ pub(crate) fn refresh(world: &mut World) {
         .collect();
     fields.sort_by(|a, b| a.area.id.cmp(&b.area.id).then(a.entity.cmp(&b.entity)));
     for field in &mut fields {
+        if field.activity != crate::influence_report::Outcome::Active {
+            continue;
+        }
         let Some(sort) = &field.area.sorting else {
             continue;
         };
@@ -278,7 +292,11 @@ pub(crate) fn refresh(world: &mut World) {
                 &WorkspaceMember,
                 Option<&RecordProperties>,
                 Option<&RecordBinding>,
-            ), (Without<InfluenceArea>, Without<Pinned>)>()
+            ), (
+                Without<InfluenceArea>,
+                Without<Pinned>,
+                Without<crate::external_drop::Preview>,
+            )>()
             .iter(world)
             .filter(|(_, _, parent, member, record, binding)| {
                 parent.parent() == field.root
@@ -360,13 +378,25 @@ pub(crate) fn refresh(world: &mut World) {
         runtime.shields = fields
             .iter()
             .enumerate()
-            .filter(|(_, f)| f.area.immunity != Immunity::None)
+            .filter(|(_, f)| {
+                f.activity == crate::influence_report::Outcome::Active
+                    && f.area.immunity != Immunity::None
+            })
             .map(|(i, _)| i)
             .collect();
         runtime.fields = fields;
         runtime.revision = runtime.revision.wrapping_add(1);
     }
     runtime.cache.retain(|entity, _| living.contains(entity));
+    runtime.tracked = world
+        .get_resource::<crate::influence_report::Tracked>()
+        .map(|tracked| tracked.0.clone())
+        .unwrap_or_default();
+    for (entity, cached) in &mut runtime.cache {
+        if !runtime.tracked.contains(entity) {
+            cached.trace = None;
+        }
+    }
     world.insert_resource(runtime);
 }
 
@@ -382,26 +412,30 @@ impl Influences {
     pub(crate) fn forget(&mut self, sand: Entity) {
         self.cache.remove(&sand);
     }
-    fn immune(
+    fn blocker(
         &self,
         field: &Field,
         point: DVec2,
         record: Option<&RecordProperties>,
         binding: Option<&RecordBinding>,
         forces: bool,
-    ) -> bool {
-        self.shields.iter().map(|i| &self.fields[*i]).any(|shield| {
-            shield.entity != field.entity
-                && shield.root == field.root
-                && shield.workspace == field.workspace
-                && shield.area.immunity != Immunity::None
-                && (forces || shield.area.immunity != Immunity::Containment)
-                && shield.area.immunity.blocks(
-                    shield.area.contains(DVec2::from_array(field.area.center)),
-                    shield.area.contains(point),
-                )
-                && shield.matches(record, binding, true)
-        })
+    ) -> Option<Entity> {
+        self.shields
+            .iter()
+            .map(|i| &self.fields[*i])
+            .find(|shield| {
+                shield.entity != field.entity
+                    && shield.root == field.root
+                    && shield.workspace == field.workspace
+                    && shield.area.immunity != Immunity::None
+                    && (forces || shield.area.immunity != Immunity::Containment)
+                    && shield.area.immunity.blocks(
+                        shield.area.contains(DVec2::from_array(field.area.center)),
+                        shield.area.contains(point),
+                    )
+                    && shield.matches(record, binding, true)
+            })
+            .map(|shield| shield.entity)
     }
 
     fn calculate(
@@ -420,6 +454,7 @@ impl Influences {
             && cache.identity.record.as_ref() == record
             && &cache.identity.source == binding.map_or(&Source::Local, |b| &b.source)
             && (!cache.spatial || cache.point == point)
+            && (!self.tracked.contains(&sand) || cache.trace.is_some())
         {
             if cache.point != point {
                 cache.point = point;
@@ -431,6 +466,18 @@ impl Influences {
                     }
                 }
                 cache.total = bounded_total(&cache.forces);
+                if let Some(trace) = &mut cache.trace {
+                    for entry in trace {
+                        entry.force = cache
+                            .forces
+                            .0
+                            .iter()
+                            .find(|force| force.area == entry.area)
+                            .map_or(bevy::math::DVec3::ZERO, |force| {
+                                bevy::math::DVec3::new(force.force.x, 0.0, force.force.y)
+                            });
+                    }
+                }
             }
             return self.cache.get(&sand).unwrap();
         }
@@ -445,6 +492,7 @@ impl Influences {
             .filter(|c| c.revision == self.revision && c.identity == identity)
             .map_or_else(BTreeMap::new, |c| c.simple);
         let mut forces = AreaForces::default();
+        let mut trace = self.tracked.contains(&sand).then(Vec::new);
         let spatial = self.fields.iter().any(|f| {
             f.root == root
                 && f.workspace == workspace
@@ -459,7 +507,26 @@ impl Influences {
             .filter(|f| f.root == root && f.workspace == workspace)
         {
             self.evaluations += 1;
-            if self.immune(field, point, record, binding, true) || !field.area.reaches(point) {
+            let mut evaluation = crate::influence_report::Evaluation::new(field.entity);
+            evaluation.inside = field.area.contains(point);
+            evaluation.slot = field
+                .targets
+                .get(&sand)
+                .map(|target| bevy::math::DVec3::new(target.x, 0.0, target.y));
+            let reason = if field.activity != crate::influence_report::Outcome::Active {
+                Some(field.activity.clone())
+            } else if let Some(shield) = self.blocker(field, point, record, binding, true) {
+                Some(crate::influence_report::Outcome::Immune(shield))
+            } else if !field.area.reaches(point) {
+                Some(crate::influence_report::Outcome::Reach)
+            } else {
+                None
+            };
+            if let Some(reason) = reason {
+                evaluation.motion = reason;
+                if let Some(trace) = &mut trace {
+                    trace.push(evaluation);
+                }
                 continue;
             }
             let mut force = DVec2::ZERO;
@@ -468,6 +535,10 @@ impl Influences {
             } else if field.area.force_mode == ForceMode::Simple {
                 let matches = field.matches(record, binding, false);
                 if !matches && !field.targets.contains_key(&sand) {
+                    evaluation.motion = crate::influence_report::Outcome::Filter;
+                    if let Some(trace) = &mut trace {
+                        trace.push(evaluation);
+                    }
                     continue;
                 }
                 force += simple
@@ -481,6 +552,8 @@ impl Influences {
                 let distance = point.distance(field.area.target_position());
                 force += field.area.force_for_match(point, true)
                     * (radius / distance.max(radius)).powi(2);
+            } else {
+                evaluation.motion = crate::influence_report::Outcome::Filter;
             }
             if let Some(sort) = &field.area.sorting
                 && (field.area.force_mode != ForceMode::Simple || field.group.is_some())
@@ -493,12 +566,21 @@ impl Influences {
                         field.area.size[0].min(field.area.size[1]) * 0.5,
                         sort.strength,
                     );
+                evaluation.motion = crate::influence_report::Outcome::Active;
             }
             if force.is_finite() && force != DVec2::ZERO {
                 forces.0.push(AreaForce {
                     area: field.entity,
                     force,
                 });
+            }
+            evaluation.force = if force.is_finite() {
+                bevy::math::DVec3::new(force.x, 0.0, force.y)
+            } else {
+                bevy::math::DVec3::ZERO
+            };
+            if let Some(trace) = &mut trace {
+                trace.push(evaluation);
             }
         }
         forces.0.sort_by_key(|force| force.area);
@@ -513,6 +595,7 @@ impl Influences {
                 forces,
                 total,
                 spatial,
+                trace,
             },
         );
         self.cache.get(&sand).unwrap()
@@ -554,17 +637,69 @@ impl Influences {
     ) -> f32 {
         self.fields
             .iter()
-            .filter(|f| {
-                f.root == root
-                    && f.workspace == workspace
-                    && f.area.scale != 1.0
-                    && f.area.contains(point)
-                    && f.matches(record, binding, true)
-                    && !self.immune(f, point, record, binding, false)
-            })
-            .map(|f| f64::from(f.area.scale))
+            .filter(|f| f.root == root && f.workspace == workspace)
+            .map(|field| f64::from(self.scale_result(field, point, record, binding).0))
             .product::<f64>()
             .clamp(0.05, 20.0) as f32
+    }
+
+    fn scale_result(
+        &self,
+        field: &Field,
+        point: DVec2,
+        record: Option<&RecordProperties>,
+        binding: Option<&RecordBinding>,
+    ) -> (f32, crate::influence_report::Outcome) {
+        use crate::influence_report::Outcome;
+        if field.activity != Outcome::Active {
+            return (1.0, field.activity.clone());
+        }
+        if !field.area.contains(point) {
+            return (1.0, Outcome::Outside);
+        }
+        if !field.matches(record, binding, true) {
+            return (1.0, Outcome::Filter);
+        }
+        if let Some(shield) = self.blocker(field, point, record, binding, false) {
+            return (1.0, Outcome::Immune(shield));
+        }
+        (field.area.scale, Outcome::Active)
+    }
+
+    fn report(
+        &mut self,
+        sand: Entity,
+        root: Entity,
+        workspace: u64,
+        point: DVec2,
+        record: Option<&RecordProperties>,
+        binding: Option<&RecordBinding>,
+        pinned: bool,
+        scale: f32,
+    ) -> crate::influence_report::Report {
+        let cache = self.calculate(sand, root, workspace, point, record, binding);
+        let mut entries = cache.trace.clone().unwrap_or_default();
+        let total = cache.total;
+        for entry in &mut entries {
+            if pinned {
+                entry.motion = crate::influence_report::Outcome::Pinned;
+                entry.size = entry.motion.clone();
+                entry.force = bevy::math::DVec3::ZERO;
+            } else if let Some(field) = self.fields.iter().find(|field| field.entity == entry.area)
+            {
+                (entry.scale, entry.size) = self.scale_result(field, point, record, binding);
+                entry.inside = field.area.contains(point);
+            }
+        }
+        crate::influence_report::Report {
+            entries,
+            scale,
+            total: if pinned {
+                bevy::math::DVec3::ZERO
+            } else {
+                bevy::math::DVec3::new(total.x, 0.0, total.y)
+            },
+        }
     }
 }
 
@@ -592,7 +727,10 @@ pub(crate) fn update(world: &mut World) {
             Option<&RecordProperties>,
             Option<&RecordBinding>,
             Has<Pinned>,
-        ), Without<InfluenceArea>>()
+        ), (
+            Without<InfluenceArea>,
+            Without<crate::external_drop::Preview>,
+        )>()
         .iter(world)
         .map(|(entity, item, parent, member, record, binding, pinned)| {
             (
@@ -653,6 +791,19 @@ pub(crate) fn update(world: &mut World) {
                 runtime.forget(entity);
                 AreaForces::default()
             };
+            if crate::influence_report::tracked(world, entity) {
+                let report = runtime.report(
+                    entity,
+                    root,
+                    workspace,
+                    item.position,
+                    record.as_ref(),
+                    binding.as_ref(),
+                    pinned,
+                    scale,
+                );
+                crate::influence_report::store(world, entity, report);
+            }
             if record.is_none() && forces.0.is_empty() {
                 world.entity_mut(entity).remove::<AreaForces>();
                 continue;

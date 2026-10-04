@@ -1,10 +1,12 @@
 #![recursion_limit = "512"]
 
 pub mod authority;
+pub mod role_authority;
 mod decimal_operand;
 mod karma_rules;
 mod karma_transfers;
 pub mod calendar;
+pub mod schedule;
 pub mod read_rules;
 pub mod record_query;
 mod transfer_application;
@@ -102,6 +104,7 @@ pub enum Source {
     KarmaRule,
     Timeline,
     Calendar,
+    Schedule,
     Entry,
     Frequency,
     Recurrence,
@@ -368,17 +371,7 @@ pub async fn execute_for_with_context(
     let visible = match subject {
         None => None,
         Some(s) => {
-            let mut allowed = store::visibility::visible_targets(&store.pool, s).await?;
-            if let Some(access) = store::auth::person_access(&store.pool, s).await? {
-                if let Some(role) = access.role_id {
-                    if store::role_policies::get(&store.pool, role)
-                        .await?
-                        .is_some_and(|row| row.policy.is_some())
-                    {
-                        allowed = store::visibility::role_targets(&store.pool, s, role).await?;
-                    }
-                }
-            }
+            let mut allowed = role_authority::readable(store, s).await?;
             if let Some(readable) = read_filter_targets(store, s, &allowed).await? {
                 allowed.retain(|uid| readable.contains(uid));
             }
@@ -403,6 +396,7 @@ pub async fn execute_for_with_context(
         Source::Fact => execute_facts(store, protein, visible, subject).await?,
         Source::Timeline => execute_timeline(store, protein, visible, subject).await?,
         Source::Calendar => calendar::execute(store, protein, visible, subject).await?,
+        Source::Schedule => schedule::execute(store, protein, visible, subject).await?,
         Source::Entry => execute_entries(store, protein, visible).await?,
         Source::Frequency => execute_frequency(store, visible).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
@@ -495,7 +489,7 @@ async fn read_filter_targets(
 
 fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
     match source {
-        Source::Record | Source::Fact | Source::Timeline | Source::Calendar | Source::Entry | Source::Assertion => {
+        Source::Record | Source::Fact | Source::Timeline | Source::Calendar | Source::Schedule | Source::Entry | Source::Assertion => {
             Some(&["record:read"])
         }
         Source::Promise
@@ -517,8 +511,8 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
     fn visit(predicate: &Predicate, group_depth: usize, source: Source) -> Result<(), ProteinError> {
         match predicate {
             Predicate::ProjectionWindow(window) => {
-                if source != Source::Calendar || group_depth != 0 {
-                    return Err(store::StoreError::Protocol("protein_calendar_invalid:projection window must be a top-level Calendar filter".into()));
+                if !matches!(source, Source::Calendar | Source::Schedule) || group_depth != 0 {
+                    return Err(store::StoreError::Protocol("protein_calendar_invalid:projection window must be a top-level Calendar or Schedule filter".into()));
                 }
                 window.validate().map_err(store::StoreError::Protocol)?;
             }
@@ -730,19 +724,31 @@ async fn execute_auth(store: &Store, subject: Option<&str>) -> Result<Vec<Value>
     let mut out = Vec::new();
     if can("role:read") {
         for role in store::roles::catalog(&store.pool, can("permission:read")).await? {
+            let policy = store::role_policies::get(&store.pool, role.id).await?;
             out.push(json!({
                 "kind": "role",
                 "id": role.id.to_string(),
                 "name": role.name,
                 "revision": role.revision,
                 "permissions": role.permissions,
+                "policy": if can("permission:read") { policy.as_ref().and_then(|row| row.policy.clone()) } else { None },
+                "policy_revision": policy.as_ref().map_or(0, |row| row.revision),
             }));
         }
     }
     if can("user:read") {
-        for (uid, username, name, role) in store::auth::list_users(&store.pool).await? {
+        for (uid, username, name, role) in store::auth::list_actors(&store.pool).await? {
             let person_record = store::records::get(&store.pool, &uid).await?;
             let standing = store::people::standing(&store.pool, &uid).await?;
+            let mut supplied = std::collections::BTreeMap::<String, Vec<String>>::new();
+            if can("permission:read") {
+                for role in store::person_roles::ids(&store.pool, &uid).await? {
+                    let name: String = store::sqlx::query_scalar("SELECT name FROM role WHERE id=?").bind(role).fetch_one(&store.pool).await?;
+                    for permission in store::auth::role_permission_keys_by_id(&store.pool, role).await? {
+                        supplied.entry(permission).or_default().push(name.clone());
+                    }
+                }
+            }
             out.push(json!({
                 "kind": "user",
                 "active": standing.as_ref().is_none_or(|standing| standing.active),
@@ -750,8 +756,12 @@ async fn execute_auth(store: &Store, subject: Option<&str>) -> Result<Vec<Value>
                 "standing_note": standing.as_ref().and_then(|s| s.note.clone()),
                 "id": uid,
                 "username": username,
+                "has_credentials": !username.is_empty(),
+                "effective_permissions": supplied.into_iter().map(|(permission,roles)| json!({"permission":permission,"roles":roles})).collect::<Vec<_>>(),
                 "name": name,
                 "role": role,
+                "roles": store::person_roles::names(&store.pool, &uid).await?,
+                "access_revision": store::auth::person_access(&store.pool, &uid).await?.map_or(0, |access| access.revision),
                 "person": uid,
                 "person_head": person_record.as_ref().map(|record| record.head.as_str()),
                 "person_slug": person_record.as_ref().and_then(|record| record.slug.as_deref()),
@@ -1787,6 +1797,10 @@ async fn attach_includes(
                     "proximity": c.proximity,
                     "pending_introduction": c.pending_introduction,
                     "node_id": c.node_id,
+                    "delivery": c.delivery().as_str(),
+                    "awaiting_roster_since": c.awaiting_roster_since,
+                    "mailed_at": c.mailed_at,
+                    "peer_acked_seq": c.peer_acked_seq,
                     "sync_out": c.sync_out,
                     "sync_in": c.sync_in,
                     "scope_fields": c.scope_fields,
@@ -1799,6 +1813,10 @@ async fn attach_includes(
             })
             .unwrap_or(Value::Null);
         if row["contact"].is_object() {
+            row["contact"]["organ_access"] = serde_json::to_value(store::organ_access::get(&store.pool, record_uid).await?)
+                .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
+            let mailbox: (i64, i64, Option<String>) = store::sqlx::query_as("SELECT COUNT(*), COALESCE(SUM(EXISTS(SELECT 1 FROM mailbox_outbox_receipt r WHERE r.uid=o.uid)),0), (SELECT MAX(r.accepted_at) FROM mailbox_outbox_receipt r JOIN mailbox_outbox q ON q.uid=r.uid WHERE q.to_organ=?1) FROM mailbox_outbox o WHERE o.to_organ=?1").bind(record_uid).fetch_one(&store.pool).await?;
+            row["contact"]["delivery_status"] = json!({"saved_mail":mailbox.0,"mailbox_stored":mailbox.1,"last_mailbox_storage":mailbox.2,"queued_operations":store::sqlx::query_scalar::<_,i64>("SELECT COUNT(*) FROM sync_outbox WHERE contact_organ=?").bind(record_uid).fetch_one(&store.pool).await?});
             row["contact"]["quarantined"] = json!(
                 store::organs::quarantined_for(&store.pool, record_uid, 20)
                     .await?
@@ -2432,6 +2450,7 @@ impl PredicateCtx {
                             work.get(key)
                                 .and_then(Value::as_str)
                                 .filter(|date| !date.is_empty())
+                                .and_then(|date| date.get(..10))
                         });
                     match op {
                         DateComparison::Exists => date.is_some(),

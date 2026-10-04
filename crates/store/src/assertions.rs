@@ -631,7 +631,18 @@ pub async fn set_identity(
     predicate_uid: Option<&str>,
     actor_uid: Option<&str>,
 ) -> Result<Option<String>, StoreError> {
-    let mut transaction = crate::write_tx(pool).await?;
+    let mut tx = crate::write_tx(pool).await?;
+    let result = set_identity_tx(&mut tx, subject_uid, predicate_uid, actor_uid).await?;
+    tx.commit().await?;
+    Ok(result)
+}
+
+pub async fn set_identity_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    subject_uid: &str,
+    predicate_uid: Option<&str>,
+    actor_uid: Option<&str>,
+) -> Result<Option<String>, StoreError> {
     let now = nucleus::execution::now().to_rfc3339();
     let displaced: Vec<String> = sqlx::query(
         "SELECT uid FROM record_assertion
@@ -640,7 +651,7 @@ pub async fn set_identity(
     )
     .bind(subject_uid)
     .bind(predicate_uid)
-    .fetch_all(&mut *transaction)
+    .fetch_all(&mut **tx)
     .await?
     .into_iter()
     .map(|row| row.get("uid"))
@@ -654,11 +665,11 @@ pub async fn set_identity(
     .bind(actor_uid)
     .bind(subject_uid)
     .bind(predicate_uid)
-    .execute(&mut *transaction)
+    .execute(&mut **tx)
     .await?;
     for uid in &displaced {
         crate::sync_ops::log_local_tx(
-            &mut transaction,
+            tx,
             "record_assertion",
             uid,
             "",
@@ -668,7 +679,6 @@ pub async fn set_identity(
         .await?;
     }
     let Some(predicate_uid) = predicate_uid else {
-        transaction.commit().await?;
         return Ok(None);
     };
     if let Some(row) = sqlx::query(
@@ -678,14 +688,13 @@ pub async fn set_identity(
     )
     .bind(subject_uid)
     .bind(predicate_uid)
-    .fetch_optional(&mut *transaction)
+    .fetch_optional(&mut **tx)
     .await?
     {
         let uid: String = row.get("uid");
         if row.get::<String, _>("role") != "identity" {
-            promote_identity_tx(&mut transaction, &uid).await?;
+            promote_identity_tx(tx, &uid).await?;
         }
-        transaction.commit().await?;
         return Ok(Some(uid));
     }
     let uid = nucleus::new_uid("a");
@@ -699,10 +708,10 @@ pub async fn set_identity(
     .bind(predicate_uid)
     .bind(actor_uid)
     .bind(&now)
-    .execute(&mut *transaction)
+    .execute(&mut **tx)
     .await?;
     crate::sync_ops::log_local_tx(
-        &mut transaction,
+        tx,
         "record_assertion",
         &uid,
         "",
@@ -719,7 +728,6 @@ pub async fn set_identity(
         )),
     )
     .await?;
-    transaction.commit().await?;
     Ok(Some(uid))
 }
 
@@ -971,7 +979,19 @@ pub async fn refine(
     object_uid: &str,
     actor_uid: Option<&str>,
 ) -> Result<String, StoreError> {
-    let mut transaction = crate::write_tx(pool).await?;
+    let mut tx = crate::write_tx(pool).await?;
+    let result = refine_tx(&mut tx, subject_uid, predicate_uid, object_uid, actor_uid).await?;
+    tx.commit().await?;
+    Ok(result)
+}
+
+pub async fn refine_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    subject_uid: &str,
+    predicate_uid: &str,
+    object_uid: &str,
+    actor_uid: Option<&str>,
+) -> Result<String, StoreError> {
     let now = nucleus::execution::now().to_rfc3339();
     if let Some(row) = sqlx::query(
         "SELECT uid FROM record_assertion
@@ -980,7 +1000,7 @@ pub async fn refine(
     )
     .bind(subject_uid)
     .bind(predicate_uid)
-    .fetch_optional(&mut *transaction)
+    .fetch_optional(&mut **tx)
     .await?
     {
         let unary_uid: String = row.get("uid");
@@ -991,10 +1011,10 @@ pub async fn refine(
         .bind(&now)
         .bind(actor_uid)
         .bind(&unary_uid)
-        .execute(&mut *transaction)
+        .execute(&mut **tx)
         .await?;
         crate::sync_ops::log_local_tx(
-            &mut transaction,
+            tx,
             "record_assertion",
             &unary_uid,
             "",
@@ -1011,10 +1031,9 @@ pub async fn refine(
     .bind(subject_uid)
     .bind(predicate_uid)
     .bind(object_uid)
-    .fetch_optional(&mut *transaction)
+    .fetch_optional(&mut **tx)
     .await?;
     if let Some(existing) = existing {
-        transaction.commit().await?;
         return Ok(existing.get("uid"));
     }
     let uid = nucleus::new_uid("a");
@@ -1029,10 +1048,10 @@ pub async fn refine(
     .bind(object_uid)
     .bind(actor_uid)
     .bind(&now)
-    .execute(&mut *transaction)
+    .execute(&mut **tx)
     .await?;
     crate::sync_ops::log_local_tx(
-        &mut transaction,
+        tx,
         "record_assertion",
         &uid,
         "",
@@ -1049,7 +1068,6 @@ pub async fn refine(
         )),
     )
     .await?;
-    transaction.commit().await?;
     Ok(uid)
 }
 

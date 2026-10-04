@@ -32,13 +32,16 @@ pub struct SandEvent {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Scope {
     Entity(Entity),
+    Workspace(Entity, u64),
     Group(Entity, u64, crate::canvas_selection::SandGroup),
 }
 
 fn scope(world: &World, mut entity: Entity, name: &str) -> Scope {
+    let mut workspace = None;
     loop {
+        if workspace.is_none() { workspace = world.get::<crate::workspace::WorkspaceMember>(entity).map(|member| member.0); }
         if world.get::<IsolatedEvents>(entity).is_some() {
-            return Scope::Entity(entity);
+            return world.get::<crate::workspace::Workspaces>(entity).map_or(Scope::Entity(entity), |spaces| Scope::Workspace(entity, workspace.unwrap_or(spaces.active)));
         }
         let parent = world.get::<ChildOf>(entity).map(ChildOf::parent);
         if let (Some(parent), Some(group)) = (
@@ -68,8 +71,9 @@ fn scope(world: &World, mut entity: Entity, name: &str) -> Scope {
             .get::<EventBoundary>(entity)
             .is_some_and(|b| b.0.iter().any(|n| n == name))
         {
-            return Scope::Entity(entity);
+            return world.get::<crate::workspace::Workspaces>(entity).map_or(Scope::Entity(entity), |spaces| Scope::Workspace(entity, workspace.unwrap_or(spaces.active)));
         }
+        if let Some(spaces) = world.get::<crate::workspace::Workspaces>(entity) { return Scope::Workspace(entity, workspace.unwrap_or(spaces.active)); }
         match parent {
             Some(parent) => entity = parent,
             None => return Scope::Entity(entity),
@@ -106,6 +110,19 @@ pub(crate) struct ToggleDateBoundary;
 #[cfg(test)]
 mod isolation_tests {
     use super::*;
+
+    #[test]
+    fn record_selections_cannot_cross_workspaces_on_one_canvas() {
+        let mut world = World::new();
+        let canvas = world.spawn(crate::workspace::Workspaces::default()).id();
+        let first = world.spawn((ChildOf(canvas), crate::workspace::WorkspaceMember(1))).id();
+        let second = world.spawn((ChildOf(canvas), crate::workspace::WorkspaceMember(2))).id();
+        let source = world.spawn(ChildOf(first)).id();
+        let receiver = world.spawn(ChildOf(first)).id();
+        let other = world.spawn(ChildOf(second)).id();
+        assert!(scope(&world, source, "Record selected") == scope(&world, receiver, "Record selected"));
+        assert!(scope(&world, source, "Record selected") != scope(&world, other, "Record selected"));
+    }
 
     #[test]
     fn arbitrary_named_events_stay_within_each_balloon() {

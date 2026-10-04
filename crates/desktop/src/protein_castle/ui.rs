@@ -1090,6 +1090,20 @@ pub(super) fn output(world: &mut World, owner: Entity) {
     world.entity_mut(status_entity).insert(Tooltip(status));
     let line = row(world, parent);
     label(world, line, &format!("{count} rows"), 18.0);
+    crate::sand_panel::button(
+        world,
+        parent,
+        owner,
+        "Change presentation…",
+        crate::protein_area::presentation::Open(owner),
+    );
+    crate::sand_panel::button(
+        world,
+        parent,
+        owner,
+        "Undo presentation",
+        crate::protein_area::presentation::Undo(owner),
+    );
     icon(
         world,
         line,

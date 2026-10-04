@@ -1,11 +1,4 @@
-use super::guide::{Guide, Target};
-use super::*;
-use crate::{
-    actions::ActionButton,
-    edit_mode::{EditAction, EditControl},
-    icons::{IconButton, Tooltip},
-};
-use bevy::a11y::AccessibilityNode;
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct TutorialHighlight {
@@ -13,140 +6,17 @@ pub struct TutorialHighlight {
 }
 
 #[derive(Component, Default)]
-struct Highlights {
+pub(super) struct Highlights {
     targets: Vec<Entity>,
     outlines: Vec<Entity>,
     reveal: bool,
 }
 
-pub(super) fn under(world: &World, mut entity: Entity, parent: Entity) -> bool {
-    loop {
-        if entity == parent {
-            return true;
-        }
-        let Some(next) = world.get::<ChildOf>(entity) else {
-            return false;
-        };
-        entity = next.parent();
-    }
+pub(super) fn active(highlights: Query<(), With<Highlights>>) -> bool {
+    !highlights.is_empty()
 }
 
-fn visible(world: &World, mut entity: Entity) -> bool {
-    loop {
-        if world
-            .get::<Node>(entity)
-            .is_some_and(|node| node.display == Display::None)
-            || world.get::<Visibility>(entity) == Some(&Visibility::Hidden)
-        {
-            return false;
-        }
-        let Some(next) = world.get::<ChildOf>(entity) else {
-            return true;
-        };
-        entity = next.parent();
-    }
-}
-
-fn button(world: &mut World, owner: Entity, title: &str) -> Option<Entity> {
-    world
-        .query::<(
-            Entity,
-            &ActionButton,
-            Option<&Tooltip>,
-            Option<&IconButton>,
-            Option<&AccessibilityNode>,
-        )>()
-        .iter(world)
-        .find(|(entity, button, tip, icon, node)| {
-            button.target == owner
-                && visible(world, *entity)
-                && (tip.is_some_and(|tip| tip.0 == title)
-                    || icon.is_some_and(|icon| icon.label == title)
-                    || node.is_some_and(|node| node.label() == Some(title)))
-        })
-        .map(|(entity, ..)| entity)
-}
-
-pub(super) fn targets(world: &mut World, root: Entity, target: &Target) -> Vec<Entity> {
-    let entity = match target {
-        Target::Edit(action) => world
-            .query::<(Entity, &EditControl)>()
-            .iter(world)
-            .find(|(entity, control)| {
-                control.root == root
-                    && (control.action == *action
-                        || (*action == EditAction::Open && control.action == EditAction::Toggle))
-                    && visible(world, *entity)
-            })
-            .map(|(entity, _)| entity),
-        Target::Button(owner, title) => button(world, *owner, title),
-        Target::Menu(owner, name, choice) => {
-            let menus: Vec<_> = world
-                .query::<(Entity, &crate::dropdown::Dropdown, &AccessibilityNode)>()
-                .iter(world)
-                .filter(|(_, _, node)| node.label() == Some(*name))
-                .map(|(entity, dropdown, _)| (entity, dropdown.menu))
-                .collect();
-            menus.into_iter().find_map(|(toggle, menu)| {
-                let option = world
-                    .query::<(Entity, &ActionButton, &AccessibilityNode, &ChildOf)>()
-                    .iter(world)
-                    .find(|(_, button, node, parent)| {
-                        button.target == *owner
-                            && node.label() == Some(*choice)
-                            && parent.parent() == menu
-                    })
-                    .map(|(entity, ..)| entity)?;
-                visible(world, toggle).then(|| {
-                    if visible(world, option) {
-                        option
-                    } else {
-                        toggle
-                    }
-                })
-            })
-        }
-        Target::Field(field) => world
-            .query::<(Entity, &TutorialField)>()
-            .iter(world)
-            .find(|(entity, value)| *value == field && visible(world, *entity))
-            .map(|(entity, _)| entity),
-        Target::PanelField(title) => {
-            let panel = world
-                .get::<crate::edit_mode::EditMode>(root)
-                .map(|mode| mode.panel);
-            world
-                .query::<(Entity, &AccessibilityNode)>()
-                .iter(world)
-                .find(|(entity, node)| {
-                    node.label() == Some(*title)
-                        && panel.is_some_and(|panel| under(world, *entity, panel))
-                        && visible(world, *entity)
-                })
-                .map(|(entity, _)| entity)
-        }
-        Target::Control(title) => world
-            .query::<(Entity, &AccessibilityNode)>()
-            .iter(world)
-            .find(|(entity, node)| {
-                node.label() == Some(*title)
-                    && under(world, *entity, root)
-                    && visible(world, *entity)
-            })
-            .map(|(entity, _)| entity),
-        Target::Canvas(entities) => {
-            return entities
-                .iter()
-                .copied()
-                .filter(|entity| world.get_entity(*entity).is_ok() && visible(world, *entity))
-                .collect();
-        }
-        Target::None => None,
-    };
-    entity.into_iter().collect()
-}
-
-pub(super) fn clear(world: &mut World, root: Entity) {
+pub(crate) fn clear(world: &mut World, root: Entity) {
     if let Some(state) = world.entity_mut(root).take::<Highlights>() {
         for entity in state.outlines {
             world.despawn(entity);
@@ -154,14 +24,7 @@ pub(super) fn clear(world: &mut World, root: Entity) {
     }
 }
 
-pub(super) fn reveal_current(world: &mut World, root: Entity) {
-    if let Some(mut state) = world.get_mut::<Highlights>(root) {
-        state.reveal = true;
-    }
-}
-
-pub(super) fn update(world: &mut World, root: Entity, target: &Target) {
-    let targets = targets(world, root, target);
+pub(crate) fn update_entities(world: &mut World, root: Entity, targets: Vec<Entity>) {
     if world
         .get::<Highlights>(root)
         .is_some_and(|state| state.targets == targets)
@@ -261,12 +124,7 @@ pub(super) fn position(world: &mut World) {
         .iter(world)
         .collect();
     for root in roots {
-        let active = world.get::<Session>(root).is_some_and(|session| {
-            !session.hidden
-                && world
-                    .get::<Workspaces>(root)
-                    .is_some_and(|spaces| spaces.active == session.workspace)
-        });
+        let active = crate::instinct::practice::visible(world, root);
         if !active {
             clear(world, root);
             continue;
@@ -278,9 +136,6 @@ pub(super) fn position(world: &mut World) {
         if state.reveal {
             for target in &targets {
                 moving |= reveal(world, *target);
-            }
-            if let Some(current) = world.get::<Guide>(root).and_then(|guide| guide.current) {
-                moving |= reveal(world, current);
             }
             world.get_mut::<Highlights>(root).unwrap().reveal = moving;
         }

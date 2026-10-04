@@ -60,7 +60,7 @@ impl Plugin for CanvasSelectionPlugin {
 }
 
 pub(crate) fn eligible(world: &World, root: Entity, entity: Entity) -> bool {
-    world.get::<CanvasItem>(entity).is_some()
+    crate::instinct::practice::permits_target(world, entity) && world.get::<CanvasItem>(entity).is_some()
         && !crate::inspection::excluded(world, entity)
         && world
             .get::<ChildOf>(entity)

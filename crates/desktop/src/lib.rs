@@ -36,6 +36,9 @@ pub mod schedule_editor;
 pub mod time_castle;
 
 #[cfg(feature = "native-runtime")]
+pub mod sound_cues;
+
+#[cfg(feature = "native-runtime")]
 mod castle_feed;
 
 #[cfg(feature = "native-runtime")]
@@ -156,9 +159,9 @@ pub mod scoped_events;
 #[cfg(feature = "native-runtime")]
 pub mod calendar;
 #[cfg(feature = "native-runtime")]
-pub mod simulation_castle;
-#[cfg(feature = "native-runtime")]
 pub mod kanban;
+#[cfg(feature = "native-runtime")]
+pub mod simulation_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod time_limit;
@@ -220,21 +223,21 @@ pub mod record_creation;
 pub mod thread_castle;
 
 #[cfg(feature = "native-runtime")]
-pub mod message_content;
-#[cfg(feature = "native-runtime")]
-pub mod speech;
-#[cfg(feature = "native-runtime")]
 mod directory_list;
-#[cfg(feature = "native-runtime")]
-mod operation_view;
-#[cfg(feature = "native-runtime")]
-mod message_progress;
 #[cfg(feature = "native-runtime")]
 mod message_commands;
 #[cfg(feature = "native-runtime")]
-mod question_form;
+pub mod message_content;
+#[cfg(feature = "native-runtime")]
+mod message_progress;
 #[cfg(feature = "native-runtime")]
 mod message_questions;
+#[cfg(feature = "native-runtime")]
+mod operation_view;
+#[cfg(feature = "native-runtime")]
+mod question_form;
+#[cfg(feature = "native-runtime")]
+pub mod speech;
 
 #[cfg(feature = "native-runtime")]
 pub mod protein_area;
@@ -255,6 +258,8 @@ pub mod fiote;
 
 #[cfg(feature = "native-runtime")]
 pub mod tutorial;
+#[cfg(feature = "native-runtime")]
+mod practice_cells;
 
 #[cfg(feature = "native-runtime")]
 pub mod tray;
@@ -303,9 +308,9 @@ mod sand_panel;
 #[cfg(feature = "native-runtime")]
 pub mod freedoom;
 
+pub mod command_castle;
 #[cfg(feature = "native-runtime")]
 pub mod terminal;
-pub mod command_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod configuration;
@@ -330,11 +335,11 @@ pub mod document_viewer;
 #[cfg(feature = "native-runtime")]
 pub mod external_drop;
 #[cfg(feature = "native-runtime")]
-pub mod media_sand;
-#[cfg(feature = "native-runtime")]
 pub mod file_explorer;
 #[cfg(feature = "native-runtime")]
 pub mod ide;
+#[cfg(feature = "native-runtime")]
+pub mod media_sand;
 
 #[cfg(feature = "native-runtime")]
 pub mod transfer_castle;

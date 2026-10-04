@@ -214,6 +214,10 @@ async fn schedule_cache_obeys_half_open_windows_and_source_invalidation() {
     assert_eq!(scheduled.len(), 1);
     assert_eq!(scheduled[0]["record_uid"], actual);
     assert_eq!(scheduled[0]["origin"]["kind"], "manual");
+    let link: nucleus::projection::OccurrenceLink =
+        serde_json::from_value(scheduled[0]["origin"]["occurrence"].clone()).unwrap();
+    assert_eq!(link.occurrence.rule_uid, rule_uid);
+    assert_eq!(link.occurrence.revision, 1);
     engine
         .act(
             Action::SetExtension {
@@ -290,5 +294,97 @@ async fn scoped_schedule_cannot_read_another_actors_private_work() {
             || rows
                 .last()
                 .is_some_and(|row| row["status"]["kind"] == "incomplete")
+    );
+}
+
+#[tokio::test]
+async fn admitted_recurring_work_is_confirmed_without_a_projection_cache() {
+    let engine = Engine::open_memory().await.unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+    let record = task(&engine, "admitted", json!({"estimate_min":10}), 0.0).await;
+    let rule = engine
+        .act(
+            Action::CreateRecurrence {
+                target: record.clone(),
+                consequences: vec![nucleus::karma::Consequence::AddQuantity {
+                    delta: Some(nucleus::fact::zero_delta()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
+                note: None,
+                cadence: nucleus::karma::Cadence::every_days(1),
+                anchor_at: None,
+                request_id: None,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let intended = chrono::DateTime::from_timestamp_millis(now - 120_000)
+        .unwrap()
+        .to_rfc3339();
+    for attempt in 0..2 {
+        store::sqlx::query("INSERT INTO karma_rule_application (event_id, rule_uid, rule_revision, status, at, intended_at, attempt) VALUES (?, ?, 1, 'applied', ?, ?, ?)")
+            .bind("admitted-schedule-test").bind(&rule).bind(&intended).bind(&intended).bind(attempt)
+            .execute(&engine.store.pool).await.unwrap();
+    }
+    let window = Window {
+        from_ms: now,
+        until_ms: now + 3_600_000,
+        timezone: "UTC".into(),
+    };
+    let query = protein::schedule::query(window.clone(), Vec::new());
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    let confirmed: Vec<_> = rows
+        .iter()
+        .filter(|row| row["record_uid"] == record)
+        .collect();
+    assert_eq!(confirmed.len(), 1);
+    assert_eq!(confirmed[0]["origin"]["kind"], "manual");
+    assert_eq!(
+        confirmed[0]["origin"]["occurrence"]["occurrence"]["event_id"],
+        "admitted-schedule-test"
+    );
+    assert_eq!(confirmed[0]["preview"], false);
+    assert_eq!(confirmed[0]["time"]["from_ms"], now - 120_000);
+    assert_eq!(confirmed[0]["time"]["until_ms"], now + 480_000);
+    let boundary = protein::schedule::query(
+        Window {
+            from_ms: now + 480_000,
+            ..window
+        },
+        Vec::new(),
+    );
+    assert!(
+        protein::execute(&engine.store, &boundary)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != record)
+    );
+    let visitor = engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Person,
+                head: "Visitor".into(),
+                body: String::new(),
+                quantity: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    assert!(
+        protein::execute_for(&engine.store, &query, Some(&visitor))
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["kind"] != "schedule-entry")
     );
 }

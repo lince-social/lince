@@ -10,6 +10,10 @@ description = "The running Lince Cell: engine, wire and every supervisor that ke
 [lib]
 name = "cell"
 
+[features]
+default = []
+instinct = ["engine/instinct"]
+
 [dependencies]
 fiote = { workspace = true }
 tempfile = "=3.27.0"

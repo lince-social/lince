@@ -10,9 +10,22 @@ use std::{collections::VecDeque, sync::Arc};
 pub trait Action: Send + Sync + 'static {
     fn apply(&self, world: &mut World, target: Entity);
 
+    fn practice_intent(&self) -> PracticeIntent {
+        PracticeIntent::Target
+    }
+
     fn connections(&self, _: &World, _: Entity) -> Vec<crate::inspection::Connection> {
         Vec::new()
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum PracticeIntent {
+    Target,
+    Navigation,
+    Recovery,
+    Feature(lince_interface::practice::Operation),
+    Object(Entity),
 }
 
 #[derive(Clone, Default)]
@@ -32,9 +45,16 @@ impl ActionSequence {
             if world.get_entity(target).is_err() {
                 break;
             }
+            if !crate::instinct::practice::permits_action(world, target, action.practice_intent()) {
+                continue;
+            }
             action.apply(world, target);
         }
         wake(world);
+    }
+
+    pub(crate) fn permitted(&self, world: &World, target: Entity) -> bool {
+        self.0.iter().all(|action| crate::instinct::practice::permits_action(world, target, action.practice_intent()))
     }
 }
 

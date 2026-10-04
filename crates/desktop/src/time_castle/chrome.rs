@@ -4,12 +4,12 @@ use crate::icons::{Icon, IconButton, IconStyle};
 
 #[derive(Component)]
 pub(super) struct Chrome {
-    pub pages: [Entity; 3],
+    pub pages: [Entity; 4],
     pub peek: Entity,
     panel: Entity,
     button: Entity,
     center: Entity,
-    tabs: [Entity; 3],
+    tabs: [Entity; 4],
     binding: Option<[Entity; 2]>,
     open: bool,
     tab: usize,
@@ -36,6 +36,10 @@ pub(super) fn surfaces(world: &World, owner: Entity) -> Vec<Entity> {
     } else {
         vec![entry]
     }
+}
+
+pub(super) fn controls_open(world: &World, owner: Entity) -> bool {
+    world.get::<Chrome>(owner).is_some_and(|chrome| chrome.open)
 }
 
 pub(super) fn presentation(world: &mut World, owner: Entity, round: bool) {
@@ -108,11 +112,12 @@ pub(super) fn populate(world: &mut World, owner: Entity) {
         .id();
     crate::edit_mode::label(world, panel, "Time Castle", 18.0);
     let row = crate::sand_panel::row(world, panel);
-    let tabs = ["Clock", "Agenda", "Stopwatch"].map(|caption| {
+    let tabs = ["Clock", "Agenda", "Stopwatch", "Sound"].map(|caption| {
         let tab = match caption {
             "Clock" => 0,
             "Agenda" => 1,
-            _ => 2,
+            "Stopwatch" => 2,
+            _ => 3,
         };
         button(world, row, owner, caption, Tab(tab))
     });
@@ -142,8 +147,10 @@ pub(super) fn populate(world: &mut World, owner: Entity) {
             ))
             .id()
     });
-    for page in &pages[..2] {
-        crate::scroll_sand::attach(world, *page);
+    for (index, page) in pages.iter().enumerate() {
+        if index != 2 {
+            crate::scroll_sand::attach(world, *page);
+        }
     }
     world.spawn((
         Node {
@@ -194,14 +201,14 @@ pub(super) fn populate(world: &mut World, owner: Entity) {
             Node {
                 position_type: PositionType::Absolute,
                 left: percent(50),
-                top: percent(50),
+                top: percent(75),
                 margin: UiRect {
                     left: px(-58),
-                    top: px(-56),
+                    top: px(-31),
                     ..default()
                 },
                 width: px(116),
-                height: px(112),
+                height: px(86),
                 ..default()
             },
             BackgroundColor(Color::NONE),
@@ -333,7 +340,12 @@ pub(super) fn colors(world: &mut World, owner: Entity, palette: &palette::Palett
             .unwrap()
             .set_if_neq(BackgroundColor(color));
     }
-    let color = if world.get::<View>(owner).is_some_and(|view| !view.forecast) {
+    let color = if world.get::<View>(owner).is_some_and(|view| {
+        !matches!(
+            view.projection,
+            Some(nucleus::projection::Status::Ready { .. })
+        )
+    }) {
         palette.present
     } else {
         palette.ink
@@ -628,7 +640,7 @@ mod tests {
             Some("Memento mori. Clock controls")
         );
         assert_eq!(world.get::<Node>(center).unwrap().left, percent(50));
-        assert_eq!(world.get::<Node>(center).unwrap().top, percent(50));
+        assert_eq!(world.get::<Node>(center).unwrap().top, percent(75));
         presentation(&mut world, owner, false);
         assert!(!visible(&world, center));
         assert!(visible(&world, button));

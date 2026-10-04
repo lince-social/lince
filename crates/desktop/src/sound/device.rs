@@ -4,7 +4,11 @@ use std::sync::{Arc, Mutex};
 
 static CAPTURING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 struct CaptureGuard;
-impl Drop for CaptureGuard { fn drop(&mut self) { CAPTURING.store(false, std::sync::atomic::Ordering::Release); } }
+impl Drop for CaptureGuard {
+    fn drop(&mut self) {
+        CAPTURING.store(false, std::sync::atomic::Ordering::Release);
+    }
+}
 
 pub struct Capture {
     _guard: CaptureGuard,
@@ -20,16 +24,29 @@ impl Capture {
     }
 
     pub fn devices() -> Result<Vec<String>, String> {
-        Ok(cpal::default_host().input_devices().map_err(|error| error.to_string())?.filter_map(|device| device.name().ok()).take(32).collect())
+        Ok(cpal::default_host()
+            .input_devices()
+            .map_err(|error| error.to_string())?
+            .filter_map(|device| device.name().ok())
+            .take(32)
+            .collect())
     }
 
     pub fn start_on(name: Option<&str>) -> Result<Self, String> {
-        if CAPTURING.swap(true, std::sync::atomic::Ordering::AcqRel) { return Err("Another Lince recorder is using the microphone.".into()); }
+        if CAPTURING.swap(true, std::sync::atomic::Ordering::AcqRel) {
+            return Err("Another Lince recorder is using the microphone.".into());
+        }
         let guard = CaptureGuard;
         let host = cpal::default_host();
         let device = if let Some(name) = name {
-            host.input_devices().map_err(|error| error.to_string())?.find(|device| device.name().is_ok_and(|found| found == name)).ok_or("The selected microphone is unavailable.")?
-        } else { host.default_input_device().ok_or("No microphone available")? };
+            host.input_devices()
+                .map_err(|error| error.to_string())?
+                .find(|device| device.name().is_ok_and(|found| found == name))
+                .ok_or("The selected microphone is unavailable.")?
+        } else {
+            host.default_input_device()
+                .ok_or("No microphone available")?
+        };
         let config = device.default_input_config().map_err(|e| e.to_string())?;
         let rate = config.sample_rate().0;
         if !(8000..=192000).contains(&rate) || config.channels() == 0 || config.channels() > 8 {
@@ -178,6 +195,10 @@ impl Output {
                 owner,
             });
         }
+    }
+
+    pub fn stop_all(&self) {
+        self.voices.lock().unwrap().clear();
     }
 
     pub fn stop(&self, owner: bevy::prelude::Entity) {

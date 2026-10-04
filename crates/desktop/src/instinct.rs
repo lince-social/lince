@@ -1,6 +1,8 @@
-mod persistence;
-mod reader;
 mod habit_ui;
+mod import_ui;
+mod persistence;
+pub(crate) mod practice;
+mod reader;
 pub(crate) mod tests;
 
 use crate::{actions::Action, canvas::CanvasItem, workspace::WorkspaceMember};
@@ -76,20 +78,46 @@ struct Entry {
     page: String,
     title: String,
     depth: usize,
+    chapter: String,
 }
 
 #[derive(Clone)]
 struct Section {
+    slug: Option<String>,
     uid: String,
     title: String,
     body: String,
-    tutorial: bool,
 }
 
 pub struct InstinctPlugin;
 impl Plugin for InstinctPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<habit_ui::Subscriptions>().add_systems(Update, habit_ui::tick.after(crate::cell_bridge::ReceiveCell));
+        app.init_resource::<practice::Learned>()
+            .add_systems(PreUpdate, practice::emergency.run_if(practice::active))
+            .add_systems(
+                PreUpdate,
+                practice::refresh_input
+                    .after(bevy::input::InputSystems)
+                    .before(bevy::input_focus::InputFocusSystems::Dispatch)
+                    .before(bevy::picking::PickingSystems::Hover)
+                    .run_if(practice::advancing),
+            )
+            .add_systems(
+                Update,
+                practice::update
+                    .after(crate::protein_area::UpdateProteinAreas)
+                    .run_if(practice::advancing),
+            )
+            .add_systems(
+                Update,
+                import_ui::receive
+                    .after(crate::cell_bridge::ReceiveCell)
+                    .run_if(import_ui::active),
+            );
+        app.init_resource::<habit_ui::Subscriptions>().add_systems(
+            Update,
+            habit_ui::tick.after(crate::cell_bridge::ReceiveCell),
+        );
         app.add_systems(
             PostUpdate,
             (reader::scroll_to_record, reader::reveal_selection)
@@ -111,52 +139,72 @@ impl Default for Book {
                 return Self(Arc::from([]), Arc::from([]), Some(error.to_string()));
             }
         };
-        Self(
-            records
+        let mut pages = Vec::new();
+        let mut entries = Vec::new();
+        for descriptor in lince_interface::handbook::PAGES {
+            if let Some(record) = records
                 .iter()
-                .filter(|record| record.is_entry())
-                .map(|entry| Page {
-                    id: entry
-                        .slug
-                        .clone()
-                        .unwrap_or_else(|| entry.projection.uid.clone()),
-                    title: entry.head.clone(),
-                    sections: records
-                        .iter()
-                        .filter(|record| record.entry_uid(&records) == entry.projection.uid)
-                        .map(|record| Section {
-                            uid: record.projection.uid.clone(),
-                            title: record.head.clone(),
-                            body: record.body.clone(),
-                            tutorial: record.slug.as_deref() == Some("areas-of-influence"),
-                        })
-                        .collect(),
-                })
-                .collect(),
-            records
-                .iter()
-                .map(|record| {
-                    let parent = records
-                        .iter()
-                        .find(|entry| entry.projection.uid == record.entry_uid(&records))
-                        .unwrap();
-                    Entry {
-                        id: record
-                            .slug
-                            .clone()
-                            .unwrap_or_else(|| record.projection.uid.clone()),
+                .find(|record| record.slug.as_deref() == Some(descriptor.slug))
+            {
+                pages.push(Page {
+                    id: descriptor.slug.into(),
+                    title: record.head.clone(),
+                    sections: vec![Section {
+                        slug: record.slug.clone(),
                         uid: record.projection.uid.clone(),
-                        page: parent
-                            .slug
-                            .clone()
-                            .unwrap_or_else(|| parent.projection.uid.clone()),
                         title: record.head.clone(),
-                        depth: record.path(&records).len().saturating_sub(1),
-                    }
-                })
-                .collect(),
-            None,
-        )
+                        body: record.body.clone(),
+                    }],
+                });
+                entries.push(Entry {
+                    id: descriptor.slug.into(),
+                    uid: record.projection.uid.clone(),
+                    page: descriptor.slug.into(),
+                    title: record.head.clone(),
+                    depth: 0,
+                    chapter: records
+                        .iter()
+                        .find(|record| record.slug.as_deref() == Some(descriptor.chapter))
+                        .map_or_else(
+                            || descriptor.chapter.to_owned(),
+                            |record| record.head.clone(),
+                        ),
+                });
+            }
+        }
+        for record in records.iter().filter(|record| {
+            !lince_interface::handbook::PAGES
+                .iter()
+                .any(|page| record.slug.as_deref() == Some(page.slug))
+                && !record
+                    .slug
+                    .as_deref()
+                    .is_some_and(|slug| slug.starts_with("step-") || slug.starts_with("instinct-"))
+        }) {
+            let id = record
+                .slug
+                .clone()
+                .unwrap_or_else(|| record.projection.uid.clone());
+            pages.push(Page {
+                id: id.clone(),
+                title: record.head.clone(),
+                sections: vec![Section {
+                    slug: record.slug.clone(),
+                    uid: record.projection.uid.clone(),
+                    title: record.head.clone(),
+                    body: record.body.clone(),
+                }],
+            });
+            entries.push(Entry {
+                id: id.clone(),
+                uid: record.projection.uid.clone(),
+                page: id,
+                title: record.head.clone(),
+                depth: 0,
+                chapter: "Reference".into(),
+            });
+        }
+        Self(pages.into(), entries.into(), None)
     }
 }
 
@@ -227,6 +275,14 @@ pub fn spawn(
 enum Command {
     Create,
     Page(String),
+    Search,
+    ClearSearch,
+}
+
+#[derive(Component, Default)]
+struct Search {
+    query: String,
+    input: Option<Entity>,
 }
 
 impl Action for Command {
@@ -235,6 +291,21 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::Search | Self::ClearSearch => {
+                let input = world.get::<Search>(owner).and_then(|search| search.input);
+                let query = if matches!(self, Self::ClearSearch) {
+                    String::new()
+                } else {
+                    input
+                        .and_then(|input| world.get::<bevy::text::EditableText>(input))
+                        .map(|input| input.value().to_string())
+                        .unwrap_or_default()
+                };
+                world
+                    .entity_mut(owner)
+                    .insert(Search { query, input: None });
+                reader::render(world, owner);
+            }
             Self::Create => {
                 let Some(workspace) = world
                     .get::<crate::workspace::Workspaces>(owner)
@@ -266,6 +337,9 @@ impl Action for Command {
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
+    if !cfg!(feature = "instinct") {
+        return;
+    }
     crate::sand_store::castle_entry(
         world,
         root,

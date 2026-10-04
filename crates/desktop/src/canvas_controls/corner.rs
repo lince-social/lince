@@ -142,7 +142,10 @@ fn update_at(world: &mut World, now: std::time::Instant) {
         if started && let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
             wake.after(HIDE_DELAY);
         }
-        let expanded = hovered
+        let expanded = world
+            .get::<crate::edit_mode::EditMode>(view)
+            .is_some_and(|mode| mode.enabled)
+            || hovered
             || waiting
             || [bar, corner]
                 .into_iter()
@@ -271,6 +274,24 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn editing_keeps_the_complete_toolbar_visible() {
+        let (mut app, root) = crate::edit_mode::tests::fixture();
+        app.world_mut()
+            .get_mut::<crate::edit_mode::EditMode>(root)
+            .unwrap()
+            .enabled = true;
+        let bar = super::super::toolbar(app.world_mut(), root);
+        update(app.world_mut());
+        assert_eq!(
+            *app.world().get::<Visibility>(bar).unwrap(),
+            Visibility::Inherited
+        );
+        let node = app.world().get::<Node>(bar).unwrap();
+        assert_eq!(node.flex_wrap, FlexWrap::Wrap);
+        assert_eq!(node.max_width, Val::Vw(96.0));
     }
 
     #[test]

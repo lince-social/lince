@@ -455,6 +455,9 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
                     continue;
                 };
+                if !crate::instinct::practice::permits_target(world, entity) {
+                    continue;
+                }
                 let task = world
                     .get::<crate::full_record::RecordCard>(entity)
                     .is_some();

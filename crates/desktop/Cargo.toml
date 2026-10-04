@@ -10,6 +10,7 @@ description = "Desktop application and native runtime for Lince."
 
 [features]
 default = ["native-runtime"]
+instinct = ["native-runtime", "engine/instinct"]
 native-media = ["native-runtime", "dep:lince-media", "lince-media/native"]
 native-runtime = [
     "dep:lince-interface",
@@ -17,6 +18,8 @@ native-runtime = [
     "dep:lince-editor",
     "dep:rfd",
     "dep:cpal",
+    "dep:tts",
+    "dep:ttf-parser",
     "dep:qrcode",
     "dep:nokhwa",
     "dep:hound",
@@ -35,6 +38,7 @@ native-runtime = [
     "dep:tokio",
     "dep:protein",
     "dep:engine",
+    "dep:store",
     "dep:serde_json",
     "dep:serde",
     "dep:image",
@@ -76,6 +80,7 @@ native-runtime = [
 ]
 
 [dependencies]
+store = { workspace = true, optional = true }
 simulation = { workspace = true, optional = true }
 lince-interface = { workspace = true, optional = true, features = ["ui", "models", "behavior-checks"] }
 lince-document = { path = "../document", optional = true }
@@ -85,6 +90,8 @@ qrcode = { workspace = true, optional = true }
 nokhwa = { version = "=0.10.11", default-features = false, features = ["input-native"], optional = true }
 lince-media = { workspace = true, optional = true }
 cpal = { version = "=0.15.3", optional = true }
+tts = { version = "=0.26.3", optional = true, default-features = false }
+ttf-parser = { version = "=0.25.1", optional = true }
 hound = { version = "=3.5.1", optional = true }
 naga = { version = "=29.0.4", features = ["wgsl-in"], optional = true }
 wasmi = { version = "=2.0.0", default-features = false, features = ["std", "validate", "auto-dispatch"], optional = true }
@@ -298,6 +305,10 @@ required-features = ["native-runtime"]
 
 [[example]]
 name = "time_schedule_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "time_castle_linux_smoke"
 required-features = ["native-runtime"]
 
 [[example]]

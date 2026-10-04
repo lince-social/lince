@@ -8,6 +8,7 @@ pub struct Request {
     pub density: f32,
     pub previous: f32,
     pub visible: bool,
+    pub text: bool,
 }
 
 pub fn dimensions(size: Vec2, density: f32) -> (UVec2, f32) {
@@ -44,8 +45,17 @@ pub fn plan(requests: &[Request], budget: u64) -> Vec<(UVec2, f32)> {
         }
         let reduction =
             ((budget as f64 / pixels as f64).sqrt() as f32).min(std::f32::consts::FRAC_1_SQRT_2);
+        let reduce_media = requests
+            .iter()
+            .zip(&result)
+            .any(|(request, (pixels, density))| {
+                request.visible
+                    && !request.text
+                    && pixels.max_element() > 1
+                    && *density > request.density * 0.125
+            });
         for (request, (pixels, density)) in requests.iter().zip(&mut result) {
-            if request.visible {
+            if request.visible && (!reduce_media || !request.text) {
                 *density *= reduction;
                 let exponent = (*density).log2().mul_add(2.0, -0.0001).floor() * 0.5;
                 *density = 2.0_f32.powf(exponent);
@@ -111,6 +121,7 @@ mod tests {
                 density: 1000.0,
                 previous: 0.0,
                 visible: index % 3 != 0,
+                text: index % 5 == 0,
             })
             .collect();
         let result = plan(&requests, PIXEL_BUDGET);
@@ -145,8 +156,35 @@ mod tests {
                 density,
                 previous: 1.0,
                 visible: true,
+                text: true,
             };
             assert_eq!(plan(&[request], PIXEL_BUDGET)[0], (UVec2::splat(300), 1.0));
         }
+    }
+
+    #[test]
+    fn text_keeps_its_physical_resolution_before_media_is_reduced() {
+        let text = Request {
+            size: Vec2::new(200.0, 80.0),
+            density: 2.0,
+            previous: 0.0,
+            visible: true,
+            text: true,
+        };
+        let media = Request {
+            size: Vec2::splat(1000.0),
+            text: false,
+            ..text
+        };
+        let allocations = plan(&[text, media], 1_000_000);
+        assert_eq!(allocations[0], (UVec2::new(400, 160), 2.0));
+        assert!(allocations[1].1 < 2.0);
+        assert!(
+            allocations
+                .iter()
+                .map(|(size, _)| u64::from(size.x) * u64::from(size.y))
+                .sum::<u64>()
+                <= 1_000_000
+        );
     }
 }

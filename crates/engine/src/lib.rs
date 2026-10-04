@@ -35,6 +35,7 @@ pub mod operation_origin;
 pub mod imagination;
 pub mod projection;
 pub mod instinct;
+pub mod instinct_import;
 pub mod karma_control;
 pub mod karma_execution;
 pub mod karma_runtime;

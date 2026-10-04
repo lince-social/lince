@@ -298,7 +298,7 @@ fn records(world: &mut World) -> Vec<Record> {
         ), (
             Without<Pinned>,
             Without<crate::protein_area::placement::Pending>,
-            Without<crate::protein_area::RemoteRecord>,
+            Or<(Without<crate::protein_area::RemoteRecord>, With<crate::practice_cells::PracticeRecord>)>,
             bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
         )>()
         .iter(world)
@@ -446,6 +446,7 @@ fn request_id() -> String {
 }
 
 fn send(world: &World, id: String, action: Action) -> bool {
+    if let Some(sent) = crate::practice_cells::route(world, id.clone(), &action) { return sent }
     world.get_non_send::<CellBridge>().is_some_and(|bridge| {
         bridge
             .outgoing
@@ -675,6 +676,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             .iter()
             .filter(|record| record.root == grant.root && record.workspace == grant.workspace)
         {
+            if !crate::practice_cells::permits_area(world, *entity, &record.uid) { continue }
             if pending_uids.contains(record.uid.as_str()) {
                 continue;
             }

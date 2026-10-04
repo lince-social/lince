@@ -668,7 +668,8 @@ pub enum Action {
     RetractAssertion {
         assertion: String,
     },
-    ImportInstinct,
+    PreviewInstinct,
+    ImportInstinct { fingerprint: String },
     ConfigureFiote {
         target: String,
         prompt_parent: Option<String>,
@@ -2009,7 +2010,7 @@ impl Engine {
             | Action::SetSlug { .. } | Action::CreateRecord { .. }
             | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. } | Action::ImportKarmaHabit { .. }
         );
-        let preview = matches!(&action, Action::PendingOffers | Action::PreviewRecordMove { .. } | Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. });
+        let preview = matches!(&action, Action::PreviewInstinct | Action::PendingOffers | Action::PreviewRecordMove { .. } | Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. });
         let _rule_guard = if matches!(&action,
             Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
@@ -4096,7 +4097,8 @@ impl Engine {
             | Action::CreateAgent { .. }
             | Action::CreateMessageDraft { .. }
             | Action::SendMessageDraft { .. }
-            | Action::ImportInstinct | Action::ImportKarmaHabit { .. } => "record:create",
+            | Action::ImportInstinct { .. } | Action::ImportKarmaHabit { .. } => "record:create",
+            Action::PreviewInstinct => "record:read",
             Action::SetQuantity { .. }
             | Action::PreviewAreaTransition { .. }
             | Action::ApplyAreaTransition { .. }

@@ -1,11 +1,16 @@
 mod annotations;
+mod audio;
 mod chrome;
 mod events;
+mod motion;
 mod palette;
 mod render;
 mod scene;
 pub use scene::SchedulePick;
 mod ui;
+
+#[cfg(test)]
+mod integration;
 
 use crate::protein_area::Source;
 use bevy::prelude::*;
@@ -38,7 +43,7 @@ struct View {
     rendered: Option<(Settings, u64, i64, [u32; 2], u32, bool)>,
     scene: Option<Entity>,
     fallback: bool,
-    forecast: bool,
+    projection: Option<nucleus::projection::Status>,
     palette: Option<palette::Palette>,
 }
 
@@ -93,7 +98,8 @@ impl Plugin for TimeCastlePlugin {
                 render::update
                     .after(bevy::ui::UiSystems::PostLayout)
                     .before(bevy::transform::TransformSystems::Propagate),
-            );
+            )
+            .add_systems(Update, audio::update.after(update));
     }
 }
 
@@ -139,7 +145,7 @@ pub fn populate(world: &mut World, owner: Entity) {
         rendered: None,
         scene: None,
         fallback,
-        forecast: false,
+        projection: None,
         palette: None,
     });
 }
@@ -210,15 +216,47 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
                 if id == &subscription =>
             {
-                let entries: Vec<_> = rows
+                let entries: Vec<model::Entry> = rows
                     .iter()
                     .filter(|row| row["kind"] == "schedule-entry")
                     .filter_map(|row| serde_json::from_value(row.clone()).ok())
                     .collect();
-                if let Some(mut view) = world.get_mut::<View>(owner) {
+                let changed_selection = if let Some(mut view) = world.get_mut::<View>(owner) {
+                    let before = (view.selected.len() == 1)
+                        .then(|| {
+                            view.entries
+                                .iter()
+                                .find(|entry| view.selected.contains(&entry.id))
+                                .cloned()
+                        })
+                        .flatten();
+                    let selected: std::collections::HashSet<_> = view
+                        .entries
+                        .iter()
+                        .filter(|entry| view.selected.contains(&entry.id))
+                        .filter_map(|entry| entry.cue_key(""))
+                        .collect();
+                    view.selected = entries
+                        .iter()
+                        .filter(|entry| {
+                            view.selected.contains(&entry.id)
+                                || entry.cue_key("").is_some_and(|key| selected.contains(&key))
+                        })
+                        .map(|entry| entry.id.clone())
+                        .collect();
                     view.entries = entries;
                     view.source = source.clone();
                     view.revision = view.revision.wrapping_add(1);
+                    view.entries
+                        .iter()
+                        .find(|entry| view.selected.len() == 1 && view.selected.contains(&entry.id))
+                        .filter(|entry| before.as_ref().is_some_and(|before| before != *entry))
+                        .map(|entry| entry.id.clone())
+                } else {
+                    None
+                };
+                if let Some(id) = changed_selection {
+                    crate::actions::Action::apply(&ui::Select(vec![id]), world, owner);
                 }
                 let state = rows
                     .iter()
@@ -228,7 +266,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                             .ok()
                     });
                 let forecast = matches!(&state, Some(nucleus::projection::Status::Ready { .. }));
-                world.get_mut::<View>(owner).unwrap().forecast = forecast;
+                world.get_mut::<View>(owner).unwrap().projection = state.clone();
                 chrome::availability(world, owner, forecast);
                 let message = match state {
                     Some(nucleus::projection::Status::Ready { .. }) => {
@@ -261,7 +299,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 }
                 if let Some(mut view) = world.get_mut::<View>(owner) {
                     view.entries.clear();
-                    view.forecast = false;
+                    view.projection = None;
                     view.revision = view.revision.wrapping_add(1);
                 }
                 chrome::availability(world, owner, false);
@@ -315,10 +353,10 @@ fn update(
                     world.resource_mut::<Feeds>().closing.push(feed);
                 }
                 if let Some(mut view) = world.get_mut::<View>(owner)
-                    && (!view.entries.is_empty() || view.forecast)
+                    && (!view.entries.is_empty() || view.projection.is_some())
                 {
                     view.entries.clear();
-                    view.forecast = false;
+                    view.projection = None;
                     view.revision = view.revision.wrapping_add(1);
                 }
                 chrome::availability(world, owner, false);
@@ -347,7 +385,7 @@ fn update(
             }
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.entries.clear();
-            view.forecast = false;
+            view.projection = None;
             view.selected.clear();
             view.page = 0;
             view.source = source.clone();
@@ -394,9 +432,9 @@ fn update(
                 .unwrap()
                 .sent = false;
             let mut view = world.get_mut::<View>(owner).unwrap();
-            if !view.entries.is_empty() || view.forecast {
+            if !view.entries.is_empty() || view.projection.is_some() {
                 view.entries.clear();
-                view.forecast = false;
+                view.projection = None;
                 view.revision = view.revision.wrapping_add(1);
             }
             status(world, owner, "Schedule connection closed");
@@ -427,6 +465,26 @@ fn update(
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::Attribution {
+        name: "tts",
+        author: "Nolan Darilek and contributors",
+        license: include_str!("../licenses/tts-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "speech-dispatcher Rust bindings",
+        author: "Nolan Darilek and contributors",
+        license: include_str!("../licenses/tts-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "ttf-parser",
+        author: "Yevhenii Reizner and contributors",
+        license: include_str!("../licenses/ttf-parser-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "cpal",
+        author: "The CPAL contributors",
+        license: include_str!("../licenses/cpal-Apache-2.0.txt"),
+    },
+    crate::credits::Attribution {
         name: "usvg",
         author: "Yevhenii Reizner and contributors",
         license: include_str!("../licenses/usvg-MIT.txt"),
@@ -443,6 +501,11 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
     },
     crate::credits::SYMBOLS,
     crate::credits::DEJAVU,
+    crate::credits::Attribution {
+        name: "Noto Sans Mono CJK",
+        author: include_str!("../../../institute/assets/fonts/NotoSansMonoCJK/CREDITS.txt"),
+        license: include_str!("../../../institute/assets/fonts/NotoSansMonoCJK/OFL.txt"),
+    },
     crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "Bevy",

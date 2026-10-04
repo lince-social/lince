@@ -422,3 +422,11 @@ Bevy supports replaceable/mockable pointer input, useful for sharing interaction
 `InteractionDisabled` can prevent widget interaction while leaving it rendered and able to acquire keyboard focus. Therefore adding that component or drawing a dimmed overlay is not a complete Assisted policy; keyboard/focus and direct handlers need their own integration. Source: [InteractionDisabled](https://docs.rs/bevy/latest/bevy/ui/struct.InteractionDisabled.html).
 
 State/run conditions are a suitable basis for an inactive runner doing no step work; Bevy's menu example demonstrates conditional systems and state-bound UI cleanup. Reuse that mechanism without coupling every Sand's behavior to a tutorial state. Source: [Bevy game menu example](https://bevy.org/examples/games/game-menu/).
+
+## Implementation pause — 2026-10-04
+
+Implementation was authorized after this proposal and is now paused at the owner's request. The handbook, typed runner, isolated sample Cells, build flag and atomic import have been partially implemented. The 65 pages are present as explanations; that does not mean all 65 feature practices or acceptance checks are complete.
+
+The owner authorized additive explanations and instructions in institute/anicca/Lince.lingua; original text was retained. Ordinary mise dev keeps the unfinished Instinct feature disabled, and mise dev-instinct enables it explicitly.
+
+See [the pause handoff](../plans/instinct-pause.md) for the implemented behavior, remaining gaps, validation results and the sequential resume plan. The unchecked proposal tasks above remain an acceptance checklist.

@@ -129,73 +129,81 @@ impl Engine {
         let changed = self.query_changed.clone();
         let metrics = self.projection.metrics.clone();
         let expiry = self.projection.expiry.clone();
+        let execution = nucleus::execution::current();
         let task = tokio::spawn(async move {
-            let mut request = request;
-            let mut config = config;
-            loop {
-                let base = nucleus::execution::now().timestamp_millis();
-                let computed = calculate(
-                    &store,
-                    &request.context,
-                    base,
-                    Some(config.clone()),
-                    &metrics,
-                )
-                .await;
-                match computed {
-                    Ok(calculated) => {
-                        if calculated.source_revision == request.revision {
-                            match store::projection::publish_schedule(
-                                &store.pool,
-                                &request.context,
-                                calculated.source_revision,
-                                base,
-                                calculated.expires_ms,
-                                calculated.incomplete.as_ref(),
-                                &calculated.spans,
-                                &calculated.schedule,
-                            )
-                            .await
-                            {
-                                Ok(true) => {
-                                    arm_expiry(&expiry, calculated.expires_ms, changed.clone())
-                                }
-                                Ok(false) => {}
-                                Err(error) => {
-                                    tracing::warn!(%error, "projection publication failed")
+            let work = async move {
+                let mut request = request;
+                let mut config = config;
+                loop {
+                    let base = nucleus::execution::now().timestamp_millis();
+                    let computed = calculate(
+                        &store,
+                        &request.context,
+                        base,
+                        Some(config.clone()),
+                        &metrics,
+                    )
+                    .await;
+                    match computed {
+                        Ok(calculated) => {
+                            if calculated.source_revision == request.revision {
+                                match store::projection::publish_schedule(
+                                    &store.pool,
+                                    &request.context,
+                                    calculated.source_revision,
+                                    base,
+                                    calculated.expires_ms,
+                                    calculated.incomplete.as_ref(),
+                                    &calculated.spans,
+                                    &calculated.schedule,
+                                )
+                                .await
+                                {
+                                    Ok(true) => {
+                                        arm_expiry(&expiry, calculated.expires_ms, changed.clone())
+                                    }
+                                    Ok(false) => {}
+                                    Err(error) => {
+                                        tracing::warn!(%error, "projection publication failed")
+                                    }
                                 }
                             }
                         }
+                        Err(error) => {
+                            tracing::warn!(%error, "projection calculation failed");
+                            let _ = store::projection::publish(
+                                &store.pool,
+                                &request.context,
+                                request.revision,
+                                base,
+                                base + 60_000,
+                                Some(&Incomplete::UnavailableRuntime {}),
+                                &[],
+                            )
+                            .await;
+                            arm_expiry(&expiry, base + 60_000, changed.clone());
+                        }
                     }
-                    Err(error) => {
-                        tracing::warn!(%error, "projection calculation failed");
-                        let _ = store::projection::publish(
-                            &store.pool,
-                            &request.context,
-                            request.revision,
-                            base,
-                            base + 60_000,
-                            Some(&Incomplete::UnavailableRuntime {}),
-                            &[],
-                        )
-                        .await;
-                        arm_expiry(&expiry, base + 60_000, changed.clone());
+                    changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+                    let next = {
+                        let mut queue = queue.lock().expect("projection queue");
+                        let next = queue.pending.take();
+                        queue.active = next.as_ref().map(|(request, _)| request.clone());
+                        next
+                    };
+                    match next {
+                        Some((next, next_config)) => {
+                            request = next;
+                            config = next_config;
+                        }
+                        None => break,
                     }
                 }
-                changed.send_modify(|revision| *revision = revision.wrapping_add(1));
-                let next = {
-                    let mut queue = queue.lock().expect("projection queue");
-                    let next = queue.pending.take();
-                    queue.active = next.as_ref().map(|(request, _)| request.clone());
-                    next
-                };
-                match next {
-                    Some((next, next_config)) => {
-                        request = next;
-                        config = next_config;
-                    }
-                    None => break,
-                }
+            };
+            if let Some(execution) = execution {
+                execution.scope(work).await;
+            } else {
+                work.await;
             }
         });
         *self.projection.task.lock().expect("projection task") = Some(task);
@@ -415,26 +423,49 @@ pub async fn calculate(
     }).await;
     private.pool.close().await;
     outcome?;
-    result.spans.sort_by(|a, b| a.from_ms.cmp(&b.from_ms).then_with(|| a.id.cmp(&b.id)));
-    result.schedule.sort_by(|a, b| a.time.from_ms.cmp(&b.time.from_ms).then_with(|| a.id.cmp(&b.id)));
+    result
+        .spans
+        .sort_by(|a, b| a.from_ms.cmp(&b.from_ms).then_with(|| a.id.cmp(&b.id)));
+    result.schedule.sort_by(|a, b| {
+        a.time
+            .from_ms
+            .cmp(&b.time.from_ms)
+            .then_with(|| a.id.cmp(&b.id))
+    });
     let mut bytes = 0;
     let spans_limited = retain_payload_budget(&mut result.spans, &mut bytes)?;
     let schedule_limited = retain_payload_budget(&mut result.schedule, &mut bytes)?;
-    if spans_limited || schedule_limited { result.incomplete = Some(Incomplete::Budget {}); }
+    if spans_limited || schedule_limited {
+        result.incomplete = Some(Incomplete::Budget {});
+    }
     Ok(result)
 }
 
-fn retain_payload_budget<T: serde::Serialize>(entries: &mut Vec<T>, bytes: &mut usize) -> Result<bool, EngineError> {
+fn retain_payload_budget<T: serde::Serialize>(
+    entries: &mut Vec<T>,
+    bytes: &mut usize,
+) -> Result<bool, EngineError> {
     let mut limited = false;
     let mut error = None;
-    entries.retain(|entry| {
-        match serde_json::to_vec(entry) {
-            Ok(encoded) if encoded.len() <= nucleus::projection::MAX_CACHE_BYTES.saturating_sub(*bytes) => { *bytes += encoded.len(); true }
-            Ok(_) => { limited = true; false }
-            Err(failure) => { error = Some(failure); false }
+    entries.retain(|entry| match serde_json::to_vec(entry) {
+        Ok(encoded)
+            if encoded.len() <= nucleus::projection::MAX_CACHE_BYTES.saturating_sub(*bytes) =>
+        {
+            *bytes += encoded.len();
+            true
+        }
+        Ok(_) => {
+            limited = true;
+            false
+        }
+        Err(failure) => {
+            error = Some(failure);
+            false
         }
     });
-    if let Some(error) = error { return Err(EngineError::Json(error)); }
+    if let Some(error) = error {
+        return Err(EngineError::Json(error));
+    }
     Ok(limited)
 }
 
@@ -444,7 +475,10 @@ mod tests {
 
     #[test]
     fn projection_budget_counts_json_escaping_and_preserves_entries_that_fit() {
-        let mut entries = vec!["\\".repeat(nucleus::projection::MAX_CACHE_BYTES / 2), "available".into()];
+        let mut entries = vec![
+            "\\".repeat(nucleus::projection::MAX_CACHE_BYTES / 2),
+            "available".into(),
+        ];
         let mut bytes = 0;
         assert!(retain_payload_budget(&mut entries, &mut bytes).unwrap());
         assert_eq!(entries, vec!["available"]);

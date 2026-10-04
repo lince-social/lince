@@ -67,6 +67,7 @@ pub(super) fn populate(
         let button = chrome::button(world, cursor, owner, caption, SetCursor(mode));
         world.entity_mut(button).insert(CursorChoice(mode));
     }
+    audio::controls(world, owner, pages[3]);
     let panel = crate::sand_panel::row(world, pages[0]);
     let columns: Vec<_> = [48.0, 48.0]
         .into_iter()

@@ -357,7 +357,9 @@ fn instinct_castles_keep_their_page_when_saved_and_placed_again() {
         root,
         1,
         DVec2::ZERO,
-        crate::instinct::Instinct { page: Some("tool".into()) },
+        crate::instinct::Instinct {
+            page: Some("tool".into()),
+        },
     );
     world.entity_mut(root).insert(SandSelection(vec![reader]));
     let castle = CustomCastle::capture(world, root, "Reading").unwrap();
@@ -365,7 +367,14 @@ fn instinct_castles_keep_their_page_when_saved_and_placed_again() {
     let castle: CustomCastle = serde_json::from_str(&encoded).unwrap();
     let copies = castle.spawn(world, root).unwrap();
     assert_eq!(copies.len(), 1);
-    assert_eq!(world.get::<crate::instinct::Instinct>(copies[0]).unwrap().page.as_deref(), Some("tool"));
+    assert_eq!(
+        world
+            .get::<crate::instinct::Instinct>(copies[0])
+            .unwrap()
+            .page
+            .as_deref(),
+        Some("tool")
+    );
     assert_ne!(reader, copies[0]);
 }
 
@@ -375,27 +384,62 @@ fn composed_time_castle_keeps_its_standalone_log() {
     let (mut app, root) = fixture(directory.path());
     let world = app.world_mut();
     let sand = crate::sand_store::spawn_sand(world, root, 1, SandKind::WorkTimer, "", DVec2::ZERO);
-    let mut area = InfluenceArea::new(crate::area::AreaShape::Square, DVec2::new(500.0, 0.0), DVec2::splat(600.0));
+    let mut area = InfluenceArea::new(
+        crate::area::AreaShape::Square,
+        DVec2::new(500.0, 0.0),
+        DVec2::splat(600.0),
+    );
     area.protein = Some(crate::protein_area::Config::records());
     let area_id = area.id.clone();
     crate::area::spawn_area(world, root, 1, area).unwrap();
     let timer: crate::work_timer::LocalTimer = serde_json::from_value(serde_json::json!({"logs":[
         {"id":"work.log:running", "start":"2026-09-19T10:00:00Z", "end":null}
-    ]})).unwrap();
+    ]}))
+    .unwrap();
     world.entity_mut(sand).insert(timer.clone());
-    let settings = lince_interface::time_castle::Settings { aperture_ms: 7_200_000, horizon_ms: 36_000_000, timezone: "America/Sao_Paulo".into(), mode: lince_interface::time_castle::Mode::Straight, area: Some(area_id.clone()), cursor: lince_interface::time_castle::CursorMode::Fixed };
-    world.entity_mut(sand).insert(crate::time_castle::TimeSettings(settings.clone()));
+    let settings = lince_interface::time_castle::Settings {
+        aperture_ms: 7_200_000,
+        horizon_ms: 36_000_000,
+        timezone: "America/Sao_Paulo".into(),
+        mode: lince_interface::time_castle::Mode::Straight,
+        area: Some(area_id.clone()),
+        cursor: lince_interface::time_castle::CursorMode::Fixed,
+        sound: Default::default(),
+    };
+    world
+        .entity_mut(sand)
+        .insert(crate::time_castle::TimeSettings(settings.clone()));
     world.entity_mut(root).insert(SandSelection(vec![sand]));
     let castle = CustomCastle::capture(world, root, "Time").unwrap();
     assert!(castle.valid());
-    let restored: CustomCastle = serde_json::from_str(&serde_json::to_string(&castle).unwrap()).unwrap();
+    let restored: CustomCastle =
+        serde_json::from_str(&serde_json::to_string(&castle).unwrap()).unwrap();
     let copies = restored.spawn(world, root).unwrap();
     assert_eq!(copies.len(), 2);
-    let clock = *copies.iter().find(|entity| world.get::<crate::time_castle::TimeSettings>(**entity).is_some()).unwrap();
-    let copied_area = copies.iter().find_map(|entity| world.get::<InfluenceArea>(*entity)).unwrap();
+    let clock = *copies
+        .iter()
+        .find(|entity| {
+            world
+                .get::<crate::time_castle::TimeSettings>(**entity)
+                .is_some()
+        })
+        .unwrap();
+    let copied_area = copies
+        .iter()
+        .find_map(|entity| world.get::<InfluenceArea>(*entity))
+        .unwrap();
     assert_ne!(copied_area.id, area_id);
-    assert_eq!(world.get::<crate::work_timer::LocalTimer>(clock).unwrap(), &timer);
+    assert_eq!(
+        world.get::<crate::work_timer::LocalTimer>(clock).unwrap(),
+        &timer
+    );
     let mut expected = settings;
     expected.area = Some(copied_area.id.clone());
-    assert_eq!(world.get::<crate::time_castle::TimeSettings>(clock).unwrap().0, expected);
+    assert_eq!(
+        world
+            .get::<crate::time_castle::TimeSettings>(clock)
+            .unwrap()
+            .0,
+        expected
+    );
 }

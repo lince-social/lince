@@ -56,6 +56,9 @@ impl Kanban {
     }
 }
 
+#[derive(Component)]
+pub(crate) struct KanbanSource;
+
 #[derive(Component, Clone, Copy)]
 struct Part {
     owner: Entity,
@@ -88,7 +91,7 @@ use crate::full_record::RecordCard;
 struct Requests {
     next: u64,
     pending: HashMap<String, (Entity, Request)>,
-    outgoing: VecDeque<ClientMessage>,
+    outgoing: VecDeque<(Entity, ClientMessage)>,
 }
 
 #[derive(Clone)]
@@ -145,10 +148,8 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
     if count + 8 > crate::area::MAX_AREAS {
         return None;
     }
-    let mut source = rectangle(
-        position,
-        DVec2::new(COLUMNS.len() as f64 * 340.0 + 80.0, 880.0),
-    );
+    let mut source = rectangle(position, DVec2::new(COLUMNS.len() as f64 * 340.0, 720.0));
+    source.center[1] -= 40.0;
     source.name = "Kanban · Task spawning".into();
     source.immunity = crate::area_effects::Immunity::Containment;
     let mut spawning = config();
@@ -257,9 +258,11 @@ pub(crate) fn restore(
         .entity_mut(owner)
         .insert((board.clone(), View::default()));
     if let Some(source) = area(world, owner, &board.source) {
-        world
-            .entity_mut(source)
-            .insert((ZIndex(-3), crate::topology::SummaryAtBottom));
+        world.entity_mut(source).insert((
+            KanbanSource,
+            ZIndex(-3),
+            crate::topology::SummaryAtBottom,
+        ));
     }
     for (index, column) in board.columns.iter().enumerate() {
         if let Some(column) = area(world, owner, &column.area) {
@@ -533,7 +536,7 @@ fn request(
     state.next += 1;
     let id = format!("kanban-{}", state.next);
     state.pending.insert(id.clone(), (owner, kind));
-    state.outgoing.push_back(message(id));
+    state.outgoing.push_back((owner, message(id)));
 }
 
 fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
@@ -565,7 +568,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             world
                 .resource_mut::<Requests>()
                 .outgoing
-                .push_back(ClientMessage::Unsubscribe { id });
+                .push_back((owner, ClientMessage::Unsubscribe { id }));
         }
         if world.get::<Kanban>(owner).is_none() {
             continue;
@@ -608,21 +611,21 @@ fn update(world: &mut World) {
     if crate::laboratory::active(world) {
         return;
     }
-    while let Some(message) = world.resource_mut::<Requests>().outgoing.pop_front() {
-        let Some(bridge) = world.get_non_send::<CellBridge>() else {
+    while let Some((owner, message)) = world.resource_mut::<Requests>().outgoing.pop_front() {
+        let Some(sender) = crate::practice_cells::sender(world, owner) else {
             world
                 .resource_mut::<Requests>()
                 .outgoing
-                .push_front(message);
+                .push_front((owner, message));
             break;
         };
-        if let Err(error) = bridge.outgoing.try_send(message) {
+        if let Err(error) = sender.try_send(message) {
             match error {
                 tokio::sync::mpsc::error::TrySendError::Full(message) => {
                     world
                         .resource_mut::<Requests>()
                         .outgoing
-                        .push_front(message);
+                        .push_front((owner, message));
                 }
                 tokio::sync::mpsc::error::TrySendError::Closed(_) => {
                     world.resource_mut::<Requests>().pending.clear();
@@ -960,6 +963,7 @@ fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {
     let first_size = world.get::<CanvasItem>(first).unwrap().size;
     let mut left = -f64::from(first_size.x) * 0.5;
     let mut bottom = 0.0_f64;
+    let mut top = 0.0_f64;
     for column in columns {
         let size = world.get::<CanvasItem>(column).unwrap().size;
         let offset = DVec3::new(left + f64::from(size.x) * 0.5, 0.0, 0.0);
@@ -972,6 +976,7 @@ fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {
         refresh_attachment(world, column, first);
         left += f64::from(size.x);
         bottom = bottom.max(f64::from(size.y) * 0.5);
+        top = top.max(f64::from(size.y) * 0.5 + 80.0);
     }
     if world
         .get::<crate::canvas_selection::SandGroup>(first)
@@ -981,7 +986,7 @@ fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {
     {
         let width = left + f64::from(first_size.x) * 0.5;
         let center = (width - f64::from(first_size.x)) * 0.5;
-        let size = DVec2::new(width + 80.0, bottom * 2.0 + 240.0);
+        let size = DVec2::new(width, bottom + top);
         if world.get::<CanvasItem>(source).unwrap().size != size.as_vec2() {
             world.get_mut::<CanvasItem>(source).unwrap().size = size.as_vec2();
         }
@@ -995,7 +1000,7 @@ fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {
         place(
             world,
             source,
-            first_position + placement.rotation() * DVec3::new(center, 0.0, 0.0),
+            first_position + placement.rotation() * DVec3::new(center, 0.0, (bottom - top) * 0.5),
         );
         rotate(world, source, placement.rotation);
         refresh_attachment(world, source, first);

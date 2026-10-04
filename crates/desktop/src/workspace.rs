@@ -571,7 +571,7 @@ fn initialize(world: &mut World) {
             };
         }
         let topology = active.topology;
-        let seed = !restored
+        let seed = cfg!(feature = "instinct") && !engine::instinct::BUNDLE.is_empty() && !restored
             && spaces.error.is_none()
             && world.get::<crate::instinct::SeedInstinct>(root).is_some();
         world.entity_mut(root).insert((spaces, topology));
@@ -1179,6 +1179,7 @@ pub(crate) mod tests {
         assert!(after.sands.is_empty() && after.records.is_empty());
     }
 
+    #[cfg(feature = "instinct")]
     #[cfg_attr(test, test)]
     fn instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way() {
         fn seeded(path: PathBuf) -> (App, Entity) {
@@ -2110,6 +2111,7 @@ pub(crate) mod tests {
     crate::laboratory_cases! {
         drawings_restore_native_strokes_from_disk_after_restart,
         document_viewers_restore_progress_from_disk_after_restart,
+        #[cfg(feature = "instinct")]
         instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way,
         protein_group_settings_are_saved_without_generated_areas,
         sand_groups_survive_workspace_restart_and_saved_record_regrouping,

@@ -509,6 +509,30 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
 }
 
 #[test]
+fn source_fits_columns_and_headers_without_padding() {
+    let (mut app, _, owner) = fixture();
+    app.update();
+    let world = app.world();
+    let board = world.get::<Kanban>(owner).unwrap();
+    let source = area(world, owner, &board.source).unwrap();
+    let source_item = world.get::<CanvasItem>(source).unwrap();
+    let first = area(world, owner, &board.columns[0].area).unwrap();
+    let first_item = world.get::<CanvasItem>(first).unwrap();
+    assert_eq!(
+        source_item.size,
+        Vec2::new(COLUMNS.len() as f32 * 340.0, 720.0)
+    );
+    assert_eq!(
+        source_item.position.y - f64::from(source_item.size.y) * 0.5,
+        first_item.position.y - f64::from(first_item.size.y) * 0.5 - 80.0
+    );
+    assert_eq!(
+        source_item.position.y + f64::from(source_item.size.y) * 0.5,
+        first_item.position.y + f64::from(first_item.size.y) * 0.5
+    );
+}
+
+#[test]
 fn source_covers_columns_after_group_rotation() {
     let (mut app, _, owner) = fixture();
     app.update();

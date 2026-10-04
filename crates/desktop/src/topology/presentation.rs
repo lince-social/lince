@@ -37,6 +37,9 @@ pub struct Surface {
 #[derive(Component)]
 pub struct VisualOwner(pub Entity);
 
+#[derive(Component, Clone, Copy)]
+pub struct SurfaceOpacity(pub f32);
+
 #[derive(Component)]
 pub struct WorldCamera;
 
@@ -68,6 +71,22 @@ pub fn origin(world: &World, root: Entity) -> bevy::math::DVec3 {
         })
 }
 
+fn has_text(world: &World, entity: Entity) -> bool {
+    if world
+        .get::<Node>(entity)
+        .is_some_and(|node| node.display == Display::None)
+    {
+        return false;
+    }
+    world.get::<Text>(entity).is_some()
+        || world
+            .get::<crate::time_castle::TimeSettings>(entity)
+            .is_some()
+        || world
+            .get::<Children>(entity)
+            .is_some_and(|children| children.iter().any(|child| has_text(world, child)))
+}
+
 fn request(
     world: &World,
     root: Entity,
@@ -96,6 +115,7 @@ fn request(
         density: 1.0,
         previous,
         visible: active,
+        text: has_text(world, entity),
     };
     if !active || !item.size.is_finite() || item.size.min_element() <= 0.0 {
         request.visible = false;
@@ -110,7 +130,10 @@ fn request(
         .unwrap_or_default();
     let placement = spatial(world, entity);
     let depth = if let Some(settings) = world.get::<crate::time_castle::TimeSettings>(entity) {
-        (f64::from(item.size.min_element()) * 0.18 * settings.0.horizon_ms as f64 / settings.0.aperture_ms.max(1000) as f64).min(100_000.0) * f64::from(scale)
+        (f64::from(item.size.min_element()) * 0.18 * settings.0.horizon_ms as f64
+            / settings.0.aperture_ms.max(1000) as f64)
+            .min(100_000.0)
+            * f64::from(scale)
     } else if world.get::<crate::area::InfluenceArea>(entity).is_some() {
         0.0
     } else {
@@ -150,7 +173,8 @@ fn request(
             && !points.iter().all(|point| point.x > max.x)
             && !points.iter().all(|point| point.z < min.y)
             && !points.iter().all(|point| point.z > max.y);
-        request.density = canvas.zoom as f32 * scale_factor * scale;
+        request.density =
+            canvas.zoom as f32 * scale_factor * scale * if request.text { 2.0 } else { 1.0 };
         return request;
     }
     let rotation = Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0).as_dquat();
@@ -166,7 +190,8 @@ fn request(
         .iter()
         .map(|point| -point.z)
         .fold(f64::INFINITY, f64::min);
-    request.density = physical_size.y as f32 * scale / (2.0 * tangent * (nearest as f32).max(0.5));
+    request.density = physical_size.y as f32 * scale / (2.0 * tangent * (nearest as f32).max(0.5))
+        * if request.text { 2.0 } else { 1.0 };
     request
 }
 
@@ -332,7 +357,7 @@ pub fn synchronize(world: &mut World) {
                 .add(StandardMaterial {
                     base_color_texture: Some(image.clone()),
                     unlit: true,
-                    alpha_mode: AlphaMode::Blend,
+                    alpha_mode: AlphaMode::Premultiplied,
                     depth_bias: 2.0,
                     ..default()
                 });
@@ -439,17 +464,18 @@ pub fn synchronize(world: &mut World) {
             super::areas::opacity(world, entity)
         } else {
             1.0
-        };
+        } * world
+            .get::<SurfaceOpacity>(entity)
+            .map_or(1.0, |opacity| opacity.0.clamp(0.0, 1.0));
         let mut materials = world.resource_mut::<Assets<StandardMaterial>>();
         if materials.get(&material).unwrap().base_color.alpha() != opacity {
-            materials
-                .get_mut(&material)
-                .unwrap()
-                .base_color
-                .set_alpha(opacity);
+            materials.get_mut(&material).unwrap().base_color =
+                Color::linear_rgba(opacity, opacity, opacity, opacity);
         }
         let arrow = world.get::<crate::arrow_sand::ArrowSand>(entity).is_some();
-        let flat = world.get::<crate::time_castle::TimeSettings>(entity).is_some()
+        let flat = world
+            .get::<crate::time_castle::TimeSettings>(entity)
+            .is_some()
             || area
             || arrow
             || !world
@@ -471,7 +497,11 @@ pub fn synchronize(world: &mut World) {
         let clipped_size = clip.size();
         let clipped_center = clip.center() - item.size * 0.5;
         let uv = Rect::from_corners(clip.min / item.size, clip.max / item.size);
-        if world.get::<Surface>(entity).unwrap().uv != uv && world.get::<crate::time_castle::TimeSettings>(entity).is_none() {
+        if world.get::<Surface>(entity).unwrap().uv != uv
+            && world
+                .get::<crate::time_castle::TimeSettings>(entity)
+                .is_none()
+        {
             let handle = world.get::<Mesh3d>(face).unwrap().0.clone();
             if let Some(mut mesh) = world.resource_mut::<Assets<Mesh>>().get_mut(&handle) {
                 mesh.insert_attribute(
@@ -720,6 +750,36 @@ mod tests {
         }
         assert!(bytes <= surface_budget::PIXEL_BUDGET * 4);
         bytes
+    }
+
+    #[test]
+    fn text_surfaces_supersample_and_fade_without_darkening_transparent_edges() {
+        let (mut world, _, entities) = scene(2);
+        let text = entities[0];
+        world.spawn((Text::new("Clear titles and times"), ChildOf(text)));
+        synchronize(&mut world);
+        let surface = world.get::<Surface>(text).unwrap();
+        let (image, material) = (surface.image.clone(), surface.material.clone());
+        assert_eq!(surface.density, 2.0);
+        assert_eq!(world.get::<Surface>(entities[1]).unwrap().density, 1.0);
+        assert_eq!(
+            world
+                .resource::<Assets<StandardMaterial>>()
+                .get(&material)
+                .unwrap()
+                .alpha_mode,
+            AlphaMode::Premultiplied
+        );
+        world.entity_mut(text).insert(SurfaceOpacity(0.35));
+        synchronize(&mut world);
+        assert_eq!(world.get::<Surface>(text).unwrap().image.id(), image.id());
+        let tint = world
+            .resource::<Assets<StandardMaterial>>()
+            .get(&material)
+            .unwrap()
+            .base_color
+            .to_linear();
+        assert_eq!([tint.red, tint.green, tint.blue, tint.alpha], [0.35; 4]);
     }
 
     #[test]

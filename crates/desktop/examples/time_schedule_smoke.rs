@@ -22,6 +22,7 @@ struct Trial {
     stage: u8,
     started: std::time::Instant,
     capture: Option<(u8, std::time::Instant, u32)>,
+    sound_at: Option<std::time::Instant>,
 }
 
 fn activate(world: &mut World, clock: Entity, caption: &str) {
@@ -72,7 +73,7 @@ fn exercise(world: &mut World) {
                 .spawn(Screenshot::primary_window())
                 .observe(save_to_disk(path))
                 .id();
-            if stage == 12 {
+            if stage == 22 {
                 world.entity_mut(capture).observe(
                     |_: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
                         exit.write(AppExit::Success);
@@ -108,7 +109,7 @@ fn exercise(world: &mut World) {
         return;
     }
     let stage = world.resource::<Trial>().stage;
-    if stage > 12 {
+    if stage > 22 {
         return;
     }
     if stage == 0
@@ -125,6 +126,12 @@ fn exercise(world: &mut World) {
     let clock = world.resource::<Trial>().clock.unwrap();
     if stage == 1 {
         activate(world, clock, "Clock controls");
+        assert!(
+            world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0 == "Future simulation ready")
+        );
     }
     if stage == 2 {
         activate(world, clock, "Agenda");
@@ -223,6 +230,119 @@ fn exercise(world: &mut World) {
             lince_interface::time_castle::Mode::Coiled
         );
     }
+    if stage == 13 {
+        activate(world, clock, "Clock controls");
+        activate(world, clock, "Clock");
+        activate(world, clock, "Sound");
+        activate(world, clock, "Blip");
+        activate(world, clock, "Test sound");
+    }
+    if stage == 14 {
+        assert!(
+            world
+                .resource::<lince_desktop::sound_cues::Native>()
+                .error
+                .is_none()
+        );
+        activate(world, clock, "Speak title");
+        activate(world, clock, "Test sound");
+        activate(world, clock, "Test sound");
+        let scope = world.resource::<Trial>().receiver.unwrap().to_bits();
+        let now = chrono::Utc::now().timestamp_millis();
+        world
+            .resource::<lince_desktop::sound_cues::Native>()
+            .schedule(
+                scope,
+                now,
+                vec![lince_interface::sound::Cue {
+                    scope,
+                    key: "scheduled-native-smoke".into(),
+                    at_ms: now + 2000,
+                    title: "Scheduled smoke task".into(),
+                    projected: true,
+                    settings: world.get::<TimeSettings>(clock).unwrap().0.sound.clone(),
+                }],
+            )
+            .unwrap();
+        world.resource_mut::<Trial>().sound_at = Some(std::time::Instant::now());
+    }
+    if stage == 15 {
+        world
+            .resource_mut::<lince_desktop::sound_cues::Native>()
+            .poll();
+        let native = world.resource::<lince_desktop::sound_cues::Native>();
+        assert!(native.error.is_none(), "{:?}", native.error);
+        assert!(!native.voices.is_empty());
+        if native.completed < 3 {
+            assert!(
+                world
+                    .resource::<Trial>()
+                    .sound_at
+                    .unwrap()
+                    .elapsed()
+                    .as_secs()
+                    < 15
+            );
+            return;
+        }
+        assert!(
+            native.started >= 4 && native.completed >= 3,
+            "{} starts, {} completions",
+            native.started,
+            native.completed
+        );
+        activate(world, clock, "Sound off");
+        activate(world, clock, "Hide clock controls");
+    }
+    if stage == 16 {
+        world.get_mut::<TimeSettings>(clock).unwrap().0.aperture_ms = 7_200_000;
+    }
+    if stage == 17 {
+        world.get_mut::<TimeSettings>(clock).unwrap().0.aperture_ms = 60_000;
+    }
+    if stage == 18 {
+        world.get_mut::<TimeSettings>(clock).unwrap().0.aperture_ms = 3_600_000;
+        let root = world.get::<ChildOf>(clock).unwrap().parent();
+        world
+            .get_mut::<lince_desktop::canvas::CanvasView>(root)
+            .unwrap()
+            .zoom = 2.0;
+    }
+    if stage == 19 {
+        let root = world.get::<ChildOf>(clock).unwrap().parent();
+        world
+            .get_mut::<lince_desktop::canvas::CanvasView>(root)
+            .unwrap()
+            .zoom = 1.0;
+        world.get_mut::<TimeSettings>(clock).unwrap().0.cursor =
+            lince_interface::time_castle::CursorMode::Moving;
+    }
+    if stage == 20 {
+        world
+            .query::<&mut Window>()
+            .single_mut(world)
+            .unwrap()
+            .resolution
+            .set_scale_factor_override(Some(2.0));
+        let root = world.get::<ChildOf>(clock).unwrap().parent();
+        world
+            .get_mut::<lince_desktop::canvas::CanvasView>(root)
+            .unwrap()
+            .zoom = 0.6;
+    }
+    if stage == 21 {
+        world
+            .query::<&mut Window>()
+            .single_mut(world)
+            .unwrap()
+            .resolution
+            .set_scale_factor_override(None);
+        let root = world.get::<ChildOf>(clock).unwrap().parent();
+        world
+            .get_mut::<lince_desktop::canvas::CanvasView>(root)
+            .unwrap()
+            .zoom = 1.0;
+    }
     assert_eq!(
         world
             .get::<lince_desktop::canvas::CanvasItem>(clock)
@@ -241,6 +361,35 @@ fn exercise(world: &mut World) {
 async fn main() {
     let directory = tempfile::tempdir().unwrap();
     let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
+    let organ = store::organs::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap();
+    let cell = store::cells::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap();
+    let root = engine::trust::Signer::generate(&organ.uid, engine::roster::ROOT_KEY_ID);
+    let operational =
+        engine::trust::Signer::generate(&organ.uid, &engine::roster::cell_key_id(&cell.uid));
+    engine.set_signer(operational.clone()).await.unwrap();
+    engine.publish_root_key(&root).await.unwrap();
+    engine
+        .publish_roster(
+            &root,
+            vec![engine::roster::CellEntry {
+                cell_uid: cell.uid,
+                node_id: "time-smoke".into(),
+                label: "Time Castle smoke".into(),
+                operational_key: operational.public_key_b64(),
+                sealing_key: None,
+                front_door: false,
+                capabilities: engine::roster::full_capabilities(),
+            }],
+        )
+        .await
+        .unwrap();
+    assert!(engine.karma_device_execution().await.unwrap().executing);
     let now = chrono::Utc::now();
     let mut record = String::new();
     let mut selected = String::new();
@@ -261,6 +410,8 @@ async fn main() {
         ("Later today", 150, Some(15), false, false),
         ("All-day reminder", 0, None, true, false),
         ("Unfinished deadline", -5, None, false, true),
+        ("Current task", -2, Some(9), false, false),
+        ("Another ongoing task", -1, Some(14), false, false),
     ]
     .into_iter()
     .enumerate()
@@ -329,6 +480,7 @@ async fn main() {
             stage: 0,
             started: std::time::Instant::now(),
             capture: None,
+            sound_at: None,
         })
         .insert_resource(lince_desktop::workspace::WorkspaceFile::new(
             directory.path().join("interface.json"),

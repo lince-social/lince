@@ -1,5 +1,6 @@
 pub mod extension;
 pub mod grammar;
+pub mod instinct;
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;

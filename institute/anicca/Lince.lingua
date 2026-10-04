@@ -569,6 +569,7 @@ Here are the subjects wanted to create Trails for, from fields of knowledge to s
 } r_Q46Z5FZHZFACPNSNPJP2GEDC1D
 
 Sync (@sync: 0, #instinct, #part-of @ontology) {
+Sync connects a selected Protein to a local Lingua or Markdown directory. Inspect status and conflicts, and stop it when you no longer want incoming and outgoing edits. One-time import is separate.
 }
 
 Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
@@ -1068,3 +1069,475 @@ For that a system that allows for maximum control of the scenes, is needed, the 
 - [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
 - [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
 }
+
+Instinct handbook (@instinct-handbook: 0, is #chapter, #instinct) { r_0SMVW3VGREZ6TYYQ5PQVKD268A
+Begin with Welcome, Interface and Areas, then Records and Protein. Later chapters are optional. Every page is accessible directly. Suggested earlier ideas are links, never locks. Practice is disposable, and reading needs no database import.
+} r_0SMVW3VGREZ6TYYQ5PQVKD268A
+
+Welcome and finding help (@instinct-welcome: 0, is #chapter, #instinct, #part-of @instinct-handbook: 1) { r_4P5JGN3V4Q62SA2HNSPGSFA2CB
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_4P5JGN3V4Q62SA2HNSPGSFA2CB
+
+Interface foundations (@instinct-interface: 0, is #chapter, #instinct, #part-of @instinct-handbook: 2) { r_72X2M0SK4WZBA0HHB864DYSEWY
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_72X2M0SK4WZBA0HHB864DYSEWY
+
+Areas without Protein (@instinct-areas: 0, is #chapter, #instinct, #part-of @instinct-handbook: 3) { r_4BCGSHXT8F8VAANGGBEJ0FKK3W
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_4BCGSHXT8F8VAANGGBEJ0FKK3W
+
+Records and meaning (@instinct-records: 0, is #chapter, #instinct, #part-of @instinct-handbook: 4) { r_6D4P7ZZWGMNT73YFHVC05CPNRJ
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_6D4P7ZZWGMNT73YFHVC05CPNRJ
+
+Protein and data-backed Areas (@instinct-protein: 0, is #chapter, #instinct, #part-of @instinct-handbook: 5) { r_5EK8CXM9Z0NTHD7YF1TZ8CN4NM
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_5EK8CXM9Z0NTHD7YF1TZ8CN4NM
+
+Getting work done (@instinct-work: 0, is #chapter, #instinct, #part-of @instinct-handbook: 6) { r_2GAFCNWRETWMM3Z99DX60MHW5H
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_2GAFCNWRETWMM3Z99DX60MHW5H
+
+Automation and trying outcomes (@instinct-automation: 0, is #chapter, #instinct, #part-of @instinct-handbook: 7) { r_4M69ES59RP6B1TB6BYW7ZX29WZ
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_4M69ES59RP6B1TB6BYW7ZX29WZ
+
+Cells, Organs and sharing (@instinct-sharing: 0, is #chapter, #instinct, #part-of @instinct-handbook: 8) { r_18YTT89APP1661QFCH29E3WSQ6
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_18YTT89APP1661QFCH29E3WSQ6
+
+Transfers (@instinct-transfers: 0, is #chapter, #instinct, #part-of @instinct-handbook: 9) { r_1X5VKHSHM63H5S0ZDTQSVTFSF1
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_1X5VKHSHM63H5S0ZDTQSVTFSF1
+
+Trails and data on disk (@instinct-disk: 0, is #chapter, #instinct, #part-of @instinct-handbook: 10) { r_5P75GZJECWWTVXHT8SWXE5BDGJ
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_5P75GZJECWWTVXHT8SWXE5BDGJ
+
+Local files and developer tools (@instinct-files: 0, is #chapter, #instinct, #part-of @instinct-handbook: 11) { r_12YTD2TNS4J92G5EBFZRX8ANP2
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_12YTD2TNS4J92G5EBFZRX8ANP2
+
+Audio, spatial and reusable tools (@instinct-creative: 0, is #chapter, #instinct, #part-of @instinct-handbook: 12) { r_4XGM5ZB8BZ7JWZVX77KXBDW6Y7
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_4XGM5ZB8BZ7JWZVX77KXBDW6Y7
+
+Inspecting and maintaining Lince (@instinct-maintaining: 0, is #chapter, #instinct, #part-of @instinct-handbook: 13) { r_63R30TFVCB8SP8X5QM289JHY34
+Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
+} r_63R30TFVCB8SP8X5QM289JHY34
+
+Why Lince (@learn-philosophy: 0, #instinct, #part-of @instinct-welcome: 1, #reference @philosophy) { r_6PN5JPWVV3TWH9ZFZYY409QZQ9
+A Need is something you want to meet; a Contribution is something available to help. A quantity of -1 can express a Need for one apple, 1 an available apple, and zero neither. Your running Lince is a Cell. Think of one everyday Need and one Contribution that could meet it. Reading is enough.
+} r_6PN5JPWVV3TWH9ZFZYY409QZQ9
+
+Starting Lince (@learn-installation: 0, #instinct, #part-of @instinct-welcome: 2, #reference @installation) { r_79Z9X7PNFMHNEBS7Z8NWFQG5MY
+Your Cell keeps data in its local directory and can work offline. Information shows the running version and directory. Contacting other Cells needs a connection. Practice uses separate data. Repository, container and server installation are optional reference material.
+} r_79Z9X7PNFMHNEBS7Z8NWFQG5MY
+
+Using Instinct (@instinct: 0, #instinct, #part-of @instinct-welcome: 3) { r_2BT1WGJENZ6TC4QA00MEDZ0TRC
+Find a subject through the chapter list or search. Free keeps ordinary interaction available; Assisted guides the sample action. Next performs the displayed action and waits for its result. Skip advances without it. Close or Ctrl+Shift+Escape immediately releases guidance. Start anywhere, change mode anytime and import the handbook only if you want ordinary Records of it.
+} r_2BT1WGJENZ6TC4QA00MEDZ0TRC
+
+Workspaces (@workspaces: 0, #instinct, #part-of @instinct-interface: 1) { r_46HV3R4APT0A447VRM6A78KT8V
+A workspace holds an arrangement of Sands, Castles and Areas. Select a practice workspace and switch back. A workspace changes the view, not the Organ whose data you use. An Area is a shape within a workspace.
+} r_46HV3R4APT0A447VRM6A78KT8V
+
+Canvas navigation (@canvas: 0, #instinct, #part-of @instinct-interface: 2) { r_1XE0VM96KFSZBXTBXN903TNA02
+Pan to look elsewhere, zoom to see more or less, and use Home or Fit to recover the sample view. Selection identifies your pieces. Bring Sands here moves presentations into view without changing the meaning of their Records.
+} r_1XE0VM96KFSZBXTBXN903TNA02
+
+Edit mode and the store (@edit-mode: 0, #instinct, #part-of @instinct-interface: 3) { r_5FH4XFDNTBBBYKZNZG3GP2M7VM
+Open Edit mode to add or arrange pieces. Open the store, find an item, then return to normal interaction. The store offers small Sands and composed Castles. Reveal controls when you need them.
+} r_5FH4XFDNTBBBYKZNZG3GP2M7VM
+
+Sands and placement (@sands: 0, #instinct, #part-of @instinct-interface: 4) { r_0J3KYFP5MJS7GZV063D7RW0BW6
+A Sand is a piece of the interface. Add an empty Square and a plain text Sand, then move, resize and pin a sample. Selection and removal act on presentations. Removing a presentation does not delete its Record. Ordinary Sands need no Protein.
+} r_0J3KYFP5MJS7GZV063D7RW0BW6
+
+Plain and editable text (@text-sands: 0, #instinct, #part-of @instinct-interface: 5) { r_0VE5CQHRC6E2F1YZNREBX3KTW6
+Plain text makes labels; editable text makes notes. Change a sample label and write a short note. Text size, overflow and scrolling help fit content to its place.
+} r_0VE5CQHRC6E2F1YZNREBX3KTW6
+
+Castle composition (@castles: 0, #instinct, #part-of @instinct-interface: 6) { r_29A1SG36T8YDBHCTA82B9TDJJG
+A Castle combines pieces into a useful view. Compose two sample Sands, group and ungroup them, then try an enclosing row or column layout. Fit follows content; Fill uses available space. Clipping or scrolling handles overflow. No Protein properties are needed.
+} r_29A1SG36T8YDBHCTA82B9TDJJG
+
+Appearance (@appearance: 0, #instinct, #part-of @instinct-interface: 7) { r_6NVDCF41YXTX5BGRC4RF3QBXSM
+Change one practice sample appearance and reset it. Themes set shared choices; per-kind and workspace overrides make narrower changes. Background and pattern belong to the canvas. Theme export saves appearance choices, not Records.
+} r_6NVDCF41YXTX5BGRC4RF3QBXSM
+
+Keyboard and accessible navigation (@shortcuts: 0, #instinct, #part-of @instinct-interface: 8) { r_3NK96774SKC021JFF8529GR174
+Open Shortcuts to inspect remapping. Tab through sample controls and activate a focused button. A text editor has its own input scope. Ctrl+Shift+Escape remains the tutorial recovery shortcut even when ordinary bindings change.
+} r_3NK96774SKC021JFF8529GR174
+
+Area shape and reach (@learn-areas-of-influence: 0, #instinct, #part-of @instinct-areas: 1, #reference @areas-of-influence) { r_6RFMHMZA8JWVRDP5A2TSHTDDC7
+Place a square or circle Area around an ordinary Sand. Turn it off and on. Reach controls where effects apply and can differ from the drawn boundary. Polygons are another shape choice. This first example needs no Record filter.
+} r_6RFMHMZA8JWVRDP5A2TSHTDDC7
+
+Attraction and repulsion (@area-forces: 0, #instinct, #part-of @instinct-areas: 2) { r_5XZBWGPKMHZ791G9JQA59X3EXP
+Enable practice workspace physics. Set the sample Area to attract and observe movement toward its target, then repel and observe movement away. Strength, target and simple or Newtonian choices refine the effect; start with the visible result.
+} r_5XZBWGPKMHZ791G9JQA59X3EXP
+
+Area presentation effects (@area-effects: 0, #instinct, #part-of @instinct-areas: 3) { r_0KQFVPZK8MW2KSVT4ZWEYZ7MCS
+Try one size or immunity effect on ordinary sample Sands, then disable it. Sorting and boundaries help arrange pieces. Immunity can exclude a Sand. Data-driven order belongs to Protein and comes later.
+} r_0KQFVPZK8MW2KSVT4ZWEYZ7MCS
+
+Understanding an Area effect (@area-inspection: 0, #instinct, #part-of @instinct-areas: 4) { r_0TF0ER7ZHPTFWDJK9WPHHV081X
+Inspect one cause of inclusion or exclusion: enabled state, reach, workspace physics or immunity. Use the sample to explain why a Sand responds. You do not need to open every diagnostic control.
+} r_0TF0ER7ZHPTFWDJK9WPHHV081X
+
+A Record (@learn-record: 0, #instinct, #part-of @instinct-records: 1, #reference @record) { r_0T0TRGGAJCNQBGX00FB2HDY2DC
+A Record has title, description and quantity. Edit the prepared sample and give it a slug. Negative quantity expresses a Need, positive a Contribution and zero neither. A unit says what you count. Description links connect related Records.
+} r_0T0TRGGAJCNQBGX00FB2HDY2DC
+
+Assertions and identity (@learn-assertion: 0, #instinct, #part-of @instinct-records: 2, #reference @assertion) { r_42X48BJ3ANRH16NNB30STMSC25
+Apply one concept and one relation to a prepared sample. A plain tag has no object; a relation names another Record. Main identity says what the Record is. Concepts come from a Vocabulary, so matching names can have different meanings.
+} r_42X48BJ3ANRH16NNB30STMSC25
+
+Vocabulary and Ontology (@learn-ontology: 0, #instinct, #part-of @instinct-records: 3, #reference @ontology) { r_44TBMRPDGFRHGS1VC1XAT6EG1K
+Look up a sample concept meaning and source Vocabulary, then inspect its parent and an alias. When a name is ambiguous, choose the intended source. Creating a complete Vocabulary is optional.
+} r_44TBMRPDGFRHGS1VC1XAT6EG1K
+
+Record, Assertions and Relations views (@record-castles: 0, #instinct, #part-of @instinct-records: 4) { r_2AE13GNGXQ36QWQE7C0RAEK1J7
+Open the same sample in Record, Assertions and Relations views and follow one relation. Each presents the same saved data with a different focus.
+} r_2AE13GNGXQ36QWQE7C0RAEK1J7
+
+Facts and work metadata (@facts: 0, #instinct, #part-of @instinct-records: 5) { r_6KDD83XJXD0ZHZWRT5D9HE276E
+A Fact records a confirmed change. Inspect one sample change and its current quantity. Dates, assignees, estimate and work log describe the work. A click is not proof of a saved change; wait for confirmation.
+} r_6KDD83XJXD0ZHZWRT5D9HE276E
+
+Protein (@protein: 0, #instinct, #part-of @instinct-protein: 1) { r_04PESBG43ASBNW30QDN8KQPARV
+A Protein selects live data you are allowed to see. Choose a prepared source, apply one filter and inspect results before spawning. The filter chooses data; the row template chooses presentation. Protein does not grant access to hidden data.
+} r_04PESBG43ASBNW30QDN8KQPARV
+
+Protein Castle and presentation (@protein-presentation: 0, #instinct, #part-of @instinct-protein: 2) { r_3A4R2K8WF4PGC5CRM52W0EKWKV
+Run and save a small query. Choose Title and Quantity for its sample row template. Presentation changes do not redefine the Record. Sorting, grouping, count or sum, selected fields and optional Facts are further choices.
+} r_3A4R2K8WF4PGC5CRM52W0EKWKV
+
+Areas that change Records (@area-record-actions: 0, #instinct, #part-of @instinct-protein: 3) { r_56EMY33439N288RGJE49XVQPPF
+Match only the prepared Record. Set entry Quantity 1 and exit Quantity 0, then move its Sand inside and outside and wait for each saved change. Quantity, Assertions and identity are possible properties. Inspect failure status and disable changes when needed.
+} r_56EMY33439N288RGJE49XVQPPF
+
+Protein arrangement and motion (@protein-arrangement: 0, #instinct, #part-of @instinct-protein: 4) { r_1XS84ZBS646X60T37BJ9YKTM9Z
+Inspect one sorted or grouped presentation and a destination or motion choice. These control where matching data appears. Ordinary placement and Area forces keep their meanings. Arrangement grants no additional data access.
+} r_1XS84ZBS646X60T37BJ9YKTM9Z
+
+Todo (@todo: 0, #instinct, #part-of @instinct-work: 1) { r_6FQT1908XCGAJ5BQMTX4T2XQJ8
+Complete the prepared task and undo it. Todo presents a live queue selected by a Protein. Selected-task details show its Record, quantity and history.
+} r_6FQT1908XCGAJ5BQMTX4T2XQJ8
+
+Kanban (@kanban: 0, #instinct, #part-of @instinct-work: 2) { r_52Y0229RD50HVKHH8QTT39CT2H
+Move a sample task between two columns and wait for its saved state. Columns are Areas that change task state. Counts summarise columns; assignees and dates describe the work.
+} r_52Y0229RD50HVKHH8QTT39CT2H
+
+Time Castle (@time: 0, #instinct, #part-of @instinct-work: 3) { r_5NEE2FHN3TMQTZE4XFRZPMAC7G
+Start and stop a sample timer, then inspect its work log. A standalone stopwatch measures time without a Record. A bound timer records work for its chosen Record. Decide where measured time belongs.
+} r_5NEE2FHN3TMQTZE4XFRZPMAC7G
+
+Calendar (@calendar: 0, #instinct, #part-of @instinct-work: 4) { r_27ZXE21N3JCZ0PXW9R7N7PV06T
+Find a dated practice sample and open it. Scheduled or projected changes show expected work and its source; they are not yet confirmed Facts. Frequency and Karma explain recurring work.
+} r_27ZXE21N3JCZ0PXW9R7N7PV06T
+
+Operation Sand (@operation: 0, #instinct, #part-of @instinct-work: 5) { r_0JBH408SPEMJ29565H69R643J0
+Configure a sample button to set its prepared Record quantity to zero, activate it and wait for confirmation. Commands are covered later. A button has the same permissions as its ordinary action.
+} r_0JBH408SPEMJ29565H69R643J0
+
+Notifications (@notifications: 0, #instinct, #part-of @instinct-work: 6) { r_0PYJDFWVZCTV4SEHBTCQF89JTN
+Inspect and dismiss a prepared status message. Waiting means the result is unconfirmed; success and failure explain the outcome. Dismissing feedback does not undo an action. System notification permissions are optional.
+} r_0PYJDFWVZCTV4SEHBTCQF89JTN
+
+Frequency and Cadence (@frequency: 0, #instinct, #part-of @instinct-automation: 1) { r_5G0TYRBP3BJ34DARTYT4H17FMW
+Define one sample recurring time and inspect its next occurrence. Frequency and Cadence supply the clock used by habits, Karma and Calendar. Check the timezone when a wall-clock time matters.
+} r_5G0TYRBP3BJ34DARTYT4H17FMW
+
+Karma and Rule Castle (@learn-karma: 0, #instinct, #part-of @instinct-automation: 2, #reference @karma) { r_2W87FRQA5QP7VZ8DEC8C4MS1XW
+Karma connects condition, threshold and consequence. Preview the prepared rule before enabling it in isolated practice. Inspect its resulting Fact, pause it and review history. Consequences follow ordinary permissions.
+} r_2W87FRQA5QP7VZ8DEC8C4MS1XW
+
+Daily habit helper (@habits: 0, #instinct, #part-of @instinct-automation: 3) { r_6AQ5GAVCDTN1R91ZBK2Z6BVMS2
+Preview the Record, Frequency and Rule made by the daily habit helper before importing the sample. Meet its Need once. Resolve conflicts and find Pause. Refer to Frequency and Karma for their shared ideas.
+} r_6AQ5GAVCDTN1R91ZBK2Z6BVMS2
+
+Commands and Signals (@commands: 0, #instinct, #part-of @instinct-automation: 4) { r_5JDVBTS2F7XCVW3CEG2T2GD18V
+A saved Command describes a local program and working directory. Run the bundled harmless practice example and inspect output and history. A Signal can carry its result to a rule. A Command Castle is reusable; Terminal is an interactive shell.
+} r_5JDVBTS2F7XCVW3CEG2T2GD18V
+
+Simulation Castle (@simulation: 0, #instinct, #part-of @instinct-automation: 5) { r_21EB0V3PHR7RSVSSVHSRH8WVGE
+Open a built-in scenario, step one event and inspect its timeline. Pause, Stop, replay, comparisons and checks help explore outcomes. This example does not simulate or version personal data.
+} r_21EB0V3PHR7RSVSSVHSRH8WVGE
+
+Fiote (@learn-fiote: 0, #instinct, #part-of @instinct-automation: 6, #reference @fiote) { r_5DD8GTDQ47958MYYBQCW69J88G
+Inspect provider and model settings and a prepared assistant thread containing a proposed action or question. Find Stop and authority controls. Proposals are not confirmed changes. Credentials, provider calls and activating rules are optional live use.
+} r_5DD8GTDQ47958MYYBQCW69J88G
+
+Cell and Organ (@learn-organ: 0, #instinct, #part-of @instinct-sharing: 1, #reference @organ) { r_7JC5ZH3CJSEXNCGCQQ73HQP8X4
+A Cell is one running Lince. An Organ is a context for shared data and people, including your own devices. Compare prepared personal and shared contexts. They stay separate. A Protein selects an Organ; a workspace arranges views.
+} r_7JC5ZH3CJSEXNCGCQQ73HQP8X4
+
+Contacts and pairing (@contacts: 0, #instinct, #part-of @instinct-sharing: 2) { r_64HZR90VXZFPWWBDQT4KKQ5N48
+Inspect a sample peer and pairing code or QR. Known, unknown and blocked describe trust choices. Proximity concerns nearby discovery. Tutorial pairing uses a prepared local peer; a real second device is optional.
+} r_64HZR90VXZFPWWBDQT4KKQ5N48
+
+Users, Roles and Access Control (@access-control: 0, #instinct, #part-of @instinct-sharing: 3) { r_64MDTKTWWVDW7EF0REBXSV51JW
+Inspect a prepared user Roles and one allowed and one refused operation. Authorisation also limits visible data. Protein selects within those limits; changing a view or starting a tutorial bypasses none of them.
+} r_64MDTKTWWVDW7EF0REBXSV51JW
+
+Sharing and synchronization (@organ-sync: 0, #instinct, #part-of @instinct-sharing: 4) { r_4AB7NGB9Z1XJR33J4TX7RAV0MF
+Compare a prepared shared selection with its arrival on a prepared peer. Inspect visibility, permissions and sync status. Hiding, refusal, revocation and Stop change the relationship. Practice needs no real recipient.
+} r_4AB7NGB9Z1XJR33J4TX7RAV0MF
+
+My devices and Karma authority (@devices: 0, #instinct, #part-of @instinct-sharing: 5) { r_0G3W8QZCFSE98H8ZZ0PHP22G9H
+Inspect a prepared device roster and owner or execution controls. Synchronised rule definitions and permission to execute them are separate. Practice does not rotate real keys or change your devices authority.
+} r_0G3W8QZCFSE98H8ZZ0PHP22G9H
+
+Mail and delivery (@mail: 0, #instinct, #part-of @instinct-sharing: 6) { r_32W85E6XR31FW8WP2QH6DMBE5P
+Inspect a prepared outgoing item and its delivery status. Mailbox storage differs from recipient receipt. Held and expired items need attention; Retry and Cancel manage delivery. Reading requires no live relay.
+} r_32W85E6XR31FW8WP2QH6DMBE5P
+
+Public Needs and Contributions (@discovery: 0, #instinct, #part-of @instinct-sharing: 7) { r_33PDKT37A1AV7KEJ31MDCTTS31
+Search prepared announcements, inspect a profile and prepare a post or request. Publication and withdrawal control announcements. Subscriptions, services, block, report and moderation are further choices. A request is not a Transfer agreement.
+} r_33PDKT37A1AV7KEJ31MDCTTS31
+
+Conversations and Messages (@conversations: 0, #instinct, #part-of @instinct-sharing: 8) { r_3AE57C7E20EB1Z6514SYT8TX2X
+Open a prepared conversation, send a sample Message and inspect delivery. Thread tabs, mentions, replies, attachments and requests organise communication. Practice uses prepared peers rather than real recipients.
+} r_3AE57C7E20EB1Z6514SYT8TX2X
+
+Calls and screen sharing (@calls: 0, #instinct, #part-of @instinct-sharing: 9) { r_199ADF8E0BQB0QM90CAYGMQBVE
+Locate Call, Mute, Video or Share and Leave in the prepared conversation. Reading and highlights suffice when capture devices are unavailable. Microphone, camera and screen capture are optional; Leave remains available.
+} r_199ADF8E0BQB0QM90CAYGMQBVE
+
+Transfer Castle (@learn-transfer: 0, #instinct, #part-of @instinct-transfers: 1, #reference @transfer) { r_3A9KSK04M1686PD6A0XJBXS1B4
+Inspect a simple prepared proposal, agreement and confirmed action for an exchange or donation. Promised quantities describe agreement; Facts describe changes that occurred. Prepared parties keep practice separate from real commitments.
+} r_3A9KSK04M1686PD6A0XJBXS1B4
+
+Transfers with Karma (@transfer-automation: 0, #instinct, #part-of @instinct-transfers: 2) { r_5V6MN80TQEJJT49KP9NXXWJKZF
+Inspect the prepared rule that proposes a Transfer at a threshold. Locate approvals and Pause. A proposal still needs agreement. Use the Transfer view to compare promises with confirmed changes.
+} r_5V6MN80TQEJJT49KP9NXXWJKZF
+
+Trail and handbook import (@instinct-import: 0, #instinct, #part-of @instinct-disk: 1) { r_5G9QW9XX5EXBM5R79741W40N1Z
+Preview exact handbook titles, slugs, UIDs, quantities, identities and Assertions. Conflicting identity or meaning stops import; Cancel changes nothing. Identical imports can be reused. Reading needs no import. Imported text never starts a tutorial, enables rules or runs commands.
+} r_5G9QW9XX5EXBM5R79741W40N1Z
+
+Sync and Lingua files (@learn-sync: 0, #instinct, #part-of @instinct-disk: 2, #reference @sync) { r_7ZX4WZH37VH4FP6S9VEA2V6WBF
+Connect a small Protein to a temporary practice folder. Inspect a Lingua or Markdown export and supported incoming edit. Continuous sync differs from one-time import and editing unrelated files. Inspect status and conflicts, then Stop.
+} r_7ZX4WZH37VH4FP6S9VEA2V6WBF
+
+File and blob transfers (@blob-sync: 0, #instinct, #part-of @instinct-disk: 3) { r_214GWJFC8WFFEAWN2BG2YAB32Y
+Inspect a bundled file transfer between prepared Cells. Accept, Cancel and the file list manage it. Bytes travel separately from Record text; a visible description does not prove its attachment arrived.
+} r_214GWJFC8WFFEAWN2BG2YAB32Y
+
+Storage and owner backup (@backup: 0, #instinct, #part-of @instinct-disk: 4) { r_4PTBPFZ5532HG1Q7WEDZKV7CWR
+Inspect storage and the encrypted owner-backup form. Read what it includes and excludes. Layouts, attachments and custom Castle files need separate care. History and retention are separate choices. Reading requires no shutdown, restore, replacement or deletion.
+} r_4PTBPFZ5532HG1Q7WEDZKV7CWR
+
+File Explorer and IDE (@ide: 0, #instinct, #part-of @instinct-files: 1) { r_1Y7YWDKC4AAY8YXVRKYF80Q532
+Open the prepared local project file, edit it and explicitly Save. Tabs, search, autosave, recovery and disk conflicts help editing. Opening a folder creates no database copies or File Records.
+} r_1Y7YWDKC4AAY8YXVRKYF80Q532
+
+IDE language tools (@language-tools: 0, #instinct, #part-of @instinct-files: 2) { r_6P0TTVZWMFTCA8KZ79CZ8DAERZ
+Inspect server, formatter and linter settings and Connect or Disconnect. When installed, try one diagnostic or undoable format on the prepared file. Missing programs do not prevent reading or progression.
+} r_6P0TTVZWMFTCA8KZ79CZ8DAERZ
+
+Document Viewer (@documents: 0, #instinct, #part-of @instinct-files: 3) { r_0SXTWM4JHPHHJCMX0W1G296H13
+Open the bundled PDF or EPUB sample and move to another page or location. Find its basic reading controls. Reading a document requires no database import.
+} r_0SXTWM4JHPHHJCMX0W1G296H13
+
+Terminal (@terminal: 0, #instinct, #part-of @instinct-files: 4) { r_5V2N4Y6C9RZQ024HHE2DH6QD7D
+Inspect local shell input and output, or run the harmless practice example. Optional live shell use follows ordinary permissions. Saved Commands are reusable actions; Terminal input belongs to the current session.
+} r_5V2N4Y6C9RZQ024HHE2DH6QD7D
+
+Dropping and pasting files (@external-files: 0, #instinct, #part-of @instinct-files: 5) { r_1Z6GJTWH0BS5KAMDYSGX0XAWB9
+Use a bundled local sample to inspect file, image and link opening choices and Cancel. Images and links can become Sands; documents and editable files have viewers. Remote downloads are optional.
+} r_1Z6GJTWH0BS5KAMDYSGX0XAWB9
+
+Recorder Castle (@recorder: 0, #instinct, #part-of @instinct-creative: 1) { r_3A9DZ8143J7HC908N94WPR8VNS
+Play the bundled sample and inspect recordings and track effects. Find Record, Stop, Save and Refresh. Microphone recording is optional; a prepared playback sample needs no capture permission.
+} r_3A9DZ8143J7HC908N94WPR8VNS
+
+Sound on Area crossing (@area-sound: 0, #instinct, #part-of @instinct-creative: 2) { r_0JV05HZ991RY3QYJAFNT7361G6
+Assign a bundled sound to the sample Area and preview it. Entry and exit use the same boundary crossings as property changes. Saved effects can be reused. Audio hardware does not determine progression.
+} r_0JV05HZ991RY3QYJAFNT7361G6
+
+Shader Castle (@shaders: 0, #instinct, #part-of @instinct-creative: 3) { r_00PST668FGREB730ZVV1W5G31S
+Inspect the prepared shader effect, such as the glowing ball, and open its Record. The effect is presentation; its authoring text lives with the Record. A shader-language course is optional.
+} r_00PST668FGREB730ZVV1W5G31S
+
+Spatial view and Topology (@topology: 0, #instinct, #part-of @instinct-creative: 4) { r_6AQDWY9ACDZQQTF7K9XPZ88HBE
+Switch the prepared workspace between 2D and 3D and frame a sample. Depth, rotation and world pinning refine placement. Imported models and splats are optional. Navigation, placement and Areas retain their shared roles.
+} r_6AQDWY9ACDZQQTF7K9XPZ88HBE
+
+Custom Castles and the library (@custom-castles: 0, #instinct, #part-of @instinct-creative: 5) { r_7NVY6CKSSTYTH2Z8RR01P4PWJJ
+Save a small practice composition and add another instance. Inspect its local file or Organ library entry. Rename, replace, delete and pushing selected composition are further choices. Sharing is optional.
+} r_7NVY6CKSSTYTH2Z8RR01P4PWJJ
+
+Freedoom (@freedoom: 0, #instinct, #part-of @instinct-creative: 6) { r_194S1YJ1N9WT0FSZHP4VN8AFY6
+Find Start, focus the keyboard controls and locate the way to leave. Reading is enough; playing or completing the game is optional. Sand credits identify bundled software and assets.
+} r_194S1YJ1N9WT0FSZHP4VN8AFY6
+
+Inspection (@inspection: 0, #instinct, #part-of @instinct-maintaining: 1) { r_0TJQ9C8GQS6M1EDYH1F3FFG4JQ
+Inspect one sample control action, connection or group. Click, hover, events and hidden views offer different perspectives. Inspection helps explain behavior; ordinary work needs no implementation tour.
+} r_0TJQ9C8GQS6M1EDYH1F3FFG4JQ
+
+Information, updates and credits (@information: 0, #instinct, #part-of @instinct-maintaining: 2) { r_46VDD6HQG1ERQ6FH8T110F8TYH
+Find version, directory and update status, then a Sand license and credits. Read the available update and restart controls. Neither an update nor a restart is required.
+} r_46VDD6HQG1ERQ6FH8T110F8TYH
+
+Laboratory (@laboratory: 0, #instinct, #part-of @instinct-maintaining: 3) { r_4W8FGVW9F1FNADEQS73JDHNHNZ
+Laboratory runs checks with temporary data and normal workspaces suspended. Open it, inspect a prepared behavior or resource result and Close. Stop ends a run. Performance and stress work are optional maintenance tools.
+} r_4W8FGVW9F1FNADEQS73JDHNHNZ
+
+Open editing (@step-interface-open-edit: 0, #instinct, #part-of @sands) { r_5S865TZMJ8DVYXZSA1ESGNF8QA
+Open Edit mode in the practice workspace. Next opens the same editing panel.
+} r_5S865TZMJ8DVYXZSA1ESGNF8QA
+
+Place ordinary Sands (@step-interface-place-sand: 0, #instinct, #part-of @sands) { r_4VHSSQWR6EGRX4QYE23TBSSKXP
+Add an empty Square and plain text Sand. Move and resize the sample. Next places the prepared pair using ordinary placement.
+} r_4VHSSQWR6EGRX4QYE23TBSSKXP
+
+Compose a Castle (@step-interface-compose-castle: 0, #instinct, #part-of @castles) { r_2495W3SXVZXTNGXE307TDWW99P
+Select the prepared pieces, group them and choose an enclosing row arrangement. Next applies that composition. Try ungrouping when you want independent pieces.
+} r_2495W3SXVZXTNGXE307TDWW99P
+
+Place an Area (@step-area-place: 0, #instinct, #part-of @areas-of-influence) { r_4AEKSTE9J0QVXE28AJKD5BYKC1
+Place a square Area around the ordinary practice Sand. Compare shape and reach and turn it off and on. Next places the sample Area; no Protein is involved.
+} r_4AEKSTE9J0QVXE28AJKD5BYKC1
+
+Observe attraction (@step-area-attract: 0, #instinct, #part-of @areas-of-influence) { r_1FRCBZWACYMC2X175R4SDD11EW
+Enable practice workspace physics and sample Area attraction. Wait for movement toward its target. Next applies the settings and waits for the resulting force.
+} r_1FRCBZWACYMC2X175R4SDD11EW
+
+Observe repulsion (@step-area-repel: 0, #instinct, #part-of @areas-of-influence) { r_6A86XX56DS4YVTMZVW818SYG76
+Switch the sample Area to repulsion. Next changes the same force setting and waits for a force away from the target.
+} r_6A86XX56DS4YVTMZVW818SYG76
+
+Create a Protein Spawn Area (@step-protein-create-spawn-area: 0, #instinct, #part-of @protein) { r_3NCZK47MFXCW0FGQCFZXKZRBF0
+Create an Area and make it a Protein Spawn Area, using the prepared practice Cell. Next creates the same view through ordinary interface actions.
+} r_3NCZK47MFXCW0FGQCFZXKZRBF0
+
+Filter and preview (@step-protein-filter-preview: 0, #instinct, #part-of @protein) { r_1HXFFNF0GKHHBN88EBGTZXYFMG
+Filter the prepared data to sample Records and inspect results before spawning. Next applies the filter and waits for the expected sample identities.
+} r_1HXFFNF0GKHHBN88EBGTZXYFMG
+
+Present properties (@step-protein-present-properties: 0, #instinct, #part-of @protein) { r_4JJ3TY0H1S81FBQD1X8H0CAQKP
+Choose Title and Quantity in the row template. Next applies those presentation choices and waits for both sample Records. Their saved meaning stays the same.
+} r_4JJ3TY0H1S81FBQD1X8H0CAQKP
+
+Match the sample (@step-area-match-record: 0, #instinct, #part-of @area-record-actions) { r_6ZZ9NTMX8AX9DCWY466T8F397E
+Match only the first prepared Record. Set entry Quantity 1 and exit Quantity 0 while it is outside. Next prepares this isolated example and enables changes.
+} r_6ZZ9NTMX8AX9DCWY466T8F397E
+
+Confirm entry (@step-area-change-on-entry: 0, #instinct, #part-of @area-record-actions) { r_4X7FGT5NXT0BJCC50HCSKENK1S
+Move the first sample Sand inside and wait for confirmed Quantity 1. Next performs the ordinary movement and waits for the saved change.
+} r_4X7FGT5NXT0BJCC50HCSKENK1S
+
+Confirm exit (@step-area-change-on-exit: 0, #instinct, #part-of @area-record-actions) { r_0ZE4PFTHBX5X8WGHGPE9VDDZ2G
+Move the same sample outside and wait for confirmed Quantity 0. Next performs the exit movement and waits for confirmation.
+} r_0ZE4PFTHBX5X8WGHGPE9VDDZ2G
+
+Workspaces create (@step-workspaces-create: 0, is #idea, #instinct, #part-of @workspaces: 1) { r_1FGY7Z0JP7XP0YP2GBXW7KB1D1
+    """Create a workspace called Instinct example. Switch away and return to the practice scene. It contains a layout, while an Organ chooses whose data you use."""
+} r_1FGY7Z0JP7XP0YP2GBXW7KB1D1
+
+Canvas frame (@step-canvas-frame: 0, is #idea, #instinct, #part-of @canvas: 1) { r_6Q6EXAN0KBDJGW69FXYQT7BWNK
+    """Place two sample Sands, zoom out, and bring the view back to the centre. Panning and zooming change your view; they do not change the Records."""
+} r_6Q6EXAN0KBDJGW69FXYQT7BWNK
+
+Edit mode open (@step-edit-mode-open: 0, is #idea, #instinct, #part-of @edit-mode: 1) { r_615PGQWZTHRPFFEZ9J0BF7ZQT8
+    """Open Edit mode. Find the store and the workspace controls. You can close editing when you want to use the tools."""
+} r_615PGQWZTHRPFFEZ9J0BF7ZQT8
+
+Text sands edit (@step-text-sands-edit: 0, is #idea, #instinct, #part-of @text-sands: 1) { r_56F3ZM8XYYN7DE7FEWHRXZFMJB
+    """Change the sample label to My practice note. Add an editable note and write Today I tried Lince. The note is part of this practice layout."""
+} r_56F3ZM8XYYN7DE7FEWHRXZFMJB
+
+Appearance change (@step-appearance-change: 0, is #idea, #instinct, #part-of @appearance: 1) { r_4EH1XBJPMAS58RJSGQY4PJHDR7
+    """Give the sample Square a different paper colour. This change belongs to the sample, so other Squares keep their own appearance."""
+} r_4EH1XBJPMAS58RJSGQY4PJHDR7
+
+Appearance reset (@step-appearance-reset: 0, is #idea, #instinct, #part-of @appearance: 2) { r_66QFSCE7V1WTWX602KATMGVCQ1
+    """Reset the sample colour to its inherited theme. A reset removes an override; it does not replace the theme."""
+} r_66QFSCE7V1WTWX602KATMGVCQ1
+
+Shortcuts inspect (@step-shortcuts-inspect: 0, is #idea, #instinct, #part-of @shortcuts: 1) { r_0XMZQBR943PJQVNTCCCW5CXZB3
+    """Open the shortcut settings. Move focus with Tab and activate a practice button with the keyboard. Ctrl Shift Escape always discards this practice, even after shortcut remapping."""
+} r_0XMZQBR943PJQVNTCCCW5CXZB3
+
+Area effects scale (@step-area-effects-scale: 0, is #idea, #instinct, #part-of @area-effects: 1) { r_55DKBXB6YM1DHGGH6GDH5BBSA9
+    """Put an ordinary sample Sand inside the Area and set its size effect to one and a half. Compare the affected sample with a Sand outside."""
+} r_55DKBXB6YM1DHGGH6GDH5BBSA9
+
+Area effects disable (@step-area-effects-disable: 0, is #idea, #instinct, #part-of @area-effects: 2) { r_1B85RANDFDA9JANQY9BFMMHVZD
+    """Return the size effect to one. Turn the Area off and inspect the ordinary sample again. No Record quantity or Assertion changes here."""
+} r_1B85RANDFDA9JANQY9BFMMHVZD
+
+Area inspection inspect (@step-area-inspection-inspect: 0, is #idea, #instinct, #part-of @area-inspection: 1) { r_783JC83YMQN9ZDKBM52FJMJTYC
+    """Open the sample Area and its influence explanation. Read its enabled state, reach and effect on the sample. If a Sand is pinned or immune, the explanation tells you why it is excluded."""
+} r_783JC83YMQN9ZDKBM52FJMJTYC
+
+Learn record sample (@step-learn-record-sample: 0, is #idea, #instinct, #part-of @learn-record: 1) { r_78Q4EZEZZR4VG2HARJEW4J63CS
+    """Create an isolated sample note with a title, body and slug, and give it a Need of one. Open its full Record view. This practice uses a separate Cell; it cannot edit your personal Records."""
+} r_78Q4EZEZZR4VG2HARJEW4J63CS
+
+Learn assertion sample (@step-learn-assertion-sample: 0, is #idea, #instinct, #part-of @learn-assertion: 1) { r_1JETEP3V4ZJXQK3TDKXQWWQCHB
+    """Add the concept practice-note and a relation to a second sample Record. Choose practice-note as the main identity. Inspect the saved Assertions on the sample."""
+} r_1JETEP3V4ZJXQK3TDKXQWWQCHB
+
+Learn ontology inspect (@step-learn-ontology-inspect: 0, is #idea, #instinct, #part-of @learn-ontology: 1) { r_0J8Q1MBH0Q8B5NADT06W0RFPQ8
+    """Look at the sample concept practice-note in the local Vocabulary. The hierarchy and alias help explain its meaning. These sample concepts live in the isolated Cell."""
+} r_0J8Q1MBH0Q8B5NADT06W0RFPQ8
+
+Record castles open (@step-record-castles-open: 0, is #idea, #instinct, #part-of @record-castles: 1) { r_0D77DDANKJ9TKZN4CYA20B4YWX
+    """Open the full Record and its Assertion view for the same isolated note. Follow its relation to the second sample. The views share data; changing the view does not create another Record."""
+} r_0D77DDANKJ9TKZN4CYA20B4YWX
+
+Facts inspect (@step-facts-inspect: 0, is #idea, #instinct, #part-of @facts: 1) { r_55KJNH2K3SCZ79VPJDJGPJCKY7
+    """Inspect the confirmed quantity change on the sample and its time. A Fact records what changed, not just what someone planned to change."""
+} r_55KJNH2K3SCZ79VPJDJGPJCKY7
+
+Protein arrangement arrange (@step-protein-arrangement-arrange: 0, is #idea, #instinct, #part-of @protein-arrangement: 1) { r_0MS7HDNZCKMDVDFGKEENYG3GRY
+    """Arrange the two prepared Protein results vertically and show their titles and quantities. This changes the layout of the live results while preserving the Records."""
+} r_0MS7HDNZCKMDVDFGKEENYG3GRY
+
+Complete a sample task (@step-todo-complete: 0, #instinct, #part-of @todo: 1) { r_3X88FAM6CZN3CFEGG1HP1GMX9E
+    """The prepared task has quantity -1: it is a Need. Complete it and wait for the saved quantity to reach zero. The Todo queue contains live data; finishing its presentation changes the same Record shown in the Record view."""
+} r_3X88FAM6CZN3CFEGG1HP1GMX9E
+
+Undo the sample completion (@step-todo-undo: 0, #instinct, #part-of @todo: 2) { r_3BZH4N1Y7PZE6WTGG4GD43JHE0
+    """Undo the sample completion. Confirm that its quantity returns to -1 and the task appears in the live queue again. Undo applies a new saved change, so its history remains truthful."""
+} r_3BZH4N1Y7PZE6WTGG4GD43JHE0
+
+Move the sample to Next (@step-kanban-move: 0, #instinct, #part-of @kanban: 1) { r_1VZVK6WXE24PSXY8NVZPCWJX7C
+    """Move the prepared task from Todo to Next. These columns are Areas: entering a column applies its state to the same task. Inspect the resulting quantity and Assertion, then compare the column count with the Record view."""
+} r_1VZVK6WXE24PSXY8NVZPCWJX7C
+
+Start a sample stopwatch (@step-time-start: 0, #instinct, #part-of @time: 1) { r_774SP40KVAH6E3PDJC0JNY6M6T
+    """Start the standalone practice stopwatch. It measures time in this workspace. A timer attached to a Record instead saves a work log with that Record; choose the kind that fits the work you are tracking."""
+} r_774SP40KVAH6E3PDJC0JNY6M6T
+
+Stop and inspect the stopwatch (@step-time-stop: 0, #instinct, #part-of @time: 2) { r_2PZVMGS337ZVBFS1XCAWYQVDW5
+    """Stop the sample stopwatch and inspect its completed interval. A completed interval stays in the log. You can start another interval without replacing the previous one."""
+} r_2PZVMGS337ZVBFS1XCAWYQVDW5
+
+Open a dated sample (@step-calendar-open: 0, #instinct, #part-of @calendar: 1) { r_7NMD2G788XQK2V37AQCPVW0B3A
+    """The prepared note has a start date and a due date. Find its date in the Calendar and open the same note in the Record view. Scheduled and projected changes identify their sources; Frequency and Karma explain those sources in the next chapter."""
+} r_7NMD2G788XQK2V37AQCPVW0B3A
+
+Activate a sample operation (@step-operation-activate: 0, #instinct, #part-of @operation: 1) { r_4420FDZ73VRMJ7PR8H0Y5CZRZF
+    """Activate the sample operation to set the prepared note's quantity to zero. Wait for the Cell to confirm the change. An Operation provides a short action; saved Commands and their execution history are introduced separately."""
+} r_4420FDZ73VRMJ7PR8H0Y5CZRZF
+
+Inspect sample feedback (@step-notifications-open: 0, #instinct, #part-of @notifications: 1) { r_414YN9RKG0GQXXYSS6PEW730DB
+    """Open the sample notification. It reports a completed practice action. Waiting, success and failure feedback tell you whether a request was received or confirmed; a system notification is optional."""
+} r_414YN9RKG0GQXXYSS6PEW730DB
+
+Dismiss sample feedback (@step-notifications-dismiss: 0, #instinct, #part-of @notifications: 2) { r_74Z42F9Q06ZHPX3TNPJKV35G1N
+    """Dismiss only the sample notification. Dismissing feedback removes it from the visible list; it does not undo the saved action that it described."""
+} r_74Z42F9Q06ZHPX3TNPJKV35G1N
+
+Move, resize and pin a sample (@step-interface-move-sand: 0, is #idea, #instinct, #part-of @sands: 3) { r_24N8JXSY7PAAX0RSMFV8A2B88A
+    """Move the sample Square, make it wider, then pin it. Selection chooses a presentation on the canvas. Removing that presentation does not delete a Record it may show."""
+} r_24N8JXSY7PAAX0RSMFV8A2B88A
+
+Separate the sample composition (@step-interface-ungroup-castle: 0, is #idea, #instinct, #part-of @castles: 2) { r_6HFCZJJTHQGVKXBMDTCYPTC3M4
+    """Ungroup the sample pieces and detach the text from its enclosing row. Compare the independent pieces with the previous Castle. Grouping moves pieces together; an enclosing layout arranges them."""
+} r_6HFCZJJTHQGVKXBMDTCYPTC3M4

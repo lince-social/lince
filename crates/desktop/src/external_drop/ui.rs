@@ -2,32 +2,14 @@ use super::*;
 use crate::actions::Action;
 use bevy::{
     picking::{hover::HoverMap, pointer::PointerId},
-    text::EditableText,
     ui::InteractionDisabled,
 };
-
-#[derive(Component)]
-struct Launch;
-
-#[derive(Component)]
-struct Form {
-    root: Entity,
-    workspace: u64,
-    input: Entity,
-    paste: Option<bevy::clipboard::ClipboardRead>,
-    pick: Option<std::sync::Mutex<std::sync::mpsc::Receiver<Option<std::path::PathBuf>>>>,
-}
 
 #[derive(Component)]
 struct ChoicePanel;
 
 #[derive(Clone, Copy)]
 pub(super) enum Control {
-    Open,
-    Submit,
-    Paste,
-    Browse,
-    CloseForm,
     Cancel,
     Download,
     Show,
@@ -57,72 +39,7 @@ impl Action for Choice {
 impl Action for Control {
     fn apply(&self, world: &mut World, target: Entity) {
         match self {
-            Self::Open => open_form(world, target),
             Self::Cancel => cancel(world, target),
-            Self::CloseForm => {
-                world.despawn(target);
-            }
-            Self::Submit => {
-                let Some(form) = world.get::<Form>(target) else {
-                    return;
-                };
-                let (root, workspace, input) = (form.root, form.workspace, form.input);
-                if world
-                    .get::<crate::workspace::Workspaces>(root)
-                    .is_none_or(|spaces| spaces.active != workspace)
-                {
-                    world.despawn(target);
-                    return;
-                }
-                let Some(input) = world.get::<EditableText>(input) else {
-                    return;
-                };
-                let source = source::Source::parse(&input.value().to_string());
-                let elevation = world
-                    .get::<crate::topology::view::View>(root)
-                    .map_or(0.0, |view| view.plane);
-                let position = crate::inspection::bounds(world, root)
-                    .and_then(|bounds| {
-                        crate::topology::input::plane_point(world, root, bounds.center(), elevation)
-                    })
-                    .map(|point| DVec2::new(point.x, point.z))
-                    .unwrap_or_else(|| {
-                        world
-                            .get::<crate::canvas::CanvasView>(root)
-                            .map_or(DVec2::ZERO, |view| view.center)
-                    });
-                world.despawn(target);
-                begin(world, root, None, source, position, elevation, false);
-                chooser(world, root);
-            }
-            Self::Paste => {
-                if world.get::<Form>(target).is_none() {
-                    return;
-                }
-                if let Some(mut clipboard) = world.get_resource_mut::<bevy::clipboard::Clipboard>()
-                {
-                    let read = clipboard.fetch_text();
-                    world.get_mut::<Form>(target).unwrap().paste = Some(read);
-                }
-            }
-            Self::Browse => {
-                if !world
-                    .get::<Form>(target)
-                    .is_some_and(|form| form.pick.is_none())
-                {
-                    return;
-                }
-                let (sender, receiver) = std::sync::mpsc::channel();
-                let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
-                std::thread::spawn(move || {
-                    let path = rfd::FileDialog::new().pick_file();
-                    let _ = sender.send(path);
-                    if let Some(wake) = wake {
-                        wake.ring();
-                    }
-                });
-                world.get_mut::<Form>(target).unwrap().pick = Some(std::sync::Mutex::new(receiver));
-            }
             Self::Download => {
                 if world
                     .resource::<Sessions>()
@@ -166,148 +83,6 @@ fn panel(world: &mut World, root: Entity) -> Entity {
             crate::token_style::background(crate::tokens::Token::Surface),
         ))
         .id()
-}
-
-fn open_form(world: &mut World, root: Entity) {
-    if world.get::<crate::workspace::Workspaces>(root).is_none()
-        || crate::laboratory::suspended(world, root)
-    {
-        return;
-    }
-    let old: Vec<_> = world
-        .query::<(Entity, &Form)>()
-        .iter(world)
-        .filter(|(_, form)| form.root == root)
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in old {
-        world.despawn(entity);
-    }
-    cancel(world, root);
-    let workspace = world
-        .get::<crate::workspace::Workspaces>(root)
-        .unwrap()
-        .active;
-    let owner = panel(world, root);
-    crate::edit_mode::label(world, owner, "Display a file or URL", 22.0);
-    crate::edit_mode::label(
-        world,
-        owner,
-        "Drop local files onto Box, browse, or paste a URL. If your desktop does not accept file drops, use Browse. Paste browser links here to choose a Sand.",
-        13.0,
-    );
-    let input = world
-        .spawn(crate::sand::text_editor(
-            "",
-            world.resource::<crate::theme::Typography>(),
-            0,
-        ))
-        .id();
-    world.entity_mut(input).insert(ChildOf(owner));
-    let mut text = world.get_mut::<EditableText>(input).unwrap();
-    text.allow_newlines = false;
-    text.max_characters = Some(4096);
-    text.visible_lines = Some(1.0);
-    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(input) {
-        node.set_label("File path or HTTP(S) URL");
-    }
-    for (label, action) in [
-        ("Browse…", Control::Browse),
-        ("Paste URL or path", Control::Paste),
-        ("Preview and choose Sand", Control::Submit),
-        ("Cancel", Control::CloseForm),
-    ] {
-        crate::castle_feed::button(world, owner, owner, label, action);
-    }
-    world.entity_mut(owner).insert(Form {
-        root,
-        workspace,
-        input,
-        paste: None,
-        pick: None,
-    });
-}
-
-pub(super) fn install(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<crate::container::BoxRoot>>()
-        .iter(world)
-        .collect();
-    for root in roots {
-        if crate::laboratory::suspended(world, root) {
-            continue;
-        }
-        let existing = world
-            .query::<(Entity, &Launch, &crate::actions::ActionButton)>()
-            .iter(world)
-            .any(|(_, _, action)| action.target == root);
-        if !existing {
-            let toolbar = crate::canvas_controls::toolbar(world, root);
-            let button =
-                crate::castle_feed::button(world, toolbar, root, "File or URL…", Control::Open);
-            world.entity_mut(button).insert(Launch);
-        }
-    }
-}
-
-pub(super) fn poll_clipboard(world: &mut World) {
-    let forms: Vec<_> = world
-        .query_filtered::<Entity, With<Form>>()
-        .iter(world)
-        .collect();
-    for owner in forms {
-        let form = world.get::<Form>(owner).unwrap();
-        if world
-            .get::<crate::workspace::Workspaces>(form.root)
-            .is_none_or(|spaces| spaces.active != form.workspace)
-        {
-            world.despawn(owner);
-            continue;
-        }
-        let input = form.input;
-        let pasted = world
-            .get_mut::<Form>(owner)
-            .unwrap()
-            .paste
-            .as_mut()
-            .and_then(|read| read.poll_result());
-        if let Some(pasted) = pasted {
-            world.get_mut::<Form>(owner).unwrap().paste = None;
-            match pasted {
-                Ok(text) if text.len() <= 4096 => {
-                    world
-                        .get_mut::<EditableText>(input)
-                        .unwrap()
-                        .editor
-                        .set_text(text.trim());
-                }
-                Ok(_) => crate::notifications::report(
-                    world,
-                    "File or URL",
-                    "The clipboard text exceeds 4096 bytes.",
-                ),
-                Err(error) => {
-                    crate::notifications::report(world, "File or URL", &error.to_string())
-                }
-            }
-        }
-        let picked = world
-            .get::<Form>(owner)
-            .unwrap()
-            .pick
-            .as_ref()
-            .and_then(|receiver| receiver.lock().unwrap().try_recv().ok());
-        if let Some(path) = picked {
-            world.get_mut::<Form>(owner).unwrap().pick = None;
-            if let Some(path) = path {
-                world
-                    .get_mut::<EditableText>(input)
-                    .unwrap()
-                    .editor
-                    .set_text(&path.to_string_lossy());
-            }
-        }
-    }
 }
 
 pub(super) fn chooser(world: &mut World, root: Entity) {

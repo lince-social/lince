@@ -381,8 +381,9 @@ fn submit(
     mutation: Mutation,
 ) -> Result<(), String> {
     let id = nucleus::new_uid("todo-action");
-    panel::send(
+    crate::practice_cells::send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -626,7 +627,7 @@ fn update(
                     name: view.protein.clone(),
                 }
             };
-            if panel::send(world, message).is_ok() {
+            if crate::practice_cells::send(world, owner, message).is_ok() {
                 world.resource_mut::<Subscriptions>().0.insert(id);
                 world.get_mut::<TodoSand>(owner).unwrap().requested = true;
             }

@@ -26,6 +26,9 @@ struct Scene {
 #[derive(Component)]
 struct Connectors(Entity);
 
+#[derive(Component)]
+struct Hand(Entity);
+
 #[derive(Default)]
 struct Ribbon {
     positions: Vec<[f32; 3]>,
@@ -145,13 +148,13 @@ fn spawn(
             Pickable::IGNORE,
             ChildOf(parent),
         ))
+        .observe(clicked)
         .id();
     if let Some(ids) = ids {
         world
             .entity_mut(entity)
             .remove::<Pickable>()
-            .insert(SchedulePick { owner, ids })
-            .observe(clicked);
+            .insert(SchedulePick { owner, ids });
     }
     Some(entity)
 }
@@ -179,7 +182,15 @@ fn replace(
                 .entity_mut(entity)
                 .remove::<bevy::camera::primitives::Aabb>();
             if let Some(ids) = ids {
-                world.entity_mut(entity).insert(SchedulePick { owner, ids });
+                world
+                    .entity_mut(entity)
+                    .remove::<Pickable>()
+                    .insert(SchedulePick { owner, ids });
+            } else {
+                world
+                    .entity_mut(entity)
+                    .remove::<SchedulePick>()
+                    .insert(Pickable::IGNORE);
             }
             meshes.push(entity);
         } else if let Some(entity) = spawn(world, parent, owner, ribbon, material.clone(), ids) {
@@ -202,7 +213,7 @@ pub(super) fn update(
     size: Vec2,
     spatial: bool,
 ) {
-    if !spatial || !crate::topology::presentation::ready(world) {
+    if !crate::topology::presentation::ready(world) {
         if let Some(previous) = world.get_mut::<View>(owner).unwrap().scene.take()
             && world.get_entity(previous).is_ok()
         {
@@ -221,13 +232,14 @@ pub(super) fn update(
         .palette
         .clone()
         .unwrap_or_else(|| palette::Palette::resolve(world, owner));
-    let occurrences =
-        model::occurrences(&entries, now, now + settings.horizon_ms, &settings.timezone);
-    let lanes = occurrences
-        .iter()
-        .map(|entry| entry.lane + 1)
-        .max()
-        .unwrap_or(1);
+    let duration = if spatial {
+        settings.horizon_ms
+    } else {
+        (settings.aperture_ms as f64
+            + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
+            as i64
+    };
+    let occurrences = model::occurrences(&entries, now, now + duration, &settings.timezone);
     let parent = if let Some(parent) = view
         .scene
         .filter(|entity| world.get_entity(*entity).is_ok())
@@ -240,6 +252,7 @@ pub(super) fn update(
                 base_color: Color::WHITE,
                 unlit: true,
                 cull_mode: None,
+                alpha_mode: AlphaMode::Blend,
                 ..default()
             });
         let parent = world
@@ -258,19 +271,21 @@ pub(super) fn update(
         parent
     };
     let mut background = Ribbon::default();
-    background.strip(
-        settings,
-        &nucleus::schedule::TimeRange {
-            from_ms: now,
-            until_ms: Some(now + settings.horizon_ms),
-        },
-        now,
-        size,
-        unwind,
-        10.0,
-        palette::rgba(palette.track),
-        4096,
-    );
+    if spatial {
+        background.strip(
+            settings,
+            &nucleus::schedule::TimeRange {
+                from_ms: now,
+                until_ms: Some(now + settings.horizon_ms),
+            },
+            now,
+            size,
+            unwind,
+            10.0,
+            palette::rgba(palette.track),
+            4096,
+        );
+    }
     let circular = size.min_element()
         * std::f32::consts::TAU
         * 0.4
@@ -280,7 +295,7 @@ pub(super) fn update(
         .max(model::tick_interval(settings.horizon_ms, 256.0, 1.0));
     let major_interval = model::tick_interval(settings.horizon_ms, pixels, 85.0).max(interval);
     let mut at = now.div_euclid(interval) * interval + interval;
-    while at < now + settings.horizon_ms {
+    while spatial && at < now + settings.horizon_ms {
         background.strip(
             settings,
             &nucleus::schedule::TimeRange {
@@ -300,30 +315,62 @@ pub(super) fn update(
         );
         at += interval;
     }
-    let point =
-        Vec3::from_array(settings.position(now, now, size.to_array(), unwind)) + Vec3::Y * 0.2;
-    let cross = Vec3::from_array(settings.transverse(now, now, unwind));
-    let inner = point - cross * 18.0;
-    let end = point + cross * 15.0;
-    let tangent = Vec3::new(-cross.z, 0.0, cross.x) * density.recip().clamp(0.5, 3.0);
-    background.quad(
-        [
-            inner - tangent,
-            end - tangent,
-            end + tangent,
-            inner + tangent,
-        ],
-        palette::rgba(palette.present),
-    );
-    let mut ribbons = vec![(background, None)];
-    for occurrence in occurrences {
-        let entry = &entries[occurrence.index];
-        let color = palette::rgba(palette.event(occurrence.lane, selected.contains(&entry.id)));
+    if spatial {
+        let point =
+            Vec3::from_array(settings.position(now, now, size.to_array(), unwind)) + Vec3::Y * 0.2;
+        let cross = Vec3::from_array(settings.transverse(now, now, unwind));
+        let inner = point - cross * 18.0;
+        let end = point + cross * 15.0;
+        let tangent = Vec3::new(-cross.z, 0.0, cross.x) * density.recip().clamp(0.5, 3.0);
+        background.quad(
+            [
+                inner - tangent,
+                end - tangent,
+                end + tangent,
+                inner + tangent,
+            ],
+            palette::rgba(palette.present),
+        );
+    }
+    let mut ribbons = if background.positions.is_empty() {
+        Vec::new()
+    } else {
+        vec![(background, None)]
+    };
+    let mut bands: Vec<_> = world
+        .get::<motion::Motion>(owner)
+        .map(|motion| motion.bands.values().cloned().collect())
+        .unwrap_or_else(|| {
+            occurrences
+                .into_iter()
+                .map(|occurrence| {
+                    motion::Band::settled(entries[occurrence.index].clone(), occurrence)
+                })
+                .collect()
+        });
+    bands.sort_by(|a, b| {
+        a.occurrence
+            .time
+            .from_ms
+            .cmp(&b.occurrence.time.from_ms)
+            .then_with(|| a.entry.id.cmp(&b.entry.id))
+    });
+    for band in bands {
+        let occurrence = &band.occurrence;
+        let entry = &band.entry;
+        let color = palette::rgba(
+            palette
+                .event(occurrence.lane, selected.contains(&entry.id))
+                .with_alpha(band.opacity()),
+        );
         let mut ribbon = Ribbon::default();
-        let points = render::occurrence_points(settings, &occurrence, lanes, now, size, unwind);
-        let width = palette
-            .width
-            .min((size.min_element() * 0.088 / lanes as f32).max(0.8));
+        let mut points = motion::points(&band, settings, now, size, unwind, palette.width);
+        if !spatial {
+            for point in &mut points {
+                point.y = 0.0;
+            }
+        }
+        let width = palette.width;
         if points.len() == 1 {
             let point = points[0] + Vec3::Y * 0.2;
             let cross =
@@ -366,7 +413,7 @@ pub(super) fn update(
                 );
             }
         }
-        ribbons.push((ribbon, Some(vec![entry.id.clone()])));
+        ribbons.push((ribbon, (!band.retiring).then(|| vec![entry.id.clone()])));
     }
     replace(world, parent, owner, ribbons);
 }
@@ -394,26 +441,27 @@ pub(super) fn annotations(
         return;
     };
     let mut ribbon = Ribbon::default();
-    let entries = &world.get::<View>(owner).unwrap().entries;
     let selected = &world.get::<View>(owner).unwrap().selected;
     for label in labels {
         let anchor = Vec3::from_array(label.anchor).with_y(0.03);
         let direction = anchor.xz().normalize_or_zero();
-        let elbow = anchor + Vec3::new(direction.x, 0.0, direction.y) * 32.0;
-        let end = Vec3::new(
-            elbow.x.clamp(label.rect[0], label.rect[0] + label.rect[2]),
-            0.03,
-            elbow.z.clamp(label.rect[1], label.rect[1] + label.rect[3]),
-        );
+        let elbow = anchor + Vec3::new(direction.x, 0.0, direction.y) * 24.0;
+        let edge = card_edge(anchor.xz(), label.rect);
+        let end = Vec3::new(edge.x, 0.03, edge.y);
         let color = palette::rgba(
             palette
-                .event(
-                    label.occurrence.lane,
-                    selected.contains(&entries[label.occurrence.index].id),
-                )
-                .with_alpha(0.45),
+                .event(label.occurrence.lane, selected.contains(&label.id))
+                .with_alpha(
+                    0.45 * world
+                        .get::<motion::Motion>(owner)
+                        .and_then(|motion| motion.bands.get(&label.id))
+                        .map_or(1.0, motion::Band::opacity),
+                ),
         );
-        for (a, b) in [(anchor, elbow), (elbow, end)] {
+        let curve =
+            |t: f32| anchor * (1.0 - t).powi(2) + elbow * (2.0 * t * (1.0 - t)) + end * t * t;
+        for index in 0..12 {
+            let (a, b) = (curve(index as f32 / 12.0), curve((index + 1) as f32 / 12.0));
             let delta = (b - a).normalize_or_zero();
             let cross = Vec3::new(-delta.z, 0.0, delta.x) * 0.4;
             ribbon.quad([a - cross, a + cross, b + cross, b - cross], color);
@@ -443,6 +491,121 @@ pub(super) fn annotations(
             });
         let entity = spawn(world, visual, owner, ribbon, material, None).unwrap();
         world.entity_mut(owner).insert(Connectors(entity));
+    }
+}
+
+fn card_edge(anchor: Vec2, rect: [f32; 4]) -> Vec2 {
+    let bounds = Rect::from_corners(
+        Vec2::new(rect[0], rect[1]),
+        Vec2::new(rect[0] + rect[2], rect[1] + rect[3]),
+    );
+    let nearest = anchor.clamp(bounds.min, bounds.max);
+    if bounds.contains(anchor) {
+        [
+            Vec2::new(bounds.min.x, anchor.y),
+            Vec2::new(bounds.max.x, anchor.y),
+            Vec2::new(anchor.x, bounds.min.y),
+            Vec2::new(anchor.x, bounds.max.y),
+        ]
+        .into_iter()
+        .min_by(|a, b| {
+            a.distance_squared(anchor)
+                .total_cmp(&b.distance_squared(anchor))
+        })
+        .unwrap()
+    } else {
+        nearest
+    }
+}
+
+pub(super) fn hand(
+    world: &mut World,
+    owner: Entity,
+    settings: &Settings,
+    now: i64,
+    size: Vec2,
+    visible: bool,
+    palette: &palette::Palette,
+) {
+    if !visible {
+        if let Some(hand) = world.get::<Hand>(owner).map(|hand| hand.0) {
+            world.despawn(hand);
+            world.entity_mut(owner).remove::<Hand>();
+        }
+        return;
+    }
+    let Some(visual) = world
+        .get::<crate::topology::presentation::Surface>(owner)
+        .map(|surface| surface.visual)
+    else {
+        return;
+    };
+    let radius = size.min_element() * 0.4;
+    let direction = Vec3::from_array(settings.transverse(now, now, 0.0));
+    let regions = [
+        Rect::from_corners(
+            Vec2::new(-radius * 0.63, -radius * 0.31),
+            Vec2::new(radius * 0.63, radius * 0.39),
+        ),
+        Rect::from_corners(
+            Vec2::new(-radius * 0.50, -radius * 0.77),
+            Vec2::new(radius * 0.50, -radius * 0.35),
+        ),
+        Rect::from_corners(
+            Vec2::new(-60.0, radius * 0.43),
+            Vec2::new(60.0, radius * 0.84),
+        ),
+    ];
+    let mut ribbon = Ribbon::default();
+    let cross = Vec3::new(-direction.z, 0.0, direction.x) * 0.6;
+    for index in 0..48 {
+        let at = |index: usize| {
+            direction * (radius * 0.58 + (radius * 0.42 - 4.0) * index as f32 / 48.0)
+                + Vec3::Y * 0.3
+        };
+        let (a, b) = (at(index), at(index + 1));
+        if regions
+            .iter()
+            .any(|region| region.contains(((a + b) * 0.5).xz()))
+        {
+            continue;
+        }
+        ribbon.quad(
+            [a - cross, a + cross, b + cross, b - cross],
+            palette::rgba(palette.present),
+        );
+    }
+    let tip = direction * (radius - 1.0) + Vec3::Y * 0.3;
+    let base = direction * (radius - 7.0) + Vec3::Y * 0.3;
+    ribbon.quad(
+        [tip, base - cross * 3.0, base + cross * 3.0, tip],
+        palette::rgba(palette.present),
+    );
+    if let Some(entity) = world.get::<Hand>(owner).map(|hand| hand.0) {
+        world.get_mut::<Transform>(entity).unwrap().translation.y = 0.5;
+        let handle = world.get::<Mesh3d>(entity).unwrap().0.clone();
+        let _ = world
+            .resource_mut::<Assets<Mesh>>()
+            .insert(handle.id(), ribbon.mesh());
+        world
+            .entity_mut(entity)
+            .remove::<bevy::camera::primitives::Aabb>();
+    } else {
+        let material = world
+            .resource_mut::<Assets<StandardMaterial>>()
+            .add(StandardMaterial {
+                unlit: true,
+                alpha_mode: AlphaMode::Blend,
+                cull_mode: None,
+                depth_bias: 3.0,
+                ..default()
+            });
+        if let Some(entity) = spawn(world, visual, owner, ribbon, material, None) {
+            world
+                .entity_mut(entity)
+                .insert(Transform::from_xyz(0.0, 0.5, 0.0));
+            world.entity_mut(owner).insert(Hand(entity));
+        }
     }
 }
 
@@ -557,6 +720,20 @@ pub(super) fn placement(world: &mut World, owner: Entity, viewport: Entity, spat
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn strings_end_at_the_nearest_card_edge_even_during_entry_motion() {
+        let card = [10.0, 20.0, 100.0, 50.0];
+        assert_eq!(card_edge(Vec2::new(0.0, 40.0), card), Vec2::new(10.0, 40.0));
+        assert_eq!(
+            card_edge(Vec2::new(50.0, 10.0), card),
+            Vec2::new(50.0, 20.0)
+        );
+        assert_eq!(
+            card_edge(Vec2::new(12.0, 40.0), card),
+            Vec2::new(10.0, 40.0)
+        );
+    }
 
     #[test]
     fn schedule_updates_keep_render_entities_and_asset_handles() {

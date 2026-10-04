@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 mod layout;
-pub use layout::{Label, Occurrence, labels, lane_offset, occurrences};
+pub use layout::{
+    BandLevel, Label, LabelMetrics, Occurrence, labels, labels_with_metrics, lane_offset,
+    occurrences,
+};
 
 pub const RECORD_SELECTED: &str = "Record selected";
 pub const COVERAGE_PADDING_MS: i64 = 300_000;
@@ -26,6 +29,60 @@ pub enum CursorMode {
     Fixed,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct RimTick {
+    pub at_ms: i64,
+    pub major: bool,
+    pub label: String,
+}
+
+pub fn countdown(milliseconds: i64) -> String {
+    let seconds = milliseconds.max(0).saturating_add(999) / 1000;
+    if seconds >= 3600 {
+        format!(
+            "{}h {:02}m {:02}s",
+            seconds / 3600,
+            seconds / 60 % 60,
+            seconds % 60
+        )
+    } else if seconds >= 60 {
+        format!("{}m {:02}s", seconds / 60, seconds % 60)
+    } else {
+        format!("{seconds}s")
+    }
+}
+
+pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
+    let mut current = Vec::new();
+    let mut future = Vec::new();
+    for (index, entry) in entries.iter().enumerate() {
+        if entry.category != Category::Timed {
+            continue;
+        }
+        let Some(time) = &entry.time else { continue };
+        if time.from_ms <= now && time.until_ms.is_some_and(|end| end > now) {
+            current.push((index, time.from_ms, time.until_ms.unwrap() - now));
+        } else if time.from_ms >= now && time.from_ms < until {
+            future.push((index, time.from_ms, time.from_ms - now));
+        }
+    }
+    let sort = |rows: &mut Vec<(usize, i64, i64)>| {
+        rows.sort_by(|a, b| {
+            a.1.cmp(&b.1)
+                .then_with(|| entries[a.0].id.cmp(&entries[b.0].id))
+        })
+    };
+    sort(&mut current);
+    sort(&mut future);
+    current
+        .into_iter()
+        .take(1)
+        .chain(future)
+        .take(2)
+        .map(|(index, _, remaining)| (index, remaining))
+        .collect()
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Settings {
@@ -36,6 +93,8 @@ pub struct Settings {
     pub mode: Mode,
     #[serde(default)]
     pub cursor: CursorMode,
+    #[serde(default)]
+    pub sound: crate::sound::Settings,
 }
 
 impl Default for Settings {
@@ -47,12 +106,60 @@ impl Default for Settings {
             area: None,
             mode: Mode::Coiled,
             cursor: CursorMode::Moving,
+            sound: crate::sound::Settings::default(),
         }
     }
 }
 
 impl Settings {
+    pub fn rim_ticks(&self, now: i64) -> Vec<RimTick> {
+        let mut civil = self.clone();
+        civil.cursor = CursorMode::Moving;
+        let phase = civil.phase(now) / std::f64::consts::TAU;
+        let base = now - (phase * self.aperture_ms as f64).round() as i64;
+        let interval = (self.aperture_ms / 12).max(1);
+        (0..60)
+            .map(|index| {
+                let mut at =
+                    base + (self.aperture_ms as f64 * f64::from(index) / 60.0).round() as i64;
+                if at < now {
+                    at += self.aperture_ms;
+                }
+                let major = index % 5 == 0;
+                let label = if !major {
+                    String::new()
+                } else if self.aperture_ms == 3_600_000 {
+                    let full = self.tick_label(at, interval);
+                    if full.len() == 5 {
+                        full[3..].to_owned()
+                    } else {
+                        full
+                    }
+                } else if self.aperture_ms <= 60_000 {
+                    chrono::DateTime::from_timestamp_millis(at)
+                        .zip(self.timezone.parse::<Tz>().ok())
+                        .map(|(time, zone)| {
+                            time.with_timezone(&zone)
+                                .format(if interval < 1000 { "%S%.3f" } else { "%S" })
+                                .to_string()
+                        })
+                        .unwrap_or_default()
+                } else {
+                    self.tick_label(at, interval)
+                };
+                RimTick {
+                    at_ms: at,
+                    major,
+                    label,
+                }
+            })
+            .collect()
+    }
+
     pub fn valid(&self) -> bool {
+        if !self.sound.valid() {
+            return false;
+        }
         (1000..=MAX_HORIZON_MS).contains(&self.aperture_ms)
             && (self.aperture_ms..=MAX_HORIZON_MS).contains(&self.horizon_ms)
             && self.timezone.parse::<Tz>().is_ok()
@@ -211,13 +318,64 @@ pub struct Entry {
 }
 
 impl Entry {
+    pub fn sound_cue(
+        &self,
+        scope: u64,
+        settings: &crate::sound::Settings,
+    ) -> Option<crate::sound::Cue> {
+        if self.category == Category::AllDay {
+            return None;
+        }
+        Some(crate::sound::Cue {
+            scope,
+            key: self.cue_key("")?,
+            at_ms: self.time.as_ref()?.from_ms,
+            title: self
+                .head
+                .lines()
+                .find(|line| !line.trim().is_empty())
+                .unwrap_or("Untitled event")
+                .into(),
+            projected: self.preview || self.origin["kind"] == "projection",
+            settings: settings.clone(),
+        })
+    }
+
+    pub fn cue_key(&self, source: &str) -> Option<String> {
+        let time = self.time.as_ref()?;
+        let linked = self.origin.get("occurrence").and_then(|value| {
+            serde_json::from_value::<nucleus::projection::OccurrenceLink>(value.clone()).ok()
+        });
+        let cause = self.origin.get("cause").and_then(|value| {
+            serde_json::from_value::<nucleus::simulation::Cause>(value.clone()).ok()
+        });
+        let identity = if let Some(link) = linked {
+            serde_json::json!([
+                link.record.as_str(),
+                link.occurrence.rule_uid,
+                link.occurrence.revision,
+                link.occurrence.event_id
+            ])
+        } else if let Some(nucleus::simulation::Cause::Rule { occurrence, .. }) = cause {
+            serde_json::json!([
+                self.record_uid,
+                occurrence.rule_uid,
+                occurrence.revision,
+                occurrence.event_id
+            ])
+        } else {
+            serde_json::json!([self.record_uid, time.from_ms])
+        };
+        Some(serde_json::json!([source, identity]).to_string())
+    }
+
     pub fn time_label(&self, settings: &Settings, now: i64) -> String {
         let Some(time) = &self.time else {
             return [self.start_date.as_deref(), self.due_date.as_deref()]
                 .into_iter()
                 .flatten()
                 .collect::<Vec<_>>()
-                .join(" → ");
+                .join(" – ");
         };
         let Ok(zone) = settings.timezone.parse::<Tz>() else {
             return "Invalid timezone".into();
@@ -226,7 +384,7 @@ impl Entry {
             chrono::DateTime::from_timestamp_millis(at)
                 .map(|at| at.with_timezone(&zone).date_naive())
         };
-        let interval = if settings.aperture_ms < 60_000 {
+        let interval = if settings.aperture_ms <= 60_000 {
             1000
         } else {
             60_000
@@ -241,7 +399,7 @@ impl Entry {
         let start = label(time.from_ms, date(now));
         time.until_ms.map_or_else(
             || start.clone(),
-            |end| format!("{start} → {}", label(end, date(time.from_ms))),
+            |end| format!("{start} – {}", label(end, date(time.from_ms))),
         )
     }
 

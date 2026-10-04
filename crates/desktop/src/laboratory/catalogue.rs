@@ -3,7 +3,8 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::instinct::tests::laboratory_cases(&mut cases);
     crate::description::tests::laboratory_cases(&mut cases);
     crate::thread_castle::tests::laboratory_cases(&mut cases);
-    crate::tutorial::tests::laboratory_cases(&mut cases);
+    #[cfg(feature = "instinct")]
+    crate::instinct::practice::tests::laboratory_cases(&mut cases);
     crate::actions::tests::laboratory_cases(&mut cases);
     crate::shortcuts::tests::laboratory_cases(&mut cases);
     crate::area::tests::laboratory_cases(&mut cases);

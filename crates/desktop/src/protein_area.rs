@@ -313,6 +313,7 @@ fn stop(world: &mut World, owner: Entity) {
 }
 
 pub(crate) fn connect_organ(world: &World, organ: &str) -> Result<Remote, String> {
+    if let Some(remote) = crate::practice_cells::remote(world, organ) { return remote }
     if organ.trim().is_empty() {
         return Err("Choose an Organ".into());
     }
@@ -434,6 +435,13 @@ pub(crate) fn ensure_auxiliary(world: &mut World, source: &Source) {
     if let Source::Organ(organ) = source { sessions::ensure_auxiliary(world, organ); }
 }
 
+pub(crate) fn release_practice_source(world: &mut World, organ: &str) {
+    if !crate::practice_cells::owns_source(world, &Source::Organ(organ.into())) { return }
+    let owners: Vec<_> = world.get_resource::<Runtime>().map(|runtime| runtime.areas.iter().filter(|(_, state)| state.remote.as_deref() == Some(organ)).map(|(owner, _)| *owner).collect()).unwrap_or_default();
+    for owner in owners { stop(world, owner); }
+    if let Some(mut runtime) = world.get_resource_mut::<Runtime>() { runtime.sessions.remove(organ); }
+}
+
 pub(crate) fn logout_organ(world: &mut World, organ: &str) { sessions::logout(world, organ); }
 pub(crate) fn reconnect_auxiliary(world: &mut World, organ: &str) { sessions::ensure_auxiliary(world, organ); sessions::reconnect(world, organ); }
 
@@ -458,6 +466,13 @@ pub(crate) fn auxiliary_unsubscribe(world: &mut World, organ: &str, id: String) 
 }
 
 fn observe(world: &mut World, source: &Source, message: &ServerMessage) {
+    if crate::practice_cells::owns_source(world, source)
+        && matches!(message, ServerMessage::ActionOk { .. } | ServerMessage::Error { .. } | ServerMessage::Snapshot { .. } | ServerMessage::Update { .. }) {
+        if let (Source::Organ(source), ServerMessage::ActionOk { created: Some(uid), .. }) = (source, message) {
+            world.resource_mut::<crate::practice_cells::PracticeCells>().records.insert(uid.clone(), source.clone());
+        }
+        world.write_message(CellMessage(message.clone()));
+    }
     if matches!(source, Source::Organ(_)) { crate::workspace_sync::receive(world, source, message); }
     if matches!(source, Source::Organ(_)) { crate::time_castle::receive(world, source, message); }
     if matches!(source, Source::Organ(_)) { crate::record_extensions::receive(world, source, message); }

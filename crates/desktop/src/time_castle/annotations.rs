@@ -16,6 +16,8 @@ pub(super) struct Annotation {
     title: Entity,
     time: Entity,
     bar: Entity,
+    label: model::Label,
+    spring: lince_interface::motion::Spring<2>,
 }
 
 #[derive(Component)]
@@ -58,16 +60,50 @@ pub(super) fn update(
         .cloned()
         .unwrap_or_default();
     let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
-    let font = palette.font * 0.8125;
-    let labels = if changed || world.get::<Layout>(owner).is_none() {
-        let labels = model::labels(
+    let font = palette.font * 0.875;
+    let bounds = visible_bounds(world, root, &item, &spatial);
+    let mut labels = if changed || world.get::<Layout>(owner).is_none() {
+        let face = world
+            .get_resource::<crate::theme::Typography>()
+            .and_then(|typography| {
+                world
+                    .get_resource::<Assets<Font>>()
+                    .and_then(|fonts| fonts.get(&typography.0))
+            })
+            .and_then(|font| ttf_parser::Face::parse(font.data.as_ref(), 0).ok());
+        let advance = |ch: char| {
+            face.as_ref()
+                .and_then(|face| {
+                    face.glyph_index(ch)
+                        .and_then(|glyph| face.glyph_hor_advance(glyph))
+                })
+                .map_or(
+                    font * if ch as u32 >= 0x1100 { 1.0 } else { 0.62 },
+                    |width| {
+                        f32::from(width) / f32::from(face.as_ref().unwrap().units_per_em()) * font
+                    },
+                )
+        };
+        let mut labels = model::labels_with_metrics(
             &settings,
             &world.get::<View>(owner).unwrap().entries,
             now,
             size.to_array(),
             font,
             palette.gap,
+            &model::LabelMetrics {
+                band_width: palette.width,
+                advance: &advance,
+            },
         );
+        if let Some(bounds) = bounds {
+            let radius = label_floor(&labels, size, palette.width);
+            let mut previous = Vec::new();
+            for label in &mut labels {
+                fit(&mut label.rect, &previous, radius, palette.gap, bounds);
+                previous.push(label.rect);
+            }
+        }
         world.entity_mut(owner).insert(Layout(labels.clone()));
         labels
     } else {
@@ -81,9 +117,36 @@ pub(super) fn update(
                 .map(|annotation| (annotation.id.clone(), *entity))
         })
         .collect();
-    for label in &labels {
-        let entry = world.get::<View>(owner).unwrap().entries[label.occurrence.index].clone();
-        let entity = existing.remove(&entry.id).unwrap_or_else(|| {
+    let live: std::collections::HashSet<_> = labels.iter().map(|label| label.id.clone()).collect();
+    for entity in &previous {
+        let annotation = world.get::<Annotation>(*entity).unwrap();
+        if !live.contains(&annotation.id)
+            && world.get::<motion::Motion>(owner).is_some_and(|motion| {
+                motion
+                    .bands
+                    .get(&annotation.id)
+                    .is_some_and(|band| band.retiring)
+            })
+        {
+            labels.push(annotation.label.clone());
+        }
+    }
+    let seconds = world
+        .get::<motion::Motion>(owner)
+        .map_or(0.0, |motion| motion.seconds);
+    let mut rectangles = Vec::new();
+    let radius = label_floor(&labels, size, palette.width);
+    let mut active = false;
+    for label in &mut labels {
+        let band = world
+            .get::<motion::Motion>(owner)
+            .and_then(|motion| motion.bands.get(&label.id))
+            .cloned();
+        let opacity = band.as_ref().map_or(1.0, motion::Band::opacity);
+        if let Some(band) = &band {
+            label.anchor = band.anchor(&settings, now, size, palette.width);
+        }
+        let entity = existing.remove(&label.id).unwrap_or_else(|| {
             let entity = world
                 .spawn((
                     AnnotationOf(owner),
@@ -120,11 +183,11 @@ pub(super) fn update(
                             crate::tokens::TokenValue::Number(8.0),
                         ),
                     ])),
-                    ActionButton::new(owner, crate::actions![ui::Select(vec![entry.id.clone()])]),
+                    ActionButton::new(owner, crate::actions![ui::Select(vec![label.id.clone()])]),
                 ))
                 .id();
             let title = crate::edit_mode::label(world, entity, "", font);
-            let time = crate::edit_mode::label(world, entity, "", font * 0.9);
+            let time = crate::edit_mode::label(world, entity, "", font);
             for text in [title, time] {
                 world
                     .entity_mut(text)
@@ -147,13 +210,64 @@ pub(super) fn update(
                 ))
                 .id();
             world.entity_mut(entity).insert(Annotation {
-                id: entry.id.clone(),
+                id: label.id.clone(),
                 title,
                 time,
                 bar,
+                label: label.clone(),
+                spring: lince_interface::motion::Spring::new(if band.is_some() {
+                    let direction = Vec2::new(
+                        label.rect[0] + label.rect[2] * 0.5,
+                        label.rect[1] + label.rect[3] * 0.5,
+                    )
+                    .normalize_or_zero();
+                    [
+                        label.rect[0] + direction.x * 32.0,
+                        label.rect[1] + direction.y * 32.0,
+                    ]
+                } else {
+                    [label.rect[0], label.rect[1]]
+                }),
             });
             entity
         });
+        if let Some(band) = &band {
+            let direction = Vec2::new(
+                label.rect[0] + label.rect[2] * 0.5,
+                label.rect[1] + label.rect[3] * 0.5,
+            )
+            .normalize_or_zero();
+            let target = if band.retiring {
+                let position = world.get::<Annotation>(entity).unwrap().spring.position;
+                world.entity_mut(entity).remove::<ActionButton>();
+                [
+                    position[0] + direction.x * 4.0,
+                    position[1] + direction.y * 4.0,
+                ]
+            } else {
+                if world.get::<ActionButton>(entity).is_none() {
+                    world.entity_mut(entity).insert(ActionButton::new(
+                        owner,
+                        crate::actions![ui::Select(vec![label.id.clone()])],
+                    ));
+                }
+                [label.rect[0], label.rect[1]]
+            };
+            let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
+            active |= annotation.spring.advance(target, seconds);
+            label.rect[0] = annotation.spring.position[0];
+            label.rect[1] = annotation.spring.position[1];
+        }
+        if let Some(bounds) = bounds {
+            fit(&mut label.rect, &rectangles, radius, palette.gap, bounds);
+        }
+        separate(&mut label.rect, &rectangles, radius, palette.gap);
+        rectangles.push(label.rect);
+        {
+            let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
+            annotation.spring.position = [label.rect[0], label.rect[1]];
+            annotation.label = label.clone();
+        }
         let offset = bevy::math::DQuat::from_array(spatial.rotation)
             * bevy::math::DVec3::new(
                 f64::from(label.rect[0] + label.rect[2] * 0.5),
@@ -211,7 +325,7 @@ pub(super) fn update(
             .get::<View>(owner)
             .unwrap()
             .selected
-            .contains(&entry.id);
+            .contains(&label.id);
         let color = palette.event(label.occurrence.lane, selected);
         world
             .get_mut::<TextColor>(title)
@@ -221,7 +335,7 @@ pub(super) fn update(
             .get_mut::<TextColor>(time)
             .unwrap()
             .set_if_neq(TextColor(palette.muted));
-        for (entity, size) in [(title, font), (time, font * 0.9)] {
+        for (entity, size) in [(title, font), (time, font)] {
             let mut text = world.get_mut::<TextFont>(entity).unwrap();
             if text.font_size != FontSize::Px(size) {
                 text.font_size = FontSize::Px(size);
@@ -235,16 +349,216 @@ pub(super) fn update(
             .get_mut::<BackgroundColor>(bar)
             .unwrap()
             .set_if_neq(BackgroundColor(color));
+        world
+            .entity_mut(entity)
+            .insert(crate::topology::presentation::SurfaceOpacity(opacity));
+        if let Some(material) = world
+            .get::<crate::topology::presentation::Surface>(entity)
+            .map(|surface| surface.material.clone())
+            && let Some(mut materials) = world.get_resource_mut::<Assets<StandardMaterial>>()
+            && let Some(mut material) = materials.get_mut(&material)
+            && material.base_color.alpha() != opacity
+        {
+            material.base_color = Color::linear_rgba(opacity, opacity, opacity, opacity);
+        }
     }
     for entity in existing.into_values() {
         world.despawn(entity);
     }
+    if let Some(mut motion) = world.get_mut::<motion::Motion>(owner) {
+        motion.active |= active;
+    }
     labels
+}
+
+fn separate(rect: &mut [f32; 4], previous: &[[f32; 4]], radius: f32, gap: f32) {
+    let center = Vec2::new(rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5);
+    let direction = center.try_normalize().unwrap_or(Vec2::Y);
+    let nearest = Vec2::new(
+        0.0_f32.clamp(rect[0], rect[0] + rect[2]),
+        0.0_f32.clamp(rect[1], rect[1] + rect[3]),
+    )
+    .length();
+    if nearest < radius {
+        let half = Vec2::new(rect[2], rect[3]) * 0.5;
+        let target = direction * (radius + half.length() + gap.max(0.01)) - half;
+        rect[0] = target.x;
+        rect[1] = target.y;
+    }
+    for _ in 0..previous.len() {
+        let Some(other) = previous.iter().find(|other| {
+            rect[0] < other[0] + other[2] + gap
+                && rect[0] + rect[2] + gap > other[0]
+                && rect[1] < other[1] + other[3] + gap
+                && rect[1] + rect[3] + gap > other[1]
+        }) else {
+            break;
+        };
+        let clearance = gap
+            + (other[0].abs() + other[1].abs() + rect[2] + rect[3] + gap).max(1.0)
+                * f32::EPSILON
+                * 4.0;
+        if direction.x.abs() > direction.y.abs() {
+            rect[0] = if direction.x >= 0.0 {
+                other[0] + other[2] + clearance
+            } else {
+                other[0] - rect[2] - clearance
+            };
+        } else {
+            rect[1] = if direction.y >= 0.0 {
+                other[1] + other[3] + clearance
+            } else {
+                other[1] - rect[3] - clearance
+            };
+        }
+    }
+}
+
+fn label_floor(labels: &[model::Label], size: Vec2, width: f32) -> f32 {
+    size.min_element() * 0.4
+        + 28.0
+        + width * 0.5
+        + labels
+            .iter()
+            .map(|label| label.occurrence.lane)
+            .max()
+            .unwrap_or_default() as f32
+            * (width + 3.0)
+}
+
+fn visible_bounds(
+    world: &mut World,
+    root: Entity,
+    item: &CanvasItem,
+    spatial: &crate::topology::Spatial,
+) -> Option<Rect> {
+    if spatial.rotation != bevy::math::DQuat::IDENTITY.to_array() {
+        return None;
+    }
+    let canvas = world.get::<crate::canvas::CanvasView>(root).copied()?;
+    let size = world
+        .query::<&Window>()
+        .iter(world)
+        .next()
+        .map(|window| Vec2::new(window.width(), window.height()))?;
+    let half = size / canvas.zoom as f32 * 0.5 - Vec2::splat(16.0);
+    let center = (canvas.center - item.position).as_vec2();
+    (half.min_element() > item.size.max_element() * 0.5
+        && center.abs().max_element() < half.min_element())
+    .then(|| Rect::from_corners(center - half, center + half))
+}
+
+fn fit(rect: &mut [f32; 4], previous: &[[f32; 4]], radius: f32, gap: f32, bounds: Rect) {
+    let valid = |candidate: [f32; 4]| {
+        let nearest = Vec2::new(
+            0.0_f32.clamp(candidate[0], candidate[0] + candidate[2]),
+            0.0_f32.clamp(candidate[1], candidate[1] + candidate[3]),
+        )
+        .length();
+        candidate[0] >= bounds.min.x
+            && candidate[1] >= bounds.min.y
+            && candidate[0] + candidate[2] <= bounds.max.x
+            && candidate[1] + candidate[3] <= bounds.max.y
+            && nearest >= radius
+            && previous.iter().all(|other| {
+                candidate[0] >= other[0] + other[2] + gap
+                    || candidate[0] + candidate[2] + gap <= other[0]
+                    || candidate[1] >= other[1] + other[3] + gap
+                    || candidate[1] + candidate[3] + gap <= other[1]
+            })
+    };
+    if valid(*rect) || rect[2] > bounds.width() || rect[3] > bounds.height() {
+        return;
+    }
+    let original = Vec2::new(rect[0], rect[1]);
+    let mut xs = vec![
+        rect[0].clamp(bounds.min.x, bounds.max.x - rect[2]),
+        bounds.min.x,
+        bounds.max.x - rect[2],
+        -radius - rect[2] - gap,
+        radius + gap,
+    ];
+    let mut ys = vec![
+        rect[1].clamp(bounds.min.y, bounds.max.y - rect[3]),
+        bounds.min.y,
+        bounds.max.y - rect[3],
+        -radius - rect[3] - gap,
+        radius + gap,
+    ];
+    for other in previous.iter().rev().take(24) {
+        xs.extend([other[0] - rect[2] - gap, other[0] + other[2] + gap]);
+        ys.extend([other[1] - rect[3] - gap, other[1] + other[3] + gap]);
+    }
+    let mut best = None;
+    let mut distance = f32::INFINITY;
+    for x in xs {
+        for y in &ys {
+            let candidate = [x, *y, rect[2], rect[3]];
+            let squared = Vec2::new(x, *y).distance_squared(original);
+            if squared < distance && valid(candidate) {
+                best = Some(candidate);
+                distance = squared;
+            }
+        }
+    }
+    if let Some(best) = best {
+        *rect = best;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn animated_card_separation_terminates_at_the_center_and_fractional_edges() {
+        let mut centered = [-100.0, -24.0, 200.0, 48.0];
+        separate(&mut centered, &[], 210.0, 8.0);
+        assert!(centered[1] > 210.0);
+        for sign in [-1.0, 1.0] {
+            let mut placed = Vec::new();
+            for index in 0..100 {
+                let mut rect = [sign * 220.1273, index as f32 * 0.1237, 200.0, 48.0];
+                separate(&mut rect, &placed, 210.0, 8.0);
+                assert!(placed.iter().all(|other: &[f32; 4]| {
+                    rect[0] >= other[0] + other[2] + 8.0
+                        || rect[0] + rect[2] + 8.0 <= other[0]
+                        || rect[1] >= other[1] + other[3] + 8.0
+                        || rect[1] + rect[3] + 8.0 <= other[1]
+                }));
+                placed.push(rect);
+            }
+        }
+    }
+
+    #[test]
+    fn cards_fan_out_at_window_edges_without_covering_the_clock_or_each_other() {
+        let bounds = Rect::from_corners(Vec2::new(-650.0, -360.0), Vec2::new(650.0, 360.0));
+        let mut placed = Vec::new();
+        for index in 0..20 {
+            let mut rect = [-100.0, 200.0 + index as f32 * 56.0, 200.0, 48.0];
+            fit(&mut rect, &placed, 210.0, 8.0, bounds);
+            assert!(
+                bounds.contains(Vec2::new(rect[0], rect[1]))
+                    && bounds.contains(Vec2::new(rect[0] + rect[2], rect[1] + rect[3]))
+            );
+            let nearest = Vec2::new(
+                0.0_f32.clamp(rect[0], rect[0] + rect[2]),
+                0.0_f32.clamp(rect[1], rect[1] + rect[3]),
+            )
+            .length();
+            assert!(nearest >= 210.0);
+            assert!(
+                placed
+                    .iter()
+                    .all(|other: &[f32; 4]| rect[0] >= other[0] + other[2] + 8.0
+                        || rect[0] + rect[2] + 8.0 <= other[0]
+                        || rect[1] >= other[1] + other[3] + 8.0
+                        || rect[1] + rect[3] + 8.0 <= other[1])
+            );
+            placed.push(rect);
+        }
+    }
 
     #[test]
     fn annotations_follow_a_fixed_clock_reuse_entities_and_close_with_their_owner() {
@@ -321,6 +635,40 @@ mod tests {
             entities
                 .iter()
                 .all(|entity| world.get::<Node>(*entity).unwrap().overflow == Overflow::visible())
+        );
+        motion::update(&mut world, owner, now, 3_600_000, true);
+        let entries = std::mem::take(&mut world.get_mut::<View>(owner).unwrap().entries);
+        motion::update(&mut world, owner, now, 3_600_000, true);
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            true,
+            &palette,
+        );
+        assert!(
+            entities
+                .iter()
+                .all(|entity| world.get::<ActionButton>(*entity).is_none())
+        );
+        world.get_mut::<View>(owner).unwrap().entries = entries;
+        motion::update(&mut world, owner, now, 3_600_000, true);
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            true,
+            &palette,
+        );
+        assert_eq!(world.get::<Annotations>(owner).unwrap().0, entities);
+        assert!(
+            entities
+                .iter()
+                .all(|entity| world.get::<ActionButton>(*entity).is_some())
         );
         world.despawn(owner);
         assert!(

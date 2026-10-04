@@ -18,6 +18,9 @@ pub(super) fn opacity(world: &World, entity: Entity) -> f32 {
         .get::<ChildOf>(entity)
         .and_then(|parent| world.get::<crate::edit_mode::EditMode>(parent.parent()))
         .is_some_and(|mode| mode.enabled);
+    if !editing && world.get::<crate::kanban::KanbanSource>(entity).is_some() {
+        return 0.0;
+    }
     let hovered = world
         .get_resource::<super::input::PointerState>()
         .and_then(|pointer| pointer.hit)
@@ -284,7 +287,14 @@ pub fn update(world: &mut World) {
             .0
             .clone();
         let fill_material = world.get::<Volume>(entity).unwrap().material.clone();
-        let fill_opacity = if opacity == 1.0 { 1.0 } else { area.opacity };
+        let kanban_source = world.get::<crate::kanban::KanbanSource>(entity).is_some();
+        let fill_opacity = if kanban_source && !editing {
+            0.0
+        } else if opacity == 1.0 {
+            1.0
+        } else {
+            area.opacity
+        };
         let mut materials = world.resource_mut::<Assets<StandardMaterial>>();
         for (handle, alpha) in [(outline_material, opacity), (fill_material, fill_opacity)] {
             if materials.get(&handle).unwrap().base_color.alpha() != alpha {
@@ -332,6 +342,15 @@ mod tests {
     use super::*;
     use crate::area::{AreaShape, InfluenceArea};
     use bevy::{math::DVec2, mesh::VertexAttributeValues};
+
+    #[test]
+    fn kanban_source_is_transparent_outside_edit_mode() {
+        let mut world = World::new();
+        let source = world.spawn(crate::kanban::KanbanSource).id();
+        assert_eq!(opacity(&world, source), 0.0);
+        let other = world.spawn_empty().id();
+        assert_eq!(opacity(&world, other), 0.5);
+    }
 
     #[test]
     fn edit_hover_restores_fill_and_card_opacity_without_changing_settings() {

@@ -732,69 +732,11 @@ impl Engine {
                         }
                     }
                 }
-                Action::ImportInstinct => {
-                    let bundle = crate::instinct::records()
-                        .map_err(|error| EngineError::Consequence(error.to_string()))?;
-                    for name in crate::instinct::VOCABULARY {
-                        store::concepts::ensure(&self.store.pool, name).await?;
-                    }
-                    let mut fresh = Vec::new();
-                    for record in &bundle {
-                        let uid = record.projection.uid.trim();
-                        if store::records::get(&self.store.pool, uid).await?.is_some() {
-                            continue;
-                        }
-                        store::records::create_with_uid(
-                            &self.store.pool,
-                            store::records::NewRecord {
-                                slug: record.slug.as_deref(),
-                                kind: RecordKind::Plain,
-                                head: &record.head,
-                                body: &record.body,
-                                quantity: store::exact::zero(),
-                            },
-                            uid,
-                        )
-                        .await?;
-                        fresh.push(record);
-                    }
-                    for record in fresh {
-                        let uid = record.projection.uid.trim().to_string();
-                        for line in &record.projection.assertions {
-                            self.act(
-                                Action::AssertRecord {
-                                    subject: uid.clone(),
-                                    predicate: line.predicate.clone(),
-                                    object: line.object.as_ref().map(|link| link.uid.clone()),
-                                    quantity: line.quantity.clone(),
-                                    unit: line.unit.clone(),
-                                },
-                                actor.clone(),
-                            )
-                            .await?;
-                            if line.identity {
-                                self.act(
-                                    Action::SetIdentity {
-                                        subject: uid.clone(),
-                                        predicate: Some(line.predicate.clone()),
-                                    },
-                                    actor.clone(),
-                                )
-                                .await?;
-                            }
-                        }
-                        if let Some(amount) = record.quantity() {
-                            self.act(
-                                Action::SetQuantityExact {
-                                    target: uid.clone(),
-                                    amount,
-                                },
-                                actor.clone(),
-                            )
-                            .await?;
-                        }
-                        outcome.created = Some(uid);
-                    }
+                Action::PreviewInstinct => {
+                    outcome.data = Some(serde_json::to_value(self.preview_instinct(actor.as_deref()).await?)?);
+                }
+                Action::ImportInstinct { fingerprint } => {
+                    outcome = self.import_instinct(&fingerprint, actor.as_deref(), now).await?;
                 }
                 Action::ConfigureFiote {
                     target,

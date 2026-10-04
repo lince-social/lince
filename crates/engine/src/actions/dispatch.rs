@@ -179,7 +179,8 @@ impl Engine {
             | Action::AddConceptParent { .. }
             | Action::RemoveConceptParent { .. }
             | Action::AssertRecord { .. }
-            | Action::ImportInstinct
+            | Action::PreviewInstinct
+            | Action::ImportInstinct { .. }
             | Action::ConfigureFiote { .. }
             | Action::CreateAgent { .. }
             | Action::RetractAssertion { .. }

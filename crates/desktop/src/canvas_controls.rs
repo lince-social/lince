@@ -28,6 +28,10 @@ pub enum CanvasAction {
 }
 
 impl Action for CanvasAction {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        if *self == Self::BringHere { crate::actions::PracticeIntent::Target } else { crate::actions::PracticeIntent::Navigation }
+    }
+
     fn connections(&self, _: &World, target: Entity) -> Vec<crate::inspection::Connection> {
         vec![crate::inspection::Connection {
             target,
@@ -86,10 +90,11 @@ fn toolbar_bundle(view: Entity) -> impl Bundle {
             position_type: PositionType::Absolute,
             right: px(0),
             bottom: px(0),
-            max_width: percent(96),
-            flex_wrap: FlexWrap::NoWrap,
+            max_width: Val::Vw(96.0),
+            flex_wrap: FlexWrap::Wrap,
             align_items: AlignItems::Center,
             column_gap: px(6),
+            row_gap: px(6),
             padding: UiRect::all(px(4)),
             overflow: Overflow::scroll_x(),
             ..default()

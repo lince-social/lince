@@ -4,6 +4,8 @@ use nucleus::schedule::{TimeValue, timezone_date};
 use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 
+mod admitted;
+
 pub fn query(window: Window, filter: Vec<Predicate>) -> Protein {
     let mut query = crate::calendar::query(window, filter);
     query.source = Source::Schedule;
@@ -44,6 +46,11 @@ pub(super) async fn execute(
         .filter
         .retain(|filter| !matches!(filter, Predicate::ProjectionWindow(_)));
     let live = crate::execute_records(store, &manual, visible, actor).await?;
+    let records: HashMap<_, _> = live
+        .iter()
+        .filter_map(|row| Some((row["uid"].as_str()?.to_owned(), row.clone())))
+        .collect();
+    let links = store::records::all_extensions(&store.pool, "work").await?;
     let manual_budget = live.len() > nucleus::projection::MAX_SPANS;
     let now = nucleus::execution::now().timestamp_millis();
     let from_date = context
@@ -102,10 +109,27 @@ pub(super) async fn execute(
         row["kind"] = json!("schedule-entry");
         row["category"] = json!(category);
         row["time"] = json!(time);
-        row["origin"] = json!({"kind":"manual"});
+        let occurrence = links
+            .get(&uid)
+            .and_then(|work| work.get("projection_occurrence"))
+            .and_then(|value| {
+                serde_json::from_value::<nucleus::projection::OccurrenceLink>(value.clone()).ok()
+            });
+        row["origin"] = if let Some(occurrence) = occurrence {
+            json!({"kind":"manual", "occurrence":occurrence})
+        } else {
+            json!({"kind":"manual"})
+        };
         row["preview"] = json!(false);
         output.push(row);
     }
+    let (confirmed, admission_budget) =
+        admitted::entries(store, &context, &records, &links, visible).await?;
+    output.extend(confirmed);
+    let confirmed_ids: HashSet<_> = output
+        .iter()
+        .filter_map(|row| row["uid"].as_str().map(str::to_owned))
+        .collect();
     let unavailable = if actor.is_some() {
         Some(Incomplete::UnavailableRuntime {})
     } else if context.window.until_ms <= now {
@@ -129,7 +153,7 @@ pub(super) async fn execute(
                 reason,
             })
         });
-    if manual_budget {
+    if manual_budget || admission_budget {
         status = Status::Incomplete {
             base_ms: now,
             reason: Incomplete::Budget {},
@@ -155,7 +179,6 @@ pub(super) async fn execute(
                 .into_iter()
                 .filter_map(|row| Some((row["uid"].as_str()?.to_owned(), row)))
                 .collect();
-            let links = store::records::all_extensions(&store.pool, "work").await?;
             let actual: HashSet<_> = links
                 .iter()
                 .filter(|(uid, _)| visible.is_none_or(|visible| visible.contains(*uid)))
@@ -173,6 +196,9 @@ pub(super) async fn execute(
                 })
                 .collect();
             for entry in cached.schedule {
+                if confirmed_ids.contains(&entry.id) {
+                    continue;
+                }
                 if matches!(entry.cause, nucleus::simulation::Cause::Seed {})
                     && candidates.contains_key(entry.record.as_str())
                 {

@@ -1,8 +1,10 @@
 use bevy::{
     a11y::AccessibilityNode,
+    input::{ButtonState, mouse::MouseButtonInput},
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
     ui_widgets::Activate,
+    window::{CursorMoved, PrimaryWindow, WindowEvent},
     winit::WinitSettings,
 };
 use lince_desktop::{
@@ -20,6 +22,8 @@ struct Exercise {
     started: Instant,
     frame: u64,
     stage: u8,
+    tab: usize,
+    tabs_only: bool,
     root: Option<Entity>,
     sand: Option<Entity>,
     broken: Option<Entity>,
@@ -27,14 +31,51 @@ struct Exercise {
     output: PathBuf,
 }
 
-fn activate(world: &mut World, label: &str) {
-    let entity = world
-        .query::<(Entity, &AccessibilityNode)>()
+fn button(world: &mut World, label: &str) -> Entity {
+    world
+        .query_filtered::<(Entity, &AccessibilityNode), With<bevy::ui_widgets::Button>>()
         .iter(world)
         .find(|(_, node)| node.label() == Some(label))
         .unwrap_or_else(|| panic!("Missing button: {label}"))
-        .0;
+        .0
+}
+
+fn activate(world: &mut World, label: &str) {
+    let entity = button(world, label);
     world.trigger(Activate { entity });
+}
+
+fn pointer(world: &mut World, label: &str) {
+    let entity = button(world, label);
+    let node = world.get::<ComputedNode>(entity).unwrap();
+    assert!(node.size().min_element() > 0.0, "Hidden button: {label}");
+    let position =
+        world.get::<UiGlobalTransform>(entity).unwrap().translation * node.inverse_scale_factor();
+    let window = world
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(world)
+        .unwrap();
+    world.write_message(WindowEvent::CursorMoved(CursorMoved {
+        window,
+        position,
+        delta: None,
+    }));
+}
+
+fn press(world: &mut World, down: bool) {
+    let window = world
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(world)
+        .unwrap();
+    world.write_message(WindowEvent::MouseButtonInput(MouseButtonInput {
+        window,
+        button: MouseButton::Left,
+        state: if down {
+            ButtonState::Pressed
+        } else {
+            ButtonState::Released
+        },
+    }));
 }
 
 fn exercise(world: &mut World) {
@@ -49,6 +90,54 @@ fn exercise(world: &mut World) {
         return;
     }
     match state.stage {
+        7 => {
+            activate(world, "Edit mode");
+            state.frame = 0;
+            state.stage = 8;
+        }
+        8 => {
+            let tabs = [
+                ("General", "General"),
+                ("Sand store", "Sand store"),
+                ("Customization", "Customization"),
+                ("Workspaces", "Workspace"),
+                ("Information", "Information"),
+                ("Shortcuts", "Shortcuts"),
+                ("Areas of influence", "Areas"),
+                ("Licenses and credits", "Licenses and credits"),
+                ("Sand store", "Sand store"),
+            ];
+            match state.frame % 12 {
+                0 => pointer(world, "General"),
+                3 => pointer(world, tabs[state.tab].0),
+                5 => press(world, true),
+                7 => press(world, false),
+                11 => {
+                    let heading = tabs[state.tab].1;
+                    assert!(
+                        world
+                            .query::<&Text>()
+                            .iter(world)
+                            .any(|text| text.0 == heading),
+                        "Missing rendered tab heading after clicking: {heading}"
+                    );
+                    state.tab += 1;
+                    if state.tab == tabs.len() {
+                        activate(world, "Close edit mode");
+                        if state.tabs_only {
+                            println!(
+                                "Edit tabs smoke passed: mouse clicks on all eight tabs and Sand store reopening."
+                            );
+                            world.write_message(AppExit::Success);
+                            state.stage = 5;
+                        } else {
+                            state.stage = 0;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
         0 => {
             let root = world
                 .query_filtered::<Entity, (With<BoxRoot>, Without<LaboratoryRoot>)>()
@@ -201,7 +290,7 @@ fn exercise(world: &mut World) {
             let saved = lince_desktop::sand_text::snapshot(world, state.sand.unwrap());
             assert_eq!(saved[0].text, "Keep this draft");
             println!(
-                "Laboratory smoke passed: graphics device, resource counts, asset failure, shared behavior suite, six rendered stress workloads, suspension and restoration."
+                "Laboratory smoke passed: all edit tabs, Sand store reopening, graphics device, resource counts, asset failure, shared behavior suite, six rendered stress workloads, suspension and restoration."
             );
             world.write_message(AppExit::Success);
             state.stage = 5;
@@ -211,14 +300,17 @@ fn exercise(world: &mut World) {
     world.insert_resource(state);
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let output = PathBuf::from(std::env::args().nth(1).expect("provide screenshot path"));
     lince_desktop::app::interface_app()
         .insert_resource(WinitSettings::continuous())
         .insert_resource(Exercise {
             started: Instant::now(),
             frame: 0,
-            stage: 0,
+            stage: 7,
+            tab: 0,
+            tabs_only: std::env::args().any(|arg| arg == "--edit-tabs-only"),
             root: None,
             sand: None,
             broken: None,

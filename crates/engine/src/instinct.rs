@@ -16,14 +16,14 @@ pub const VOCABULARY: [&str; 11] = [
     "wip",
 ];
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Projection {
     pub uid: String,
     pub assertions: Vec<Line>,
     pub quantity: Option<(String, Option<String>)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Line {
     pub predicate: String,
     pub identity: bool,
@@ -32,13 +32,13 @@ pub struct Line {
     pub unit: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Link {
     pub title: String,
     pub uid: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct BundledRecord {
     pub slug: Option<String>,
     pub head: String,
@@ -166,7 +166,36 @@ impl BundledRecord {
 }
 
 pub fn records() -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
-    records_from(BUNDLE)
+    let mut records = records_from(BUNDLE)?;
+    let mut selected: std::collections::BTreeSet<_> = records
+        .iter()
+        .filter(|record| {
+            record
+                .slug
+                .as_deref()
+                .is_some_and(|slug| MANIFEST.contains(&slug))
+        })
+        .map(|record| record.projection.uid.clone())
+        .collect();
+    loop {
+        let before = selected.len();
+        for record in &records {
+            if selected.contains(&record.projection.uid) {
+                selected.extend(
+                    record
+                        .projection
+                        .assertions
+                        .iter()
+                        .filter_map(|line| line.object.as_ref().map(|object| object.uid.clone())),
+                );
+            }
+        }
+        if selected.len() == before {
+            break;
+        }
+    }
+    records.retain(|record| selected.contains(&record.projection.uid));
+    Ok(records)
 }
 
 fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
@@ -174,12 +203,39 @@ fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::
     for (name, source) in sources {
         projected.extend(project_source(name, source)?);
     }
-    projected.retain(|record| {
-        record
-            .assertions
-            .iter()
-            .any(|assertion| !assertion.identity && assertion.predicate == "instinct")
-    });
+    let mut selected: std::collections::BTreeSet<_> = projected
+        .iter()
+        .filter(|record| {
+            record
+                .assertions
+                .iter()
+                .any(|assertion| !assertion.identity && assertion.predicate == "instinct")
+        })
+        .map(|record| record.uid.clone())
+        .collect();
+    loop {
+        let previous = selected.len();
+        for record in &projected {
+            if selected.contains(&record.uid) {
+                for link in record
+                    .assertions
+                    .iter()
+                    .filter_map(|line| line.object_slug.as_ref())
+                {
+                    if let Some(target) = projected
+                        .iter()
+                        .find(|record| record.slug.as_ref() == Some(link))
+                    {
+                        selected.insert(target.uid.clone());
+                    }
+                }
+            }
+        }
+        if selected.len() == previous {
+            break;
+        }
+    }
+    projected.retain(|record| selected.contains(&record.uid));
 
     let identities: BTreeMap<String, String> = projected
         .iter()
@@ -277,9 +333,23 @@ fn project_source(
         error.path = Some(std::path::Path::new("institute/anicca").join(name));
         error
     };
-    let (identified, _) = anicca::ensure_uids(source).map_err(with_path)?;
+    let (identified, minted) = anicca::ensure_uids(source).map_err(with_path)?;
     let document = anicca::parse(&identified).map_err(with_path)?;
-    Ok(anicca::project(&document).map_err(with_path)?.records)
+    let mut records = anicca::project(&document).map_err(with_path)?.records;
+    for record in &mut records {
+        if let Some(identity) = minted
+            .iter()
+            .find(|identity| identity.kind == "Record" && identity.uid == record.uid)
+        {
+            use sha2::{Digest, Sha256};
+            let hash = Sha256::digest(format!("Instinct/{name}/{}", identity.name));
+            record.uid = format!(
+                "r_{}",
+                nucleus::ulid_from(0, u128::from_be_bytes(hash[..16].try_into().unwrap()))
+            );
+        }
+    }
+    Ok(records)
 }
 
 #[cfg(test)]
@@ -385,6 +455,7 @@ A child.
     }
 
     #[test]
+    #[cfg(feature = "instinct")]
     fn philosophy_and_tool_are_the_first_bundled_pages() {
         let records = records().unwrap();
         let pages: Vec<_> = records.iter().filter(|record| record.is_entry()).collect();
@@ -403,9 +474,16 @@ A child.
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].slug.as_deref(), Some("example"));
         assert!(records[0].uid.starts_with("r_"));
+        let changed = project_source(
+            "Example.lingua",
+            "Example (@example: 1, #instinct) {\nChanged explanation.\n}\n",
+        )
+        .unwrap();
+        assert_eq!(records[0].uid, changed[0].uid);
     }
 
     #[test]
+    #[cfg(feature = "instinct")]
     fn bundle_is_the_valid_root_anicca_tree() {
         let records = records().unwrap();
         assert!(!records.is_empty());
@@ -431,5 +509,12 @@ A child.
                 .unwrap_or_else(|| panic!("{} has no bundled parent", record.head));
             assert!(owner < index, "{} precedes its parent", record.head);
         }
+    }
+
+    #[test]
+    #[cfg(not(feature = "instinct"))]
+    fn disabled_instinct_has_no_embedded_records() {
+        assert!(BUNDLE.is_empty());
+        assert!(records().unwrap().is_empty());
     }
 }

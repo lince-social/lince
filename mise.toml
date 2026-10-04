@@ -1,0 +1,29 @@
+[env]
+RUSTFLAGS = "-D warnings"
+
+[tasks.dev]
+description = "Run the native interface"
+usage = '''
+flag "--directory <directory>" default=".lince-dev"
+flag "--port <port>" default="6176"
+'''
+run = 'LINCE_DATA_DIR="${usage_directory}" LINCE_PORT="${usage_port}" cargo xtask dev'
+
+[tasks.dev-instinct]
+description = "Run the unfinished Instinct handbook explicitly"
+usage = '''
+flag "--directory <directory>" default=".lince-dev"
+flag "--port <port>" default="6176"
+'''
+run = 'cargo run --package lince --features instinct -- --directory "${usage_directory}" --port "${usage_port}"'
+
+[tasks."check-instinct"]
+description = "Check both handbook feature paths and shared practice contracts"
+run = [
+  "cargo check --package lince --no-default-features",
+  "cargo check --package lince --features instinct",
+  "cargo test --package anicca --test instinct",
+  "cargo test --package lince-interface --no-default-features --test practice",
+  "cargo test --package engine --features instinct --test instinct_import",
+  "cargo test --package lince-desktop --features instinct instinct::",
+]

@@ -7,6 +7,10 @@ repository.workspace = true
 homepage.workspace = true
 description = "Lince engine: the single fact write path, the reactive Karma scheduler, effects, timers."
 
+[features]
+default = []
+instinct = []
+
 [dependencies]
 schemars = { workspace = true }
 anicca = { workspace = true }
@@ -52,6 +56,8 @@ rustix = { version = "=1.1.4", features = ["fs", "process"] }
 
 [build-dependencies]
 sensei = { workspace = true }
+anicca = { workspace = true }
+lince-interface = { workspace = true, default-features = false }
 
 [lints]
 workspace = true

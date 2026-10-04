@@ -78,7 +78,7 @@ fn keyboard(
     event.propagate(false);
 }
 
-fn scrolling(world: &mut World, parent: Entity, name: &str) -> Entity {
+pub(super) fn scrolling(world: &mut World, parent: Entity, name: &str) -> Entity {
     let mut accessibility = accesskit::Node::new(accesskit::Role::ScrollView);
     accessibility.set_label(name);
     world
@@ -151,11 +151,64 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         .id();
     world.get_mut::<View>(owner).unwrap().body = Some(body);
     label(world, body, "Instinct", 18.0);
+    label(
+        world,
+        body,
+        "Suggested basics: Welcome → Interface → Areas → Records → Protein. Start any page freely; the remaining chapters are optional.",
+        13.0,
+    );
     if let Some(error) = world.resource::<Book>().2.clone() {
         label(world, body, "Instinct could not be loaded.", 16.0);
         label(world, body, &error, 14.0);
         return;
     }
+    let query = world
+        .get::<Search>(owner)
+        .map(|search| search.query.clone())
+        .unwrap_or_default();
+    let search_row = world
+        .spawn((
+            Node {
+                width: percent(100),
+                column_gap: px(8),
+                ..default()
+            },
+            ChildOf(body),
+        ))
+        .id();
+    let typography =
+        crate::theme::Typography(world.resource::<crate::theme::Typography>().0.clone());
+    let editor = world
+        .spawn(crate::sand::text_editor(&query, &typography, 0))
+        .insert((
+            Node {
+                flex_grow: 1.0,
+                min_width: px(0),
+                ..default()
+            },
+            ChildOf(search_row),
+        ))
+        .id();
+    world.entity_mut(owner).insert(Search {
+        query: query.clone(),
+        input: Some(editor),
+    });
+    button(
+        world,
+        search_row,
+        owner,
+        "Find",
+        "Find a page or concept",
+        Command::Search,
+    );
+    button(
+        world,
+        search_row,
+        owner,
+        "All",
+        "Show every page",
+        Command::ClearSearch,
+    );
     let Some(page) = pages.get(index) else {
         label(world, body, "No Instinct Records are embedded.", 16.0);
         return;
@@ -185,7 +238,19 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     world.get_mut::<View>(owner).unwrap().nav = Some(nav);
     world.get_mut::<Node>(nav).unwrap().width = percent(28);
     let mut selected_button = None;
+    let mut chapter = None;
     for entry in entries.iter() {
+        if !query.trim().is_empty()
+            && !format!("{} {} {}", entry.id, entry.title, entry.chapter)
+                .to_lowercase()
+                .contains(&query.trim().to_lowercase())
+        {
+            continue;
+        }
+        if chapter != Some(entry.chapter.as_str()) {
+            crate::description::heading(world, nav, &entry.chapter, 16.0);
+            chapter = Some(entry.chapter.as_str());
+        }
         let tab = button(
             world,
             nav,
@@ -242,14 +307,37 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         if index > 0 {
             crate::description::heading(world, container, &section.title, 22.0);
         }
-        if section.tutorial {
-            crate::description::button(
-                world,
-                container,
-                owner,
-                "Tutorial: Areas of Influence",
-                crate::tutorial::Start,
-            );
+        if let Some(slug) = section.slug.as_ref().filter(|slug| {
+            lince_interface::handbook::PAGES
+                .iter()
+                .any(|page| page.slug == *slug)
+        }) {
+            if let Some(progress) = world
+                .get_resource::<practice::Learned>()
+                .and_then(|learned| learned.0.0.get(slug))
+            {
+                label(
+                    world,
+                    container,
+                    &format!("Learning progress: {progress:?}"),
+                    13.0,
+                );
+            }
+            for (label, mode) in [
+                ("Free", lince_interface::practice::Mode::Free),
+                ("Assisted", lince_interface::practice::Mode::Assisted),
+            ] {
+                crate::description::button(
+                    world,
+                    container,
+                    owner,
+                    label,
+                    super::practice::StartPage {
+                        slug: slug.clone(),
+                        mode,
+                    },
+                );
+            }
         }
         crate::description::spawn(
             world,
@@ -260,7 +348,29 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 source: crate::protein_area::Source::Local,
             },
         );
-        if section.uid == engine::karma_habits::GUIDE { super::habit_ui::spawn(world, owner, container); }
+        if let Some(reference) = section
+            .slug
+            .as_ref()
+            .and_then(|slug| {
+                lince_interface::handbook::PAGES
+                    .iter()
+                    .find(|page| page.slug == *slug)
+            })
+            .and_then(|page| page.reference)
+            && let Some(entry) = entries.iter().find(|entry| entry.id == reference)
+        {
+            button(
+                world,
+                container,
+                owner,
+                "Related reference",
+                &entry.title,
+                Command::Page(entry.id.clone()),
+            );
+        }
+        if section.uid == engine::karma_habits::GUIDE {
+            super::habit_ui::spawn(world, owner, container);
+        }
     }
     let footer = world
         .spawn((
@@ -275,6 +385,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             ChildOf(body),
         ))
         .id();
+    super::import_ui::controls(world, owner, body);
     let previous = button(
         world,
         footer,

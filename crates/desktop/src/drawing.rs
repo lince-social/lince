@@ -30,6 +30,7 @@ struct View {
     saving: bool,
     last_paint: std::time::Instant,
     painted: Option<(Drawing, image::RgbaImage)>,
+    pointer: Option<Vec2>,
 }
 
 #[derive(Resource, Default)]
@@ -415,10 +416,13 @@ fn content(
         destinations: None,
         saving: false,
         painted: None,
+        pointer: None,
         last_paint: std::time::Instant::now() - std::time::Duration::from_secs(1),
     });
     world.entity_mut(surface).observe(
-        move |mut event: On<Pointer<Press>>, mut views: Query<&mut View>| {
+        move |mut event: On<Pointer<Press>>,
+              mut views: Query<&mut View>,
+              geometry: Query<(&ComputedNode, &UiGlobalTransform)>| {
             event.propagate(false);
             if event.button == PointerButton::Primary
                 && let Ok(mut view) = views.get_mut(owner)
@@ -426,6 +430,35 @@ fn content(
                 && !view.saving
             {
                 view.active = true;
+                if let Ok((node, transform)) = geometry.get(event.entity) {
+                    view.pointer = node.normalize_point(
+                        *transform,
+                        event.pointer_location.position / node.inverse_scale_factor(),
+                    );
+                }
+            }
+        },
+    );
+    world.entity_mut(surface).observe(
+        move |mut event: On<Pointer<Move>>,
+              mut views: Query<&mut View>,
+              geometry: Query<(&ComputedNode, &UiGlobalTransform)>| {
+            event.propagate(false);
+            if let Ok(mut view) = views.get_mut(owner)
+                && let Ok((node, transform)) = geometry.get(event.entity)
+            {
+                view.pointer = node.normalize_point(
+                    *transform,
+                    event.pointer_location.position / node.inverse_scale_factor(),
+                );
+            }
+        },
+    );
+    world.entity_mut(surface).observe(
+        move |mut event: On<Pointer<Out>>, mut views: Query<&mut View>| {
+            event.propagate(false);
+            if let Ok(mut view) = views.get_mut(owner) {
+                view.pointer = None;
             }
         },
     );
@@ -598,10 +631,12 @@ fn update(world: &mut World) {
     for owner in owners {
         let view = world.get::<View>(owner).unwrap();
         let surface = view.surface;
-        let pointer = world
-            .get::<RelativeCursorPosition>(surface)
-            .filter(|cursor| cursor.cursor_over())
-            .and_then(|cursor| cursor.normalized);
+        let pointer = view.pointer.or_else(|| {
+            world
+                .get::<RelativeCursorPosition>(surface)
+                .filter(|cursor| cursor.cursor_over())
+                .and_then(|cursor| cursor.normalized)
+        });
         if view.active
             && pressed
             && let Some(pointer) = pointer
@@ -650,6 +685,18 @@ fn update(world: &mut World) {
             world.get_mut::<View>(owner).unwrap().active = false;
         }
         let view = world.get::<View>(owner).unwrap();
+        if view.dirty
+            && view.last_paint.elapsed().as_millis() < 40
+            && let Some(wake) = world.get_resource::<crate::wake::WakeSignal>()
+        {
+            wake.after(
+                std::time::Duration::from_millis(40)
+                    - view
+                        .last_paint
+                        .elapsed()
+                        .min(std::time::Duration::from_millis(40)),
+            );
+        }
         if view.dirty && view.last_paint.elapsed().as_millis() >= 40 {
             let drawing = world.get::<NativeDrawing>(owner).unwrap().0.clone();
             let painted = world.get_mut::<View>(owner).unwrap().painted.take();
@@ -995,19 +1042,44 @@ mod tests {
         world.init_resource::<ButtonInput<MouseButton>>();
         let owner = spawn(&mut world, root, 1, DVec2::ZERO, Drawing::default());
         let surface = world.get::<View>(owner).unwrap().surface;
-        world.get_mut::<View>(owner).unwrap().active = true;
+        world.get_mut::<ComputedNode>(surface).unwrap().size = Vec2::splat(100.0);
+        world.entity_mut(surface).insert(UiGlobalTransform::from(
+            bevy::math::Affine2::from_translation(Vec2::splat(50.0)),
+        ));
+        world.flush();
+        let location = bevy::picking::pointer::Location {
+            target: bevy::camera::NormalizedRenderTarget::Image(bevy::camera::ImageRenderTarget {
+                handle: Handle::default(),
+                scale_factor: 1.0,
+            }),
+            position: Vec2::new(10.0, 20.0),
+        };
+        world.trigger(Pointer::new(
+            crate::topology::input::CONTENT_POINTER,
+            location.clone(),
+            Press {
+                button: PointerButton::Primary,
+                hit: bevy::picking::backend::HitData::new(root, 0.0, None, None),
+                count: 1,
+            },
+            surface,
+        ));
         world
             .resource_mut::<ButtonInput<MouseButton>>()
             .press(MouseButton::Left);
-        world.entity_mut(surface).insert(RelativeCursorPosition {
-            cursor_over: true,
-            normalized: Some(Vec2::new(-0.4, -0.3)),
-        });
         update(&mut world);
-        world
-            .get_mut::<RelativeCursorPosition>(surface)
-            .unwrap()
-            .normalized = Some(Vec2::ZERO);
+        world.trigger(Pointer::new(
+            crate::topology::input::CONTENT_POINTER,
+            bevy::picking::pointer::Location {
+                position: Vec2::splat(50.0),
+                ..location
+            },
+            Move {
+                hit: bevy::picking::backend::HitData::new(root, 0.0, None, None),
+                delta: Vec2::new(40.0, 30.0),
+            },
+            surface,
+        ));
         update(&mut world);
         assert!(world.get::<ImageNode>(surface).is_some());
         assert_eq!(

@@ -714,6 +714,7 @@
             with pkgs;
             lib.optionals stdenv.isLinux [
               alsa-lib
+              speechd
               pipewire
               glib
               dbus
@@ -761,11 +762,15 @@
               cargoBuildFlags = [
                 "--package"
                 "lince"
+                "--features"
+                "instinct"
               ]
               ++ lib.optional (!ui) "--no-default-features";
               cargoTestFlags = [
                 "--package"
                 "lince"
+                "--features"
+                "instinct"
               ]
               ++ lib.optional (!ui) "--no-default-features";
 

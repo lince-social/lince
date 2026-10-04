@@ -409,7 +409,6 @@ fn cancel(world: &mut World, root: Entity) {
 }
 
 fn update(world: &mut World) {
-    ui::install(world);
     let stale: Vec<_> = world
         .resource::<Sessions>()
         .entries
@@ -531,6 +530,5 @@ fn update(world: &mut World) {
             }
         }
     }
-    ui::poll_clipboard(world);
     pulse(world);
 }

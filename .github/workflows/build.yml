@@ -23,6 +23,19 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  instinct-contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check feature paths and handbook contracts
+        run: |
+          cargo check --locked --package lince --no-default-features
+          cargo check --locked --package lince --no-default-features --features instinct
+          cargo test --locked --package anicca --test instinct
+          cargo test --locked --package lince-interface --no-default-features --test practice
+          cargo test --locked --package engine --features instinct --test instinct_import
+          cargo test --locked --package engine --no-default-features --lib instinct::
   binary:
     if: github.ref != 'refs/heads/dev'
     name: binary (${{ matrix.variant }}, ${{ matrix.os }}, ${{ matrix.target }})
@@ -99,13 +112,17 @@ jobs:
             binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-
             binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-
 
+      - name: Check native handbook recovery
+        if: matrix.variant == 'native'
+        run: cargo test --locked --package lince-desktop --features instinct instinct::
+
       - name: Build native Lince
         if: matrix.variant == 'native'
         timeout-minutes: 105
         env:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
-        run: cargo build --release --locked --package lince --target "$BUILD_TARGET" --timings
+        run: cargo build --release --locked --package lince --features instinct --target "$BUILD_TARGET" --timings
         shell: bash
 
       - name: Build headless Lince for NixOS server
@@ -115,7 +132,7 @@ jobs:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
         shell: bash
-        run: cargo build --release --locked --package lince --no-default-features --target "$BUILD_TARGET" --timings
+        run: cargo build --release --locked --package lince --no-default-features --features instinct --target "$BUILD_TARGET" --timings
 
       - name: Save compiled crates
         if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}

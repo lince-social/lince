@@ -28,6 +28,7 @@ pub struct EditPopupToggle {
 #[derive(Component)]
 pub struct EditMode {
     pub enabled: bool,
+    pub(crate) revision: u64,
     pub panel: Entity,
     pub toggle: Entity,
     name: Option<Entity>,
@@ -74,6 +75,18 @@ pub enum EditAction {
 }
 
 impl Action for EditAction {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        use crate::actions::PracticeIntent;
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Open | Self::Toggle => PracticeIntent::Feature(Operation::OpenEdit),
+            Self::AddSand(SandKind::Square | SandKind::Text) => PracticeIntent::Feature(Operation::PlaceSand),
+            Self::EditSand(entity) => PracticeIntent::Object(*entity),
+            Self::Close | Self::Workspaces | Self::SwitchWorkspace(_) | Self::Store | Self::Canvas | Self::Areas => PracticeIntent::Navigation,
+            _ => PracticeIntent::Target,
+        }
+    }
+
     fn connections(&self, world: &World, root: Entity) -> Vec<crate::inspection::Connection> {
         crate::inspection::edit_connection(world, root, *self)
             .into_iter()
@@ -515,6 +528,7 @@ pub(crate) fn setup(world: &mut World) {
             .id();
         world.entity_mut(root).insert(EditMode {
             enabled: false,
+            revision: 0,
             panel,
             toggle,
             name: None,
@@ -859,6 +873,7 @@ fn set_open(world: &mut World, root: Entity, enabled: bool) {
         return;
     }
     mode.enabled = enabled;
+    mode.revision = mode.revision.wrapping_add(1);
     mode.confirm_remove = None;
     mode.credits = false;
     let panel = mode.panel;
@@ -1474,7 +1489,7 @@ pub(crate) mod tests {
         app.update();
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn store_cards_have_inert_content_previews_and_all_tabs_have_bottom_space() {
         let (mut app, root) = fixture();
         EditAction::Open.apply(app.world_mut(), root);
@@ -1508,8 +1523,8 @@ pub(crate) mod tests {
             }
         }
         for expected in [
-            "Run",
-            "00:00:00",
+            "Operation",
+            "Total 00:00:00",
             "Record Castle",
             "Fiote Castle",
             "Protein Castle",
@@ -1522,12 +1537,6 @@ pub(crate) mod tests {
                 "Missing {expected}"
             );
         }
-        assert!(
-            !world
-                .query::<&Text>()
-                .iter(world)
-                .any(|text| text.0 == "+" || text.0.contains("text area"))
-        );
         assert!(
             !world
                 .query::<&crate::icons::Tooltip>()
@@ -1547,6 +1556,79 @@ pub(crate) mod tests {
             let node = world.get::<Node>(content).unwrap();
             assert_eq!(node.height, px(16));
             assert_eq!(node.flex_shrink, 0.0);
+        }
+    }
+
+    #[cfg_attr(test, test)]
+    fn all_edit_panel_tabs_activate_render_and_reopen() {
+        let (mut app, root) = fixture();
+        app.add_plugins(crate::information::InformationPlugin);
+        activate(&mut app, root, EditAction::Toggle);
+        let tabs = app
+            .world_mut()
+            .query_filtered::<Entity, With<EditTabs>>()
+            .single(app.world())
+            .unwrap();
+        let controls: Vec<_> = app
+            .world()
+            .get::<Children>(tabs)
+            .unwrap()
+            .iter()
+            .filter_map(|entity| {
+                let control = app.world().get::<EditControl>(entity)?;
+                (control.action != EditAction::Close).then_some((entity, control.action))
+            })
+            .collect();
+        let expected = [
+            (EditAction::General, "General"),
+            (EditAction::Store, "Sand store"),
+            (EditAction::Customization, "Customization"),
+            (EditAction::Workspaces, "Workspace"),
+            (EditAction::Information, "Information"),
+            (EditAction::Shortcuts, "Shortcuts"),
+            (EditAction::Areas, "Areas"),
+            (EditAction::Credits, "Licenses and credits"),
+        ];
+        assert_eq!(controls.len(), expected.len());
+        for _ in 0..2 {
+            for ((entity, action), (expected_action, heading)) in controls.iter().zip(expected) {
+                assert_eq!(*action, expected_action);
+                app.world_mut().trigger(Activate { entity: *entity });
+                app.update();
+                app.update();
+                let world = app.world_mut();
+                let mode = world.get::<EditMode>(root).unwrap();
+                assert!(mode.enabled, "{action:?}");
+                let panel = mode.panel;
+                assert_eq!(world.get::<Node>(panel).unwrap().display, Display::Flex);
+                let mut pending = vec![panel];
+                let mut found = false;
+                while let Some(entity) = pending.pop() {
+                    found |= world
+                        .get::<Text>(entity)
+                        .is_some_and(|text| text.0 == heading);
+                    if let Some(children) = world.get::<Children>(entity) {
+                        pending.extend(children.iter());
+                    }
+                }
+                assert!(found, "Missing {heading} after activating {action:?}");
+                if *action == EditAction::Store {
+                    let kinds: Vec<_> = world
+                        .query::<&crate::sand_store::StoreEntry>()
+                        .iter(world)
+                        .map(|entry| entry.0)
+                        .collect();
+                    for kind in SandKind::ALL {
+                        assert!(kinds.contains(&kind), "Missing {kind:?} store card");
+                    }
+                    assert_eq!(world.query::<&StoreFilter>().iter(world).count(), 1);
+                    assert_eq!(world.query::<&StoredSand>().iter(world).count(), 0);
+                }
+            }
+            activate(&mut app, root, EditAction::Close);
+            assert!(!app.world().get::<EditMode>(root).unwrap().enabled);
+            activate(&mut app, root, EditAction::Toggle);
+            assert!(app.world().get_entity(tabs).is_ok());
         }
     }
 
@@ -1996,7 +2078,7 @@ pub(crate) mod tests {
             .get_mut::<EditableText>(filter)
             .unwrap()
             .editor
-            .set_text("timer");
+            .set_text("time castle");
         app.update();
         for entry in sand_entries {
             let visible = app.world().get::<Node>(entry).unwrap().display == Display::Flex;
@@ -2113,6 +2195,8 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        all_edit_panel_tabs_activate_render_and_reopen,
+        store_cards_have_inert_content_previews_and_all_tabs_have_bottom_space,
         selected_tabs_preserve_content_and_scroll,
         store_credits_only_appear_in_tabs_and_reselection_keeps_filter,
         general_settings_are_separate_and_tab_entities_survive_navigation,

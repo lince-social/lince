@@ -26,7 +26,7 @@ pub(super) fn samples(
     let count = if end == from {
         1
     } else {
-        (((end - from) as f64 / settings.aperture_ms as f64 * 128.0).ceil() as usize)
+        (((end - from) as f64 / settings.aperture_ms as f64 * 512.0).ceil() as usize)
             .clamp(2, budget.max(2))
     };
     (0..count)
@@ -41,13 +41,13 @@ pub(super) fn samples(
 pub(super) fn occurrence_points(
     settings: &Settings,
     occurrence: &model::Occurrence,
-    lanes: usize,
+    width: f32,
     now: i64,
     size: Vec2,
     unwind: f32,
 ) -> Vec<Vec3> {
-    let mut points = samples(settings, &occurrence.time, now, size, unwind, 32);
-    let offset = model::lane_offset(occurrence.lane, lanes, size.min_element() * 0.4);
+    let mut points = samples(settings, &occurrence.time, now, size, unwind, 512);
+    let radius = size.min_element() * 0.4;
     let samples = points.len().saturating_sub(1).max(1) as f64;
     for (index, point) in points.iter_mut().enumerate() {
         let at = occurrence.time.from_ms
@@ -55,9 +55,57 @@ pub(super) fn occurrence_points(
                 - occurrence.time.from_ms) as f64
                 * index as f64
                 / samples) as i64;
+        let offset = occurrence.offset_at(at, settings.aperture_ms, radius, width);
         *point += Vec3::from_array(settings.transverse(at, now, unwind)) * offset;
     }
     points
+}
+
+fn summary_lines(title: &str, font: f32, width: f32) -> Vec<String> {
+    let face = ttf_parser::Face::parse(
+        include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf"),
+        0,
+    )
+    .ok();
+    let advance = |ch| {
+        face.as_ref()
+            .and_then(|face| {
+                face.glyph_index(ch)
+                    .and_then(|glyph| face.glyph_hor_advance(glyph))
+            })
+            .map_or(font, |advance| {
+                f32::from(advance) / f32::from(face.as_ref().unwrap().units_per_em()) * font
+            })
+    };
+    let measure = |text: &str| text.chars().map(advance).sum::<f32>();
+    let mut lines = vec![String::new()];
+    for word in title.split_whitespace() {
+        let current = lines.last_mut().unwrap();
+        if !current.is_empty() && measure(current) + advance(' ') + measure(word) > width {
+            lines.push(String::new());
+        }
+        let current = lines.last_mut().unwrap();
+        if !current.is_empty() {
+            current.push(' ');
+        }
+        for ch in word.chars() {
+            if measure(lines.last().unwrap()) + advance(ch) > width
+                && !lines.last().unwrap().is_empty()
+            {
+                lines.push(String::new());
+            }
+            lines.last_mut().unwrap().push(ch);
+        }
+    }
+    if lines.len() > 2 {
+        lines.truncate(2);
+        let last = lines.last_mut().unwrap();
+        while !last.is_empty() && measure(last) + advance('…') > width {
+            last.pop();
+        }
+        last.push('…');
+    }
+    lines
 }
 
 fn svg(
@@ -67,13 +115,13 @@ fn svg(
     size: Vec2,
     density: f32,
     palette: &palette::Palette,
+    geometry: bool,
 ) -> String {
     let face = palette::css(palette.face);
     let ink = palette::css(palette.ink);
     let muted = palette::css(palette.muted);
     let track = palette::css(palette.track);
     let present = palette::css(palette.present);
-    let border = palette::css(palette.border);
     let duration = (settings.aperture_ms as f64
         + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(view.unwind))
         as i64;
@@ -103,12 +151,8 @@ fn svg(
     let radius = size.min_element() * 0.4;
     if view.unwind < 0.95 {
         svg.push_str(&format!(
-            "<circle cx='0' cy='0' r='{}' fill='{face}' fill-opacity='{}' stroke='{border}' stroke-width='{}'/><circle cx='0' cy='0' r='{}' stroke='{track}' stroke-width='0.5' stroke-opacity='{}'/>",
-            radius + 30.0,
+            "<circle cx='0' cy='0' r='{radius}' fill='{face}' fill-opacity='{}'/>",
             0.96 * (1.0 - view.unwind),
-            palette.border_width,
-            radius - 26.0,
-            1.0 - view.unwind
         ));
     }
     let base = samples(
@@ -123,7 +167,7 @@ fn svg(
         2048,
     );
     svg.push_str(&format!(
-        "<path d='{}' fill='none' stroke='{track}' stroke-width='6' stroke-linecap='round'/>",
+        "<path d='{}' fill='none' stroke='{track}' stroke-width='1' stroke-linecap='round'/>",
         path(&base)
     ));
     let pixels = if view.unwind > 0.9 {
@@ -134,14 +178,26 @@ fn svg(
     let interval = model::tick_interval(duration, pixels, 12.0)
         .max(model::tick_interval(duration, 128.0, 1.0));
     let label_interval = model::tick_interval(duration, pixels, 85.0).max(interval);
-    let mut at = now.div_euclid(interval) * interval + interval;
-    let mut count = 0;
-    while at < now + duration && count < 128 {
+    let ticks = if view.unwind < 0.001 {
+        settings.rim_ticks(now)
+    } else {
+        ((now.div_euclid(interval) * interval + interval)..now + duration)
+            .step_by(interval as usize)
+            .take(128)
+            .map(|at_ms| model::RimTick {
+                at_ms,
+                major: at_ms.rem_euclid(label_interval) == 0,
+                label: settings.tick_label(at_ms, label_interval),
+            })
+            .collect()
+    };
+    for tick in ticks {
+        let at = tick.at_ms;
         let point = Vec3::from_array(settings.position(at, now, size.to_array(), view.unwind));
         let cross = Vec3::from_array(settings.transverse(at, now, view.unwind));
-        let major = at.rem_euclid(label_interval) == 0;
-        let start = point + cross * 7.0;
-        let end = point + cross * if major { 14.0 } else { 10.0 };
+        let major = tick.major;
+        let start = point - cross * if major { 11.0 } else { 5.0 };
+        let end = point;
         svg.push_str(&format!(
             "<path d='M {} {} L {} {}' stroke='{}' stroke-width='0.8'/>",
             start.x,
@@ -151,27 +207,21 @@ fn svg(
             if major { &muted } else { &track }
         ));
         if major {
-            let label = settings.tick_label(at, label_interval);
-            let label_point = point + cross * 26.0;
+            let label = tick.label;
+            let label_point = point - cross * 23.0;
             svg.push_str(&format!("<text x='{}' y='{}' dominant-baseline='central' text-anchor='middle' fill='{muted}' font-size='10' font-family='Lato'>{label}</text>", label_point.x, label_point.z));
         }
-        at += interval;
-        count += 1;
     }
     let occurrences = model::occurrences(&view.entries, now, now + duration, &settings.timezone);
-    let lanes = occurrences
-        .iter()
-        .map(|entry| entry.lane + 1)
-        .max()
-        .unwrap_or(1);
-    for occurrence in occurrences {
+    for occurrence in occurrences.into_iter().filter(|_| geometry) {
         let entry = &view.entries[occurrence.index];
-        let points = occurrence_points(settings, &occurrence, lanes, now, size, view.unwind);
+        let points =
+            occurrence_points(settings, &occurrence, palette.width, now, size, view.unwind);
         let color = palette::css(palette.event(occurrence.lane, view.selected.contains(&entry.id)));
         if occurrence.time.until_ms.is_some() {
             svg.push_str(&format!(
                 "<path d='{}' fill='none' stroke='{color}' stroke-width='{}' stroke-linecap='round'/>",
-                path(&points), palette.width.min((radius * 0.22 / lanes.max(1) as f32).max(0.8))
+                path(&points), palette.width
             ));
         } else if let Some(point) = points.first() {
             let cross =
@@ -190,15 +240,29 @@ fn svg(
     }
     let now_point = Vec3::from_array(settings.position(now, now, size.to_array(), view.unwind));
     let direction = Vec3::from_array(settings.transverse(now, now, view.unwind));
-    let inner = now_point - direction * 18.0;
-    let end = now_point + direction * 16.0;
-    svg.push_str(&format!("<path d='M {} {} L {} {}' stroke='{present}' stroke-width='1.6'/><circle cx='{}' cy='{}' r='3.5' fill='{present}'/>", inner.x, inner.z, end.x, end.z, now_point.x, now_point.z));
+    let inner = now_point
+        - direction
+            * if view.unwind < 0.001 {
+                radius * 0.42
+            } else {
+                18.0
+            };
+    let end = now_point - direction * if view.unwind < 0.001 { 4.0 } else { -16.0 };
+    if geometry {
+        svg.push_str(&format!("<path d='M {} {} L {} {}' stroke='{present}' stroke-width='1.2' stroke-linecap='round'/>", inner.x, inner.z, end.x, end.z));
+        if view.unwind < 0.001 {
+            svg.push_str(&format!(
+                "<circle cx='{}' cy='{}' r='2' fill='{present}'/>",
+                end.x, end.z
+            ));
+        }
+    }
     if view.unwind < 0.5 {
         let current = chrono::DateTime::from_timestamp_millis(now)
             .zip(settings.timezone.parse::<nucleus::schedule::Tz>().ok())
             .map(|(time, zone)| {
                 time.with_timezone(&zone)
-                    .format(if settings.aperture_ms < 60_000 {
+                    .format(if settings.aperture_ms <= 60_000 {
                         "%H:%M:%S"
                     } else {
                         "%H:%M"
@@ -207,7 +271,7 @@ fn svg(
             })
             .unwrap_or_else(|| "--:--".into());
         let aperture = settings.aperture_label();
-        let precision = if settings.aperture_ms < 60_000 {
+        let precision = if settings.aperture_ms <= 60_000 {
             1000
         } else {
             60_000
@@ -218,24 +282,82 @@ fn svg(
             settings.tick_label(now + settings.aperture_ms, precision)
         );
         let scale = (palette.font / 16.0).clamp(0.8, 1.25);
-        svg.push_str(&format!("<g opacity='{}' font-family='Lato' text-anchor='middle'><text x='0' y='-128' fill='{muted}' font-size='9' letter-spacing='2'>NOW</text><text x='0' y='-101' fill='{ink}' font-size='{}'>{current}</text><g transform='translate(-16 -50)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><text x='0' y='7' fill='{ink}' font-size='13' letter-spacing='3'>memento</text><text x='0' y='29' fill='{ink}' font-size='13' letter-spacing='5'>mori</text><text x='0' y='100' fill='{ink}' font-size='{}'>{aperture}</text><text x='0' y='119' fill='{muted}' font-size='11'>{window}</text></g>", 1.0 - view.unwind * 2.0, 26.0 * scale, 13.0 * scale));
-        if !view.forecast {
-            svg.push_str(&format!("<text x='0' y='138' text-anchor='middle' fill='{muted}' font-size='9' font-family='Lato'>Scheduled work · projection unavailable</text>"));
+        svg.push_str(&format!("<g opacity='{}' font-family='Lato' text-anchor='middle'><text x='0' y='{}' fill='{ink}' font-size='{}'>{current}</text><text x='0' y='{}' fill='{ink}' font-size='12'>{aperture}</text><text x='0' y='{}' fill='{muted}' font-size='10'>{window}</text><g transform='translate(-13 {}) scale(0.8125)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><text x='0' y='{}' fill='{ink}' font-size='11' letter-spacing='3'>memento</text><text x='0' y='{}' fill='{ink}' font-size='11' letter-spacing='4'>mori</text>", 1.0 - view.unwind * 2.0, -radius * 0.63, 26.0 * scale, -radius * 0.50, -radius * 0.40, radius * 0.44, radius * 0.68, radius * 0.79));
+        for (row, (index, remaining)) in
+            model::summaries(&view.entries, now, now + settings.aperture_ms)
+                .into_iter()
+                .enumerate()
+        {
+            let entry = &view.entries[index];
+            let y = -radius * 0.25 + row as f32 * radius * 0.32;
+            let title = entry
+                .head
+                .lines()
+                .find(|line| !line.trim().is_empty())
+                .unwrap_or("Untitled event");
+            let font = 12.5 * scale.min(1.12);
+            let lines = summary_lines(title, font, radius * 1.12);
+            for (index, line) in lines.iter().enumerate() {
+                let line = line
+                    .replace('&', "&amp;")
+                    .replace('<', "&lt;")
+                    .replace('>', "&gt;");
+                svg.push_str(&format!(
+                    "<text x='0' y='{}' fill='{ink}' font-size='{font}'>{line}</text>",
+                    y + index as f32 * (font + 1.0)
+                ));
+            }
+            let timing = entry.time_label(settings, now);
+            let amount = model::countdown(remaining);
+            let baseline = y + lines.len() as f32 * (font + 1.0);
+            svg.push_str(&format!("<text x='0' y='{baseline}' fill='{muted}' font-size='11'>{timing}</text><text x='0' y='{}' fill='{ink}' font-size='12'>{amount}</text>", baseline + 14.0));
         }
+        svg.push_str("</g>");
     }
     svg.push_str("</svg>");
     svg
+}
+
+fn fonts(cjk: bool) -> std::sync::Arc<resvg::usvg::fontdb::Database> {
+    static BASE: std::sync::OnceLock<std::sync::Arc<resvg::usvg::fontdb::Database>> =
+        std::sync::OnceLock::new();
+    static CJK: std::sync::OnceLock<std::sync::Arc<resvg::usvg::fontdb::Database>> =
+        std::sync::OnceLock::new();
+    let base = BASE.get_or_init(|| {
+        let mut fonts = resvg::usvg::fontdb::Database::new();
+        for data in [
+            include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
+            include_bytes!("../../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf")
+                .as_slice(),
+            include_bytes!(
+                "../../../../institute/assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf"
+            )
+            .as_slice(),
+        ] {
+            fonts.load_font_data(data.to_vec());
+        }
+        std::sync::Arc::new(fonts)
+    });
+    if cjk {
+        CJK.get_or_init(|| {
+            let mut fonts = base.as_ref().clone();
+            fonts.load_font_data(include_bytes!("../../../../institute/assets/fonts/NotoSansMonoCJK/NotoSansMonoCJKjp-Regular.otf").to_vec());
+            std::sync::Arc::new(fonts)
+        }).clone()
+    } else {
+        base.clone()
+    }
 }
 
 fn rasterize(svg: &str, size: Vec2, density: f32) -> Option<Image> {
     let mut options = resvg::usvg::Options::default();
     options.image_href_resolver.resolve_string = Box::new(|_, _| None);
     options.image_href_resolver.resolve_data = Box::new(|_, _, _| None);
-    options.fontdb_mut().load_font_data(
-        include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
-    );
+    options.fontdb = fonts(svg.chars().any(|ch| {
+        (0x2e80..=0x9fff).contains(&(ch as u32)) || (0xac00..=0xd7ff).contains(&(ch as u32))
+    }));
     let tree = resvg::usvg::Tree::from_str(svg, &options).ok()?;
-    let density = density.clamp(0.5, 2.0).min(1600.0 / size.max_element());
+    let density = density.max(0.01).min(4096.0 / size.max_element());
     let width = (size.x * density).ceil().max(1.0) as u32;
     let height = (size.y * density).ceil().max(1.0) as u32;
     let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)?;
@@ -277,6 +399,7 @@ pub(super) fn preview(world: &World, owner: Entity) -> Option<(Entity, Image)> {
         size,
         1.0,
         &palette,
+        true,
     );
     Some((view.viewport, rasterize(&svg, size, 1.0)?))
 }
@@ -288,17 +411,38 @@ pub(super) fn select_at(world: &mut World, owner: Entity, point: Vec2) {
     let settings = &world.get::<TimeSettings>(owner).unwrap().0;
     let now = chrono::Utc::now().timestamp_millis();
     let size = size(world, view.viewport);
+    if let Some(motion) = world.get::<motion::Motion>(owner) {
+        let width = view.palette.as_ref().map_or(4.0, |palette| palette.width);
+        let selected = motion
+            .bands
+            .values()
+            .filter(|band| !band.retiring)
+            .filter_map(|band| {
+                let points = motion::points(band, settings, now, size, view.unwind, width);
+                let distance = if points.len() == 1 {
+                    point.distance(points[0].xz())
+                } else {
+                    points
+                        .windows(2)
+                        .map(|pair| segment_distance(point, pair[0].xz(), pair[1].xz()))
+                        .fold(f32::INFINITY, f32::min)
+                };
+                (distance <= 12.0).then_some((distance, band.entry.id.clone()))
+            })
+            .min_by(|a, b| a.0.total_cmp(&b.0))
+            .map(|(_, id)| id);
+        if let Some(id) = selected {
+            ui::Select(vec![id]).apply(world, owner);
+        }
+        return;
+    }
     let duration = (settings.aperture_ms as f64
         + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(view.unwind))
         as i64;
     let occurrences = model::occurrences(&view.entries, now, now + duration, &settings.timezone);
-    let lanes = occurrences
-        .iter()
-        .map(|entry| entry.lane + 1)
-        .max()
-        .unwrap_or(1);
+    let width = view.palette.as_ref().map_or(4.0, |palette| palette.width);
     let distance = |occurrence: &model::Occurrence| -> f32 {
-        let points = occurrence_points(settings, occurrence, lanes, now, size, view.unwind);
+        let points = occurrence_points(settings, occurrence, width, now, size, view.unwind);
         if points.len() == 1 {
             point.distance(points[0].xz())
         } else {
@@ -422,7 +566,7 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
         let stamp = (
             settings.clone(),
             revision,
-            now / 1000,
+            now / (settings.aperture_ms / 12).clamp(16, 1000),
             [
                 (size.x * density).round() as u32,
                 (size.y * density).round() as u32,
@@ -431,12 +575,31 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
             spatial,
         );
         let changed = world.get::<View>(owner).unwrap().rendered.as_ref() != Some(&stamp);
+        let duration = if spatial {
+            settings.horizon_ms
+        } else {
+            (settings.aperture_ms as f64
+                + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
+                as i64
+        };
+        let moving = motion::update(world, owner, now, duration, changed);
+        animated |= moving;
         if changed {
             if spatial {
                 world.entity_mut(viewport).remove::<ImageNode>();
             } else {
                 let view = world.get::<View>(owner).unwrap();
-                let svg = svg(&settings, view, now, size, density, &palette);
+                let svg = svg(
+                    &settings,
+                    view,
+                    now,
+                    size,
+                    density,
+                    &palette,
+                    world
+                        .get::<crate::topology::presentation::Surface>(owner)
+                        .is_none(),
+                );
                 if let Some(image) = rasterize(&svg, size, density) {
                     world.init_resource::<Assets<Image>>();
                     let previous = world.get::<View>(owner).unwrap().image.clone();
@@ -454,16 +617,23 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
                     world.get_mut::<View>(owner).unwrap().image = Some(handle);
                 }
             }
-            scene::update(world, owner, &settings, now, size, spatial);
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.rendered = Some(stamp);
             view.detail_revision = u64::MAX;
         }
         let round = !spatial && settings.mode == Mode::Coiled && unwind < 0.001;
         let labels = annotations::update(world, owner, now, size, round, changed, &palette);
-        if changed {
+        let following = world
+            .get::<motion::Motion>(owner)
+            .is_some_and(|motion| motion.active);
+        animated |= following;
+        if changed || moving || following {
+            scene::update(world, owner, &settings, now, size, spatial);
             scene::annotations(world, owner, &labels, &palette);
         }
+        let hand = round && !chrome::controls_open(world, owner);
+        scene::hand(world, owner, &settings, now, size, hand, &palette);
+        animated |= hand;
         scene::placement(world, owner, viewport, spatial);
     }
     let delay = if animated { 16 } else { 1000 };
@@ -483,6 +653,86 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn raster_density_tracks_zoom_and_transparent_edges_keep_their_color() {
+        let source = "<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><circle cx='210' cy='210' r='100.3' fill='white'/></svg>";
+        let image = rasterize(source, Vec2::splat(420.0), 4.0).unwrap();
+        assert_eq!(image.size(), UVec2::splat(1680));
+        let pixels = image.data.as_ref().unwrap();
+        assert!(
+            pixels
+                .chunks_exact(4)
+                .any(|pixel| pixel[3] > 0 && pixel[3] < 255)
+        );
+        assert!(
+            pixels
+                .chunks_exact(4)
+                .filter(|pixel| pixel[3] > 0)
+                .all(|pixel| pixel[..3] == [255, 255, 255])
+        );
+        let maximum = rasterize(source, Vec2::splat(420.0), 20.0).unwrap();
+        assert!(maximum.size().max_element() <= 4096);
+    }
+
+    #[test]
+    fn round_face_has_one_rim_and_keeps_diagnostics_inside_configuration() {
+        let mut world = World::new();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let owner = world
+            .spawn((Node::default(), TimeSettings(Settings::default())))
+            .id();
+        populate(&mut world, owner);
+        let palette = palette::Palette::resolve(&world, owner);
+        let svg = svg(
+            &Settings::default(),
+            world.get::<View>(owner).unwrap(),
+            1_800_000,
+            Vec2::splat(420.0),
+            1.0,
+            &palette,
+            false,
+        );
+        assert_eq!(svg.matches("<circle cx='0' cy='0'").count(), 1);
+        assert_eq!(svg.matches("dominant-baseline='central'").count(), 12);
+        assert!(!svg.contains("simulation"));
+        assert!(!svg.contains("Scheduled work"));
+        assert!(svg.contains("memento"));
+        assert!(svg.contains("mori"));
+    }
+
+    #[test]
+    fn interior_titles_wrap_and_limit_long_unicode_without_losing_card_data() {
+        let lines = summary_lines(
+            "Prepare a thoughtful response to the design review",
+            14.0,
+            100.0,
+        );
+        assert_eq!(lines.len(), 2);
+        assert!(lines[1].ends_with('…'));
+        let unicode = summary_lines("日程 🕰 café & work", 14.0, 80.0);
+        assert!(unicode.len() <= 2);
+        assert!(!unicode[0].is_empty());
+    }
+
+    #[test]
+    fn clock_text_fallbacks_cover_arrows_symbols_and_cjk_and_reuse_font_data() {
+        let database = fonts(true);
+        assert!(std::sync::Arc::ptr_eq(&database, &fonts(true)));
+        for symbol in ['→', '✓', '日'] {
+            assert!(database.faces().any(|font| {
+                database
+                    .with_face_data(font.id, |bytes, index| {
+                        ttf_parser::Face::parse(bytes, index)
+                            .ok()
+                            .and_then(|face| face.glyph_index(symbol))
+                            .is_some()
+                    })
+                    .unwrap_or(false)
+            }));
+        }
+    }
 
     #[test]
     fn equal_time_points_select_their_own_visible_lane() {
@@ -518,7 +768,7 @@ mod tests {
         world.get_mut::<View>(owner).unwrap().entries = entries.clone();
         let size = size(&world, world.get::<View>(owner).unwrap().viewport);
         for occurrence in model::occurrences(&entries, now, now + settings.aperture_ms, "UTC") {
-            let point = occurrence_points(&settings, &occurrence, 4, now, size, 0.0)[0];
+            let point = occurrence_points(&settings, &occurrence, 4.0, now, size, 0.0)[0];
             select_at(&mut world, owner, point.xz());
             assert_eq!(
                 world.get::<View>(owner).unwrap().selected,

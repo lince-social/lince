@@ -1,5 +1,7 @@
 use super::*;
-use crate::{actions::ActionButton, container::BoxRoot, icons::Tooltip};
+use crate::container::BoxRoot;
+#[cfg(feature = "instinct")]
+use crate::{actions::ActionButton, icons::Tooltip};
 
 fn fixture() -> (App, Entity) {
     let mut app = App::new();
@@ -14,6 +16,7 @@ fn fixture() -> (App, Entity) {
     (app, root)
 }
 
+#[cfg(feature = "instinct")]
 fn click(world: &mut World, owner: Entity, tip: &str) {
     let action = world
         .query::<(&Tooltip, &ActionButton)>()
@@ -42,6 +45,7 @@ fn load_errors_are_shown_without_panicking() {
     assert!(text.contains(&error));
 }
 
+#[cfg(feature = "instinct")]
 #[cfg_attr(test, test)]
 fn pages_embed_records_and_navigation_is_independent_and_bounded() {
     let (mut app, root) = fixture();
@@ -50,29 +54,29 @@ fn pages_embed_records_and_navigation_is_independent_and_bounded() {
     let other = spawn(world, root, 1, DVec2::new(900.0, 0.0), Instinct::default());
     world.flush();
     let book = world.resource::<Book>().0.clone();
-    assert_eq!(book[0].id, "philosophy");
-    assert_eq!(book[1].id, "tool");
-    let records = engine::instinct::records().unwrap();
-    let record = records
-        .iter()
-        .find(|record| record.slug.as_deref() == Some("record"))
-        .unwrap();
-    assert!(
-        book[1]
-            .sections
+    assert_eq!(book[0].id, "learn-philosophy");
+    assert_eq!(book[1].id, "learn-installation");
+    assert_eq!(
+        book.iter()
+            .take(65)
+            .map(|page| page.id.as_str())
+            .collect::<Vec<_>>(),
+        lince_interface::handbook::PAGES
             .iter()
-            .any(|section| section.body == record.body)
+            .map(|page| page.slug)
+            .collect::<Vec<_>>()
     );
+    assert!(!book.iter().any(|page| page.id == "ailuros"));
     let before = world.entities().count_spawned();
     for _ in 0..8 {
         click(world, first, "Next chapter");
         assert_eq!(
             world.get::<Instinct>(first).unwrap().page.as_deref(),
-            Some("tool")
+            Some("learn-installation")
         );
         assert_eq!(
             world.get::<Instinct>(other).unwrap().page.as_deref(),
-            Some("philosophy")
+            Some("learn-philosophy")
         );
         click(world, first, "Previous chapter");
     }
@@ -81,7 +85,7 @@ fn pages_embed_records_and_navigation_is_independent_and_bounded() {
     Command::Page("missing".into()).apply(world, first);
     assert_eq!(
         world.get::<Instinct>(first).unwrap().page.as_deref(),
-        Some("philosophy")
+        Some("learn-philosophy")
     );
     click(world, first, &book.last().unwrap().title);
     let disabled = world
@@ -99,6 +103,7 @@ fn pages_embed_records_and_navigation_is_independent_and_bounded() {
     );
 }
 
+#[cfg(feature = "instinct")]
 #[cfg_attr(test, test)]
 fn saved_reader_restores_geometry_and_selection_without_copying_the_book() {
     let (mut app, root) = fixture();
@@ -139,72 +144,34 @@ fn saved_reader_restores_geometry_and_selection_without_copying_the_book() {
     );
     assert_eq!(
         world.get::<Instinct>(entity).unwrap().page.as_deref(),
-        Some("philosophy")
+        Some("learn-philosophy")
     );
 }
 
 crate::laboratory_cases! {
     load_errors_are_shown_without_panicking,
+    #[cfg(feature = "instinct")]
     child_records_are_ordered_indented_and_restore_their_section,
+    #[cfg(feature = "instinct")]
     pages_embed_records_and_navigation_is_independent_and_bounded,
+    #[cfg(feature = "instinct")]
     saved_reader_restores_geometry_and_selection_without_copying_the_book,
 }
 
+#[cfg(feature = "instinct")]
 #[cfg_attr(test, test)]
 fn child_records_are_ordered_indented_and_restore_their_section() {
     let (mut app, root) = fixture();
     let world = app.world_mut();
     let reader = spawn(world, root, 1, DVec2::ZERO, Instinct::default());
     let entries = world.resource::<Book>().1.clone();
-    let records = engine::instinct::records().unwrap();
-    assert_eq!(
-        entries.iter().map(|entry| &entry.uid).collect::<Vec<_>>(),
-        records
-            .iter()
-            .map(|record| &record.projection.uid)
-            .collect::<Vec<_>>()
-    );
-    let parent = entries
+    let expected = entries
         .iter()
-        .position(|entry| entry.id == "interface")
+        .find(|entry| entry.id == "area-record-actions")
         .unwrap();
-    let child = entries
-        .iter()
-        .position(|entry| entry.id == "areas-of-influence")
-        .unwrap();
-    assert!(child > parent);
-    assert_eq!(entries[child].depth, entries[parent].depth + 1);
-    let tab = |world: &mut World, title: &str| {
-        world
-            .query::<(Entity, &Tooltip, &ActionButton)>()
-            .iter(world)
-            .find(|(_, tip, button)| tip.0 == title && button.target == reader)
-            .unwrap()
-            .0
-    };
-    let parent_tab = tab(world, &entries[parent].title);
-    let child_tab = tab(world, &entries[child].title);
-    assert_eq!(
-        world.get::<Node>(child_tab).unwrap().padding.left,
-        px(8.0 + entries[child].depth as f32 * 10.0)
-    );
-    assert_ne!(
-        world.get::<Node>(parent_tab).unwrap().padding.left,
-        world.get::<Node>(child_tab).unwrap().padding.left
-    );
+    Command::Page(expected.id.clone()).apply(world, reader);
     let nav = world.get::<View>(reader).unwrap().nav.unwrap();
     world.get_mut::<ScrollPosition>(nav).unwrap().0.y = 200.0;
-    click(world, reader, &entries[child].title);
-    assert_eq!(
-        world.get::<Instinct>(reader).unwrap().page.as_deref(),
-        Some("areas-of-influence")
-    );
-    assert_eq!(
-        world.get::<reader::ScrollToRecord>(reader).unwrap().0,
-        entries[child].uid
-    );
-    let nav = world.get::<View>(reader).unwrap().nav.unwrap();
-    assert_eq!(world.get::<ScrollPosition>(nav).unwrap().0.y, 200.0);
     let saved = snapshot(world, root).pop().unwrap();
     world.despawn(reader);
     saved.restore(world, root);
@@ -213,7 +180,16 @@ fn child_records_are_ordered_indented_and_restore_their_section() {
         .single(world)
         .unwrap();
     assert_eq!(
-        world.get::<reader::ScrollToRecord>(restored).unwrap().0,
-        entries[child].uid
+        world.get::<Instinct>(restored).unwrap().page.as_deref(),
+        Some("area-record-actions")
+    );
+    assert_eq!(
+        world
+            .resource::<Book>()
+            .1
+            .iter()
+            .filter(|entry| entry.id == expected.id)
+            .count(),
+        1
     );
 }

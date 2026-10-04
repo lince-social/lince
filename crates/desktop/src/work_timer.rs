@@ -276,7 +276,15 @@ fn change(
 }
 
 #[derive(Clone)]
-struct Toggle;
+pub(crate) struct Toggle;
+
+pub(crate) fn running(world: &World, entity: Entity) -> Option<bool> {
+    world.get::<WorkTimer>(entity).map(|timer| timer.logs.iter().any(|entry| entry.end.is_none()))
+}
+
+pub(crate) fn stopped_log(world: &World, entity: Entity) -> bool {
+    world.get::<WorkTimer>(entity).is_some_and(|timer| timer.logs.iter().any(|entry| entry.end.is_some()))
+}
 impl Action for Toggle {
     fn apply(&self, world: &mut World, entity: Entity) {
         let Some(timer) = world.get::<WorkTimer>(entity) else {

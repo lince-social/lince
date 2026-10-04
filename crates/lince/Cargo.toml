@@ -11,6 +11,7 @@ keywords = ["registry", "automation", "self-hosted"]
 
 [features]
 default = ["ui"]
+instinct = ["cell/instinct", "lince-desktop?/instinct"]
 # The native window. Off for a headless server build:
 # `cargo build -p lince --no-default-features`.
 ui = ["dep:lince-desktop", "lince-desktop/native-media"]

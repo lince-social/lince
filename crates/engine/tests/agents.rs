@@ -153,10 +153,11 @@ async fn an_agent_with_no_name_is_refused() {
 }
 
 #[tokio::test]
+#[cfg(feature = "instinct")]
 async fn importing_instinct_puts_the_documentation_in_the_store() {
     let e = cell().await;
-    let outcome = e.act(Action::ImportInstinct, None).await.unwrap();
-    assert!(outcome.created.is_some(), "something was made");
+    let outcome = e.act(Action::ImportInstinct { fingerprint: e.preview_instinct(None).await.unwrap().fingerprint }, None).await.unwrap();
+    assert!(outcome.data.unwrap()["created"].as_u64().unwrap() > 0);
 
     let bundle = engine::instinct::records().unwrap();
     for record in &bundle {
@@ -218,9 +219,10 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
 }
 
 #[tokio::test]
+#[cfg(feature = "instinct")]
 async fn a_second_import_leaves_your_edits_alone() {
     let e = cell().await;
-    e.act(Action::ImportInstinct, None).await.unwrap();
+    e.act(Action::ImportInstinct { fingerprint: e.preview_instinct(None).await.unwrap().fingerprint }, None).await.unwrap();
     let uid = engine::instinct::records().unwrap()[0]
         .projection
         .uid
@@ -237,7 +239,7 @@ async fn a_second_import_leaves_your_edits_alone() {
     .await
     .unwrap();
 
-    e.act(Action::ImportInstinct, None).await.unwrap();
+    assert!(e.act(Action::ImportInstinct { fingerprint: e.preview_instinct(None).await.unwrap().fingerprint }, None).await.is_err());
 
     let row = store::records::get(&e.store.pool, &uid)
         .await

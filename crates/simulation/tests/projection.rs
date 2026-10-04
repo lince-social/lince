@@ -3,6 +3,195 @@ use std::sync::{Arc, atomic::Ordering};
 use engine::actions::Action;
 use nucleus::projection::{Context, Status, Window};
 
+async fn clock_task(engine: &engine::Engine, head: &str, work: serde_json::Value) -> String {
+    let uid = engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Plain,
+                head: head.into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    engine
+        .act(
+            Action::SetExtension {
+                target: uid.clone(),
+                namespace: "work".into(),
+                fds: work,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    uid
+}
+
+async fn clock_ready(engine: &Arc<engine::Engine>, context: &Context, now: i64) {
+    engine.request_projection(context.clone()).await.unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(20), async {
+        loop {
+            if let Some(cache) = store::projection::read(&engine.store.pool, context, now)
+                .await
+                .unwrap()
+            {
+                assert!(
+                    matches!(cache.status, Status::Ready { base_ms, .. } if base_ms == now),
+                    "{:?}",
+                    cache.status
+                );
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+}
+
+fn clock_entries(messages: Vec<cell::ServerMessage>) -> Vec<lince_interface::time_castle::Entry> {
+    for message in messages {
+        match message {
+            cell::ServerMessage::Error { message, .. } => panic!("{message}"),
+            cell::ServerMessage::Snapshot { id, rows } if id == "recurrence-a" => {
+                return rows
+                    .into_iter()
+                    .filter(|row| row["kind"] == "schedule-entry")
+                    .map(|row| serde_json::from_value(row).unwrap())
+                    .collect();
+            }
+            _ => {}
+        }
+    }
+    panic!("The real clock subscription did not produce a snapshot");
+}
+
+fn clock_alerts(
+    queue: &mut lince_interface::sound::Queue,
+    entries: &[lince_interface::time_castle::Entry],
+    now: i64,
+) {
+    let settings = lince_interface::sound::Settings {
+        mode: lince_interface::sound::Mode::Title,
+        ..Default::default()
+    };
+    for scope in [0, 1] {
+        queue.refresh(
+            scope,
+            now,
+            entries
+                .iter()
+                .filter_map(|entry| entry.sound_cue(scope, &settings))
+                .collect(),
+        );
+    }
+}
+
+#[test]
+fn real_recurrence_subscription_and_clock_alerts_keep_scheduled_work_first_class() {
+    run(async {
+        let directory = tempfile::tempdir().unwrap();
+        let mut case = simulation::fixtures::daily();
+        let base = case.start_ms;
+        let day = 86_400_000;
+        for invocation in &mut case.cells[0].seed {
+            if let Action::CreateRecurrence { consequences, .. } = &mut invocation.action {
+                *consequences = vec![nucleus::karma::Consequence::AddQuantity {
+                    delta: Some(nucleus::fact::zero_delta()),
+                }];
+            }
+        }
+        let world = simulation::world::World::open(case, &directory.path().join("world"))
+            .await
+            .unwrap();
+        let node = &world.nodes["a"];
+        authorize_projection(node).await;
+        node.execution.scope(async {
+            let engine = node.cell.runtime().engine.clone();
+            let stock = world.captured["stock"].clone();
+            engine.act(Action::SetExtension { target:stock.clone(), namespace:"work".into(), fds:serde_json::json!({"estimate_min":10}) }, None).await.unwrap();
+            let at = |ms| chrono::DateTime::from_timestamp_millis(ms).unwrap().to_rfc3339();
+            let point = clock_task(&engine, "Scheduled point", serde_json::json!({"start":at(base+600_000)})).await;
+            let range = clock_task(&engine, "Scheduled explicit range", serde_json::json!({"start":at(base+660_000),"due":at(base+1_260_000),"estimate_min":999})).await;
+            let deadline = clock_task(&engine, "Scheduled estimated deadline", serde_json::json!({"due":at(base+1_800_000),"estimate_min":5})).await;
+            engine.advance_karma_time(node.execution.now()).await.unwrap();
+            let context = Context { actor:None, window:Window { from_ms:base, until_ms:base+4*day, timezone:"UTC".into() } };
+            let query = protein::schedule::query(context.window.clone(), Vec::new());
+            let mut session = node.cell.runtime().local_session();
+            let initial = clock_entries(session.handle(cell::ClientMessage::Subscribe { id:"recurrence-a".into(), protein:query.clone() }).await);
+            assert!(initial.iter().any(|entry| entry.record_uid == point));
+            session.handle(cell::ClientMessage::Subscribe { id:"recurrence-b".into(), protein:query.clone() }).await;
+            clock_ready(&engine, &context, base).await;
+            let entries = clock_entries(session.refresh().await);
+            let snapshots = engine.projection.metrics.snapshots.load(Ordering::Relaxed);
+            for _ in 0..20 {
+                engine.request_projection(context.clone()).await.unwrap();
+                session.refresh().await;
+            }
+            assert_eq!(engine.projection.metrics.snapshots.load(Ordering::Relaxed), snapshots);
+            assert_eq!(entries.iter().filter(|entry| entry.origin["kind"] == "manual").count(), 3);
+            assert!(entries.iter().any(|entry| entry.record_uid == range && entry.time.as_ref().unwrap().until_ms == Some(base+1_260_000)));
+            assert!(entries.iter().any(|entry| entry.record_uid == deadline && entry.time.as_ref().unwrap().from_ms == base+1_500_000));
+            let recurring:Vec<_> = entries.iter().filter(|entry| entry.record_uid == stock).collect();
+            assert!(recurring.len() >= 3);
+            let first = recurring.iter().find(|entry| entry.time.as_ref().unwrap().from_ms == base+day).unwrap();
+            let first_key = first.cue_key("").unwrap();
+            let future = recurring.iter().find(|entry| entry.time.as_ref().unwrap().from_ms == base+2*day).unwrap();
+            let future_key = future.cue_key("").unwrap();
+            let cause:nucleus::simulation::Cause = serde_json::from_value(future.origin["cause"].clone()).unwrap();
+            let mut alerts = lince_interface::sound::Queue::default();
+            clock_alerts(&mut alerts, &entries, base);
+            assert!(alerts.due(base).is_empty());
+            let heard = alerts.due(base+600_000);
+            assert_eq!(heard.len(), 1);
+            assert_eq!(heard[0].title, "Scheduled point");
+            assert!(!heard[0].projected);
+            let heard = alerts.due(base+day);
+            assert_eq!(heard.len(), 1);
+            assert_eq!(heard[0].key, first_key);
+            assert!(heard[0].projected);
+            node.execution.set_time(base+day+1).unwrap();
+            engine.advance_karma_time(node.execution.now()).await.unwrap();
+            clock_ready(&engine, &context, base+day+1).await;
+            let admitted = clock_entries(session.refresh().await);
+            let current = admitted.iter().find(|entry| entry.cue_key("").as_deref() == Some(&first_key));
+            let applications: Vec<(String, String, String)> = store::sqlx::query_as("SELECT event_id, rule_uid, intended_at FROM karma_rule_application WHERE status = 'applied'").fetch_all(&engine.store.pool).await.unwrap();
+            assert!(current.is_some(), "Admitted recurrence must remain visible throughout its estimated interval: {first_key}; {admitted:?}; {applications:?}");
+            let current = current.unwrap();
+            assert_eq!(current.origin["kind"], "manual");
+            let summary = lince_interface::time_castle::summaries(&admitted, base+day+1, base+4*day);
+            assert_eq!(admitted[summary[0].0].record_uid, stock);
+            assert_eq!(summary[0].1, 599_999);
+            clock_alerts(&mut alerts, &admitted, base+day+1);
+            assert!(alerts.due(base+day+2).is_empty());
+            let nucleus::simulation::Cause::Rule { occurrence, consequence } = cause else { unreachable!() };
+            let link = nucleus::projection::OccurrenceLink { record:nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Record, &stock).unwrap(), occurrence, consequence };
+            let actual = clock_task(&engine, "Materialized recurring work", serde_json::json!({"start":at(base+2*day),"estimate_min":10,"projection_occurrence":link})).await;
+            clock_ready(&engine, &context, base+day+1).await;
+            let materialized = clock_entries(session.refresh().await);
+            let matches:Vec<_> = materialized.iter().filter(|entry| entry.cue_key("").as_deref() == Some(&future_key)).collect();
+            assert_eq!(matches.len(), 1);
+            assert_eq!(matches[0].record_uid, actual);
+            assert_eq!(matches[0].origin["kind"], "manual");
+            clock_alerts(&mut alerts, &materialized, base+day+1);
+            let heard = alerts.due(base+2*day);
+            assert_eq!(heard.len(), 1);
+            assert_eq!(heard[0].key, future_key);
+            assert_eq!(heard[0].title, "Materialized recurring work");
+            assert!(!heard[0].projected);
+            clock_alerts(&mut alerts, &materialized, base+2*day+1);
+            assert!(alerts.due(base+2*day+2).is_empty());
+            engine.store.pool.close().await;
+        }).await;
+    });
+}
+
 #[test]
 fn concurrent_calendars_share_one_window_without_recomputing_each_other() {
     run(async {

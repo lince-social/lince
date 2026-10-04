@@ -1,8 +1,12 @@
 pub mod credits;
+pub mod practice;
+pub mod handbook;
 #[cfg(feature = "images")]
 pub mod images;
 pub mod blob_sync;
 pub mod settings;
+pub mod motion;
+pub mod sound;
 
 #[cfg(feature = "models")]
 pub mod presentation;

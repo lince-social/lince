@@ -1538,7 +1538,7 @@ CREATE TABLE recurrence (
     actor_uid       TEXT,
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL
-, slug TEXT, frequency_uid TEXT REFERENCES frequency(uid), quantity INTEGER NOT NULL DEFAULT 1
+, slug TEXT, quantity INTEGER NOT NULL DEFAULT 1
     CHECK (quantity IN (0, 1)), name TEXT NOT NULL DEFAULT 'Karma rule', bindings_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(bindings_json)));
 
 CREATE TABLE recurrence_revision (
@@ -1558,7 +1558,7 @@ CREATE TABLE recurrence_revision (
     state           TEXT NOT NULL,
     request_id      TEXT NOT NULL,
     actor_uid       TEXT,
-    at              TEXT NOT NULL, slug TEXT, frequency_uid TEXT REFERENCES frequency(uid), quantity INTEGER NOT NULL DEFAULT 1
+    at              TEXT NOT NULL, slug TEXT, quantity INTEGER NOT NULL DEFAULT 1
     CHECK (quantity IN (0, 1)), name TEXT NOT NULL DEFAULT 'Karma rule', bindings_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(bindings_json)),
     UNIQUE(recurrence_uid, revision)
 );
@@ -1571,36 +1571,6 @@ CREATE TABLE recurrence_skip (
     at             TEXT NOT NULL,
     PRIMARY KEY (recurrence_uid, due_at)
 );
-
-CREATE TABLE frequency (
-    uid        TEXT PRIMARY KEY,
-
-    slug       TEXT NOT NULL UNIQUE,
-
-    head       TEXT NOT NULL,
-
-    every_json TEXT NOT NULL CHECK (json_valid(every_json)),
-
-    anchor_at  TEXT NOT NULL,
-    actor_uid  TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-, quantity INTEGER NOT NULL DEFAULT 1
-    CHECK (quantity IN (0, 1)), timezone TEXT NOT NULL DEFAULT 'UTC', next_at TEXT);
-
-CREATE TABLE frequency_revision (
-    uid           TEXT PRIMARY KEY,
-    frequency_uid TEXT NOT NULL REFERENCES frequency(uid),
-
-    kind          TEXT NOT NULL,
-    head          TEXT NOT NULL,
-    every_json    TEXT NOT NULL CHECK (json_valid(every_json)),
-    anchor_at     TEXT NOT NULL,
-    request_id    TEXT NOT NULL,
-    actor_uid     TEXT,
-    at            TEXT NOT NULL
-, quantity INTEGER NOT NULL DEFAULT 1
-    CHECK (quantity IN (0, 1)), timezone TEXT NOT NULL DEFAULT 'UTC', next_at TEXT);
 
 CREATE TABLE sync_op (
     seq         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1815,14 +1785,6 @@ CREATE TABLE contact_share (
     held INTEGER NOT NULL DEFAULT 0,
     added_at TEXT NOT NULL,
     PRIMARY KEY (contact_organ, record_uid)
-);
-
-CREATE TABLE anicca_rule_firing (
-    rule_uid      TEXT NOT NULL REFERENCES recurrence(uid),
-    frequency_uid TEXT NOT NULL REFERENCES frequency(uid),
-    intended_at   TEXT NOT NULL,
-    applied_at    TEXT NOT NULL,
-    PRIMARY KEY (rule_uid, frequency_uid, intended_at)
 );
 
 CREATE TABLE record_move (
@@ -3357,11 +3319,6 @@ CREATE INDEX idx_recurrence_record ON recurrence(record_uid, state);
 
 CREATE UNIQUE INDEX idx_recurrence_revision_request
     ON recurrence_revision(request_id);
-
-CREATE UNIQUE INDEX idx_frequency_slug ON frequency(slug);
-
-CREATE UNIQUE INDEX idx_frequency_revision_request
-    ON frequency_revision(request_id);
 
 CREATE UNIQUE INDEX idx_sync_op_identity ON sync_op(actor_cell, hlc);
 

@@ -119,7 +119,29 @@ async fn a_new_durable_store_has_schema_without_domain_defaults() {
         .fetch_one(&store.pool)
         .await
         .unwrap();
-    assert!(migrations > 0);
+    assert_eq!(migrations, 1);
+    let statuses = store::sqlx::query_as::<_, (String, i64)>(
+        "SELECT status, holds_reservation FROM karma_intent_status ORDER BY status",
+    )
+    .fetch_all(&store.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        statuses,
+        vec![("authorized".into(), 1), ("cancelled".into(), 0)]
+    );
+    let integrity: String = store::sqlx::query_scalar("PRAGMA integrity_check")
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+    assert_eq!(integrity, "ok");
+    assert!(
+        store::sqlx::query("PRAGMA foreign_key_check")
+            .fetch_all(&store.pool)
+            .await
+            .unwrap()
+            .is_empty()
+    );
     for table in ["record", "lingua", "configuration", "role"] {
         let count: i64 = store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
             .fetch_one(&store.pool)

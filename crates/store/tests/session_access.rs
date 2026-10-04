@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use store::Store;
@@ -1240,75 +1238,6 @@ async fn session_access_database_errors_are_not_an_admission() {
             .await
             .is_err()
     );
-}
-
-#[tokio::test]
-async fn session_access_real_migration_backfills_people_grants_and_ungranted_contacts() {
-    let all = store::sqlx::migrate!("./migrations");
-    let before = store::sqlx::migrate::Migrator {
-        migrations: Cow::Owned(
-            all.iter()
-                .filter(|migration| migration.version < 80)
-                .cloned()
-                .collect(),
-        ),
-        ..store::sqlx::migrate::Migrator::DEFAULT
-    };
-    let options = store::sqlx::sqlite::SqliteConnectOptions::from_str("sqlite::memory:")
-        .unwrap()
-        .foreign_keys(true);
-    let pool = store::sqlx::sqlite::SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(options)
-        .await
-        .unwrap();
-    before.run(&pool).await.unwrap();
-    let store = Store { pool };
-    store::organs::ensure_local(&store.pool, "").await.unwrap();
-    let uid = person(&store, "Existing").await;
-    credential(&store, &uid, "worker", "hash").await;
-    let deleted = person(&store, "Deleted").await;
-    store::records::mark_deleted(&store.pool, &deleted)
-        .await
-        .unwrap();
-    let organ = peer(&store, &node(1)).await;
-    let ungranted = peer(&store, &node(2)).await;
-    store::logins::grant(&store.pool, &organ, &uid)
-        .await
-        .unwrap();
-    all.run(&store.pool).await.unwrap();
-    let mut connection = store.pool.acquire().await.unwrap();
-    assert_eq!(
-        session_access::password_on(&mut connection, "worker")
-            .await
-            .unwrap()
-            .unwrap()
-            .authentication()
-            .generation(),
-        1
-    );
-    assert!(
-        session_access::granted_login_on(&mut connection, &organ, &node(1))
-            .await
-            .unwrap()
-            .is_some()
-    );
-    assert_eq!(
-        session_access::peer_contact_on(&mut connection, &node(2))
-            .await
-            .unwrap()
-            .unwrap()
-            .organ_uid,
-        ungranted
-    );
-    let tombstone: i64 = store::sqlx::query_scalar(
-        "SELECT generation FROM person_auth_generation WHERE person_uid = ?",
-    )
-    .bind(&deleted)
-    .fetch_one(&mut *connection)
-    .await
-    .unwrap();
-    assert_eq!(tombstone, 1);
 }
 
 #[tokio::test]

@@ -1,6 +1,3 @@
-use std::borrow::Cow;
-use std::str::FromStr;
-
 use nucleus::RecordKind;
 use store::Store;
 use store::record_docs::Qualification;
@@ -124,29 +121,9 @@ async fn qualified_snapshots_are_bounded_and_use_exact_generation_and_revision()
 }
 
 #[tokio::test]
-async fn the_real_migration_keeps_old_snapshots_explicitly_unqualified() {
-    let all = store::sqlx::migrate!("./migrations");
-    let before_generations = store::sqlx::migrate::Migrator {
-        migrations: Cow::Owned(
-            all.iter()
-                .filter(|migration| migration.version <= 80)
-                .cloned()
-                .collect(),
-        ),
-        ..store::sqlx::migrate::Migrator::DEFAULT
-    };
-    let options = store::sqlx::sqlite::SqliteConnectOptions::from_str("sqlite::memory:")
-        .unwrap()
-        .foreign_keys(true);
-    let pool = store::sqlx::sqlite::SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(options)
-        .await
-        .unwrap();
-    before_generations.run(&pool).await.unwrap();
-    let store = Store { pool };
-    store::organs::ensure_local(&store.pool, "").await.unwrap();
-    let uid = record(&store, "Before 0081").await;
+async fn the_initial_schema_keeps_unqualified_snapshots_explicit() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = record(&store, "Unqualified snapshot").await;
     store::sqlx::query(
         "INSERT INTO record_doc (record_uid, snapshot, through_seq, updated_at)
          VALUES (?, ?, 9, ?)",
@@ -157,8 +134,6 @@ async fn the_real_migration_keeps_old_snapshots_explicitly_unqualified() {
     .execute(&store.pool)
     .await
     .unwrap();
-
-    all.run(&store.pool).await.unwrap();
 
     let stored = snapshot(&store, &uid).await;
     assert_eq!(stored.metadata.retained_generation, 1);

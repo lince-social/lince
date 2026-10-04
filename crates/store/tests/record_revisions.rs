@@ -1,6 +1,3 @@
-use std::borrow::Cow;
-use std::str::FromStr;
-
 use nucleus::RecordKind;
 use store::Store;
 
@@ -29,31 +26,9 @@ async fn revision(store: &Store, uid: &str) -> i64 {
 }
 
 #[tokio::test]
-async fn the_real_migration_backfills_existing_records_and_installs_every_trigger() {
-    let all = store::sqlx::migrate!("./migrations");
-    let before_revisions = store::sqlx::migrate::Migrator {
-        migrations: Cow::Owned(
-            all.iter()
-                .filter(|migration| migration.version <= 78)
-                .cloned()
-                .collect(),
-        ),
-        ..store::sqlx::migrate::Migrator::DEFAULT
-    };
-    let options = store::sqlx::sqlite::SqliteConnectOptions::from_str("sqlite::memory:")
-        .unwrap()
-        .foreign_keys(true);
-    let pool = store::sqlx::sqlite::SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(options)
-        .await
-        .unwrap();
-    before_revisions.run(&pool).await.unwrap();
-    let store = Store { pool };
-    store::organs::ensure_local(&store.pool, "").await.unwrap();
-    let existing = record(&store, RecordKind::Plain, "Before 0079").await;
-
-    all.run(&store.pool).await.unwrap();
+async fn the_initial_migration_initializes_revisions_and_installs_every_trigger() {
+    let store = Store::open_memory().await.unwrap();
+    let existing = record(&store, RecordKind::Plain, "Initial schema").await;
 
     assert_eq!(revision(&store, &existing).await, 1);
     assert_eq!(

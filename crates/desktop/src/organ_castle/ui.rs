@@ -677,7 +677,7 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         label(
             world,
             parent,
-            "Create an Organ on this device, or use a device enrolment code to join the Organ on another device.",
+            "Karma runs on this device by default. Create a roster or join another device to manage which devices run Karma.",
         );
         form(
             world,
@@ -713,6 +713,9 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         label(world, parent, "No device roster loaded yet.");
         return;
     };
+    if cells.len() > 1 {
+        label(world, parent, "Choose which device runs Karma. A newly joined device can edit synced Rules; if another device already runs Karma, use the controls below to transfer execution or explicitly allow both.");
+    }
     for cell in cells {
         form(
             world,

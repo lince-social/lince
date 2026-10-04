@@ -1,9 +1,9 @@
 use lince_interface::karma as model;
-mod persistence;
-mod schedules_ui;
-mod preview_ui;
-mod history_ui;
 mod commands_ui;
+mod history_ui;
+mod persistence;
+mod preview_ui;
+mod schedules_ui;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -37,6 +37,8 @@ pub struct KarmaCastle {
 
 #[derive(Component)]
 struct View {
+    execution: Entity,
+    execution_checked: Option<std::time::Instant>,
     controls: Entity,
     editing: Option<(String, usize)>,
     deleting: Vec<String>,
@@ -59,6 +61,7 @@ struct View {
 
 #[derive(Resource, Default)]
 struct Requests {
+    executions: HashMap<String, Entity>,
     subscriptions: HashMap<String, (Entity, usize)>,
     readings: HashMap<String, Entity>,
 }
@@ -88,8 +91,16 @@ impl Plugin for KarmaCastlePlugin {
             .add_observer(ui::hover_off)
             .add_systems(
                 Update,
-                (receive.after(ReceiveCell), maintain, ui::tick, schedules_ui::maintain, preview_ui::maintain).chain(),
+                (
+                    receive.after(ReceiveCell),
+                    maintain,
+                    ui::tick,
+                    schedules_ui::maintain,
+                    preview_ui::maintain,
+                )
+                    .chain(),
             )
+            .add_systems(PostUpdate, ui::keys.before(bevy::text::EditableTextSystems))
             .add_systems(
                 PostUpdate,
                 ui::inputs
@@ -136,6 +147,7 @@ pub fn spawn(
     let controls = ui::row(world, header);
     world.get_mut::<Node>(controls).unwrap().width = Val::Auto;
     ui::search(world, header, owner);
+    let execution = crate::edit_mode::label(world, owner, "Checking Karma execution…", 13.0);
     ui::headings(world, owner);
     let scroll = world
         .spawn((
@@ -157,6 +169,8 @@ pub fn spawn(
     let status = crate::edit_mode::label(world, owner, "", 12.0);
     world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(owner).insert(View {
+        execution,
+        execution_checked: None,
         controls,
         editing: None,
         deleting: Vec::new(),
@@ -318,7 +332,11 @@ fn query(index: usize) -> protein::Protein {
         );
     }
     if index == 3 {
-        query.fields = Some(["uid", "slug", "head", "parties", "promises", "karma_state"].map(str::to_owned).into());
+        query.fields = Some(
+            ["uid", "slug", "head", "parties", "promises", "karma_state"]
+                .map(str::to_owned)
+                .into(),
+        );
     }
     query
 }
@@ -351,7 +369,41 @@ fn maintain(world: &mut World) {
         .query_filtered::<Entity, With<KarmaCastle>>()
         .iter(world)
         .collect();
+    world
+        .resource_mut::<Requests>()
+        .executions
+        .retain(|_, owner| owners.contains(owner));
     for owner in owners {
+        let due = world
+            .get::<View>(owner)
+            .unwrap()
+            .execution_checked
+            .is_none_or(|checked| checked.elapsed() >= std::time::Duration::from_secs(5));
+        if due
+            && !world
+                .resource::<Requests>()
+                .executions
+                .values()
+                .any(|value| *value == owner)
+        {
+            let id = nucleus::new_uid("karma-execution");
+            if send(
+                world,
+                ClientMessage::Act {
+                    id: id.clone(),
+                    action: engine::actions::Action::RosterStatus,
+                },
+            )
+            .is_ok()
+            {
+                world
+                    .resource_mut::<Requests>()
+                    .executions
+                    .insert(id, owner);
+                world.get_mut::<View>(owner).unwrap().execution_checked =
+                    Some(std::time::Instant::now());
+            }
+        }
         for index in 0..4 {
             let id = format!("karma-castle-{}-{index}", owner.to_bits());
             if world.resource::<Requests>().subscriptions.contains_key(&id) {
@@ -382,10 +434,50 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .map(|message| message.0.clone())
         .collect();
     for message in messages {
-        if schedules_ui::receive(world, &message) { continue; }
-        if preview_ui::receive(world, &message) { continue; }
-        if commands_ui::receive(world, &message) { continue; }
-        if history_ui::receive(world, &message) { continue; }
+        let execution_id = match &message {
+            ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => Some(id),
+            _ => None,
+        };
+        if let Some(owner) =
+            execution_id.and_then(|id| world.resource_mut::<Requests>().executions.remove(id))
+        {
+            if let Some(view) = world.get::<View>(owner) {
+                let label = view.execution;
+                let text = match &message {
+                    ServerMessage::ActionOk {
+                        data: Some(data), ..
+                    } if data["karma"]["executing"] == true => {
+                        "Karma is running on this Cell.".to_owned()
+                    }
+                    ServerMessage::ActionOk {
+                        data: Some(data), ..
+                    } => format!(
+                        "Karma is not running: {}. Check My devices and Karma authority.",
+                        data["karma"]["reason"]
+                            .as_str()
+                            .unwrap_or("Execution is unavailable")
+                    ),
+                    ServerMessage::Error { message, .. } => {
+                        format!("Could not check Karma execution: {message}")
+                    }
+                    _ => "Could not check Karma execution.".to_owned(),
+                };
+                world.get_mut::<Text>(label).unwrap().0 = text;
+            }
+            continue;
+        }
+        if schedules_ui::receive(world, &message) {
+            continue;
+        }
+        if preview_ui::receive(world, &message) {
+            continue;
+        }
+        if commands_ui::receive(world, &message) {
+            continue;
+        }
+        if history_ui::receive(world, &message) {
+            continue;
+        }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
                 let Some((owner, index)) =

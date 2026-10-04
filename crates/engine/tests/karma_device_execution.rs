@@ -8,6 +8,81 @@ use nucleus::karma::{Cadence, CadenceStep, Consequence};
 
 mod support;
 
+#[tokio::test]
+async fn a_local_cell_runs_karma_without_a_roster_and_can_stop_locally() {
+    let engine = support::engine().await;
+    let organ = store::organs::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap();
+    let cell = store::cells::ensure_local(&engine.store.pool, &organ.uid, "Local test Cell")
+        .await
+        .unwrap();
+    let result = engine
+        .act(Action::RosterStatus, None)
+        .await
+        .unwrap()
+        .data
+        .unwrap();
+    assert_eq!(result["karma"]["local_running"], true);
+    assert_eq!(result["karma"]["permitted"], true);
+    assert_eq!(result["karma"]["executing"], true);
+    assert!(result["karma"]["reason"].is_null());
+    assert_eq!(result["karma"]["executors"], serde_json::json!([cell.uid]));
+    engine
+        .act(
+            Action::SetCellConfig {
+                namespace: "lince.karma-runtime".into(),
+                fds: serde_json::json!({"running": false}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let stopped = engine.karma_device_execution().await.unwrap();
+    assert!(stopped.permitted);
+    assert!(!stopped.executing);
+    assert_eq!(
+        stopped.reason.as_deref(),
+        Some("Karma is stopped on this Cell")
+    );
+}
+
+#[tokio::test]
+async fn enrolment_allows_karma_when_no_existing_cell_is_an_executor() {
+    let pair = pair().await;
+    let held = pair
+        .laptop
+        .roster_of(&pair.root.actor_uid)
+        .await
+        .unwrap()
+        .unwrap();
+    pair.laptop
+        .choose_karma_executor(
+            &pair.root,
+            &pair.laptop_uid,
+            false,
+            false,
+            held.roster.version,
+        )
+        .await
+        .unwrap();
+    let signer = Signer::generate(&pair.root.actor_uid, "third");
+    let roster = pair
+        .laptop
+        .enrol_cell(&pair.root, entry("third", &signer, "third"))
+        .await
+        .unwrap();
+    let executors: Vec<_> = roster
+        .roster
+        .cells
+        .iter()
+        .filter(|cell| cell.may(engine::roster::CAP_KARMA))
+        .map(|cell| cell.cell_uid.as_str())
+        .collect();
+    assert_eq!(executors, vec!["third"]);
+}
+
 struct Pair {
     laptop: Engine,
     phone: Engine,

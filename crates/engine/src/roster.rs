@@ -611,7 +611,7 @@ impl Engine {
         let mut cell = cell;
         if let Some(existing) = cells.iter().find(|existing| existing.cell_uid == cell.cell_uid) {
             cell.capabilities = existing.capabilities.clone();
-        } else if !cells.is_empty() {
+        } else if cells.iter().any(|existing| existing.may(CAP_KARMA)) {
             cell.capabilities.retain(|capability| capability != CAP_KARMA);
         }
         cells.retain(|existing| existing.cell_uid != cell.cell_uid);

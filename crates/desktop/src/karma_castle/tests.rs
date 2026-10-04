@@ -613,6 +613,7 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
         record: String::new(),
     }];
     ui::render_list(app.world_mut(), owner);
+    preview_ui::toggle(app.world_mut(), owner);
     for scheme in [
         crate::tokens::ColorScheme::Dark,
         crate::tokens::ColorScheme::Light,

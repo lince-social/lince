@@ -65,8 +65,8 @@ impl Engine {
                     true
                 }
             } else {
-                reason = Some("Karma execution needs a signed Organ roster".into());
-                false
+                executors.push(cell.uid.clone());
+                true
             };
         if permitted && !local_running {
             reason = Some("Karma is stopped on this Cell".into());

@@ -53,6 +53,7 @@ impl Form {
 
 #[derive(Component)]
 struct PreviewView {
+    panel: Entity,
     output: Entity,
     pending: Option<(String, String, u64)>,
     report: Option<Report>,
@@ -75,10 +76,24 @@ enum Command {
 
 pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     let panel = ui::stack(world, parent);
+    world
+        .entity_mut(panel)
+        .insert(crate::token_style::border(crate::tokens::Token::TableGrid));
+    {
+        let mut node = world.get_mut::<Node>(panel).unwrap();
+        node.display = Display::None;
+        node.padding = UiRect::all(px(14));
+        node.row_gap = px(12);
+        node.border = UiRect::all(px(1));
+    }
     crate::edit_mode::label(world, panel, "Simulate unsaved Rules", 16.0);
     let form = world.get::<KarmaCastle>(owner).unwrap().preview.clone();
     for (index, label, value) in [
-        (0, "Simulated span (1d or 100y; a year is 365 days)", form.horizon),
+        (
+            0,
+            "Simulated span (1d or 100y; a year is 365 days)",
+            form.horizon,
+        ),
         (1, "Maximum Rule evaluations", form.evaluations),
         (
             2,
@@ -93,7 +108,8 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
         (4, "Controlled inputs", form.inputs),
         (5, "Saved check set ID (optional)", form.saved_checks),
     ] {
-        let line = ui::row(world, panel);
+        let line = ui::stack(world, panel);
+        world.get_mut::<Node>(line).unwrap().row_gap = px(4);
         crate::edit_mode::label(world, line, label, 13.0);
         let input = world
             .spawn(crate::sand::text_editor(
@@ -105,7 +121,9 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
                 ChildOf(line),
                 Input { owner, index },
                 Node {
-                    width: px(460),
+                    width: percent(100),
+                    max_width: px(640),
+                    min_width: px(0),
                     ..default()
                 },
             ))
@@ -116,6 +134,7 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
         text.max_characters = Some(if index == 4 { 65_536 } else { 2048 });
     }
     let line = ui::row(world, panel);
+    world.get_mut::<Node>(line).unwrap().flex_wrap = FlexWrap::Wrap;
     crate::castle_feed::button(world, line, owner, "Run unsaved Rules", Command::Run);
     crate::castle_feed::button(
         world,
@@ -133,12 +152,26 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     );
     let output = crate::edit_mode::label(world, panel, "", 13.0);
     world.entity_mut(owner).insert(PreviewView {
+        panel,
         output,
         pending: None,
         report: None,
         source_revision: 0,
         stale: false,
     });
+}
+
+pub(super) fn toggle(world: &mut World, owner: Entity) {
+    let Some(view) = world.get::<PreviewView>(owner) else {
+        return;
+    };
+    let panel = view.panel;
+    let mut node = world.get_mut::<Node>(panel).unwrap();
+    node.display = if node.display == Display::None {
+        Display::Flex
+    } else {
+        Display::None
+    };
 }
 
 fn capture(world: &mut World, owner: Entity) {
@@ -341,10 +374,6 @@ fn run(world: &mut World, owner: Entity) -> Result<(), String> {
     Ok(())
 }
 
-pub(super) fn run_captured(world: &mut World, owner: Entity) {
-    Command::Run.apply(world, owner);
-}
-
 pub(super) fn dirty(world: &mut World, owner: Entity) {
     if let Some(mut view) = world.get_mut::<PreviewView>(owner) {
         view.source_revision = view.source_revision.wrapping_add(1);
@@ -479,8 +508,30 @@ fn describe(report: &Report, names: &HashMap<String, String>) -> String {
     )];
     for value in &report.final_values {
         if let Some(transfer) = &value.transfer {
-            let levels = transfer.participants.iter().map(|(person, participant)| format!("{} level {}", name(person), participant.guard.level)).collect::<Vec<_>>().join(", ");
-            lines.push(format!("{} · revision {} · {} · {} · {} · {levels}", name(&value.record), transfer.revision, if transfer.active { "active" } else { "inactive" }, if transfer.published { "published" } else { "unpublished" }, if transfer.ready { "ready" } else { "not ready" }));
+            let levels = transfer
+                .participants
+                .iter()
+                .map(|(person, participant)| {
+                    format!("{} level {}", name(person), participant.guard.level)
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            lines.push(format!(
+                "{} · revision {} · {} · {} · {} · {levels}",
+                name(&value.record),
+                transfer.revision,
+                if transfer.active {
+                    "active"
+                } else {
+                    "inactive"
+                },
+                if transfer.published {
+                    "published"
+                } else {
+                    "unpublished"
+                },
+                if transfer.ready { "ready" } else { "not ready" }
+            ));
             continue;
         }
         lines.push(format!(
@@ -575,6 +626,28 @@ mod tests {
                 }),
                 ..Default::default()
             },
+        );
+        let panel = app.world().get::<PreviewView>(owner).unwrap().panel;
+        assert_eq!(
+            app.world().get::<Node>(panel).unwrap().display,
+            Display::None
+        );
+        toggle(app.world_mut(), owner);
+        assert_eq!(
+            app.world().get::<Node>(panel).unwrap().display,
+            Display::Flex
+        );
+        toggle(app.world_mut(), owner);
+        assert_eq!(
+            app.world().get::<Node>(panel).unwrap().display,
+            Display::None
+        );
+        assert!(
+            app.world()
+                .get::<PreviewView>(owner)
+                .unwrap()
+                .pending
+                .is_none()
         );
         let proposed = request(app.world(), owner).unwrap();
         assert!(

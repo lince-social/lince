@@ -18,6 +18,9 @@ struct Input {
     focused: bool,
     selection: std::ops::Range<usize>,
     dirty: bool,
+    options: Vec<(Entity, Command)>,
+    selected: usize,
+    dismissed: bool,
 }
 
 #[derive(Component)]
@@ -88,7 +91,7 @@ impl Action for Command {
         capture(world, owner);
         match self {
             Self::Simulate => {
-                super::preview_ui::run_captured(world, owner);
+                super::preview_ui::toggle(world, owner);
                 return;
             }
             Self::Create => {}
@@ -544,7 +547,7 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
     let creating = castle.draft.is_some();
     let editing = !castle.edits.is_empty();
     clear(world, controls);
-    button(world, controls, owner, Command::Simulate, "Simulate unsaved Rules");
+    button(world, controls, owner, Command::Simulate, "Simulation");
     if creating || editing {
         for (command, title) in [
             (Command::Save, if creating { "Create" } else { "Save" }),
@@ -601,9 +604,9 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
             let cell = cell(world, cells);
             let active = editing.as_ref() == Some(&(rule.uid.clone(), index));
             let content = if index == 3 {
-                let line = row(world, cell);
+                let identity = stack(world, cell);
                 for text in [value.name.as_str(), &format!("@{}", value.slug)] {
-                    let label = crate::edit_mode::label(world, line, text, 16.0);
+                    let label = crate::edit_mode::label(world, identity, text, 16.0);
                     world.entity_mut(label).insert(TextLayout::linebreak(
                         bevy::text::LineBreak::WordOrCharacter,
                     ));
@@ -611,6 +614,7 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     node.min_width = Val::Auto;
                     node.flex_shrink = 1.0;
                 }
+                let line = row(world, identity);
                 let paused = rule.state == "paused";
                 let toggle = icon_button(
                     world,
@@ -623,7 +627,7 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                 );
                 size_icon(world, toggle, 16.0);
                 super::history_ui::button(world, owner, line, &rule.uid);
-                line
+                identity
             } else {
                 rich_text(
                     world,
@@ -797,11 +801,15 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
         node.max_height = px(220);
         node.overflow = Overflow::scroll_y();
         node.display = Display::None;
+        node.border = UiRect::all(px(1));
+        node.padding = UiRect::all(px(4));
+        node.row_gap = px(2);
     }
     world.entity_mut(suggestions).insert((
         GlobalZIndex(30),
         ScrollPosition::default(),
         crate::token_style::background(crate::tokens::Token::Surface),
+        crate::token_style::border(crate::tokens::Token::Accent),
     ));
     crate::scroll_sand::attach(world, suggestions);
     world.entity_mut(entity).insert(Input {
@@ -813,6 +821,9 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
         focused: false,
         selection: 0..0,
         dirty: true,
+        options: Vec::new(),
+        selected: 0,
+        dismissed: false,
     });
 }
 
@@ -890,6 +901,12 @@ pub(super) fn inputs(world: &mut World) {
         .collect();
     for (entity, owner, row, index, suggestions, text, focused, selection) in inputs {
         let mut input = world.get_mut::<Input>(entity).unwrap();
+        if text != input.observed || focused != input.focused {
+            input.dismissed = false;
+        }
+        let dismissed = input.dismissed;
+        input.options.clear();
+        input.selected = 0;
         input.observed = text.clone();
         input.dirty = false;
         input.focused = focused;
@@ -899,7 +916,11 @@ pub(super) fn inputs(world: &mut World) {
         }
         clear(world, suggestions);
         world.get_mut::<Node>(suggestions).unwrap().display = Display::None;
-        if !focused || index >= 3 || world.get::<View>(owner).unwrap().pending.is_some() {
+        if !focused
+            || dismissed
+            || index >= 3
+            || world.get::<View>(owner).unwrap().pending.is_some()
+        {
             continue;
         }
         let view = world.get::<View>(owner).unwrap();
@@ -911,8 +932,30 @@ pub(super) fn inputs(world: &mut World) {
             &view.records,
             &view.frequencies,
         );
-        let tail = prefix.rsplit(|character: char| character.is_whitespace() || matches!(character, '(' | ')' | '*' | '/' | '+' | '=' | ',')).next().unwrap_or("").to_lowercase();
-        choices.extend(model::transfers::elements(RuleFieldKind::ALL[index], &view.transfers, view.acting_person.as_deref()).into_iter().filter(|element| element.to_lowercase().contains(&tail) || model::transfers::label(element, &view.transfers).to_lowercase().contains(&tail)).take(16).map(Suggestion::Element));
+        let tail = prefix
+            .rsplit(|character: char| {
+                character.is_whitespace()
+                    || matches!(character, '(' | ')' | '*' | '/' | '+' | '=' | ',')
+            })
+            .next()
+            .unwrap_or("")
+            .to_lowercase();
+        choices.extend(
+            model::transfers::elements(
+                RuleFieldKind::ALL[index],
+                &view.transfers,
+                view.acting_person.as_deref(),
+            )
+            .into_iter()
+            .filter(|element| {
+                element.to_lowercase().contains(&tail)
+                    || model::transfers::label(element, &view.transfers)
+                        .to_lowercase()
+                        .contains(&tail)
+            })
+            .take(16)
+            .map(Suggestion::Element),
+        );
         if !choices.is_empty() {
             world.get_mut::<Node>(suggestions).unwrap().display = Display::Flex;
         }
@@ -924,11 +967,103 @@ pub(super) fn inputs(world: &mut World) {
                 }
                 Suggestion::Element(element) => (
                     Command::Insert(row, index, element.clone(), selection.clone()),
-                    model::transfers::label(&model::element_label(&element, &world.get::<View>(owner).unwrap().records), &world.get::<View>(owner).unwrap().transfers),
+                    model::transfers::label(
+                        &model::element_label(&element, &world.get::<View>(owner).unwrap().records),
+                        &world.get::<View>(owner).unwrap().transfers,
+                    ),
                 ),
             };
-            button(world, suggestions, owner, command, &label);
+            let option = button(world, suggestions, owner, command.clone(), &label);
+            world.get_mut::<Node>(option).unwrap().width = percent(100);
+            world
+                .get_mut::<Input>(entity)
+                .unwrap()
+                .options
+                .push((option, command));
         }
+        highlight(world, entity);
+    }
+}
+
+fn highlight(world: &mut World, entity: Entity) {
+    let input = world.get::<Input>(entity).unwrap();
+    let selected = input.selected;
+    let options: Vec<_> = input.options.iter().map(|(entity, _)| *entity).collect();
+    for (index, option) in options.into_iter().enumerate() {
+        world
+            .entity_mut(option)
+            .insert(crate::token_style::background(if index == selected {
+                crate::tokens::Token::Accent
+            } else {
+                crate::tokens::Token::Surface
+            }));
+    }
+}
+
+pub(super) fn keys(world: &mut World) {
+    let Some(focused) = world
+        .get_resource::<InputFocus>()
+        .and_then(|focus| focus.get())
+    else {
+        return;
+    };
+    let Some(input) = world.get::<Input>(focused) else {
+        return;
+    };
+    if input.options.is_empty()
+        || world
+            .get::<View>(input.owner)
+            .is_none_or(|view| view.pending.is_some())
+    {
+        return;
+    }
+    let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() else {
+        return;
+    };
+    if keys.any_pressed([
+        KeyCode::ControlLeft,
+        KeyCode::ControlRight,
+        KeyCode::AltLeft,
+        KeyCode::AltRight,
+        KeyCode::SuperLeft,
+        KeyCode::SuperRight,
+        KeyCode::ShiftLeft,
+        KeyCode::ShiftRight,
+    ]) {
+        return;
+    }
+    let enter = keys.any_just_pressed([KeyCode::Enter, KeyCode::NumpadEnter]);
+    let escape = keys.just_pressed(KeyCode::Escape);
+    let step = i32::from(keys.just_pressed(KeyCode::ArrowDown))
+        - i32::from(keys.just_pressed(KeyCode::ArrowUp));
+    if !enter && !escape && step == 0 {
+        return;
+    }
+    let Some(mut text) = world.get_mut::<EditableText>(focused) else {
+        return;
+    };
+    if text.is_composing() || text.pending_paste.is_some() {
+        return;
+    }
+    text.pending_edits.retain(|edit| {
+        !(step != 0 && matches!(edit, bevy::text::TextEdit::Up(_) | bevy::text::TextEdit::Down(_))
+            || enter && matches!(edit, bevy::text::TextEdit::Insert(value) if value.contains(['\n', '\r'])))
+    });
+    let mut input = world.get_mut::<Input>(focused).unwrap();
+    if escape {
+        input.dismissed = true;
+        let suggestions = input.suggestions;
+        input.options.clear();
+        world.get_mut::<Node>(suggestions).unwrap().display = Display::None;
+        return;
+    }
+    input.selected = (input.selected as i32 + step).rem_euclid(input.options.len() as i32) as usize;
+    let owner = input.owner;
+    let command = input.options[input.selected].1.clone();
+    if enter {
+        command.apply(world, owner);
+    } else {
+        highlight(world, focused);
     }
 }
 
@@ -1131,5 +1266,107 @@ pub(super) fn reading_reply(world: &mut World, entity: Entity, result: String) {
     if let Some(mut reading) = world.get_mut::<Reading>(entity) {
         reading.pending = false;
         reading.result = Some(result);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suggestions_keep_editor_focus_and_accept_the_arrow_selected_option() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.add_plugins(MinimalPlugins)
+            .init_resource::<Assets<Font>>()
+            .init_resource::<crate::theme::Typography>()
+            .init_resource::<InputFocus>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .add_plugins(KarmaCastlePlugin);
+        let root = app
+            .world_mut()
+            .spawn(crate::workspace::Workspaces::default())
+            .id();
+        let owner = spawn(
+            app.world_mut(),
+            root,
+            1,
+            DVec2::ZERO,
+            KarmaCastle::default(),
+        );
+        Command::New.apply(app.world_mut(), owner);
+        let field = app
+            .world_mut()
+            .query::<(Entity, &Input)>()
+            .iter(app.world())
+            .find(|(_, input)| input.owner == owner && input.index == 1)
+            .unwrap()
+            .0;
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(field, bevy::input_focus::FocusCause::Pressed);
+        inputs(app.world_mut());
+        let input = app.world().get::<Input>(field).unwrap();
+        assert!(input.options.len() > 1);
+        assert_eq!(input.selected, 0);
+        let popup = input.suggestions;
+        assert_eq!(
+            app.world().get::<Node>(popup).unwrap().border,
+            UiRect::all(px(1))
+        );
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ArrowDown);
+        keys(app.world_mut());
+        assert_eq!(app.world().get::<Input>(field).unwrap().selected, 1);
+        let selected = app.world().get::<Input>(field).unwrap().options[1].0;
+        assert_eq!(app.world().get::<crate::token_style::BackgroundToken>(selected).unwrap().0, crate::tokens::Token::Accent);
+        assert_eq!(app.world().resource::<InputFocus>().get(), Some(field));
+        let expected = match &app.world().get::<Input>(field).unwrap().options[1].1 {
+            Command::Insert(_, _, value, _) => value.clone(),
+            _ => panic!("Expected a threshold suggestion"),
+        };
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .clear();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Enter);
+        keys(app.world_mut());
+        assert_eq!(
+            app.world()
+                .get::<KarmaCastle>(owner)
+                .unwrap()
+                .draft
+                .as_ref()
+                .unwrap()
+                .fields[1]
+                .text,
+            expected
+        );
+        let field = app
+            .world_mut()
+            .query::<(Entity, &Input)>()
+            .iter(app.world())
+            .find(|(_, input)| input.owner == owner && input.index == 1)
+            .unwrap()
+            .0;
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(field, bevy::input_focus::FocusCause::Pressed);
+        inputs(app.world_mut());
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .clear();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        keys(app.world_mut());
+        let input = app.world().get::<Input>(field).unwrap();
+        assert!(input.options.is_empty());
+        assert_eq!(
+            app.world().get::<Node>(input.suggestions).unwrap().display,
+            Display::None
+        );
     }
 }

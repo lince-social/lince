@@ -1602,7 +1602,7 @@ impl Drop for ImageReservation {
 
 fn load_image(world: &mut World, parent: Entity, value: &Value) {
     if IMAGE_DECODERS
-        .fetch_update(
+        .try_update(
             std::sync::atomic::Ordering::AcqRel,
             std::sync::atomic::Ordering::Acquire,
             |count| (count < 2).then_some(count + 1),

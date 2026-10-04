@@ -206,7 +206,7 @@ impl AssetLoader for SplatLoader {
                 self.limit
             )));
         }
-        self.resident.fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
+        self.resident.try_update(Ordering::AcqRel, Ordering::Acquire, |current| {
             current.checked_add(count).filter(|total| *total <= codec::MAX_SPLATS)
         }).map_err(|_| io::Error::other("Loaded Gaussian assets exceed the 1 GiB decoded-data budget; remove another cloud or prepare less detail"))?;
         let reservation = Reservation {

@@ -28,6 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: instinct-contracts
       - name: Check feature paths and handbook contracts
         run: |
           cargo check --locked --package lince --no-default-features
@@ -104,6 +107,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            target/debug
             target/release
             target/${{ matrix.target }}/release
           key: binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -143,6 +147,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            target/debug
             target/release
             target/${{ matrix.target }}/release
           key: ${{ steps.cache.outputs.cache-primary-key }}

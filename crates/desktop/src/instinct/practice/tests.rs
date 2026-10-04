@@ -23,7 +23,15 @@ fn fixture() -> (App, Entity) {
     .insert_resource(crate::wake::WakeSignal::new(|| {}));
     let root = app
         .world_mut()
-        .spawn((crate::container::BoxRoot, Workspaces::default()))
+        .spawn((
+            crate::container::BoxRoot,
+            Workspaces::default(),
+            ComputedNode {
+                size: Vec2::new(1280.0, 720.0),
+                ..default()
+            },
+            UiGlobalTransform::default(),
+        ))
         .id();
     app.update();
     (app, root)
@@ -198,7 +206,29 @@ async fn until(app: &mut App, predicate: impl Fn(&mut World) -> bool) {
         .iter(app.world())
         .map(|text| text.0.clone())
         .collect();
-    panic!("Practice did not confirm its result: {text:?}");
+    let practices: Vec<_> = app
+        .world_mut()
+        .query::<&Practice>()
+        .iter(app.world())
+        .map(|practice| {
+            (
+                practice.runner.step,
+                practice.confirmed_entry,
+                practice.confirmed_exit,
+            )
+        })
+        .collect();
+    let records: Vec<_> = app
+        .world_mut()
+        .query::<(
+            &CanvasItem,
+            &RecordProperties,
+            Option<&crate::protein_area::placement::Pending>,
+        )>()
+        .iter(app.world())
+        .map(|(item, record, pending)| (item.position, record.0.clone(), pending.is_some()))
+        .collect();
+    panic!("Practice did not confirm its result: {practices:?}, {records:?}, {text:?}");
 }
 
 #[cfg_attr(test, tokio::test)]
@@ -240,6 +270,18 @@ async fn record_changes_use_an_isolated_cell_and_confirm_entry_and_exit() {
         world
             .get::<Practice>(root)
             .is_some_and(|practice| practice.records.len() == 2)
+            && {
+                let rows = sample_rows(world, root);
+                rows.len() == 2
+                    && rows.iter().all(|(entity, _)| {
+                        world
+                            .get::<crate::protein_area::placement::Pending>(*entity)
+                            .is_none()
+                            && world
+                                .get::<crate::practice_cells::PracticeRecord>(*entity)
+                                .is_some()
+                    })
+            }
     })
     .await;
     for step in 0..3 {

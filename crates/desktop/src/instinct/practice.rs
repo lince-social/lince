@@ -542,6 +542,11 @@ fn protein(world: &mut World, root: Entity) -> Result<Entity, String> {
     {
         let mut config = crate::protein_area::Config {
             source: crate::protein_area::Source::Organ(source),
+            bindings: vec![
+                crate::protein_area::Binding::new("head"),
+                crate::protein_area::Binding::new("body"),
+                crate::protein_area::Binding::new("quantity"),
+            ],
             ..default()
         };
         config.draft.query["where"] = serde_json::json!([{"any":ids.iter().map(|uid| serde_json::json!({"uid_eq":uid})).collect::<Vec<_>>()}]);
@@ -573,6 +578,11 @@ fn execute(world: &mut World, root: Entity, operation: Operation) -> Result<(), 
             pair(world, root);
             let square = find(world, root, Role::Square).unwrap();
             let text = find(world, root, Role::Text).unwrap();
+            for entity in [square, text] {
+                if world.get::<crate::sand_placement::Pinned>(entity).is_some() {
+                    crate::sand_placement::PlacementAction::Pin.apply(world, entity);
+                }
+            }
             world
                 .entity_mut(root)
                 .insert(crate::canvas_selection::SandSelection(vec![square, text]));

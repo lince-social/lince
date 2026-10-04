@@ -114,7 +114,8 @@ jobs:
 
       - name: Check native handbook recovery
         if: matrix.variant == 'native'
-        run: cargo test --locked --package lince-desktop --features instinct instinct::
+        run: |
+          cargo test --locked --package lince-desktop --features instinct instinct::
 
       - name: Build native Lince
         if: matrix.variant == 'native'

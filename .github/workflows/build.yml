@@ -81,6 +81,7 @@ jobs:
             libdbus-1-dev \
             libglib2.0-dev \
             libpulse-dev \
+            libspeechd-dev \
             libva-dev \
             libssl-dev \
             libsqlite3-dev \

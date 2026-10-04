@@ -721,9 +721,8 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
 
 fn editor_cells(world: &mut World, cells: Entity, owner: Entity, row: usize, draft: &Draft) {
     let identity = cell(world, cells);
-    let line = self::row(world, identity);
-    editor(world, line, owner, row, 3, &draft.name);
-    editor(world, line, owner, row, 4, &draft.slug);
+    editor(world, identity, owner, row, 3, &draft.name);
+    editor(world, identity, owner, row, 4, &draft.slug);
     for (index, field) in draft.fields.iter().enumerate() {
         let cell = cell(world, cells);
         editor(world, cell, owner, row, index, &field.text);
@@ -733,8 +732,11 @@ fn editor_cells(world: &mut World, cells: Entity, owner: Entity, row: usize, dra
 fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: usize, value: &str) {
     let host = stack(world, parent);
     world.get_mut::<Node>(host).unwrap().flex_shrink = 1.0;
-    if row > 0 {
+    if row > 0 && index < 3 {
         world.get_mut::<Node>(host).unwrap().height = percent(100);
+    }
+    if index >= 3 {
+        crate::edit_mode::label(world, host, if index == 3 { "Name" } else { "Slug" }, 12.0);
     }
     let entity = world
         .spawn(crate::sand::text_editor(
@@ -754,8 +756,16 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
         Node {
             width: percent(100),
             min_width: px(0),
-            height: if row == 0 { Val::Auto } else { percent(100) },
-            min_height: if row == 0 { px(20) } else { Val::Auto },
+            height: if row == 0 || index >= 3 {
+                Val::Auto
+            } else {
+                percent(100)
+            },
+            min_height: if row == 0 || index >= 3 {
+                px(20)
+            } else {
+                Val::Auto
+            },
             overflow: Overflow::clip(),
             ..default()
         },

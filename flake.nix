@@ -835,6 +835,9 @@
             let
               libraries = with pkgs; [
                 stdenv.cc.cc.lib
+                speechd
+                pipewire
+                dbus
                 openssl
                 sqlite
                 libGL

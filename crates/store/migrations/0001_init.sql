@@ -3294,14 +3294,8 @@ CREATE INDEX karma_frequency_status
 CREATE INDEX karma_frequency_revision_frequency
     ON karma_frequency_revision(frequency_uid, created_at);
 
-CREATE INDEX karma_frequency_activation_frequency
-    ON karma_frequency_activation(frequency_uid, activating_handle_revision);
-
 CREATE INDEX karma_frequency_activation_resolution
     ON karma_frequency_activation(frequency_uid, effective_parameter_hash);
-
-CREATE INDEX karma_schedule_occurrence_activation
-    ON karma_schedule_occurrence(activation_hash, sequence);
 
 CREATE INDEX karma_schedule_occurrence_intended_range
     ON karma_schedule_occurrence(activation_hash, first_intended_at, last_intended_at);
@@ -3327,9 +3321,6 @@ CREATE INDEX karma_run_replay_order
 CREATE INDEX karma_run_program_order
     ON karma_run(program_uid, cell_sequence, member_ordinal);
 
-CREATE INDEX karma_program_state_event_history
-    ON karma_program_state_event(program_uid, node_id, state_revision);
-
 CREATE INDEX karma_candidate_program_order
     ON karma_candidate(program_uid, created_at, candidate_hash);
 
@@ -3350,9 +3341,6 @@ CREATE INDEX karma_intent_candidate
 
 CREATE INDEX karma_intent_state_status
     ON karma_intent_state(status, intent_hash);
-
-CREATE INDEX karma_intent_event_history
-    ON karma_intent_event(intent_hash, state_revision);
 
 CREATE INDEX idx_fact_concept_event_fact ON fact_concept_event(fact_uid);
 
@@ -3489,8 +3477,6 @@ CREATE INDEX social_reply_expiry ON social_reply_route(expires_at);
 CREATE INDEX social_reply_post ON social_reply_route(post);
 
 CREATE INDEX social_reply_owner ON social_reply_route(owner,id);
-
-CREATE INDEX social_gossip_item_document ON social_gossip_item(kind,document_hash);
 
 CREATE UNIQUE INDEX social_gossip_item_identity ON social_gossip_item(kind,document_hash);
 
@@ -5794,3 +5780,9 @@ WHEN NEW.role_id IS NOT OLD.role_id
 BEGIN
     DELETE FROM person_role WHERE person_uid = NEW.person_uid;
 END;
+
+CREATE INDEX concept_parent_children ON concept_parent(parent_uid, concept_uid);
+
+CREATE INDEX concept_name_lookup ON concept_name(name, concept_uid);
+
+CREATE INDEX record_extension_namespace ON record_extension(namespace, record_uid);

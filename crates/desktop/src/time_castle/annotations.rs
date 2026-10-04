@@ -21,7 +21,10 @@ pub(super) struct Annotation {
 }
 
 #[derive(Component)]
-struct Layout(Vec<model::Label>);
+struct Layout {
+    labels: Vec<model::Label>,
+    position: bevy::math::DVec2,
+}
 
 pub(super) fn update(
     world: &mut World,
@@ -36,6 +39,59 @@ pub(super) fn update(
         .get::<Annotations>(owner)
         .map(|annotations| annotations.0.clone())
         .unwrap_or_default();
+    if let Some((hit, point)) = world
+        .get_resource::<crate::topology::input::PointerState>()
+        .and_then(|pointer| pointer.hit)
+    {
+        let id = if hit == owner {
+            world
+                .get::<crate::topology::presentation::Surface>(owner)
+                .and_then(|surface| world.get::<GlobalTransform>(surface.visual))
+                .and_then(|transform| {
+                    render::nearest_at(
+                        world,
+                        owner,
+                        transform.affine().inverse().transform_point3(point).xz(),
+                    )
+                })
+        } else {
+            world
+                .get::<Annotation>(hit)
+                .filter(|_| {
+                    world
+                        .get::<AnnotationOf>(hit)
+                        .is_some_and(|parent| parent.0 == owner)
+                })
+                .map(|annotation| annotation.id.clone())
+        };
+        if let Some(id) = id {
+            let local = (hit == owner)
+                .then(|| {
+                    world
+                        .get::<crate::topology::presentation::Surface>(owner)
+                        .and_then(|surface| world.get::<GlobalTransform>(surface.visual))
+                        .map(|transform| transform.affine().inverse().transform_point3(point))
+                })
+                .flatten();
+            let mut view = world.get_mut::<View>(owner).unwrap();
+            view.hovered = Some(id);
+            if let Some(point) = local {
+                view.hover_point = Some(point);
+            }
+            view.hover_at = std::time::Instant::now();
+        }
+    }
+    if world
+        .get::<View>(owner)
+        .unwrap()
+        .hover_at
+        .elapsed()
+        .as_millis()
+        > 250
+    {
+        world.get_mut::<View>(owner).unwrap().hovered = None;
+        world.get_mut::<View>(owner).unwrap().hover_point = None;
+    }
     if !visible {
         for entity in previous {
             world.despawn(entity);
@@ -60,6 +116,18 @@ pub(super) fn update(
         .cloned()
         .unwrap_or_default();
     let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
+    let unwind = world.get::<View>(owner).unwrap().unwind;
+    let spatial_mode = world
+        .get::<crate::topology::view::View>(root)
+        .is_some_and(|view| view.spatial);
+    let hovered = world.get::<View>(owner).unwrap().hovered.clone();
+    let displacement = world
+        .get::<Layout>(owner)
+        .map_or(bevy::math::DVec2::ZERO, |layout| {
+            layout.position - item.position
+        });
+    let displacement = bevy::math::DQuat::from_array(spatial.rotation).inverse()
+        * bevy::math::DVec3::new(displacement.x, 0.0, displacement.y);
     let font = palette.font * 0.875;
     let bounds = visible_bounds(world, root, &item, &spatial);
     let mut labels = if changed || world.get::<Layout>(owner).is_none() {
@@ -96,19 +164,27 @@ pub(super) fn update(
                 advance: &advance,
             },
         );
-        if let Some(bounds) = bounds {
-            let radius = label_floor(&labels, size, palette.width);
-            let mut previous = Vec::new();
-            for label in &mut labels {
+        let radius = label_floor(&labels, size, palette.width);
+        let mut previous = Vec::new();
+        for label in &mut labels {
+            if let Some(bounds) = bounds {
                 fit(&mut label.rect, &previous, radius, palette.gap, bounds);
-                previous.push(label.rect);
             }
+            separate(&mut label.rect, &previous, radius, palette.gap);
+            previous.push(label.rect);
         }
-        world.entity_mut(owner).insert(Layout(labels.clone()));
+        world.entity_mut(owner).insert(Layout {
+            labels: labels.clone(),
+            position: item.position,
+        });
         labels
     } else {
-        world.get::<Layout>(owner).unwrap().0.clone()
+        world.get::<Layout>(owner).unwrap().labels.clone()
     };
+    world.get_mut::<Layout>(owner).unwrap().position = item.position;
+    if !settings.floating_cards {
+        labels.retain(|label| hovered.as_ref() == Some(&label.id));
+    }
     let mut existing: HashMap<_, _> = previous
         .iter()
         .filter_map(|entity| {
@@ -120,7 +196,8 @@ pub(super) fn update(
     let live: std::collections::HashSet<_> = labels.iter().map(|label| label.id.clone()).collect();
     for entity in &previous {
         let annotation = world.get::<Annotation>(*entity).unwrap();
-        if !live.contains(&annotation.id)
+        if settings.floating_cards
+            && !live.contains(&annotation.id)
             && world.get::<motion::Motion>(owner).is_some_and(|motion| {
                 motion
                     .bands
@@ -144,12 +221,23 @@ pub(super) fn update(
             .cloned();
         let opacity = band.as_ref().map_or(1.0, motion::Band::opacity);
         if let Some(band) = &band {
-            label.anchor = band.anchor(&settings, now, size, palette.width);
+            label.anchor = band.anchor(&settings, now, size, palette.width, unwind);
+            if !spatial_mode {
+                label.anchor[1] = 0.0;
+            }
+        }
+        if !settings.floating_cards {
+            if let Some(point) = world.get::<View>(owner).unwrap().hover_point {
+                label.anchor = point.to_array();
+            }
+            label.rect[0] = label.anchor[0] + 16.0;
+            label.rect[1] = label.anchor[2] + 16.0;
         }
         let entity = existing.remove(&label.id).unwrap_or_else(|| {
             let entity = world
                 .spawn((
                     AnnotationOf(owner),
+                    AttachedCard,
                     ChildOf(root),
                     member,
                     spatial.clone(),
@@ -254,14 +342,26 @@ pub(super) fn update(
                 [label.rect[0], label.rect[1]]
             };
             let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
-            active |= annotation.spring.advance(target, seconds);
+            if settings.card_physics && settings.floating_cards {
+                annotation.spring.position[0] += displacement.x as f32;
+                annotation.spring.position[1] += displacement.z as f32;
+                active |= annotation
+                    .spring
+                    .advance_with_frequency(target, seconds, 6.0);
+            } else {
+                annotation.spring = lince_interface::motion::Spring::new(target);
+            }
             label.rect[0] = annotation.spring.position[0];
             label.rect[1] = annotation.spring.position[1];
         }
-        if let Some(bounds) = bounds {
+        if settings.floating_cards
+            && let Some(bounds) = bounds
+        {
             fit(&mut label.rect, &rectangles, radius, palette.gap, bounds);
         }
-        separate(&mut label.rect, &rectangles, radius, palette.gap);
+        if settings.floating_cards {
+            separate(&mut label.rect, &rectangles, radius, palette.gap);
+        }
         rectangles.push(label.rect);
         {
             let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
@@ -277,6 +377,9 @@ pub(super) fn update(
         let position = item.position + bevy::math::DVec2::new(offset.x, offset.z);
         let mut placement = spatial;
         placement.elevation += offset.y;
+        if !settings.floating_cards {
+            placement.elevation += f64::from(label.anchor[1]);
+        }
         let size = Vec2::new(label.rect[2], label.rect[3]);
         if world
             .get::<CanvasItem>(entity)
@@ -631,6 +734,60 @@ mod tests {
         let action = world.get::<ActionButton>(entities[0]).unwrap().clone();
         action.actions.run(&mut world, owner);
         assert_eq!(world.get::<View>(owner).unwrap().selected.len(), 1);
+        {
+            let mut settings = world.get_mut::<TimeSettings>(owner).unwrap();
+            settings.0.floating_cards = false;
+            settings.0.card_physics = false;
+        }
+        let labels = update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            true,
+            &palette,
+        );
+        assert!(labels.is_empty());
+        {
+            let mut view = world.get_mut::<View>(owner).unwrap();
+            view.hovered = Some("event-1".into());
+            view.hover_point = Some(Vec3::new(20.0, 0.0, 30.0));
+            view.hover_at = std::time::Instant::now();
+        }
+        let labels = update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            false,
+            &palette,
+        );
+        assert_eq!(labels.len(), 1);
+        assert_eq!(labels[0].id, "event-1");
+        assert_eq!([labels[0].rect[0], labels[0].rect[1]], [36.0, 46.0]);
+        let hover_card = world.get::<Annotations>(owner).unwrap().0[0];
+        assert!(world.get::<AttachedCard>(hover_card).is_some());
+        assert_eq!(
+            world.get::<Annotation>(hover_card).unwrap().spring.velocity,
+            [0.0; 2]
+        );
+        world
+            .get_mut::<TimeSettings>(owner)
+            .unwrap()
+            .0
+            .floating_cards = true;
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            true,
+            &palette,
+        );
+        let entities = world.get::<Annotations>(owner).unwrap().0.clone();
         assert!(
             entities
                 .iter()
@@ -670,6 +827,40 @@ mod tests {
                 .iter()
                 .all(|entity| world.get::<ActionButton>(*entity).is_some())
         );
+        world.get_mut::<TimeSettings>(owner).unwrap().0.card_physics = true;
+        world.get_mut::<CanvasItem>(owner).unwrap().position.x += 4.0;
+        world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            false,
+            &palette,
+        );
+        assert!(entities.iter().any(|entity| {
+            world
+                .get::<Annotation>(*entity)
+                .unwrap()
+                .spring
+                .velocity
+                .iter()
+                .any(|velocity| velocity.abs() > 0.25)
+        }));
+        for _ in 0..240 {
+            world.get_mut::<motion::Motion>(owner).unwrap().active = false;
+            update(
+                &mut world,
+                owner,
+                now,
+                Vec2::splat(420.0),
+                true,
+                false,
+                &palette,
+            );
+        }
+        assert!(!world.get::<motion::Motion>(owner).unwrap().active);
         world.despawn(owner);
         assert!(
             entities

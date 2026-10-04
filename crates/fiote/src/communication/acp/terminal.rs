@@ -67,7 +67,7 @@ impl LoginTerminal {
         command.args(&config.args);
         command.args(&method.args);
         command.cwd(&config.directory);
-        for (key, value) in &config.environment {
+        for (key, value) in launch::environment(config) {
             command.env(key, value);
         }
         for (key, value) in &method.env {

@@ -203,6 +203,7 @@ pub fn synchronize(world: &mut World) -> bool {
                     .is_some_and(|s| s.active == member.0)
                 && world.get::<crate::sand_placement::Pinned>(*e).is_none()
                 && world.get::<crate::arrow_sand::ArrowSand>(*e).is_none()
+                && world.get::<crate::time_castle::AttachedCard>(*e).is_none()
                 && world
                     .get::<crate::protein_area::placement::Pending>(*e)
                     .is_none()
@@ -232,6 +233,7 @@ pub fn synchronize(world: &mut World) -> bool {
             .filter(|e| {
                 world.get::<crate::area::InfluenceArea>(*e).is_none()
                     && world.get::<crate::arrow_sand::ArrowSand>(*e).is_none()
+                    && world.get::<crate::time_castle::AttachedCard>(*e).is_none()
                     && !world
                         .get::<super::assets::ImportedAsset>(*e)
                         .is_some_and(super::splats::is_splat)

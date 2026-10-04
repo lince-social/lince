@@ -142,7 +142,7 @@ fn every_aperture_has_twelve_major_and_sixty_total_next_occurrence_ticks() {
 }
 
 #[test]
-fn summary_shows_one_current_and_one_future_task_with_correct_countdowns() {
+fn summary_includes_every_current_and_future_task_with_correct_countdowns() {
     use lince_interface::time_castle::{countdown, summaries};
     let entries = vec![
         entry("later active", 2000, Some(9000)),
@@ -150,8 +150,14 @@ fn summary_shows_one_current_and_one_future_task_with_correct_countdowns() {
         entry("next", 6000, None),
         entry("after", 7000, Some(10_000)),
     ];
-    assert_eq!(summaries(&entries, 5000, 20_000), [(1, 3000), (2, 1000)]);
-    assert_eq!(summaries(&entries, 0, 20_000), [(1, 1000), (0, 2000)]);
+    assert_eq!(
+        summaries(&entries, 5000, 20_000),
+        [(1, 3000), (0, 4000), (2, 1000), (3, 2000)]
+    );
+    assert_eq!(
+        summaries(&entries, 0, 20_000),
+        [(1, 1000), (0, 2000), (2, 6000), (3, 7000)]
+    );
     assert_eq!(countdown(64_000), "1m 04s");
     assert_eq!(countdown(3_724_000), "1h 02m 04s");
     assert_eq!(countdown(1), "1s");
@@ -351,10 +357,10 @@ fn ring_wraps_into_the_future_and_untwists_left_to_right() {
 }
 
 #[test]
-fn aperture_and_horizon_remain_independent_with_valid_bounds() {
+fn aperture_sets_the_schedule_window_with_valid_bounds() {
     let mut settings = Settings::default();
     settings.set_aperture(7_200_000);
-    assert_eq!(settings.horizon_ms, 14_400_000);
+    assert_eq!(settings.horizon_ms, 7_200_000);
     settings.set_aperture(36_000_000);
     assert_eq!(settings.horizon_ms, 36_000_000);
     settings.set_horizon(3_600_000);

@@ -117,9 +117,6 @@ pub(super) fn content(
         world.entity_mut(row).insert(crate::full_record::RecordCard);
     }
     fields(world, row, config, data, binding.clone(), sections.as_ref());
-    if let Some(sections) = sections {
-        super::record_layout::arrange(world, row, &sections, data);
-    }
     if config.record_cards
         && let Some(binding) = binding.clone()
         && matches!(binding.source, Source::Local)
@@ -158,6 +155,9 @@ pub(super) fn content(
                 ChildOf(row),
             ));
         }
+    }
+    if let Some(sections) = sections {
+        super::record_layout::arrange(world, row, &sections, data);
     }
 }
 

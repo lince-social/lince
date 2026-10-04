@@ -18,6 +18,9 @@ use cell::{ClientMessage, ServerMessage};
 use lince_interface::time_castle::{self as model, CursorMode, Entry, Mode, Settings};
 use std::collections::HashMap;
 
+#[derive(Component)]
+pub(crate) struct AttachedCard;
+
 #[derive(Component, Clone)]
 pub struct TimeSettings(pub Settings);
 
@@ -30,8 +33,14 @@ struct View {
     status: Entity,
     present: Entity,
     details: Entity,
-    fields: [Entity; 3],
+    fields: [Entity; 2],
     entries: Vec<Entry>,
+    upcoming: Entity,
+    upcoming_rows: Vec<(String, String)>,
+    upcoming_stamp: Option<(u64, i64, i64, String)>,
+    hovered: Option<String>,
+    hover_point: Option<Vec3>,
+    hover_at: std::time::Instant,
     source: Source,
     selected: Vec<String>,
     page: usize,
@@ -118,11 +127,16 @@ pub fn populate(world: &mut World, owner: Entity) {
             ..Settings::default()
         }));
     }
+    {
+        let mut settings = world.get_mut::<TimeSettings>(owner).unwrap();
+        settings.0.horizon_ms = settings.0.aperture_ms;
+    }
     world
         .entity_mut(owner)
         .insert(crate::sand_store::SandCredits(CREDITS));
     let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
     let (viewport, status, present, details, fields) = ui::populate(world, owner, &settings);
+    let upcoming = ui::upcoming_panel(world, owner);
     world.entity_mut(owner).insert(View {
         viewport,
         status,
@@ -130,6 +144,12 @@ pub fn populate(world: &mut World, owner: Entity) {
         details,
         fields,
         entries: Vec::new(),
+        upcoming,
+        upcoming_rows: Vec::new(),
+        upcoming_stamp: None,
+        hovered: None,
+        hover_point: None,
+        hover_at: std::time::Instant::now(),
         source: Source::Local,
         selected: Vec::new(),
         page: 0,

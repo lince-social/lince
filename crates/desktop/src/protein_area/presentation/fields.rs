@@ -12,6 +12,9 @@ struct Field {
     editors: Vec<(Entity, Node)>,
 }
 
+#[derive(Component, Clone, PartialEq)]
+struct AppliedFieldSettings(Values);
+
 #[derive(Component)]
 struct SettingsObserved;
 
@@ -274,6 +277,9 @@ fn apply_field(world: &mut World, entity: Entity) {
             };
         }
     }
+    world
+        .entity_mut(entity)
+        .insert(AppliedFieldSettings(values));
 }
 
 pub(super) fn arrange(world: &mut World, row: Entity, view: &Presentation) {
@@ -469,7 +475,36 @@ fn refresh_added(world: &mut World, row: Entity, view: &Presentation) {
 
 pub(super) fn refresh(world: &mut World, row: Entity) {
     for (entity, _) in containers(world, row) {
-        apply_field(world, entity);
+        let unchanged = world
+            .get::<AppliedFieldSettings>(entity)
+            .is_some_and(|applied| {
+                world
+                    .get::<Configuration>(entity)
+                    .is_some_and(|configuration| applied.0 == configuration.0)
+            });
+        if !unchanged {
+            apply_field(world, entity);
+        } else {
+            let values = world.get::<Configuration>(entity).unwrap().0.clone();
+            if let Some(mut node) = world.get_mut::<Node>(entity) {
+                if let Some(Setting::Number(width)) = values.0.get("width") {
+                    if node.width != px(*width) {
+                        node.width = px(*width);
+                    }
+                    if node.max_width != px(*width) {
+                        node.max_width = px(*width);
+                    }
+                }
+                if let Some(Setting::Number(height)) = values.0.get("height") {
+                    if node.height != px(*height) {
+                        node.height = px(*height);
+                    }
+                    if node.min_height != px(*height) {
+                        node.min_height = px(*height);
+                    }
+                }
+            }
+        }
     }
 }
 

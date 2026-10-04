@@ -26,6 +26,8 @@ struct Exercise {
     tabs_only: bool,
     root: Option<Entity>,
     sand: Option<Entity>,
+    relation: Option<Entity>,
+    relation_physics: bool,
     broken: Option<Entity>,
     captured: bool,
     output: PathBuf,
@@ -121,8 +123,40 @@ fn exercise(world: &mut World) {
                             .any(|text| text.0 == heading),
                         "Missing rendered tab heading after clicking: {heading}"
                     );
+                    if state.tab == 1 {
+                        let root = world
+                            .query_filtered::<Entity, (With<BoxRoot>, Without<LaboratoryRoot>)>()
+                            .single(world)
+                            .unwrap();
+                        state.relation_physics =
+                            lince_desktop::workspace_config::enabled(world, root, 1);
+                        let area = lince_desktop::relation_castle::spawn(world, root).unwrap();
+                        world
+                            .entity_mut(root)
+                            .insert(lince_desktop::area_panel::AreaEditor {
+                                selected: Some(area),
+                                ..default()
+                            });
+                        state.relation = Some(area);
+                    }
+                    if state.tab == 6 {
+                        assert!(
+                            world
+                                .query::<&Text>()
+                                .iter(world)
+                                .any(|text| text.0 == "Repulsion")
+                        );
+                    }
                     state.tab += 1;
                     if state.tab == tabs.len() {
+                        world.despawn(state.relation.take().unwrap());
+                        let root = world
+                            .query_filtered::<Entity, (With<BoxRoot>, Without<LaboratoryRoot>)>()
+                            .single(world)
+                            .unwrap();
+                        lince_desktop::workspace_config::set_physics(
+                            world, root, 1, state.relation_physics,
+                        );
                         activate(world, "Close edit mode");
                         if state.tabs_only {
                             println!(
@@ -313,6 +347,8 @@ async fn main() {
             tabs_only: std::env::args().any(|arg| arg == "--edit-tabs-only"),
             root: None,
             sand: None,
+            relation: None,
+            relation_physics: false,
             broken: None,
             captured: false,
             output,

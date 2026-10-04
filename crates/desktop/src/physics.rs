@@ -228,6 +228,9 @@ fn synchronize(world: &mut World) -> bool {
                 && world.get::<crate::area::InfluenceArea>(*entity).is_none()
                 && world.get::<crate::arrow_sand::ArrowSand>(*entity).is_none()
                 && world
+                    .get::<crate::time_castle::AttachedCard>(*entity)
+                    .is_none()
+                && world
                     .get::<crate::protein_area::placement::Pending>(*entity)
                     .is_none()
                 && world
@@ -643,6 +646,44 @@ pub(crate) mod tests {
         for _ in 0..ticks {
             app.update();
         }
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn attached_clock_cards_cannot_push_their_clock_or_gain_workspace_bodies() {
+        let (mut baseline, root, _, clock) = fixture(DVec2::ZERO);
+        crate::workspace_config::set_physics(baseline.world_mut(), root, 1, true);
+        advance(&mut baseline, 120);
+        let expected = baseline.world().get::<CanvasItem>(clock).unwrap().position;
+        let (mut app, root, _, clock) = fixture(DVec2::ZERO);
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        let position = app.world().get::<CanvasItem>(clock).unwrap().position;
+        let card = app
+            .world_mut()
+            .spawn((
+                crate::time_castle::AttachedCard,
+                CanvasItem {
+                    position,
+                    size: Vec2::splat(100.0),
+                },
+                WorkspaceMember(1),
+                ChildOf(root),
+            ))
+            .id();
+        advance(&mut app, 120);
+        assert!(
+            (app.world().get::<CanvasItem>(clock).unwrap().position - expected).length() < 0.001
+        );
+        assert!(
+            !app.world_mut()
+                .query::<&BodyLink>()
+                .iter(app.world())
+                .any(|body| body.sand == card)
+        );
+        assert_eq!(
+            app.world().get::<CanvasItem>(card).unwrap().position,
+            position
+        );
     }
 
     #[cfg(test)]

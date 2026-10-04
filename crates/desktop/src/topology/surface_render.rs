@@ -1,4 +1,5 @@
 use bevy::{
+    asset::AssetId,
     camera::{CameraMainTextureUsages, RenderTarget},
     core_pipeline::core_2d::{AlphaMask2d, Opaque2d, Transparent2d},
     ecs::schedule::ScheduleLabel,
@@ -15,7 +16,7 @@ use bevy::{
         },
         render_resource::{
             LoadOp, Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
-            StoreOp, TextureFormat, TextureUsages,
+            StoreOp, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
         renderer::RenderContext,
         sync_world::RenderEntity,
@@ -34,7 +35,7 @@ use std::{
     collections::{HashMap, HashSet, hash_map::DefaultHasher},
     hash::{Hash, Hasher},
     sync::{
-        Mutex,
+        Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
 };
@@ -44,12 +45,26 @@ struct CaptureCache {
     pending: AtomicBool,
     fingerprints: HashMap<Entity, DefaultHasher>,
     dirty: HashSet<Entity>,
+    blocked: HashSet<Entity>,
     skipped: HashSet<Entity>,
     rendered: Mutex<HashMap<Entity, u64>>,
+    targets: Mutex<HashMap<Entity, Texture>>,
 }
 
 #[derive(Component, Clone, ExtractComponent)]
 pub struct SurfaceCapture(pub Handle<Image>);
+
+#[derive(Component, Clone, ExtractComponent)]
+pub(crate) struct CaptureReady(pub bool);
+
+#[derive(Resource, Clone, Default)]
+pub(crate) struct CompletedCaptures(Arc<Mutex<HashSet<AssetId<Image>>>>);
+
+impl CompletedCaptures {
+    pub(crate) fn contains(&self, image: &Handle<Image>) -> bool {
+        self.0.lock().unwrap().contains(&image.id())
+    }
+}
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SurfacePass;
@@ -58,11 +73,16 @@ pub struct SurfaceRenderPlugin;
 
 impl Plugin for SurfaceRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ExtractComponentPlugin::<SurfaceCapture>::default());
+        let completed = CompletedCaptures::default();
+        app.insert_resource(completed.clone()).add_plugins((
+            ExtractComponentPlugin::<SurfaceCapture>::default(),
+            ExtractComponentPlugin::<CaptureReady>::default(),
+        ));
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
         render_app
+            .insert_resource(completed)
             .init_resource::<CaptureCache>()
             .add_systems(
                 ExtractSchedule,
@@ -169,10 +189,22 @@ fn fingerprint_captures(
     nodes: Res<ExtractedUiNodes>,
     changed: Res<ExtractedAssets<GpuImage>>,
     images: Res<RenderAssets<GpuImage>>,
+    completed: Res<CompletedCaptures>,
 ) {
+    completed
+        .0
+        .lock()
+        .unwrap()
+        .retain(|image| images.get(*image).is_some());
+    cache.targets.get_mut().unwrap().retain(|entity, _| {
+        captures
+            .get(*entity)
+            .is_ok_and(|(_, camera)| camera.is_some_and(|camera| views.contains(camera.0)))
+    });
     cache.pending.store(true, Ordering::Relaxed);
     cache.fingerprints.clear();
     cache.dirty.clear();
+    cache.blocked.clear();
     cache
         .rendered
         .get_mut()
@@ -191,6 +223,9 @@ fn fingerprint_captures(
         let entity = node.extracted_camera_entity;
         if !cache.fingerprints.contains_key(&entity) {
             continue;
+        }
+        if node.image != AssetId::default() && images.get(node.image).is_none() {
+            cache.blocked.insert(entity);
         }
         if changed.modified.contains(&node.image)
             || changed.added.contains(&node.image)
@@ -303,7 +338,12 @@ fn capture_hash(
 }
 
 fn reuse_captures(
-    captures: Query<(Entity, &SurfaceCapture, &UiCameraView)>,
+    captures: Query<(
+        Entity,
+        &SurfaceCapture,
+        &UiCameraView,
+        Option<&CaptureReady>,
+    )>,
     views: Query<&ExtractedView>,
     mut phases: ResMut<ViewSortedRenderPhases<TransparentUi>>,
     images: Res<RenderAssets<GpuImage>>,
@@ -313,7 +353,11 @@ fn reuse_captures(
 ) {
     cache.skipped.clear();
     let draw_ui = draws.read().get_id::<DrawUi>();
-    for (entity, capture, ui_view) in &captures {
+    for (entity, capture, ui_view, ready) in &captures {
+        if ready.is_some_and(|ready| !ready.0) || cache.blocked.contains(&entity) {
+            cache.skipped.insert(entity);
+            continue;
+        }
         if cache.dirty.contains(&entity) {
             continue;
         }
@@ -343,20 +387,30 @@ fn reuse_captures(
 
 fn render_surface(
     world: &World,
-    captures: Query<(Entity, &SurfaceCapture, &UiCameraView)>,
+    captures: Query<(
+        Entity,
+        &SurfaceCapture,
+        &UiCameraView,
+        Option<&CaptureReady>,
+    )>,
     views: Query<&ExtractedView>,
     phases: Res<ViewSortedRenderPhases<TransparentUi>>,
     images: Res<RenderAssets<GpuImage>>,
     cache: Res<CaptureCache>,
     draws: Res<DrawFunctions<TransparentUi>>,
     pipelines: Res<PipelineCache>,
+    completed: Res<CompletedCaptures>,
+    wake: Option<Res<crate::wake::WakeSignal>>,
     mut context: RenderContext,
 ) {
     if !cache.pending.swap(false, Ordering::Relaxed) {
         return;
     }
-    for (entity, capture, ui_view) in &captures {
-        if cache.skipped.contains(&entity) {
+    for (entity, capture, ui_view, ready) in &captures {
+        if ready.is_some_and(|ready| !ready.0)
+            || cache.skipped.contains(&entity)
+            || cache.blocked.contains(&entity)
+        {
             continue;
         }
         let (Some(image), Ok(extracted_view)) = (images.get(&capture.0), views.get(ui_view.0))
@@ -367,6 +421,19 @@ fn render_surface(
             continue;
         };
         let draw_ui = draws.read().get_id::<DrawUi>();
+        if ready.is_some() && phase.items.is_empty() {
+            continue;
+        }
+        if !phase
+            .items
+            .values()
+            .all(|item| pipelines.get_render_pipeline(item.pipeline).is_some())
+        {
+            if let Some(wake) = &wake {
+                wake.ring();
+            }
+            continue;
+        }
         let cacheable = phase.items.values().all(|item| {
             Some(item.draw_function) == draw_ui
                 && pipelines.get_render_pipeline(item.pipeline).is_some()
@@ -382,8 +449,37 @@ fn render_surface(
         {
             continue;
         }
+        let target = {
+            let mut targets = cache.targets.lock().unwrap();
+            let target = targets.entry(entity).or_insert_with(|| {
+                context.render_device().create_texture(&TextureDescriptor {
+                    label: Some("sand_ui_staging"),
+                    size: image.texture.size(),
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: TextureDimension::D2,
+                    format: image.texture.format(),
+                    usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
+                    view_formats: &[],
+                })
+            });
+            if target.size() != image.texture.size() || target.format() != image.texture.format() {
+                *target = context.render_device().create_texture(&TextureDescriptor {
+                    label: Some("sand_ui_staging"),
+                    size: image.texture.size(),
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: TextureDimension::D2,
+                    format: image.texture.format(),
+                    usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
+                    view_formats: &[],
+                });
+            }
+            target.clone()
+        };
+        let target_view = target.create_view(&default());
         let attachments = [Some(RenderPassColorAttachment {
-            view: &image.texture_view,
+            view: &target_view,
             depth_slice: None,
             resolve_target: None,
             ops: Operations {
@@ -399,13 +495,26 @@ fn render_surface(
             occlusion_query_set: None,
             multiview_mask: None,
         });
-        if let Err(error) = phase.render(&mut pass, world, ui_view.0) {
+        let result = phase.render(&mut pass, world, ui_view.0);
+        drop(pass);
+        if let Err(error) = result {
             error!("Cannot render Sand UI: {error:?}");
             cache.rendered.lock().unwrap().remove(&entity);
-        } else if cacheable {
-            cache.rendered.lock().unwrap().insert(entity, fingerprint);
         } else {
-            cache.rendered.lock().unwrap().remove(&entity);
+            context.command_encoder().copy_texture_to_texture(
+                target.as_image_copy(),
+                image.texture.as_image_copy(),
+                image.texture.size(),
+            );
+            let changed = completed.0.lock().unwrap().insert(capture.0.id());
+            if changed && let Some(wake) = &wake {
+                wake.ring();
+            }
+            if cacheable {
+                cache.rendered.lock().unwrap().insert(entity, fingerprint);
+            } else {
+                cache.rendered.lock().unwrap().remove(&entity);
+            }
         }
     }
 }
@@ -421,7 +530,8 @@ mod tests {
     #[test]
     fn capture_fingerprint_tracks_camera_text_clipping_and_changed_images() {
         let mut app = App::new();
-        app.init_resource::<CaptureCache>()
+        app.init_resource::<CompletedCaptures>()
+            .init_resource::<CaptureCache>()
             .init_resource::<ExtractedUiNodes>()
             .init_resource::<ExtractedAssets<GpuImage>>()
             .init_resource::<RenderAssets<GpuImage>>()
@@ -505,6 +615,16 @@ mod tests {
             app.world()
                 .resource::<CaptureCache>()
                 .dirty
+                .contains(&camera)
+        );
+        app.init_resource::<Assets<Image>>();
+        let missing = app.world().resource::<Assets<Image>>().reserve_handle();
+        app.world_mut().resource_mut::<ExtractedUiNodes>().uinodes[0].image = missing.id();
+        app.update();
+        assert!(
+            app.world()
+                .resource::<CaptureCache>()
+                .blocked
                 .contains(&camera)
         );
         app.world_mut().despawn(camera);

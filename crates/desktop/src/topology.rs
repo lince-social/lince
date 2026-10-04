@@ -18,7 +18,7 @@ pub mod presentation;
 mod resizing;
 pub mod splats;
 mod surface_budget;
-mod surface_render;
+pub(crate) mod surface_render;
 pub mod ui;
 pub mod view;
 

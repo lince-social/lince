@@ -1539,7 +1539,7 @@ CREATE TABLE recurrence (
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL
 , slug TEXT, quantity INTEGER NOT NULL DEFAULT 1
-    CHECK (quantity IN (0, 1)), name TEXT NOT NULL DEFAULT 'Karma rule', bindings_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(bindings_json)));
+    CHECK (quantity IN (0, 1)), name TEXT NOT NULL DEFAULT '', bindings_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(bindings_json)));
 
 CREATE TABLE recurrence_revision (
     uid             TEXT PRIMARY KEY,
@@ -1559,7 +1559,7 @@ CREATE TABLE recurrence_revision (
     request_id      TEXT NOT NULL,
     actor_uid       TEXT,
     at              TEXT NOT NULL, slug TEXT, quantity INTEGER NOT NULL DEFAULT 1
-    CHECK (quantity IN (0, 1)), name TEXT NOT NULL DEFAULT 'Karma rule', bindings_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(bindings_json)),
+    CHECK (quantity IN (0, 1)), name TEXT NOT NULL DEFAULT '', bindings_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(bindings_json)),
     UNIQUE(recurrence_uid, revision)
 );
 

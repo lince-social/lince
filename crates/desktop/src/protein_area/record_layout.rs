@@ -272,8 +272,28 @@ fn toolbar_visibility(
         Display::Flex
     };
     let mut node = world.get_mut::<Node>(toolbar).unwrap();
-    if node.display != display {
-        node.display = display;
+    if node.display == display {
+        return;
+    }
+    node.display = display;
+    let controls: Vec<_> = world
+        .get::<Children>(row)
+        .into_iter()
+        .flatten()
+        .copied()
+        .filter(|entity| {
+            world.get::<ActionButton>(*entity).is_some()
+                || world
+                    .get::<super::presentation::Controls>(*entity)
+                    .is_some()
+        })
+        .collect();
+    for entity in controls {
+        if let Some(mut node) = world.get_mut::<Node>(entity)
+            && node.display != display
+        {
+            node.display = display;
+        }
     }
 }
 
@@ -300,6 +320,14 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
     let mut filled = false;
     let mut unfilled = false;
     for (entity, property) in properties {
+        world.get_mut::<Node>(entity).unwrap().display = if property != "head"
+            && sections.presentation.hide_filled
+            && !sections.presentation.expanded
+        {
+            Display::None
+        } else {
+            Display::Flex
+        };
         let parent = sections.parent(&property, data);
         if world.get::<ChildOf>(entity).map(ChildOf::parent) != Some(parent) {
             world.entity_mut(entity).insert(ChildOf(parent));
@@ -385,12 +413,90 @@ pub(super) fn restore(world: &mut World, row: Entity) {
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use serde_json::json;
 
-    #[test]
+    crate::laboratory_cases! {
+        relation_records_keep_every_non_title_property_in_a_saved_accordion,
+        title_only_records_hide_properties_and_controls_until_opened,
+        fiote_castle_contains_management_without_conversation,
+        empty_fields_collapse_and_dates_share_a_row_without_replacing_editors,
+    }
+
+    #[cfg_attr(test, test)]
+    fn title_only_records_hide_properties_and_controls_until_opened() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let config = Config {
+            hide_filled: true,
+            delete_button: true,
+            ..Config::records()
+        };
+        app.world_mut()
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .protein = Some(config.clone());
+        app.world_mut().resource_mut::<Runtime>().areas.insert(owner, State {
+            applied: Some(config),
+            data: vec![json!({"uid":"record", "head":"Title", "body":"Body", "quantity":"7", "slug":"slug", "start_date":"2026-09-22", "due_date":"2026-09-23", "threads":[{"uid":"thread", "head":"Thread"}]})],
+            ready: true, dirty: true, ..default()
+        });
+        rows::reconcile(app.world_mut(), owner);
+        let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
+        let sections = app.world().get::<Sections>(row).unwrap().clone();
+        let fields: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &rows::PropertyContainer)>()
+            .iter(app.world())
+            .map(|(entity, field)| (entity, field.0.clone()))
+            .collect();
+        assert_eq!(
+            app.world().get::<Node>(sections.toolbar).unwrap().display,
+            Display::None
+        );
+        for (entity, property) in &fields {
+            assert_eq!(
+                app.world().get::<Node>(*entity).unwrap().display,
+                if property == "head" {
+                    Display::Flex
+                } else {
+                    Display::None
+                }
+            );
+        }
+        let buttons: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &ActionButton)>()
+            .iter(app.world())
+            .filter(|(_, button)| button.target == row)
+            .map(|(entity, _)| entity)
+            .collect();
+        assert!(!buttons.is_empty());
+        for entity in buttons {
+            let mut ancestor = entity;
+            while app.world().get::<Node>(ancestor).unwrap().display != Display::None {
+                assert_ne!(ancestor, row, "Visible Record control in title-only mode");
+                ancestor = app.world().get::<ChildOf>(ancestor).unwrap().parent();
+            }
+        }
+        Toggle.apply(app.world_mut(), row);
+        for (entity, _) in &fields {
+            assert_eq!(
+                app.world().get::<Node>(*entity).unwrap().display,
+                Display::Flex
+            );
+        }
+        Toggle.apply(app.world_mut(), row);
+        Compact.apply(app.world_mut(), row);
+        for (entity, _) in fields {
+            assert_eq!(
+                app.world().get::<Node>(entity).unwrap().display,
+                Display::Flex
+            );
+        }
+    }
+
+    #[cfg_attr(test, test)]
     fn relation_records_keep_every_non_title_property_in_a_saved_accordion() {
         let (mut app, _, owner) = super::super::tests::fixture();
         let config = crate::relation_castle::config();
@@ -427,6 +533,17 @@ mod tests {
         app.world_mut()
             .resource_mut::<bevy::picking::hover::HoverMap>()
             .clear();
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(sections.title, bevy::input_focus::FocusCause::Pressed);
+        update(app.world_mut());
+        assert_eq!(
+            app.world().get::<Node>(sections.toolbar).unwrap().display,
+            Display::Flex
+        );
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(owner, bevy::input_focus::FocusCause::Pressed);
         update(app.world_mut());
         assert_eq!(
             app.world().get::<Node>(sections.toolbar).unwrap().display,
@@ -496,7 +613,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn fiote_castle_contains_management_without_conversation() {
         let (mut app, _, owner) = super::super::tests::fixture();
         let mut config = Config::records();
@@ -539,7 +656,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn empty_fields_collapse_and_dates_share_a_row_without_replacing_editors() {
         let (mut app, _, owner) = super::super::tests::fixture();
         app.add_plugins(crate::record_binding::RecordBindingPlugin);

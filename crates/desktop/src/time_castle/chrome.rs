@@ -9,6 +9,7 @@ pub(super) struct Chrome {
     panel: Entity,
     button: Entity,
     center: Entity,
+    center_button: Entity,
     tabs: [Entity; 4],
     binding: Option<[Entity; 2]>,
     open: bool,
@@ -195,36 +196,37 @@ pub(super) fn populate(world: &mut World, owner: Entity) {
         .id();
     let center = world
         .spawn((
-            crate::sand::button(0),
-            crate::sand::Borderless,
-            bevy::a11y::AccessibilityNode::default(),
             Node {
                 position_type: PositionType::Absolute,
                 left: percent(50),
                 top: percent(75),
                 margin: UiRect {
-                    left: px(-58),
-                    top: px(-31),
+                    left: px(-16),
+                    top: px(-16),
                     ..default()
                 },
-                width: px(116),
-                height: px(86),
+                width: px(32),
+                height: px(32),
                 ..default()
             },
-            BackgroundColor(Color::NONE),
-            crate::icons::Tooltip("Clock controls".into()),
             ZIndex(40),
-            ActionButton::new(owner, crate::actions![ToggleControls]),
             ChildOf(owner),
         ))
         .id();
-    world
-        .entity_mut(center)
-        .remove::<(Outline, crate::token_style::OutlineToken)>();
-    world
-        .get_mut::<bevy::a11y::AccessibilityNode>(center)
-        .unwrap()
-        .set_label("Memento mori. Clock controls");
+    let center_button = world
+        .spawn((
+            IconButton::new(Icon::General, "Clock controls"),
+            IconStyle {
+                size: 16.0,
+                padding: 6.0,
+                radius: 32.0,
+                ..default()
+            },
+            crate::sand::Borderless,
+            ActionButton::new(owner, crate::actions![ToggleControls]),
+            ChildOf(center),
+        ))
+        .id();
     let peek = world
         .spawn((
             Node {
@@ -254,6 +256,7 @@ pub(super) fn populate(world: &mut World, owner: Entity) {
         panel,
         button,
         center,
+        center_button,
         tabs,
         binding: None,
         open: false,
@@ -298,11 +301,12 @@ pub(super) fn colors(world: &mut World, owner: Entity, palette: &palette::Palett
     let Some(chrome) = world.get::<Chrome>(owner) else {
         return;
     };
-    let (panel, peek, tabs, button, tab) = (
+    let (panel, peek, tabs, button, center, tab) = (
         chrome.panel,
         chrome.peek,
         chrome.tabs,
         chrome.button,
+        chrome.center_button,
         chrome.tab,
     );
     for entity in [panel, peek] {
@@ -350,7 +354,10 @@ pub(super) fn colors(world: &mut World, owner: Entity, palette: &palette::Palett
     } else {
         palette.ink
     };
-    if let Some(mut style) = world.get_mut::<IconStyle>(button) {
+    for button in [button, center] {
+        let Some(mut style) = world.get_mut::<IconStyle>(button) else {
+            continue;
+        };
         if style.color != color {
             style.color = color;
         }
@@ -627,17 +634,23 @@ mod tests {
     fn round_clock_has_only_its_center_entry_and_keeps_selection_outside_configuration() {
         let (mut world, owner, _) = fixture();
         let chrome = world.get::<Chrome>(owner).unwrap();
-        let (center, button, peek_entity) = (chrome.center, chrome.button, chrome.peek);
+        let (center, center_button, button, peek_entity) = (
+            chrome.center,
+            chrome.center_button,
+            chrome.button,
+            chrome.peek,
+        );
         assert!(visible(&world, center));
         assert!(!visible(&world, button));
         assert_eq!(surfaces(&world, owner), [center]);
         assert_eq!(world.get::<BackgroundColor>(center).unwrap().0, Color::NONE);
         assert_eq!(
-            world
-                .get::<bevy::a11y::AccessibilityNode>(center)
-                .unwrap()
-                .label(),
-            Some("Memento mori. Clock controls")
+            world.get::<IconButton>(center_button).unwrap().label,
+            "Clock controls"
+        );
+        assert_eq!(
+            world.get::<ChildOf>(center_button).unwrap().parent(),
+            center
         );
         assert_eq!(world.get::<Node>(center).unwrap().left, percent(50));
         assert_eq!(world.get::<Node>(center).unwrap().top, percent(75));

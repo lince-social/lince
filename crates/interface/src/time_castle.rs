@@ -76,9 +76,7 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
     sort(&mut future);
     current
         .into_iter()
-        .take(1)
         .chain(future)
-        .take(2)
         .map(|(index, _, remaining)| (index, remaining))
         .collect()
 }
@@ -93,19 +91,29 @@ pub struct Settings {
     pub mode: Mode,
     #[serde(default)]
     pub cursor: CursorMode,
+    #[serde(default = "enabled")]
+    pub floating_cards: bool,
+    #[serde(default = "enabled")]
+    pub card_physics: bool,
     #[serde(default)]
     pub sound: crate::sound::Settings,
+}
+
+fn enabled() -> bool {
+    true
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             aperture_ms: 3_600_000,
-            horizon_ms: 14_400_000,
+            horizon_ms: 3_600_000,
             timezone: "UTC".into(),
             area: None,
             mode: Mode::Coiled,
             cursor: CursorMode::Moving,
+            floating_cards: true,
+            card_physics: true,
             sound: crate::sound::Settings::default(),
         }
     }
@@ -171,7 +179,7 @@ impl Settings {
 
     pub fn set_aperture(&mut self, value: i64) {
         self.aperture_ms = value;
-        self.horizon_ms = self.horizon_ms.max(value);
+        self.horizon_ms = value;
     }
 
     pub fn set_horizon(&mut self, value: i64) {

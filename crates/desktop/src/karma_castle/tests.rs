@@ -448,7 +448,7 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
     assert!(world.get::<View>(owner).unwrap().pending.is_none());
     ui::Command::CancelDelete.apply(world, owner);
     let first = world.get::<Children>(list).unwrap()[0];
-    let condition = world.get::<Children>(first).unwrap()[2];
+    let condition = world.get::<Children>(first).unwrap()[3];
     world
         .get::<crate::actions::ActionButton>(condition)
         .unwrap()
@@ -557,7 +557,11 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
         crate::theme::ThemePlugin,
         crate::sand::SandPlugin,
     ))
-    .init_resource::<Assets<TextureAtlasLayout>>();
+    .init_resource::<Assets<TextureAtlasLayout>>()
+    .add_systems(
+        PostUpdate,
+        ui::fit_columns.after(bevy::ui::UiSystems::Layout),
+    );
     app.world_mut().spawn((
         Camera2d,
         Camera {
@@ -654,6 +658,12 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
     let list = app.world().get::<View>(owner).unwrap().list;
     let row = app.world().get::<Children>(list).unwrap()[0];
     let before = app.world().get::<ComputedNode>(row).unwrap().size();
+    let cells = app.world().get::<Children>(row).unwrap();
+    assert_eq!(cells.len(), 6);
+    let name = app.world().get::<ComputedNode>(cells[1]).unwrap();
+    let slug = app.world().get::<ComputedNode>(cells[2]).unwrap();
+    assert!(slug.size().x > name.size().x / 2.0);
+    assert!(before.y < 50.0, "Row should fit a single line: {before:?}");
     ui::Command::EditCell("rule".into(), 0).apply(app.world_mut(), owner);
     for _ in 0..5 {
         app.update();
@@ -670,4 +680,25 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
         .get::<bevy::text::TextLayoutInfo>(focus)
         .unwrap();
     assert!(!layout.glyphs.is_empty());
+    ui::Command::EditCell("rule".into(), 4).apply(app.world_mut(), owner);
+    let focus = app
+        .world()
+        .resource::<bevy::input_focus::InputFocus>()
+        .get()
+        .unwrap();
+    assert_eq!(
+        app.world()
+            .get::<bevy::a11y::AccessibilityNode>(focus)
+            .unwrap()
+            .label(),
+        Some("Slug")
+    );
+    assert_eq!(
+        app.world()
+            .get::<bevy::text::EditableText>(focus)
+            .unwrap()
+            .editor
+            .text(),
+        "balance-rule"
+    );
 }

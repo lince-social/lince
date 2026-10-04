@@ -296,6 +296,10 @@ name = "relation_smoke"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "relation_area_checks"
+required-features = ["native-runtime"]
+
+[[example]]
 name = "editor_smoke"
 required-features = ["native-runtime"]
 
@@ -314,3 +318,7 @@ required-features = ["native-runtime"]
 [[example]]
 name = "fiote_smoke"
 required-features = ["native-runtime"]
+
+[[example]]
+name = "castle_transition_smoke"
+required-features = ["instinct"]

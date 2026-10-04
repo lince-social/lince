@@ -1,3 +1,6 @@
+#[derive(bevy::prelude::SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct MeasureRecords;
+
 mod assignees;
 mod date_order;
 pub(crate) mod filter;
@@ -8,7 +11,7 @@ mod model;
 pub(crate) mod placement;
 pub(crate) mod presentation;
 mod property_actions;
-mod record_layout;
+pub(crate) mod record_layout;
 mod rows;
 mod sessions;
 pub(crate) mod tests;
@@ -258,7 +261,9 @@ impl Plugin for ProteinAreaPlugin {
             )
             .add_systems(
                 PostUpdate,
-                rows::layout.after(bevy::ui::UiSystems::PostLayout),
+                rows::layout
+                    .in_set(MeasureRecords)
+                    .after(bevy::ui::UiSystems::PostLayout),
             );
     }
 }

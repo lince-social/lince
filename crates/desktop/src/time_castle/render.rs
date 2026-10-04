@@ -61,53 +61,6 @@ pub(super) fn occurrence_points(
     points
 }
 
-fn summary_lines(title: &str, font: f32, width: f32) -> Vec<String> {
-    let face = ttf_parser::Face::parse(
-        include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf"),
-        0,
-    )
-    .ok();
-    let advance = |ch| {
-        face.as_ref()
-            .and_then(|face| {
-                face.glyph_index(ch)
-                    .and_then(|glyph| face.glyph_hor_advance(glyph))
-            })
-            .map_or(font, |advance| {
-                f32::from(advance) / f32::from(face.as_ref().unwrap().units_per_em()) * font
-            })
-    };
-    let measure = |text: &str| text.chars().map(advance).sum::<f32>();
-    let mut lines = vec![String::new()];
-    for word in title.split_whitespace() {
-        let current = lines.last_mut().unwrap();
-        if !current.is_empty() && measure(current) + advance(' ') + measure(word) > width {
-            lines.push(String::new());
-        }
-        let current = lines.last_mut().unwrap();
-        if !current.is_empty() {
-            current.push(' ');
-        }
-        for ch in word.chars() {
-            if measure(lines.last().unwrap()) + advance(ch) > width
-                && !lines.last().unwrap().is_empty()
-            {
-                lines.push(String::new());
-            }
-            lines.last_mut().unwrap().push(ch);
-        }
-    }
-    if lines.len() > 2 {
-        lines.truncate(2);
-        let last = lines.last_mut().unwrap();
-        while !last.is_empty() && measure(last) + advance('…') > width {
-            last.pop();
-        }
-        last.push('…');
-    }
-    lines
-}
-
 fn svg(
     settings: &Settings,
     view: &View,
@@ -270,49 +223,8 @@ fn svg(
                     .to_string()
             })
             .unwrap_or_else(|| "--:--".into());
-        let aperture = settings.aperture_label();
-        let precision = if settings.aperture_ms <= 60_000 {
-            1000
-        } else {
-            60_000
-        };
-        let window = format!(
-            "{} – {}",
-            settings.tick_label(now, precision),
-            settings.tick_label(now + settings.aperture_ms, precision)
-        );
         let scale = (palette.font / 16.0).clamp(0.8, 1.25);
-        svg.push_str(&format!("<g opacity='{}' font-family='Lato' text-anchor='middle'><text x='0' y='{}' fill='{ink}' font-size='{}'>{current}</text><text x='0' y='{}' fill='{ink}' font-size='12'>{aperture}</text><text x='0' y='{}' fill='{muted}' font-size='10'>{window}</text><g transform='translate(-13 {}) scale(0.8125)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><text x='0' y='{}' fill='{ink}' font-size='11' letter-spacing='3'>memento</text><text x='0' y='{}' fill='{ink}' font-size='11' letter-spacing='4'>mori</text>", 1.0 - view.unwind * 2.0, -radius * 0.63, 26.0 * scale, -radius * 0.50, -radius * 0.40, radius * 0.44, radius * 0.68, radius * 0.79));
-        for (row, (index, remaining)) in
-            model::summaries(&view.entries, now, now + settings.aperture_ms)
-                .into_iter()
-                .enumerate()
-        {
-            let entry = &view.entries[index];
-            let y = -radius * 0.25 + row as f32 * radius * 0.32;
-            let title = entry
-                .head
-                .lines()
-                .find(|line| !line.trim().is_empty())
-                .unwrap_or("Untitled event");
-            let font = 12.5 * scale.min(1.12);
-            let lines = summary_lines(title, font, radius * 1.12);
-            for (index, line) in lines.iter().enumerate() {
-                let line = line
-                    .replace('&', "&amp;")
-                    .replace('<', "&lt;")
-                    .replace('>', "&gt;");
-                svg.push_str(&format!(
-                    "<text x='0' y='{}' fill='{ink}' font-size='{font}'>{line}</text>",
-                    y + index as f32 * (font + 1.0)
-                ));
-            }
-            let timing = entry.time_label(settings, now);
-            let amount = model::countdown(remaining);
-            let baseline = y + lines.len() as f32 * (font + 1.0);
-            svg.push_str(&format!("<text x='0' y='{baseline}' fill='{muted}' font-size='11'>{timing}</text><text x='0' y='{}' fill='{ink}' font-size='12'>{amount}</text>", baseline + 14.0));
-        }
-        svg.push_str("</g>");
+        svg.push_str(&format!("<text x='0' y='{}' fill='{ink}' font-family='Lato' text-anchor='middle' font-size='{}'>{current}</text>", -radius * 0.63, 26.0 * scale));
     }
     svg.push_str("</svg>");
     svg
@@ -405,8 +317,14 @@ pub(super) fn preview(world: &World, owner: Entity) -> Option<(Entity, Image)> {
 }
 
 pub(super) fn select_at(world: &mut World, owner: Entity, point: Vec2) {
+    if let Some(id) = nearest_at(world, owner, point) {
+        ui::Select(vec![id]).apply(world, owner);
+    }
+}
+
+pub(super) fn nearest_at(world: &World, owner: Entity, point: Vec2) -> Option<String> {
     let Some(view) = world.get::<View>(owner) else {
-        return;
+        return None;
     };
     let settings = &world.get::<TimeSettings>(owner).unwrap().0;
     let now = chrono::Utc::now().timestamp_millis();
@@ -431,10 +349,7 @@ pub(super) fn select_at(world: &mut World, owner: Entity, point: Vec2) {
             })
             .min_by(|a, b| a.0.total_cmp(&b.0))
             .map(|(_, id)| id);
-        if let Some(id) = selected {
-            ui::Select(vec![id]).apply(world, owner);
-        }
-        return;
+        return selected;
     }
     let duration = (settings.aperture_ms as f64
         + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(view.unwind))
@@ -458,8 +373,9 @@ pub(super) fn select_at(world: &mut World, owner: Entity, point: Vec2) {
         && distance(occurrence) <= 12.0
     {
         let id = view.entries[occurrence.index].id.clone();
-        ui::Select(vec![id]).apply(world, owner);
+        return Some(id);
     }
+    None
 }
 
 fn segment_distance(point: Vec2, a: Vec2, b: Vec2) -> f32 {
@@ -532,6 +448,7 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
                 .get::<crate::topology::presentation::Surface>(owner)
                 .is_some();
         chrome::presentation(world, owner, !spatial && settings.mode == Mode::Coiled);
+        ui::upcoming(world, owner, now, !spatial && unwind < 0.001, &palette);
         let source = settings
             .area
             .as_ref()
@@ -622,15 +539,23 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
             view.detail_revision = u64::MAX;
         }
         let round = !spatial && settings.mode == Mode::Coiled && unwind < 0.001;
-        let labels = annotations::update(world, owner, now, size, round, changed, &palette);
+        let labels = annotations::update(
+            world,
+            owner,
+            now,
+            size,
+            round || !settings.floating_cards,
+            changed,
+            &palette,
+        );
         let following = world
             .get::<motion::Motion>(owner)
             .is_some_and(|motion| motion.active);
         animated |= following;
         if changed || moving || following {
             scene::update(world, owner, &settings, now, size, spatial);
-            scene::annotations(world, owner, &labels, &palette);
         }
+        scene::annotations(world, owner, &labels, &palette);
         let hand = round && !chrome::controls_open(world, owner);
         scene::hand(world, owner, &settings, now, size, hand, &palette);
         animated |= hand;
@@ -698,22 +623,9 @@ mod tests {
         assert_eq!(svg.matches("dominant-baseline='central'").count(), 12);
         assert!(!svg.contains("simulation"));
         assert!(!svg.contains("Scheduled work"));
-        assert!(svg.contains("memento"));
-        assert!(svg.contains("mori"));
-    }
-
-    #[test]
-    fn interior_titles_wrap_and_limit_long_unicode_without_losing_card_data() {
-        let lines = summary_lines(
-            "Prepare a thoughtful response to the design review",
-            14.0,
-            100.0,
-        );
-        assert_eq!(lines.len(), 2);
-        assert!(lines[1].ends_with('…'));
-        let unicode = summary_lines("日程 🕰 café & work", 14.0, 80.0);
-        assert!(unicode.len() <= 2);
-        assert!(!unicode[0].is_empty());
+        assert!(!svg.contains("memento"));
+        assert!(!svg.contains("mori"));
+        assert!(!svg.contains("Next "));
     }
 
     #[test]

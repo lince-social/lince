@@ -399,6 +399,8 @@ fn composed_time_castle_keeps_its_standalone_log() {
     world.entity_mut(sand).insert(timer.clone());
     let settings = lince_interface::time_castle::Settings {
         aperture_ms: 7_200_000,
+        floating_cards: true,
+        card_physics: true,
         horizon_ms: 36_000_000,
         timezone: "America/Sao_Paulo".into(),
         mode: lince_interface::time_castle::Mode::Straight,

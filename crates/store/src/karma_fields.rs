@@ -163,7 +163,7 @@ pub async fn save_rule_tx(
     if let Some(identity) = identity {
         sqlx::query("UPDATE recurrence SET name = ?, slug = ? WHERE uid = ?")
             .bind(&identity.name)
-            .bind(&identity.slug)
+            .bind((!identity.slug.is_empty()).then_some(&identity.slug))
             .bind(&rule.uid)
             .execute(&mut **tx)
             .await?;
@@ -278,9 +278,7 @@ pub async fn identity(
                 let slug: Option<String> = row.get("slug");
                 nucleus::karma::rule_field::RuleIdentity {
                     name: row.get("name"),
-                    slug: slug
-                        .filter(|slug| nucleus::valid_slug(slug))
-                        .unwrap_or_else(|| uid.to_ascii_lowercase().replace('_', "-")),
+                    slug: slug.unwrap_or_default(),
                 }
             }),
     )

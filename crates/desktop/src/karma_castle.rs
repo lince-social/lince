@@ -103,6 +103,10 @@ impl Plugin for KarmaCastlePlugin {
             .add_systems(PostUpdate, ui::keys.before(bevy::text::EditableTextSystems))
             .add_systems(
                 PostUpdate,
+                ui::fit_columns.after(bevy::ui::UiSystems::Layout),
+            )
+            .add_systems(
+                PostUpdate,
                 ui::inputs
                     .after(bevy::text::EditableTextSystems)
                     .before(crate::actions::ApplyActions),
@@ -148,7 +152,6 @@ pub fn spawn(
     world.get_mut::<Node>(controls).unwrap().width = Val::Auto;
     ui::search(world, header, owner);
     let execution = crate::edit_mode::label(world, owner, "Checking Karma execution…", 13.0);
-    ui::headings(world, owner);
     let scroll = world
         .spawn((
             Node {
@@ -164,6 +167,8 @@ pub fn spawn(
         ))
         .id();
     crate::scroll_sand::attach(world, scroll);
+    world.get_mut::<Node>(scroll).unwrap().overflow = Overflow::scroll();
+    ui::headings(world, scroll);
     let form = ui::stack(world, scroll);
     let list = ui::stack(world, scroll);
     let status = crate::edit_mode::label(world, owner, "", 12.0);
@@ -252,12 +257,13 @@ fn save(world: &mut World, owner: Entity) {
         world.get_mut::<View>(owner).unwrap().saving = false;
         return;
     };
-    if draft.name.trim().is_empty() || !nucleus::valid_slug(draft.slug.trim()) || !draft.valid() {
+    if (!draft.slug.trim().is_empty() && !nucleus::valid_slug(draft.slug.trim())) || !draft.valid()
+    {
         world.get_mut::<View>(owner).unwrap().saving = false;
         status(
             world,
             owner,
-            "Enter a name and a lowercase slug using letters, numbers, hyphens or dots",
+            "Use an optional lowercase slug with letters, numbers, hyphens or dots",
         );
         return;
     }

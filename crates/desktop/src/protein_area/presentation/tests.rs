@@ -76,6 +76,57 @@ fn container(world: &World, editor: Entity) -> Entity {
 }
 
 #[test]
+fn record_save_refresh_preserves_measured_field_sizes() {
+    let (mut app, _, owner) = super::super::tests::fixture();
+    let config = Config::records();
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(config.clone());
+    app.world_mut().resource_mut::<Runtime>().areas.insert(owner, super::super::State {
+        applied: Some(config),
+        data: vec![json!({"uid":"record", "head":"Title", "body":"Body", "slug":"slug", "quantity":"0"})],
+        ready: true,
+        dirty: true,
+        ..default()
+    });
+    super::super::rows::reconcile(app.world_mut(), owner);
+    let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
+    fields::prepare(app.world_mut(), row);
+    let fields =
+        ["head", "body", "slug", "quantity"].map(|property| editor(app.world_mut(), row, property));
+    let slug_container = container(app.world(), fields[2]);
+    app.world_mut()
+        .get_mut::<crate::sand_settings::Configuration>(slug_container)
+        .unwrap()
+        .0
+        .0
+        .insert("width".into(), crate::sand_settings::Value::Number(120.0));
+    fields::refresh(app.world_mut(), row);
+    for (index, entity) in fields.iter().enumerate() {
+        app.world_mut().get_mut::<Node>(*entity).unwrap().height = px(24.0 + index as f32 * 3.0);
+    }
+    let before = fields.map(|entity| app.world().get::<Node>(entity).unwrap().height);
+    for slug in ["sluga", "slugab", "slugabc", "slugab", "slug"] {
+        {
+            let mut runtime = app.world_mut().resource_mut::<Runtime>();
+            let state = runtime.areas.get_mut(&owner).unwrap();
+            state.data[0]["slug"] = json!(slug);
+            state.dirty = true;
+        }
+        super::super::rows::reconcile(app.world_mut(), owner);
+        assert_eq!(
+            fields.map(|entity| app.world().get::<Node>(entity).unwrap().height),
+            before
+        );
+        assert_eq!(
+            app.world().get::<Node>(slug_container).unwrap().width,
+            px(120)
+        );
+    }
+}
+
+#[test]
 fn switching_hides_fields_without_replacing_editors_or_sending_record_changes() {
     let (mut app, _, owner, rows) = fixture();
     let body = editor(app.world_mut(), rows[0], "body");

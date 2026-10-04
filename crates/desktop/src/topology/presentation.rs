@@ -35,6 +35,9 @@ pub struct Surface {
 }
 
 #[derive(Component)]
+struct DisplayedImage(Handle<Image>);
+
+#[derive(Component)]
 pub struct VisualOwner(pub Entity);
 
 #[derive(Component, Clone, Copy)]
@@ -206,8 +209,10 @@ fn image(size: UVec2) -> Image {
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::RENDER_WORLD,
     );
-    image.texture_descriptor.usage =
-        TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | TextureUsages::RENDER_ATTACHMENT;
+    image.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
+        | TextureUsages::COPY_DST
+        | TextureUsages::COPY_SRC
+        | TextureUsages::RENDER_ATTACHMENT;
     image
 }
 
@@ -318,7 +323,7 @@ pub fn synchronize(world: &mut World) {
                 world.despawn(surface.visual);
                 world
                     .entity_mut(entity)
-                    .remove::<(UiTargetCamera, bevy::ui::LayoutConfig)>()
+                    .remove::<(UiTargetCamera, bevy::ui::LayoutConfig, DisplayedImage)>()
                     .insert(UiTransform::default());
             }
             continue;
@@ -400,6 +405,7 @@ pub fn synchronize(world: &mut World) {
                 bevy::ui::LayoutConfig {
                     use_rounding: false,
                 },
+                DisplayedImage(image.clone()),
                 Surface {
                     camera,
                     image,
@@ -416,7 +422,7 @@ pub fn synchronize(world: &mut World) {
             ));
         }
         let surface = world.get::<Surface>(entity).unwrap();
-        let (camera, image_handle, visual, body, face, old_pixels) = (
+        let (camera, mut image_handle, visual, body, face, old_pixels) = (
             surface.camera,
             surface.image.clone(),
             surface.visual,
@@ -426,15 +432,26 @@ pub fn synchronize(world: &mut World) {
         );
         let material = surface.material.clone();
         if pixels != old_pixels {
-            world
-                .resource_mut::<Assets<Image>>()
-                .insert(image_handle.id(), image(pixels))
-                .unwrap();
+            image_handle = world.resource_mut::<Assets<Image>>().add(image(pixels));
+            world.get_mut::<Surface>(entity).unwrap().image = image_handle.clone();
+            world.get_mut::<SurfaceCapture>(camera).unwrap().0 = image_handle.clone();
+        }
+        if world
+            .get::<DisplayedImage>(entity)
+            .is_some_and(|displayed| displayed.0 != image_handle)
+            && (!visible
+                || world
+                    .get_resource::<super::surface_render::CompletedCaptures>()
+                    .is_some_and(|completed| completed.contains(&image_handle)))
+        {
             world
                 .resource_mut::<Assets<StandardMaterial>>()
                 .get_mut(&material)
                 .unwrap()
                 .base_color_texture = Some(image_handle.clone());
+            world
+                .entity_mut(entity)
+                .insert(DisplayedImage(image_handle.clone()));
         }
         let target = if visible {
             RenderTarget::Image(ImageRenderTarget {
@@ -544,10 +561,17 @@ pub fn synchronize(world: &mut World) {
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
             .with_scale(Vec3::new(clipped_size.x, clipped_size.y, 1.0)),
         );
+        let displayed_ready = world
+            .get::<DisplayedImage>(entity)
+            .is_some_and(|displayed| {
+                world
+                    .get_resource::<super::surface_render::CompletedCaptures>()
+                    .is_none_or(|completed| completed.contains(&displayed.0))
+            });
         world
             .get_mut::<Visibility>(visual)
             .unwrap()
-            .set_if_neq(if visible {
+            .set_if_neq(if visible && displayed_ready {
                 Visibility::Visible
             } else {
                 Visibility::Hidden
@@ -851,6 +875,16 @@ mod tests {
         world.entity_mut(entity).insert(Disabled);
         synchronize(&mut world);
         assert_eq!(world.get::<Surface>(entity).unwrap().pixels, UVec2::ONE);
+        let surface = world.get::<Surface>(entity).unwrap();
+        assert_eq!(
+            world
+                .resource::<Assets<StandardMaterial>>()
+                .get(&surface.material)
+                .unwrap()
+                .base_color_texture
+                .as_ref(),
+            Some(&surface.image)
+        );
         assert!(
             world
                 .get::<Camera>(camera)

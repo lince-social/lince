@@ -1384,6 +1384,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        relation_castle_area_tab_opens_and_edits_spawn_configuration,
         color_controls_validate_and_save_area_appearance,
         target_and_depth_controls_validate_and_preserve_offsets_on_redraw,
         reach_controls_validate_radius_and_preserve_it_when_switching_modes,
@@ -1391,6 +1392,76 @@ pub(crate) mod tests {
         area_editor_saves_valid_values_keeps_invalid_drafts_and_enforces_ownership,
         force_slider_changes_only_the_selected_area_and_never_arms_record_changes,
         redraw_keeps_identity_rules_and_force_and_escape_cancels_without_replacing,
+    }
+
+    #[cfg_attr(test, test)]
+    fn relation_castle_area_tab_opens_and_edits_spawn_configuration() {
+        let (mut app, root) = fixture();
+        app.add_plugins((MinimalPlugins, crate::protein_area::ProteinAreaPlugin));
+        EditAction::Open.apply(app.world_mut(), root);
+        EditAction::Store.apply(app.world_mut(), root);
+        let title = app
+            .world_mut()
+            .query::<(Entity, &Text)>()
+            .iter(app.world())
+            .find(|(_, text)| text.0 == "Relation Castle")
+            .unwrap()
+            .0;
+        let metadata = app.world().get::<ChildOf>(title).unwrap().parent();
+        let entry = app.world().get::<ChildOf>(metadata).unwrap().parent();
+        let button = app
+            .world()
+            .get::<crate::actions::ActionButton>(entry)
+            .unwrap()
+            .clone();
+        button.actions.run(app.world_mut(), button.target);
+        let area = app
+            .world()
+            .get::<AreaEditor>(root)
+            .unwrap()
+            .selected
+            .unwrap();
+        let tab = app
+            .world_mut()
+            .query::<(Entity, &crate::edit_mode::EditControl)>()
+            .iter(app.world())
+            .find(|(_, control)| control.root == root && control.action == EditAction::Areas)
+            .unwrap()
+            .0;
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: tab });
+        app.update();
+        assert!(app.world().get::<EditMode>(root).unwrap().areas);
+        assert_eq!(
+            app.world().get::<AreaEditor>(root).unwrap().selected,
+            Some(area)
+        );
+        let input = app
+            .world_mut()
+            .query::<(Entity, &EditableText, &crate::icons::Tooltip)>()
+            .iter(app.world())
+            .find(|(_, _, tooltip)| tooltip.0 == "0 to 100000")
+            .unwrap()
+            .0;
+        app.world_mut()
+            .get_mut::<EditableText>(input)
+            .unwrap()
+            .editor
+            .set_text("75");
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<InfluenceArea>(area)
+                .unwrap()
+                .protein
+                .as_ref()
+                .unwrap()
+                .motion
+                .as_ref()
+                .unwrap()
+                .repulsion,
+            75.0
+        );
     }
 
     #[cfg_attr(test, test)]

@@ -40,7 +40,7 @@ pub(super) fn populate(
     world: &mut World,
     owner: Entity,
     settings: &Settings,
-) -> (Entity, Entity, Entity, Entity, [Entity; 3]) {
+) -> (Entity, Entity, Entity, Entity, [Entity; 2]) {
     world
         .entity_mut(owner)
         .remove::<(Outline, crate::token_style::OutlineToken)>();
@@ -68,30 +68,28 @@ pub(super) fn populate(
         world.entity_mut(button).insert(CursorChoice(mode));
     }
     audio::controls(world, owner, pages[3]);
-    let panel = crate::sand_panel::row(world, pages[0]);
-    let columns: Vec<_> = [48.0, 48.0]
-        .into_iter()
-        .map(|width| {
-            let column = crate::sand_panel::column(world, panel);
-            if let Some(mut node) = world.get_mut::<Node>(column) {
-                node.width = percent(width);
-                node.min_width = px(0);
-            }
-            column
-        })
-        .collect();
     let aperture = crate::sand_panel::field(
         world,
-        columns[0],
-        "Minutes per turn",
+        pages[0],
+        "Aperture (minutes)",
         &(settings.aperture_ms as f64 / 60_000.0).to_string(),
     );
-    let horizon = crate::sand_panel::field(
+    let cards = chrome::button(
         world,
-        columns[1],
-        "Hours ahead",
-        &(settings.horizon_ms as f64 / 3_600_000.0).to_string(),
+        pages[0],
+        owner,
+        card_caption(settings, false),
+        ToggleCards,
     );
+    world.entity_mut(cards).insert(CardOption(false));
+    let physics = chrome::button(
+        world,
+        pages[0],
+        owner,
+        card_caption(settings, true),
+        TogglePhysics,
+    );
+    world.entity_mut(physics).insert(CardOption(true));
     let timezone = crate::sand_panel::field(world, pages[0], "Timezone", &settings.timezone);
     chrome::button(world, pages[0], owner, "Apply settings", Apply);
     let present = crate::edit_mode::label(world, pages[0], "Now", 11.0);
@@ -112,20 +110,261 @@ pub(super) fn populate(
             ChildOf(owner),
         ))
         .observe(click)
+        .observe(hover)
         .id();
     world.entity_mut(viewport).insert(ViewportOwner(owner));
     let details = pages[1];
-    (
-        viewport,
-        status,
-        present,
-        details,
-        [aperture, horizon, timezone],
-    )
+    (viewport, status, present, details, [aperture, timezone])
 }
 
 #[derive(Component)]
 struct ViewportOwner(Entity);
+
+#[derive(Component)]
+struct UpcomingRow(String);
+
+#[derive(Component)]
+struct UpcomingReady;
+
+#[derive(Component)]
+struct CardOption(bool);
+
+fn card_caption(settings: &Settings, physics: bool) -> &'static str {
+    if physics {
+        if settings.card_physics {
+            "Card physics: on"
+        } else {
+            "Card physics: off"
+        }
+    } else if settings.floating_cards {
+        "Cards: floating"
+    } else {
+        "Cards: on hover"
+    }
+}
+
+fn set_caption(world: &mut World, button: Entity, caption: &str) {
+    let text = world.get::<Children>(button).and_then(|children| {
+        children
+            .iter()
+            .find(|child| world.get::<Text>(*child).is_some())
+    });
+    if let Some(text) = text {
+        world
+            .get_mut::<Text>(text)
+            .unwrap()
+            .set_if_neq(Text::new(caption));
+    }
+    world.get_mut::<crate::icons::Tooltip>(button).unwrap().0 = caption.into();
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(button) {
+        node.set_label(caption);
+    }
+}
+
+fn card_options(world: &mut World, owner: Entity) {
+    let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
+    let buttons: Vec<_> = world
+        .query::<(Entity, &CardOption, &crate::actions::ActionButton)>()
+        .iter(world)
+        .filter(|(_, _, button)| button.target == owner)
+        .map(|(entity, option, _)| (entity, option.0))
+        .collect();
+    for (button, physics) in buttons {
+        set_caption(world, button, card_caption(&settings, physics));
+    }
+}
+
+fn hover(
+    event: On<Pointer<Move>>,
+    nodes: Query<(&ViewportOwner, &ComputedNode, &UiGlobalTransform)>,
+    mut commands: Commands,
+) {
+    let Ok((owner, node, transform)) = nodes.get(event.entity) else {
+        return;
+    };
+    let Some(inverse) = transform.try_inverse() else {
+        return;
+    };
+    let point = inverse
+        .transform_point2(event.pointer_location.position / node.inverse_scale_factor())
+        * node.inverse_scale_factor();
+    let owner = owner.0;
+    commands.queue(move |world: &mut World| {
+        let id = render::nearest_at(world, owner, point);
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            if id.is_some() {
+                view.hovered = id;
+                view.hover_point = Some(Vec3::new(point.x, 0.0, point.y));
+                view.hover_at = std::time::Instant::now();
+            }
+        }
+    });
+}
+
+pub(super) fn upcoming_panel(world: &mut World, owner: Entity) -> Entity {
+    let panel = world
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: percent(28),
+                top: percent(36),
+                width: percent(44),
+                height: percent(34),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(6),
+                overflow: Overflow::scroll_y(),
+                ..default()
+            },
+            ScrollPosition::default(),
+            ZIndex(5),
+            ChildOf(owner),
+        ))
+        .id();
+    crate::scroll_sand::attach(world, panel);
+    world.get_mut::<Node>(panel).unwrap().overflow.x = OverflowAxis::Clip;
+    panel
+}
+
+pub(super) fn upcoming(
+    world: &mut World,
+    owner: Entity,
+    now: i64,
+    visible: bool,
+    palette: &palette::Palette,
+) {
+    let view = world.get::<View>(owner).unwrap();
+    let panel = view.upcoming;
+    let visible = visible && !chrome::controls_open(world, owner);
+    world.get_mut::<Node>(panel).unwrap().display = if visible {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    if !visible {
+        return;
+    }
+    let view = world.get::<View>(owner).unwrap();
+    let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+    let stamp = (
+        view.revision,
+        now.div_euclid(1000),
+        settings.aperture_ms,
+        settings.timezone.clone(),
+    );
+    if view.upcoming_stamp.as_ref() == Some(&stamp) {
+        return;
+    }
+    let rows: Vec<_> = model::summaries(&view.entries, now, now + settings.aperture_ms)
+        .into_iter()
+        .map(|(index, remaining)| {
+            let entry = &view.entries[index];
+            (
+                entry.id.clone(),
+                format!(
+                    "{}\n{} · {}",
+                    headline(&entry.head),
+                    entry.time_label(settings, now),
+                    model::countdown(remaining)
+                ),
+            )
+        })
+        .collect();
+    world.get_mut::<View>(owner).unwrap().upcoming_stamp = Some(stamp);
+    let view = world.get::<View>(owner).unwrap();
+    let ready = world.get::<UpcomingReady>(panel).is_some();
+    if ready && view.upcoming_rows == rows {
+        return;
+    }
+    let same_ids = view
+        .upcoming_rows
+        .iter()
+        .map(|(id, _)| id)
+        .eq(rows.iter().map(|(id, _)| id));
+    if ready && same_ids {
+        let buttons: Vec<_> = world
+            .query::<(Entity, &UpcomingRow, &ChildOf)>()
+            .iter(world)
+            .filter(|(_, _, parent)| parent.parent() == panel)
+            .map(|(entity, row, _)| (entity, row.0.clone()))
+            .collect();
+        for (button, id) in buttons {
+            if let Some((_, caption)) = rows.iter().find(|(next, _)| *next == id) {
+                set_caption(world, button, caption);
+            }
+        }
+        world.get_mut::<View>(owner).unwrap().upcoming_rows = rows;
+        return;
+    }
+    world.entity_mut(panel).despawn_children();
+    world.entity_mut(panel).insert(UpcomingReady);
+    let caption = if rows.is_empty() {
+        "No upcoming work".into()
+    } else {
+        format!("Next {} things", rows.len())
+    };
+    let heading = crate::edit_mode::label(world, panel, &caption, 12.0);
+    world.get_mut::<TextColor>(heading).unwrap().0 = palette.muted;
+    for (id, text) in &rows {
+        let button = chrome::button(world, panel, owner, text, Select(vec![id.clone()]));
+        world.entity_mut(button).insert(UpcomingRow(id.clone()));
+        let mut node = world.get_mut::<Node>(button).unwrap();
+        node.width = percent(100);
+        node.min_width = px(0);
+        node.flex_shrink = 0.0;
+        let texts: Vec<_> = world
+            .get::<Children>(button)
+            .unwrap()
+            .iter()
+            .filter(|child| world.get::<Text>(*child).is_some())
+            .collect();
+        for text in texts {
+            world.entity_mut(text).insert(TextLayout::linebreak(
+                bevy::text::LineBreak::WordOrCharacter,
+            ));
+            let mut node = world.get_mut::<Node>(text).unwrap();
+            node.width = percent(100);
+            node.min_width = px(0);
+            node.flex_shrink = 1.0;
+        }
+    }
+    world.get_mut::<View>(owner).unwrap().upcoming_rows = rows;
+}
+
+#[derive(Clone)]
+struct ToggleCards;
+
+impl Action for ToggleCards {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        if let Some(mut settings) = world.get_mut::<TimeSettings>(owner) {
+            settings.0.floating_cards = !settings.0.floating_cards;
+            let message = if settings.0.floating_cards {
+                "Floating cards enabled"
+            } else {
+                "Cards appear when hovering a point or range"
+            };
+            status(world, owner, message);
+        }
+        card_options(world, owner);
+    }
+}
+
+#[derive(Clone)]
+struct TogglePhysics;
+
+impl Action for TogglePhysics {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        if let Some(mut settings) = world.get_mut::<TimeSettings>(owner) {
+            settings.0.card_physics = !settings.0.card_physics;
+            let message = if settings.0.card_physics {
+                "Card physics enabled"
+            } else {
+                "Card physics disabled"
+            };
+            status(world, owner, message);
+        }
+        card_options(world, owner);
+    }
+}
 
 fn click(
     mut event: On<Pointer<Click>>,
@@ -228,18 +467,10 @@ impl Action for Apply {
             status(world, owner, "Enter positive minutes within 366 days");
             return;
         };
-        let Some(horizon) = parse(&values[1], 3_600_000.0) else {
-            status(world, owner, "Enter positive future hours within 366 days");
-            return;
-        };
         let mut settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
-        if aperture != settings.aperture_ms {
-            settings.set_aperture(aperture);
-        }
-        if horizon != world.get::<TimeSettings>(owner).unwrap().0.horizon_ms {
-            settings.set_horizon(horizon);
-        }
-        settings.timezone = values[2].clone();
+        settings.aperture_ms = aperture;
+        settings.horizon_ms = aperture;
+        settings.timezone = values[1].clone();
         if !settings.valid() {
             status(
                 world,
@@ -252,7 +483,6 @@ impl Action for Apply {
         let fields = world.get::<View>(owner).unwrap().fields;
         let values = [
             (settings.aperture_ms as f64 / 60_000.0).to_string(),
-            (settings.horizon_ms as f64 / 3_600_000.0).to_string(),
             settings.timezone,
         ];
         for (field, value) in fields.into_iter().zip(values) {
@@ -482,4 +712,105 @@ pub(super) fn details(world: &mut World, owner: Entity, now: i64) {
     let mut view = world.get_mut::<View>(owner).unwrap();
     view.page = page;
     view.detail_revision = view.revision;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fixture() -> (World, Entity) {
+        let mut world = World::new();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let owner = world
+            .spawn((
+                Node::default(),
+                TimeSettings(Settings {
+                    horizon_ms: 7_200_000,
+                    ..Settings::default()
+                }),
+            ))
+            .id();
+        super::super::populate(&mut world, owner);
+        (world, owner)
+    }
+
+    #[test]
+    fn aperture_is_the_only_window_field_and_toggles_are_saved_in_settings() {
+        let (mut world, owner) = fixture();
+        let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+        assert_eq!(settings.horizon_ms, settings.aperture_ms);
+        let fields = world.get::<View>(owner).unwrap().fields;
+        world
+            .get_mut::<EditableText>(fields[0])
+            .unwrap()
+            .editor
+            .set_text("120");
+        world
+            .get_mut::<EditableText>(fields[1])
+            .unwrap()
+            .editor
+            .set_text("America/Sao_Paulo");
+        Apply.apply(&mut world, owner);
+        let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+        assert_eq!(settings.aperture_ms, 7_200_000);
+        assert_eq!(settings.horizon_ms, settings.aperture_ms);
+        assert_eq!(settings.timezone, "America/Sao_Paulo");
+        ToggleCards.apply(&mut world, owner);
+        TogglePhysics.apply(&mut world, owner);
+        let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+        let restored: Settings =
+            serde_json::from_value(serde_json::to_value(settings).unwrap()).unwrap();
+        assert!(!restored.floating_cards);
+        assert!(!restored.card_physics);
+        world
+            .get_mut::<EditableText>(fields[0])
+            .unwrap()
+            .editor
+            .set_text("NaN");
+        Apply.apply(&mut world, owner);
+        assert_eq!(world.get::<TimeSettings>(owner).unwrap().0, restored);
+        world
+            .get_mut::<EditableText>(fields[0])
+            .unwrap()
+            .editor
+            .set_text("120");
+        world
+            .get_mut::<EditableText>(fields[1])
+            .unwrap()
+            .editor
+            .set_text("Unknown/Zone");
+        Apply.apply(&mut world, owner);
+        assert_eq!(world.get::<TimeSettings>(owner).unwrap().0, restored);
+    }
+
+    #[test]
+    fn upcoming_list_keeps_all_aperture_entries_and_scroll_position_during_countdowns() {
+        let (mut world, owner) = fixture();
+        let entries: Vec<Entry> = (0..8).map(|index| serde_json::from_value(serde_json::json!({
+            "uid": format!("task-{index}"), "record_uid": format!("record-{index}"),
+            "head": format!("Task {index}"), "quantity": "-1", "category": "timed",
+            "time": {"from_ms": 10_000 + index * 1000}, "origin": {"kind": "manual"}, "preview": false
+        })).unwrap()).collect();
+        world.get_mut::<View>(owner).unwrap().entries = entries;
+        let palette = palette::Palette::resolve(&world, owner);
+        upcoming(&mut world, owner, 1000, true, &palette);
+        let panel = world.get::<View>(owner).unwrap().upcoming;
+        assert_eq!(world.get::<View>(owner).unwrap().upcoming_rows.len(), 8);
+        assert_eq!(
+            world.get::<Node>(panel).unwrap().overflow.y,
+            OverflowAxis::Scroll
+        );
+        assert_eq!(
+            world.get::<Node>(panel).unwrap().overflow.x,
+            OverflowAxis::Clip
+        );
+        let children = world.get::<Children>(panel).unwrap().to_vec();
+        world.get_mut::<ScrollPosition>(panel).unwrap().0.y = 40.0;
+        upcoming(&mut world, owner, 2000, true, &palette);
+        assert_eq!(world.get::<Children>(panel).unwrap().to_vec(), children);
+        assert_eq!(world.get::<ScrollPosition>(panel).unwrap().0.y, 40.0);
+        upcoming(&mut world, owner, 2000, false, &palette);
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
+    }
 }

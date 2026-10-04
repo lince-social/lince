@@ -33,6 +33,9 @@ pub(crate) fn image_ready(world: &World, image: AssetId<Image>) -> bool {
     })
 }
 
+#[derive(Component)]
+struct Presented;
+
 #[derive(Resource, Default)]
 struct Layouts(HashMap<Entity, [u32; 5]>);
 
@@ -46,7 +49,9 @@ impl Plugin for CastlePlugin {
         app.init_resource::<Layouts>()
             .add_systems(
                 PostUpdate,
-                remember_layout.after(bevy::ui::UiSystems::PostLayout),
+                remember_layout
+                    .after(bevy::ui::UiSystems::PostLayout)
+                    .before(crate::protein_area::MeasureRecords),
             )
             .add_systems(Last, present.in_set(PresentCastles));
         if let Some(render) = app.get_sub_app_mut(RenderApp) {
@@ -222,6 +227,72 @@ pub(crate) mod tests {
     crate::laboratory_cases! {
         nested_castles_wait_for_every_image_without_hiding_unrelated_sands,
         new_members_and_pending_work_hold_the_whole_group,
+        presented_castles_keep_their_surface_while_replacement_content_settles,
+    }
+
+    #[cfg_attr(test, test)]
+    fn presented_castles_keep_their_surface_while_replacement_content_settles() {
+        let mut world = World::new();
+        world.init_resource::<Layouts>();
+        let camera = world
+            .spawn(crate::topology::surface_render::SurfaceCapture(
+                Handle::default(),
+            ))
+            .id();
+        let root = world.spawn((Castle, InheritedVisibility::VISIBLE)).id();
+        world
+            .entity_mut(root)
+            .insert(crate::topology::presentation::Surface {
+                camera,
+                image: Handle::default(),
+                visual: root,
+                body: root,
+                face: root,
+                size: Vec2::splat(100.0),
+                pixels: UVec2::splat(100),
+                density: 1.0,
+                material: Handle::default(),
+                uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
+                visible: true,
+            });
+        remember_layout(&mut world);
+        present(&mut world);
+        assert!(world.get::<Presented>(root).is_some());
+        assert!(
+            world
+                .get::<crate::topology::surface_render::CaptureReady>(camera)
+                .unwrap()
+                .0
+        );
+        world.increment_change_tick();
+        let child = world
+            .spawn((
+                Node::default(),
+                ChildOf(root),
+                InheritedVisibility::VISIBLE,
+                Pending,
+            ))
+            .id();
+        present(&mut world);
+        assert!(world.get::<InheritedVisibility>(root).unwrap().get());
+        assert!(world.get::<InheritedVisibility>(child).unwrap().get());
+        assert!(
+            !world
+                .get::<crate::topology::surface_render::CaptureReady>(camera)
+                .unwrap()
+                .0
+        );
+        world.entity_mut(child).remove::<Pending>();
+        remember_layout(&mut world);
+        present(&mut world);
+        assert!(world.get::<InheritedVisibility>(root).unwrap().get());
+        assert!(
+            world
+                .get::<crate::topology::surface_render::CaptureReady>(camera)
+                .unwrap()
+                .0
+        );
+        assert!(world.get::<StartupStatus>(root).unwrap().0.is_empty());
     }
 }
 
@@ -393,7 +464,18 @@ fn present(world: &mut World) {
         if world.get::<StartupStatus>(root) != Some(&status) {
             world.entity_mut(root).insert(status);
         }
-        if !ready {
+        for entity in &members {
+            if let Some(surface) = world.get::<crate::topology::presentation::Surface>(*entity) {
+                let camera = surface.camera;
+                world
+                    .entity_mut(camera)
+                    .insert(crate::topology::surface_render::CaptureReady(ready));
+            }
+        }
+        if ready {
+            world.entity_mut(root).insert(Presented);
+        }
+        if !ready && world.get::<Presented>(root).is_none() {
             for entity in members {
                 if let Some(mut visibility) = world.get_mut::<InheritedVisibility>(entity) {
                     visibility.set_if_neq(InheritedVisibility::HIDDEN);
@@ -402,9 +484,9 @@ fn present(world: &mut World) {
             if let Some(mut visibility) = world.get_mut::<Visibility>(root) {
                 visibility.set_changed();
             }
-            if layout_pending && let Some(wake) = world.get_resource::<WakeSignal>() {
-                wake.ring();
-            }
+        }
+        if layout_pending && let Some(wake) = world.get_resource::<WakeSignal>() {
+            wake.ring();
         }
     }
 }

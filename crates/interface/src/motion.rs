@@ -13,13 +13,17 @@ impl<const N: usize> Spring<N> {
     }
 
     pub fn advance(&mut self, target: [f32; N], seconds: f32) -> bool {
+        self.advance_with_frequency(target, seconds, 18.0)
+    }
+
+    pub fn advance_with_frequency(&mut self, target: [f32; N], seconds: f32, omega: f32) -> bool {
         if !seconds.is_finite() || seconds > 1.0 {
             self.position = target;
             self.velocity = [0.0; N];
             return false;
         }
         let time = seconds.clamp(0.0, 0.1);
-        let omega = 18.0_f32;
+        let omega = omega.clamp(1.0, 30.0);
         let damping = 0.86_f32;
         let frequency = omega * (1.0 - damping * damping).sqrt();
         let decay = (-damping * omega * time).exp();

@@ -5,8 +5,11 @@ use crate::{
     theme::{PAPER, ThemePlugin, idle_settings},
 };
 use bevy::{
-    core_pipeline::tonemapping::Tonemapping, input_focus::tab_navigation::TabNavigationPlugin,
-    log::LogPlugin, prelude::*, render::RenderPlugin,
+    core_pipeline::tonemapping::{DebandDither, Tonemapping},
+    input_focus::tab_navigation::TabNavigationPlugin,
+    log::LogPlugin,
+    prelude::*,
+    render::RenderPlugin,
 };
 
 #[derive(Resource, Clone)]
@@ -169,9 +172,8 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     ))
     .insert_resource(idle_settings())
     .add_systems(Startup, camera);
-    let wake = crate::wake::from_proxy(
-        app.world().resource::<bevy::winit::EventLoopProxyWrapper>(),
-    );
+    let wake =
+        crate::wake::from_proxy(app.world().resource::<bevy::winit::EventLoopProxyWrapper>());
     app.insert_resource(wake);
     app
 }
@@ -195,6 +197,7 @@ fn camera(mut commands: Commands) {
             },
             IsDefaultUiCamera,
             Tonemapping::None,
+            DebandDither::Disabled,
             Projection::Orthographic(OrthographicProjection::default_3d()),
             Transform::from_xyz(0.0, 10000.0, 0.0).looking_at(Vec3::ZERO, -Vec3::Z),
         ))
@@ -222,6 +225,21 @@ fn camera(mut commands: Commands) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn workspace_camera_does_not_add_screen_space_dither_to_moving_sands() {
+        let mut app = App::new();
+        app.add_systems(Startup, camera);
+        app.update();
+        let camera = app
+            .world()
+            .resource::<crate::topology::presentation::SceneCamera>()
+            .0;
+        assert_eq!(
+            app.world().get::<DebandDither>(camera),
+            Some(&DebandDither::Disabled)
+        );
+    }
 
     #[test]
     fn native_startup_has_one_empty_canvas_without_automatic_record_view() {

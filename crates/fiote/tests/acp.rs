@@ -120,8 +120,17 @@ async fn terminal_auth_uses_advertised_invocation_environment_directory_and_inpu
         AuthMethodTerminal,
         terminal::{LoginTerminal, TerminalRequest},
     };
-    let (root, config, connection) = fixture().await;
+    let (root, mut config, connection) = fixture().await;
     connection.close();
+    if cfg!(target_os = "linux") {
+        config.command = "/bin/sh".into();
+        config.args = vec![
+            "-c".into(),
+            "[ \"${LD_LIBRARY_PATH-unset}\" = \"\" ] || exit 71; exec \"$@\"".into(),
+            "agent-login".into(),
+            env!("CARGO_BIN_EXE_lince-acp-test-agent").into(),
+        ];
+    }
     let method = AuthMethodTerminal::new("terminal", "Terminal login")
         .args(vec!["--terminal-login".into()])
         .env([("TEST_AUTH_ENV".into(), "advertised".into())].into());
@@ -492,6 +501,41 @@ async fn agent_lookup_respects_the_configured_path() {
         "test-agent"
     );
     connection.close();
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn agent_library_path_is_isolated_and_explicit_overrides_are_preserved() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (root, mut config, connection) = fixture().await;
+    connection.close();
+    let agent = config.command.clone();
+    let wrapper = root.path().join("agent-wrapper");
+    std::fs::write(
+        &wrapper,
+        "#!/bin/sh\n[ \"${LD_LIBRARY_PATH-unset}\" = \"$1\" ] || exit 71\nshift\nexec \"$@\"\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o700)).unwrap();
+    config.command = wrapper;
+    for expected in ["", "/explicit/agent/libraries"] {
+        if !expected.is_empty() {
+            config
+                .environment
+                .insert("LD_LIBRARY_PATH".into(), expected.into());
+        }
+        config.args = vec![expected.into(), agent.to_string_lossy().into_owned()];
+        let connection = Connection::open(&config).await.unwrap();
+        let session = connection.session(&config, tools(), None).await.unwrap();
+        let (_stop, receiver) = watch::channel(false);
+        let response = connection
+            .prompt(&session, "hello".into(), &Sink::default(), receiver)
+            .await
+            .unwrap();
+        assert!(!response.is_empty());
+        connection.close();
+    }
 }
 
 #[tokio::test]

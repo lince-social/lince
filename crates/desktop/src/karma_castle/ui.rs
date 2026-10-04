@@ -27,6 +27,50 @@ struct Input {
 struct Search(Entity);
 
 #[derive(Component)]
+struct TableRow(Entity);
+
+fn reset_columns(world: &mut World, owner: Entity) {
+    let rows: Vec<_> = world
+        .query::<(Entity, &TableRow)>()
+        .iter(world)
+        .filter(|(_, row)| row.0 == owner)
+        .map(|(entity, _)| entity)
+        .collect();
+    for row in rows {
+        world.get_mut::<Node>(row).unwrap().grid_template_columns =
+            vec![GridTrack::max_content(); 6];
+    }
+}
+
+pub(super) fn fit_columns(world: &mut World) {
+    let mut widths = HashMap::<Entity, [f32; 6]>::new();
+    let rows: Vec<_> = world
+        .query::<(Entity, &TableRow, &Children)>()
+        .iter(world)
+        .map(|(entity, row, children)| (entity, row.0, children.to_vec()))
+        .collect();
+    for (_, owner, children) in &rows {
+        let columns = widths.entry(*owner).or_default();
+        for (index, child) in children.iter().take(6).enumerate() {
+            if let Some(node) = world.get::<ComputedNode>(*child) {
+                columns[index] = columns[index].max(node.size().x * node.inverse_scale_factor());
+            }
+        }
+    }
+    for (entity, owner, _) in rows {
+        if let Some(widths) = widths.get(&owner)
+            && widths.iter().all(|width| *width > 0.0)
+        {
+            let tracks: Vec<_> = widths.iter().map(|width| GridTrack::px(*width)).collect();
+            let mut node = world.get_mut::<Node>(entity).unwrap();
+            if node.grid_template_columns != tracks {
+                node.grid_template_columns = tracks;
+            }
+        }
+    }
+}
+
+#[derive(Component)]
 pub(super) struct Reading {
     owner: Entity,
     slug: String,
@@ -114,7 +158,7 @@ impl Action for Command {
                 return;
             }
             Self::EditCell(uid, index) => {
-                if *index > 3 || world.get::<KarmaCastle>(owner).unwrap().draft.is_some() {
+                if *index > 4 || world.get::<KarmaCastle>(owner).unwrap().draft.is_some() {
                     return;
                 }
                 let Some(rule) = world
@@ -289,19 +333,26 @@ pub(super) fn stack(world: &mut World, parent: Entity) -> Entity {
 }
 
 fn grid(world: &mut World, parent: Entity) -> Entity {
+    let mut owner = parent;
+    while world.get::<KarmaCastle>(owner).is_none() {
+        owner = world.get::<ChildOf>(owner).unwrap().parent();
+    }
     world
         .spawn((
+            TableRow(owner),
             Node {
                 display: Display::Grid,
-                width: percent(100),
+                width: Val::Auto,
                 min_width: px(0),
+                align_self: AlignSelf::Start,
                 flex_shrink: 0.0,
                 grid_template_columns: vec![
-                    GridTrack::px(30.0),
-                    GridTrack::flex(2.0),
-                    GridTrack::flex(3.0),
-                    GridTrack::flex(1.5),
-                    GridTrack::flex(3.0),
+                    GridTrack::max_content(),
+                    GridTrack::max_content(),
+                    GridTrack::max_content(),
+                    GridTrack::max_content(),
+                    GridTrack::max_content(),
+                    GridTrack::max_content(),
                 ],
                 border: UiRect::bottom(px(1)),
                 ..default()
@@ -315,6 +366,7 @@ fn grid(world: &mut World, parent: Entity) -> Entity {
 fn cell(world: &mut World, parent: Entity) -> Entity {
     let entity = stack(world, parent);
     let mut node = world.get_mut::<Node>(entity).unwrap();
+    node.width = Val::Auto;
     node.padding = UiRect::all(px(6));
     node.border = UiRect::right(px(1));
     world
@@ -467,7 +519,7 @@ pub(super) fn search(world: &mut World, parent: Entity, owner: Entity) {
 pub(super) fn headings(world: &mut World, parent: Entity) {
     let heading = grid(world, parent);
     stack(world, heading);
-    for (index, title) in ["Name / Slug", "Condition", "Threshold", "Consequence"]
+    for (index, title) in ["Name", "Slug", "Condition", "Threshold", "Consequence"]
         .into_iter()
         .enumerate()
     {
@@ -480,12 +532,12 @@ pub(super) fn headings(world: &mut World, parent: Entity) {
         let mut node = world.get_mut::<Node>(label).unwrap();
         node.min_width = Val::Auto;
         node.flex_shrink = 1.0;
-        if index > 0 {
+        if index > 1 {
             let explanation = [
                 "The condition calculates a quantity from numbers, record quantities and frequencies. For example, @balance * freq(@weekly) uses the balance when the weekly frequency fires.",
                 "The threshold decides whether the calculated quantity should trigger the consequence. Use >0 for positive values, >=10 for at least ten, !=0 for any nonzero value, or always.",
                 "The consequence chooses the record to change. @target sets its quantity to the calculated value; @target: command(\"…\") runs a command on that record.",
-            ][index - 1];
+            ][index - 2];
             let info = world
                 .spawn((
                     crate::sand::button(0),
@@ -574,6 +626,7 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
+    reset_columns(world, owner);
     let view = world.get::<View>(owner).unwrap();
     let (list, busy, editing) = (view.list, view.pending.is_some(), view.editing.clone());
     let rules = visible_rules(world, owner);
@@ -600,13 +653,20 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
         let value = edited
             .map(|index| edits[index].clone())
             .unwrap_or_else(|| Draft::from_rule(&rule));
-        for index in [3, 0, 1, 2] {
+        for index in [3, 4, 0, 1, 2] {
             let cell = cell(world, cells);
             let active = editing.as_ref() == Some(&(rule.uid.clone(), index));
-            let content = if index == 3 {
-                let identity = stack(world, cell);
-                for text in [value.name.as_str(), &format!("@{}", value.slug)] {
-                    let label = crate::edit_mode::label(world, identity, text, 16.0);
+            let content = if index >= 3 {
+                let identity = row(world, cell);
+                let text = if index == 3 {
+                    value.name.clone()
+                } else if value.slug.is_empty() {
+                    String::new()
+                } else {
+                    format!("@{}", value.slug)
+                };
+                {
+                    let label = crate::edit_mode::label(world, identity, &text, 16.0);
                     world.entity_mut(label).insert(TextLayout::linebreak(
                         bevy::text::LineBreak::WordOrCharacter,
                     ));
@@ -614,19 +674,22 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     node.min_width = Val::Auto;
                     node.flex_shrink = 1.0;
                 }
-                let line = row(world, identity);
-                let paused = rule.state == "paused";
-                let toggle = icon_button(
-                    world,
-                    line,
-                    owner,
-                    if paused { Icon::Play } else { Icon::Stop },
-                    if paused { "Resume rule" } else { "Pause rule" },
-                    Command::Pause(rule.uid.clone(), rule.revision, !paused),
-                    !busy,
-                );
-                size_icon(world, toggle, 16.0);
-                super::history_ui::button(world, owner, line, &rule.uid);
+                if index == 3 {
+                    let line = row(world, identity);
+                    world.get_mut::<Node>(line).unwrap().width = Val::Auto;
+                    let paused = rule.state == "paused";
+                    let toggle = icon_button(
+                        world,
+                        line,
+                        owner,
+                        if paused { Icon::Play } else { Icon::Stop },
+                        if paused { "Resume rule" } else { "Pause rule" },
+                        Command::Pause(rule.uid.clone(), rule.revision, !paused),
+                        !busy,
+                    );
+                    size_icon(world, toggle, 16.0);
+                    super::history_ui::button(world, owner, line, &rule.uid);
+                }
                 identity
             } else {
                 rich_text(
@@ -651,9 +714,15 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     column_gap: px(8),
                     ..default()
                 };
-                if index == 3 {
-                    editor(world, overlay, owner, edited + 1, 3, &value.name);
-                    editor(world, overlay, owner, edited + 1, 4, &value.slug);
+                if index >= 3 {
+                    editor(
+                        world,
+                        overlay,
+                        owner,
+                        edited + 1,
+                        index,
+                        if index == 3 { &value.name } else { &value.slug },
+                    );
                 } else {
                     editor(
                         world,
@@ -679,7 +748,7 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     accesskit::Role::Button,
                     &format!(
                         "Edit {} for {}",
-                        ["condition", "threshold", "consequence", "name and slug"][index],
+                        ["condition", "threshold", "consequence", "name", "slug"][index],
                         rule.name
                     ),
                 );
@@ -700,6 +769,7 @@ fn size_icon(world: &mut World, entity: Entity, size: f32) {
 }
 
 pub(super) fn render_form(world: &mut World, owner: Entity) {
+    reset_columns(world, owner);
     let form = world.get::<View>(owner).unwrap().form;
     clear(world, form);
     let draft = world.get::<KarmaCastle>(owner).unwrap().draft.clone();
@@ -726,7 +796,8 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
 fn editor_cells(world: &mut World, cells: Entity, owner: Entity, row: usize, draft: &Draft) {
     let identity = cell(world, cells);
     editor(world, identity, owner, row, 3, &draft.name);
-    editor(world, identity, owner, row, 4, &draft.slug);
+    let slug = cell(world, cells);
+    editor(world, slug, owner, row, 4, &draft.slug);
     for (index, field) in draft.fields.iter().enumerate() {
         let cell = cell(world, cells);
         editor(world, cell, owner, row, index, &field.text);
@@ -740,7 +811,16 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
         world.get_mut::<Node>(host).unwrap().height = percent(100);
     }
     if index >= 3 {
-        crate::edit_mode::label(world, host, if index == 3 { "Name" } else { "Slug" }, 12.0);
+        crate::edit_mode::label(
+            world,
+            host,
+            if index == 3 {
+                "Name (optional)"
+            } else {
+                "Slug (optional)"
+            },
+            12.0,
+        );
     }
     let entity = world
         .spawn(crate::sand::text_editor(
@@ -1320,7 +1400,13 @@ mod tests {
         keys(app.world_mut());
         assert_eq!(app.world().get::<Input>(field).unwrap().selected, 1);
         let selected = app.world().get::<Input>(field).unwrap().options[1].0;
-        assert_eq!(app.world().get::<crate::token_style::BackgroundToken>(selected).unwrap().0, crate::tokens::Token::Accent);
+        assert_eq!(
+            app.world()
+                .get::<crate::token_style::BackgroundToken>(selected)
+                .unwrap()
+                .0,
+            crate::tokens::Token::Accent
+        );
         assert_eq!(app.world().resource::<InputFocus>().get(), Some(field));
         let expected = match &app.world().get::<Input>(field).unwrap().options[1].1 {
             Command::Insert(_, _, value, _) => value.clone(),

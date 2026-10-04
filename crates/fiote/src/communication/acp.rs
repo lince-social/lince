@@ -215,7 +215,7 @@ impl Connection {
         let agent = AcpAgent::new(
             AcpAgentConfig::new(command)
                 .args(config.args.clone())
-                .envs(config.environment.clone()),
+                .envs(launch::environment(&config)),
         );
         let (events, receiver) = mpsc::channel(256);
         let notices = events.clone();

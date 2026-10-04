@@ -40,13 +40,19 @@ impl Band {
         previous + (next - previous) * self.blend.position[0] + self.fall.position[0]
     }
 
-    pub fn anchor(&self, settings: &Settings, now: i64, size: Vec2, width: f32) -> [f32; 3] {
+    pub fn anchor(
+        &self,
+        settings: &Settings,
+        now: i64,
+        size: Vec2,
+        width: f32,
+        unwind: f32,
+    ) -> [f32; 3] {
         let time = self.visible_time(now);
         let at = time.from_ms + (time.until_ms.unwrap_or(time.from_ms) - time.from_ms) / 2;
-        let mut point = Vec3::from_array(settings.position(at, now, size.to_array(), 0.0));
-        point += Vec3::from_array(settings.transverse(at, now, 0.0))
+        let mut point = Vec3::from_array(settings.position(at, now, size.to_array(), unwind));
+        point += Vec3::from_array(settings.transverse(at, now, unwind))
             * self.offset(at, settings, size, width);
-        point.y = 0.0;
         point.to_array()
     }
 
@@ -96,6 +102,7 @@ pub(super) fn update(
     let entries = occurrences
         .as_ref()
         .map(|_| world.get::<View>(owner).unwrap().entries.clone());
+    let physics = settings.card_physics;
     let mut motion = world.get_mut::<Motion>(owner).unwrap();
     motion.seconds = motion.last.elapsed().as_secs_f32();
     motion.last = Instant::now();
@@ -160,10 +167,14 @@ pub(super) fn update(
         {
             return false;
         }
-        active |= band.blend.advance([1.0], seconds);
-        active |= band
-            .fall
-            .advance([if band.retiring { 72.0 } else { 0.0 }], seconds);
+        let target = [if band.retiring { 72.0 } else { 0.0 }];
+        if physics {
+            active |= band.blend.advance([1.0], seconds);
+            active |= band.fall.advance(target, seconds);
+        } else {
+            band.blend = Spring::new([1.0]);
+            band.fall = Spring::new(target);
+        }
         true
     });
     active |= previous_count != motion.bands.len();
@@ -281,7 +292,7 @@ mod tests {
         let band = Band::settled(entry, occurrence);
         let settings = Settings::default();
         let size = Vec2::splat(420.0);
-        let anchor = Vec3::from_array(band.anchor(&settings, 2000, size, 4.0));
+        let anchor = Vec3::from_array(band.anchor(&settings, 2000, size, 4.0, 0.0)).with_y(0.0);
         let midpoint =
             Vec3::from_array(settings.position(31_000, 2000, size.to_array(), 0.0)).with_y(0.0);
         assert!((anchor.normalize() - midpoint.normalize()).length() < 0.0001);

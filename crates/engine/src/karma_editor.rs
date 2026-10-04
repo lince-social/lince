@@ -24,14 +24,19 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<serde_json::Value, EngineError> {
         check_source(source)?;
-        self.karma_condition_records(Condition::parse(source).map_err(invalid)?, actor).await?;
+        self.karma_condition_records(Condition::parse(source).map_err(invalid)?, actor)
+            .await?;
         let condition = RuleCondition {
             source: source.into(),
             bindings: Vec::new(),
             gate: Gate::Always,
             carry: Carry::Value,
         };
-        let value = crate::karma_transfers::scope(actor, Box::pin(self.evaluate_rule_condition(&condition, now, now))).await?;
+        let value = crate::karma_transfers::scope(
+            actor,
+            Box::pin(self.evaluate_rule_condition(&condition, now, now)),
+        )
+        .await?;
         Ok(
             serde_json::json!({"source":source,"value":value.map(|value| value.to_string()),"at":now.to_rfc3339()}),
         )
@@ -68,15 +73,14 @@ impl Engine {
             slug: identity.slug.trim().into(),
         });
         if let Some(identity) = &identity {
-            if identity.name.is_empty()
-                || identity.name.len() > 256
-                || identity.name.chars().any(char::is_control)
-            {
+            if identity.name.len() > 256 || identity.name.chars().any(char::is_control) {
                 return Err(invalid(
-                    "Use a rule name of 1–256 bytes without control characters",
+                    "Use a rule name of at most 256 bytes without control characters",
                 ));
             }
-            if identity.slug.len() > 256 || !nucleus::valid_slug(&identity.slug) {
+            if identity.slug.len() > 256
+                || (!identity.slug.is_empty() && !nucleus::valid_slug(&identity.slug))
+            {
                 return Err(invalid(
                     "Use a lowercase rule slug with letters, numbers, hyphens or dots",
                 ));
@@ -111,14 +115,26 @@ impl Engine {
                         let rule = store::recurrence::get(&self.store.pool, &reader)
                             .await?
                             .ok_or_else(|| invalid("Rule not found"))?;
-                        self.refuse_unreadable_karma_inputs(actor, &[crate::karma_transfer_effects::target(&rule).into()])
-                            .await?;
+                        self.refuse_unreadable_karma_inputs(
+                            actor,
+                            &[crate::karma_transfer_effects::target(&rule).into()],
+                        )
+                        .await?;
                         match kind {
                             RuleFieldKind::Condition => {
-                                let bindings =
-                                    rule.condition.clone()
-                                        .map(|condition| condition.bindings.into_iter().filter(|binding| !binding.reading.starts_with("consequence.")).collect::<Vec<_>>())
-                                        .ok_or_else(|| invalid("Shared condition is missing"))?;
+                                let bindings = rule
+                                    .condition
+                                    .clone()
+                                    .map(|condition| {
+                                        condition
+                                            .bindings
+                                            .into_iter()
+                                            .filter(|binding| {
+                                                !binding.reading.starts_with("consequence.")
+                                            })
+                                            .collect::<Vec<_>>()
+                                    })
+                                    .ok_or_else(|| invalid("Shared condition is missing"))?;
                                 if shared_bindings
                                     .as_ref()
                                     .is_some_and(|saved| saved != &bindings)
@@ -130,11 +146,20 @@ impl Engine {
                                 shared_bindings = Some(bindings);
                             }
                             RuleFieldKind::Consequence => {
-                                let value = (crate::karma_transfer_effects::target(&rule).to_owned(), rule.condition.as_ref().map_or_else(Vec::new, |condition| condition.bindings.iter().filter(|binding| binding.reading.starts_with("consequence.")).cloned().collect::<Vec<_>>()));
-                                if shared_target
-                                    .as_ref()
-                                    .is_some_and(|saved| saved != &value)
-                                {
+                                let value = (
+                                    crate::karma_transfer_effects::target(&rule).to_owned(),
+                                    rule.condition.as_ref().map_or_else(Vec::new, |condition| {
+                                        condition
+                                            .bindings
+                                            .iter()
+                                            .filter(|binding| {
+                                                binding.reading.starts_with("consequence.")
+                                            })
+                                            .cloned()
+                                            .collect::<Vec<_>>()
+                                    }),
+                                );
+                                if shared_target.as_ref().is_some_and(|saved| saved != &value) {
                                     return Err(invalid(
                                         "Shared consequence has conflicting targets",
                                     ));
@@ -326,8 +351,22 @@ impl Engine {
         } else {
             None
         };
-        let previous_effect_bindings = shared_target.as_ref().map(|(_, bindings)| bindings.as_slice()).unwrap_or_else(|| previous.as_ref().and_then(|rule| rule.condition.as_ref()).map_or(&[], |condition| condition.bindings.as_slice()));
-        let consequences = self.bind_transfer_effects(consequence.consequences, &mut condition.bindings, previous_effect_bindings).await?;
+        let previous_effect_bindings = shared_target
+            .as_ref()
+            .map(|(_, bindings)| bindings.as_slice())
+            .unwrap_or_else(|| {
+                previous
+                    .as_ref()
+                    .and_then(|rule| rule.condition.as_ref())
+                    .map_or(&[], |condition| condition.bindings.as_slice())
+            });
+        let consequences = self
+            .bind_transfer_effects(
+                consequence.consequences,
+                &mut condition.bindings,
+                previous_effect_bindings,
+            )
+            .await?;
         let target = match self.transfer_rule_anchor(&consequences, actor).await? {
             Some(target) => target,
             None => {

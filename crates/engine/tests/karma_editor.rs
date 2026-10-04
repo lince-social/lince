@@ -727,7 +727,6 @@ async fn rule_identity_is_atomic_unique_and_removed_with_the_rule() {
         1
     );
     for (name, slug) in [
-        ("", "valid"),
         ("Name", "UPPER"),
         ("Name", "bad slug"),
         ("Bad\nName", "valid"),
@@ -846,5 +845,78 @@ async fn rule_deletion_requires_permission_and_a_readable_target() {
             .await
             .unwrap()
             .is_none()
+    );
+}
+
+#[tokio::test]
+async fn rule_name_and_slug_are_independently_optional_and_can_be_cleared() {
+    let engine = support::karma::engine().await;
+    support::plain(&engine, "source", 2.0).await;
+    support::plain(&engine, "target", 0.0).await;
+    let unnamed = create(&engine, text("@source"), "target").await;
+    let saved = store::karma_fields::identity(&engine.store.pool, &unnamed)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(saved.name.is_empty());
+    assert!(saved.slug.is_empty());
+    for (name, slug) in [("", ""), ("", ""), ("Name", ""), ("", "only-slug")] {
+        let uid = engine
+            .act(
+                Action::SaveKarmaRule {
+                    identity: Some(nucleus::karma::rule_field::RuleIdentity {
+                        name: name.into(),
+                        slug: slug.into(),
+                    }),
+                    rule: None,
+                    expected_revision: None,
+                    fields: [text("@source"), text(">0"), text("@target")],
+                    request_id: nucleus::new_uid("optional-identity"),
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let saved = store::karma_fields::identity(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(saved.name, name);
+        assert_eq!(saved.slug, slug);
+        engine
+            .act(
+                Action::SaveKarmaRule {
+                    identity: Some(serde_json::from_value(serde_json::json!({})).unwrap()),
+                    rule: Some(uid.clone()),
+                    expected_revision: Some(1),
+                    fields: [text("@source"), text(">0"), text("@target")],
+                    request_id: nucleus::new_uid("clear-identity"),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        let saved = store::karma_fields::identity(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(saved.name.is_empty());
+        assert!(saved.slug.is_empty());
+        let slug: Option<String> =
+            store::sqlx::query_scalar("SELECT slug FROM recurrence WHERE uid = ?")
+                .bind(&uid)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap();
+        assert!(slug.is_none());
+    }
+    let query = serde_json::from_value(serde_json::json!({"source":"karma_rule"})).unwrap();
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(rows.len(), 5);
+    assert!(
+        rows.iter()
+            .all(|row| row["name"] == "" && row["slug"] == "")
     );
 }

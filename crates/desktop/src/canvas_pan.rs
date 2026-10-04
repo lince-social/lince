@@ -65,12 +65,15 @@ fn pan(
     hover: Res<HoverMap>,
     mut gesture: ResMut<CanvasPan>,
     mut views: Query<&mut CanvasView, Without<crate::topology::presentation::SpatialRoot>>,
-    mut items: Query<(
-        &mut CanvasItem,
-        Option<&mut crate::sand_placement::Pinned>,
-        Option<&mut crate::area::InfluenceArea>,
-        Option<&crate::area_effects::AreaScale>,
-    )>,
+    mut items: Query<
+        (
+            &mut CanvasItem,
+            Option<&mut crate::sand_placement::Pinned>,
+            Option<&mut crate::area::InfluenceArea>,
+            Option<&crate::area_effects::AreaScale>,
+        ),
+        Without<crate::time_castle::AttachedCard>,
+    >,
     modes: Query<&crate::edit_mode::EditMode>,
     parents: Query<&ChildOf>,
     mut pointers: Query<(&PointerId, &mut PointerPress)>,
@@ -79,7 +82,10 @@ fn pan(
     window_cursors: Query<(Entity, &Window, Option<&CursorIcon>)>,
     mut cursor: ResMut<ResizeCursor>,
     mut commands: Commands,
-    surfaces: (Query<(&crate::sand_text::SandText, &ChildOf, &Node)>, Query<&crate::drawing::DrawingSurface>),
+    surfaces: (
+        Query<(&crate::sand_text::SandText, &ChildOf, &Node)>,
+        Query<&crate::drawing::DrawingSurface>,
+    ),
 ) {
     let (text_areas, drawings) = surfaces;
     for event in windows.read() {
@@ -117,7 +123,10 @@ fn pan(
                 let mut candidate = hit;
                 let mut sand = None;
                 loop {
-                    if button == PointerButton::Primary && !control && drawings.contains(candidate) { break; }
+                    if button == PointerButton::Primary && !control && drawings.contains(candidate)
+                    {
+                        break;
+                    }
                     if items.contains(candidate) {
                         sand = Some(candidate);
                     }

@@ -204,7 +204,10 @@ pub(crate) fn blocked(
             &ChildOf,
             &WorkspaceMember,
             Option<&Matches>,
-        ), (Without<crate::component_push::composition::Generated>, Without<crate::canvas_host::composition::Generated>)>()
+        ), (
+            Without<crate::component_push::composition::Generated>,
+            Without<crate::canvas_host::composition::Generated>,
+        )>()
         .iter(world)
         .any(|(entity, shield, parent, member, filter)| {
             entity != source
@@ -237,7 +240,10 @@ pub(crate) fn refresh(world: &mut World) {
             &WorkspaceMember,
             Option<Ref<Matches>>,
             Option<&GeneratedGroup>,
-        ), (Without<crate::component_push::composition::Generated>, Without<crate::canvas_host::composition::Generated>)>()
+        ), (
+            Without<crate::component_push::composition::Generated>,
+            Without<crate::canvas_host::composition::Generated>,
+        )>()
         .iter(world)
         .filter(|(_, area, _, _, _, group)| area.validate() || group.is_some())
         .map(|(entity, area, parent, member, filter, group)| Field {
@@ -296,6 +302,7 @@ pub(crate) fn refresh(world: &mut World) {
                 Without<InfluenceArea>,
                 Without<Pinned>,
                 Without<crate::external_drop::Preview>,
+                Without<crate::time_castle::AttachedCard>,
             )>()
             .iter(world)
             .filter(|(_, _, parent, member, record, binding)| {

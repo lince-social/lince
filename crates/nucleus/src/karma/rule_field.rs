@@ -5,7 +5,9 @@ use crate::DecimalValue;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct RuleIdentity {
+    #[serde(default)]
     pub name: String,
+    #[serde(default)]
     pub slug: String,
 }
 
@@ -106,23 +108,35 @@ impl RuleConsequence {
                     vec![effect]
                 } else if command == "activate-fiote" {
                     vec![Consequence::ActivateFiote]
-                } else if let Some(command) = command.strip_prefix("run(@").and_then(|source| source.strip_suffix(')')) {
-                    vec![Consequence::InvokeCommand { command: command.trim().into() }]
-                } else if let Some(state) = command.strip_prefix("show(").and_then(|source| source.strip_suffix(')')) {
-                    let mut component: crate::component::ComponentState = serde_json::from_str(state).map_err(|error| format!("Invalid component state: {error}"))?;
-                    if let Some(record) = component.record_mut() && record.is_empty() {
+                } else if let Some(command) = command
+                    .strip_prefix("run(@")
+                    .and_then(|source| source.strip_suffix(')'))
+                {
+                    vec![Consequence::InvokeCommand {
+                        command: command.trim().into(),
+                    }]
+                } else if let Some(state) = command
+                    .strip_prefix("show(")
+                    .and_then(|source| source.strip_suffix(')'))
+                {
+                    let mut component: crate::component::ComponentState =
+                        serde_json::from_str(state)
+                            .map_err(|error| format!("Invalid component state: {error}"))?;
+                    if let Some(record) = component.record_mut()
+                        && record.is_empty()
+                    {
                         *record = target.into();
                     }
                     vec![Consequence::ShowComponent { component }]
                 } else {
-                let command = command
-                    .strip_prefix("command(")
-                    .and_then(|v| v.strip_suffix(')'))
-                    .ok_or("Use command(\"shell command\")")?;
-                vec![Consequence::RunCommand {
-                    command: serde_json::from_str(command)
-                        .map_err(|error| format!("Quote the command: {error}"))?,
-                }]
+                    let command = command
+                        .strip_prefix("command(")
+                        .and_then(|v| v.strip_suffix(')'))
+                        .ok_or("Use command(\"shell command\")")?;
+                    vec![Consequence::RunCommand {
+                        command: serde_json::from_str(command)
+                            .map_err(|error| format!("Quote the command: {error}"))?,
+                    }]
                 }
             } else {
                 return Err(
@@ -148,13 +162,20 @@ impl RuleConsequence {
 
     pub fn as_text(&self) -> String {
         if let [effect] = self.consequences.as_slice()
-            && let Some(source) = super::transfer_consequence::display(&self.target, effect) {
+            && let Some(source) = super::transfer_consequence::display(&self.target, effect)
+        {
             return source;
         }
         match self.consequences.as_slice() {
             [Consequence::ActivateFiote] => format!("@{}: activate-fiote", self.target),
-            [Consequence::InvokeCommand { command }] => format!("@{}: run(@{})", self.target, command),
-            [Consequence::ShowComponent { component }] => format!("@{}: show({})", self.target, serde_json::to_string(component).unwrap()),
+            [Consequence::InvokeCommand { command }] => {
+                format!("@{}: run(@{})", self.target, command)
+            }
+            [Consequence::ShowComponent { component }] => format!(
+                "@{}: show({})",
+                self.target,
+                serde_json::to_string(component).unwrap()
+            ),
             [Consequence::SetQuantity { value: None }] => format!("@{}", self.target),
             [Consequence::SetQuantity { value }] => {
                 format!("@{} = {}", self.target, display_amount(value))

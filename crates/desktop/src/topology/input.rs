@@ -212,7 +212,9 @@ pub fn pointer(
             && let Ok((owner, _)) = owners.get(*mesh)
         {
             hit_owner = Some((owner.0, hit.point));
-            if !mode.enabled && schedule_picks.contains(*mesh) { hit_mesh = Some(*mesh); }
+            if !mode.enabled && schedule_picks.contains(*mesh) {
+                hit_mesh = Some(*mesh);
+            }
         }
     }
     if !overlay {
@@ -259,7 +261,8 @@ pub fn pointer(
         }
     }
     if let Some((owner, hit)) = hit_owner {
-        if hit_mesh.is_none() && (!mode.enabled || areas.contains(owner))
+        if hit_mesh.is_none()
+            && (!mode.enabled || areas.contains(owner))
             && let Ok(surface) = surfaces.get(owner)
             && let Ok((_, transform)) = owners.get(surface.face)
         {
@@ -452,6 +455,12 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     world.resource_mut::<PointerState>().pan = Some(event.location.position);
                     continue;
                 };
+                if world
+                    .get::<crate::time_castle::AttachedCard>(entity)
+                    .is_some()
+                {
+                    continue;
+                }
                 let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
                     continue;
                 };

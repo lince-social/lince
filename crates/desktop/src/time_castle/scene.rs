@@ -26,6 +26,9 @@ struct Scene {
 #[derive(Component)]
 struct Connectors(Entity);
 
+#[derive(Component, PartialEq)]
+struct ConnectorStamp(Vec<model::Label>, Vec<String>, palette::Palette);
+
 #[derive(Component)]
 struct Hand(Entity);
 
@@ -424,6 +427,19 @@ pub(super) fn annotations(
     labels: &[model::Label],
     palette: &palette::Palette,
 ) {
+    let stamp = ConnectorStamp(
+        labels.to_vec(),
+        world.get::<View>(owner).unwrap().selected.clone(),
+        palette.clone(),
+    );
+    if world.get::<ConnectorStamp>(owner) == Some(&stamp)
+        && !world
+            .get::<motion::Motion>(owner)
+            .is_some_and(|motion| motion.active)
+    {
+        return;
+    }
+    world.entity_mut(owner).insert(stamp);
     if labels.is_empty() {
         if let Some(previous) = world
             .get::<Connectors>(owner)
@@ -443,11 +459,11 @@ pub(super) fn annotations(
     let mut ribbon = Ribbon::default();
     let selected = &world.get::<View>(owner).unwrap().selected;
     for label in labels {
-        let anchor = Vec3::from_array(label.anchor).with_y(0.03);
+        let anchor = Vec3::from_array(label.anchor) + Vec3::Y * 0.4;
         let direction = anchor.xz().normalize_or_zero();
         let elbow = anchor + Vec3::new(direction.x, 0.0, direction.y) * 24.0;
         let edge = card_edge(anchor.xz(), label.rect);
-        let end = Vec3::new(edge.x, 0.03, edge.y);
+        let end = Vec3::new(edge.x, anchor.y, edge.y);
         let color = palette::rgba(
             palette
                 .event(label.occurrence.lane, selected.contains(&label.id))
@@ -544,16 +560,16 @@ pub(super) fn hand(
     let direction = Vec3::from_array(settings.transverse(now, now, 0.0));
     let regions = [
         Rect::from_corners(
-            Vec2::new(-radius * 0.63, -radius * 0.31),
-            Vec2::new(radius * 0.63, radius * 0.39),
+            Vec2::new(-size.x * 0.22, -size.y * 0.14),
+            Vec2::new(size.x * 0.22, size.y * 0.20),
         ),
         Rect::from_corners(
             Vec2::new(-radius * 0.50, -radius * 0.77),
             Vec2::new(radius * 0.50, -radius * 0.35),
         ),
         Rect::from_corners(
-            Vec2::new(-60.0, radius * 0.43),
-            Vec2::new(60.0, radius * 0.84),
+            Vec2::new(-20.0, size.y * 0.25 - 20.0),
+            Vec2::new(20.0, size.y * 0.25 + 20.0),
         ),
     ];
     let mut ribbon = Ribbon::default();

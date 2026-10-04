@@ -492,7 +492,7 @@ impl Engine {
         if !completed
             && (stored.is_some() || !preview.objects[2].exists)
             && rule.revision == 1
-            && identity.name == "Karma rule"
+            && identity.name.is_empty()
         {
             let fields = store::karma_fields::for_rule(&self.store.pool, &rule.uid).await?;
             let fields = nucleus::karma::rule_field::RuleFieldKind::ALL.map(|kind| {

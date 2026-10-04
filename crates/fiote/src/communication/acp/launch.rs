@@ -1,6 +1,14 @@
 use super::*;
 use std::path::Path;
 
+pub(super) fn environment(config: &Config) -> BTreeMap<String, String> {
+    let mut environment = config.environment.clone();
+    if cfg!(target_os = "linux") {
+        environment.entry("LD_LIBRARY_PATH".into()).or_default();
+    }
+    environment
+}
+
 fn executable(path: &Path) -> bool {
     let Ok(metadata) = path.metadata() else {
         return false;

@@ -156,6 +156,7 @@ pub(crate) fn draft(
             ))
             .insert(Node {
                 width: px(220),
+                max_width: percent(100),
                 ..default()
             })
             .id();

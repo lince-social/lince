@@ -9,7 +9,7 @@ use bevy::text::EditableText;
 use serde_json::json;
 
 #[derive(Clone)]
-pub(super) enum Command {
+pub(crate) enum Command {
     Create,
     Delete,
     Run,
@@ -374,35 +374,27 @@ fn input(
     list: bool,
     help: &str,
 ) {
-    let font = world.resource::<crate::theme::Typography>().text(14.0);
-    let mut text = crate::sand::editable(value);
-    text.allow_newlines = false;
-    text.visible_lines = Some(1.0);
-    text.max_characters = Some(if path.starts_with('$') { 256 } else { 4096 });
-    world.spawn((
-        text,
-        font,
-        crate::token_style::text(Token::Ink),
-        crate::token_style::CursorToken(Token::Accent),
-        Tooltip(help.into()),
-        bevy::input_focus::tab_navigation::TabIndex(0),
-        Input {
-            owner,
-            path: path.into(),
-            list,
-            previous: value.into(),
-        },
-        crate::tutorial::TutorialField::Query(owner, path.into()),
-        Node {
-            width: percent(100),
-            min_width: px(80),
-            min_height: px(28),
-            flex_shrink: 0.0,
-            padding: UiRect::all(px(4)),
-            ..default()
-        },
-        ChildOf(parent),
-    ));
+    let input = crate::sand::single_line_editor(
+        value,
+        world.resource::<crate::theme::Typography>(),
+        0,
+        if path.starts_with('$') { 256 } else { 4096 },
+    );
+    let entity = world
+        .spawn((
+            input,
+            Tooltip(help.into()),
+            Input {
+                owner,
+                path: path.into(),
+                list,
+                previous: value.into(),
+            },
+            crate::tutorial::TutorialField::Query(owner, path.into()),
+            ChildOf(parent),
+        ))
+        .id();
+    world.get_mut::<Node>(entity).unwrap().min_width = px(80);
 }
 
 pub(super) fn inputs(world: &mut World) {

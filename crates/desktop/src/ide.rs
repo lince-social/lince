@@ -18,6 +18,7 @@ pub use settings::Settings;
 #[cfg(test)]
 mod tests;
 
+use crate::actions::Action;
 use bevy::{math::DVec2, prelude::*, text::EditableText};
 pub(crate) use file_changes::{finish_change, reserve_change};
 use lince_editor::{
@@ -457,6 +458,78 @@ pub fn spawn(
 
 pub(crate) fn open(world: &mut World, owner: Entity, scope: Scope, path: PathBuf) {
     open_with_activation(world, owner, scope, path, true);
+}
+
+pub(crate) fn file_ready(world: &World, owner: Entity) -> bool {
+    let Some(view) = world.get::<View>(owner) else {
+        return false;
+    };
+    view.path.as_ref().is_some_and(|path| {
+        world
+            .get_resource::<Documents>()
+            .and_then(|docs| docs.0.get(path))
+            .is_some_and(|document| {
+                !document.reading && document.file.is_some() && document.error.is_none()
+            })
+    })
+}
+
+pub(crate) fn forget_directory(world: &mut World, directory: &std::path::Path) {
+    if let Some(mut documents) = world.get_resource_mut::<Documents>() {
+        documents.0.retain(|path, _| !path.starts_with(directory));
+        documents.1.retain(|path| !path.starts_with(directory));
+    }
+}
+
+pub(crate) fn edit_and_save(world: &mut World, owner: Entity, text: &str) {
+    if !file_ready(world, owner) {
+        return;
+    }
+    let view = world.get::<View>(owner).unwrap();
+    let path = view.path.clone().unwrap();
+    let editor = view.editor;
+    let document = &world.resource::<Documents>().0[&path];
+    if document.saving.is_some() {
+        return;
+    }
+    if document.buffer.text() != text {
+        if view.window.is_none() {
+            return;
+        }
+        world
+            .get_mut::<EditableText>(editor)
+            .unwrap()
+            .editor
+            .set_text(text);
+        editing::capture_one(world, owner);
+    }
+    actions::Control::Save.apply(world, owner);
+}
+
+pub(crate) fn saved_text(world: &World, owner: Entity, text: &str) -> bool {
+    let Some(path) = world.get::<View>(owner).and_then(|view| view.path.as_ref()) else {
+        return false;
+    };
+    world
+        .get_resource::<Documents>()
+        .and_then(|docs| docs.0.get(path))
+        .is_some_and(|document| {
+            document.saving.is_none()
+                && document.error.is_none()
+                && !document.buffer.is_dirty()
+                && document.disk.text.as_ref() == text
+                && document.buffer.text() == text
+        })
+}
+
+pub(crate) fn inspect_tools(world: &mut World, owner: Entity) {
+    if !tools::visible(world, owner) {
+        actions::Control::Tools.apply(world, owner);
+    }
+}
+
+pub(crate) fn tools_visible(world: &World, owner: Entity) -> bool {
+    file_ready(world, owner) && tools::visible(world, owner)
 }
 
 fn open_with_activation(

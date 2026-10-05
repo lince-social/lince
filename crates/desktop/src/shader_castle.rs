@@ -26,8 +26,8 @@ impl Plugin for ShaderCastlePlugin {
     }
 }
 
-fn config(slug: &str) -> crate::protein_area::Config {
-    let mut config = crate::full_record::config(slug, Source::Local);
+fn config(slug: &str, source: Source) -> crate::protein_area::Config {
+    let mut config = crate::full_record::config(slug, source);
     config.enabled = !slug.is_empty();
     config.group_with_source = false;
     config.width = 880.0;
@@ -51,7 +51,7 @@ pub fn spawn(
         position,
         Vec2::new(920.0, 760.0),
         "Shader Castle",
-        config(slug),
+        config(slug, Source::Local),
     );
     world
         .entity_mut(owner)
@@ -112,16 +112,23 @@ impl Action for Select {
         let slug = slug.trim().trim_start_matches(['@', '#']);
         let frame = world.get::<Frame>(owner).unwrap();
         let area = frame.area;
+        let source = world
+            .get::<crate::area::InfluenceArea>(area)
+            .and_then(|area| area.protein.as_ref())
+            .map_or(Source::Local, |config| config.source.clone());
         world
             .get_mut::<crate::area::InfluenceArea>(area)
             .unwrap()
-            .protein = Some(config(slug));
+            .protein = Some(config(slug, source));
     }
 }
 
 #[derive(Clone)]
 struct AddBall;
 impl Action for AddBall {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        &[lince_interface::practice::Operation::AddShaderExample]
+    }
     fn apply(&self, world: &mut World, owner: Entity) {
         if crate::laboratory::suspended(world, owner) {
             return;
@@ -141,6 +148,9 @@ impl Action for AddBall {
             .map(|(entity, _, _)| entity)
             .collect();
         for entity in editors {
+            if !crate::record_binding::can_edit(world, entity) {
+                continue;
+            }
             let mut text = world.get_mut::<EditableText>(entity).unwrap();
             let source = text.value().to_string();
             text.editor.set_text(&format!(
@@ -175,7 +185,10 @@ fn update(world: &mut World) {
                     &crate::protein_area::RecordBinding {
                         area,
                         uid: uid.into(),
-                        source: Source::Local,
+                        source: world
+                            .get::<crate::area::InfluenceArea>(area)
+                            .and_then(|area| area.protein.as_ref())
+                            .map_or(Source::Local, |config| config.source.clone()),
                     },
                 )
             });
@@ -262,4 +275,52 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedShader> {
         .filter(|(_, parent)| parent.parent() == root)
         .filter_map(|(owner, _)| castle_feed::Saved::capture(world, owner).map(SavedShader))
         .collect()
+}
+
+pub(crate) fn prepare_source(world: &mut World, owner: Entity, source: Source) {
+    let area = world.get::<Frame>(owner).unwrap().area;
+    if let Some(config) = world
+        .get_mut::<crate::area::InfluenceArea>(area)
+        .unwrap()
+        .protein
+        .as_mut()
+    {
+        config.source = source;
+    }
+}
+
+pub(crate) fn add_example(world: &mut World, owner: Entity) {
+    let Some(area) = world.get::<Frame>(owner).map(|frame| frame.area) else {
+        return;
+    };
+    let authored = world
+        .query::<(&crate::protein_area::RecordBinding, &EditableText)>()
+        .iter(world)
+        .any(|(record, text)| {
+            record.area == area && text.value().to_string().contains("fn shade(")
+        });
+    if !authored {
+        AddBall.apply(world, owner);
+    }
+}
+
+pub(crate) fn example_visible(world: &mut World, owner: Entity) -> bool {
+    let Some(area) = world.get::<Frame>(owner).map(|frame| frame.area) else {
+        return false;
+    };
+    world
+        .query::<(
+            &crate::protein_area::RecordBinding,
+            &EditableText,
+            &crate::record_binding::TextBinding,
+        )>()
+        .iter(world)
+        .any(|(record, text, binding)| {
+            let value = text.value().to_string();
+            record.area == area
+                && value.contains("fn shade(")
+                && !binding.unsaved(&value)
+                && crate::record_binding::status(world, record)
+                    .is_some_and(|status| status == "Saved")
+        })
 }

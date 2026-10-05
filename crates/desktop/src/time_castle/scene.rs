@@ -242,7 +242,7 @@ pub(super) fn update(
             + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
             as i64
     };
-    let occurrences = model::occurrences(&entries, now, now + duration, &settings.timezone);
+    let occurrences = model::clock_occurrences(settings, &entries, now, now + duration);
     let parent = if let Some(parent) = view
         .scene
         .filter(|entity| world.get_entity(*entity).is_ok())
@@ -570,6 +570,10 @@ pub(super) fn hand(
         Rect::from_corners(
             Vec2::new(-20.0, size.y * 0.25 - 20.0),
             Vec2::new(20.0, size.y * 0.25 + 20.0),
+        ),
+        Rect::from_corners(
+            Vec2::new(-radius * 0.60, radius * 0.70),
+            Vec2::new(radius * 0.60, radius * 0.94),
         ),
     ];
     let mut ribbon = Ribbon::default();

@@ -1,5 +1,6 @@
 use super as karma;
 use super::*;
+use crate::cell_bridge::CellBridge;
 use nucleus::transfer::{
     AgreementGuard,
     karma::{Participant, Snapshot},

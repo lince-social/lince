@@ -7,23 +7,28 @@ usage = '''
 flag "--directory <directory>" default=".lince-dev"
 flag "--port <port>" default="6176"
 '''
-run = 'LINCE_DATA_DIR="${usage_directory}" LINCE_PORT="${usage_port}" cargo xtask dev'
+run = 'LINCE_INSTINCT=1 LINCE_DATA_DIR="${usage_directory}" LINCE_PORT="${usage_port}" cargo xtask dev'
 
 [tasks.dev-instinct]
-description = "Run the unfinished Instinct handbook explicitly"
+description = "Run the Instinct handbook with native practice"
 usage = '''
 flag "--directory <directory>" default=".lince-dev"
 flag "--port <port>" default="6176"
 '''
-run = 'cargo run --package lince --features instinct -- --directory "${usage_directory}" --port "${usage_port}"'
+run = 'LINCE_INSTINCT=1 LINCE_DATA_DIR="${usage_directory}" LINCE_PORT="${usage_port}" cargo xtask dev'
 
 [tasks."check-instinct"]
 description = "Check both handbook feature paths and shared practice contracts"
 run = [
-  "cargo check --package lince --no-default-features",
-  "cargo check --package lince --features instinct",
-  "cargo test --package anicca --test instinct",
-  "cargo test --package lince-interface --no-default-features --test practice",
-  "cargo test --package engine --features instinct --test instinct_import",
-  "cargo test --package lince-desktop --features instinct instinct::",
+  "cargo xtask check --locked --package lince",
+  "cargo xtask check --locked --package lince --features instinct",
+  "cargo xtask test --locked --package anicca --test instinct",
+  "cargo xtask test --locked --package lince-interface --no-default-features --test practice",
+  "cargo xtask test --locked --package engine --features instinct --test instinct_import",
+  "cargo xtask test --locked --package lince-desktop --features instinct --lib ontology::tests:: -- --test-threads=1",
+  "cargo xtask test --locked --package lince-desktop --features instinct --lib sound::tests:: -- --test-threads=1",
+  "cargo xtask test --locked --package lince-desktop --lib description::tests:: -- --test-threads=1",
+  "cargo xtask test --locked --package lince-desktop --features instinct --lib description::tests:: -- --test-threads=1",
+  "cargo xtask test --locked --package lince-desktop --features instinct --lib instinct -- --test-threads=1",
+  "cargo xtask test --locked --package lince-desktop --features instinct --lib kept_cell_reopens -- --test-threads=1",
 ]

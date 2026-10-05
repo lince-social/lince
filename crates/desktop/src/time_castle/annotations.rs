@@ -129,7 +129,6 @@ pub(super) fn update(
     let displacement = bevy::math::DQuat::from_array(spatial.rotation).inverse()
         * bevy::math::DVec3::new(displacement.x, 0.0, displacement.y);
     let font = palette.font * 0.875;
-    let bounds = visible_bounds(world, root, &item, &spatial);
     let mut labels = if changed || world.get::<Layout>(owner).is_none() {
         let face = world
             .get_resource::<crate::theme::Typography>()
@@ -152,7 +151,7 @@ pub(super) fn update(
                     },
                 )
         };
-        let mut labels = model::labels_with_metrics(
+        let labels = model::labels_with_metrics(
             &settings,
             &world.get::<View>(owner).unwrap().entries,
             now,
@@ -164,15 +163,6 @@ pub(super) fn update(
                 advance: &advance,
             },
         );
-        let radius = label_floor(&labels, size, palette.width);
-        let mut previous = Vec::new();
-        for label in &mut labels {
-            if let Some(bounds) = bounds {
-                fit(&mut label.rect, &previous, radius, palette.gap, bounds);
-            }
-            separate(&mut label.rect, &previous, radius, palette.gap);
-            previous.push(label.rect);
-        }
         world.entity_mut(owner).insert(Layout {
             labels: labels.clone(),
             position: item.position,
@@ -211,8 +201,12 @@ pub(super) fn update(
     let seconds = world
         .get::<motion::Motion>(owner)
         .map_or(0.0, |motion| motion.seconds);
-    let mut rectangles = Vec::new();
-    let radius = label_floor(&labels, size, palette.width);
+    let mut neighbors = Neighbors::default();
+    for entity in &previous {
+        if let Some(annotation) = world.get::<Annotation>(*entity) {
+            neighbors.insert(*entity, annotation.label.rect);
+        }
+    }
     let mut active = false;
     for label in &mut labels {
         let band = world
@@ -325,7 +319,7 @@ pub(super) fn update(
                 label.rect[1] + label.rect[3] * 0.5,
             )
             .normalize_or_zero();
-            let target = if band.retiring {
+            let mut target = if band.retiring {
                 let position = world.get::<Annotation>(entity).unwrap().spring.position;
                 world.entity_mut(entity).remove::<ActionButton>();
                 [
@@ -341,28 +335,61 @@ pub(super) fn update(
                 }
                 [label.rect[0], label.rect[1]]
             };
+            let held = crate::canvas_pan::dragged(world) == Some(entity)
+                || world
+                    .get_resource::<crate::topology::input::PointerState>()
+                    .is_some_and(|pointer| pointer.drag.is_some_and(|(card, _)| card == entity));
+            let held_position = held.then(|| {
+                let card = world.get::<CanvasItem>(entity).unwrap();
+                let elevation = world
+                    .get::<crate::topology::Spatial>(entity)
+                    .map_or(0.0, |card| card.elevation - spatial.elevation);
+                let offset = bevy::math::DQuat::from_array(spatial.rotation).inverse()
+                    * bevy::math::DVec3::new(
+                        card.position.x - item.position.x,
+                        elevation,
+                        card.position.y - item.position.y,
+                    );
+                [
+                    offset.x as f32 - label.rect[2] * 0.5,
+                    offset.z as f32 - label.rect[3] * 0.5,
+                ]
+            });
+            if settings.card_physics && settings.floating_cards && !band.retiring {
+                let annotation = world.get::<Annotation>(entity).unwrap();
+                let rect = [
+                    annotation.spring.position[0],
+                    annotation.spring.position[1],
+                    label.rect[2],
+                    label.rect[3],
+                ];
+                let rest = rest_position(
+                    rect,
+                    Vec2::new(label.anchor[0], label.anchor[2]),
+                    size.min_element() * 0.4,
+                );
+                let push = neighbors.push(entity, rect, palette.gap);
+                target = repel_clock(
+                    rest + push,
+                    Vec2::new(label.rect[2], label.rect[3]) * 0.5,
+                    size.min_element() * 0.4,
+                )
+                .to_array();
+            }
             let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
-            if settings.card_physics && settings.floating_cards {
+            if let Some(position) = held_position {
+                annotation.spring = lince_interface::motion::Spring::new(position);
+                active = true;
+            } else if settings.card_physics && settings.floating_cards {
                 annotation.spring.position[0] += displacement.x as f32;
                 annotation.spring.position[1] += displacement.z as f32;
-                active |= annotation
-                    .spring
-                    .advance_with_frequency(target, seconds, 6.0);
+                active |= advance_card(&mut annotation.spring, target, seconds);
             } else {
                 annotation.spring = lince_interface::motion::Spring::new(target);
             }
             label.rect[0] = annotation.spring.position[0];
             label.rect[1] = annotation.spring.position[1];
         }
-        if settings.floating_cards
-            && let Some(bounds) = bounds
-        {
-            fit(&mut label.rect, &rectangles, radius, palette.gap, bounds);
-        }
-        if settings.floating_cards {
-            separate(&mut label.rect, &rectangles, radius, palette.gap);
-        }
-        rectangles.push(label.rect);
         {
             let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
             annotation.spring.position = [label.rect[0], label.rect[1]];
@@ -474,138 +501,102 @@ pub(super) fn update(
     labels
 }
 
-fn separate(rect: &mut [f32; 4], previous: &[[f32; 4]], radius: f32, gap: f32) {
-    let center = Vec2::new(rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5);
-    let direction = center.try_normalize().unwrap_or(Vec2::Y);
-    let nearest = Vec2::new(
-        0.0_f32.clamp(rect[0], rect[0] + rect[2]),
-        0.0_f32.clamp(rect[1], rect[1] + rect[3]),
-    )
-    .length();
-    if nearest < radius {
-        let half = Vec2::new(rect[2], rect[3]) * 0.5;
-        let target = direction * (radius + half.length() + gap.max(0.01)) - half;
-        rect[0] = target.x;
-        rect[1] = target.y;
-    }
-    for _ in 0..previous.len() {
-        let Some(other) = previous.iter().find(|other| {
-            rect[0] < other[0] + other[2] + gap
-                && rect[0] + rect[2] + gap > other[0]
-                && rect[1] < other[1] + other[3] + gap
-                && rect[1] + rect[3] + gap > other[1]
-        }) else {
+#[derive(Default)]
+struct Neighbors(HashMap<(i32, i32), Vec<(Entity, [f32; 4])>>);
+
+fn rest_position(rect: [f32; 4], anchor: Vec2, radius: f32) -> Vec2 {
+    let half = Vec2::new(rect[2], rect[3]) * 0.5;
+    let center = Vec2::new(rect[0], rect[1]) + half;
+    let direction = (center - anchor)
+        .try_normalize()
+        .unwrap_or_else(|| anchor.try_normalize().unwrap_or(Vec2::Y));
+    let target = anchor + direction * (half.dot(direction.abs()) + 30.0);
+    repel_clock(target - half, half, radius)
+}
+
+fn repel_clock(position: Vec2, half: Vec2, radius: f32) -> Vec2 {
+    let mut target = position + half;
+    for _ in 0..8 {
+        let nearest = Vec2::ZERO.clamp(target - half, target + half).length();
+        if nearest >= radius + 18.0 {
             break;
-        };
-        let clearance = gap
-            + (other[0].abs() + other[1].abs() + rect[2] + rect[3] + gap).max(1.0)
-                * f32::EPSILON
-                * 4.0;
-        if direction.x.abs() > direction.y.abs() {
-            rect[0] = if direction.x >= 0.0 {
-                other[0] + other[2] + clearance
-            } else {
-                other[0] - rect[2] - clearance
-            };
-        } else {
-            rect[1] = if direction.y >= 0.0 {
-                other[1] + other[3] + clearance
-            } else {
-                other[1] - rect[3] - clearance
-            };
+        }
+        target += target.try_normalize().unwrap_or(Vec2::Y) * (radius + 18.0 - nearest + 0.01);
+    }
+    target - half
+}
+
+fn advance_card(
+    spring: &mut lince_interface::motion::Spring<2>,
+    target: [f32; 2],
+    seconds: f32,
+) -> bool {
+    if spring
+        .position
+        .iter()
+        .zip(target)
+        .all(|(position, target)| (position - target).abs() <= 0.1)
+        && spring
+            .velocity
+            .iter()
+            .all(|velocity| velocity.abs() <= 0.25)
+    {
+        spring.velocity = [0.0; 2];
+        return false;
+    }
+    spring.advance_with_frequency(target, seconds, 6.0)
+}
+
+impl Neighbors {
+    fn cells(rect: [f32; 4], gap: f32) -> Vec<(i32, i32)> {
+        let min = Vec2::new(rect[0] - gap, rect[1] - gap) / 256.0;
+        let max = Vec2::new(rect[0] + rect[2] + gap, rect[1] + rect[3] + gap) / 256.0;
+        (min.x.floor() as i32..=max.x.floor() as i32)
+            .flat_map(|x| (min.y.floor() as i32..=max.y.floor() as i32).map(move |y| (x, y)))
+            .collect()
+    }
+
+    fn insert(&mut self, entity: Entity, rect: [f32; 4]) {
+        for cell in Self::cells(rect, 0.0) {
+            self.0.entry(cell).or_default().push((entity, rect));
         }
     }
-}
 
-fn label_floor(labels: &[model::Label], size: Vec2, width: f32) -> f32 {
-    size.min_element() * 0.4
-        + 28.0
-        + width * 0.5
-        + labels
-            .iter()
-            .map(|label| label.occurrence.lane)
-            .max()
-            .unwrap_or_default() as f32
-            * (width + 3.0)
-}
-
-fn visible_bounds(
-    world: &mut World,
-    root: Entity,
-    item: &CanvasItem,
-    spatial: &crate::topology::Spatial,
-) -> Option<Rect> {
-    if spatial.rotation != bevy::math::DQuat::IDENTITY.to_array() {
-        return None;
-    }
-    let canvas = world.get::<crate::canvas::CanvasView>(root).copied()?;
-    let size = world
-        .query::<&Window>()
-        .iter(world)
-        .next()
-        .map(|window| Vec2::new(window.width(), window.height()))?;
-    let half = size / canvas.zoom as f32 * 0.5 - Vec2::splat(16.0);
-    let center = (canvas.center - item.position).as_vec2();
-    (half.min_element() > item.size.max_element() * 0.5
-        && center.abs().max_element() < half.min_element())
-    .then(|| Rect::from_corners(center - half, center + half))
-}
-
-fn fit(rect: &mut [f32; 4], previous: &[[f32; 4]], radius: f32, gap: f32, bounds: Rect) {
-    let valid = |candidate: [f32; 4]| {
-        let nearest = Vec2::new(
-            0.0_f32.clamp(candidate[0], candidate[0] + candidate[2]),
-            0.0_f32.clamp(candidate[1], candidate[1] + candidate[3]),
-        )
-        .length();
-        candidate[0] >= bounds.min.x
-            && candidate[1] >= bounds.min.y
-            && candidate[0] + candidate[2] <= bounds.max.x
-            && candidate[1] + candidate[3] <= bounds.max.y
-            && nearest >= radius
-            && previous.iter().all(|other| {
-                candidate[0] >= other[0] + other[2] + gap
-                    || candidate[0] + candidate[2] + gap <= other[0]
-                    || candidate[1] >= other[1] + other[3] + gap
-                    || candidate[1] + candidate[3] + gap <= other[1]
-            })
-    };
-    if valid(*rect) || rect[2] > bounds.width() || rect[3] > bounds.height() {
-        return;
-    }
-    let original = Vec2::new(rect[0], rect[1]);
-    let mut xs = vec![
-        rect[0].clamp(bounds.min.x, bounds.max.x - rect[2]),
-        bounds.min.x,
-        bounds.max.x - rect[2],
-        -radius - rect[2] - gap,
-        radius + gap,
-    ];
-    let mut ys = vec![
-        rect[1].clamp(bounds.min.y, bounds.max.y - rect[3]),
-        bounds.min.y,
-        bounds.max.y - rect[3],
-        -radius - rect[3] - gap,
-        radius + gap,
-    ];
-    for other in previous.iter().rev().take(24) {
-        xs.extend([other[0] - rect[2] - gap, other[0] + other[2] + gap]);
-        ys.extend([other[1] - rect[3] - gap, other[1] + other[3] + gap]);
-    }
-    let mut best = None;
-    let mut distance = f32::INFINITY;
-    for x in xs {
-        for y in &ys {
-            let candidate = [x, *y, rect[2], rect[3]];
-            let squared = Vec2::new(x, *y).distance_squared(original);
-            if squared < distance && valid(candidate) {
-                best = Some(candidate);
-                distance = squared;
+    fn push(&self, entity: Entity, rect: [f32; 4], gap: f32) -> Vec2 {
+        let center = Vec2::new(rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5);
+        let mut seen = std::collections::HashSet::new();
+        let mut push = Vec2::ZERO;
+        for cell in Self::cells(rect, gap) {
+            for (other, bounds) in self.0.get(&cell).into_iter().flatten() {
+                if *other == entity || !seen.insert(*other) {
+                    continue;
+                }
+                let other_center =
+                    Vec2::new(bounds[0] + bounds[2] * 0.5, bounds[1] + bounds[3] * 0.5);
+                let delta = center - other_center;
+                let overlap = Vec2::new(
+                    (rect[2] + bounds[2]) * 0.5 + gap,
+                    (rect[3] + bounds[3]) * 0.5 + gap,
+                ) - delta.abs();
+                if overlap.min_element() <= 0.0 {
+                    continue;
+                }
+                let direction = delta.try_normalize().unwrap_or_else(|| {
+                    let angle =
+                        ((entity.to_bits().min(other.to_bits()) % 1024) as f32 + 0.5) * 2.399_963_1;
+                    Vec2::new(angle.cos(), angle.sin())
+                        * if entity.to_bits() < other.to_bits() {
+                            1.0
+                        } else {
+                            -1.0
+                        }
+                });
+                let distance = (overlap.x / direction.x.abs().max(0.001))
+                    .min(overlap.y / direction.y.abs().max(0.001));
+                push += direction * distance * 0.65;
             }
         }
-    }
-    if let Some(best) = best {
-        *rect = best;
+        push.clamp_length_max(200.0)
     }
 }
 
@@ -614,53 +605,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn animated_card_separation_terminates_at_the_center_and_fractional_edges() {
-        let mut centered = [-100.0, -24.0, 200.0, 48.0];
-        separate(&mut centered, &[], 210.0, 8.0);
-        assert!(centered[1] > 210.0);
-        for sign in [-1.0, 1.0] {
-            let mut placed = Vec::new();
-            for index in 0..100 {
-                let mut rect = [sign * 220.1273, index as f32 * 0.1237, 200.0, 48.0];
-                separate(&mut rect, &placed, 210.0, 8.0);
-                assert!(placed.iter().all(|other: &[f32; 4]| {
-                    rect[0] >= other[0] + other[2] + 8.0
-                        || rect[0] + rect[2] + 8.0 <= other[0]
-                        || rect[1] >= other[1] + other[3] + 8.0
-                        || rect[1] + rect[3] + 8.0 <= other[1]
-                }));
-                placed.push(rect);
-            }
-        }
+    fn nearby_cards_repel_in_two_dimensions_without_camera_constraints() {
+        let mut world = World::new();
+        let a = world.spawn_empty().id();
+        let b = world.spawn_empty().id();
+        let mut neighbors = Neighbors::default();
+        neighbors.insert(a, [1000.0, -1200.0, 200.0, 48.0]);
+        neighbors.insert(b, [1000.0, -1200.0, 200.0, 48.0]);
+        let push = neighbors.push(a, [1000.0, -1200.0, 200.0, 48.0], 8.0);
+        assert!(push.x.abs() > 0.1 && push.y.abs() > 0.1);
+        assert!((push + neighbors.push(b, [1000.0, -1200.0, 200.0, 48.0], 8.0)).length() < 0.001);
+        assert_eq!(
+            neighbors.push(a, [1600.0, -1200.0, 200.0, 48.0], 8.0),
+            Vec2::ZERO
+        );
     }
 
     #[test]
-    fn cards_fan_out_at_window_edges_without_covering_the_clock_or_each_other() {
-        let bounds = Rect::from_corners(Vec2::new(-650.0, -360.0), Vec2::new(650.0, 360.0));
-        let mut placed = Vec::new();
-        for index in 0..20 {
-            let mut rect = [-100.0, 200.0 + index as f32 * 56.0, 200.0, 48.0];
-            fit(&mut rect, &placed, 210.0, 8.0, bounds);
-            assert!(
-                bounds.contains(Vec2::new(rect[0], rect[1]))
-                    && bounds.contains(Vec2::new(rect[0] + rect[2], rect[1] + rect[3]))
-            );
-            let nearest = Vec2::new(
-                0.0_f32.clamp(rect[0], rect[0] + rect[2]),
-                0.0_f32.clamp(rect[1], rect[1] + rect[3]),
-            )
-            .length();
-            assert!(nearest >= 210.0);
-            assert!(
-                placed
-                    .iter()
-                    .all(|other: &[f32; 4]| rect[0] >= other[0] + other[2] + 8.0
-                        || rect[0] + rect[2] + 8.0 <= other[0]
-                        || rect[1] >= other[1] + other[3] + 8.0
-                        || rect[1] + rect[3] + 8.0 <= other[1])
-            );
-            placed.push(rect);
-        }
+    fn cards_are_attracted_to_their_anchor_and_repelled_from_the_clock() {
+        let anchor = Vec2::new(174.0, 0.0);
+        let far = rest_position([1000.0, -24.0, 200.0, 48.0], anchor, 168.0);
+        assert!((far.x - anchor.x - 30.0).abs() < 0.01);
+        let close = rest_position([-100.0, -24.0, 200.0, 48.0], Vec2::new(0.0, -174.0), 168.0);
+        assert!(
+            Vec2::ZERO
+                .clamp(close, close + Vec2::new(200.0, 48.0))
+                .length()
+                >= 186.0
+        );
     }
 
     #[test]
@@ -681,7 +653,7 @@ mod tests {
             ))
             .id();
         populate(&mut world, owner);
-        let now = chrono::Utc::now().timestamp_millis();
+        let now = 1_800_000_000_000;
         world.get_mut::<View>(owner).unwrap().entries = (0..4)
             .map(|index| Entry {
                 id: format!("event-{index}"),
@@ -848,7 +820,7 @@ mod tests {
                 .iter()
                 .any(|velocity| velocity.abs() > 0.25)
         }));
-        for _ in 0..240 {
+        for _ in 0..1200 {
             world.get_mut::<motion::Motion>(owner).unwrap().active = false;
             update(
                 &mut world,
@@ -859,8 +831,115 @@ mod tests {
                 false,
                 &palette,
             );
+            if !world.get::<motion::Motion>(owner).unwrap().active {
+                break;
+            }
         }
         assert!(!world.get::<motion::Motion>(owner).unwrap().active);
+        let card = entities[0];
+        let original = world.get::<CanvasItem>(card).unwrap().position;
+        let dragged = original + bevy::math::DVec2::new(80.0, -90.0);
+        let clock_position = world.get::<CanvasItem>(owner).unwrap().position;
+        world.get_mut::<CanvasItem>(card).unwrap().position = dragged;
+        world.init_resource::<crate::topology::input::PointerState>();
+        world
+            .resource_mut::<crate::topology::input::PointerState>()
+            .drag = Some((card, bevy::math::DVec3::ZERO));
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            false,
+            &palette,
+        );
+        assert!((world.get::<CanvasItem>(card).unwrap().position - dragged).length() < 0.01);
+        world
+            .resource_mut::<crate::topology::input::PointerState>()
+            .drag = None;
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            false,
+            &palette,
+        );
+        let released = world.get::<CanvasItem>(card).unwrap().position;
+        assert!(released.distance(dragged) < 10.0);
+        assert!(released.distance(original) > 60.0);
+        assert_eq!(
+            world.get::<CanvasItem>(owner).unwrap().position,
+            clock_position
+        );
+        let rotation = bevy::math::DQuat::from_rotation_x(0.4);
+        world.entity_mut(owner).insert(crate::topology::Spatial {
+            rotation: rotation.to_array(),
+            ..default()
+        });
+        let offset = rotation * bevy::math::DVec3::new(320.0, 0.0, -150.0);
+        let rotated_drag = clock_position + bevy::math::DVec2::new(offset.x, offset.z);
+        world.get_mut::<CanvasItem>(card).unwrap().position = rotated_drag;
+        world
+            .get_mut::<crate::topology::Spatial>(card)
+            .unwrap()
+            .elevation = offset.y;
+        world
+            .resource_mut::<crate::topology::input::PointerState>()
+            .drag = Some((card, bevy::math::DVec3::ZERO));
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            false,
+            &palette,
+        );
+        assert!((world.get::<CanvasItem>(card).unwrap().position - rotated_drag).length() < 0.01);
+        assert!(
+            (world
+                .get::<crate::topology::Spatial>(card)
+                .unwrap()
+                .elevation
+                - offset.y)
+                .abs()
+                < 0.01
+        );
+        world
+            .resource_mut::<crate::topology::input::PointerState>()
+            .drag = None;
+        world.get_mut::<TimeSettings>(owner).unwrap().0.card_physics = false;
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            true,
+            &palette,
+        );
+        let before_camera = world.get::<CanvasItem>(card).unwrap().position;
+        world.entity_mut(root).insert(crate::canvas::CanvasView {
+            center: bevy::math::DVec2::splat(20_000.0),
+            zoom: 3.0,
+            ..default()
+        });
+        update(
+            &mut world,
+            owner,
+            now,
+            Vec2::splat(420.0),
+            true,
+            true,
+            &palette,
+        );
+        assert_eq!(
+            world.get::<CanvasItem>(card).unwrap().position,
+            before_camera
+        );
         world.despawn(owner);
         assert!(
             entities

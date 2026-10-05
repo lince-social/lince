@@ -365,6 +365,37 @@ async fn admitted_recurring_work_is_confirmed_without_a_projection_cache() {
             .iter()
             .all(|row| row["record_uid"] != record)
     );
+    let past_at = chrono::DateTime::from_timestamp_millis(now - 1_200_000)
+        .unwrap()
+        .to_rfc3339();
+    store::sqlx::query("INSERT INTO karma_rule_application (event_id, rule_uid, rule_revision, status, at, intended_at, attempt) VALUES (?, ?, 1, 'applied', ?, ?, 0)")
+        .bind("past-admitted-schedule-test").bind(&rule).bind(&past_at).bind(&past_at)
+        .execute(&engine.store.pool).await.unwrap();
+    let finished = task(&engine, "finished-manual", json!({"due":past_at}), 0.0).await;
+    let history = protein::schedule::query(
+        Window {
+            from_ms: now - 3_600_000,
+            until_ms: now + 3_600_000,
+            timezone: "UTC".into(),
+        },
+        Vec::new(),
+    );
+    let history = protein::execute(&engine.store, &history).await.unwrap();
+    let past = history
+        .iter()
+        .find(|row| {
+            row["origin"]["occurrence"]["occurrence"]["event_id"] == "past-admitted-schedule-test"
+        })
+        .unwrap();
+    assert_eq!(past["preview"], false);
+    assert_eq!(past["time"]["until_ms"], now - 600_000);
+    let manual = history
+        .iter()
+        .find(|row| row["record_uid"] == finished)
+        .unwrap();
+    assert_eq!(manual["category"], "timed");
+    assert_eq!(manual["preview"], false);
+    assert_eq!(manual["time"]["from_ms"], now - 1_200_000);
     let visitor = engine
         .act(
             Action::CreateRecord {

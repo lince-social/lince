@@ -122,10 +122,7 @@ impl Action for Command {
                 return;
             }
         };
-        let Some(runtime) = world
-            .get_resource::<crate::app::CellHandle>()
-            .map(|h| h.0.clone())
-        else {
+        let Some(runtime) = crate::practice_cells::runtime(world, owner) else {
             panel::status(world, status, "Local Cell unavailable");
             return;
         };
@@ -182,10 +179,7 @@ fn start(world: &mut World, owner: Entity) {
     if crate::laboratory::active(world) {
         return;
     }
-    let Some(runtime) = world
-        .get_resource::<crate::app::CellHandle>()
-        .map(|h| h.0.clone())
-    else {
+    let Some(runtime) = crate::practice_cells::runtime(world, owner) else {
         return;
     };
     let Ok(handle) = tokio::runtime::Handle::try_current() else {

@@ -164,6 +164,14 @@ fn context(world: &World, owner: Entity) -> Option<(PathBuf, PathBuf, &'static s
     Some((path, root, language))
 }
 
+pub(super) fn visible(world: &World, owner: Entity) -> bool {
+    world.get::<Panel>(owner).is_some_and(|panel| {
+        world
+            .get::<Node>(panel.panel)
+            .is_some_and(|node| node.display == Display::Flex)
+    })
+}
+
 fn message(world: &mut World, owner: Entity, text: impl Into<String>) {
     if let Some(panel) = world.get::<Panel>(owner) {
         crate::sand_panel::status(world, panel.status, text);

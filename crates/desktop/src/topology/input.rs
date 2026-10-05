@@ -455,12 +455,9 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     world.resource_mut::<PointerState>().pan = Some(event.location.position);
                     continue;
                 };
-                if world
+                let attached = world
                     .get::<crate::time_castle::AttachedCard>(entity)
-                    .is_some()
-                {
-                    continue;
-                }
+                    .is_some();
                 let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
                     continue;
                 };
@@ -474,6 +471,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     .get::<crate::edit_mode::EditMode>(root)
                     .is_some_and(|mode| mode.enabled);
                 if editing
+                    && !attached
                     && let Some(resize) =
                         super::resizing::Gesture::start(world, entity, event.location.position)
                 {
@@ -490,6 +488,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     continue;
                 }
                 if !task
+                    && !attached
                     && !world
                         .get::<crate::edit_mode::EditMode>(root)
                         .is_some_and(|m| m.enabled)
@@ -500,7 +499,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     continue;
                 };
                 if let Some(point) = plane_point(world, root, event.location.position, position.y) {
-                    if task {
+                    if task || attached {
                         world.resource_mut::<PointerState>().pending_drag =
                             Some((entity, event.location.position, point));
                     } else {
@@ -545,7 +544,14 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     && event.location.position.distance(start) >= 5.0
                 {
                     world.resource_mut::<PointerState>().pending_drag = None;
-                    crate::kanban::begin_drag(world, entity, point);
+                    if world
+                        .get::<crate::time_castle::AttachedCard>(entity)
+                        .is_some()
+                    {
+                        world.resource_mut::<PointerState>().drag = Some((entity, point));
+                    } else {
+                        crate::kanban::begin_drag(world, entity, point);
+                    }
                     if let Some(location) = world.resource::<PointerState>().cursor.clone() {
                         world.write_message(PointerInput::new(
                             CONTENT_POINTER,
@@ -961,6 +967,16 @@ pub(crate) mod tests {
 
     #[test]
     fn task_body_drag_waits_for_movement_and_cancels_the_content_click() {
+        body_drag(false);
+    }
+
+    #[test]
+    fn attached_clock_cards_can_be_dragged_without_edit_mode() {
+        body_drag(true);
+    }
+
+    #[cfg(test)]
+    fn body_drag(attached: bool) {
         use bevy::camera::CameraProjection;
         let mut app = App::new();
         app.init_resource::<PointerState>()
@@ -993,7 +1009,6 @@ pub(crate) mod tests {
         let card = app
             .world_mut()
             .spawn((
-                crate::full_record::RecordCard,
                 crate::canvas::CanvasItem {
                     position: bevy::math::DVec2::ZERO,
                     size: Vec2::new(316.0, 80.0),
@@ -1001,6 +1016,15 @@ pub(crate) mod tests {
                 ChildOf(root),
             ))
             .id();
+        if attached {
+            app.world_mut()
+                .entity_mut(card)
+                .insert(crate::time_castle::AttachedCard);
+        } else {
+            app.world_mut()
+                .entity_mut(card)
+                .insert(crate::full_record::RecordCard);
+        }
         app.world_mut().resource_mut::<PointerState>().hit = Some((card, Vec3::ZERO));
         app.world_mut()
             .resource_mut::<bevy::picking::hover::HoverMap>()
@@ -1059,11 +1083,13 @@ pub(crate) mod tests {
                 .x
                 > 0.0
         );
-        assert!(
-            app.world()
-                .get::<crate::area_mutation::HeldPoint>(card)
-                .is_some()
-        );
+        if !attached {
+            assert!(
+                app.world()
+                    .get::<crate::area_mutation::HeldPoint>(card)
+                    .is_some()
+            );
+        }
         let mut messages = MessageCursor::<PointerInput>::default();
         assert!(
             messages

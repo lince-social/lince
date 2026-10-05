@@ -5,6 +5,7 @@ pub(crate) mod tests;
 mod ui;
 mod worker;
 
+use crate::actions::Action;
 use bevy::{ecs::message::MessageCursor, math::DVec2, prelude::*, window::FileDragAndDrop};
 use std::{
     collections::HashMap,
@@ -406,6 +407,50 @@ fn cancel(world: &mut World, root: Entity) {
             world.despawn(entity);
         }
     }
+}
+
+#[derive(Component)]
+struct CancelledChoice;
+
+pub(crate) fn prepare_choice(world: &mut World, root: Entity, path: std::path::PathBuf) {
+    if world.resource::<Sessions>().entries.contains_key(&root) {
+        return;
+    }
+    world.entity_mut(root).remove::<CancelledChoice>();
+    begin(
+        world,
+        root,
+        None,
+        source::Source::from_path(path),
+        DVec2::ZERO,
+        0.0,
+        false,
+    );
+}
+
+pub(crate) fn choice_owner(world: &World, root: Entity) -> Option<Entity> {
+    world.get_resource::<Sessions>()?.entries.get(&root)?.panel
+}
+
+pub(crate) fn choice_ready(world: &World, root: Entity) -> bool {
+    world.get_resource::<Sessions>().is_some_and(|sessions| {
+        sessions.entries.get(&root).is_some_and(|session| {
+            session.prepared.is_some() && session.ready && !session.busy && session.panel.is_some()
+        })
+    })
+}
+
+pub(crate) fn cancel_choice(world: &mut World, root: Entity) {
+    ui::Control::Cancel.apply(world, root);
+}
+
+pub(crate) fn cancel_owned_choice(world: &mut World, root: Entity, directory: &std::path::Path) {
+    let owned = world.get_resource::<Sessions>().and_then(|sessions| sessions.entries.get(&root)).is_some_and(|session| matches!(&session.source, source::Source::File(path) if path.starts_with(directory)));
+    if owned { cancel_choice(world, root); }
+}
+
+pub(crate) fn choice_cancelled(world: &World, root: Entity) -> bool {
+    world.get::<CancelledChoice>(root).is_some() && choice_owner(world, root).is_none()
 }
 
 fn update(world: &mut World) {

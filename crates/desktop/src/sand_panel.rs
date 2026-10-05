@@ -1,4 +1,5 @@
-use bevy::{prelude::*, text::EditableText};
+use crate::actions::Action;
+use bevy::prelude::*;
 pub(crate) use lince_interface::controls::{clear, column, row, status, value};
 
 #[cfg(test)]
@@ -45,21 +46,17 @@ pub(crate) fn field(world: &mut World, parent: Entity, caption: &str, value: &st
             text: value.into(),
         },
     );
-    if let Some(mut input) = world.get_mut::<EditableText>(entity) {
-        input.allow_newlines = false;
-        input.visible_lines = Some(1.0);
-    }
+    let input = crate::sand::single_line_editor(
+        value,
+        world.resource::<crate::theme::Typography>(),
+        0,
+        4096,
+    );
+    world.entity_mut(entity).insert(input);
     crate::accessibility::input(world, entity, caption, false);
-    world.entity_mut(entity).insert((
-        crate::icons::Tooltip(caption.into()),
-        Node {
-            width: percent(100),
-            min_height: px(32),
-            flex_shrink: 0.0,
-            padding: UiRect::all(px(6)),
-            ..default()
-        },
-    ));
+    world
+        .entity_mut(entity)
+        .insert(crate::icons::Tooltip(caption.into()));
     entity
 }
 
@@ -102,15 +99,18 @@ pub(crate) fn credits(
     attributions: &'static [crate::credits::Attribution],
 ) {
     let content = column(world, parent);
-    world.entity_mut(content).insert(Node {
-        display: Display::None,
-        width: percent(100),
-        height: px(240),
-        flex_shrink: 0.0,
-        flex_direction: FlexDirection::Column,
-        overflow: Overflow::scroll_y(),
-        ..default()
-    });
+    world.entity_mut(content).insert((
+        CreditsOwner(parent),
+        Node {
+            display: Display::None,
+            width: percent(100),
+            height: px(240),
+            flex_shrink: 0.0,
+            flex_direction: FlexDirection::Column,
+            overflow: Overflow::scroll_y(),
+            ..default()
+        },
+    ));
     crate::scroll_sand::attach(world, content);
     button(
         world,
@@ -125,7 +125,37 @@ pub(crate) fn credits(
 struct Credits(&'static [crate::credits::Attribution]);
 #[derive(Component)]
 struct CreditsLoaded;
+
+#[derive(Component)]
+struct CreditsOwner(Entity);
+
+pub(crate) fn show_credits(world: &mut World, owner: Entity) {
+    let contents: Vec<_> = world
+        .query::<(Entity, &CreditsOwner, &Node)>()
+        .iter(world)
+        .filter(|(_, context, node)| context.0 == owner && node.display == Display::None)
+        .map(|(entity, _, _)| entity)
+        .collect();
+    for content in contents {
+        let attributions = world
+            .get::<crate::sand_store::SandCredits>(owner)
+            .map_or(crate::credits::ATTRIBUTIONS, |credits| credits.0);
+        Credits(attributions).apply(world, content);
+    }
+}
+
+pub(crate) fn credits_visible(world: &mut World, owner: Entity) -> bool {
+    world
+        .query::<(&CreditsOwner, &Node, Option<&CreditsLoaded>)>()
+        .iter(world)
+        .any(|(context, node, loaded)| {
+            context.0 == owner && node.display != Display::None && loaded.is_some()
+        })
+}
 impl crate::actions::Action for Credits {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        &[lince_interface::practice::Operation::InspectSandCredits]
+    }
     fn apply(&self, world: &mut World, content: Entity) {
         let Some(mut node) = world.get_mut::<Node>(content) else {
             return;

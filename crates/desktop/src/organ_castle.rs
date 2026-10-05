@@ -29,6 +29,7 @@ pub struct OrganCastle {
 #[derive(Resource, Default)]
 struct Requests {
     subscriptions: HashSet<String>,
+    senders: HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
     actions: HashMap<String, (Entity, std::time::Instant)>,
 }
 
@@ -66,6 +67,164 @@ impl Plugin for OrganCastlePlugin {
 }
 
 const TOPICS: [&str; 4] = ["organs", "pairing", "roster", "nearby"];
+
+pub(crate) fn page_visible(world: &World, owner: Entity, index: usize) -> bool {
+    world
+        .get::<OrganCastle>(owner)
+        .and_then(|view| view.pages.get(index))
+        .is_some_and(|page| {
+            world
+                .get::<Node>(*page)
+                .is_some_and(|node| node.display != Display::None)
+        })
+}
+
+pub(crate) fn has_contact(world: &World, owner: Entity, uid: &str) -> bool {
+    world
+        .get::<OrganCastle>(owner)
+        .and_then(|view| view.rows.get("organs"))
+        .is_some_and(|rows| {
+            rows.iter()
+                .any(|row| row["uid"] == uid && row["contact"]["trust"] == "known")
+        })
+}
+
+pub(crate) fn prepare_pairing(world: &mut World, owner: Entity, invite: &str, name: &str) {
+    Command::Page(3).apply(world, owner);
+    let form = world
+        .query::<(Entity, &forms::Form)>()
+        .iter(world)
+        .find(|(_, form)| form.owner == owner && form.payload["action"] == "add-known-organ")
+        .map(|(entity, _)| entity);
+    if let Some(form) = form {
+        for (path, value) in [("/invite", invite), ("/name", name)] {
+            if let Some(field) = forms::input_text(world, form, path)
+                && let Some(mut text) = world.get_mut::<bevy::text::EditableText>(field)
+            {
+                text.editor.set_text(value);
+            }
+        }
+    }
+}
+
+pub(crate) fn submit_pairing(world: &mut World, owner: Entity) {
+    let form = world
+        .query::<(Entity, &forms::Form)>()
+        .iter(world)
+        .find(|(_, form)| {
+            form.owner == owner
+                && form.payload["action"] == "add-known-organ"
+                && form.pending.is_none()
+        })
+        .map(|(entity, _)| entity);
+    if let Some(form) = form {
+        forms::submit(world, form);
+    }
+}
+
+pub(crate) fn select_contact(world: &mut World, owner: Entity, uid: &str) -> bool {
+    if !world.get::<OrganCastle>(owner).is_some_and(|view| {
+        view.rows
+            .get("organs")
+            .is_some_and(|rows| rows.iter().any(|row| row["uid"] == uid))
+    }) {
+        return false;
+    }
+    Command::Page(1).apply(world, owner);
+    if world.get::<OrganCastle>(owner).unwrap().selected.as_deref() != Some(uid) {
+        Command::Select(uid.into()).apply(world, owner);
+    }
+    true
+}
+
+pub(crate) fn feed_enabled(world: &World, owner: Entity, uid: &str) -> bool {
+    world
+        .get::<OrganCastle>(owner)
+        .and_then(|view| view.rows.get("organs"))
+        .is_some_and(|rows| {
+            rows.iter()
+                .any(|row| row["uid"] == uid && row["contact"]["sync_out"] == true)
+        })
+}
+
+pub(crate) fn submit_form(
+    world: &mut World,
+    owner: Entity,
+    action: &str,
+    fields: &[(&str, Value)],
+) -> bool {
+    let form = world
+        .query::<(Entity, &forms::Form)>()
+        .iter(world)
+        .find(|(_, form)| {
+            form.owner == owner && form.payload["action"] == action && form.pending.is_none()
+        })
+        .map(|(entity, _)| entity);
+    let Some(form) = form else { return false };
+    forms::prepare_values(world, form, fields);
+    forms::submit(world, form);
+    true
+}
+
+pub(crate) fn form_result(world: &mut World, owner: Entity, action: &str) -> Option<Value> {
+    world
+        .query::<&forms::Form>()
+        .iter(world)
+        .find(|form| form.owner == owner && form.payload["action"] == action)
+        .and_then(|form| form.result.clone())
+}
+
+pub(crate) fn social_form(
+    world: &mut World,
+    owner: Entity,
+    command: &str,
+    fields: &[(&str, Value)],
+    submit: bool,
+) -> bool {
+    let form = world
+        .query::<(Entity, &forms::Form)>()
+        .iter(world)
+        .find(|(_, form)| {
+            form.owner == owner
+                && form.payload["action"] == "social"
+                && form.payload["request"]["command"] == command
+                && form.pending.is_none()
+        })
+        .map(|(entity, _)| entity);
+    let Some(form) = form else { return false };
+    forms::prepare_values(world, form, fields);
+    if submit {
+        forms::submit(world, form);
+    }
+    true
+}
+
+pub(crate) fn social_result(world: &mut World, owner: Entity, command: &str) -> Option<Value> {
+    world
+        .query::<&forms::Form>()
+        .iter(world)
+        .find(|form| {
+            form.owner == owner
+                && form.payload["action"] == "social"
+                && form.payload["request"]["command"] == command
+        })
+        .and_then(|form| form.result.clone())
+}
+
+pub(crate) fn roster_visible(world: &World, owner: Entity) -> bool {
+    page_visible(world, owner, 4)
+        && world
+            .get::<OrganCastle>(owner)
+            .and_then(|view| view.rows.get("roster"))
+            .is_some_and(|rows| {
+                rows.iter().any(|row| {
+                    row["slug"] == "local-organ"
+                        && row["extension"]["cells"]
+                            .as_array()
+                            .is_some_and(|cells| !cells.is_empty())
+                })
+            })
+}
 
 pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
     let body = panel::frame(world, sand, "Organ");
@@ -151,7 +310,7 @@ fn report(world: &mut World, output: Entity, text: &str) {
 }
 
 #[derive(Clone)]
-enum Command {
+pub(crate) enum Command {
     Page(usize),
     Select(String),
     Reload,
@@ -200,7 +359,11 @@ impl Action for Command {
                 if *remote {
                     open_live(world, root, uid);
                 } else {
-                    crate::full_record::open(world, root, uid, crate::protein_area::Source::Local);
+                    let source = crate::practice_cells::source(world, owner).map_or(
+                        crate::protein_area::Source::Local,
+                        crate::protein_area::Source::Organ,
+                    );
+                    crate::full_record::open(world, root, uid, source);
                 }
             }
         }
@@ -264,8 +427,9 @@ fn dispatch(world: &mut World, entity: Entity, payload: Value) -> Result<(), Str
     let action: engine::actions::Action =
         serde_json::from_value(payload).map_err(|e| e.to_string())?;
     let id = nucleus::new_uid("organ");
-    panel::send(
+    crate::practice_cells::send(
         world,
+        form.owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -304,11 +468,7 @@ fn nearby_job(world: &mut World, entity: Entity, payload: Value) -> Result<(), S
             return Ok(());
         }
     }
-    let runtime = world
-        .get_resource::<crate::app::CellHandle>()
-        .ok_or("The local Cell is unavailable")?
-        .0
-        .clone();
+    let runtime = crate::practice_cells::runtime(world, owner).ok_or("The Cell is unavailable")?;
     let name = payload["name"]
         .as_str()
         .unwrap_or_default()
@@ -357,6 +517,7 @@ fn finish(world: &mut World, entity: Entity, result: Result<Value, String>) {
         return;
     };
     form.pending = None;
+    form.result = result.as_ref().ok().cloned();
     let (output, owner) = (form.output, form.owner);
     panel::clear(world, output);
     match result {
@@ -541,8 +702,19 @@ fn update(
         .cloned()
         .collect();
     for id in stale {
-        if panel::send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
+        if world
+            .resource::<Requests>()
+            .senders
+            .get(&id)
+            .is_none_or(|sender| {
+                sender.is_closed()
+                    || sender
+                        .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                        .is_ok()
+            })
+        {
             world.resource_mut::<Requests>().subscriptions.remove(&id);
+            world.resource_mut::<Requests>().senders.remove(&id);
         }
     }
     for owner in owners {
@@ -551,8 +723,9 @@ fn update(
             if !world.resource::<Requests>().subscriptions.contains(&id)
                 && !crate::laboratory::active(world)
             {
-                if panel::send(
+                if crate::practice_cells::send(
                     world,
+                    owner,
                     ClientMessage::Subscribe {
                         id: id.clone(),
                         protein: query(topic),
@@ -560,6 +733,12 @@ fn update(
                 )
                 .is_ok()
                 {
+                    if let Some(sender) = crate::practice_cells::sender(world, owner) {
+                        world
+                            .resource_mut::<Requests>()
+                            .senders
+                            .insert(id.clone(), sender);
+                    }
                     world.resource_mut::<Requests>().subscriptions.insert(id);
                 }
             }

@@ -107,6 +107,7 @@ pub const DIAL_STAGGER: std::time::Duration = std::time::Duration::from_millis(1
 
 #[derive(Debug, Clone, Copy)]
 pub struct PrivateWireConfig {
+    full_protocols: bool,
     pub listen_addr: SocketAddr,
     pub accept_credentials: bool,
     pub max_connections: usize,
@@ -118,6 +119,7 @@ pub struct PrivateWireConfig {
 impl PrivateWireConfig {
     pub fn new(listen_addr: SocketAddr, accept_credentials: bool) -> Self {
         Self {
+            full_protocols: false,
             listen_addr,
             accept_credentials,
             max_connections: 64,
@@ -564,6 +566,12 @@ impl Wire {
         Self::bind_inner(engine, secret, Reach::Local, None, false, 0, Some(config)).await
     }
 
+    pub async fn bind_loopback(engine: Arc<Engine>, secret: SecretKey) -> Result<Wire, EngineError> {
+        let mut config = PrivateWireConfig::new(SocketAddr::from(([127, 0, 0, 1], 0)), false);
+        config.full_protocols = true;
+        Self::bind_private(engine, secret, config).await
+    }
+
     async fn bind_inner(
         engine: Arc<Engine>,
         secret: SecretKey,
@@ -573,7 +581,7 @@ impl Wire {
         peer_port: u16,
         private: Option<PrivateWireConfig>,
     ) -> Result<Wire, EngineError> {
-        let alpns = if private.is_some() {
+        let alpns = if private.is_some_and(|config| !config.full_protocols) {
             vec![ALPN_LIVE.to_vec()]
         } else {
             vec![
@@ -687,7 +695,7 @@ impl Wire {
     }
 
     pub fn serve_enrolment(self: &Arc<Self>) {
-        if self.private.is_some() {
+        if self.private.is_some_and(|config| !config.full_protocols) {
             return;
         }
         let as_trait: Arc<dyn crate::enrolment::CellTransport> = self.clone();
@@ -1140,7 +1148,7 @@ impl Wire {
     }
 
     pub async fn accept_unknown(&self) -> bool {
-        if self.private.is_some() {
+        if self.private.is_some_and(|config| !config.full_protocols) {
             return false;
         }
         let Ok(Some(organ)) = store::organs::local(&self.engine.store.pool).await else {
@@ -1156,7 +1164,7 @@ impl Wire {
     }
 
     pub async fn accept_logins(&self) -> bool {
-        if let Some(config) = self.private {
+        if let Some(config) = self.private.filter(|config| !config.full_protocols) {
             return config.accept_credentials;
         }
         let Ok(Some(organ)) = store::organs::local(&self.engine.store.pool).await else {
@@ -1431,7 +1439,7 @@ impl Wire {
     async fn serve_connection(&self, connection: Connection) -> Result<(), EngineError> {
         let peer = connection.remote_id();
         let alpn = connection.alpn().to_vec();
-        if let Some(config) = self.private {
+        if let Some(config) = self.private.filter(|config| !config.full_protocols) {
             if alpn != ALPN_LIVE {
                 connection.close(0u32.into(), b"unsupported private alpn");
                 return Ok(());

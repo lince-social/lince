@@ -1,5 +1,5 @@
 use super::*;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BandLevel {
@@ -14,6 +14,7 @@ pub struct Occurrence {
     pub time: TimeRange,
     pub lane: usize,
     pub profile: Vec<BandLevel>,
+    pub historical: bool,
 }
 
 impl Occurrence {
@@ -92,6 +93,7 @@ pub fn occurrences(entries: &[Entry], now: i64, until: i64, timezone: &str) -> V
             time,
             lane: 0,
             profile: Vec::new(),
+            historical: false,
         })
         .collect();
     let mut boundaries = BTreeMap::<i64, (Vec<usize>, Vec<usize>, Vec<usize>)>::new();
@@ -141,6 +143,42 @@ pub fn occurrences(entries: &[Entry], now: i64, until: i64, timezone: &str) -> V
                 from_ms: at,
                 next_ms,
                 lane: occurrence.lane,
+            });
+        }
+    }
+    result
+}
+
+pub fn clock_occurrences(
+    settings: &Settings,
+    entries: &[Entry],
+    now: i64,
+    until: i64,
+) -> Vec<Occurrence> {
+    let mut result = occurrences(entries, now, until, &settings.timezone);
+    if settings.past_tasks {
+        let from = settings.history_from(now);
+        for (index, entry) in entries.iter().enumerate() {
+            if entry.preview
+                || entry.origin["kind"] != "manual"
+                || entry.category_at(now, &settings.timezone) != Category::Timed
+            {
+                continue;
+            }
+            let Some(time) = &entry.time else { continue };
+            let end = time.until_ms.unwrap_or(time.from_ms);
+            if end < from || end > now || time.from_ms >= now {
+                continue;
+            }
+            result.push(Occurrence {
+                index,
+                time: TimeRange {
+                    from_ms: now,
+                    until_ms: None,
+                },
+                lane: 0,
+                profile: Vec::new(),
+                historical: true,
             });
         }
     }
@@ -223,16 +261,18 @@ pub fn labels_with_metrics(
     gap: f32,
     metrics: &LabelMetrics<'_>,
 ) -> Vec<Label> {
-    let occurrences = occurrences(
+    let occurrences = clock_occurrences(
+        settings,
         entries,
         now,
         now.saturating_add(settings.aperture_ms),
-        &settings.timezone,
     );
     let radius = size[0].min(size[1]) * 0.4;
     let width = 200.0 * (font / 14.0).clamp(0.85, 1.4);
-    let mut groups =
-        BTreeMap::<usize, Vec<(Occurrence, [f32; 3], [f32; 3], String, String, f32)>>::new();
+    let mut output = Vec::<Label>::new();
+    let mut cells = HashMap::<(i32, i32), Vec<[f32; 4]>>::new();
+    let mut searches = HashMap::<(i32, i32), usize>::new();
+    let cell_size = width + gap;
     for occurrence in occurrences {
         let entry = &entries[occurrence.index];
         let title = entry
@@ -246,6 +286,9 @@ pub fn labels_with_metrics(
         if entry.preview {
             time.push_str(" · projected");
         }
+        if occurrence.historical {
+            time.push_str(" · past");
+        }
         let time = wrap(&time, width - 16.0, metrics.advance);
         let height = (lines.len().max(1) as f32 + time.len().max(1) as f32) * font * 1.35 + 17.0;
         let at = occurrence.anchor_ms();
@@ -254,76 +297,65 @@ pub fn labels_with_metrics(
         let offset = occurrence.offset_at(at, settings.aperture_ms, radius, metrics.band_width);
         anchor[0] += cross[0] * offset;
         anchor[2] += cross[2] * offset;
-        let sector = (((cross[0].atan2(-cross[2]) + std::f32::consts::TAU) / std::f32::consts::TAU
-            * 16.0)
-            .floor() as usize)
-            % 16;
-        groups.entry(sector).or_default().push((
-            occurrence,
-            anchor,
-            cross,
-            lines.join("\n"),
-            time.join("\n"),
-            height,
-        ));
-    }
-    let mut output = Vec::<Label>::new();
-    let mut rectangles = Vec::<[f32; 4]>::new();
-    for group in groups.into_values() {
-        let direction = group.iter().fold([0.0_f32; 2], |mut sum, row| {
-            sum[0] += row.2[0];
-            sum[1] += row.2[2];
-            sum
-        });
-        let length = direction[0].hypot(direction[1]).max(0.001);
-        let cross = [direction[0] / length, direction[1] / length];
-        let height =
-            group.iter().map(|row| row.5).sum::<f32>() + gap * group.len().saturating_sub(1) as f32;
-        let outside = group
-            .iter()
-            .map(|row| row.1[0].hypot(row.1[2]))
-            .fold(radius, f32::max);
-        let mut distance =
-            outside + 40.0 + cross[0].abs() * width * 0.5 + cross[1].abs() * height * 0.5;
-        let step = if cross[0].abs() > cross[1].abs() {
-            width + gap
-        } else {
-            height + gap
-        };
+        let clearance = cross[0].abs() * width * 0.5 + cross[2].abs() * height * 0.5 + 30.0;
+        let center = [
+            anchor[0] + cross[0] * clearance,
+            anchor[2] + cross[2] * clearance,
+        ];
+        let key = (
+            (center[0] / cell_size).floor() as i32,
+            (center[1] / cell_size).floor() as i32,
+        );
+        let mut attempt = searches.get(&key).copied().unwrap_or_default();
         let rect = loop {
+            let angle = attempt as f32 * 2.399_963_1;
+            let distance = (attempt as f32).sqrt() * (height + gap).max(32.0);
             let rect = [
-                cross[0] * distance - width * 0.5,
-                cross[1] * distance - height * 0.5,
+                center[0] + angle.cos() * distance - width * 0.5,
+                center[1] + angle.sin() * distance - height * 0.5,
                 width,
                 height,
             ];
-            let collides = rectangles
-                .iter()
-                .any(|previous| overlap(rect, *previous, gap));
+            let occupied = cell_keys(rect, cell_size, gap);
+            let collides = occupied.into_iter().any(|key| {
+                cells.get(&key).is_some_and(|neighbors| {
+                    neighbors.iter().any(|other| overlap(rect, *other, gap))
+                })
+            });
             let nearest_x = 0.0_f32.clamp(rect[0], rect[0] + width);
             let nearest_y = 0.0_f32.clamp(rect[1], rect[1] + height);
-            if !collides && nearest_x.hypot(nearest_y) >= radius + 24.0 {
+            if !collides && nearest_x.hypot(nearest_y) >= radius + 18.0 {
                 break rect;
             }
-            distance += step;
+            attempt += 1;
         };
-        rectangles.push(rect);
-        let mut offset = if cross[1] < -0.55 { height } else { 0.0 };
-        for (occurrence, anchor, _, title, time, height) in group {
-            if cross[1] < -0.55 {
-                offset -= height;
-            }
-            output.push(Label {
-                id: entries[occurrence.index].id.clone(),
-                occurrence,
-                anchor,
-                rect: [rect[0], rect[1] + offset, width, height],
-                title,
-                time,
-            });
-            offset += if cross[1] < -0.55 { -gap } else { height + gap };
+        searches.insert(key, attempt + 1);
+        for key in cell_keys(rect, cell_size, gap) {
+            cells.entry(key).or_default().push(rect);
         }
+        output.push(Label {
+            id: entry.id.clone(),
+            occurrence,
+            anchor,
+            rect,
+            title: lines.join("\n"),
+            time: time.join("\n"),
+        });
     }
     output.sort_by_key(|label| (label.occurrence.time.from_ms, label.occurrence.index));
     output
+}
+
+fn cell_keys(rect: [f32; 4], size: f32, gap: f32) -> Vec<(i32, i32)> {
+    let min = [
+        ((rect[0] - gap) / size).floor() as i32,
+        ((rect[1] - gap) / size).floor() as i32,
+    ];
+    let max = [
+        ((rect[0] + rect[2] + gap) / size).floor() as i32,
+        ((rect[1] + rect[3] + gap) / size).floor() as i32,
+    ];
+    (min[0]..=max[0])
+        .flat_map(|x| (min[1]..=max[1]).map(move |y| (x, y)))
+        .collect()
 }

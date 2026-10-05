@@ -134,7 +134,10 @@ pub(crate) fn field(world: &mut World, parent: Entity, title: &str, secret: bool
 }
 
 pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding) {
-    if binding.source != Source::Local || !nucleus::valid_uid(&binding.uid, "r") {
+    if (binding.source != Source::Local
+        && !crate::practice_cells::owns_source(world, &binding.source))
+        || !nucleus::valid_uid(&binding.uid, "r")
+    {
         return;
     }
     let automatic = world
@@ -228,10 +231,14 @@ fn open_setup(world: &mut World, owner: Entity) -> bool {
 }
 
 fn connection_setup(world: &mut World, owner: Entity) {
-    let saved = world.get::<Panel>(owner).and_then(|panel| panel.saved.as_ref());
+    let saved = world
+        .get::<Panel>(owner)
+        .and_then(|panel| panel.saved.as_ref());
     if saved.is_some_and(|saved| saved.agent.is_some()) {
         show(world, owner, Step::Agent);
-    } else if saved.is_some_and(|saved| saved.settings.enabled && saved.requires_credential && saved.locked && saved.has_key) {
+    } else if saved.is_some_and(|saved| {
+        saved.settings.enabled && saved.requires_credential && saved.locked && saved.has_key
+    }) {
         show(world, owner, Step::Unlock);
     } else {
         connections::Open.apply(world, owner);
@@ -243,16 +250,46 @@ fn send(world: &World, entity: Entity, request: FioteRequest) -> Result<String, 
         return Err("Workspace is suspended.".into());
     }
     let id = nucleus::new_uid("fiote");
-    world
-        .get_non_send::<crate::cell_bridge::CellBridge>()
-        .ok_or("The local Cell is not connected.")?
-        .outgoing
-        .try_send(cell::ClientMessage::Fiote {
+    let owner = world
+        .get::<Panel>(entity)
+        .map(|panel| panel.binding.area)
+        .or_else(|| {
+            world
+                .get::<ThreadControl>(entity)
+                .map(|control| control.area)
+        })
+        .unwrap_or(entity);
+    crate::practice_cells::send(
+        world,
+        owner,
+        cell::ClientMessage::Fiote {
             id: id.clone(),
             request,
-        })
-        .map_err(|_| "The local Cell is busy or disconnected.")?;
+        },
+    )?;
     Ok(id)
+}
+
+pub(crate) fn inspect_connections(world: &mut World, area: Entity) -> bool {
+    let owner = world
+        .query::<(Entity, &Panel)>()
+        .iter(world)
+        .find(|(_, panel)| {
+            panel.binding.area == area && panel.saved.is_some() && panel.pending.is_none()
+        })
+        .map(|(owner, _)| owner);
+    let Some(owner) = owner else { return false };
+    connections::Open.apply(world, owner);
+    true
+}
+
+pub(crate) fn connections_visible(world: &mut World, area: Entity) -> bool {
+    world.query::<&Panel>().iter(world).any(|panel| {
+        panel.binding.area == area
+            && panel.saved.is_some()
+            && panel.pending.is_none()
+            && panel.step == Step::Connections
+    })
 }
 
 fn request(world: &mut World, owner: Entity, message: FioteRequest) {
@@ -811,7 +848,9 @@ pub fn ready(world: &mut World, binding: &RecordBinding) -> bool {
 }
 
 pub fn thread_controls(world: &mut World, parent: Entity, thread: &str, binding: &RecordBinding) {
-    if binding.source != Source::Local {
+    if binding.source != Source::Local
+        && !crate::practice_cells::owns_source(world, &binding.source)
+    {
         return;
     }
     let owner = world
@@ -1165,13 +1204,15 @@ fn receive(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::cell_bridge::CellMessage>>,
 ) {
-    let Some(messages) = world.get_resource::<Messages<crate::cell_bridge::CellMessage>>() else {
-        return;
-    };
-    let events: Vec<_> = cursor
-        .read(messages)
-        .map(|message| message.0.clone())
-        .collect();
+    let events: Vec<_> = world
+        .get_resource::<Messages<crate::cell_bridge::CellMessage>>()
+        .map(|messages| {
+            cursor
+                .read(messages)
+                .map(|message| message.0.clone())
+                .collect()
+        })
+        .unwrap_or_default();
     for event in events {
         let (id, result) = match event {
             cell::ServerMessage::Fiote { id, status } => (id, Ok(status)),

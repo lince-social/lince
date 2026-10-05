@@ -361,15 +361,15 @@ pub(crate) fn input(
     value: &str,
     limit: usize,
 ) -> Entity {
-    let bundle = crate::sand::text_editor(value, world.resource::<crate::theme::Typography>(), 0);
+    let bundle = crate::sand::single_line_editor(
+        value,
+        world.resource::<crate::theme::Typography>(),
+        0,
+        limit,
+    );
     let entity = world
         .spawn((bundle, ChildOf(parent), crate::icons::Tooltip(title.into())))
         .id();
-    let mut edit = world.get_mut::<bevy::text::EditableText>(entity).unwrap();
-    edit.allow_newlines = false;
-    edit.visible_lines = Some(1.0);
-    edit.max_characters = Some(limit);
-    world.get_mut::<TextFont>(entity).unwrap().font_size = bevy::text::FontSize::Px(14.0);
     if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
         node.set_label(title);
     }

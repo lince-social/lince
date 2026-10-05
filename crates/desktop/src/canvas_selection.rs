@@ -60,7 +60,8 @@ impl Plugin for CanvasSelectionPlugin {
 }
 
 pub(crate) fn eligible(world: &World, root: Entity, entity: Entity) -> bool {
-    crate::instinct::practice::permits_target(world, entity) && world.get::<CanvasItem>(entity).is_some()
+    crate::instinct::practice::permits_target(world, entity)
+        && world.get::<CanvasItem>(entity).is_some()
         && !crate::inspection::excluded(world, entity)
         && world
             .get::<ChildOf>(entity)
@@ -262,7 +263,7 @@ fn inside(world: &World, root: Entity, rect: Rect) -> Vec<Entity> {
     expand_groups(world, root, result)
 }
 
-fn hit(world: &World) -> Option<(Entity, Option<Entity>)> {
+fn hit(world: &World) -> Option<(Entity, Option<Entity>, bool)> {
     let mut entity = world
         .resource::<HoverMap>()
         .get(&PointerId::Mouse)?
@@ -270,6 +271,7 @@ fn hit(world: &World) -> Option<(Entity, Option<Entity>)> {
         .min_by(|(_, a), (_, b)| a.depth.total_cmp(&b.depth))
         .map(|(entity, _)| *entity)?;
     let mut sand = None;
+    let mut editable = false;
     loop {
         if world.get::<InspectionExcluded>(entity).is_some() {
             return None;
@@ -277,8 +279,9 @@ fn hit(world: &World) -> Option<(Entity, Option<Entity>)> {
         if world.get::<CanvasItem>(entity).is_some() {
             sand = Some(entity);
         }
+        editable |= world.get::<bevy::text::EditableText>(entity).is_some();
         if world.get::<CanvasView>(entity).is_some() {
-            return Some((entity, sand));
+            return Some((entity, sand, editable));
         }
         let parent = world.get::<ChildOf>(entity)?.parent();
         if world.get::<CanvasView>(parent).is_some() && sand.is_none() {
@@ -379,7 +382,7 @@ fn input(
             consumed = true;
             continue;
         }
-        let Some((root, sand)) = hit(world) else {
+        let Some((root, sand, editable)) = hit(world) else {
             continue;
         };
         let editing = world.get::<EditMode>(root).is_some_and(|mode| mode.enabled);
@@ -428,6 +431,11 @@ fn input(
                     }
                 });
             set_selection(world, root, entities);
+            if !editable {
+                world
+                    .resource_mut::<bevy::input_focus::InputFocus>()
+                    .set(root, bevy::input_focus::FocusCause::Pressed);
+            }
         } else if matches!(event.action, PointerAction::Press(PointerButton::Primary)) {
             set_selection(world, root, Vec::new());
         }
@@ -476,6 +484,10 @@ pub(crate) fn options(world: &World, root: Entity, target: Entity) -> (bool, boo
 }
 
 impl Action for GroupAction {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        crate::actions::PracticeIntent::SelectedObjects
+    }
+
     fn connections(&self, _: &World, target: Entity) -> Vec<crate::inspection::Connection> {
         vec![crate::inspection::Connection {
             target,
@@ -792,6 +804,79 @@ pub(crate) mod tests {
             action,
         ));
         app.update();
+    }
+
+    #[cfg_attr(test, test)]
+    fn selecting_canvas_after_typing_in_store_restores_deletion_focus() {
+        let (mut app, root, first, second) = fixture();
+        let panel = app.world().get::<EditMode>(root).unwrap().panel;
+        let filter = app
+            .world_mut()
+            .spawn((crate::sand::editable("fiote"), ChildOf(panel)))
+            .id();
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(filter, bevy::input_focus::FocusCause::Pressed);
+        app.world_mut()
+            .resource_mut::<HoverMap>()
+            .get_mut(&PointerId::Mouse)
+            .unwrap()
+            .insert(first, HitData::new(root, -1.0, None, None));
+        send(
+            &mut app,
+            PointerAction::Press(PointerButton::Primary),
+            Vec2::ZERO,
+        );
+        assert_eq!(
+            app.world()
+                .resource::<bevy::input_focus::InputFocus>()
+                .get(),
+            Some(root)
+        );
+        assert_eq!(selected(app.world(), root), vec![first]);
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        assert_eq!(
+            app.world()
+                .get::<bevy::text::EditableText>(filter)
+                .unwrap()
+                .value()
+                .to_string(),
+            "fiote"
+        );
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
+        assert!(app.world().get_entity(first).is_err());
+        assert!(app.world().get_entity(second).is_ok());
+    }
+
+    #[cfg_attr(test, test)]
+    fn selecting_a_canvas_text_editor_preserves_typing_and_blocks_item_deletion() {
+        let (mut app, root, first, _) = fixture();
+        let editor = app
+            .world_mut()
+            .spawn((crate::sand::editable("keep this note"), ChildOf(first)))
+            .id();
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(editor, bevy::input_focus::FocusCause::Pressed);
+        app.world_mut()
+            .resource_mut::<HoverMap>()
+            .get_mut(&PointerId::Mouse)
+            .unwrap()
+            .insert(editor, HitData::new(root, -1.0, None, None));
+        send(
+            &mut app,
+            PointerAction::Press(PointerButton::Primary),
+            Vec2::ZERO,
+        );
+        assert_eq!(
+            app.world()
+                .resource::<bevy::input_focus::InputFocus>()
+                .get(),
+            Some(editor)
+        );
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
+        assert!(app.world().get_entity(first).is_ok());
     }
 
     #[cfg_attr(test, test)]
@@ -1180,6 +1265,8 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        selecting_canvas_after_typing_in_store_restores_deletion_focus,
+        selecting_a_canvas_text_editor_preserves_typing_and_blocks_item_deletion,
         selection_and_group_deletion_work_outside_edit_mode,
         rectangle_selection_outside_edit_mode_preserves_text_and_workspace_boundaries,
         selection_uses_zoomed_bounds_and_screen_pins_and_retains_overlay_entities,

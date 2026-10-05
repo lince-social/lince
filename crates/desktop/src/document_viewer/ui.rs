@@ -28,17 +28,14 @@ pub(super) fn input(
     limit: usize,
 ) -> Entity {
     let input = world
-        .spawn(crate::sand::text_editor(
+        .spawn(crate::sand::single_line_editor(
             value,
             world.resource::<crate::theme::Typography>(),
             0,
+            limit,
         ))
         .id();
     world.entity_mut(input).insert(ChildOf(parent));
-    let mut text = world.get_mut::<EditableText>(input).unwrap();
-    text.allow_newlines = false;
-    text.max_characters = Some(limit);
-    text.visible_lines = Some(1.0);
     if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(input) {
         node.set_label(title);
     }
@@ -58,6 +55,14 @@ pub(super) enum Control {
 }
 
 impl Action for Control {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        if matches!(self, Self::Next) {
+            &[lince_interface::practice::Operation::NextDocumentPage]
+        } else {
+            &[]
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         if matches!(self, Self::Create) {
             let workspace = world

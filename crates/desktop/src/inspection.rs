@@ -15,7 +15,7 @@ use bevy::{
 };
 use std::collections::HashSet;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, PartialEq)]
 pub struct Inspection {
     pub click: bool,
     pub hover: bool,
@@ -251,8 +251,7 @@ fn input(
         if pressed.is_some() && chain.contains(&root) {
             state.selected_point = pressed;
             if state.click {
-                state.selected = candidate;
-                state.suppressed = None;
+                select_control(&mut state, candidate, pressed);
             }
         }
     }
@@ -407,7 +406,7 @@ pub(crate) fn bounds(world: &World, entity: Entity) -> Option<Rect> {
         .then(|| Rect::from_center_size(center, size))
 }
 
-fn connections(world: &World, entity: Entity) -> Vec<Connection> {
+pub(crate) fn connections(world: &World, entity: Entity) -> Vec<Connection> {
     if excluded(world, entity) {
         return Vec::new();
     }
@@ -460,6 +459,24 @@ fn connections(world: &World, entity: Entity) -> Vec<Connection> {
         });
     }
     links
+}
+
+pub(crate) fn inspect_control(world: &mut World, root: Entity, control: Entity) {
+    if world
+        .get::<Inspection>(root)
+        .is_none_or(|state| !state.click)
+    {
+        Setting { root, index: 0 }.apply(world, root);
+    }
+    if let Some(mut state) = world.get_mut::<Inspection>(root) {
+        select_control(&mut state, Some(control), None);
+    }
+}
+
+fn select_control(state: &mut Inspection, candidate: Option<Entity>, point: Option<Vec2>) {
+    state.selected_point = point;
+    state.selected = candidate;
+    state.suppressed = None;
 }
 
 pub(crate) fn edit_connection(

@@ -4,8 +4,8 @@ use serde_json::Value;
 
 mod layout;
 pub use layout::{
-    BandLevel, Label, LabelMetrics, Occurrence, labels, labels_with_metrics, lane_offset,
-    occurrences,
+    BandLevel, Label, LabelMetrics, Occurrence, clock_occurrences, labels, labels_with_metrics,
+    lane_offset, occurrences,
 };
 
 pub const RECORD_SELECTED: &str = "Record selected";
@@ -95,6 +95,8 @@ pub struct Settings {
     pub floating_cards: bool,
     #[serde(default = "enabled")]
     pub card_physics: bool,
+    #[serde(default = "enabled")]
+    pub past_tasks: bool,
     #[serde(default)]
     pub sound: crate::sound::Settings,
 }
@@ -114,6 +116,7 @@ impl Default for Settings {
             cursor: CursorMode::Moving,
             floating_cards: true,
             card_physics: true,
+            past_tasks: true,
             sound: crate::sound::Settings::default(),
         }
     }
@@ -202,7 +205,8 @@ impl Settings {
         if !self.valid() {
             return None;
         }
-        let from_ms = now_ms.div_euclid(COVERAGE_PADDING_MS) * COVERAGE_PADDING_MS;
+        let from_ms =
+            self.history_from(now_ms).div_euclid(COVERAGE_PADDING_MS) * COVERAGE_PADDING_MS;
         Some(nucleus::projection::Window {
             from_ms,
             until_ms: now_ms
@@ -210,6 +214,17 @@ impl Settings {
                 .checked_add(COVERAGE_PADDING_MS)?,
             timezone: self.timezone.clone(),
         })
+    }
+
+    pub fn history_from(&self, now_ms: i64) -> i64 {
+        let history = if self.past_tasks {
+            self.aperture_ms
+                .min(MAX_HORIZON_MS - self.horizon_ms)
+                .max(0)
+        } else {
+            0
+        };
+        now_ms.saturating_sub(history).max(0)
     }
 
     pub fn phase(&self, now_ms: i64) -> f64 {
@@ -399,7 +414,7 @@ impl Entry {
         };
         let label = |at, compare| {
             let prefix = date(at)
-                .filter(|date| Some(*date) != compare)
+                .filter(|date| settings.aperture_ms < 86_400_000 && Some(*date) != compare)
                 .map(|date| date.format("%m-%d ").to_string())
                 .unwrap_or_default();
             format!("{prefix}{}", settings.tick_label(at, interval))

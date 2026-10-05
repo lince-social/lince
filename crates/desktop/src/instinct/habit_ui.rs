@@ -44,7 +44,7 @@ enum Operation {
 }
 
 #[derive(Component, Default)]
-struct State {
+pub(super) struct State {
     form: Form,
     preview: Option<(Form, Preview)>,
     source_changed: bool,
@@ -68,10 +68,13 @@ struct Field {
 }
 
 #[derive(Resource, Default)]
-pub(super) struct Subscriptions(HashMap<String, Entity>);
+pub(super) struct Subscriptions(
+    HashMap<String, Entity>,
+    HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+);
 
 #[derive(Clone, Copy)]
-enum Command {
+pub(in crate::instinct) enum Command {
     Preview,
     Import,
     Complete,
@@ -202,22 +205,18 @@ pub(super) fn capture(world: &mut World, owner: Entity) {
     }
 }
 
-fn send(world: &World, message: ClientMessage) -> Result<(), String> {
+fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
     if crate::laboratory::active(world) {
         return Err("Importing is unavailable in the Laboratory".into());
     }
-    world
-        .get_non_send::<crate::cell_bridge::CellBridge>()
-        .ok_or("No Cell connection")?
-        .outgoing
-        .try_send(message)
-        .map_err(|error| format!("Could not reach the Cell: {error}"))
+    crate::practice_cells::send(world, owner, message)
 }
 
 fn submit(world: &mut World, owner: Entity, action: engine::actions::Action, operation: Operation) {
     let id = nucleus::new_uid("habit-ui");
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -238,6 +237,24 @@ fn submit(world: &mut World, owner: Entity, action: engine::actions::Action, ope
 }
 
 impl crate::actions::Action for Command {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Preview => &[Operation::PreviewHabit],
+            Self::Import => &[Operation::ImportHabit],
+            Self::Complete => &[Operation::CompleteHabit],
+            _ => &[],
+        }
+    }
+
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        if matches!(self, Self::Gap | Self::Fold) {
+            &[lince_interface::practice::Operation::PreviewHabit]
+        } else {
+            &[]
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         if crate::laboratory::suspended(world, owner) {
             return;
@@ -578,6 +595,10 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
     }
 }
 
+pub(super) fn active(states: Query<(), With<State>>) -> bool {
+    !states.is_empty()
+}
+
 pub(super) fn tick(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::cell_bridge::CellMessage>>,
@@ -615,6 +636,7 @@ pub(super) fn tick(
                 };
                 if send(
                     world,
+                    owner,
                     ClientMessage::Subscribe {
                         id: id.clone(),
                         protein: query,
@@ -622,6 +644,12 @@ pub(super) fn tick(
                 )
                 .is_ok()
                 {
+                    if let Some(sender) = crate::practice_cells::sender(world, owner) {
+                        world
+                            .resource_mut::<Subscriptions>()
+                            .1
+                            .insert(id.clone(), sender);
+                    }
                     world
                         .resource_mut::<Subscriptions>()
                         .0
@@ -642,10 +670,41 @@ pub(super) fn tick(
         .map(|(id, _)| id.clone())
         .collect();
     for id in abandoned {
-        if send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
+        let sender = world.resource::<Subscriptions>().1.get(&id).cloned();
+        if sender.is_none_or(|sender| {
+            sender.is_closed()
+                || sender
+                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                    .is_ok()
+        }) {
             world.resource_mut::<Subscriptions>().0.remove(&id);
+            world.resource_mut::<Subscriptions>().1.remove(&id);
         }
     }
+}
+
+pub(in crate::instinct) fn previewed(world: &World, owner: Entity) -> bool {
+    world.get::<State>(owner).is_some_and(|state| {
+        state.pending.is_none()
+            && state
+                .preview
+                .as_ref()
+                .is_some_and(|(form, preview)| form == &state.form && preview.conflicts.is_empty())
+    })
+}
+
+pub(in crate::instinct) fn imported(world: &World, owner: Entity) -> Option<String> {
+    world.get::<State>(owner)?.record.clone()
+}
+
+pub(in crate::instinct) fn completed(world: &World, owner: Entity) -> bool {
+    world.get::<State>(owner).is_some_and(|state| {
+        state.pending.is_none()
+            && state
+                .quantity
+                .as_ref()
+                .is_some_and(|quantity| quantity.to_string() == "0")
+    })
 }
 
 #[cfg(test)]

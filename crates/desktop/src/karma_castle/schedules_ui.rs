@@ -46,6 +46,7 @@ enum Command {
 
 pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     let panel = ui::stack(world, parent);
+    world.get_mut::<Node>(panel).unwrap().display = Display::None;
     world.entity_mut(owner).insert(ScheduleView {
         panel,
         rows: Vec::new(),
@@ -54,6 +55,16 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
         dates: Default::default(),
     });
     render(world, owner);
+}
+
+pub(super) fn toggle(world: &mut World, owner: Entity) {
+    let panel = world.get::<ScheduleView>(owner).unwrap().panel;
+    let mut node = world.get_mut::<Node>(panel).unwrap();
+    node.display = if node.display == Display::None {
+        Display::Flex
+    } else {
+        Display::None
+    };
 }
 
 pub(super) fn dirty(world: &mut World, owner: Entity) {
@@ -90,6 +101,7 @@ fn submit(world: &mut World, owner: Entity, action: engine::actions::Action, ope
     let id = nucleus::new_uid("schedule-ui");
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -584,7 +596,8 @@ pub(super) fn maintain(world: &mut World) {
         .map(|(owner, _)| owner)
         .collect();
     for owner in owners {
-        if world.get_non_send::<CellBridge>().is_none() || crate::laboratory::active(world) {
+        if crate::practice_cells::sender(world, owner).is_none() || crate::laboratory::active(world)
+        {
             continue;
         }
         submit(

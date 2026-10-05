@@ -274,6 +274,7 @@ fn contact(world: &mut World, owner: Entity, parent: Entity, row: &Value) {
     label(world, parent, &format!("Saved locally: {} queued operations / {} mail envelopes · Mailbox storage confirmed: {} envelopes (last {}) · Recipient receipt: last acknowledged operation {}", c["delivery_status"]["queued_operations"].as_i64().unwrap_or(0), c["delivery_status"]["saved_mail"].as_i64().unwrap_or(0), c["delivery_status"]["mailbox_stored"].as_i64().unwrap_or(0), c["delivery_status"]["last_mailbox_storage"].as_str().unwrap_or("none"), c["peer_acked_seq"].as_i64().unwrap_or(0)));
     label(world, parent, "Mailbox acceptance confirms carrier storage. Recipient receipt is shown separately; mailbox copies can expire or be collected. Reconnect to refresh a missing or expired device list; queued work checks current sharing and device permissions again.");
     form(world, owner, parent, "Reconnect and refresh device list", json!({"action":"reconnect-contact","target":uid}), vec![], None);
+    request(world, owner, parent, "Synchronize now", json!({"action":"sync-now"}));
     for (key, broken, action, caption, explanation) in [
         (
             "scope_fields",

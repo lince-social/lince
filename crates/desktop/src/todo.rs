@@ -3,7 +3,7 @@ use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const PAGE: usize = 40;
 
@@ -40,6 +40,7 @@ pub struct TodoSand {
     dirty: bool,
     pending: Option<(String, Mutation)>,
     undo: Vec<(String, String)>,
+    last_saved: Option<(String, String)>,
 }
 
 enum Mutation {
@@ -49,7 +50,7 @@ enum Mutation {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashSet<String>);
+struct Subscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
 
 pub struct TodoPlugin;
 impl Plugin for TodoPlugin {
@@ -124,6 +125,7 @@ pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity
         dirty: true,
         pending: None,
         undo: Vec::new(),
+        last_saved: None,
     });
     sand
 }
@@ -220,7 +222,7 @@ fn add_key(
 }
 
 #[derive(Clone)]
-enum Command {
+pub(crate) enum Command {
     Query,
     Refresh,
     Ids,
@@ -233,6 +235,25 @@ enum Command {
 }
 
 impl Action for Command {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Complete(_) => &[Operation::CompleteTask],
+            Self::Undo => &[Operation::UndoTask],
+            _ => &[],
+        }
+    }
+
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::CompleteActive | Self::Select(_) | Self::Move(_) | Self::Refresh => {
+                &[Operation::CompleteTask, Operation::UndoTask]
+            }
+            _ => &[],
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         let Some(view) = world.get::<TodoSand>(owner) else {
             return;
@@ -544,13 +565,14 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
                     }
                 }
                 Mutation::Complete(uid, amount) => {
+                    view.last_saved = Some((uid.clone(), "0".into()));
                     view.undo.push((uid, amount));
                     if view.undo.len() > 100 {
                         view.undo.remove(0);
                     }
                 }
                 Mutation::Undo => {
-                    view.undo.pop();
+                    view.last_saved = view.undo.pop();
                 }
             }
             panel::status(
@@ -597,11 +619,17 @@ fn update(
     let stale: Vec<_> = world
         .resource::<Subscriptions>()
         .0
-        .difference(&active)
+        .keys()
+        .filter(|id| !active.contains(*id))
         .cloned()
         .collect();
     for id in stale {
-        if panel::send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
+        let sender = world.resource::<Subscriptions>().0[&id].clone();
+        if sender
+            .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+            .is_ok()
+            || sender.is_closed()
+        {
             world.resource_mut::<Subscriptions>().0.remove(&id);
         }
     }
@@ -627,8 +655,10 @@ fn update(
                     name: view.protein.clone(),
                 }
             };
-            if crate::practice_cells::send(world, owner, message).is_ok() {
-                world.resource_mut::<Subscriptions>().0.insert(id);
+            if let Some(sender) = crate::practice_cells::sender(world, owner)
+                && sender.try_send(message).is_ok()
+            {
+                world.resource_mut::<Subscriptions>().0.insert(id, sender);
                 world.get_mut::<TodoSand>(owner).unwrap().requested = true;
             }
         }
@@ -636,4 +666,26 @@ fn update(
             render(world, owner);
         }
     }
+}
+
+pub(crate) fn contains(world: &World, owner: Entity, uid: &str) -> bool {
+    world.get::<TodoSand>(owner).is_some_and(|view| {
+        view.ready && view.rows.iter().any(|row| row["uid"].as_str() == Some(uid))
+    })
+}
+
+pub(crate) fn busy(world: &World, owner: Entity) -> bool {
+    world
+        .get::<TodoSand>(owner)
+        .is_some_and(|view| view.pending.is_some())
+}
+
+pub(crate) fn saved(world: &World, owner: Entity, uid: &str, amount: &str) -> bool {
+    world.get::<TodoSand>(owner).is_some_and(|view| {
+        view.pending.is_none()
+            && view
+                .last_saved
+                .as_ref()
+                .is_some_and(|(target, value)| target == uid && value == amount)
+    })
 }

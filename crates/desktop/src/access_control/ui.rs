@@ -17,7 +17,7 @@ pub(super) struct UserForm {
     expected_revision: i64,
     role_label: Entity,
     chooser: Entity,
-    preview_record: Entity,
+    pub(super) preview_record: Entity,
 }
 
 #[derive(Component)]
@@ -103,7 +103,7 @@ impl Action for AcceptSelector {
 }
 
 #[derive(Clone)]
-enum Command {
+pub(super) enum Command {
     Tab(Tab),
     Select(String),
     New,
@@ -153,8 +153,7 @@ impl Action for Command {
             }
             Self::Selector(grant) => open_selector(world, owner, *grant),
             Self::Refresh => {
-                world.resource_mut::<Catalog>().refresh = true;
-                world.resource_mut::<Catalog>().ready = false;
+                refresh_catalog(world, owner);
                 world
                     .get_mut::<AccessControlSand>(owner)
                     .unwrap()
@@ -238,7 +237,7 @@ impl Action for Command {
                     };
             }
             _ => {
-                if !world.resource::<Catalog>().ready {
+                if !catalog(world, owner).ready {
                     status(
                         world,
                         owner,
@@ -311,8 +310,7 @@ fn mutation(
             let form = world
                 .get::<StandingEditor>(owner)
                 .ok_or("Open the user editor again.")?;
-            let entry = world
-                .resource::<Catalog>()
+            let entry = catalog(world, owner)
                 .rows
                 .iter()
                 .find(|entry| entry["kind"] == "user" && entry["id"] == person)
@@ -406,8 +404,7 @@ fn mutation(
             if name.is_empty() || name.len() > 100 || name.chars().any(char::is_control) {
                 return Err("Enter a Role name of up to 100 bytes.".into());
             }
-            if world
-                .resource::<Catalog>()
+            if catalog(world, owner)
                 .rows
                 .iter()
                 .any(|row| row["kind"] == "role" && row["name"] == name)
@@ -454,7 +451,7 @@ fn mutation(
             }
         }
         Command::Permission(permission, grant) => {
-            let catalog = world.resource::<Catalog>();
+            let catalog = catalog(world, owner);
             let known = catalog
                 .rows
                 .iter()
@@ -617,6 +614,7 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
         page: 0,
         selected: None,
         pending: None,
+        last_preview: None,
         dirty: true,
         reload_editor: true,
     });
@@ -629,8 +627,7 @@ pub(super) fn list(world: &mut World, owner: Entity) {
     let tab = view.tab;
     let selected = view.selected.clone();
     let kind = if tab == Tab::Users { "user" } else { "role" };
-    let mut rows: Vec<_> = world
-        .resource::<Catalog>()
+    let mut rows: Vec<_> = catalog(world, owner)
         .rows
         .iter()
         .filter(|row| row["kind"] == kind)
@@ -728,7 +725,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         .entity_mut(owner)
         .remove::<(UserForm, StandingEditor, RoleForm, RoleEdit, PolicyForm)>();
     world.entity_mut(parent).despawn_children();
-    if !world.resource::<Catalog>().ready {
+    if !catalog(world, owner).ready {
         label(
             world,
             parent,
@@ -745,7 +742,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         .get_mut::<AccessControlSand>(owner)
         .unwrap()
         .reload_editor = false;
-    let entries = world.resource::<Catalog>().rows.clone();
+    let entries = catalog(world, owner).rows.clone();
     let kind = if tab == Tab::Users { "user" } else { "role" };
     let entry = selected.as_ref().and_then(|id| {
         entries
@@ -1462,8 +1459,7 @@ fn refresh_standing(world: &mut World, owner: Entity) {
     else {
         return;
     };
-    let Some(entry) = world
-        .resource::<Catalog>()
+    let Some(entry) = catalog(world, owner)
         .rows
         .iter()
         .find(|entry| entry["kind"] == "user" && entry["id"].as_str() == Some(person))
@@ -1485,8 +1481,7 @@ fn refresh_role(world: &mut World, owner: Entity) {
         .unwrap()
         .selected
         .clone();
-    let entry = world
-        .resource::<Catalog>()
+    let entry = catalog(world, owner)
         .rows
         .iter()
         .find(|entry| entry["kind"] == "role" && entry["id"].as_str() == selected.as_deref())
@@ -1528,9 +1523,13 @@ fn role_permissions(world: &mut World, owner: Entity, parent: Entity, entry: &Va
         "Permissions · changes save immediately for everyone with this Role",
         14.0,
     );
-    label(world, parent, "Managing Record visibility and Concepts requires permission:assign. Workspace editing grants no Record authority. Manual and resumed Rules execute as the person invoking them.", 12.0);
-    let keys: Vec<String> = world
-        .resource::<Catalog>()
+    label(
+        world,
+        parent,
+        "Managing Record visibility and Concepts requires permission:assign. Workspace editing grants no Record authority. Manual and resumed Rules execute as the person invoking them.",
+        12.0,
+    );
+    let keys: Vec<String> = catalog(world, owner)
         .rows
         .iter()
         .filter(|entry| entry["kind"] == "permission_catalog")
@@ -1561,8 +1560,7 @@ fn role_permissions(world: &mut World, owner: Entity, parent: Entity, entry: &Va
 }
 
 fn role_choices(world: &mut World, owner: Entity, parent: Entity) {
-    let choices = world
-        .resource::<Catalog>()
+    let choices = catalog(world, owner)
         .rows
         .iter()
         .filter(|entry| entry["kind"] == "role")

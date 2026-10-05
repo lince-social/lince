@@ -31,8 +31,61 @@ enum Command {
     Close,
 }
 
+pub(crate) fn edit_shell(world: &mut World, owner: Entity, slug: &str, head: &str, script: &str) {
+    Command::New.apply(world, owner);
+    if let Some(mut state) = world.get_mut::<Commands>(owner) {
+        state.values = [
+            slug.into(),
+            head.into(),
+            script.into(),
+            "[]".into(),
+            String::new(),
+        ];
+        state.shell = true;
+        state.editing = true;
+        render(world, owner);
+    }
+}
+
+pub(crate) fn save(world: &mut World, owner: Entity) {
+    Command::Save.apply(world, owner);
+}
+
+pub(crate) fn saved(world: &World, owner: Entity, slug: &str) -> Option<String> {
+    world
+        .get::<Commands>(owner)?
+        .rows
+        .iter()
+        .find(|row| row["slug"] == slug)?["uid"]
+        .as_str()
+        .map(str::to_string)
+}
+
+pub(crate) fn run(world: &mut World, owner: Entity, command: String) {
+    Command::Run(command).apply(world, owner);
+}
+
+pub(crate) fn refresh(world: &mut World, owner: Entity) {
+    Command::Refresh.apply(world, owner);
+}
+
+pub(crate) fn sampled(world: &World, owner: Entity, slug: &str, value: &str) -> bool {
+    world.get::<Commands>(owner).is_some_and(|state| {
+        state.rows.iter().any(|row| {
+            row["slug"] == slug
+                && row["history"].as_array().is_some_and(|history| {
+                    history.iter().any(|invocation| {
+                        invocation["status"] == "completed"
+                            && invocation["value"].as_str() == Some(value)
+                    })
+                })
+        })
+    })
+}
+
 pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     let panel = ui::stack(world, parent);
+    world.get_mut::<Node>(panel).unwrap().display = Display::None;
     world.entity_mut(owner).insert(Commands {
         panel,
         rows: Vec::new(),
@@ -44,6 +97,16 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
         editing: false,
     });
     render(world, owner);
+}
+
+pub(super) fn toggle(world: &mut World, owner: Entity) {
+    let panel = world.get::<Commands>(owner).unwrap().panel;
+    let mut node = world.get_mut::<Node>(panel).unwrap();
+    node.display = if node.display == Display::None {
+        Display::Flex
+    } else {
+        Display::None
+    };
 }
 
 fn capture(world: &mut World, owner: Entity) {
@@ -64,6 +127,7 @@ fn submit(world: &mut World, owner: Entity, action: engine::actions::Action, ins
     let id = nucleus::new_uid("commands-ui");
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -77,6 +141,24 @@ fn submit(world: &mut World, owner: Entity, action: engine::actions::Action, ins
 }
 
 impl crate::actions::Action for Command {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Save => &[Operation::SaveCommand],
+            Self::Run(_) => &[Operation::RunCommand],
+            _ => &[],
+        }
+    }
+
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Refresh => &[Operation::SaveCommand, Operation::RunCommand],
+            Self::Shell(_) => &[Operation::SaveCommand],
+            _ => &[],
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         if crate::laboratory::suspended(world, owner)
             || world
@@ -103,6 +185,8 @@ impl crate::actions::Action for Command {
                 state.values = Default::default();
                 state.shell = true;
                 state.editing = true;
+                let panel = state.panel;
+                world.get_mut::<Node>(panel).unwrap().display = Display::Flex;
             }
             Self::Edit(uid) => {
                 let row = world

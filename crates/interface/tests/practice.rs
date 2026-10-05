@@ -95,3 +95,24 @@ fn discard_only_returns_owned_resources_and_keeps_pending_work_visible() {
     assert_eq!(ownership.discard(), ["sample-b"]);
     assert_eq!(ownership.outstanding().count(), 0);
 }
+#[test]
+fn unavailable_hardware_inspection_is_visited_and_never_practiced() {
+    let mut runner = runner();
+    let slug = runner.current().unwrap().slug;
+    runner.next(Observation::Viewed, 0, 30);
+    assert_eq!(runner.progress.0[slug], Progress::Visited);
+    assert_eq!(runner.step, 1);
+    let slug = runner.current().unwrap().slug;
+    let request = ticket(runner.next(Observation::Waiting, 1, 30));
+    runner.response(request, Observation::Viewed);
+    assert_eq!(runner.progress.0[slug], Progress::Visited);
+}
+#[test]
+fn foundations_refer_to_earlier_pages_without_creating_progress_locks() {
+    for (index, page) in lince_interface::handbook::PAGES.iter().enumerate() {
+        for earlier in lince_interface::handbook::foundations(page.slug) {
+            let position = lince_interface::handbook::PAGES.iter().position(|page| page.slug == *earlier).unwrap();
+            assert!(position < index, "{} must precede {}", earlier, page.slug);
+        }
+    }
+}

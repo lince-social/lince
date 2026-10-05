@@ -305,7 +305,10 @@ impl Action for Command {
             }
             Self::Record(uid) => {
                 let root = world.get::<ChildOf>(owner).unwrap().parent();
-                crate::full_record::open(world, root, uid, crate::protein_area::Source::Local);
+                let source = crate::practice_cells::source(world, owner)
+                    .map(crate::protein_area::Source::Organ)
+                    .unwrap_or(crate::protein_area::Source::Local);
+                crate::full_record::open(world, root, uid, source);
                 return;
             }
         }

@@ -16,11 +16,18 @@ async fn output(reader: impl AsyncRead + Unpin) -> Result<String, String> {
     String::from_utf8(bytes).map_err(|_| "Command output is not valid UTF-8".into())
 }
 
-pub(super) async fn run(configuration: &Command) -> CommandResponse {
-    run_with_timeout(configuration, Duration::from_secs(30)).await
+pub(super) async fn run(
+    configuration: &Command,
+    directory: Option<&std::path::Path>,
+) -> CommandResponse {
+    run_with_timeout(configuration, Duration::from_secs(30), directory).await
 }
 
-async fn run_with_timeout(configuration: &Command, timeout: Duration) -> CommandResponse {
+async fn run_with_timeout(
+    configuration: &Command,
+    timeout: Duration,
+    directory: Option<&std::path::Path>,
+) -> CommandResponse {
     let mut command = match configuration {
         Command::Shell { script } => {
             let mut command = tokio::process::Command::new("sh");
@@ -33,6 +40,9 @@ async fn run_with_timeout(configuration: &Command, timeout: Duration) -> Command
             command
         }
     };
+    if let Some(directory) = directory {
+        command.current_dir(directory);
+    }
     command
         .kill_on_drop(true)
         .stdout(std::process::Stdio::piped())
@@ -107,26 +117,56 @@ mod tests {
             script: script.into(),
         };
         assert_eq!(
-            run(&shell("printf '42'; printf diagnostic >&2"))
+            run(&shell("printf '42'; printf diagnostic >&2"), None)
                 .await
                 .stdout,
             "42"
         );
-        assert!(!run(&shell("exit 7")).await.ok);
-        assert!(run(&shell("printf '\\377'")).await.stderr.contains("UTF-8"));
+        assert!(!run(&shell("exit 7"), None).await.ok);
         assert!(
-            run_with_timeout(&shell("sleep 30"), Duration::from_millis(20))
+            run(&shell("printf '\\377'"), None)
+                .await
+                .stderr
+                .contains("UTF-8")
+        );
+        assert!(
+            run_with_timeout(&shell("sleep 30"), Duration::from_millis(20), None)
                 .await
                 .stderr
                 .contains("exceeded")
         );
-        assert!(run(&shell("yes x")).await.stderr.contains("64 KiB"));
-        let response = run(&Command::Process {
-            program: "printf".into(),
-            arguments: vec!["%s".into(), "$(exit 9)".into()],
-        })
+        assert!(run(&shell("yes x"), None).await.stderr.contains("64 KiB"));
+        let response = run(
+            &Command::Process {
+                program: "printf".into(),
+                arguments: vec!["%s".into(), "$(exit 9)".into()],
+            },
+            None,
+        )
         .await;
         assert!(response.ok);
         assert_eq!(response.stdout, "$(exit 9)");
+    }
+
+    #[tokio::test]
+    async fn configured_directory_is_local_to_the_child() {
+        let previous = std::env::current_dir().unwrap();
+        let directory = std::env::temp_dir().join(nucleus::new_uid("command-test"));
+        std::fs::create_dir(&directory).unwrap();
+        let response = run(
+            &Command::Process {
+                program: "pwd".into(),
+                arguments: Vec::new(),
+            },
+            Some(&directory),
+        )
+        .await;
+        assert!(response.ok);
+        assert_eq!(
+            response.stdout.trim(),
+            directory.canonicalize().unwrap().to_str().unwrap()
+        );
+        assert_eq!(std::env::current_dir().unwrap(), previous);
+        std::fs::remove_dir(directory).unwrap();
     }
 }

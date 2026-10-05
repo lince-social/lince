@@ -12,6 +12,15 @@ struct Status {
     message: String,
 }
 
+#[derive(Component)]
+struct NameField;
+
+#[derive(Component)]
+struct SavedCustom(String);
+
+#[derive(Component)]
+struct AddedCustom(Vec<Entity>);
+
 #[derive(Clone)]
 enum Command {
     Save(Entity),
@@ -20,6 +29,25 @@ enum Command {
 }
 
 impl Action for Command {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Save(_) => &[Operation::SaveCustomCastle],
+            Self::Add(_) => &[Operation::AddCustomCastle],
+            _ => &[],
+        }
+    }
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        match self {
+            Self::Save(_) => crate::actions::PracticeIntent::Feature(
+                lince_interface::practice::Operation::SaveCustomCastle,
+            ),
+            Self::Add(_) => crate::actions::PracticeIntent::Feature(
+                lince_interface::practice::Operation::AddCustomCastle,
+            ),
+            Self::Refresh => crate::actions::PracticeIntent::Navigation,
+        }
+    }
     fn apply(&self, world: &mut World, root: Entity) {
         if !world
             .get::<crate::edit_mode::EditMode>(root)
@@ -38,16 +66,22 @@ impl Action for Command {
                     message: String::new(),
                 });
                 CustomCastle::capture(world, root, &name).and_then(|castle| {
-                    let directory = storage::directory(world).map_err(|e| e.to_string())?;
-                    storage::save(&directory, &castle).map_err(|e| e.to_string())?;
+                    let directory =
+                        storage::scoped_directory(world, root).map_err(|e| e.to_string())?;
+                    let path = storage::save(&directory, &castle).map_err(|e| e.to_string())?;
+                    world.entity_mut(root).insert(SavedCustom(
+                        path.file_name().unwrap().to_string_lossy().into_owned(),
+                    ));
                     Ok(format!("Saved {} to Custom.", castle.name))
                 })
             }
-            Self::Add(filename) => storage::directory(world)
+            Self::Add(filename) => storage::scoped_directory(world, root)
                 .and_then(|directory| storage::load(&directory, filename))
                 .map_err(|e| e.to_string())
                 .and_then(|castle| {
-                    castle.spawn(world, root)?;
+                    let entities = castle.spawn(world, root)?;
+                    crate::instinct::practice::track_custom(world, root, &entities);
+                    world.entity_mut(root).insert(AddedCustom(entities));
                     Ok(format!("Added {} at the camera.", castle.name))
                 }),
             Self::Refresh => Ok(String::new()),
@@ -87,7 +121,7 @@ pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
     super::library::show(world, root, parent);
     let heading = row(world, parent);
     label(world, heading, "Custom", 18.0);
-    let directory = storage::directory(world);
+    let directory = storage::scoped_directory(world, root);
     let tip = match &directory {
         Ok(directory) => format!(
             "Your custom Castles are saved as files in {}. Back up these files before switching computers or wiping this one. Copy them into the same folder on another computer, then refresh Custom. Each entry's info shows its file.",
@@ -115,7 +149,17 @@ pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
         .map_or_else(String::new, |s| s.name.clone());
     let bundle = crate::sand::text_editor(&name, world.resource::<crate::theme::Typography>(), 0);
     let controls = row(world, parent);
-    let field = world.spawn((bundle, ChildOf(controls))).id();
+    let field = world
+        .spawn((
+            bundle,
+            ChildOf(controls),
+            NameField,
+            crate::actions::TutorialField {
+                owner: root,
+                operation: lince_interface::practice::Operation::SaveCustomCastle,
+            },
+        ))
+        .id();
     world.entity_mut(field).insert((
         Node {
             flex_grow: 1.0,
@@ -193,4 +237,51 @@ pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
             13.0,
         );
     }
+}
+
+pub(crate) fn save_example(world: &mut World, root: Entity) {
+    if world.get::<SavedCustom>(root).is_some() {
+        return;
+    }
+    let field = world
+        .query_filtered::<Entity, With<NameField>>()
+        .iter(world)
+        .find(|entity| crate::instinct::practice::window_root(world, *entity) == Some(root));
+    if let Some(field) = field {
+        world
+            .get_mut::<EditableText>(field)
+            .unwrap()
+            .editor
+            .set_text("My practice Castle");
+        Command::Save(field).apply(world, root);
+    }
+}
+
+pub(crate) fn add_example(world: &mut World, root: Entity) {
+    if world.get::<AddedCustom>(root).is_some() {
+        return;
+    }
+    if let Some(filename) = world.get::<SavedCustom>(root).map(|saved| saved.0.clone()) {
+        Command::Add(filename).apply(world, root);
+    }
+}
+
+pub(crate) fn saved_example(world: &World, root: Entity) -> bool {
+    world.get::<SavedCustom>(root).is_some()
+}
+
+pub(crate) fn added_example(world: &World, root: Entity) -> bool {
+    world.get::<AddedCustom>(root).is_some_and(|added| {
+        !added.0.is_empty()
+            && added
+                .0
+                .iter()
+                .all(|entity| world.get_entity(*entity).is_ok())
+    })
+}
+
+pub(crate) fn clear_example(world: &mut World, root: Entity) {
+    world
+        .entity_mut(root)
+        .remove::<(SavedCustom, AddedCustom)>();
 }

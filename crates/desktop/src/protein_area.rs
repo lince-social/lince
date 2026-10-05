@@ -28,6 +28,7 @@ pub use grouping::{GroupAxis, Grouping};
 pub use model::{Binding, Config, OverflowMode, Source, SpawnPlacement};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
+pub(crate) use ui::Command as ProteinAction;
 pub(crate) use ui::controls;
 
 pub(crate) fn attach_field_history(world: &mut World, entity: Entity) {
@@ -318,7 +319,9 @@ fn stop(world: &mut World, owner: Entity) {
 }
 
 pub(crate) fn connect_organ(world: &World, organ: &str) -> Result<Remote, String> {
-    if let Some(remote) = crate::practice_cells::remote(world, organ) { return remote }
+    if let Some(remote) = crate::practice_cells::remote(world, organ) {
+        return remote;
+    }
     if organ.trim().is_empty() {
         return Err("Choose an Organ".into());
     }
@@ -429,41 +432,84 @@ fn retry_wake(world: &World) {
     }
 }
 
-pub(crate) fn auxiliary_sender(world: &World, source: &Source) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+pub(crate) fn auxiliary_sender(
+    world: &World,
+    source: &Source,
+) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
     match source {
-        Source::Local => world.get_non_send::<CellBridge>().map(|bridge| bridge.outgoing.clone()),
+        Source::Local => world
+            .get_non_send::<CellBridge>()
+            .map(|bridge| bridge.outgoing.clone()),
         Source::Organ(organ) => sessions::sender(world, organ),
     }
 }
 
 pub(crate) fn ensure_auxiliary(world: &mut World, source: &Source) {
-    if let Source::Organ(organ) = source { sessions::ensure_auxiliary(world, organ); }
+    if let Source::Organ(organ) = source {
+        sessions::ensure_auxiliary(world, organ);
+    }
 }
 
 pub(crate) fn release_practice_source(world: &mut World, organ: &str) {
-    if !crate::practice_cells::owns_source(world, &Source::Organ(organ.into())) { return }
-    let owners: Vec<_> = world.get_resource::<Runtime>().map(|runtime| runtime.areas.iter().filter(|(_, state)| state.remote.as_deref() == Some(organ)).map(|(owner, _)| *owner).collect()).unwrap_or_default();
-    for owner in owners { stop(world, owner); }
-    if let Some(mut runtime) = world.get_resource_mut::<Runtime>() { runtime.sessions.remove(organ); }
+    if !crate::practice_cells::owns_source(world, &Source::Organ(organ.into())) {
+        return;
+    }
+    let owners: Vec<_> = world
+        .get_resource::<Runtime>()
+        .map(|runtime| {
+            runtime
+                .areas
+                .iter()
+                .filter(|(_, state)| state.remote.as_deref() == Some(organ))
+                .map(|(owner, _)| *owner)
+                .collect()
+        })
+        .unwrap_or_default();
+    for owner in owners {
+        stop(world, owner);
+    }
+    if let Some(mut runtime) = world.get_resource_mut::<Runtime>() {
+        runtime.sessions.remove(organ);
+    }
 }
 
-pub(crate) fn logout_organ(world: &mut World, organ: &str) { sessions::logout(world, organ); }
-pub(crate) fn reconnect_auxiliary(world: &mut World, organ: &str) { sessions::ensure_auxiliary(world, organ); sessions::reconnect(world, organ); }
+pub(crate) fn logout_organ(world: &mut World, organ: &str) {
+    sessions::logout(world, organ);
+}
+pub(crate) fn reconnect_auxiliary(world: &mut World, organ: &str) {
+    sessions::ensure_auxiliary(world, organ);
+    sessions::reconnect(world, organ);
+}
 
-pub(crate) fn auxiliary_login(world: &mut World, organ: &str, username: String, password: String) -> Result<(), String> { sessions::login(world, organ, username, password) }
+pub(crate) fn auxiliary_login(
+    world: &mut World,
+    organ: &str,
+    username: String,
+    password: String,
+) -> Result<(), String> {
+    sessions::login(world, organ, username, password)
+}
 
 pub(crate) fn row_entities(world: &World, owner: Entity) -> Vec<Entity> {
-    world.get_resource::<Runtime>().and_then(|runtime| runtime.areas.get(&owner))
-        .map(|state| state.row_entities.values().copied().collect()).unwrap_or_default()
+    world
+        .get_resource::<Runtime>()
+        .and_then(|runtime| runtime.areas.get(&owner))
+        .map(|state| state.row_entities.values().copied().collect())
+        .unwrap_or_default()
 }
 
 pub(crate) fn selection_pending(world: &mut World, owner: Entity) -> bool {
-    world.get_resource::<Runtime>().and_then(|runtime| runtime.areas.get(&owner))
-        .is_some_and(|state| !state.actions.is_empty()) || property_actions::selection_pending(world, owner)
+    world
+        .get_resource::<Runtime>()
+        .and_then(|runtime| runtime.areas.get(&owner))
+        .is_some_and(|state| !state.actions.is_empty())
+        || property_actions::selection_pending(world, owner)
 }
 
 pub(crate) fn auxiliary_subscribed(world: &mut World, source: &Source, message: &ClientMessage) {
-    if let Source::Organ(organ) = source { sessions::subscribed(world, organ, message); }
+    if let Source::Organ(organ) = source {
+        sessions::subscribed(world, organ, message);
+    }
 }
 
 pub(crate) fn auxiliary_unsubscribe(world: &mut World, organ: &str, id: String) {
@@ -472,16 +518,44 @@ pub(crate) fn auxiliary_unsubscribe(world: &mut World, organ: &str, id: String) 
 
 fn observe(world: &mut World, source: &Source, message: &ServerMessage) {
     if crate::practice_cells::owns_source(world, source)
-        && matches!(message, ServerMessage::ActionOk { .. } | ServerMessage::Error { .. } | ServerMessage::Snapshot { .. } | ServerMessage::Update { .. }) {
-        if let (Source::Organ(source), ServerMessage::ActionOk { created: Some(uid), .. }) = (source, message) {
-            world.resource_mut::<crate::practice_cells::PracticeCells>().records.insert(uid.clone(), source.clone());
+        && matches!(
+            message,
+            ServerMessage::ActionOk { .. }
+                | ServerMessage::Error { .. }
+                | ServerMessage::Snapshot { .. }
+                | ServerMessage::Update { .. }
+                | ServerMessage::Fiote { .. }
+        )
+    {
+        if let (
+            Source::Organ(source),
+            ServerMessage::ActionOk {
+                created: Some(uid), ..
+            },
+        ) = (source, message)
+            && nucleus::valid_uid(uid, "r")
+        {
+            world
+                .resource_mut::<crate::practice_cells::PracticeCells>()
+                .records
+                .entry(source.clone())
+                .or_default()
+                .insert(uid.clone());
         }
         world.write_message(CellMessage(message.clone()));
     }
-    if matches!(source, Source::Organ(_)) { crate::workspace_sync::receive(world, source, message); }
-    if matches!(source, Source::Organ(_)) { crate::time_castle::receive(world, source, message); }
-    if matches!(source, Source::Organ(_)) { crate::record_extensions::receive(world, source, message); }
-    if matches!(source, Source::Organ(_)) { crate::description::receive_live(world, source, message); }
+    if matches!(source, Source::Organ(_)) {
+        crate::workspace_sync::receive(world, source, message);
+    }
+    if matches!(source, Source::Organ(_)) {
+        crate::time_castle::receive(world, source, message);
+    }
+    if matches!(source, Source::Organ(_)) {
+        crate::record_extensions::receive(world, source, message);
+    }
+    if matches!(source, Source::Organ(_)) {
+        crate::description::receive_live(world, source, message);
+    }
     #[cfg(feature = "native-media")]
     crate::communication::calls::receive(world, message);
     crate::work_timer::receive(world, message);
@@ -1077,6 +1151,19 @@ pub(crate) fn set_configuration(world: &mut World, entity: Entity, config: Optio
     let filter = world
         .get::<filter::Subscription>(entity)
         .map(|filter| (filter.0, filter.1));
+    let owner = filter.map_or(entity, |filter| filter.0);
+    if let Some(source) = world.get::<crate::practice_cells::PracticeSource>(owner)
+        && config
+            .as_ref()
+            .is_some_and(|config| config.source != Source::Organ(source.0.clone()))
+    {
+        crate::notifications::report(
+            world,
+            "Instinct",
+            "This view uses the isolated practice Cell. Close practice before choosing personal data.",
+        );
+        return;
+    }
     if let Some(mut area) = world.get_mut::<InfluenceArea>(filter.map_or(entity, |f| f.0)) {
         if let Some((_, changes)) = filter {
             if changes {

@@ -21,6 +21,21 @@ pub enum TopologyAction {
 }
 
 impl Action for TopologyAction {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        if matches!(self, Self::ToggleView) {
+            &[Operation::SwitchSpatialView, Operation::ReturnFlatView]
+        } else {
+            &[]
+        }
+    }
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        if matches!(self, Self::ToggleView) {
+            crate::actions::PracticeIntent::Navigation
+        } else {
+            crate::actions::PracticeIntent::Target
+        }
+    }
     fn connections(&self, _: &World, target: Entity) -> Vec<crate::inspection::Connection> {
         vec![crate::inspection::Connection {
             target,

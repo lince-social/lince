@@ -1,5 +1,5 @@
 use lince_interface::karma as model;
-mod commands_ui;
+pub(crate) mod commands_ui;
 mod history_ui;
 mod persistence;
 mod preview_ui;
@@ -13,11 +13,11 @@ use cell::{ClientMessage, ServerMessage};
 use model::{Draft, Rule};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     actions::Action,
-    cell_bridge::{CellBridge, CellMessage, ReceiveCell},
+    cell_bridge::{CellMessage, ReceiveCell},
     workspace::WorkspaceMember,
 };
 pub(crate) use persistence::{SavedKarmaCastle, snapshot};
@@ -35,11 +35,56 @@ pub struct KarmaCastle {
     pub preview: preview_ui::Form,
 }
 
+pub(crate) use ui::Command as RuleAction;
+
+pub(crate) fn saved_rule(
+    world: &World,
+    owner: Entity,
+    slug: &str,
+) -> Option<(String, i64, String)> {
+    world
+        .get::<View>(owner)?
+        .rules
+        .iter()
+        .find(|rule| rule.slug == slug)
+        .map(|rule| (rule.uid.clone(), rule.revision, rule.state.clone()))
+}
+
+pub(crate) fn preview(world: &mut World, owner: Entity) {
+    preview_ui::run_action(world, owner);
+}
+
+pub(crate) fn previewed(world: &World, owner: Entity) -> bool {
+    preview_ui::confirmed(world, owner)
+}
+
+pub(crate) fn preview_needs_refresh(world: &World, owner: Entity) -> bool {
+    preview_ui::needs_refresh(world, owner)
+}
+
+pub(crate) fn ready(world: &World, owner: Entity) -> bool {
+    world
+        .get::<View>(owner)
+        .is_some_and(|view| view.loaded.iter().all(|loaded| *loaded))
+}
+
+pub(crate) fn preview_form(inputs: Vec<engine::karma_preview::Input>) -> preview_ui::Form {
+    preview_ui::Form::with_inputs(inputs)
+}
+
+pub(crate) fn history(world: &mut World, owner: Entity, uid: &str) {
+    history_ui::inspect(world, owner, uid);
+}
+
 #[derive(Component)]
 struct View {
     execution: Entity,
     execution_checked: Option<std::time::Instant>,
     controls: Entity,
+    tools: Entity,
+    selected: HashSet<String>,
+    pausing: Vec<(String, i64, bool)>,
+    pause_active: bool,
     editing: Option<(String, usize)>,
     deleting: Vec<String>,
     deleting_pending: Option<String>,
@@ -57,10 +102,12 @@ struct View {
     pending: Option<String>,
     submitted: Option<Draft>,
     ready: bool,
+    loaded: [bool; 4],
 }
 
 #[derive(Resource, Default)]
 struct Requests {
+    senders: HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
     executions: HashMap<String, Entity>,
     subscriptions: HashMap<String, (Entity, usize)>,
     readings: HashMap<String, Entity>,
@@ -72,12 +119,24 @@ struct FocusRule(String);
 pub(crate) fn open_rule(world: &mut World, source: Entity, uid: &str) {
     let mut root = source;
     while world.get::<crate::workspace::Workspaces>(root).is_none() {
-        let Some(parent) = world.get::<ChildOf>(root) else { return; };
+        let Some(parent) = world.get::<ChildOf>(root) else {
+            return;
+        };
         root = parent.parent();
     }
-    let workspace = world.get::<WorkspaceMember>(source).map_or(1, |member| member.0);
-    let position = world.get::<crate::canvas::CanvasItem>(source).map_or(DVec2::ZERO, |item| item.position + DVec2::new(40.0, 40.0));
+    let workspace = world
+        .get::<WorkspaceMember>(source)
+        .map_or(1, |member| member.0);
+    let position = world
+        .get::<crate::canvas::CanvasItem>(source)
+        .map_or(DVec2::ZERO, |item| item.position + DVec2::new(40.0, 40.0));
     let owner = spawn(world, root, workspace, position, KarmaCastle::default());
+    if let Some(source) = crate::practice_cells::source(world, source) {
+        world
+            .entity_mut(owner)
+            .insert(crate::practice_cells::PracticeSource(source));
+        crate::instinct::practice::track_custom(world, root, &[owner]);
+    }
     world.entity_mut(owner).insert(FocusRule(uid.into()));
 }
 
@@ -95,6 +154,7 @@ impl Plugin for KarmaCastlePlugin {
                     receive.after(ReceiveCell),
                     maintain,
                     ui::tick,
+                    ui::hover_actions,
                     schedules_ui::maintain,
                     preview_ui::maintain,
                 )
@@ -150,6 +210,13 @@ pub fn spawn(
     world.get_mut::<Node>(header).unwrap().align_items = AlignItems::Center;
     let controls = ui::row(world, header);
     world.get_mut::<Node>(controls).unwrap().width = Val::Auto;
+    let tools = ui::row(world, header);
+    {
+        let mut node = world.get_mut::<Node>(tools).unwrap();
+        node.width = Val::Auto;
+        node.flex_grow = 1.0;
+        node.justify_content = JustifyContent::End;
+    }
     ui::search(world, header, owner);
     let execution = crate::edit_mode::label(world, owner, "Checking Karma execution…", 13.0);
     let scroll = world
@@ -177,6 +244,10 @@ pub fn spawn(
         execution,
         execution_checked: None,
         controls,
+        tools,
+        selected: HashSet::new(),
+        pausing: Vec::new(),
+        pause_active: false,
         editing: None,
         deleting: Vec::new(),
         deleting_pending: None,
@@ -194,12 +265,14 @@ pub fn spawn(
         pending: None,
         submitted: None,
         ready: false,
+        loaded: [false; 4],
     });
     ui::render_form(world, owner);
     schedules_ui::spawn(world, owner, scroll);
     preview_ui::spawn(world, owner, scroll);
     history_ui::spawn(world, owner, scroll);
     commands_ui::spawn(world, owner, scroll);
+    ui::render_tools(world, owner);
     owner
 }
 
@@ -228,16 +301,11 @@ fn status(world: &mut World, owner: Entity, text: impl Into<String>) {
     }
 }
 
-fn send(world: &World, message: ClientMessage) -> Result<(), String> {
+fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
     if crate::laboratory::active(world) {
         return Err("Saving is unavailable in the Laboratory".into());
     }
-    world
-        .get_non_send::<CellBridge>()
-        .ok_or("No Cell connection")?
-        .outgoing
-        .try_send(message)
-        .map_err(|error| format!("Could not reach the Cell: {error}"))
+    crate::practice_cells::send(world, owner, message)
 }
 
 fn save(world: &mut World, owner: Entity) {
@@ -280,6 +348,7 @@ fn save(world: &mut World, owner: Entity) {
     };
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: request_id.clone(),
             action,
@@ -308,6 +377,7 @@ fn delete_next(world: &mut World, owner: Entity) {
     let id = nucleus::new_uid("karma-delete");
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action: engine::actions::Action::DeleteRecurrence {
@@ -367,8 +437,15 @@ fn maintain(world: &mut World) {
         .map(|(id, _)| id.clone())
         .collect();
     for id in stale {
-        if send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
+        let sender = world.resource::<Requests>().senders.get(&id).cloned();
+        if sender.is_none_or(|sender| {
+            sender.is_closed()
+                || sender
+                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                    .is_ok()
+        }) {
             world.resource_mut::<Requests>().subscriptions.remove(&id);
+            world.resource_mut::<Requests>().senders.remove(&id);
         }
     }
     let owners: Vec<_> = world
@@ -395,6 +472,7 @@ fn maintain(world: &mut World) {
             let id = nucleus::new_uid("karma-execution");
             if send(
                 world,
+                owner,
                 ClientMessage::Act {
                     id: id.clone(),
                     action: engine::actions::Action::RosterStatus,
@@ -417,12 +495,19 @@ fn maintain(world: &mut World) {
             }
             match send(
                 world,
+                owner,
                 ClientMessage::Subscribe {
                     id: id.clone(),
                     protein: query(index),
                 },
             ) {
                 Ok(()) => {
+                    if let Some(sender) = crate::practice_cells::sender(world, owner) {
+                        world
+                            .resource_mut::<Requests>()
+                            .senders
+                            .insert(id.clone(), sender);
+                    }
                     world
                         .resource_mut::<Requests>()
                         .subscriptions
@@ -491,11 +576,10 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 else {
                     continue;
                 };
-                schedules_ui::dirty(world, owner);
-                preview_ui::dirty(world, owner);
                 let Some(mut view) = world.get_mut::<View>(owner) else {
                     continue;
                 };
+                view.loaded[index] = true;
                 match index {
                     0 => {
                         match rows
@@ -536,16 +620,34 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         view.frequencies = rows;
                     }
                     _ => {
-                        let acting = rows.iter().find(|row| row["kind"] == "transfer_context").and_then(|row| row["acting_person"].as_str()).map(str::to_owned);
-                        let transfers: Vec<_> = rows.into_iter().filter(|row| row["kind"] != "transfer_context").collect();
-                        if view.transfers == transfers && view.acting_person == acting { continue; }
+                        let acting = rows
+                            .iter()
+                            .find(|row| row["kind"] == "transfer_context")
+                            .and_then(|row| row["acting_person"].as_str())
+                            .map(str::to_owned);
+                        let transfers: Vec<_> = rows
+                            .into_iter()
+                            .filter(|row| row["kind"] != "transfer_context")
+                            .collect();
+                        if view.transfers == transfers && view.acting_person == acting {
+                            continue;
+                        }
                         view.transfers = transfers;
                         view.acting_person = acting;
                     }
                 }
+                schedules_ui::dirty(world, owner);
+                preview_ui::dirty(world, owner);
                 ui::refresh_links(world, owner);
-                if index == 0 && let Some(uid) = world.get::<FocusRule>(owner).map(|focus| focus.0.clone())
-                    && world.get::<View>(owner).unwrap().rules.iter().any(|rule| rule.uid == uid) {
+                if index == 0
+                    && let Some(uid) = world.get::<FocusRule>(owner).map(|focus| focus.0.clone())
+                    && world
+                        .get::<View>(owner)
+                        .unwrap()
+                        .rules
+                        .iter()
+                        .any(|rule| rule.uid == uid)
+                {
                     world.entity_mut(owner).remove::<FocusRule>();
                     ui::Command::EditCell(uid, 0).apply(world, owner);
                 }
@@ -616,6 +718,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     if world.get::<View>(owner).unwrap().saving {
                         save(world, owner);
                     }
+                    if world.get::<View>(owner).unwrap().pause_active {
+                        ui::Command::ConfirmPause.apply(world, owner);
+                    }
                     if world.get::<View>(owner).unwrap().pending.is_none() {
                         status(world, owner, "");
                     }
@@ -647,6 +752,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     view.submitted = None;
                     view.saving = false;
                     view.deleting_pending = None;
+                    view.pause_active = false;
+                    view.pausing.clear();
                     ui::render_form(world, owner);
                     ui::render_list(world, owner);
                     status(world, owner, &message);

@@ -52,6 +52,10 @@ pub fn normal(world: &World) -> bool {
     !active(world)
 }
 
+pub(crate) fn resources_visible(world: &World) -> bool {
+    world.get_resource::<Laboratory>().is_some_and(|lab| lab.root.is_some() && lab.resources_open)
+}
+
 pub fn suspended(world: &World, mut entity: Entity) -> bool {
     loop {
         if world.get::<SuspendedRoot>(entity).is_some() {
@@ -236,6 +240,7 @@ pub fn close(world: &mut World) {
     if !active(world) {
         return;
     }
+    crate::instinct::practice::laboratory_closed(world);
     stop(world);
     let mut lab = world.remove_resource::<Laboratory>().unwrap();
     if let Some(root) = lab.root.take() {

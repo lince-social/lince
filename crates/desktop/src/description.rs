@@ -401,6 +401,9 @@ pub(crate) struct Link {
     pub(crate) context: Context,
 }
 impl Action for Link {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        crate::actions::PracticeIntent::Navigation
+    }
     fn apply(&self, world: &mut World, _: Entity) {
         let reference = self
             .reference
@@ -412,6 +415,9 @@ impl Action for Link {
         }
         let mut cursor = Some(self.context.owner);
         while let Some(entity) = cursor {
+            if crate::instinct::practice::follow(world, entity, reference) {
+                return;
+            }
             if world.get::<crate::instinct::Instinct>(entity).is_some()
                 && crate::instinct::follow(world, entity, reference)
             {

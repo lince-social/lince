@@ -1212,9 +1212,17 @@ pub(crate) mod tests {
             .get_mut::<crate::instinct::Instinct>(reader)
             .unwrap()
             .page = Some("tool".into());
+        create(app.world_mut(), root);
+        assert_eq!(app.world().get::<Workspaces>(root).unwrap().active, 2);
+        assert_eq!(
+            app.world_mut().query::<&crate::instinct::Instinct>().iter(app.world()).count(),
+            1
+        );
+        assert_eq!(app.world().get::<WorkspaceMember>(reader).unwrap().0, 1);
         flush(&mut app);
         drop(app);
-        let (mut app, _) = seeded(path.clone());
+        let (mut app, root) = seeded(path.clone());
+        assert_eq!(app.world().get::<Workspaces>(root).unwrap().active, 2);
         let (reader, instinct) = app
             .world_mut()
             .query::<(Entity, &crate::instinct::Instinct)>()
@@ -1222,6 +1230,7 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(instinct.page.as_deref(), Some("tool"));
         app.world_mut().despawn(reader);
+        create(app.world_mut(), root);
         flush(&mut app);
         drop(app);
         let (mut app, _) = seeded(path.clone());

@@ -63,6 +63,9 @@ fn dispatch() -> Result<()> {
             version(&root)
         }
         Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
+        Some("check") => {
+            prune::with_cleanup(&root, || checked(cargo_command().arg("check").args(&extra)))
+        }
         Some("test") => {
             if extra.is_empty() {
                 return Err("usage: cargo xtask test -p <package> <test-name> -- --exact".into());
@@ -109,7 +112,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <dev|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview>"
+                "cargo xtask <dev|check|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -120,11 +123,11 @@ fn dispatch() -> Result<()> {
             );
             println!("dev passes additional arguments to Lince.");
             println!(
-                "test forwards arguments to cargo test; test-all runs every workspace target."
+                "check and test forward arguments to Cargo; test-all runs every workspace target."
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
             println!(
-                "dev, test and test-all prune superseded incremental snapshots before and after running."
+                "dev, check, test and test-all prune superseded incremental snapshots before and after running."
             );
             Ok(())
         }
@@ -168,6 +171,11 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
         .filter(|value| !value.is_empty())
         .unwrap_or_else(|| "6176".into());
     let mut command = cargo_command();
+    let features = if env::var("LINCE_INSTINCT").is_ok_and(|value| value == "1") {
+        "ui,instinct"
+    } else {
+        "ui"
+    };
     command.args([
         "run",
         "--release",
@@ -175,7 +183,7 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
         "lince",
         "--no-default-features",
         "--features",
-        "ui",
+        features,
         "--",
         "--no-tray",
     ]);

@@ -19,6 +19,49 @@ pub(super) fn directory(world: &bevy::prelude::World) -> io::Result<PathBuf> {
         .ok_or_else(|| error("Workspace storage is unavailable."))
 }
 
+pub(super) fn scoped_directory(
+    world: &bevy::prelude::World,
+    root: bevy::prelude::Entity,
+) -> io::Result<PathBuf> {
+    if crate::instinct::practice::active_source(world, root).is_some() {
+        return crate::instinct::practice::sample_directory(world, root)
+            .map(|directory| directory.join("castles"))
+            .ok_or_else(|| error("The practice library is still preparing."));
+    }
+    let workspace = world
+        .get::<crate::workspace::Workspaces>(root)
+        .map(|spaces| spaces.active);
+    let mut sources = std::collections::BTreeSet::new();
+    for entity in world
+        .get::<bevy::prelude::Children>(root)
+        .into_iter()
+        .flatten()
+    {
+        if world
+            .get::<crate::workspace::WorkspaceMember>(*entity)
+            .map(|member| member.0)
+            == workspace
+            && let Some(source) = world.get::<crate::practice_cells::PracticeSource>(*entity)
+        {
+            sources.insert(source.0.as_str());
+        }
+    }
+    if !sources.is_empty() {
+        if sources.len() != 1 {
+            return Err(error(
+                "This sample workspace contains more than one Cell library.",
+            ));
+        }
+        let source = sources.first().unwrap();
+        return world
+            .get_resource::<crate::practice_cells::PracticeCells>()
+            .and_then(|cells| cells.directories.get(*source))
+            .map(|directory| directory.join("castles"))
+            .ok_or_else(|| error("The retained practice library is unavailable."));
+    }
+    directory(world)
+}
+
 fn check_directory(directory: &Path) -> io::Result<()> {
     if !fs::symlink_metadata(directory)?.file_type().is_dir() {
         return Err(error(

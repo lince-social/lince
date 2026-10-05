@@ -108,6 +108,9 @@ pub(super) fn show(world: &mut World, root: Entity, parent: Entity) {
 }
 
 fn request(world: &mut World, root: Entity, command: model::Command) -> Result<(), String> {
+    if crate::instinct::practice::active_source(world, root).is_some() {
+        return Err("Organ publishing is available after leaving practice.".into());
+    }
     let id = nucleus::new_uid("package-action");
     panel::send(
         world,

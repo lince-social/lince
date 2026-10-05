@@ -11,7 +11,7 @@ struct Search {
 }
 
 #[derive(Clone)]
-pub(super) enum Control {
+pub(crate) enum Control {
     Create,
     Record,
     Finish,
@@ -26,6 +26,24 @@ pub(super) enum Control {
 }
 
 impl Action for Control {
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        if matches!(
+            self,
+            Self::Select(_) | Self::Enabled | Self::Mode(_) | Self::Reset | Self::Refresh
+        ) {
+            &[lince_interface::practice::Operation::PreviewRecording]
+        } else {
+            &[]
+        }
+    }
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Play => &[Operation::PreviewRecording],
+            Self::Stop => &[Operation::StopRecordingPlayback],
+            _ => &[],
+        }
+    }
     fn apply(&self, world: &mut World, owner: Entity) {
         if matches!(self, Self::Create) {
             let workspace = world
@@ -91,9 +109,28 @@ impl Action for Control {
             }
             Self::Create => return,
         };
-        match crate::sound::send(world, command) {
+        let playback = matches!(command, Command::Play { .. });
+        if playback {
+            world
+                .entity_mut(owner)
+                .remove::<(crate::sound::PlaybackResult, crate::sound::StoppedPlayback)>();
+            world
+                .entity_mut(owner)
+                .insert(crate::sound::PlaybackPending);
+        }
+        if matches!(command, Command::Stop(_)) {
+            world.entity_mut(owner).insert(crate::sound::StopPending);
+        }
+        match crate::sound::send_to(world, owner, command) {
             Ok(()) => status(world, owner, "Working…"),
-            Err(error) => status(world, owner, &error),
+            Err(error) => {
+                status(world, owner, &error);
+                if playback {
+                    world
+                        .entity_mut(owner)
+                        .insert(crate::sound::PlaybackResult(Err(error)));
+                }
+            }
         }
     }
 }
@@ -321,8 +358,7 @@ fn render_matches(world: &mut World, owner: Entity, query: &str) {
     let matches = stack(world, parent);
     world.entity_mut(matches).insert(Matches(owner));
     let selected = world.get::<RecorderCastle>(owner).unwrap().selected.clone();
-    let paths: Vec<_> = world
-        .get_resource::<crate::sound::Audio>()
+    let paths: Vec<_> = crate::sound::audio_for(world, owner)
         .map(|audio| {
             crate::sound::library::suggestions(&audio.paths, query)
                 .into_iter()
@@ -369,21 +405,39 @@ pub(super) fn inputs(world: &mut World) {
 }
 
 pub(super) fn refresh(world: &mut World) {
-    let (revision, error) = world
-        .get_resource::<crate::sound::Audio>()
-        .map(|audio| (audio.revision, audio.error.clone()))
-        .unwrap_or_default();
     let owners: Vec<_> = world
         .query::<(Entity, &View)>()
         .iter(world)
-        .filter(|(_, view)| view.revision != revision)
-        .map(|(e, _)| e)
+        .filter_map(|(owner, view)| {
+            let audio = crate::sound::audio_for(world, owner)?;
+            (view.revision != audio.revision).then_some((
+                owner,
+                audio.revision,
+                audio.error.clone(),
+            ))
+        })
         .collect();
-    for owner in owners {
+    for (owner, revision, error) in owners {
         world.get_mut::<View>(owner).unwrap().revision = revision;
         list(world, owner);
         if let Some(error) = &error {
             status(world, owner, error);
         }
+    }
+}
+
+pub(crate) fn preview(world: &mut World, owner: Entity) {
+    if world.get::<crate::sound::PlaybackResult>(owner).is_none()
+        && world.get::<crate::sound::PlaybackPending>(owner).is_none()
+    {
+        Control::Play.apply(world, owner);
+    }
+}
+
+pub(crate) fn stop(world: &mut World, owner: Entity) {
+    if world.get::<crate::sound::StoppedPlayback>(owner).is_none()
+        && world.get::<crate::sound::StopPending>(owner).is_none()
+    {
+        Control::Stop.apply(world, owner);
     }
 }

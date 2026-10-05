@@ -1,6 +1,6 @@
 mod checks_ui;
-mod limits_ui;
 mod cycles_ui;
+mod limits_ui;
 mod runner;
 mod sharing_ui;
 pub(crate) mod transfer_entry;
@@ -95,7 +95,11 @@ struct View {
 
 impl Drop for View {
     fn drop(&mut self) {
-        if let Some(execution) = self.progress.as_ref().and_then(|progress| progress.borrow().execution.clone()) {
+        if let Some(execution) = self
+            .progress
+            .as_ref()
+            .and_then(|progress| progress.borrow().execution.clone())
+        {
             execution.request_cancel();
         }
         if let Some(controls) = &self.controls {
@@ -107,6 +111,32 @@ impl Drop for View {
 }
 
 pub struct SimulationCastlePlugin;
+
+pub(crate) fn next_event(world: &mut World, owner: Entity) {
+    Command::Step.apply(world, owner);
+}
+
+pub(crate) fn stop(world: &mut World, owner: Entity) {
+    Command::Stop.apply(world, owner);
+}
+
+pub(crate) fn stepped(world: &World, owner: Entity) -> bool {
+    world.get::<View>(owner).is_some_and(|view| {
+        view.progress.as_ref().is_some_and(|progress| {
+            let progress = progress.borrow();
+            progress.steps > 0 && progress.paused
+        }) || view
+            .bundle
+            .as_ref()
+            .is_some_and(|bundle| bundle.result.steps > 0)
+    })
+}
+
+pub(crate) fn stopped(world: &World, owner: Entity) -> bool {
+    world
+        .get::<View>(owner)
+        .is_some_and(|view| view.task.is_none() && view.bundle.is_some())
+}
 impl Plugin for SimulationCastlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, receive).add_systems(
@@ -511,7 +541,8 @@ fn show_evidence(world: &mut World, owner: Entity) {
             .filter(|event| {
                 matches!(
                     event.observation,
-                    nucleus::simulation::Observation::CommittedQuantity { .. } | nucleus::simulation::Observation::LoanQuantity {..}
+                    nucleus::simulation::Observation::CommittedQuantity { .. }
+                        | nucleus::simulation::Observation::LoanQuantity { .. }
                 )
             })
             .count(),
@@ -576,6 +607,15 @@ enum Command {
 }
 
 impl Action for Command {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Step => &[Operation::StepSimulation],
+            Self::Stop => &[Operation::StopSimulation],
+            _ => &[],
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         if crate::laboratory::suspended(world, owner) {
             return;
@@ -642,7 +682,11 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
     }
     if let Some(task) = &view.task {
         if let Some(control) = control {
-            if let Some(execution) = view.progress.as_ref().and_then(|progress| progress.borrow().execution.clone()) {
+            if let Some(execution) = view
+                .progress
+                .as_ref()
+                .and_then(|progress| progress.borrow().execution.clone())
+            {
                 match control {
                     Control::Pause => execution.pause(),
                     Control::Stop => execution.request_cancel(),
@@ -780,9 +824,7 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         Command::Compare => Job::Compare,
         _ => Job::Scenario(control.unwrap_or(Control::Run)),
     };
-    let runtime = world
-        .get_resource::<crate::app::CellHandle>()
-        .map(|cell| cell.0.clone());
+    let runtime = crate::practice_cells::runtime(world, owner);
     let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
     let handle =
         tokio::runtime::Handle::try_current().map_err(|_| "Simulation runtime unavailable")?;

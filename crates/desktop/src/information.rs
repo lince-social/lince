@@ -190,6 +190,13 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
     sync::panel(world, root, parent);
 }
 
+pub(crate) fn panel_visible(world: &mut World, root: Entity) -> bool {
+    world
+        .query::<&InformationPanel>()
+        .iter(world)
+        .any(|panel| panel.root == root && panel.revision.is_some())
+}
+
 pub(crate) fn open_button(world: &mut World, parent: Entity, target: Entity) {
     action_button(
         world,

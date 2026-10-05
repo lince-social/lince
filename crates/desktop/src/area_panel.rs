@@ -51,6 +51,7 @@ pub enum AreaAction {
     Cancel,
     Remove,
     AttractionEnabled,
+    Enabled,
     ChangesEnabled,
     PreviewChanges,
     ArmChanges,
@@ -143,10 +144,11 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
         .and_then(|editor| editor.selected)
         .filter(|entity| owns(world, root, *entity));
     match action {
-        AreaAction::AttractionEnabled | AreaAction::ChangesEnabled => {
+        AreaAction::AttractionEnabled | AreaAction::ChangesEnabled | AreaAction::Enabled => {
             if let Some(entity) = selected {
                 let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
                 match action {
+                    AreaAction::Enabled => area.enabled = !area.enabled,
                     AreaAction::AttractionEnabled => {
                         area.attraction_enabled = !area.attraction_enabled
                     }
@@ -289,6 +291,29 @@ enum Field {
 struct ForceSlider {
     root: Entity,
     area: Entity,
+}
+
+pub(crate) fn set_force_strength(
+    world: &mut World,
+    root: Entity,
+    area: Entity,
+    value: f32,
+) -> Result<(), String> {
+    let controls: Vec<_> = world
+        .query::<(Entity, &ForceSlider)>()
+        .iter(world)
+        .filter(|(_, control)| control.root == root && control.area == area)
+        .map(|(entity, _)| entity)
+        .collect();
+    let [entity] = controls.as_slice() else {
+        return Err("The Area force control is missing or ambiguous. Skip or Close.".into());
+    };
+    world.trigger(crate::slider::SliderChanged {
+        entity: *entity,
+        value,
+    });
+    world.flush();
+    Ok(())
 }
 
 fn force_status(area: &InfluenceArea) -> &'static str {
@@ -858,9 +883,21 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         );
     }
     let Some(entity) = selected else { return };
+    let panel = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(8),
+                ..default()
+            },
+            ChildOf(panel),
+            crate::actions::ControlOwner(entity),
+        ))
+        .id();
     crate::influence_report::ui::panel(world, root, panel, Some(entity));
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     for (action, title, enabled) in [
+        (AreaAction::Enabled, "Area enabled", area.enabled),
         (
             AreaAction::AttractionEnabled,
             "Attraction",

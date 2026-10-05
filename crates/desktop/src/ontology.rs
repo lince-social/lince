@@ -6,7 +6,7 @@ use crate::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
 use cell::{ClientMessage, ServerMessage};
 use serde_json::Value;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const SOURCES: [protein::Source; 4] = [
     protein::Source::Lingua,
@@ -36,7 +36,7 @@ pub struct OntologySand {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashSet<String>);
+struct Subscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
 
 pub struct OntologyPlugin;
 impl Plugin for OntologyPlugin {
@@ -133,8 +133,9 @@ impl Action for Command {
             _ => {
                 let result = mutation(world, owner, self).and_then(|action| {
                     let id = nucleus::new_uid("ontology-action");
-                    panel::send(
+                    crate::practice_cells::send(
                         world,
+                        owner,
                         ClientMessage::Act {
                             id: id.clone(),
                             action,
@@ -328,6 +329,23 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
     }
 }
 
+pub(crate) fn inspect_sample(world: &mut World, owner: Entity) {
+    Command::Tab(1).apply(world, owner);
+}
+
+pub(crate) fn sample_visible(world: &World, owner: Entity) -> bool {
+    world.get::<OntologySand>(owner).is_some_and(|view| {
+        view.tab == 1
+            && view.ready[1]
+            && view.rows[1].iter().any(|row| {
+                row["name"] == "practice-note"
+                    && row["parents"]
+                        .as_array()
+                        .is_some_and(|parents| !parents.is_empty())
+            })
+    })
+}
+
 fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::cell_bridge::CellMessage>>,
@@ -343,11 +361,17 @@ fn update(
     let stale: Vec<_> = world
         .resource::<Subscriptions>()
         .0
-        .difference(&active)
+        .keys()
+        .filter(|id| !active.contains(*id))
         .cloned()
         .collect();
     for id in stale {
-        if panel::send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
+        let sender = world.resource::<Subscriptions>().0[&id].clone();
+        if sender
+            .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+            .is_ok()
+            || sender.is_closed()
+        {
             world.resource_mut::<Subscriptions>().0.remove(&id);
         }
     }
@@ -363,16 +387,15 @@ fn update(
             let view = world.get::<OntologySand>(owner).unwrap();
             if !view.requested[index] && !crate::laboratory::active(world) {
                 let id = view.ids[index].clone();
-                if panel::send(
-                    world,
-                    ClientMessage::Subscribe {
-                        id: id.clone(),
-                        protein: query(*source),
-                    },
-                )
-                .is_ok()
+                if let Some(sender) = crate::practice_cells::sender(world, owner)
+                    && sender
+                        .try_send(ClientMessage::Subscribe {
+                            id: id.clone(),
+                            protein: query(*source),
+                        })
+                        .is_ok()
                 {
-                    world.resource_mut::<Subscriptions>().0.insert(id);
+                    world.resource_mut::<Subscriptions>().0.insert(id, sender);
                     world.get_mut::<OntologySand>(owner).unwrap().requested[index] = true;
                 }
             }

@@ -24,6 +24,9 @@ struct Choice {
 }
 
 impl Action for Choice {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        self.control.practice_intent()
+    }
     fn apply(&self, world: &mut World, root: Entity) {
         if world
             .resource::<Sessions>()
@@ -37,9 +40,19 @@ impl Action for Choice {
 }
 
 impl Action for Control {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        if matches!(self, Self::Cancel) {
+            crate::actions::PracticeIntent::Recovery
+        } else {
+            crate::actions::PracticeIntent::Target
+        }
+    }
     fn apply(&self, world: &mut World, target: Entity) {
         match self {
-            Self::Cancel => cancel(world, target),
+            Self::Cancel => {
+                cancel(world, target);
+                world.entity_mut(target).insert(CancelledChoice);
+            }
             Self::Download => {
                 if world
                     .resource::<Sessions>()
@@ -290,6 +303,7 @@ pub(super) fn preview(world: &mut World, root: Entity) {
             false,
         ),
     };
+    crate::instinct::practice::track_custom(world, root, &[owner]);
     world.entity_mut(owner).insert((
         Preview,
         crate::inspection::InspectionExcluded,

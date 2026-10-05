@@ -8,7 +8,7 @@ use crate::{
 use bevy::text::EditableText;
 
 #[derive(Clone)]
-enum Command {
+pub(crate) enum Command {
     HideFilled,
     Relations,
     Motion,
@@ -169,7 +169,16 @@ impl Action for Command {
                 .map_or(bevy::math::DVec2::ZERO, |view| view.center);
             let entity =
                 crate::protein_castle::spawn(world, root, workspace, position, config.draft);
-            world.entity_mut(entity).insert(QueryEditor(owner));
+            world
+                .entity_mut(entity)
+                .insert((QueryEditor(owner), crate::actions::ControlOwner(target)));
+            if crate::practice_cells::owns_source(world, &config.source) {
+                if let Source::Organ(source) = config.source {
+                    world
+                        .entity_mut(entity)
+                        .insert(crate::practice_cells::PracticeSource(source));
+                }
+            }
             crate::protein_castle::refresh_editor(world, entity);
             mirror_editor(world, owner);
             return;
@@ -225,7 +234,9 @@ impl Action for Command {
                     };
                 }
                 Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
-                Self::ListenRecord => config.listen_record_selection = !config.listen_record_selection,
+                Self::ListenRecord => {
+                    config.listen_record_selection = !config.listen_record_selection
+                }
                 Self::Source(remote) => {
                     config.source = if *remote {
                         Source::Organ(String::new())
@@ -719,9 +730,18 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         login::form(world, panel, owner, organ, false);
     }
     if config.record_cards {
-        text_button(world, panel, owner, Command::ListenRecord,
-            if config.listen_record_selection { "Record selected listener: on" } else { "Record selected listener: off" },
-            "Receive Time Castle selections in this event scope. Pending edits must finish before switching Records.");
+        text_button(
+            world,
+            panel,
+            owner,
+            Command::ListenRecord,
+            if config.listen_record_selection {
+                "Record selected listener: on"
+            } else {
+                "Record selected listener: off"
+            },
+            "Receive Time Castle selections in this event scope. Pending edits must finish before switching Records.",
+        );
     }
     label(world, panel, "End date order", 14.0);
     button(
@@ -786,7 +806,14 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         let field = protein::record_schema::fields()
             .into_iter()
             .find(|field| field.key == binding.property);
-        label(world, panel, field.as_ref().map_or("Extension field", |field| field.title), 16.0);
+        label(
+            world,
+            panel,
+            field
+                .as_ref()
+                .map_or("Extension field", |field| field.title),
+            16.0,
+        );
         let row = crate::area_panel::row(world, panel);
         button(
             world,
@@ -866,7 +893,13 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         );
     }
     label(world, panel, "Add property", 14.0);
-    crate::sand_panel::button(world, panel, panel, "Add extension column…", crate::record_extensions::AddColumn(owner));
+    crate::sand_panel::button(
+        world,
+        panel,
+        panel,
+        "Add extension column…",
+        crate::record_extensions::AddColumn(owner),
+    );
     let toggle = crate::dropdown::spawn(
         world,
         panel,

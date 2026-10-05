@@ -33,8 +33,8 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
         KarmaCastle::default(),
     );
     let header = app.world().get::<Children>(owner).unwrap()[0];
-    assert_eq!(app.world().get::<Children>(header).unwrap().len(), 3);
-    let search_group = app.world().get::<Children>(header).unwrap()[2];
+    assert_eq!(app.world().get::<Children>(header).unwrap().len(), 4);
+    let search_group = app.world().get::<Children>(header).unwrap()[3];
     let search = app.world().get::<Children>(search_group).unwrap()[1];
     let status = app.world().get::<View>(owner).unwrap().status;
     assert_eq!(
@@ -376,6 +376,19 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
         })
     })
     .await;
+    let revision = app.world().get::<View>(owner).unwrap().rules[0].revision;
+    ui::Command::RequestPause(uid.clone(), revision, true).apply(app.world_mut(), owner);
+    assert!(app.world().get::<View>(owner).unwrap().pending.is_none());
+    assert_eq!(
+        app.world().get::<View>(owner).unwrap().rules[0].state,
+        "active"
+    );
+    ui::Command::ConfirmPause.apply(app.world_mut(), owner);
+    until(&mut app, |world| {
+        world.get::<View>(owner).unwrap().pending.is_none()
+            && world.get::<View>(owner).unwrap().rules[0].state == "paused"
+    })
+    .await;
     ui::Command::Delete(uid).apply(app.world_mut(), owner);
     assert_eq!(app.world().get::<View>(owner).unwrap().deleting.len(), 1);
     assert!(app.world().get::<View>(owner).unwrap().pending.is_none());
@@ -426,11 +439,10 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
         .collect();
     ui::render_list(world, owner);
     let controls = world.get::<View>(owner).unwrap().controls;
-    assert_eq!(world.get::<Children>(controls).unwrap().len(), 2);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
     let list = world.get::<View>(owner).unwrap().list;
     let first = world.get::<Children>(list).unwrap()[0];
-    let delete_cell = world.get::<Children>(first).unwrap()[0];
-    let delete = world.get::<Children>(delete_cell).unwrap()[0];
+    let delete = world.get::<Children>(first).unwrap()[7];
     assert_eq!(
         world
             .get::<bevy::a11y::AccessibilityNode>(delete)
@@ -500,8 +512,8 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
     ui::Command::New.apply(world, owner);
     assert_eq!(world.get::<ScrollPosition>(scroll).unwrap().0, Vec2::ZERO);
     let buttons = world.get::<Children>(controls).unwrap();
-    assert_eq!(buttons.len(), 3);
-    let create = world.get::<Children>(buttons[1]).unwrap()[0];
+    assert_eq!(buttons.len(), 2);
+    let create = world.get::<Children>(buttons[0]).unwrap()[0];
     assert_eq!(world.get::<Text>(create).unwrap().0, "Create");
     let form = world.get::<View>(owner).unwrap().form;
     assert_eq!(world.get::<Children>(form).unwrap().len(), 1);
@@ -533,7 +545,130 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
             && z.0 == 30
     ));
     ui::Command::Cancel.apply(world, owner);
-    assert_eq!(world.get::<Children>(controls).unwrap().len(), 2);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+}
+
+#[test]
+fn row_actions_are_hidden_until_hover_and_selection_requires_confirmation() {
+    let mut app = App::new();
+    crate::laboratory::isolate(app.world_mut());
+    app.add_plugins(MinimalPlugins)
+        .init_resource::<Assets<Font>>()
+        .init_resource::<crate::theme::Typography>()
+        .init_resource::<bevy::input_focus::InputFocus>()
+        .init_resource::<bevy::picking::hover::HoverMap>();
+    let world = app.world_mut();
+    let root = world.spawn(crate::workspace::Workspaces::default()).id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, KarmaCastle::default());
+    world.get_mut::<View>(owner).unwrap().rules = (0..2)
+        .map(|index| Rule {
+            uid: format!("rule-{index}"),
+            name: format!("Rule {index}"),
+            slug: format!("rule-{index}"),
+            fields: vec![field()],
+            revision: 1,
+            state: "active".into(),
+            bindings: Vec::new(),
+            record: String::new(),
+        })
+        .collect();
+    ui::render_list(world, owner);
+    let list = world.get::<View>(owner).unwrap().list;
+    let row = world.get::<Children>(list).unwrap()[0];
+    let children = world.get::<Children>(row).unwrap().to_vec();
+    let pause = children[6];
+    let delete = children[7];
+    assert_eq!(*world.get::<Visibility>(pause).unwrap(), Visibility::Hidden);
+    assert_eq!(
+        *world.get::<Visibility>(delete).unwrap(),
+        Visibility::Hidden
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .all(|text| text.0 != "History")
+    );
+    let target = children[3];
+    world
+        .resource_mut::<bevy::picking::hover::HoverMap>()
+        .entry(bevy::picking::pointer::PointerId::Mouse)
+        .or_default()
+        .insert(
+            target,
+            bevy::picking::backend::HitData::new(root, 0.0, None, None),
+        );
+    ui::hover_actions(world);
+    assert_eq!(
+        *world.get::<Visibility>(pause).unwrap(),
+        Visibility::Inherited
+    );
+    assert_eq!(
+        *world.get::<Visibility>(delete).unwrap(),
+        Visibility::Inherited
+    );
+    assert_eq!(
+        world.get::<Node>(pause).unwrap().position_type,
+        PositionType::Absolute
+    );
+    assert_eq!(
+        world.get::<Node>(delete).unwrap().position_type,
+        PositionType::Absolute
+    );
+    world
+        .resource_mut::<bevy::picking::hover::HoverMap>()
+        .clear();
+    ui::hover_actions(world);
+    assert_eq!(*world.get::<Visibility>(pause).unwrap(), Visibility::Hidden);
+    ui::Command::RequestPause("rule-0".into(), 1, true).apply(world, owner);
+    assert_eq!(world.get::<View>(owner).unwrap().pausing.len(), 1);
+    assert!(world.get::<View>(owner).unwrap().pending.is_none());
+    ui::Command::CancelPause.apply(world, owner);
+    assert!(world.get::<View>(owner).unwrap().pausing.is_empty());
+    ui::Command::SelectAll.apply(world, owner);
+    assert_eq!(world.get::<View>(owner).unwrap().selected.len(), 2);
+    ui::Command::PauseSelected.apply(world, owner);
+    assert_eq!(world.get::<View>(owner).unwrap().pausing.len(), 2);
+    assert!(world.get::<View>(owner).unwrap().pending.is_none());
+    ui::Command::CancelPause.apply(world, owner);
+    ui::Command::DeleteSelected.apply(world, owner);
+    assert_eq!(world.get::<View>(owner).unwrap().deleting.len(), 2);
+    assert!(world.get::<View>(owner).unwrap().pending.is_none());
+    ui::Command::CancelDelete.apply(world, owner);
+    ui::Command::SelectAll.apply(world, owner);
+    assert!(world.get::<View>(owner).unwrap().selected.is_empty());
+}
+
+#[test]
+fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
+    let mut app = App::new();
+    crate::laboratory::isolate(app.world_mut());
+    app.add_plugins(MinimalPlugins)
+        .init_resource::<Assets<Font>>()
+        .init_resource::<crate::theme::Typography>()
+        .init_resource::<bevy::input_focus::InputFocus>();
+    let world = app.world_mut();
+    let root = world.spawn(crate::workspace::Workspaces::default()).id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, KarmaCastle::default());
+    let form = world.get::<View>(owner).unwrap().form;
+    let scroll = world.get::<ChildOf>(form).unwrap().parent();
+    let children = world.get::<Children>(scroll).unwrap();
+    let schedules = children[3];
+    let simulation = children[4];
+    let commands = children[6];
+    for (panel, command) in [
+        (schedules, ui::Command::Schedules),
+        (simulation, ui::Command::Simulate),
+        (commands, ui::Command::Commands),
+    ] {
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
+        command.apply(world, owner);
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::Flex);
+        command.apply(world, owner);
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
+    }
+    let tools = world.get::<View>(owner).unwrap().tools;
+    assert_eq!(world.get::<Children>(tools).unwrap().len(), 3);
 }
 
 #[test]
@@ -625,21 +760,38 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
         app.world_mut()
             .resource_mut::<crate::tokens::ThemeSettings>()
             .scheme = scheme;
-        for _ in 0..5 {
+        for _ in 0..20 {
             app.update();
         }
         let background = crate::tokens::Token::Surface.default_value(scheme).color();
         let labels: Vec<_> = app
             .world_mut()
             .query::<(
+                Entity,
                 &Text,
                 &ComputedNode,
                 &bevy::text::TextLayoutInfo,
                 &TextColor,
             )>()
             .iter(app.world())
-            .filter(|(text, _, _, _)| !text.0.trim().is_empty())
-            .map(|(text, node, layout, color)| {
+            .filter(|(entity, text, _, _, _)| {
+                if text.0.trim().is_empty() {
+                    return false;
+                }
+                let mut current = Some(*entity);
+                while let Some(entity) = current {
+                    if app
+                        .world()
+                        .get::<Node>(entity)
+                        .is_some_and(|node| node.display == Display::None)
+                    {
+                        return false;
+                    }
+                    current = app.world().get::<ChildOf>(entity).map(ChildOf::parent);
+                }
+                true
+            })
+            .map(|(_, text, node, layout, color)| {
                 (text.0.clone(), node.size(), layout.glyphs.len(), color.0)
             })
             .collect();
@@ -659,7 +811,13 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
     let row = app.world().get::<Children>(list).unwrap()[0];
     let before = app.world().get::<ComputedNode>(row).unwrap().size();
     let cells = app.world().get::<Children>(row).unwrap();
-    assert_eq!(cells.len(), 6);
+    assert_eq!(cells.len(), 8);
+    let delete = app.world().get::<ComputedNode>(cells[0]).unwrap();
+    assert!(
+        (delete.size().x - 29.0).abs() < 0.1,
+        "Selection column grew: {:?}",
+        delete.size()
+    );
     let name = app.world().get::<ComputedNode>(cells[1]).unwrap();
     let slug = app.world().get::<ComputedNode>(cells[2]).unwrap();
     assert!(slug.size().x > name.size().x / 2.0);

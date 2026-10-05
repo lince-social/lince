@@ -1,3 +1,4 @@
+mod composer_tools;
 mod controls;
 #[cfg(test)]
 mod integration;
@@ -63,6 +64,7 @@ struct Message {
     author_name: Entity,
     input: Entity,
     preview: Entity,
+    observed_body: String,
 }
 
 #[derive(Component)]
@@ -76,6 +78,32 @@ struct ThreadForm {
 }
 
 pub struct ThreadCastlePlugin;
+
+pub(crate) fn prepare_message(world: &mut World, uid: &str, source: &Source, body: &str, submit: bool) -> bool {
+    let form = world.query::<(Entity, &ThreadForm)>().iter(world)
+        .find(|(_, form)| form.binding.uid == uid && &form.binding.source == source
+            && form.thread.is_some() && form.pending.is_none())
+        .map(|(entity, form)| (entity, form.input));
+    let Some((entity, input)) = form else { return false };
+    world.get_mut::<EditableText>(input).unwrap().editor.set_text(body);
+    if submit { Send.apply(world, entity); }
+    true
+}
+
+pub(crate) fn message_visible(world: &mut World, uid: &str, source: &Source, body: &str) -> bool {
+    world.query::<&ThreadCastle>().iter(world)
+        .filter(|castle| castle.binding.uid == uid && &castle.binding.source == source)
+        .flat_map(|castle| castle.pages.values())
+        .filter_map(|page| world.get::<Page>(*page))
+        .flat_map(|page| page.messages.values())
+        .any(|entity| world.get::<Message>(*entity)
+            .is_some_and(|message| message.observed_body == body))
+}
+
+pub(crate) fn thread_visible(world: &mut World, uid: &str, source: &Source) -> bool {
+    world.query::<&ThreadCastle>().iter(world)
+        .any(|castle| castle.binding.uid == uid && &castle.binding.source == source && !castle.pages.is_empty())
+}
 
 impl Plugin for ThreadCastlePlugin {
     fn build(&self, app: &mut App) {
@@ -122,7 +150,9 @@ impl Plugin for ThreadCastlePlugin {
             )
             .add_systems(
                 Update,
-                crate::full_record::receive.after(crate::cell_bridge::ReceiveCell),
+                crate::full_record::receive
+                    .after(crate::cell_bridge::ReceiveCell)
+                    .before(crate::protein_area::UpdateProteinAreas),
             )
             .add_systems(
                 PostUpdate,
@@ -233,6 +263,9 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
             ChildOf(container),
         ))
         .id();
+    let tools = thread
+        .as_ref()
+        .map(|_| composer_tools::create(world, composer));
     let input = world
         .spawn((
             crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0),
@@ -277,14 +310,20 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
             crate::fiote::session::thread_controls(world, container, thread, &binding);
         }
     }
-    let mut children: Vec<_> = world
+    let children: Vec<_> = world
         .get::<Children>(container)
         .unwrap()
         .iter()
-        .filter(|child| *child != composer)
+        .filter(|child| *child != composer && *child != status)
         .collect();
-    children.push(composer);
-    world.entity_mut(container).replace_children(&children);
+    if let Some(tools) = tools {
+        for child in children {
+            world.entity_mut(child).insert(ChildOf(tools));
+            if let Some(mut node) = world.get_mut::<Node>(child) {
+                node.flex_shrink = 0.0;
+            }
+        }
+    }
     world.entity_mut(container).insert(ThreadForm {
         social,
         binding,

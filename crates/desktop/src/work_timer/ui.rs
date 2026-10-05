@@ -16,21 +16,14 @@ struct Form {
 fn input(world: &mut World, parent: Entity, title: &str, value: &str) -> Entity {
     crate::edit_mode::label(world, parent, title, 12.0);
     let entity = world
-        .spawn(crate::sand::text_editor(
+        .spawn(crate::sand::single_line_editor(
             value,
             world.resource::<crate::theme::Typography>(),
             0,
+            64,
         ))
         .id();
-    world.entity_mut(entity).insert((Node {
-        width: percent(100), min_width: px(0), min_height: px(30), flex_shrink: 0.0, ..default()
-    }, Tooltip("Timestamp with timezone, e.g. 2026-09-19T09:00:00-03:00. Enter or leave the entry to save.".into()), ChildOf(parent)));
-    let mut text = world.get_mut::<EditableText>(entity).unwrap();
-    text.allow_newlines = false;
-    text.visible_lines = Some(1.0);
-    text.max_characters = Some(64);
-    let font = world.resource::<crate::theme::Typography>().text(14.0);
-    world.entity_mut(entity).insert(font);
+    world.entity_mut(entity).insert((Tooltip("Timestamp with timezone, e.g. 2026-09-19T09:00:00-03:00. Enter or leave the entry to save.".into()), ChildOf(parent)));
     crate::protein_area::attach_field_history(world, entity);
     entity
 }

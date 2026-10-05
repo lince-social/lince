@@ -3,7 +3,7 @@ pub(crate) mod tests;
 mod ui;
 
 use crate::{
-    cell_bridge::{CellBridge, CellMessage, ReceiveCell},
+    cell_bridge::{CellMessage, ReceiveCell},
     workspace::WorkspaceMember,
 };
 use bevy::{math::DVec2, prelude::*};
@@ -12,6 +12,7 @@ pub use model::ProteinDraft;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeSet, HashMap, VecDeque};
+pub(crate) use ui::Command as ProteinAction;
 
 #[derive(Component, Clone, Debug, Serialize, Deserialize)]
 pub struct ProteinCastle {
@@ -124,7 +125,8 @@ enum RequestKind {
 struct Requests {
     next: u64,
     owners: HashMap<String, (Entity, RequestKind)>,
-    outgoing: VecDeque<ClientMessage>,
+    outgoing: VecDeque<(tokio::sync::mpsc::Sender<ClientMessage>, ClientMessage)>,
+    senders: HashMap<Entity, tokio::sync::mpsc::Sender<ClientMessage>>,
 }
 
 pub struct ProteinCastlePlugin;
@@ -263,11 +265,15 @@ fn request(
     kind: RequestKind,
     message: impl FnOnce(String) -> ClientMessage,
 ) -> String {
+    let sender = crate::practice_cells::sender(world, owner);
     let mut requests = world.resource_mut::<Requests>();
     requests.next += 1;
     let id = format!("interface-protein-{}", requests.next);
     requests.owners.insert(id.clone(), (owner, kind));
-    requests.outgoing.push_back(message(id.clone()));
+    if let Some(sender) = sender {
+        requests.senders.insert(owner, sender.clone());
+        requests.outgoing.push_back((sender, message(id.clone())));
+    }
     id
 }
 
@@ -281,16 +287,21 @@ fn cancel(world: &mut World, owner: Entity, kind: Option<RequestKind>) {
         .collect();
     for (id, kind) in ids {
         requests.owners.remove(&id);
-        requests.outgoing.retain(|message| match message {
+        requests.outgoing.retain(|(_, message)| match message {
             ClientMessage::Subscribe { id: pending, .. }
             | ClientMessage::Act { id: pending, .. } => pending != &id,
             _ => true,
         });
-        if kind != RequestKind::Save {
+        if kind != RequestKind::Save
+            && let Some(sender) = requests.senders.get(&owner).cloned()
+        {
             requests
                 .outgoing
-                .push_back(ClientMessage::Unsubscribe { id });
+                .push_back((sender, ClientMessage::Unsubscribe { id }));
         }
+    }
+    if !requests.owners.values().any(|(entity, _)| *entity == owner) {
+        requests.senders.remove(&owner);
     }
 }
 
@@ -320,7 +331,7 @@ fn run(world: &mut World, owner: Entity) {
             return;
         }
     };
-    if world.get_non_send::<CellBridge>().is_none() {
+    if crate::practice_cells::sender(world, owner).is_none() {
         status(world, owner, "No Cell connection");
         return;
     }
@@ -358,7 +369,7 @@ fn library(world: &mut World, owner: Entity) {
         ui::editor(world, owner);
         return;
     }
-    if world.get_non_send::<CellBridge>().is_none() {
+    if crate::practice_cells::sender(world, owner).is_none() {
         status(world, owner, "No Cell connection");
         return;
     }
@@ -390,7 +401,7 @@ fn save(world: &mut World, owner: Entity) {
         status(world, owner, "Name and slug are required to save a Protein");
         return;
     }
-    if world.get_non_send::<CellBridge>().is_none() {
+    if crate::practice_cells::sender(world, owner).is_none() {
         status(world, owner, "No Cell connection");
         return;
     }
@@ -520,6 +531,7 @@ fn disconnected(world: &mut World) {
         .collect();
     world.resource_mut::<Requests>().owners.clear();
     world.resource_mut::<Requests>().outgoing.clear();
+    world.resource_mut::<Requests>().senders.clear();
     for owner in owners {
         if let Some(mut view) = world.get_mut::<View>(owner) {
             view.saving = false;
@@ -545,18 +557,14 @@ fn maintain(world: &mut World) {
         cancel(world, owner, None);
     }
     if !crate::laboratory::active(world) {
-        while let Some(message) = world.resource_mut::<Requests>().outgoing.pop_front() {
-            let Some(bridge) = world.get_non_send::<CellBridge>() else {
-                disconnected(world);
-                break;
-            };
-            match bridge.outgoing.try_send(message) {
+        while let Some((sender, message)) = world.resource_mut::<Requests>().outgoing.pop_front() {
+            match sender.try_send(message) {
                 Ok(()) => {}
                 Err(tokio::sync::mpsc::error::TrySendError::Full(message)) => {
                     world
                         .resource_mut::<Requests>()
                         .outgoing
-                        .push_front(message);
+                        .push_front((sender, message));
                     if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
                         wake.ring();
                     }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::cell_bridge::CellBridge;
 use bevy::{
     input::{
         ButtonState, InputPlugin, InputSystems,

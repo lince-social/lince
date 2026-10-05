@@ -199,6 +199,7 @@ pub(super) fn spawn(
         author_name,
         input,
         preview,
+        observed_body: data["body"].as_str().unwrap_or_default().into(),
     });
     world.entity_mut(entity).insert(ReplyState(
         data["message_state"].as_str().unwrap_or("finished").into(),
@@ -208,6 +209,7 @@ pub(super) fn spawn(
 
 pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous: Option<&str>) {
     crate::message_content::refresh(world, entity, data);
+    world.get_mut::<Message>(entity).unwrap().observed_body = data["body"].as_str().unwrap_or_default().into();
     let message = world.get::<Message>(entity).unwrap();
     let (identity, author_name, input, preview) = (
         message.identity,

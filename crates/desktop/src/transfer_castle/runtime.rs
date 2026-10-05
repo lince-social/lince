@@ -1,16 +1,11 @@
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 
-fn send(world: &World, message: ClientMessage) -> Result<(), String> {
+fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
     if crate::laboratory::active(world) {
         return Err("Transfers are read-only in the Laboratory".into());
     }
-    world
-        .get_non_send::<CellBridge>()
-        .ok_or("No Cell connection")?
-        .outgoing
-        .try_send(message)
-        .map_err(|error| format!("Could not reach the Cell: {error}"))
+    crate::practice_cells::send(world, owner, message)
 }
 
 pub(super) fn subscribe(
@@ -24,11 +19,17 @@ pub(super) fn subscribe(
     let id = nucleus::new_uid("transfer-view");
     send(
         world,
+        owner,
         ClientMessage::Subscribe {
             id: id.clone(),
             protein,
         },
     )?;
+    let sender = crate::practice_cells::sender(world, owner).ok_or("The Cell is unavailable")?;
+    world
+        .resource_mut::<Requests>()
+        .1
+        .insert(id.clone(), sender);
     world
         .resource_mut::<Requests>()
         .0
@@ -45,9 +46,10 @@ pub(super) fn cancel(world: &mut World, owner: Entity, kind: &str) {
         .map(|(id, _)| id.clone())
         .collect();
     for id in ids {
-        if send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
-            world.resource_mut::<Requests>().0.remove(&id);
+        if let Some(sender) = world.resource_mut::<Requests>().1.remove(&id) {
+            let _ = sender.try_send(ClientMessage::Unsubscribe { id: id.clone() });
         }
+        world.resource_mut::<Requests>().0.remove(&id);
     }
 }
 
@@ -68,9 +70,10 @@ pub(super) fn maintain(world: &mut World) {
         .map(|(id, _)| id.clone())
         .collect();
     for id in stale {
-        if send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
-            world.resource_mut::<Requests>().0.remove(&id);
+        if let Some(sender) = world.resource_mut::<Requests>().1.remove(&id) {
+            let _ = sender.try_send(ClientMessage::Unsubscribe { id: id.clone() });
         }
+        world.resource_mut::<Requests>().0.remove(&id);
     }
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<TransferCastle>>()
@@ -135,6 +138,7 @@ pub(super) fn submit(world: &mut World, owner: Entity) {
     let id = nucleus::new_uid("transfer-action");
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -158,7 +162,9 @@ pub(super) fn receive(
         .map(|message| message.0.clone())
         .collect();
     for message in messages {
-        if karma::receive(world, &message) { continue; }
+        if karma::receive(world, &message) {
+            continue;
+        }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
                 let Some((owner, kind)) = world.resource::<Requests>().0.get(&id).cloned() else {
@@ -307,7 +313,8 @@ pub(super) fn receive(
                                 .0
                                 .get(&id)
                                 .is_some_and(|(target, _)| target == owner)
-                            || id == crate::cell_bridge::CONNECTION
+                            || (id == crate::cell_bridge::CONNECTION
+                                && crate::practice_cells::source(world, *owner).is_none())
                     })
                     .map(|(owner, _)| owner)
                     .collect();

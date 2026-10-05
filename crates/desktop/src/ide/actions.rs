@@ -49,6 +49,31 @@ pub(super) enum Control {
 }
 
 impl Action for Control {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Save => &[Operation::EditSavePracticeFile],
+            Self::Tools => &[Operation::InspectLanguageTools],
+            _ => &[],
+        }
+    }
+
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Undo(_) | Self::Focus(_) | Self::Indent(_) => &[Operation::EditSavePracticeFile],
+            Self::Connect
+            | Self::Disconnect
+            | Self::Complete
+            | Self::Format
+            | Self::FormatCommand
+            | Self::LintCommand
+            | Self::Diagnostic(_)
+            | Self::ChooseCompletion(_) => &[Operation::InspectLanguageTools],
+            _ => &[],
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         if crate::laboratory::suspended(world, owner) {
             return;

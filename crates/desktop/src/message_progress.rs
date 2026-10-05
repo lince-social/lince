@@ -19,6 +19,7 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity) {
         ))
         .insert(Node {
             width: px(260),
+            max_width: percent(100),
             max_height: px(96),
             ..default()
         })

@@ -7,6 +7,64 @@ pub struct Page {
     pub reference: Option<&'static str>,
 }
 
+pub fn foundations(subject: &str) -> &'static [&'static str] {
+    match subject {
+        "canvas" | "edit-mode" => &["workspaces"],
+        "sands" => &["edit-mode", "canvas"],
+        "text-sands" | "castles" | "appearance" | "shortcuts" => &["sands"],
+        "learn-areas-of-influence" => &["sands", "canvas"],
+        "area-forces" | "area-effects" | "area-inspection" => &["learn-areas-of-influence"],
+        "learn-assertion" | "facts" => &["learn-record"],
+        "learn-ontology" => &["learn-assertion"],
+        "record-castles" => &["learn-assertion", "learn-ontology"],
+        "protein" => &[
+            "learn-record",
+            "learn-assertion",
+            "learn-areas-of-influence",
+        ],
+        "protein-presentation" | "protein-arrangement" => &["protein", "castles"],
+        "area-record-actions" => &["protein", "learn-areas-of-influence"],
+        "todo" | "operation" => &["protein", "facts"],
+        "kanban" => &["todo", "area-record-actions"],
+        "time" => &["facts"],
+        "calendar" => &["facts", "protein"],
+        "notifications" => &["facts"],
+        "frequency" => &["calendar"],
+        "learn-karma" => &["frequency", "facts"],
+        "habits" => &["todo", "frequency", "learn-karma"],
+        "commands" => &["learn-karma"],
+        "simulation" => &["learn-karma", "facts"],
+        "learn-fiote" => &["record-castles", "learn-karma"],
+        "learn-organ" => &["learn-record", "protein"],
+        "contacts" | "access-control" => &["learn-organ"],
+        "organ-sync" => &["contacts", "access-control"],
+        "devices" => &["organ-sync", "learn-karma"],
+        "mail" => &["organ-sync", "devices"],
+        "discovery" => &["learn-assertion", "contacts", "mail"],
+        "conversations" => &["mail", "discovery"],
+        "calls" => &["conversations"],
+        "learn-transfer" => &["learn-record", "facts", "organ-sync"],
+        "transfer-automation" => &["learn-karma", "learn-transfer"],
+        "instinct-import" => &["learn-record", "learn-ontology"],
+        "learn-sync" => &["protein", "instinct-import"],
+        "blob-sync" => &["organ-sync", "learn-sync"],
+        "backup" => &["learn-sync", "blob-sync"],
+        "ide" => &["text-sands", "learn-sync"],
+        "language-tools" | "documents" | "terminal" => &["ide"],
+        "external-files" => &["ide", "documents"],
+        "recorder" => &["sands", "facts"],
+        "area-sound" => &["learn-areas-of-influence", "recorder"],
+        "shaders" => &["record-castles"],
+        "topology" => &["canvas", "sands", "learn-areas-of-influence"],
+        "custom-castles" => &["castles", "protein-presentation", "organ-sync"],
+        "freedoom" => &["sands", "shortcuts"],
+        "inspection" => &["area-inspection", "facts"],
+        "information" => &["learn-installation", "sands"],
+        "laboratory" => &["simulation", "inspection"],
+        _ => &[],
+    }
+}
+
 pub const PAGES: &[Page] = &[
     Page {
         slug: "learn-philosophy",
@@ -652,280 +710,432 @@ pub const READING: &[crate::practice::Lesson] = &[
         subject: "frequency",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "frequency",
+            slug: "step-frequency-create",
             subject: "frequency",
-            operation: None,
+            operation: Some(crate::practice::Operation::CreateFrequency),
         }],
     },
     crate::practice::Lesson {
         subject: "learn-karma",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "learn-karma",
-            subject: "learn-karma",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-karma-preview",
+                subject: "learn-karma",
+                operation: Some(crate::practice::Operation::PreviewRule),
+            },
+            Step {
+                slug: "step-karma-run",
+                subject: "learn-karma",
+                operation: Some(crate::practice::Operation::RunRule),
+            },
+            Step {
+                slug: "step-karma-pause",
+                subject: "learn-karma",
+                operation: Some(crate::practice::Operation::PauseRule),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "habits",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "habits",
-            subject: "habits",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-habits-preview",
+                subject: "habits",
+                operation: Some(crate::practice::Operation::PreviewHabit),
+            },
+            Step {
+                slug: "step-habits-import",
+                subject: "habits",
+                operation: Some(crate::practice::Operation::ImportHabit),
+            },
+            Step {
+                slug: "step-habits-complete",
+                subject: "habits",
+                operation: Some(crate::practice::Operation::CompleteHabit),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "commands",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "commands",
-            subject: "commands",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-commands-save",
+                subject: "commands",
+                operation: Some(crate::practice::Operation::SaveCommand),
+            },
+            Step {
+                slug: "step-commands-run",
+                subject: "commands",
+                operation: Some(crate::practice::Operation::RunCommand),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "simulation",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "simulation",
-            subject: "simulation",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-simulation-event",
+                subject: "simulation",
+                operation: Some(crate::practice::Operation::StepSimulation),
+            },
+            Step {
+                slug: "step-simulation-stop",
+                subject: "simulation",
+                operation: Some(crate::practice::Operation::StopSimulation),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "learn-fiote",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "learn-fiote",
+            slug: "step-fiote-inspect",
             subject: "learn-fiote",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectFiote),
         }],
     },
     crate::practice::Lesson {
         subject: "learn-organ",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "learn-organ",
-            subject: "learn-organ",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-organ-identity",
+                subject: "learn-organ",
+                operation: Some(crate::practice::Operation::InspectOrgan),
+            },
+            Step {
+                slug: "step-organ-context",
+                subject: "learn-organ",
+                operation: Some(crate::practice::Operation::SwitchOrgan),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "contacts",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "contacts",
+            slug: "step-contacts-pair",
             subject: "contacts",
-            operation: None,
+            operation: Some(crate::practice::Operation::PairContact),
         }],
     },
     crate::practice::Lesson {
         subject: "access-control",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "access-control",
+            slug: "step-access-control-inspect",
             subject: "access-control",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectAccess),
         }],
     },
     crate::practice::Lesson {
         subject: "organ-sync",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "organ-sync",
+            slug: "step-organ-sync-share",
             subject: "organ-sync",
-            operation: None,
+            operation: Some(crate::practice::Operation::ShareRecords),
         }],
     },
     crate::practice::Lesson {
         subject: "devices",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "devices",
+            slug: "step-devices-inspect",
             subject: "devices",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectDevices),
         }],
     },
     crate::practice::Lesson {
         subject: "mail",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "mail",
+            slug: "step-mail-inspect",
             subject: "mail",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectMail),
         }],
     },
     crate::practice::Lesson {
         subject: "discovery",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "discovery",
-            subject: "discovery",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-discovery-search",
+                subject: "discovery",
+                operation: Some(crate::practice::Operation::SearchDiscovery),
+            },
+            Step {
+                slug: "step-discovery-draft",
+                subject: "discovery",
+                operation: Some(crate::practice::Operation::PrepareAnnouncement),
+            },
+            Step {
+                slug: "step-discovery-request",
+                subject: "discovery",
+                operation: Some(crate::practice::Operation::OpenDiscoveryRequest),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "conversations",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "conversations",
+            slug: "step-conversations-send",
             subject: "conversations",
-            operation: None,
+            operation: Some(crate::practice::Operation::SendPracticeMessage),
         }],
     },
     crate::practice::Lesson {
         subject: "calls",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "calls",
+            slug: "step-calls-inspect",
             subject: "calls",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectCalls),
         }],
     },
     crate::practice::Lesson {
         subject: "learn-transfer",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "learn-transfer",
-            subject: "learn-transfer",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-transfer-check",
+                subject: "learn-transfer",
+                operation: Some(crate::practice::Operation::CheckTransfer),
+            },
+            Step {
+                slug: "step-transfer-agree",
+                subject: "learn-transfer",
+                operation: Some(crate::practice::Operation::AgreeTransfer),
+            },
+            Step {
+                slug: "step-transfer-activate",
+                subject: "learn-transfer",
+                operation: Some(crate::practice::Operation::ActivateTransfer),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "transfer-automation",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "transfer-automation",
+            slug: "step-transfer-automation-pause",
             subject: "transfer-automation",
-            operation: None,
+            operation: Some(crate::practice::Operation::PauseTransferRule),
         }],
     },
     crate::practice::Lesson {
         subject: "instinct-import",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "instinct-import",
-            subject: "instinct-import",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-import-conflict",
+                subject: "instinct-import",
+                operation: Some(crate::practice::Operation::PreviewImportConflict),
+            },
+            Step {
+                slug: "step-import-cancel",
+                subject: "instinct-import",
+                operation: Some(crate::practice::Operation::CancelImportPreview),
+            },
+            Step {
+                slug: "step-import-clean",
+                subject: "instinct-import",
+                operation: Some(crate::practice::Operation::PreviewCleanImport),
+            },
+            Step {
+                slug: "step-import-commit",
+                subject: "instinct-import",
+                operation: Some(crate::practice::Operation::ImportPreparedRecords),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "learn-sync",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "learn-sync",
-            subject: "learn-sync",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-sync-export",
+                subject: "learn-sync",
+                operation: Some(crate::practice::Operation::ExportPracticeFiles),
+            },
+            Step {
+                slug: "step-sync-incoming",
+                subject: "learn-sync",
+                operation: Some(crate::practice::Operation::EditPracticeFile),
+            },
+            Step {
+                slug: "step-sync-stop",
+                subject: "learn-sync",
+                operation: Some(crate::practice::Operation::StopPracticeSync),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "blob-sync",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "blob-sync",
-            subject: "blob-sync",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-blob-send",
+                subject: "blob-sync",
+                operation: Some(crate::practice::Operation::SendPracticeCopy),
+            },
+            Step {
+                slug: "step-blob-accept",
+                subject: "blob-sync",
+                operation: Some(crate::practice::Operation::AcceptPracticeCopy),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "backup",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "backup",
+            slug: "step-backup-inspect",
             subject: "backup",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectBackup),
         }],
     },
     crate::practice::Lesson {
         subject: "ide",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "ide",
-            subject: "ide",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-ide-open",
+                subject: "ide",
+                operation: Some(crate::practice::Operation::OpenPracticeFile),
+            },
+            Step {
+                slug: "step-ide-save",
+                subject: "ide",
+                operation: Some(crate::practice::Operation::EditSavePracticeFile),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "language-tools",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "language-tools",
+            slug: "step-language-tools-inspect",
             subject: "language-tools",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectLanguageTools),
         }],
     },
     crate::practice::Lesson {
         subject: "documents",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "documents",
+            slug: "step-document-next",
             subject: "documents",
-            operation: None,
+            operation: Some(crate::practice::Operation::NextDocumentPage),
         }],
     },
     crate::practice::Lesson {
         subject: "terminal",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "terminal",
+            slug: "step-terminal-inspect",
             subject: "terminal",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectTerminal),
         }],
     },
     crate::practice::Lesson {
         subject: "external-files",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "external-files",
-            subject: "external-files",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-file-choices",
+                subject: "external-files",
+                operation: Some(crate::practice::Operation::InspectFileChoices),
+            },
+            Step {
+                slug: "step-file-cancel",
+                subject: "external-files",
+                operation: Some(crate::practice::Operation::CancelFileChoices),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "recorder",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "recorder",
-            subject: "recorder",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-recorder-preview",
+                subject: "recorder",
+                operation: Some(crate::practice::Operation::PreviewRecording),
+            },
+            Step {
+                slug: "step-recorder-stop",
+                subject: "recorder",
+                operation: Some(crate::practice::Operation::StopRecordingPlayback),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "area-sound",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "area-sound",
-            subject: "area-sound",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-area-sound-enable",
+                subject: "area-sound",
+                operation: Some(crate::practice::Operation::EnableAreaSound),
+            },
+            Step {
+                slug: "step-area-sound-assign",
+                subject: "area-sound",
+                operation: Some(crate::practice::Operation::AssignAreaSound),
+            },
+            Step {
+                slug: "step-area-sound-preview",
+                subject: "area-sound",
+                operation: Some(crate::practice::Operation::PreviewAreaSound),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "shaders",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "shaders",
+            slug: "step-shader-example",
             subject: "shaders",
-            operation: None,
+            operation: Some(crate::practice::Operation::AddShaderExample),
         }],
     },
     crate::practice::Lesson {
         subject: "topology",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "topology",
-            subject: "topology",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-topology-spatial",
+                subject: "topology",
+                operation: Some(crate::practice::Operation::SwitchSpatialView),
+            },
+            Step {
+                slug: "step-topology-flat",
+                subject: "topology",
+                operation: Some(crate::practice::Operation::ReturnFlatView),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "custom-castles",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "custom-castles",
-            subject: "custom-castles",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-custom-save",
+                subject: "custom-castles",
+                operation: Some(crate::practice::Operation::SaveCustomCastle),
+            },
+            Step {
+                slug: "step-custom-add",
+                subject: "custom-castles",
+                operation: Some(crate::practice::Operation::AddCustomCastle),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "freedoom",
@@ -940,27 +1150,34 @@ pub const READING: &[crate::practice::Lesson] = &[
         subject: "inspection",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "inspection",
+            slug: "step-inspection-control",
             subject: "inspection",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectControl),
         }],
     },
     crate::practice::Lesson {
         subject: "information",
         prerequisites: &[],
-        steps: &[crate::practice::Step {
-            slug: "information",
-            subject: "information",
-            operation: None,
-        }],
+        steps: &[
+            Step {
+                slug: "step-information-inspect",
+                subject: "information",
+                operation: Some(crate::practice::Operation::InspectInformation),
+            },
+            Step {
+                slug: "step-information-credits",
+                subject: "information",
+                operation: Some(crate::practice::Operation::InspectSandCredits),
+            },
+        ],
     },
     crate::practice::Lesson {
         subject: "laboratory",
         prerequisites: &[],
         steps: &[crate::practice::Step {
-            slug: "laboratory",
+            slug: "step-laboratory-resources",
             subject: "laboratory",
-            operation: None,
+            operation: Some(crate::practice::Operation::InspectLaboratory),
         }],
     },
 ];

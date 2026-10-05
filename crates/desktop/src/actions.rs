@@ -14,6 +14,23 @@ pub trait Action: Send + Sync + 'static {
         PracticeIntent::Target
     }
 
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        &[]
+    }
+
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        &[]
+    }
+
+    fn teaches_tutorial(&self, operation: lince_interface::practice::Operation) -> bool {
+        self.tutorial_operations().contains(&operation)
+            || self.practice_intent() == PracticeIntent::Feature(operation)
+    }
+
+    fn supports_tutorial(&self, operation: lince_interface::practice::Operation) -> bool {
+        self.tutorial_supports().contains(&operation)
+    }
+
     fn connections(&self, _: &World, _: Entity) -> Vec<crate::inspection::Connection> {
         Vec::new()
     }
@@ -26,6 +43,24 @@ pub enum PracticeIntent {
     Recovery,
     Feature(lince_interface::practice::Operation),
     Object(Entity),
+    SelectedArea,
+    SelectedObjects,
+    EditedSand,
+}
+
+#[derive(Component)]
+pub(crate) struct ControlOwner(pub Entity);
+
+#[derive(Component)]
+pub(crate) struct TutorialControl {
+    pub owner: Entity,
+    pub operation: lince_interface::practice::Operation,
+}
+
+#[derive(Component)]
+pub(crate) struct TutorialField {
+    pub owner: Entity,
+    pub operation: lince_interface::practice::Operation,
 }
 
 #[derive(Clone, Default)]
@@ -45,7 +80,7 @@ impl ActionSequence {
             if world.get_entity(target).is_err() {
                 break;
             }
-            if !crate::instinct::practice::permits_action(world, target, action.practice_intent()) {
+            if !crate::instinct::practice::permits_control(world, target, action.as_ref()) {
                 continue;
             }
             action.apply(world, target);
@@ -54,11 +89,29 @@ impl ActionSequence {
     }
 
     pub(crate) fn permitted(&self, world: &World, target: Entity) -> bool {
-        self.0.iter().all(|action| crate::instinct::practice::permits_action(world, target, action.practice_intent()))
+        self.0.iter().all(|action| {
+            crate::instinct::practice::permits_control(world, target, action.as_ref())
+        })
+    }
+
+    pub(crate) fn teaches(&self, operation: lince_interface::practice::Operation) -> bool {
+        self.0
+            .iter()
+            .any(|action| action.teaches_tutorial(operation))
     }
 }
 
 impl Action for ActionSequence {
+    fn teaches_tutorial(&self, operation: lince_interface::practice::Operation) -> bool {
+        self.teaches(operation)
+    }
+
+    fn supports_tutorial(&self, operation: lince_interface::practice::Operation) -> bool {
+        self.0
+            .iter()
+            .any(|action| action.supports_tutorial(operation))
+    }
+
     fn apply(&self, world: &mut World, target: Entity) {
         self.run(world, target);
     }

@@ -1,6 +1,6 @@
 use crate::{
     actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},
-    cell_bridge::{CellBridge, CellMessage, RECORDS, ReceiveCell},
+    cell_bridge::{CellMessage, RECORDS, ReceiveCell},
     edit_mode::{EditAction, label},
     theme::Typography,
 };
@@ -11,7 +11,7 @@ use bevy::{
     text::EditableText,
 };
 use cell::{ClientMessage, ServerMessage};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 pub(crate) const SIZE: Vec2 = Vec2::new(520.0, 40.0);
 
@@ -34,6 +34,28 @@ struct Catalog {
 }
 
 #[derive(Component)]
+struct ScopedCatalog {
+    catalog: Catalog,
+    subscription: String,
+    requested: bool,
+}
+
+#[derive(Resource, Default)]
+struct ScopedSubscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
+
+fn catalog(world: &World, owner: Entity) -> Option<&Catalog> {
+    if world
+        .get::<crate::practice_cells::PracticeSource>(owner)
+        .is_some()
+    {
+        return world
+            .get::<ScopedCatalog>(owner)
+            .map(|catalog| &catalog.catalog);
+    }
+    world.get_resource::<Catalog>()
+}
+
+#[derive(Component)]
 pub struct OperationSand {
     root: Entity,
     input: Entity,
@@ -45,6 +67,7 @@ pub struct OperationSand {
     items: Vec<(String, String)>,
     selected: usize,
     pending: Option<(String, String)>,
+    last_saved: Option<String>,
 }
 
 #[derive(Component)]
@@ -61,8 +84,12 @@ pub struct OperationPlugin;
 impl Plugin for OperationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Catalog>()
+            .init_resource::<ScopedSubscriptions>()
             .add_message::<CellMessage>()
-            .add_systems(Update, receive.after(ReceiveCell))
+            .add_systems(
+                Update,
+                (source_catalogs, receive).chain().after(ReceiveCell),
+            )
             .add_systems(
                 PostUpdate,
                 (refresh, feedback_visibility)
@@ -123,7 +150,7 @@ impl Action for OpenOperation {
 }
 
 #[derive(Clone, Copy)]
-enum OperationAction {
+pub(crate) enum OperationAction {
     Submit,
     Complete,
     Choose(usize),
@@ -290,6 +317,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         items: Vec::new(),
         selected: 0,
         pending: None,
+        last_saved: None,
     });
     world
         .entity_mut(sand)
@@ -397,25 +425,26 @@ fn refresh(world: &mut World) {
                 return None;
             }
             let query = text.value().to_string();
-            let catalog = world.resource::<Catalog>();
-            (query != state.query || catalog.revision != state.revision)
-                .then(|| (sand, query, catalog.revision))
+            let revision = catalog(world, sand).map_or(0, |catalog| catalog.revision);
+            (query != state.query || revision != state.revision).then(|| (sand, query, revision))
         })
         .collect();
     for (sand, query, revision) in edits {
-        let catalog = world.resource::<Catalog>();
-        let items = suggestions(catalog, query.trim());
-        let message = if query.trim().starts_with('@') && !catalog.ready {
-            catalog
-                .error
-                .as_deref()
-                .unwrap_or("Loading Records…")
-                .to_owned()
-        } else if items.is_empty() && !query.trim().is_empty() {
-            "No matches. Enter an exact @slug or /command.".into()
-        } else {
-            String::new()
-        };
+        let catalog = catalog(world, sand);
+        let items = catalog
+            .map(|catalog| suggestions(catalog, query.trim()))
+            .unwrap_or_default();
+        let message =
+            if query.trim().starts_with('@') && catalog.is_none_or(|catalog| !catalog.ready) {
+                catalog
+                    .and_then(|catalog| catalog.error.as_deref())
+                    .unwrap_or("Loading Records…")
+                    .to_owned()
+            } else if items.is_empty() && !query.trim().is_empty() {
+                "No matches. Enter an exact @slug or /command.".into()
+            } else {
+                String::new()
+            };
         let mut state = world.get_mut::<OperationSand>(sand).unwrap();
         let changed = state.query != query;
         state.query = query;
@@ -524,11 +553,11 @@ fn submit(world: &mut World, sand: Entity) {
         action.apply(world, root);
         return;
     }
-    let catalog = world.resource::<Catalog>();
+    let catalog = catalog(world, sand);
     let record = value
         .strip_prefix('@')
-        .and_then(|slug| catalog.records.get(slug));
-    let Some((uid, _)) = record.filter(|_| catalog.ready) else {
+        .and_then(|slug| catalog?.records.get(slug));
+    let Some((uid, _)) = record.filter(|_| catalog.is_some_and(|catalog| catalog.ready)) else {
         status(
             world,
             sand,
@@ -547,29 +576,88 @@ fn submit(world: &mut World, sand: Entity) {
             amount: "0".into(),
         },
     };
-    let result = world
-        .get_non_send::<CellBridge>()
-        .ok_or("Not connected. Your input is still here.")
-        .and_then(|bridge| {
-            bridge
-                .outgoing
-                .try_send(request)
-                .map_err(|error| match error {
-                    tokio::sync::mpsc::error::TrySendError::Full(_) => {
-                        "The connection is busy. Try again."
-                    }
-                    tokio::sync::mpsc::error::TrySendError::Closed(_) => {
-                        "Connection closed. Your input is still here."
-                    }
-                })
-        });
+    let result = crate::practice_cells::send(world, sand, request);
     match result {
         Ok(()) => {
             world.get_mut::<OperationSand>(sand).unwrap().pending = Some((id, query));
             status(world, sand, "Setting quantity to zero…");
         }
-        Err(error) => status(world, sand, error),
+        Err(error) => status(world, sand, &error),
     }
+}
+
+fn source_catalogs(world: &mut World) {
+    let owners: Vec<_> = world
+        .query_filtered::<Entity, (
+            With<OperationSand>,
+            With<crate::practice_cells::PracticeSource>,
+        )>()
+        .iter(world)
+        .collect();
+    for owner in &owners {
+        if world.get::<ScopedCatalog>(*owner).is_none() {
+            world.entity_mut(*owner).insert(ScopedCatalog {
+                catalog: Catalog::default(),
+                subscription: nucleus::new_uid("operation-source"),
+                requested: false,
+            });
+        }
+        let view = world.get::<ScopedCatalog>(*owner).unwrap();
+        if !view.requested {
+            let id = view.subscription.clone();
+            if let Some(sender) = crate::practice_cells::sender(world, *owner)
+                && sender.try_send(ClientMessage::Subscribe { id: id.clone(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["uid","head","slug"],"limit":null})).unwrap() }).is_ok()
+            {
+                world.resource_mut::<ScopedSubscriptions>().0.insert(id, sender);
+                world.get_mut::<ScopedCatalog>(*owner).unwrap().requested = true;
+            }
+        }
+    }
+    let active: std::collections::HashSet<_> = owners
+        .iter()
+        .filter_map(|owner| {
+            world
+                .get::<ScopedCatalog>(*owner)
+                .map(|view| view.subscription.clone())
+        })
+        .collect();
+    let stale: Vec<_> = world
+        .resource::<ScopedSubscriptions>()
+        .0
+        .keys()
+        .filter(|id| !active.contains(*id))
+        .cloned()
+        .collect();
+    for id in stale {
+        let sender = world.resource::<ScopedSubscriptions>().0[&id].clone();
+        if sender
+            .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+            .is_ok()
+            || sender.is_closed()
+        {
+            world.resource_mut::<ScopedSubscriptions>().0.remove(&id);
+        }
+    }
+}
+
+pub(crate) fn input(world: &mut World, owner: Entity, value: &str) {
+    if let Some(editor) = world.get::<OperationSand>(owner).map(|view| view.input) {
+        world
+            .get_mut::<EditableText>(editor)
+            .unwrap()
+            .editor
+            .set_text(value);
+    }
+}
+
+pub(crate) fn saved(world: &World, owner: Entity, uid: &str) -> bool {
+    world
+        .get::<OperationSand>(owner)
+        .is_some_and(|view| view.pending.is_none() && view.last_saved.as_deref() == Some(uid))
+}
+
+pub(crate) fn ready(world: &World, owner: Entity, slug: &str) -> bool {
+    catalog(world, owner).is_some_and(|catalog| catalog.ready && catalog.records.contains_key(slug))
 }
 
 fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
@@ -578,6 +666,36 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .map(|message| message.0.clone())
         .collect();
     for message in messages {
+        let owners: Vec<_> = world.query::<(Entity, &ScopedCatalog)>().iter(world)
+            .filter(|(_, catalog)| matches!(&message, ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } | ServerMessage::Error { id, .. } if id == &catalog.subscription))
+            .map(|(owner, _)| owner).collect();
+        for owner in owners {
+            let mut scoped = world.get_mut::<ScopedCatalog>(owner).unwrap();
+            match &message {
+                ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
+                    scoped.catalog.records = rows
+                        .iter()
+                        .filter_map(|row| {
+                            Some((
+                                row["slug"].as_str()?.trim_start_matches('@').into(),
+                                (
+                                    row["uid"].as_str()?.into(),
+                                    row["head"].as_str().unwrap_or_default().into(),
+                                ),
+                            ))
+                        })
+                        .collect();
+                    scoped.catalog.ready = true;
+                    scoped.catalog.error = None;
+                }
+                ServerMessage::Error { message, .. } => {
+                    scoped.catalog.ready = false;
+                    scoped.catalog.error = Some(message.clone());
+                }
+                _ => {}
+            }
+            scoped.catalog.revision += 1;
+        }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
                 if id == RECORDS =>
@@ -622,10 +740,23 @@ fn acknowledge(world: &mut World, id: &str, result: Result<Vec<String>, String>)
         .iter(world)
         .filter_map(|(sand, state)| {
             let (request, query) = state.pending.as_ref()?;
-            (request == id || id == crate::cell_bridge::CONNECTION).then(|| (sand, query.clone()))
+            (request == id
+                || id == crate::cell_bridge::CONNECTION
+                    && world
+                        .get::<crate::practice_cells::PracticeSource>(sand)
+                        .is_none())
+            .then(|| (sand, query.clone()))
         })
         .collect();
     for (sand, query) in pending {
+        if result.is_ok() {
+            let uid = query
+                .trim()
+                .strip_prefix('@')
+                .and_then(|slug| catalog(world, sand)?.records.get(slug))
+                .map(|(uid, _)| uid.clone());
+            world.get_mut::<OperationSand>(sand).unwrap().last_saved = uid;
+        }
         world.get_mut::<OperationSand>(sand).unwrap().pending = None;
         let message = match &result {
             Ok(warnings) => {

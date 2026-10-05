@@ -340,6 +340,8 @@ jobs:
                   (root / name).write_bytes(Path(name).read_bytes())
               (root / 'institute' / 'server').mkdir(parents=True)
               (root / 'institute' / 'server' / 'configuration.nix').write_bytes(Path('institute/server/configuration.nix').read_bytes())
+              (root / 'institute' / 'anicca').mkdir(parents=True)
+              (root / 'institute' / 'anicca' / 'Lince.lingua').write_bytes(Path('institute/anicca/Lince.lingua').read_bytes())
               for source in Path('institute/packaging').rglob('*'):
                   if source.is_file():
                       destination = root / source

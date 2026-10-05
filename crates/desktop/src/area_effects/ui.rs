@@ -91,6 +91,10 @@ impl Action for Change {
     }
 }
 
+pub(crate) fn set_scale(world: &mut World, owner: Entity, scale: f32) {
+    Change::Scale(scale).apply(world, owner);
+}
+
 fn button(
     world: &mut World,
     parent: Entity,

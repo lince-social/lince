@@ -342,12 +342,26 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         crate::description::spawn(
             world,
             container,
-            &section.body,
+            super::teaching_text(&section.body),
             crate::description::Context {
                 owner,
                 source: crate::protein_area::Source::Local,
             },
         );
+        if let Some(slug) = &section.slug {
+            for foundation in lince_interface::handbook::foundations(slug) {
+                if let Some(entry) = entries.iter().find(|entry| entry.id == *foundation) {
+                    button(
+                        world,
+                        container,
+                        owner,
+                        "Earlier idea",
+                        &entry.title,
+                        Command::Page(entry.id.clone()),
+                    );
+                }
+            }
+        }
         if let Some(reference) = section
             .slug
             .as_ref()

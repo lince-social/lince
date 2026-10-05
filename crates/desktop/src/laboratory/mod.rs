@@ -10,6 +10,7 @@ pub use workspace::{
 };
 
 use serde::Serialize;
+pub(crate) use workspace::resources_visible;
 use std::{
     panic::{AssertUnwindSafe, catch_unwind},
     sync::{

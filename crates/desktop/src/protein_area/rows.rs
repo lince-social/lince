@@ -531,6 +531,9 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                 if config.source != Source::Local {
                     world.entity_mut(entity).insert(RemoteRecord);
                 }
+                if crate::practice_cells::owns_source(world, &config.source) {
+                    world.entity_mut(entity).insert(crate::practice_cells::PracticeRecord);
+                }
                 state.row_entities.insert(uid.clone(), entity);
                 entity
             });
@@ -1016,15 +1019,19 @@ pub(super) fn layout(world: &mut World) {
             .map(|index| heights.get(&(area, index)).copied().unwrap_or(0.0) + config.gap)
             .sum::<f32>();
         let inset = if config.group_with_source { 0.0 } else { 12.0 };
-        let position = origin
-            + DVec2::new(
-                f64::from(
-                    inset
-                        + (index % config.columns) as f32 * (config.width + config.gap)
-                        + config.width / 2.0,
-                ),
-                f64::from(inset + y + height / 2.0),
-            );
+        let position = if config.fiote && config.group_with_source && index == 0 {
+            DVec2::from_array(influence.center)
+        } else {
+            origin
+                + DVec2::new(
+                    f64::from(
+                        inset
+                            + (index % config.columns) as f32 * (config.width + config.gap)
+                            + config.width / 2.0,
+                    ),
+                    f64::from(inset + y + height / 2.0),
+                )
+        };
         let size = Vec2::new(config.width, height);
         place(world, entity, position, size);
         if config.group_with_source && index == 0 {

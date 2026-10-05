@@ -1,6 +1,6 @@
 mod detail;
-mod karma;
 mod forms;
+mod karma;
 mod model;
 mod persistence;
 mod runtime;
@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     actions::Action,
-    cell_bridge::{CellBridge, CellMessage, ReceiveCell},
+    cell_bridge::{CellMessage, ReceiveCell},
     workspace::WorkspaceMember,
 };
 use model::{Form, array, capability, display, text, title};
@@ -79,7 +79,10 @@ struct Pending {
 }
 
 #[derive(Resource, Default)]
-struct Requests(HashMap<String, (Entity, String)>);
+struct Requests(
+    HashMap<String, (Entity, String)>,
+    HashMap<String, tokio::sync::mpsc::Sender<cell::ClientMessage>>,
+);
 
 pub struct TransferCastlePlugin;
 
@@ -221,6 +224,90 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         ui::Command::Create,
         |world, root| spawn(world, root, 1, DVec2::ZERO, TransferCastle::default()),
     );
+}
+
+pub(crate) fn agreement_level(world: &World, owner: Entity) -> Option<u64> {
+    let castle = world.get::<TransferCastle>(owner)?;
+    let row = selected(world, owner)?;
+    array(&row, "parties")
+        .iter()
+        .find(|party| party["actor"] == castle.person)
+        .and_then(|party| party["level"].as_u64())
+}
+
+pub(crate) fn set_agreement(world: &mut World, owner: Entity, level: u64) {
+    if agreement_level(world, owner).is_some_and(|current| current >= level) {
+        return;
+    }
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
+    if !view.ready
+        || view.pending.is_some()
+        || world.get::<TransferCastle>(owner).unwrap().form.is_some()
+    {
+        return;
+    }
+    let Some(row) = selected(world, owner) else {
+        return;
+    };
+    let person = person(world, owner);
+    let capability_name = if level == 1 { "review" } else { "commit" };
+    if !array(&row, "parties")
+        .iter()
+        .any(|party| party["actor"] == person && capability(party, capability_name))
+    {
+        return;
+    }
+    let mut action = detail::action_base(&row, "set-transfer-agreement-level", &person);
+    action["level"] = json!(level);
+    ui::Command::Open(Form::action(
+        if level == 1 {
+            "Checked · ready to agree"
+        } else {
+            "Agree"
+        },
+        action,
+    ))
+    .apply(world, owner);
+    ui::Command::Submit.apply(world, owner);
+}
+
+pub(crate) fn has_occurrence(world: &World, owner: Entity, promise: &str) -> bool {
+    selected(world, owner).is_some_and(|row| {
+        array(&row, "occurrences").iter().any(|occurrence| {
+            occurrence["promise"] == promise || occurrence["promise_uid"] == promise
+        })
+    })
+}
+
+pub(crate) fn activate_promise(world: &mut World, owner: Entity, promise: &str) {
+    if has_occurrence(world, owner, promise) {
+        return;
+    }
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
+    if !view.ready
+        || view.pending.is_some()
+        || world.get::<TransferCastle>(owner).unwrap().form.is_some()
+    {
+        return;
+    }
+    let Some(row) = selected(world, owner) else {
+        return;
+    };
+    if !array(&row, "promises")
+        .iter()
+        .any(|item| item["uid"] == promise && capability(item, "activate"))
+    {
+        return;
+    }
+    let mut action =
+        detail::action_base(&row, "activate-transfer-occurrence", &person(world, owner));
+    action["promise"] = json!(promise);
+    ui::Command::Open(Form::action("Activate occurrence", action)).apply(world, owner);
+    ui::Command::Submit.apply(world, owner);
 }
 
 fn status(world: &mut World, owner: Entity, message: impl Into<String>) {

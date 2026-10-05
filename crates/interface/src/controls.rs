@@ -57,6 +57,36 @@ pub fn text_editor(value: &str, typography: &Typography, tab_index: i32) -> impl
     )
 }
 
+pub fn single_line_editor(
+    value: &str,
+    typography: &Typography,
+    tab_index: i32,
+    max_characters: usize,
+) -> impl Bundle + use<> {
+    let mut text = editable(value);
+    text.allow_newlines = false;
+    text.visible_lines = Some(1.0);
+    text.max_characters = Some(max_characters);
+    (
+        text,
+        Node {
+            width: percent(100),
+            min_width: px(0),
+            flex_shrink: 0.0,
+            border: UiRect::all(px(BUTTON_BORDER_WIDTH)),
+            padding: UiRect::all(px(4)),
+            ..default()
+        },
+        typography.text(16.0),
+        bevy::text::LineHeight::Px(20.0),
+        TextLayout::linebreak(bevy::text::LineBreak::NoWrap),
+        crate::style::border(crate::tokens::Token::Accent),
+        crate::style::text(crate::tokens::Token::Ink),
+        crate::style::CursorToken(crate::tokens::Token::Accent),
+        TabIndex(tab_index),
+    )
+}
+
 pub fn button(tab_index: i32) -> impl Bundle {
     (WidgetButton, TabIndex(tab_index))
 }

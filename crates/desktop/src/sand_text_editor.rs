@@ -252,6 +252,32 @@ pub(crate) fn autosave(world: &mut World) {
     }
 }
 
+pub(crate) fn set_text(
+    world: &mut World,
+    root: Entity,
+    sand: Entity,
+    value: &str,
+) -> Result<(), String> {
+    open(world, root, sand);
+    crate::edit_mode::render_panel(world, root);
+    let panel = world
+        .get::<EditMode>(root)
+        .ok_or("Edit mode is unavailable")?
+        .panel;
+    let field = world
+        .get::<TextPanel>(panel)
+        .and_then(|state| state.fields.first())
+        .copied()
+        .ok_or("The text control is unavailable. Skip or Close.")?;
+    world
+        .get_mut::<EditableText>(field)
+        .ok_or("The text control is unavailable.")?
+        .editor
+        .set_text(value);
+    autosave(world);
+    Ok(())
+}
+
 fn error(world: &mut World, panel: Entity, message: &str) {
     if let Some(entity) = world.get::<TextPanel>(panel).and_then(|state| state.error)
         && let Some(mut text) = world.get_mut::<Text>(entity)
@@ -356,6 +382,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) -> bool {
             .spawn((
                 bundle,
                 ChildOf(panel),
+                crate::actions::ControlOwner(sand),
                 crate::token_style::background(crate::tokens::Token::Surface),
             ))
             .id();

@@ -12,16 +12,16 @@ struct History {
 #[derive(Clone)]
 struct Inspect(String);
 
+pub(super) fn inspect(world: &mut World, owner: Entity, uid: &str) {
+    Inspect(uid.into()).apply(world, owner);
+}
+
 pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     let output = crate::edit_mode::label(world, parent, "", 13.0);
     world.entity_mut(owner).insert(History {
         output,
         pending: None,
     });
-}
-
-pub(super) fn button(world: &mut World, owner: Entity, parent: Entity, rule: &str) {
-    crate::castle_feed::button(world, parent, owner, "History", Inspect(rule.into()));
 }
 
 impl crate::actions::Action for Inspect {
@@ -32,6 +32,7 @@ impl crate::actions::Action for Inspect {
         let id = nucleus::new_uid("karma-history");
         let result = send(
             world,
+            owner,
             ClientMessage::Act {
                 id: id.clone(),
                 action: engine::actions::Action::InspectKarmaRuleHistory {

@@ -27,6 +27,7 @@ impl Band {
     }
     pub fn opacity(&self) -> f32 {
         (1.0 - self.fall.position[0].max(0.0) / 72.0).clamp(0.0, 1.0)
+            * if self.occurrence.historical { 0.7 } else { 1.0 }
     }
 
     pub fn offset(&self, at: i64, settings: &Settings, size: Vec2, width: f32) -> f32 {
@@ -92,11 +93,11 @@ pub(super) fn update(
     }
     let settings = &world.get::<TimeSettings>(owner).unwrap().0;
     let occurrences = changed.then(|| {
-        model::occurrences(
+        model::clock_occurrences(
+            settings,
             &world.get::<View>(owner).unwrap().entries,
             now,
             now + duration,
-            &settings.timezone,
         )
     });
     let entries = occurrences
@@ -282,6 +283,33 @@ mod tests {
             .retired_at = Some(Instant::now() - std::time::Duration::from_millis(701));
         update(&mut world, owner, 3000, 3_600_000, false);
         assert!(world.get::<Motion>(owner).unwrap().bands.is_empty());
+    }
+
+    #[test]
+    fn past_work_stays_attached_to_the_current_cursor() {
+        for cursor in [CursorMode::Moving, CursorMode::Fixed] {
+            let settings = Settings {
+                cursor,
+                ..default()
+            };
+            let entry = entry();
+            let occurrence = model::clock_occurrences(
+                &settings,
+                std::slice::from_ref(&entry),
+                61_000,
+                3_600_000,
+            )
+            .remove(0);
+            assert!(occurrence.historical);
+            let band = Band::settled(entry, occurrence);
+            for now in [61_000, 63_000] {
+                let size = Vec2::splat(420.0);
+                let expected = Vec3::from_array(settings.position(now, now, size.to_array(), 0.0))
+                    + Vec3::from_array(settings.transverse(now, now, 0.0)) * 6.0;
+                let anchor = Vec3::from_array(band.anchor(&settings, now, size, 4.0, 0.0));
+                assert!((anchor - expected).length() < 0.001);
+            }
+        }
     }
 
     #[test]

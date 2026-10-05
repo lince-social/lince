@@ -213,15 +213,20 @@ pub(super) fn populate(world: &mut World, owner: Entity) {
             ChildOf(owner),
         ))
         .id();
+    let mut skull_accessibility = bevy::a11y::AccessibilityNode::default();
+    skull_accessibility.set_label("Memento mori. Clock controls");
     let center_button = world
         .spawn((
-            IconButton::new(Icon::General, "Clock controls"),
-            IconStyle {
-                size: 16.0,
-                padding: 6.0,
-                radius: 32.0,
+            crate::sand::button(0),
+            Node {
+                width: px(32),
+                height: px(32),
+                padding: UiRect::ZERO,
                 ..default()
             },
+            BackgroundColor(Color::NONE),
+            crate::icons::Tooltip("Clock controls".into()),
+            skull_accessibility,
             crate::sand::Borderless,
             ActionButton::new(owner, crate::actions![ToggleControls]),
             ChildOf(center),
@@ -644,8 +649,9 @@ mod tests {
         assert!(!visible(&world, button));
         assert_eq!(surfaces(&world, owner), [center]);
         assert_eq!(world.get::<BackgroundColor>(center).unwrap().0, Color::NONE);
+        assert!(world.get::<IconButton>(center_button).is_none());
         assert_eq!(
-            world.get::<IconButton>(center_button).unwrap().label,
+            world.get::<crate::icons::Tooltip>(center_button).unwrap().0,
             "Clock controls"
         );
         assert_eq!(

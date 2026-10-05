@@ -30,6 +30,46 @@ fn sand(world: &mut World, root: Entity, text: &str, x: f64) -> Entity {
     )
 }
 
+#[cfg(feature = "instinct")]
+#[test]
+fn instinct_retained_libraries_stay_scoped_and_missing_sources_never_use_personal_files() {
+    let directory = tempfile::tempdir().unwrap();
+    let (mut app, root) = fixture(directory.path());
+    let note = sand(app.world_mut(), root, "Retained example", 0.0);
+    let source = nucleus::new_uid("g");
+    let sample = directory.path().join("retained-example");
+    app.world_mut()
+        .init_resource::<crate::practice_cells::PracticeCells>();
+    app.world_mut()
+        .entity_mut(note)
+        .insert(crate::practice_cells::PracticeSource(source.clone()));
+    assert!(storage::scoped_directory(app.world(), root).is_err());
+    app.world_mut()
+        .resource_mut::<crate::practice_cells::PracticeCells>()
+        .directories
+        .insert(source.clone(), sample.clone());
+    let scoped = storage::scoped_directory(app.world(), root).unwrap();
+    app.world_mut()
+        .entity_mut(root)
+        .insert(SandSelection(vec![note]));
+    let castle = CustomCastle::capture(app.world(), root, "Retained").unwrap();
+    let saved = storage::save(&scoped, &castle).unwrap();
+    assert!(saved.starts_with(sample.join("castles")));
+    assert!(!directory.path().join("castles").exists());
+    let other = sand(app.world_mut(), root, "Another source", 100.0);
+    app.world_mut()
+        .entity_mut(other)
+        .insert(crate::practice_cells::PracticeSource(nucleus::new_uid("g")));
+    assert!(storage::scoped_directory(app.world(), root).is_err());
+    app.world_mut().despawn(other);
+    crate::workspace::create(app.world_mut(), root);
+    assert_eq!(
+        storage::scoped_directory(app.world(), root).unwrap(),
+        directory.path().join("castles")
+    );
+    assert!(saved.is_file());
+}
+
 #[test]
 fn mixed_castle_files_restore_independent_layouts_and_live_area_connections() {
     let directory = tempfile::tempdir().unwrap();
@@ -401,6 +441,7 @@ fn composed_time_castle_keeps_its_standalone_log() {
         aperture_ms: 7_200_000,
         floating_cards: true,
         card_physics: true,
+        past_tasks: true,
         horizon_ms: 36_000_000,
         timezone: "America/Sao_Paulo".into(),
         mode: lince_interface::time_castle::Mode::Straight,

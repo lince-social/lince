@@ -107,6 +107,7 @@ pub struct LicenseAccordion {
 pub struct ToggleLicense;
 
 impl Action for ToggleLicense {
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] { &[lince_interface::practice::Operation::InspectSandCredits] }
     fn connections(&self, world: &World, target: Entity) -> Vec<crate::inspection::Connection> {
         world
             .get::<LicenseAccordion>(target)

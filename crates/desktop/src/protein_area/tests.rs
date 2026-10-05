@@ -283,6 +283,16 @@ fn castle_content_is_capped_and_manual_resizing_survives_row_layout() {
         });
         rows::layout(app.world_mut());
         assert_eq!(app.world().get::<CanvasItem>(row).unwrap().size.y, 1000.0);
+        if fiote {
+            assert_eq!(
+                app.world().get::<CanvasItem>(row).unwrap().position,
+                DVec2::ZERO
+            );
+            assert_eq!(
+                app.world().get::<InfluenceArea>(owner).unwrap().center,
+                [0.0, 0.0]
+            );
+        }
         app.world_mut()
             .get_mut::<ComputedNode>(child)
             .unwrap()
@@ -290,6 +300,12 @@ fn castle_content_is_capped_and_manual_resizing_survives_row_layout() {
             .y = 120.0;
         rows::layout(app.world_mut());
         assert!(app.world().get::<CanvasItem>(row).unwrap().size.y < 1000.0);
+        if fiote {
+            assert_eq!(
+                app.world().get::<CanvasItem>(row).unwrap().position,
+                DVec2::ZERO
+            );
+        }
         let before = *app.world().get::<CanvasItem>(row).unwrap();
         let after = CanvasItem {
             size: Vec2::new(650.0, 450.0),

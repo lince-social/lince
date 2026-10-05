@@ -17,15 +17,26 @@ use std::{
     time::Instant,
 };
 
+mod automation;
+mod cleanup;
+mod commitments;
+mod community;
+mod disk;
 mod input;
+mod laboratory_practice;
 mod lessons;
+mod local;
+mod media_practice;
 #[cfg(feature = "instinct")]
 pub(crate) mod tests;
+mod tools;
+mod visual;
 mod work;
 pub(super) use input::refresh as refresh_input;
+pub(super) use input::{changed as input_changed, guard_focus};
 
 #[derive(Component)]
-struct SemanticControl {
+pub(in crate::instinct) struct SemanticControl {
     session: u64,
     operation: Operation,
 }
@@ -43,6 +54,10 @@ impl Action for Perform {
             practice.pending.is_some()
                 || practice.runner.current().and_then(|step| step.operation) != Some(self.0)
         }) {
+            return;
+        }
+        if input::requires_control(self.0) {
+            Command::Next.apply(world, root);
             return;
         }
         if let Err(message) = execute(world, root, self.0) {
@@ -76,12 +91,33 @@ pub(crate) fn permits_target(world: &World, entity: Entity) -> bool {
     }
     let mut current = Some(entity);
     while let Some(entity) = current {
+        if world
+            .get::<crate::actions::TutorialField>(entity)
+            .is_some_and(|field| {
+                self::root(world, field.owner) == Some(root)
+                    && practice.runner.current().and_then(|step| step.operation)
+                        == Some(field.operation)
+            })
+        {
+            return true;
+        }
         if world.get::<Recovery>(entity).is_some() {
             return true;
         }
         if world
             .get::<Owned>(entity)
             .is_some_and(|owned| owned.session == practice.runner.session)
+        {
+            return true;
+        }
+        if world
+            .get::<crate::actions::ControlOwner>(entity)
+            .is_some_and(|context| {
+                world
+                    .get::<Owned>(context.0)
+                    .is_some_and(|owned| owned.session == practice.runner.session)
+                    && self::root(world, context.0) == Some(root)
+            })
         {
             return true;
         }
@@ -126,7 +162,75 @@ pub(crate) fn permits_action(
     if let PracticeIntent::Feature(operation) = intent {
         return practice.runner.current().and_then(|step| step.operation) == Some(operation);
     }
+    if intent == PracticeIntent::SelectedArea {
+        return world
+            .get::<crate::area_panel::AreaEditor>(root)
+            .and_then(|editor| editor.selected)
+            .is_some_and(|entity| permits_target(world, entity));
+    }
+    if intent == PracticeIntent::SelectedObjects {
+        return world
+            .get::<crate::canvas_selection::SandSelection>(root)
+            .is_some_and(|selection| {
+                !selection.0.is_empty()
+                    && selection
+                        .0
+                        .iter()
+                        .all(|entity| permits_target(world, *entity))
+            });
+    }
+    if intent == PracticeIntent::EditedSand {
+        return world
+            .get::<crate::edit_mode::EditMode>(root)
+            .and_then(|mode| world.get::<crate::sand_text_editor::TextPanel>(mode.panel))
+            .is_some_and(|panel| permits_target(world, panel.sand));
+    }
     permits_target(world, target)
+}
+
+pub(crate) fn permits_control(world: &World, target: Entity, action: &dyn Action) -> bool {
+    if !permits_action(world, target, action.practice_intent()) {
+        return false;
+    }
+    let Some(root) = self::root(world, target) else {
+        return true;
+    };
+    let Some(practice) = world.get::<Practice>(root) else {
+        return true;
+    };
+    let Some(operation) = practice.runner.current().and_then(|step| step.operation) else {
+        return true;
+    };
+    if practice.runner.restricted()
+        && visible(world, root)
+        && input::requires_control(operation)
+        && action.practice_intent() == crate::actions::PracticeIntent::Target
+    {
+        if !action.teaches_tutorial(operation) && !action.supports_tutorial(operation) {
+            return false;
+        }
+        if target == root {
+            return true;
+        }
+        let mut cursor = Some(target);
+        while let Some(entity) = cursor {
+            if world.get::<Owned>(entity).is_some_and(|owned| {
+                owned.session == practice.runner.session && owned.role == Role::Feature
+            }) {
+                return true;
+            }
+            if let Some(context) = world.get::<crate::actions::ControlOwner>(entity)
+                && world.get::<Owned>(context.0).is_some_and(|owned| {
+                    owned.session == practice.runner.session && owned.role == Role::Feature
+                })
+            {
+                return true;
+            }
+            cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        }
+        return false;
+    }
+    true
 }
 
 #[derive(Resource, Default)]
@@ -150,9 +254,11 @@ impl FromWorld for Content {
 struct Prepared {
     runtime: cell::CellRuntime,
     records: Vec<String>,
+    spatial_sample: Option<serde_json::Value>,
 }
 
 #[derive(Component)]
+#[component(on_remove = removed)]
 pub(super) struct Practice {
     runner: Runner,
     shell: Entity,
@@ -161,6 +267,12 @@ pub(super) struct Practice {
     workspace: u64,
     previous: u64,
     source: String,
+    extra_sources: Vec<String>,
+    community: community::State,
+    local: local::State,
+    media: media_practice::State,
+    visual: visual::State,
+    reference: Option<String>,
     records: Vec<String>,
     setup: Option<Mutex<mpsc::Receiver<Result<Prepared, String>>>>,
     started: Instant,
@@ -176,6 +288,87 @@ pub(super) struct Practice {
     results: HashMap<Operation, serde_json::Value>,
     previous_edit: bool,
     owned_edit_revision: Option<u64>,
+    cleanup_handled: bool,
+    cleanup: cleanup::Quiescence,
+}
+
+fn removed(mut world: bevy::ecs::world::DeferredWorld, context: bevy::ecs::lifecycle::HookContext) {
+    let Some(practice) = world.get::<Practice>(context.entity) else {
+        return;
+    };
+    if practice.cleanup_handled {
+        return;
+    }
+    let root = context.entity;
+    let shell = practice.shell;
+    let source = practice.source.clone();
+    let workspace = practice.workspace;
+    let extra_sources = practice.extra_sources.clone();
+    let previous = practice.previous;
+    let extra = practice.extra_workspaces.clone();
+    let session = practice.runner.session;
+    let previous_edit = practice.previous_edit;
+    let edit_revision = practice.owned_edit_revision;
+    let restoration = practice.visual.restoration.clone();
+    let directory = world
+        .get_resource::<crate::practice_cells::PracticeCells>()
+        .and_then(|cells| cells.directories.get(&source))
+        .cloned();
+    world.commands().queue(move |world: &mut World| {
+        input::release(world, root);
+        if let Some(directory) = directory {
+            crate::external_drop::cancel_owned_choice(world, root, &directory);
+        }
+        visual::restore_value(world, root, restoration);
+        if world.get_entity(root).is_ok() {
+            restore_edit_value(world, root, previous_edit, edit_revision);
+            crate::tutorial::highlight::clear(world, root);
+            crate::workspace::switch(world, root, previous);
+            crate::workspace::remove(world, root, workspace);
+            for workspace in extra {
+                crate::workspace::remove(world, root, workspace);
+            }
+        }
+        if world.get_entity(shell).is_ok() {
+            world.despawn(shell);
+        }
+        let owned: Vec<_> = world
+            .query::<(Entity, &Owned)>()
+            .iter(world)
+            .filter(|(_, owned)| owned.session == session)
+            .map(|(entity, _)| entity)
+            .collect();
+        for entity in owned {
+            world.despawn(entity);
+        }
+        crate::protein_area::release_practice_source(world, &source);
+        retire_source(world, &source);
+        for source in extra_sources {
+            crate::protein_area::release_practice_source(world, &source);
+            retire_source(world, &source);
+        }
+    });
+}
+
+fn retire_source(world: &mut World, source: &str) {
+    let Some(mut cells) = world.get_resource_mut::<crate::practice_cells::PracticeCells>() else {
+        return;
+    };
+    let runtime = cells.cells.remove(source);
+    cells.workers.remove(source);
+    cells.servers.remove(source);
+    cells.audio.remove(source);
+    cells.retired.insert(source.into());
+    if let Some(path) = cells.directories.remove(source) {
+        drop(cells);
+        crate::ide::forget_directory(world, &path);
+        crate::practice_cells::persistence::discard(path, runtime);
+        if let Some(mut cells) = world.get_resource_mut::<crate::practice_cells::PracticeCells>() {
+            cells.records.remove(source);
+        }
+        return;
+    }
+    cells.records.remove(source);
 }
 
 impl Drop for Practice {
@@ -190,7 +383,7 @@ impl Drop for Practice {
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct Owned {
+pub(in crate::instinct) struct Owned {
     session: u64,
     role: Role,
 }
@@ -206,6 +399,7 @@ enum Role {
     Record,
     Assertions,
     Feature,
+    Auxiliary,
 }
 
 #[derive(Component)]
@@ -237,7 +431,7 @@ fn lesson(slug: &str) -> Option<(&'static Lesson, usize)> {
         })
 }
 
-fn root(world: &World, mut owner: Entity) -> Option<Entity> {
+pub(super) fn root(world: &World, mut owner: Entity) -> Option<Entity> {
     loop {
         if world.get::<Workspaces>(owner).is_some() {
             return Some(owner);
@@ -336,6 +530,12 @@ impl Action for StartPage {
             workspace,
             previous,
             source: nucleus::new_uid("g"),
+            extra_sources: Vec::new(),
+            community: default(),
+            local: default(),
+            media: default(),
+            visual: default(),
+            reference: None,
             records: Vec::new(),
             setup: None,
             started: Instant::now(),
@@ -351,6 +551,8 @@ impl Action for StartPage {
             results: HashMap::new(),
             previous_edit,
             owned_edit_revision: None,
+            cleanup_handled: false,
+            cleanup: default(),
         });
         let data = lesson
             .steps
@@ -377,16 +579,68 @@ fn prepare_cell(world: &mut World, root: Entity) {
         );
         return;
     };
+    let source = world.get::<Practice>(root).unwrap().source.clone();
+    let existing = world
+        .resource::<crate::practice_cells::PracticeCells>()
+        .directories
+        .get(&source)
+        .cloned();
+    let fiote = world.get::<Practice>(root).unwrap().runner.lesson.subject == "learn-fiote";
+    let spatial =
+        world.get::<Practice>(root).unwrap().runner.lesson.subject == "areas-of-influence";
+    let directory = existing.map(Ok).or_else(|| {
+        let base = world
+            .get_resource::<crate::workspace::WorkspaceFile>()
+            .map(|file| file.directory().to_path_buf())
+            .unwrap_or_else(|| std::env::temp_dir().join("lince-instinct"));
+        Some(crate::practice_cells::persistence::directory(
+            &base, &source,
+        ))
+    });
+    let directory = match directory.transpose() {
+        Ok(directory) => directory,
+        Err(message) => {
+            world.get_mut::<Practice>(root).unwrap().runner.phase = Phase::Unavailable(message);
+            return;
+        }
+    };
+    if let Some(path) = &directory {
+        world
+            .resource_mut::<crate::practice_cells::PracticeCells>()
+            .directories
+            .insert(source, path.clone());
+    }
     let (sender, receiver) = mpsc::channel();
     let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
     let task = handle.spawn(async move {
-        let result = async {
+        let result = tokio::time::timeout(std::time::Duration::from_secs(30), async {
             let engine = Arc::new(
-                engine::Engine::open_memory()
-                    .await
-                    .map_err(|error| error.to_string())?,
+                match &directory {
+                    Some(path) => {
+                        engine::Engine::open(&format!(
+                            "sqlite://{}",
+                            path.join("cell.db").display()
+                        ))
+                        .await
+                    }
+                    None => engine::Engine::open_memory().await,
+                }
+                .map_err(|error| error.to_string())?,
             );
+            engine
+                .install_karma_runtime_config(
+                    engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host(
+                        "instinct-practice".into(),
+                    )
+                    .map_err(|error| error.to_string())?,
+                )
+                .map_err(|error| error.to_string())?;
             let mut records = Vec::new();
+            if let Some(directory) = &directory {
+                engine
+                    .set_command_directory(directory)
+                    .map_err(|error| error.to_string())?;
+            }
             for index in 1..=2 {
                 let draft = engine::record_creation::Draft {
                     head: format!("Instinct sample {index}"),
@@ -403,21 +657,40 @@ fn prepare_cell(world: &mut World, root: Entity) {
                         .ok_or("The Cell did not confirm the sample Record.")?,
                 );
             }
+            let spatial_sample = if spatial {
+                let query: protein::Protein = serde_json::from_value(serde_json::json!({"source":"record","where":[{"uid_eq":records[0]}],"fields":["uid","head","kind","quantity"]})).map_err(|error| error.to_string())?;
+                protein::execute_for(&engine.store, &query, None).await.map_err(|error| error.to_string())?.into_iter().next()
+            } else { None };
+            let fiote = if fiote {
+                Some(Arc::new(
+                    cell::fiote::Host::open(
+                        engine.clone(),
+                        directory.as_ref().unwrap().join("fiote"),
+                    )
+                    .await?,
+                ))
+            } else {
+                None
+            };
             Ok::<_, String>(Prepared {
                 runtime: cell::CellRuntime {
-                    commands: Default::default(),
+                    commands: cell::terminal::commands::CommandHost::new(
+                        directory.as_ref().unwrap().join("commands"),
+                    ),
                     store: engine.store.clone(),
                     engine,
                     lanes: Arc::new(cell::LaneHub::new()),
                     wire: Default::default(),
-                    fiote: None,
+                    fiote,
                     speech: None,
                     information: None,
                 },
                 records,
+                spatial_sample,
             })
-        }
-        .await;
+        })
+        .await
+        .unwrap_or_else(|_| Err("Practice setup timed out. Retry, Skip or Close.".into()));
         let _ = sender.send(result);
         if let Some(wake) = wake {
             wake.ring();
@@ -450,6 +723,23 @@ fn find(world: &mut World, root: Entity, role: Role) -> Option<Entity> {
 fn own(world: &mut World, root: Entity, entity: Entity, role: Role) {
     let session = world.get::<Practice>(root).unwrap().runner.session;
     world.entity_mut(entity).insert(Owned { session, role });
+    if matches!(
+        role,
+        Role::Spawn
+            | Role::Changes
+            | Role::Record
+            | Role::Assertions
+            | Role::Feature
+            | Role::Auxiliary
+    ) && world
+        .get::<crate::practice_cells::PracticeSource>(entity)
+        .is_none()
+    {
+        let source = world.get::<Practice>(root).unwrap().source.clone();
+        world
+            .entity_mut(entity)
+            .insert(crate::practice_cells::PracticeSource(source));
+    }
     if role == Role::Changes {
         let source = world.get::<Practice>(root).unwrap().source.clone();
         world
@@ -458,8 +748,38 @@ fn own(world: &mut World, root: Entity, entity: Entity, role: Role) {
     }
 }
 
+pub(crate) fn active_source(world: &World, root: Entity) -> Option<&str> {
+    if !visible(world, root) {
+        return None;
+    }
+    Some(world.get::<Practice>(root)?.source.as_str())
+}
+
+pub(crate) fn sample_directory(world: &World, root: Entity) -> Option<std::path::PathBuf> {
+    let source = active_source(world, root)?;
+    world
+        .get_resource::<crate::practice_cells::PracticeCells>()?
+        .directories
+        .get(source)
+        .cloned()
+}
+
+pub(crate) fn window_root(world: &World, entity: Entity) -> Option<Entity> {
+    self::root(world, entity)
+}
+
+pub(crate) use laboratory_practice::closed as laboratory_closed;
+
+pub(crate) fn track_custom(world: &mut World, root: Entity, entities: &[Entity]) {
+    if !visible(world, root) {
+        return;
+    }
+    for entity in entities {
+        own(world, root, *entity, Role::Auxiliary);
+    }
+}
+
 fn pair(world: &mut World, root: Entity) {
-    let workspace = world.get::<Practice>(root).unwrap().workspace;
     for (kind, role, position) in [
         (
             crate::sand_store::SandKind::Square,
@@ -473,16 +793,54 @@ fn pair(world: &mut World, root: Entity) {
         ),
     ] {
         if find(world, root, role).is_none() {
-            let entity = crate::sand_store::spawn_sand(
-                world,
-                root,
-                workspace,
-                kind,
-                "Instinct sample",
-                position,
-            );
-            own(world, root, entity, role);
+            if let Some(entity) = crate::edit_mode::place_sand(world, root, kind) {
+                crate::topology::set_position(
+                    world,
+                    entity,
+                    DVec3::new(position.x, 0.0, position.y),
+                );
+                own(world, root, entity, role);
+            }
         }
+    }
+}
+
+pub(crate) fn track_record_view(
+    world: &mut World,
+    root: Entity,
+    entity: Entity,
+    binding: &crate::protein_area::RecordBinding,
+) {
+    if let Some(practice) = world.get::<Practice>(root)
+        && binding.source == crate::protein_area::Source::Organ(practice.source.clone())
+        && practice.records.contains(&binding.uid)
+        && visible(world, root)
+    {
+        own(world, root, entity, Role::Record);
+    }
+}
+
+pub(crate) fn track_sand(
+    world: &mut World,
+    root: Entity,
+    entity: Entity,
+    kind: crate::sand_store::SandKind,
+) {
+    let Some(practice) = world.get::<Practice>(root) else {
+        return;
+    };
+    if practice.runner.current().and_then(|step| step.operation) != Some(Operation::PlaceSand)
+        || !visible(world, root)
+    {
+        return;
+    }
+    let role = match kind {
+        crate::sand_store::SandKind::Square => Role::Square,
+        crate::sand_store::SandKind::Text => Role::Text,
+        _ => return,
+    };
+    if find(world, root, role).is_none() {
+        own(world, root, entity, role);
     }
 }
 
@@ -514,16 +872,15 @@ fn sample_rows(world: &mut World, root: Entity) -> Vec<(Entity, String)> {
             Entity,
             &crate::protein_area::RecordBinding,
             &WorkspaceMember,
-            &ChildOf,
         )>()
         .iter(world)
-        .filter(|(_, binding, member, parent)| {
+        .filter(|(entity, binding, member)| {
             member.0 == workspace
-                && parent.parent() == root
+                && self::root(world, *entity) == Some(root)
                 && binding.source == source
                 && ids.contains(&binding.uid)
         })
-        .map(|(entity, binding, _, _)| (entity, binding.uid.clone()))
+        .map(|(entity, binding, _)| (entity, binding.uid.clone()))
         .collect()
 }
 
@@ -533,6 +890,7 @@ fn protein(world: &mut World, root: Entity) -> Result<Entity, String> {
         return Err("Waiting for the isolated practice Cell.".into());
     }
     let (source, ids) = (practice.source.clone(), practice.records[..2].to_vec());
+    let learning_protein = practice.runner.lesson.subject == "protein";
     let entity = area(world, root, Role::Spawn)?;
     if world
         .get::<InfluenceArea>(entity)
@@ -542,14 +900,22 @@ fn protein(world: &mut World, root: Entity) -> Result<Entity, String> {
     {
         let mut config = crate::protein_area::Config {
             source: crate::protein_area::Source::Organ(source),
-            bindings: vec![
-                crate::protein_area::Binding::new("head"),
-                crate::protein_area::Binding::new("body"),
-                crate::protein_area::Binding::new("quantity"),
-            ],
+            bindings: if learning_protein {
+                vec![
+                    crate::protein_area::Binding::new("head"),
+                    crate::protein_area::Binding::new("body"),
+                ]
+            } else {
+                vec![
+                    crate::protein_area::Binding::new("head"),
+                    crate::protein_area::Binding::new("body"),
+                    crate::protein_area::Binding::new("quantity"),
+                ]
+            },
+            columns: 2,
             ..default()
         };
-        config.draft.query["where"] = serde_json::json!([{"any":ids.iter().map(|uid| serde_json::json!({"uid_eq":uid})).collect::<Vec<_>>()}]);
+        config.draft.query["where"] = serde_json::json!([{"any":ids.iter().take(if learning_protein { 1 } else { 2 }).map(|uid| serde_json::json!({"uid_eq":uid})).collect::<Vec<_>>()}]);
         config.draft.compile()?;
         world.get_mut::<InfluenceArea>(entity).unwrap().protein = Some(config);
     }
@@ -609,31 +975,73 @@ fn execute(world: &mut World, root: Entity, operation: Operation) -> Result<(), 
             pair(world, root);
             let entity = area(world, root, Role::Area)?;
             crate::workspace_config::set_physics(world, root, workspace, true);
-            let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
-            area.attraction_enabled = true;
-            area.strength = 100.0;
-            area.direction = if operation == Operation::Attract {
+            crate::edit_mode::EditAction::Open.apply(world, root);
+            crate::edit_mode::EditAction::Areas.apply(world, root);
+            crate::edit_mode::EditAction::Area(crate::area_panel::AreaAction::Select(entity))
+                .apply(world, root);
+            if !world
+                .get::<InfluenceArea>(entity)
+                .unwrap()
+                .attraction_enabled
+            {
+                crate::edit_mode::EditAction::Area(
+                    crate::area_panel::AreaAction::AttractionEnabled,
+                )
+                .apply(world, root);
+            }
+            let direction = if operation == Operation::Attract {
                 Direction::Attract
             } else {
                 Direction::Repel
             };
-            drop(area);
+            crate::edit_mode::EditAction::Area(crate::area_panel::AreaAction::Direction(direction))
+                .apply(world, root);
+            crate::area_panel::set_force_strength(world, root, entity, 100.0)?;
             let sample = find(world, root, Role::Square).unwrap();
             crate::topology::set_position(world, sample, DVec3::new(420.0, 0.0, 0.0));
         }
         Operation::CreateProteinArea | Operation::PreviewProtein | Operation::PresentProperties => {
             let entity = protein(world, root)?;
-            if operation == Operation::PresentProperties {
+            crate::edit_mode::EditAction::Open.apply(world, root);
+            crate::edit_mode::EditAction::Areas.apply(world, root);
+            crate::edit_mode::EditAction::Area(crate::area_panel::AreaAction::Select(entity))
+                .apply(world, root);
+            if operation != Operation::CreateProteinArea {
+                let ids = world.get::<Practice>(root).unwrap().records[..2].to_vec();
+                crate::protein_area::ProteinAction::Query.apply(world, entity);
+                let editor = world
+                    .query::<(Entity, &crate::protein_area::QueryEditor)>()
+                    .iter(world)
+                    .find(|(_, link)| link.0 == entity)
+                    .map(|(entity, _)| entity)
+                    .ok_or("The query editor is unavailable. Skip or Close.")?;
                 world
-                    .get_mut::<InfluenceArea>(entity)
+                    .get_mut::<crate::protein_castle::ProteinCastle>(editor)
+                    .unwrap()
+                    .draft
+                    .query["where"] = serde_json::json!([{"any":ids.iter().map(|uid| serde_json::json!({"uid_eq":uid})).collect::<Vec<_>>()}]);
+                crate::protein_castle::ProteinAction::Run.apply(world, editor);
+            }
+            if operation == Operation::PresentProperties {
+                let bindings = world
+                    .get::<InfluenceArea>(entity)
                     .unwrap()
                     .protein
-                    .as_mut()
+                    .as_ref()
                     .unwrap()
-                    .bindings = vec![
-                    crate::protein_area::Binding::new("head"),
-                    crate::protein_area::Binding::new("quantity"),
-                ];
+                    .bindings
+                    .clone();
+                for (index, binding) in bindings.iter().enumerate().rev() {
+                    if !["head", "quantity"].contains(&binding.property.as_str()) {
+                        crate::protein_area::ProteinAction::RemoveField(index).apply(world, entity);
+                    }
+                }
+                for property in ["head", "quantity"] {
+                    if !bindings.iter().any(|binding| binding.property == property) {
+                        crate::protein_area::ProteinAction::Add(property.into())
+                            .apply(world, entity);
+                    }
+                }
             }
         }
         Operation::MatchRecord => {
@@ -698,6 +1106,12 @@ fn observe(world: &mut World, root: Entity) -> Observation {
     let Some(operation) = step.operation else {
         return Observation::Complete;
     };
+    if operation == Operation::InspectCalls && community::complete(world, root, operation)
+        || media_practice::unavailable_playback(world, root, operation)
+        || visual::source_only(world, root, operation)
+    {
+        return Observation::Viewed;
+    }
     let complete = match operation {
         Operation::OpenEdit => world
             .get::<crate::edit_mode::EditMode>(root)
@@ -771,17 +1185,26 @@ fn observe(world: &mut World, root: Entity) -> Observation {
                             .get::<InfluenceArea>(entity)
                             .and_then(|area| area.protein.as_ref())
                             .is_some_and(|config| {
-                                ["head", "quantity"].iter().all(|property| {
-                                    config
-                                        .bindings
-                                        .iter()
-                                        .any(|binding| binding.property == *property)
-                                })
+                                config.bindings.len() == 2
+                                    && ["head", "quantity"].iter().all(|property| {
+                                        config
+                                            .bindings
+                                            .iter()
+                                            .any(|binding| binding.property == *property)
+                                    })
                             })
                     }))
         }
-        Operation::MatchRecord => find(world, root, Role::Changes)
-            .is_some_and(|entity| crate::area_mutation::armed(world, entity)),
+        Operation::MatchRecord => {
+            find(world, root, Role::Changes)
+                .is_some_and(|entity| crate::area_mutation::armed(world, entity))
+                && sample_rows(world, root).iter().any(|(entity, uid)| {
+                    world
+                        .get::<crate::protein_area::placement::Pending>(*entity)
+                        .is_none()
+                        && world.get::<Practice>(root).unwrap().records.first() == Some(uid)
+                })
+        }
         Operation::EnterArea | Operation::LeaveArea => {
             let practice = world.get::<Practice>(root).unwrap();
             let confirmed = if operation == Operation::EnterArea {
@@ -829,6 +1252,41 @@ enum Command {
     Retry,
 }
 
+#[derive(Clone, Copy)]
+struct Recall(Option<&'static str>);
+
+pub(crate) fn follow(world: &mut World, root: Entity, reference: &str) -> bool {
+    if !visible(world, root) {
+        return false;
+    }
+    let slug = world.get_resource::<Content>().and_then(|content| {
+        content.0.iter().find_map(|(slug, record)| {
+            (slug == reference || record.projection.uid == reference).then(|| slug.clone())
+        })
+    });
+    let Some(slug) = slug else { return false };
+    world.get_mut::<Practice>(root).unwrap().reference = Some(slug);
+    render(world, root);
+    true
+}
+
+impl Action for Recall {
+    fn practice_intent(&self) -> crate::actions::PracticeIntent {
+        crate::actions::PracticeIntent::Recovery
+    }
+    fn apply(&self, world: &mut World, root: Entity) {
+        if let Some(mut practice) = world.get_mut::<Practice>(root) {
+            if self.0.is_none_or(|slug| {
+                lince_interface::handbook::foundations(practice.runner.lesson.subject)
+                    .contains(&slug)
+            }) {
+                practice.reference = self.0.map(str::to_owned);
+                render(world, root);
+            }
+        }
+    }
+}
+
 impl Action for Command {
     fn practice_intent(&self) -> crate::actions::PracticeIntent {
         crate::actions::PracticeIntent::Recovery
@@ -839,6 +1297,9 @@ impl Action for Command {
         }
         match self {
             Self::Close => {
+                if let Some(directory) = sample_directory(world, root) {
+                    crate::external_drop::cancel_owned_choice(world, root, &directory);
+                }
                 let mut practice = world.get_mut::<Practice>(root).unwrap();
                 practice.runner.close();
                 practice.pending = None;
@@ -852,8 +1313,77 @@ impl Action for Command {
                 drop(practice);
                 input::release(world, root);
                 crate::tutorial::highlight::clear(world, root);
+                restore_edit(world, root);
+                disarm_samples(world, root);
+                cleanup::start(world, root);
             }
             Self::Keep | Self::Discard => {
+                if matches!(self, Self::Keep) {
+                    cleanup::start(world, root);
+                    cleanup::receive(world, root);
+                    if !world.get::<Practice>(root).unwrap().cleanup.ready() {
+                        crate::notifications::report(
+                            world,
+                            "Instinct practice",
+                            "The sample automation is still stopping or could not be stopped. Keep is available after confirmation; Discard and Close remain available.",
+                        );
+                        render(world, root);
+                        return;
+                    }
+                    let practice = world.get::<Practice>(root).unwrap();
+                    if practice
+                        .runner
+                        .lesson
+                        .steps
+                        .iter()
+                        .filter_map(|step| step.operation)
+                        .any(Operation::needs_cell)
+                        && !world
+                            .resource::<crate::practice_cells::PracticeCells>()
+                            .cells
+                            .contains_key(&practice.source)
+                    {
+                        crate::notifications::report(
+                            world,
+                            "Instinct practice",
+                            "The sample Cell did not finish setup. Discard this attempt and restart the page to create usable examples.",
+                        );
+                        return;
+                    }
+                    let sources: Vec<_> = std::iter::once(practice.source.clone())
+                        .chain(practice.extra_sources.iter().cloned())
+                        .collect();
+                    let cells = world.resource::<crate::practice_cells::PracticeCells>();
+                    let result = sources.iter().try_for_each(|source| {
+                        let path = cells
+                            .directories
+                            .get(source)
+                            .ok_or("The practice directory is unavailable.".to_string())?;
+                        if !cells.cells.contains_key(source) {
+                            return Err(
+                                "A sample Cell is not ready. Discard or restart this page.".into(),
+                            );
+                        }
+                        let records: Vec<_> = cells
+                            .records
+                            .get(source)
+                            .into_iter()
+                            .flatten()
+                            .cloned()
+                            .collect();
+                        crate::practice_cells::persistence::keep(path, source, &records)
+                    });
+                    if let Err(error) = result {
+                        crate::notifications::report(
+                            world,
+                            "Instinct practice",
+                            &format!(
+                                "Keep failed: {error}. The examples are still available; retry Keep or Discard."
+                            ),
+                        );
+                        return;
+                    }
+                }
                 finish(world, root, matches!(self, Self::Keep));
                 return;
             }
@@ -898,6 +1428,32 @@ impl Action for Command {
                     }
                 }
                 let observation = observe(world, root);
+                let operation = world
+                    .get::<Practice>(root)
+                    .unwrap()
+                    .runner
+                    .current()
+                    .and_then(|step| step.operation);
+                let loading_control = operation == Some(Operation::CompleteTask)
+                    && find(world, root, Role::Feature).is_some_and(|owner| {
+                        !crate::todo::contains(
+                            world,
+                            owner,
+                            &world.get::<Practice>(root).unwrap().note,
+                        )
+                    });
+                if matches!(observation, Observation::Waiting)
+                    && operation.is_some_and(input::requires_control)
+                    && find(world, root, Role::Feature).is_some()
+                    && !loading_control
+                    && input::semantic(world, root).is_err()
+                {
+                    world.get_mut::<Practice>(root).unwrap().runner.phase = Phase::Unavailable("The intended native control is missing or ambiguous. Interaction is released; reveal the control and Retry, choose another page, Skip or Close.".into());
+                    input::release(world, root);
+                    render(world, root);
+                    input::refresh(world);
+                    return;
+                }
                 let mut practice = world.get_mut::<Practice>(root).unwrap();
                 let now = practice.started.elapsed().as_millis() as u64;
                 let effect = practice.runner.next(observation, now, 30_000);
@@ -981,6 +1537,11 @@ fn save_progress(world: &mut World, root: Entity) {
 
 fn finish(world: &mut World, root: Entity, keep: bool) {
     save_progress(world, root);
+    restore_edit(world, root);
+    disarm_samples(world, root);
+    if let Some(mut practice) = world.get_mut::<Practice>(root) {
+        practice.cleanup_handled = true;
+    }
     let Some(mut practice) = world.entity_mut(root).take::<Practice>() else {
         return;
     };
@@ -990,15 +1551,6 @@ fn finish(world: &mut World, root: Entity, keep: bool) {
     }
     input::release(world, root);
     crate::tutorial::highlight::clear(world, root);
-    if !practice.previous_edit
-        && practice.owned_edit_revision.is_some_and(|revision| {
-            world
-                .get::<crate::edit_mode::EditMode>(root)
-                .is_some_and(|mode| mode.enabled && mode.revision == revision)
-        })
-    {
-        crate::edit_mode::EditAction::Close.apply(world, root);
-    }
     world.despawn(practice.shell);
     let owned: Vec<_> = world
         .query::<(Entity, &Owned)>()
@@ -1015,46 +1567,125 @@ fn finish(world: &mut World, root: Entity, keep: bool) {
         }
     }
     crate::workspace::switch(world, root, practice.previous);
-    if !keep {
+    if keep {
+        crate::practice_cells::resume_audio(world, &practice.source);
+    } else {
         crate::protein_area::release_practice_source(world, &practice.source);
         crate::workspace::remove(world, root, practice.workspace);
         for workspace in &practice.extra_workspaces {
             crate::workspace::remove(world, root, *workspace);
         }
-        let mut cells = world.resource_mut::<crate::practice_cells::PracticeCells>();
-        cells.cells.remove(&practice.source);
-        let uids: Vec<_> = cells
-            .records
-            .iter()
-            .filter(|(_, source)| **source == practice.source)
-            .map(|(uid, _)| uid.clone())
-            .collect();
-        for uid in uids {
-            cells.records.remove(&uid);
-            cells.retired.insert(uid);
+        for entity in owned {
+            if world.get_entity(entity).is_ok() {
+                world.despawn(entity);
+            }
+        }
+        retire_source(world, &practice.source);
+        for source in &practice.extra_sources {
+            crate::protein_area::release_practice_source(world, source);
+            retire_source(world, source);
         }
     }
     crate::notifications::report(
         world,
         "Instinct",
         if keep {
-            "Kept the practice workspace. Property actions are disabled. Its sample Cell stays separate from personal data for this run."
+            "Kept the practice workspace. Property actions and sample automation are disabled. Its sample Cell remains separate from personal data; when workspace storage is available it will reopen next time."
         } else {
             "Discarded the practice workspace and its isolated Cell. Personal Records were untouched."
         },
     );
 }
 
+fn restore_edit(world: &mut World, root: Entity) {
+    visual::restore(world, root);
+    let Some(practice) = world.get::<Practice>(root) else {
+        return;
+    };
+    restore_edit_value(
+        world,
+        root,
+        practice.previous_edit,
+        practice.owned_edit_revision,
+    );
+}
+
+fn restore_edit_value(world: &mut World, root: Entity, previous: bool, revision: Option<u64>) {
+    if revision.is_some_and(|revision| {
+        world
+            .get::<crate::edit_mode::EditMode>(root)
+            .is_some_and(|mode| mode.enabled != previous && mode.revision == revision)
+    }) {
+        if previous {
+            crate::edit_mode::EditAction::Open.apply(world, root);
+        } else {
+            crate::edit_mode::EditAction::Close.apply(world, root);
+        }
+    }
+}
+
+fn disarm_samples(world: &mut World, root: Entity) {
+    let Some(practice) = world.get::<Practice>(root) else {
+        return;
+    };
+    let source = practice.source.clone();
+    let workspace = practice.workspace;
+    let session = practice.runner.session;
+    let timers: Vec<_> = world
+        .query::<(Entity, &Owned)>()
+        .iter(world)
+        .filter(|(entity, owned)| {
+            owned.session == session && crate::work_timer::running(world, *entity) == Some(true)
+        })
+        .map(|(entity, _)| entity)
+        .collect();
+    for timer in timers {
+        crate::work_timer::Toggle.apply(world, timer);
+    }
+    let simulations: Vec<_> = world
+        .query::<(Entity, &Owned)>()
+        .iter(world)
+        .filter(|(entity, owned)| {
+            owned.session == session
+                && world
+                    .get::<crate::simulation_castle::SimulationCastle>(*entity)
+                    .is_some()
+        })
+        .map(|(entity, _)| entity)
+        .collect();
+    for owner in simulations {
+        crate::simulation_castle::stop(world, owner);
+    }
+    work::clean_notice(world, root);
+    let areas: Vec<_> = world
+        .query::<(
+            Entity,
+            &crate::practice_cells::PracticeArea,
+            &WorkspaceMember,
+        )>()
+        .iter(world)
+        .filter(|(entity, area, member)| {
+            area.0 == source && member.0 == workspace && self::root(world, *entity) == Some(root)
+        })
+        .map(|(entity, _, _)| entity)
+        .collect();
+    for entity in areas {
+        crate::area_mutation::disarm(world, entity, "Practice ended");
+        if let Some(mut area) = world.get_mut::<InfluenceArea>(entity) {
+            area.changes_enabled = false;
+        }
+    }
+}
+
 fn render(world: &mut World, root: Entity) {
     let practice = world.get::<Practice>(root).unwrap();
-    let (content, summary, phase, mode, current, subject, count) = (
+    let (content, summary, phase, mode, current, subject) = (
         practice.content,
         practice.summary,
         practice.runner.phase.clone(),
         practice.runner.mode,
         practice.runner.current().map(|step| step.slug),
         practice.runner.lesson.subject,
-        practice.records.len(),
     );
     if let Some(children) = world.get::<Children>(content) {
         for child in children.iter().collect::<Vec<_>>() {
@@ -1090,26 +1721,123 @@ fn render(world: &mut World, root: Entity) {
     crate::edit_mode::label(
         world,
         content,
-        &format!("{mode:?} · {count} isolated sample Records"),
+        &format!("{mode:?} · disposable practice. Close offers Keep or Discard."),
         14.0,
     );
     if summary {
+        let practice = world.get::<Practice>(root).unwrap();
+        let session = practice.runner.session;
+        let workspaces = 1 + practice.extra_workspaces.len();
+        let sources: Vec<_> = std::iter::once(practice.source.clone())
+            .chain(practice.extra_sources.iter().cloned())
+            .collect();
+        let cells = world.resource::<crate::practice_cells::PracticeCells>();
+        let records = sources
+            .iter()
+            .filter_map(|source| cells.records.get(source))
+            .map(std::collections::HashSet::len)
+            .sum::<usize>();
+        let directories: Vec<_> = sources
+            .iter()
+            .filter_map(|source| cells.directories.get(source))
+            .cloned()
+            .collect();
+        let objects = world
+            .query::<&Owned>()
+            .iter(world)
+            .filter(|owned| owned.session == session)
+            .count();
         crate::edit_mode::label(
             world,
             content,
-            "Practice stopped. Restrictions are released. Keep retains this separate workspace for this run; Discard removes its samples. Submitted changes may have finished in the isolated Cell.",
+            &format!(
+                "This example created {workspaces} workspace(s), {objects} canvas object(s) and {records} Record(s) in separate sample Cells."
+            ),
+            14.0,
+        );
+        for directory in directories {
+            crate::edit_mode::label(
+                world,
+                content,
+                &format!(
+                    "Example files: {}. Keep retains these; Discard removes them.",
+                    directory.display()
+                ),
+                12.0,
+            );
+        }
+        let cleanup = world.get::<Practice>(root).unwrap().cleanup.message();
+        crate::edit_mode::label(world, content, &cleanup, 14.0);
+        crate::edit_mode::label(
+            world,
+            content,
+            "Practice stopped. Restrictions are released. Keep saves this separate workspace and its sample Cell when workspace storage is available; Discard removes its samples. Submitted changes may have finished in the isolated Cell.",
             14.0,
         );
         crate::description::button(world, content, root, "Keep practice", Command::Keep);
         crate::description::button(world, content, root, "Discard practice", Command::Discard);
         return;
     }
+    let subject_record = world.resource::<Content>().0.get(subject).cloned();
+    if current != Some(subject)
+        && let Some(record) = subject_record
+    {
+        crate::description::spawn(
+            world,
+            content,
+            super::teaching_text(&record.body),
+            crate::description::Context {
+                owner: root,
+                source: crate::protein_area::Source::Organ(
+                    world.get::<Practice>(root).unwrap().source.clone(),
+                ),
+            },
+        );
+    }
+    let foundations = lince_interface::handbook::foundations(subject);
+    if !foundations.is_empty() {
+        let earlier = crate::sand_panel::row(world, content);
+        for slug in foundations {
+            let title = world
+                .resource::<Content>()
+                .0
+                .get(*slug)
+                .map_or(*slug, |record| record.head.as_str())
+                .to_owned();
+            crate::description::button(
+                world,
+                earlier,
+                root,
+                &format!("Recall {title}"),
+                Recall(Some(slug)),
+            );
+        }
+    }
+    if let Some(reference) = world.get::<Practice>(root).unwrap().reference.clone()
+        && let Some(record) = world.resource::<Content>().0.get(&reference).cloned()
+    {
+        let pane = super::reader::scrolling(world, content, "Earlier explanation");
+        world.get_mut::<Node>(pane).unwrap().max_height = Val::Vh(30.0);
+        crate::description::heading(world, pane, &record.head, 18.0);
+        crate::description::spawn(
+            world,
+            pane,
+            super::teaching_text(&record.body),
+            crate::description::Context {
+                owner: root,
+                source: crate::protein_area::Source::Organ(
+                    world.get::<Practice>(root).unwrap().source.clone(),
+                ),
+            },
+        );
+        crate::description::button(world, content, root, "Back to this step", Recall(None));
+    }
     if let Some(slug) = current {
         let body = world
             .resource::<Content>()
             .0
             .get(slug)
-            .map(|record| record.body.clone())
+            .map(|record| super::teaching_text(&record.body).to_owned())
             .unwrap_or_else(|| {
                 "This instruction is unavailable. Skip, choose another page or Close.".into()
             });
@@ -1179,10 +1907,39 @@ fn render(world: &mut World, root: Entity) {
     }
     crate::description::button(world, footer, root, "Next", Command::Next);
     crate::description::button(world, footer, root, "Skip", Command::Skip);
+    if phase == Phase::Complete
+        && let Some(index) = lince_interface::handbook::PAGES
+            .iter()
+            .position(|page| page.slug == subject || page.reference == Some(subject))
+        && let Some(page) = lince_interface::handbook::PAGES.get(index + 1)
+    {
+        let title = world
+            .resource::<Content>()
+            .0
+            .get(page.slug)
+            .map_or(page.slug, |record| record.head.as_str())
+            .to_owned();
+        crate::description::button(
+            world,
+            footer,
+            root,
+            &format!("Continue: {title}"),
+            StartPage {
+                slug: page.slug.into(),
+                mode,
+            },
+        );
+    }
     if matches!(phase, Phase::Failed { .. } | Phase::Unavailable(_)) {
         crate::description::button(world, footer, root, "Retry", Command::Retry);
     }
     let pages = super::reader::scrolling(world, content, "Start another page");
+    crate::edit_mode::label(
+        world,
+        pages,
+        "Starting another page discards this disposable example. To retain it, Close and choose Keep first.",
+        12.0,
+    );
     world.entity_mut(pages).insert(Recovery);
     let mut node = world.get_mut::<Node>(pages).unwrap();
     node.height = Val::Auto;
@@ -1207,7 +1964,15 @@ fn render(world: &mut World, root: Entity) {
     }
 }
 
-pub(super) fn active(practices: Query<(), With<Practice>>) -> bool {
+pub(super) fn active(
+    practices: Query<
+        (),
+        (
+            With<Practice>,
+            bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
+        ),
+    >,
+) -> bool {
     !practices.is_empty()
 }
 
@@ -1217,7 +1982,13 @@ pub(super) fn advancing(practices: Query<&Practice>) -> bool {
 
 pub(super) fn emergency(
     keys: Res<ButtonInput<KeyCode>>,
-    practices: Query<Entity, With<Practice>>,
+    practices: Query<
+        Entity,
+        (
+            With<Practice>,
+            bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
+        ),
+    >,
     mut commands: Commands,
 ) {
     if keys.just_pressed(KeyCode::Escape)
@@ -1226,6 +1997,7 @@ pub(super) fn emergency(
     {
         for root in &practices {
             commands.queue(move |world: &mut World| {
+                laboratory_practice::return_to_workspace(world, root);
                 finish(world, root, false);
             });
         }
@@ -1248,9 +2020,6 @@ pub(super) fn update(
         .collect();
     for root in roots {
         let practice = world.get::<Practice>(root).unwrap();
-        if practice.summary {
-            continue;
-        }
         if world.get_entity(practice.shell).is_err()
             || world.get::<Workspaces>(root).is_none_or(|spaces| {
                 !spaces
@@ -1260,6 +2029,26 @@ pub(super) fn update(
             })
         {
             finish(world, root, false);
+            continue;
+        }
+        if practice.summary {
+            if cleanup::receive(world, root) {
+                render(world, root);
+            }
+            continue;
+        }
+        if practice.setup.is_none()
+            && practice.exercise.is_none()
+            && practice.pending.is_none()
+            && practice.records.is_empty()
+            && !practice
+                .runner
+                .lesson
+                .steps
+                .iter()
+                .filter_map(|step| step.operation)
+                .any(visual::handles)
+        {
             continue;
         }
         let prepared = practice
@@ -1272,15 +2061,57 @@ pub(super) fn update(
                 Ok(prepared) => {
                     let source = world.get::<Practice>(root).unwrap().source.clone();
                     let mut cells = world.resource_mut::<crate::practice_cells::PracticeCells>();
-                    for uid in &prepared.records {
-                        cells.records.insert(uid.clone(), source.clone());
-                    }
+                    cells
+                        .records
+                        .entry(source.clone())
+                        .or_default()
+                        .extend(prepared.records.iter().cloned());
                     cells.cells.insert(source.clone(), prepared.runtime);
                     world.get_mut::<Practice>(root).unwrap().records = prepared.records;
+                    if let Some(properties) = prepared.spatial_sample {
+                        pair(world, root);
+                        let sample = find(world, root, Role::Square).unwrap();
+                        world
+                            .entity_mut(sample)
+                            .insert(RecordProperties(properties));
+                        let entity = area(world, root, Role::Area).unwrap();
+                        world.get_mut::<InfluenceArea>(entity).unwrap().rules =
+                            vec![crate::area::PropertyRule {
+                                property: crate::area::Property::Title,
+                                value: "Instinct sample 1".into(),
+                            }];
+                        if let Some(operation) =
+                            world.get::<Practice>(root).unwrap().pending.and_then(|_| {
+                                world
+                                    .get::<Practice>(root)
+                                    .unwrap()
+                                    .runner
+                                    .current()
+                                    .and_then(|step| step.operation)
+                            })
+                        {
+                            let _ = execute(world, root, operation);
+                        }
+                    }
                     crate::protein_area::ensure_auxiliary(
                         world,
                         &crate::protein_area::Source::Organ(source),
                     );
+                    let first = world
+                        .get::<Practice>(root)
+                        .unwrap()
+                        .runner
+                        .current()
+                        .and_then(|step| step.operation);
+                    if let Some(
+                        operation @ (Operation::CompleteTask
+                        | Operation::MoveTask
+                        | Operation::OpenDatedRecord
+                        | Operation::SetOperation),
+                    ) = first
+                    {
+                        let _ = lessons::begin_record(world, root, operation);
+                    }
                     if world.get::<Practice>(root).unwrap().runner.lesson.subject
                         == "area-record-actions"
                     {
@@ -1296,13 +2127,25 @@ pub(super) fn update(
             }
         }
         lessons::receive(world, root);
-        for (entity, _) in sample_rows(world, root) {
-            world
-                .entity_mut(entity)
-                .insert(crate::practice_cells::PracticeRecord);
+        automation::prepare(world, root);
+        tools::prepare(world, root);
+        if !world.get::<Practice>(root).unwrap().records.is_empty() {
+            let source = crate::protein_area::Source::Organ(
+                world.get::<Practice>(root).unwrap().source.clone(),
+            );
+            let rows: Vec<_> = world.query_filtered::<(Entity, &crate::protein_area::RecordBinding), Without<crate::practice_cells::PracticeRecord>>().iter(world).filter(|(_, binding)| binding.source == source).map(|(entity, _)| entity).collect();
+            for entity in rows {
+                world
+                    .entity_mut(entity)
+                    .insert(crate::practice_cells::PracticeRecord);
+            }
         }
-        let change_area = find(world, root, Role::Changes);
+        work::drive(world, root);
+        let change_area = (!changes.is_empty())
+            .then(|| find(world, root, Role::Changes))
+            .flatten();
         for event in &changes {
+            work::transition(world, root, event);
             let mut practice = world.get_mut::<Practice>(root).unwrap();
             if Some(event.area) == change_area && practice.records.first() == Some(&event.record) {
                 if event.inside {
@@ -1312,7 +2155,11 @@ pub(super) fn update(
                 }
             }
         }
-        let observation = observe(world, root);
+        let observation = if world.get::<Practice>(root).unwrap().pending.is_some() {
+            observe(world, root)
+        } else {
+            Observation::Waiting
+        };
         let mut practice = world.get_mut::<Practice>(root).unwrap();
         let now = practice.started.elapsed().as_millis() as u64;
         let timed_out = practice.runner.tick(now);
@@ -1334,5 +2181,4 @@ pub(super) fn update(
             render(world, root);
         }
     }
-    input::refresh(world);
 }

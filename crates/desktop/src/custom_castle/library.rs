@@ -141,6 +141,9 @@ enum Command {
 }
 
 fn send(world: &World, root: Entity, message: ClientMessage) -> Result<(), String> {
+    if crate::instinct::practice::active_source(world, root).is_some() {
+        return Err("Organ publishing is available after leaving practice. Use the separate local practice library here.".into());
+    }
     if crate::laboratory::active(world) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
@@ -475,6 +478,9 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         .iter(world)
         .collect();
     for root in roots {
+        if crate::instinct::practice::active_source(world, root).is_some() {
+            continue;
+        }
         for message in &messages {
             let library = world.get::<Library>(root).unwrap();
             if library.organ.is_none()

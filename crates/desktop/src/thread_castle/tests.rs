@@ -25,6 +25,99 @@ pub(super) fn fixture() -> (World, Entity, Value) {
 }
 
 #[test]
+fn message_tools_overlay_the_history_and_keep_the_composer_clear() {
+    let (mut world, _, _) = fixture();
+    let forms: Vec<_> = world
+        .query::<(Entity, &ThreadForm)>()
+        .iter(&world)
+        .map(|(owner, form)| (owner, form.input, form.status))
+        .collect();
+    for (owner, input, status) in forms {
+        let composer = world.get::<ChildOf>(input).unwrap().parent();
+        let tools = world
+            .get::<composer_tools::ComposerTools>(composer)
+            .unwrap();
+        let panel = tools.panel;
+        let toggle = tools.toggle;
+        let node = world.get::<Node>(panel).unwrap();
+        assert_eq!(node.display, Display::None);
+        assert_eq!(node.position_type, PositionType::Absolute);
+        assert_eq!(node.bottom, percent(100));
+        assert_eq!(world.get::<Children>(owner).unwrap().len(), 2);
+        assert_eq!(world.get::<ChildOf>(status).unwrap().parent(), owner);
+        for caption in [
+            "Attach files",
+            "Dictate",
+            "Commands",
+            "Literal text: off",
+            "Add step list",
+        ] {
+            let label = world
+                .query::<(Entity, &Text)>()
+                .iter(&world)
+                .find(|(entity, text)| {
+                    text.0 == caption && {
+                        let mut cursor = Some(*entity);
+                        let mut inside = false;
+                        while let Some(entity) = cursor {
+                            if entity == panel {
+                                inside = true;
+                                break;
+                            }
+                            cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+                        }
+                        inside
+                    }
+                });
+            assert!(label.is_some(), "{caption}");
+        }
+        world
+            .get_mut::<EditableText>(input)
+            .unwrap()
+            .editor
+            .set_text("Keep this draft");
+        for expanded in [true, false, true, false] {
+            world.trigger(bevy::ui_widgets::Activate { entity: toggle });
+            assert_eq!(
+                world.get::<Node>(panel).unwrap().display,
+                if expanded {
+                    Display::Flex
+                } else {
+                    Display::None
+                }
+            );
+            assert_eq!(
+                world
+                    .get::<AccessibilityNode>(toggle)
+                    .unwrap()
+                    .is_expanded(),
+                Some(expanded)
+            );
+            assert_eq!(
+                world
+                    .get::<EditableText>(input)
+                    .unwrap()
+                    .value()
+                    .to_string(),
+                "Keep this draft"
+            );
+        }
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        world.trigger(bevy::ui_widgets::Activate { entity: toggle });
+        world
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(panel, bevy::input_focus::FocusCause::Pressed);
+        world.trigger(bevy::input_focus::FocusLost { entity: toggle });
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::Flex);
+        world
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(input, bevy::input_focus::FocusCause::Pressed);
+        world.trigger(bevy::input_focus::FocusLost { entity: panel });
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
+    }
+}
+
+#[test]
 fn streamed_tokens_stay_silent_and_completion_announces_once() {
     let (mut world, castle, mut data) = fixture();
     data["threads"][0]["messages"][0]["message_state"] = "writing".into();
@@ -79,6 +172,14 @@ fn private_social_threads_keep_plain_composition_participants_delivery_and_retai
         .map(|(entity, form)| (entity, form.input, form.social))
         .unwrap();
     assert!(social);
+    let composer_node = world.get::<ChildOf>(input).unwrap().parent();
+    let tools = world
+        .get::<composer_tools::ComposerTools>(composer_node)
+        .unwrap();
+    assert_eq!(
+        world.get::<Node>(tools.panel).unwrap().display,
+        Display::None
+    );
     assert!(
         world
             .get::<crate::message_content::Draft>(composer)

@@ -27,6 +27,9 @@ pub(super) fn execute(world: &mut World, root: Entity, operation: Operation) -> 
         }
         Operation::ShowNotice => {
             world.init_resource::<crate::notifications::Notifications>();
+            let previous_open = crate::notifications::open_state(world, root)
+                .map(|(open, _)| open)
+                .unwrap_or(false);
             let source = format!(
                 "Instinct practice {}",
                 world.get::<Practice>(root).unwrap().runner.session
@@ -42,12 +45,14 @@ pub(super) fn execute(world: &mut World, root: Entity, operation: Operation) -> 
                 .into_iter()
                 .find(|notice| notice.source == source)
                 .ok_or("The sample feedback is unavailable.")?;
+            crate::notifications::NotificationAction::Open.apply(world, root);
+            let revision =
+                crate::notifications::open_state(world, root).map(|(_, revision)| revision);
             world
                 .get_mut::<Practice>(root)
                 .unwrap()
                 .results
-                .insert(operation, json!({"id":notice.id,"message":notice.message}));
-            crate::notifications::NotificationAction::Toggle.apply(world, root);
+                .insert(operation, json!({"id":notice.id,"message":notice.message,"previous_open":previous_open,"revision":revision}));
         }
         Operation::DismissNotice => {
             let id = world
@@ -58,22 +63,31 @@ pub(super) fn execute(world: &mut World, root: Entity, operation: Operation) -> 
                 .and_then(|result| result["id"].as_u64())
                 .ok_or("Open the sample feedback first, or Skip.")?;
             crate::notifications::NotificationAction::Delete(id).apply(world, root);
-            crate::notifications::NotificationAction::Close.apply(world, root);
+            clean_notice(world, root);
         }
         Operation::CompleteTask
         | Operation::UndoTask
         | Operation::MoveTask
         | Operation::OpenDatedRecord
-        | Operation::SetOperation => lessons::begin_record(world, root, operation)?,
-        _ => return Err("The work example is unavailable.".into()),
+        | Operation::SetOperation => {
+            if find(world, root, Role::Feature).is_none() {
+                lessons::begin_record(world, root, operation)?;
+            }
+            drive(world, root);
+        }
+        other => automation::execute(world, root, other)?,
     }
     Ok(())
 }
 
-pub(super) fn complete(world: &World, root: Entity, operation: Operation) -> bool {
+pub(super) fn complete(world: &mut World, root: Entity, operation: Operation) -> bool {
+    let owner = find(world, root, Role::Feature);
     let practice = world.get::<Practice>(root).unwrap();
     match operation {
-        Operation::ShowNotice => practice.results.contains_key(&operation),
+        Operation::ShowNotice => {
+            practice.results.contains_key(&operation)
+                && crate::notifications::open_state(world, root).is_some_and(|(open, _)| open)
+        }
         Operation::DismissNotice => practice
             .results
             .get(&Operation::ShowNotice)
@@ -90,7 +104,45 @@ pub(super) fn complete(world: &World, root: Entity, operation: Operation) -> boo
                             .any(|notice| notice.id == id)
                     })
             }),
-        _ => practice.results.contains_key(&operation),
+        Operation::CompleteTask | Operation::UndoTask => owner.is_some_and(|owner| {
+            crate::todo::saved(
+                world,
+                owner,
+                &practice.note,
+                if operation == Operation::CompleteTask {
+                    "0"
+                } else {
+                    "-1"
+                },
+            )
+        }),
+        Operation::SetOperation => {
+            owner.is_some_and(|owner| crate::operation::saved(world, owner, &practice.note))
+        }
+        Operation::MoveTask => practice
+            .results
+            .get(&operation)
+            .is_some_and(|result| result["confirmed"] == true),
+        _ => automation::complete(world, root, operation),
+    }
+}
+
+pub(super) fn clean_notice(world: &mut World, root: Entity) {
+    let Some(result) = world
+        .get::<Practice>(root)
+        .and_then(|practice| practice.results.get(&Operation::ShowNotice))
+        .cloned()
+    else {
+        return;
+    };
+    if let Some(id) = result["id"].as_u64() {
+        crate::notifications::NotificationAction::Delete(id).apply(world, root);
+    }
+    if result["previous_open"] == false
+        && crate::notifications::open_state(world, root)
+            .is_some_and(|(open, revision)| open && Some(revision) == result["revision"].as_u64())
+    {
+        crate::notifications::NotificationAction::Close.apply(world, root);
     }
 }
 
@@ -102,6 +154,16 @@ pub(super) fn native_complete(world: &mut World, root: Entity, operation: Operat
             crate::work_timer::running(world, owner) == Some(false)
                 && crate::work_timer::stopped_log(world, owner)
         }),
+        Operation::OpenDatedRecord => {
+            let record = find(world, root, Role::Record);
+            let uid = world.get::<Practice>(root).unwrap().note.clone();
+            record.is_some_and(|record| {
+                world
+                    .query::<&crate::protein_area::RecordBinding>()
+                    .iter(world)
+                    .any(|binding| binding.area == record && binding.uid == uid)
+            })
+        }
         _ => complete(world, root, operation),
     }
 }
@@ -113,41 +175,22 @@ pub(super) async fn change(
 ) -> Result<(), engine::EngineError> {
     use engine::actions::Action;
     match operation {
-        Operation::CompleteTask
-        | Operation::UndoTask
-        | Operation::SetOperation
-        | Operation::MoveTask => {
-            let amount = match operation {
-                Operation::UndoTask => "-1",
-                Operation::MoveTask => "-2",
-                _ => "0",
-            };
-            engine
-                .act(
-                    Action::SetQuantityExact {
-                        target: uid.into(),
-                        amount: amount.into(),
-                    },
-                    None,
-                )
-                .await?;
-            if operation == Operation::MoveTask {
-                let task = lessons::concept(engine, "task", Vec::new()).await?;
-                let next = lessons::concept(engine, "next", Vec::new()).await?;
-                for predicate in [task, next] {
-                    engine
-                        .act(
-                            Action::AssertRecord {
-                                subject: uid.into(),
-                                predicate,
-                                object: None,
-                                quantity: None,
-                                unit: None,
-                            },
-                            None,
-                        )
-                        .await?;
-                }
+        Operation::MoveTask => {
+            let task = lessons::concept(engine, "task", Vec::new()).await?;
+            let todo = lessons::concept(engine, "todo", Vec::new()).await?;
+            for predicate in [task, todo] {
+                engine
+                    .act(
+                        Action::AssertRecord {
+                            subject: uid.into(),
+                            predicate,
+                            object: None,
+                            quantity: None,
+                            unit: None,
+                        },
+                        None,
+                    )
+                    .await?;
             }
         }
         Operation::OpenDatedRecord => {
@@ -242,9 +285,40 @@ pub(super) fn present(world: &mut World, root: Entity, operation: Operation) {
                     world
                         .entity_mut(entity)
                         .insert(crate::practice_cells::PracticeArea(source.clone()));
+                    own(world, root, entity, Role::Auxiliary);
                 }
             }
             board
+        }
+        Operation::SetOperation => {
+            let owner = crate::sand_store::spawn_sand(
+                world,
+                root,
+                workspace,
+                crate::sand_store::SandKind::Operation,
+                "",
+                DVec2::new(900.0, 0.0),
+            );
+            crate::operation::input(world, owner, "@instinct-note");
+            Some(owner)
+        }
+        Operation::ReadVocabulary => {
+            let owner = crate::sand_store::spawn_sand(
+                world,
+                root,
+                workspace,
+                crate::sand_store::SandKind::Ontology,
+                "",
+                DVec2::new(700.0, 0.0),
+            );
+            crate::ontology::inspect_sample(world, owner);
+            crate::edit_mode::label(
+                world,
+                owner,
+                "nota-de-pratica → practice-note\nsample-kind → choose note or practice-note",
+                14.0,
+            );
+            Some(owner)
         }
         _ => None,
     };
@@ -253,5 +327,94 @@ pub(super) fn present(world: &mut World, root: Entity, operation: Operation) {
         world
             .entity_mut(owner)
             .insert(crate::practice_cells::PracticeSource(source));
+    }
+}
+
+pub(super) fn drive(world: &mut World, root: Entity) {
+    let practice = world.get::<Practice>(root).unwrap();
+    if practice.pending.is_none() {
+        return;
+    }
+    let Some(operation) = practice.runner.current().and_then(|step| step.operation) else {
+        return;
+    };
+    let uid = practice.note.clone();
+    let source = practice.source.clone();
+    let Some(owner) = find(world, root, Role::Feature) else {
+        return;
+    };
+    match operation {
+        Operation::CompleteTask
+            if crate::todo::contains(world, owner, &uid)
+                && !crate::todo::busy(world, owner)
+                && !crate::todo::saved(world, owner, &uid, "0") =>
+        {
+            crate::todo::Command::Complete(uid).apply(world, owner)
+        }
+        Operation::UndoTask
+            if !crate::todo::busy(world, owner)
+                && !crate::todo::saved(world, owner, &uid, "-1") =>
+        {
+            crate::todo::Command::Undo.apply(world, owner)
+        }
+        Operation::SetOperation
+            if crate::operation::ready(world, owner, "instinct-note")
+                && !crate::operation::saved(world, owner, &uid) =>
+        {
+            crate::operation::input(world, owner, "@instinct-note");
+            crate::operation::OperationAction::Submit.apply(world, owner);
+        }
+        Operation::MoveTask => {
+            if !world
+                .get::<Practice>(root)
+                .unwrap()
+                .results
+                .get(&operation)
+                .is_some_and(|result| result["moving"] == true)
+                && crate::kanban::move_card(world, owner, &uid, 2).is_ok()
+            {
+                world
+                    .get_mut::<Practice>(root)
+                    .unwrap()
+                    .results
+                    .entry(operation)
+                    .or_default()["moving"] = json!(true);
+            }
+        }
+        Operation::OpenDatedRecord => {
+            let rows = sample_rows(world, root);
+            if find(world, root, Role::Record).is_none()
+                && rows.iter().any(|(_, record)| record == &uid)
+            {
+                let binding = crate::protein_area::RecordBinding {
+                    uid: uid.clone(),
+                    source: crate::protein_area::Source::Organ(source),
+                    area: owner,
+                };
+                crate::calendar::Command::Record(binding).apply(world, owner);
+            }
+        }
+        _ => {}
+    }
+}
+
+pub(super) fn transition(
+    world: &mut World,
+    root: Entity,
+    event: &crate::area_mutation::TransitionApplied,
+) {
+    let practice = world.get::<Practice>(root).unwrap();
+    if event.record != practice.note || !event.inside {
+        return;
+    }
+    if let Some(owner) = find(world, root, Role::Feature)
+        && crate::kanban::column_entity(world, owner, 2) == Some(event.area)
+    {
+        world
+            .get_mut::<Practice>(root)
+            .unwrap()
+            .results
+            .entry(Operation::MoveTask)
+            .or_default()["confirmed"] = json!(true);
     }
 }

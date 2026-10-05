@@ -15,7 +15,13 @@ fn main() {
         let mut requirements = Vec::new();
         let mut seen = BTreeSet::new();
         let mut steps = std::collections::BTreeMap::new();
+        let mut page_orders = std::collections::BTreeMap::<&str, u32>::new();
+        let mut chapter_orders = std::collections::BTreeMap::new();
         for page in lince_interface::handbook::PAGES {
+            let chapter_order = chapter_orders.len() as u32 + 1;
+            chapter_orders.entry(page.chapter).or_insert(chapter_order);
+            let order = page_orders.entry(page.chapter).or_default();
+            *order += 1;
             assert!(
                 seen.insert(page.slug),
                 "Duplicate handbook manifest slug @{}",
@@ -24,6 +30,7 @@ fn main() {
             requirements.push(anicca::instinct::Requirement {
                 slug: page.slug,
                 parent: Some(page.chapter),
+                order: Some(*order),
             });
             manifest.insert(page.chapter);
             manifest.insert(page.slug);
@@ -35,6 +42,7 @@ fn main() {
             requirements.push(anicca::instinct::Requirement {
                 slug: lesson.subject,
                 parent: None,
+                order: None,
             });
             manifest.insert(lesson.subject);
             for step in lesson.steps {
@@ -53,10 +61,12 @@ fn main() {
                 requirements.push(anicca::instinct::Requirement {
                     slug: step.subject,
                     parent: None,
+                    order: None,
                 });
                 requirements.push(anicca::instinct::Requirement {
                     slug: step.slug,
                     parent: Some(step.subject),
+                    order: None,
                 });
                 manifest.insert(step.subject);
                 manifest.insert(step.slug);
@@ -76,6 +86,7 @@ fn main() {
                 } else {
                     Some("instinct-handbook")
                 },
+                order: chapter_orders.get(slug).copied(),
             });
         }
         if let Err(errors) = anicca::instinct::validate(&text, &requirements) {

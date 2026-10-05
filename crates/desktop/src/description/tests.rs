@@ -197,29 +197,31 @@ fn record_links_keep_their_source_and_navigate_embedded_records() {
             crate::canvas::CanvasView::default(),
         ))
         .id();
-    let instinct = crate::instinct::spawn(
-        &mut world,
-        root,
-        1,
-        bevy::math::DVec2::ZERO,
-        crate::instinct::Instinct::default(),
-    );
-    Link {
-        reference: "@tool".into(),
-        context: Context {
-            owner: instinct,
-            source: Source::Local,
-        },
+    if cfg!(feature = "instinct") {
+        let instinct = crate::instinct::spawn(
+            &mut world,
+            root,
+            1,
+            bevy::math::DVec2::ZERO,
+            crate::instinct::Instinct::default(),
+        );
+        Link {
+            reference: "@tool".into(),
+            context: Context {
+                owner: instinct,
+                source: Source::Local,
+            },
+        }
+        .apply(&mut world, instinct);
+        assert_eq!(
+            world
+                .get::<crate::instinct::Instinct>(instinct)
+                .unwrap()
+                .page
+                .as_deref(),
+            Some("tool")
+        );
     }
-    .apply(&mut world, instinct);
-    assert_eq!(
-        world
-            .get::<crate::instinct::Instinct>(instinct)
-            .unwrap()
-            .page
-            .as_deref(),
-        Some("tool")
-    );
     let source = Source::Organ("another-organ".into());
     Link {
         reference: "another-record".into(),

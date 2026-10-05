@@ -166,6 +166,9 @@ impl Action for Submit {
             form.status,
         );
         let result = (|| {
+            if crate::practice_cells::source(world, owner).is_some() {
+                return Err("This is a practice form. Create owner backups from your ordinary Configuration.".to_string());
+            }
             if crate::laboratory::active(world) {
                 return Err("Backups are unavailable in the Laboratory".to_string());
             }

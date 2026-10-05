@@ -196,7 +196,7 @@ fn source_query(
         .ok_or("Time Castle closed")?
         .0;
     let Some(id) = settings.area.clone() else {
-        return Ok((Source::Local, Vec::new()));
+        return Ok((crate::practice_cells::source(world, owner).map_or(Source::Local, Source::Organ), Vec::new()));
     };
     let root = world
         .get::<ChildOf>(owner)
@@ -217,6 +217,9 @@ fn source_query(
         })
         .and_then(|(area, _, _)| area.protein.clone())
         .ok_or("Selected Protein Area is unavailable")?;
+    if crate::practice_cells::source(world, owner).is_some_and(|source| area.source != Source::Organ(source)) {
+        return Err("Choose a Protein from this practice Cell.".into());
+    }
     let query = area.query()?;
     Ok((area.source, query.filter))
 }
@@ -388,7 +391,7 @@ fn update(
             .filter(|feed| {
                 feed.window.timezone == settings.timezone
                     && feed.window.until_ms >= now.saturating_add(settings.horizon_ms)
-                    && feed.window.from_ms <= now
+                    && feed.window.from_ms <= settings.history_from(now)
             })
             .map(|feed| feed.window.clone())
             .or_else(|| settings.window(now));

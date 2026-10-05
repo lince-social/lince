@@ -101,6 +101,7 @@ impl Plugin for SoundAreaPlugin {
 }
 
 pub(crate) use ui::controls;
+pub(crate) use ui::{assign, enable, preview};
 
 fn update(world: &mut World) {
     if crate::laboratory::active(world) {

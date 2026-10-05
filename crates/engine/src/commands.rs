@@ -6,6 +6,17 @@ use crate::{Engine, EngineError};
 
 mod runner;
 
+impl Engine {
+    pub fn set_command_directory(&self, directory: &std::path::Path) -> Result<(), EngineError> {
+        let metadata = std::fs::symlink_metadata(directory).map_err(invalid)?;
+        if !metadata.is_dir() || metadata.file_type().is_symlink() {
+            return Err(invalid("The command directory must be an ordinary directory"));
+        }
+        *self.command_directory.lock().map_err(invalid)? = Some(directory.canonicalize().map_err(invalid)?);
+        Ok(())
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct QueryContext {
     pub rule_uid: String,
@@ -584,9 +595,10 @@ impl Engine {
                 message: "Simulation has no controlled command response".into(),
             })?
         } else {
+            let directory = self.command_directory.lock().map_err(invalid)?.clone();
             runner::run(&serde_json::from_str::<Command>(
                 &row.get::<String, _>("configuration"),
-            )?)
+            )?, directory.as_deref())
             .await
         };
         self.access_scope(true, async {

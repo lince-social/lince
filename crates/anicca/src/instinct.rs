@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct Requirement<'a> {
     pub slug: &'a str,
     pub parent: Option<&'a str>,
+    pub order: Option<u32>,
 }
 
 pub fn validate(
@@ -65,6 +66,24 @@ pub fn validate(
                 "@{} needs #part-of @{parent}",
                 requirement.slug
             )));
+        }
+        if let Some(expected) = requirement.order {
+            let actual = record
+                .assertions
+                .iter()
+                .find(|assertion| {
+                    assertion.predicate == "part-of"
+                        && assertion.object_slug.as_deref() == requirement.parent
+                })
+                .and_then(|assertion| assertion.quantity.as_deref())
+                .and_then(|value| value.parse::<u32>().ok());
+            if actual != Some(expected) {
+                errors.push(error(format!(
+                    "@{} needs #part-of @{}: {expected} to match the teaching order",
+                    requirement.slug,
+                    requirement.parent.unwrap_or("instinct-handbook")
+                )));
+            }
         }
         if let Some(parent) = requirement.parent
             && slugs.get(parent).is_some_and(|record| {

@@ -58,7 +58,16 @@ impl Drop for Watch {
 }
 
 #[derive(Component)]
-struct Job(tokio::sync::oneshot::Receiver<Result<Outcome, String>>);
+struct Job(
+    tokio::sync::oneshot::Receiver<Result<Outcome, String>>,
+    tokio::task::JoinHandle<()>,
+);
+
+impl Drop for Job {
+    fn drop(&mut self) {
+        self.1.abort();
+    }
+}
 
 #[derive(Component)]
 struct TransferRow(Transfer);
@@ -173,10 +182,7 @@ impl Action for Command {
         }
         let paths = view.paths.clone();
         let target = view.target.clone();
-        let Some(runtime) = world
-            .get_resource::<crate::app::CellHandle>()
-            .map(|handle| handle.0.clone())
-        else {
+        let Some(runtime) = crate::practice_cells::runtime(world, owner) else {
             panel::status(world, status, "The local Cell is unavailable");
             return;
         };
@@ -185,16 +191,28 @@ impl Action for Command {
             return;
         };
         let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
+        let prepared_directory = crate::practice_cells::source(world, owner).and_then(|source| {
+            world
+                .get_resource::<crate::practice_cells::PracticeCells>()?
+                .directories
+                .get(&source)
+                .cloned()
+        });
         let command = self.clone();
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        handle.spawn(async move {
-            let result = run(command, runtime, paths, target).await;
+        let task = handle.spawn(async move {
+            let result = tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                run(command, runtime, paths, target, prepared_directory),
+            )
+            .await
+            .unwrap_or_else(|_| Err("This operation timed out. Retry or cancel the copy.".into()));
             let _ = sender.send(result);
             if let Some(wake) = wake {
                 wake.ring();
             }
         });
-        world.entity_mut(owner).insert(Job(receiver));
+        world.entity_mut(owner).insert(Job(receiver, task));
         panel::status(
             world,
             status,
@@ -212,9 +230,13 @@ async fn run(
     runtime: cell::CellRuntime,
     paths: Vec<PathBuf>,
     target: Option<String>,
+    prepared_directory: Option<PathBuf>,
 ) -> Result<Outcome, String> {
     match command {
         Command::Files | Command::Folder => {
+            if let Some(directory) = prepared_directory {
+                return Ok(Outcome::Files(vec![directory.join("blob-sample.txt")]));
+            }
             let paths = tokio::task::spawn_blocking(move || {
                 if matches!(command, Command::Files) {
                     rfd::FileDialog::new().pick_files()
@@ -245,13 +267,21 @@ async fn run(
             ))
         }
         Command::Accept(id) => {
-            let directory = tokio::task::spawn_blocking(|| {
-                rfd::FileDialog::new()
-                    .set_title("Save Blob Sync copy in")
-                    .pick_folder()
-            })
-            .await
-            .map_err(|error| error.to_string())?;
+            let directory = if let Some(directory) = prepared_directory {
+                let directory = directory.join("received-files");
+                tokio::fs::create_dir_all(&directory)
+                    .await
+                    .map_err(|error| error.to_string())?;
+                Some(directory)
+            } else {
+                tokio::task::spawn_blocking(|| {
+                    rfd::FileDialog::new()
+                        .set_title("Save Blob Sync copy in")
+                        .pick_folder()
+                })
+                .await
+                .map_err(|error| error.to_string())?
+            };
             let Some(directory) = directory else {
                 return Ok(Outcome::Nothing);
             };
@@ -273,6 +303,80 @@ async fn run(
             Ok(Outcome::Done("Copy stopped.".into()))
         }
         _ => Ok(Outcome::Nothing),
+    }
+}
+
+fn within(world: &World, ancestor: Entity, mut entity: Entity) -> bool {
+    loop {
+        if entity == ancestor {
+            return true;
+        }
+        let Some(parent) = world.get::<ChildOf>(entity) else {
+            return false;
+        };
+        entity = parent.parent();
+    }
+}
+
+fn control(world: &mut World, ancestor: Entity) -> Option<Entity> {
+    let owners: Vec<_> = world
+        .query_filtered::<Entity, With<View>>()
+        .iter(world)
+        .filter(|entity| within(world, ancestor, *entity))
+        .collect();
+    match owners.as_slice() {
+        [owner] => Some(*owner),
+        _ => None,
+    }
+}
+
+pub(crate) fn prepare_copy(world: &mut World, ancestor: Entity, file: PathBuf, target: &str) {
+    let Some(owner) = control(world, ancestor) else {
+        return;
+    };
+    if world.get::<Job>(owner).is_some() {
+        return;
+    }
+    let selection = world.get::<View>(owner).unwrap().selection;
+    world.get_mut::<View>(owner).unwrap().paths = vec![file];
+    panel::status(world, selection, "blob-sample.txt · bundled practice file");
+    Command::Select(target.into(), "Prepared peer".into()).apply(world, owner);
+}
+
+pub(crate) fn send_copy(world: &mut World, ancestor: Entity) {
+    if let Some(owner) = control(world, ancestor) {
+        Command::Send.apply(world, owner);
+    }
+}
+
+pub(crate) fn transfer(
+    world: &mut World,
+    ancestor: Entity,
+    direction: &str,
+    state: &str,
+) -> Option<String> {
+    let owner = control(world, ancestor)?;
+    let snapshot = world.get::<View>(owner)?.snapshot.as_ref()?;
+    snapshot
+        .transfers
+        .iter()
+        .find(|transfer| {
+            transfer.direction == direction
+                && transfer.state == state
+                && transfer
+                    .manifest
+                    .entries
+                    .iter()
+                    .any(|entry| entry.path == "blob-sample.txt")
+        })
+        .map(|transfer| transfer.id.clone())
+}
+
+pub(crate) fn accept_copy(world: &mut World, ancestor: Entity) {
+    if let Some(id) = transfer(world, ancestor, "incoming", "offered")
+        && let Some(owner) = control(world, ancestor)
+    {
+        Command::Accept(id).apply(world, owner);
     }
 }
 
@@ -341,10 +445,7 @@ pub(super) fn update(world: &mut World) {
 }
 
 fn start_watch(world: &mut World, owner: Entity) {
-    let Some(runtime) = world
-        .get_resource::<crate::app::CellHandle>()
-        .map(|handle| handle.0.clone())
-    else {
+    let Some(runtime) = crate::practice_cells::runtime(world, owner) else {
         return;
     };
     let Ok(handle) = tokio::runtime::Handle::try_current() else {

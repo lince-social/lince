@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use crate::{
     actions::Action,
-    cell_bridge::{CellBridge, CellMessage, ReceiveCell},
+    cell_bridge::{CellMessage, ReceiveCell},
     workspace::WorkspaceMember,
 };
 pub(crate) use persistence::{SavedFrequencyCastle, snapshot};
@@ -43,7 +43,10 @@ struct Pending {
 }
 
 #[derive(Resource, Default)]
-struct Requests(HashMap<String, Entity>);
+struct Requests(
+    HashMap<String, Entity>,
+    HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+);
 
 pub struct FrequencyCastlePlugin;
 
@@ -162,16 +165,11 @@ fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
     }
 }
 
-fn send(world: &World, message: ClientMessage) -> Result<(), String> {
+fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
     if crate::laboratory::active(world) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
-    world
-        .get_non_send::<CellBridge>()
-        .ok_or("No Cell connection")?
-        .outgoing
-        .try_send(message)
-        .map_err(|error| format!("Could not reach the Cell: {error}"))
+    crate::practice_cells::send(world, owner, message)
 }
 
 fn submit(
@@ -191,6 +189,7 @@ fn submit(
     let id = nucleus::new_uid("frequency-castle");
     match send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action,
@@ -243,8 +242,15 @@ fn maintain(world: &mut World) {
         .map(|(id, _)| id.clone())
         .collect();
     for id in stale {
-        if send(world, ClientMessage::Unsubscribe { id: id.clone() }).is_ok() {
+        let sender = world.resource::<Requests>().1.get(&id).cloned();
+        if sender.is_none_or(|sender| {
+            sender.is_closed()
+                || sender
+                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                    .is_ok()
+        }) {
             world.resource_mut::<Requests>().0.remove(&id);
+            world.resource_mut::<Requests>().1.remove(&id);
         }
     }
     let owners: Vec<_> = world
@@ -262,17 +268,35 @@ fn maintain(world: &mut World) {
         let protein = serde_json::from_value(serde_json::json!({"source":"frequency"})).unwrap();
         match send(
             world,
+            owner,
             ClientMessage::Subscribe {
                 id: id.clone(),
                 protein,
             },
         ) {
             Ok(()) => {
+                if let Some(sender) = crate::practice_cells::sender(world, owner) {
+                    world
+                        .resource_mut::<Requests>()
+                        .1
+                        .insert(id.clone(), sender);
+                }
                 world.resource_mut::<Requests>().0.insert(id, owner);
             }
             Err(error) => status(world, owner, error),
         }
     }
+}
+
+pub(crate) use ui::Command as FrequencyAction;
+
+pub(crate) fn next_occurrence(world: &World, owner: Entity, slug: &str) -> Option<i64> {
+    world
+        .get::<View>(owner)?
+        .rows
+        .iter()
+        .find(|row| row.slug == slug)?
+        .next_at_ms
 }
 
 fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {

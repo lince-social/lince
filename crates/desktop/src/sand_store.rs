@@ -65,7 +65,9 @@ impl SandKind {
             Self::Text => "A simple text label.",
             Self::EditableText => "A note you can write in.",
             Self::Operation => "Run commands or set a Record quantity to zero by slug.",
-            Self::WorkTimer => "A quiet clock for upcoming work. Unfold the timeline or open its scheduling and stopwatch controls.",
+            Self::WorkTimer => {
+                "A quiet clock for upcoming work. Unfold the timeline or open its scheduling and stopwatch controls."
+            }
             Self::AccessControl => "Manage local users, Roles and permissions.",
             Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
             Self::Freedoom => "Play Freedoom locally with keyboard controls.",
@@ -466,6 +468,29 @@ pub fn spawn_sand(
     text: &str,
     position: DVec2,
 ) -> Entity {
+    spawn_with_source(world, root, workspace, kind, text, position, None)
+}
+
+pub(crate) fn spawn_scoped_sand(
+    world: &mut World,
+    root: Entity,
+    workspace: u64,
+    kind: SandKind,
+    position: DVec2,
+    source: String,
+) -> Entity {
+    spawn_with_source(world, root, workspace, kind, "", position, Some(source))
+}
+
+fn spawn_with_source(
+    world: &mut World,
+    root: Entity,
+    workspace: u64,
+    kind: SandKind,
+    text: &str,
+    position: DVec2,
+    source: Option<String>,
+) -> Entity {
     let elevation = world
         .get::<crate::topology::view::View>(root)
         .map_or(0.0, |view| view.plane);
@@ -515,6 +540,11 @@ pub fn spawn_sand(
             }),
         ))
         .id();
+    if let Some(source) = source {
+        world
+            .entity_mut(sand)
+            .insert(crate::practice_cells::PracticeSource(source));
+    }
     let content = match kind {
         SandKind::Operation => Some(crate::operation::populate(world, root, sand)),
         SandKind::AccessControl => Some(crate::access_control::populate(world, root, sand)),

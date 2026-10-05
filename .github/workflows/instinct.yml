@@ -1,0 +1,58 @@
+name: instinct-contracts
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instinct-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: -D warnings -C link-arg=-fuse-ld=mold
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  handbook:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned Rust version
+        id: toolchain
+        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mold pkg-config clang libclang-dev libpipewire-0.3-dev libdbus-1-dev libglib2.0-dev libpulse-dev libspeechd-dev libva-dev libssl-dev libsqlite3-dev libasound2-dev libwayland-dev libxkbcommon-dev libx11-dev libxcb1-dev libxrandr-dev libxi-dev libxcursor-dev libgl1-mesa-dev libvulkan-dev
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug
+          key: instinct-${{ runner.os }}-${{ steps.toolchain.outputs.version }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: instinct-${{ runner.os }}-${{ steps.toolchain.outputs.version }}-${{ hashFiles('Cargo.lock') }}-
+      - name: Check enabled and disabled application
+        run: |
+          test -s institute/anicca/Lince.lingua
+          cargo check --locked -p lince
+          cargo check --locked -p lince --features instinct
+      - name: Check content, runner, import and native practice
+        run: |
+          cargo test --locked -p anicca --test instinct
+          cargo test --locked -p lince-interface --no-default-features --test practice
+          cargo test --locked -p engine --features instinct --test instinct_import
+          cargo test --locked -p lince-desktop --features instinct --lib ontology::tests:: -- --test-threads=1
+          cargo test --locked -p lince-desktop --features instinct --lib sound::tests:: -- --test-threads=1
+          cargo test --locked -p lince-desktop --lib description::tests:: -- --test-threads=1
+          cargo test --locked -p lince-desktop --features instinct --lib description::tests:: -- --test-threads=1
+          cargo test --locked -p lince-desktop --features instinct --lib instinct -- --test-threads=1
+          cargo test --locked -p lince-desktop --features instinct --lib kept_cell_reopens -- --test-threads=1

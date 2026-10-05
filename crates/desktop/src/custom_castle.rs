@@ -6,6 +6,7 @@ mod ui;
 
 pub(crate) use library::LibraryPlugin;
 pub(crate) use ui::store_entries;
+pub(crate) use ui::{save_example, add_example, saved_example, added_example, clear_example};
 
 use crate::{
     area::InfluenceArea,

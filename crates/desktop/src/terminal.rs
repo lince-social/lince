@@ -167,6 +167,10 @@ enum Command {
 }
 impl Action for Command {
     fn apply(&self, world: &mut World, owner: Entity) {
+        if matches!(self, Self::Open) && crate::practice_cells::source(world, owner).is_some() {
+            crate::notifications::report(world, "Terminal practice", "Inspect the controls here. Open a shell outside this practice when you choose to use your own shell.");
+            return;
+        }
         if crate::laboratory::active(world) {
             return;
         }
@@ -227,6 +231,10 @@ pub(crate) fn displayed_text(world: &World, owner: Entity) -> String {
                 .join("\n")
         })
         .unwrap_or_default()
+}
+
+pub(crate) fn controls_visible(world: &World, owner: Entity) -> bool {
+    world.get::<TerminalSand>(owner).is_some()
 }
 
 fn command(world: &World, owner: Entity, command: worker::Command) -> Result<(), String> {

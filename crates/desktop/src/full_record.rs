@@ -95,7 +95,9 @@ pub(crate) struct Simulate(pub RecordBinding);
 
 impl Action for Simulate {
     fn apply(&self, world: &mut World, _: Entity) {
-        if !matches!(self.0.source, Source::Local) { return; }
+        if !matches!(self.0.source, Source::Local) {
+            return;
+        }
         let mut cursor = Some(self.0.area);
         while let Some(entity) = cursor {
             if world.get::<crate::workspace::Workspaces>(entity).is_some() {
@@ -375,10 +377,22 @@ mod tests {
         };
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
+            .init_resource::<Assets<Font>>()
+            .init_resource::<crate::theme::Typography>()
+            .init_resource::<bevy::input_focus::InputFocus>()
             .insert_resource(crate::app::CellHandle(runtime))
             .insert_resource(crate::wake::WakeSignal::new(|| {}))
-            .add_plugins(crate::cell_bridge::CellBridgePlugin)
-            .add_systems(Update, receive.after(crate::cell_bridge::ReceiveCell));
+            .add_plugins((
+                crate::cell_bridge::CellBridgePlugin,
+                crate::protein_area::ProteinAreaPlugin,
+                crate::fiote::session::Plugin,
+            ))
+            .add_systems(
+                Update,
+                receive
+                    .after(crate::cell_bridge::ReceiveCell)
+                    .before(crate::protein_area::UpdateProteinAreas),
+            );
         let root = app
             .world_mut()
             .spawn((
@@ -405,10 +419,31 @@ mod tests {
             .get_mut::<crate::canvas::CanvasView>(root)
             .unwrap()
             .center = DVec2::splat(500.0);
+        for entity in &entities {
+            assert_eq!(
+                app.world()
+                    .get::<crate::area::InfluenceArea>(*entity)
+                    .unwrap()
+                    .center,
+                [120.0, 80.0]
+            );
+            assert_eq!(
+                app.world()
+                    .get::<crate::workspace::WorkspaceMember>(*entity)
+                    .unwrap()
+                    .0,
+                1
+            );
+        }
         tokio::time::timeout(std::time::Duration::from_secs(10), async {
             while entities
                 .iter()
                 .any(|entity| app.world().get::<Creating>(*entity).is_some())
+                || !app
+                    .world_mut()
+                    .query::<&Text>()
+                    .iter(app.world())
+                    .any(|text| text.0 == "Fiotes")
             {
                 app.update();
                 tokio::time::sleep(std::time::Duration::from_millis(5)).await;
@@ -454,6 +489,22 @@ mod tests {
             identities.push(uid.to_string());
         }
         assert_eq!(identities.len(), 1);
+        for entity in app
+            .world_mut()
+            .query_filtered::<Entity, (With<RecordBinding>, With<crate::canvas::CanvasItem>)>()
+            .iter(app.world())
+        {
+            assert_ne!(
+                app.world().get::<Visibility>(entity),
+                Some(&Visibility::Hidden)
+            );
+        }
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == "Manage Fiote")
+        );
     }
 
     #[test]

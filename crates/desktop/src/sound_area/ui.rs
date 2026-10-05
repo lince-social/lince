@@ -23,6 +23,20 @@ fn allowed(world: &World, owner: Entity) -> Option<Entity> {
 }
 
 impl Action for Change {
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        match self {
+            Self::Choose(true, _) => &[lince_interface::practice::Operation::AssignAreaSound],
+            _ => &[],
+        }
+    }
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        use lince_interface::practice::Operation;
+        match self {
+            Self::Toggle => &[Operation::EnableAreaSound],
+            Self::Preview(true) => &[Operation::PreviewAreaSound],
+            _ => &[],
+        }
+    }
     fn apply(&self, world: &mut World, owner: Entity) {
         let Some(root) = allowed(world, owner) else {
             return;
@@ -57,22 +71,32 @@ impl Action for Change {
                     } else {
                         sound.leave.clone()
                     };
+                    let volume = sound.volume;
+                    world
+                        .entity_mut(owner)
+                        .remove::<crate::sound::PlaybackResult>();
+                    world
+                        .entity_mut(owner)
+                        .insert(crate::sound::PlaybackPending);
                     let result = crate::sound::send(
                         world,
                         crate::sound::Command::Play {
                             owner,
                             path,
                             effects: None,
-                            volume: sound.volume,
+                            volume,
                         },
                     );
                     if let Err(error) = result {
-                        world.entity_mut(owner).insert(SoundStatus(error));
+                        world.entity_mut(owner).insert((
+                            SoundStatus(error.clone()),
+                            crate::sound::PlaybackResult(Err(error)),
+                        ));
                     }
                 }
             }
             Self::Refresh => {
-                let _ = crate::sound::send(world, crate::sound::Command::Refresh);
+                let _ = crate::sound::send_to(world, owner, crate::sound::Command::Refresh);
             }
         }
     }
@@ -119,6 +143,14 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
     ] {
         label(world, panel, title, 14.0);
         let field = crate::recorder_castle::ui::input(world, panel, title, &path);
+        if enter {
+            world
+                .entity_mut(field)
+                .insert(crate::actions::TutorialControl {
+                    owner,
+                    operation: lince_interface::practice::Operation::AssignAreaSound,
+                });
+        }
         let suggestions = crate::recorder_castle::ui::stack(world, panel);
         world.entity_mut(field).insert(Input {
             owner,
@@ -192,13 +224,12 @@ pub(super) fn inputs(world: &mut World) {
             text.0 = message;
         }
     }
-    let revision = world
-        .get_resource::<crate::sound::Audio>()
-        .map_or(0, |audio| audio.revision);
     let fields: Vec<_> = world
         .query::<(Entity, &Input, &EditableText)>()
         .iter(world)
         .filter(|(_, input, text)| {
+            let revision =
+                crate::sound::audio_for(world, input.owner).map_or(0, |audio| audio.revision);
             input.last != text.value().to_string() || input.revision != revision
         })
         .map(|(e, input, text)| {
@@ -212,6 +243,7 @@ pub(super) fn inputs(world: &mut World) {
         })
         .collect();
     for (entity, owner, enter, suggestions, value) in fields {
+        let revision = crate::sound::audio_for(world, owner).map_or(0, |audio| audio.revision);
         if allowed(world, owner).is_none() {
             continue;
         }
@@ -228,8 +260,7 @@ pub(super) fn inputs(world: &mut World) {
         input.last = value.clone();
         input.revision = revision;
         crate::recorder_castle::ui::clear(world, suggestions);
-        let paths: Vec<_> = world
-            .get_resource::<crate::sound::Audio>()
+        let paths: Vec<_> = crate::sound::audio_for(world, owner)
             .map(|audio| {
                 crate::sound::library::suggestions(&audio.paths, &value)
                     .into_iter()
@@ -254,5 +285,32 @@ pub(super) fn inputs(world: &mut World) {
                 Change::Choose(enter, path.clone()),
             );
         }
+    }
+}
+
+pub(crate) fn assign(world: &mut World, owner: Entity, path: &str) {
+    if world
+        .get::<InfluenceArea>(owner)
+        .is_some_and(|area| area.sound.is_none())
+    {
+        Change::Toggle.apply(world, owner);
+    }
+    Change::Choose(true, path.into()).apply(world, owner);
+}
+
+pub(crate) fn enable(world: &mut World, owner: Entity) {
+    if world
+        .get::<InfluenceArea>(owner)
+        .is_some_and(|area| area.sound.is_none())
+    {
+        Change::Toggle.apply(world, owner);
+    }
+}
+
+pub(crate) fn preview(world: &mut World, owner: Entity) {
+    if world.get::<crate::sound::PlaybackResult>(owner).is_none()
+        && world.get::<crate::sound::PlaybackPending>(owner).is_none()
+    {
+        Change::Preview(true).apply(world, owner);
     }
 }

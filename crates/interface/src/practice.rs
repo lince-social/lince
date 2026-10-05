@@ -41,13 +41,75 @@ pub enum Operation {
     SetOperation,
     ShowNotice,
     DismissNotice,
+    CreateFrequency,
+    PreviewRule,
+    RunRule,
+    PauseRule,
+    PreviewHabit,
+    ImportHabit,
+    CompleteHabit,
+    SaveCommand,
+    RunCommand,
+    StepSimulation,
+    StopSimulation,
+    InspectFiote,
+    InspectOrgan,
+    SwitchOrgan,
+    PairContact,
+    InspectAccess,
+    ShareRecords,
+    InspectDevices,
+    InspectMail,
+    SearchDiscovery,
+    PrepareAnnouncement,
+    OpenDiscoveryRequest,
+    SendPracticeMessage,
+    InspectCalls,
+    CheckTransfer,
+    AgreeTransfer,
+    ActivateTransfer,
+    PauseTransferRule,
+    PreviewImportConflict,
+    CancelImportPreview,
+    PreviewCleanImport,
+    ImportPreparedRecords,
+    ExportPracticeFiles,
+    EditPracticeFile,
+    StopPracticeSync,
+    SendPracticeCopy,
+    AcceptPracticeCopy,
+    InspectBackup,
+    OpenPracticeFile,
+    EditSavePracticeFile,
+    InspectLanguageTools,
+    NextDocumentPage,
+    InspectTerminal,
+    InspectFileChoices,
+    CancelFileChoices,
+    PreviewRecording,
+    StopRecordingPlayback,
+    EnableAreaSound,
+    AssignAreaSound,
+    PreviewAreaSound,
+    AddShaderExample,
+    SwitchSpatialView,
+    ReturnFlatView,
+    SaveCustomCastle,
+    AddCustomCastle,
+    InspectControl,
+    InspectInformation,
+    InspectSandCredits,
+    InspectLaboratory,
 }
 
 impl Operation {
     pub fn needs_cell(self) -> bool {
         matches!(
             self,
-            Self::CreateProteinArea
+            Self::PlaceArea
+                | Self::Attract
+                | Self::Repel
+                | Self::CreateProteinArea
                 | Self::PreviewProtein
                 | Self::PresentProperties
                 | Self::MatchRecord
@@ -64,6 +126,59 @@ impl Operation {
                 | Self::MoveTask
                 | Self::OpenDatedRecord
                 | Self::SetOperation
+                | Self::CreateFrequency
+                | Self::PreviewRule
+                | Self::RunRule
+                | Self::PauseRule
+                | Self::PreviewHabit
+                | Self::ImportHabit
+                | Self::CompleteHabit
+                | Self::SaveCommand
+                | Self::RunCommand
+                | Self::StepSimulation
+                | Self::StopSimulation
+                | Self::InspectFiote
+                | Self::InspectOrgan
+                | Self::SwitchOrgan
+                | Self::PairContact
+                | Self::InspectAccess
+                | Self::ShareRecords
+                | Self::InspectDevices
+                | Self::InspectMail
+                | Self::SearchDiscovery
+                | Self::PrepareAnnouncement
+                | Self::OpenDiscoveryRequest
+                | Self::SendPracticeMessage
+                | Self::InspectCalls
+                | Self::CheckTransfer
+                | Self::AgreeTransfer
+                | Self::ActivateTransfer
+                | Self::PauseTransferRule
+                | Self::PreviewImportConflict
+                | Self::CancelImportPreview
+                | Self::PreviewCleanImport
+                | Self::ImportPreparedRecords
+                | Self::ExportPracticeFiles
+                | Self::EditPracticeFile
+                | Self::StopPracticeSync
+                | Self::SendPracticeCopy
+                | Self::AcceptPracticeCopy
+                | Self::InspectBackup
+                | Self::OpenPracticeFile
+                | Self::EditSavePracticeFile
+                | Self::InspectLanguageTools
+                | Self::NextDocumentPage
+                | Self::InspectTerminal
+                | Self::InspectFileChoices
+                | Self::CancelFileChoices
+                | Self::PreviewRecording
+                | Self::StopRecordingPlayback
+                | Self::EnableAreaSound
+                | Self::AssignAreaSound
+                | Self::PreviewAreaSound
+                | Self::AddShaderExample
+                | Self::SaveCustomCastle
+                | Self::AddCustomCastle
         )
     }
 }
@@ -249,6 +364,7 @@ pub enum Phase {
 pub enum Observation {
     Waiting,
     Complete,
+    Viewed,
     Failed(String),
     Unavailable(String),
 }
@@ -395,6 +511,9 @@ impl Runner {
         let Some(current) = self.current() else {
             return Effect::None;
         };
+        if matches!(observation, Observation::Viewed) {
+            return self.advance(Progress::Visited);
+        }
         if matches!(observation, Observation::Complete) {
             return self.advance(if current.operation.is_some() {
                 Progress::Practiced
@@ -454,6 +573,7 @@ impl Runner {
         }
         match observation {
             Observation::Complete => self.advance(Progress::Practiced),
+            Observation::Viewed => self.advance(Progress::Visited),
             Observation::Failed(message) => {
                 self.phase = Phase::Failed {
                     ticket: Some(ticket),

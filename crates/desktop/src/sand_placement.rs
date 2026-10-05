@@ -39,6 +39,8 @@ impl Pinned {
 #[derive(Component, Clone, Default, Serialize, Deserialize)]
 pub struct Placement {
     #[serde(default)]
+    pub practice_source: Option<String>,
+    #[serde(default)]
     pub identity: Option<String>,
     #[serde(default)]
     pub canvas_component: Option<nucleus::canvas::Component>,
@@ -69,6 +71,7 @@ impl Placement {
             component.component = nucleus::component::ComponentState::Composition { composition };
         }
         Self {
+            practice_source: world.get::<crate::practice_cells::PracticeSource>(entity).map(|source| source.0.clone()),
             identity: world.get::<crate::canvas_host::Identity>(entity).map(|id| id.0.clone()),
             canvas_component: crate::canvas_host::composition::capture(world, entity).map(|composition| nucleus::canvas::Component::Composition { composition }).or_else(|| world.get::<crate::canvas_host::Content>(entity).map(|content| content.0.clone())),
             backend_component,
@@ -91,6 +94,7 @@ impl Placement {
     }
 
     pub(crate) fn restore(self, world: &mut World, entity: Entity) {
+        if let Some(source) = self.practice_source { world.entity_mut(entity).insert(crate::practice_cells::PracticeSource(source)); }
         if let Some(identity) = self.identity { world.entity_mut(entity).insert(crate::canvas_host::Identity(identity)); }
         if let Some(component) = self.canvas_component {
             if let Err(error) = crate::canvas_host::restore_content(world, entity, &component) { crate::notifications::report(world, "interface::canvas", &error); }
@@ -128,7 +132,8 @@ impl Placement {
     }
 
     pub(crate) fn valid(&self) -> bool {
-        self.identity.as_ref().is_none_or(|id| nucleus::valid_uid(id, "placement"))
+        self.practice_source.as_ref().is_none_or(|source| nucleus::valid_uid(source, "g"))
+            && self.identity.as_ref().is_none_or(|id| nucleus::valid_uid(id, "placement"))
             && self.canvas_component.as_ref().is_none_or(|component| component.validate_snapshot(&crate::canvas_host::registry()).is_ok())
             && self.backend_component.as_ref().is_none_or(crate::component_push::Placed::valid)
             && self.pinned.is_none_or(|pin| pin.valid())

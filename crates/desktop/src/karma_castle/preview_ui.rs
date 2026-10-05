@@ -39,6 +39,15 @@ impl Default for Form {
 }
 
 impl Form {
+    pub(crate) fn with_inputs(inputs: Vec<engine::karma_preview::Input>) -> Self {
+        Self {
+            horizon: "1m".into(),
+            wall: "5s".into(),
+            evaluations: "100".into(),
+            inputs: serde_json::to_string(&inputs).unwrap(),
+            ..default()
+        }
+    }
     pub(super) fn valid(&self) -> bool {
         self.horizon.len() <= 20
             && self.evaluations.len() <= 20
@@ -49,6 +58,28 @@ impl Form {
             && self.checks.len() <= 1024
             && serde_json::to_vec(self).is_ok_and(|bytes| bytes.len() <= 1024 * 1024)
     }
+}
+
+pub(super) fn run_action(world: &mut World, owner: Entity) {
+    Command::Run.apply(world, owner);
+}
+
+pub(super) fn confirmed(world: &World, owner: Entity) -> bool {
+    world.get::<PreviewView>(owner).is_some_and(|view| {
+        !view.stale
+            && view.pending.is_none()
+            && view.report.as_ref().is_some_and(|report| {
+                report.first_failure.is_none()
+                    && !report.incomplete
+                    && report.unsupported.is_empty()
+            })
+    })
+}
+
+pub(super) fn needs_refresh(world: &World, owner: Entity) -> bool {
+    world
+        .get::<PreviewView>(owner)
+        .is_some_and(|view| view.stale && view.pending.is_none() && view.report.is_some())
 }
 
 #[derive(Component)]
@@ -362,6 +393,7 @@ fn run(world: &mut World, owner: Entity) -> Result<(), String> {
     let id = nucleus::new_uid("karma-preview");
     send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action: engine::actions::Action::PreviewKarmaProposal { request },

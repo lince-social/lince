@@ -45,6 +45,7 @@ struct NotificationPanel(Option<u64>);
 struct NotificationCenter {
     button: Entity,
     panel: Option<Entity>,
+    revision: u64,
 }
 
 #[derive(Component)]
@@ -64,6 +65,7 @@ struct NotificationBadge(Entity);
 
 #[derive(Clone, Copy)]
 pub enum NotificationAction {
+    Open,
     Toggle,
     Close,
     CloseToast(u64),
@@ -76,6 +78,7 @@ impl Action for NotificationAction {
         vec![crate::inspection::Connection {
             target,
             name: match self {
+                Self::Open => "Notifications Clicked Open",
                 Self::Toggle => "Notifications Clicked Toggle",
                 Self::Close => "Notifications Clicked Close",
                 Self::CloseToast(_) => "Notification Toast Clicked Close",
@@ -88,6 +91,14 @@ impl Action for NotificationAction {
 
     fn apply(&self, world: &mut World, target: Entity) {
         match *self {
+            Self::Open => {
+                if world
+                    .get::<NotificationCenter>(target)
+                    .is_some_and(|center| center.panel.is_none())
+                {
+                    ui::toggle(world, target);
+                }
+            }
             Self::Toggle => ui::toggle(world, target),
             Self::Close => close(world, target),
             Self::CloseToast(id) => ui::remove_toast(world, id),
@@ -107,6 +118,12 @@ impl Action for NotificationAction {
 }
 
 pub struct NotificationsPlugin;
+
+pub(crate) fn open_state(world: &World, root: Entity) -> Option<(bool, u64)> {
+    world
+        .get::<NotificationCenter>(root)
+        .map(|center| (center.panel.is_some(), center.revision))
+}
 
 impl Plugin for NotificationsPlugin {
     fn build(&self, app: &mut App) {

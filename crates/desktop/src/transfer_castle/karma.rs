@@ -78,19 +78,23 @@ impl Action for Command {
     }
 }
 
-fn send(world: &World, id: &str, action: engine::actions::Action) -> Result<(), String> {
+fn send(
+    world: &World,
+    owner: Entity,
+    id: &str,
+    action: engine::actions::Action,
+) -> Result<(), String> {
     if crate::laboratory::active(world) {
         return Err("Automation is read-only in the Laboratory".into());
     }
-    world
-        .get_non_send::<CellBridge>()
-        .ok_or("No Cell connection")?
-        .outgoing
-        .try_send(ClientMessage::Act {
+    crate::practice_cells::send(
+        world,
+        owner,
+        ClientMessage::Act {
             id: id.into(),
             action,
-        })
-        .map_err(|error| error.to_string())
+        },
+    )
 }
 
 pub(super) fn maintain(world: &mut World, owner: Entity) {
@@ -128,6 +132,7 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
     let id = nucleus::new_uid("transfer-automation");
     match send(
         world,
+        owner,
         &id,
         engine::actions::Action::InspectTransferKarma {
             transfer: transfer.clone(),
@@ -173,7 +178,7 @@ fn pause_next(world: &mut World, owner: Entity) {
         request_id: id.clone(),
         paused: true,
     };
-    match send(world, &id, action) {
+    match send(world, owner, &id, action) {
         Ok(()) => world.get_mut::<Automation>(owner).unwrap().pause_request = Some(id),
         Err(error) => {
             let mut state = world.get_mut::<Automation>(owner).unwrap();

@@ -19,7 +19,9 @@ pub struct ImageSand;
 #[reflect(Component)]
 pub struct InBox(#[entities] pub Entity);
 
-pub use lince_interface::controls::{BUTTON_BORDER_WIDTH, button, editable, text_editor};
+pub use lince_interface::controls::{
+    BUTTON_BORDER_WIDTH, button, editable, single_line_editor, text_editor,
+};
 
 #[derive(Component)]
 pub(crate) struct Borderless;

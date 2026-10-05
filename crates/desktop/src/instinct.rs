@@ -1,5 +1,5 @@
 mod habit_ui;
-mod import_ui;
+pub(crate) mod import_ui;
 mod persistence;
 pub(crate) mod practice;
 mod reader;
@@ -53,6 +53,13 @@ pub struct Instinct {
     pub page: Option<String>,
 }
 
+fn teaching_text(body: &str) -> &str {
+    let body = body.trim();
+    body.strip_prefix("\"\"\"")
+        .and_then(|body| body.strip_suffix("\"\"\""))
+        .map_or(body, str::trim)
+}
+
 impl Instinct {
     pub(crate) fn valid(&self) -> bool {
         self.page.as_ref().is_none_or(|page| {
@@ -92,21 +99,42 @@ struct Section {
 pub struct InstinctPlugin;
 impl Plugin for InstinctPlugin {
     fn build(&self, app: &mut App) {
+        if cfg!(feature = "instinct") {
+            app.init_resource::<crate::practice_cells::persistence::Restoration>()
+                .add_systems(
+                    Update,
+                    crate::practice_cells::persistence::restore
+                        .after(crate::workspace::PrepareWorkspaces)
+                        .run_if(crate::practice_cells::persistence::needed),
+                );
+        }
         app.init_resource::<practice::Learned>()
-            .add_systems(PreUpdate, practice::emergency.run_if(practice::active))
+            .add_systems(
+                PreUpdate,
+                practice::emergency
+                    .after(bevy::input::InputSystems)
+                    .before(bevy::input_focus::InputFocusSystems::Dispatch)
+                    .run_if(practice::active),
+            )
             .add_systems(
                 PreUpdate,
                 practice::refresh_input
                     .after(bevy::input::InputSystems)
                     .before(bevy::input_focus::InputFocusSystems::Dispatch)
                     .before(bevy::picking::PickingSystems::Hover)
+                    .run_if(practice::advancing.and_then(practice::input_changed)),
+            )
+            .add_systems(
+                PreUpdate,
+                practice::guard_focus
+                    .before(bevy::input_focus::InputFocusSystems::Dispatch)
                     .run_if(practice::advancing),
             )
             .add_systems(
                 Update,
                 practice::update
                     .after(crate::protein_area::UpdateProteinAreas)
-                    .run_if(practice::advancing),
+                    .run_if(practice::active),
             )
             .add_systems(
                 Update,
@@ -116,7 +144,9 @@ impl Plugin for InstinctPlugin {
             );
         app.init_resource::<habit_ui::Subscriptions>().add_systems(
             Update,
-            habit_ui::tick.after(crate::cell_bridge::ReceiveCell),
+            habit_ui::tick
+                .after(crate::cell_bridge::ReceiveCell)
+                .run_if(habit_ui::active),
         );
         app.add_systems(
             PostUpdate,

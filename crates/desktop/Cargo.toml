@@ -80,6 +80,7 @@ native-runtime = [
 ]
 
 [dependencies]
+async-trait = { workspace = true }
 store = { workspace = true, optional = true }
 simulation = { workspace = true, optional = true }
 lince-interface = { workspace = true, optional = true, features = ["ui", "models", "behavior-checks"] }
@@ -138,7 +139,6 @@ sensei = { workspace = true }
 resvg = { version = "0.48.1", default-features = false }
 
 [dev-dependencies]
-async-trait = { workspace = true }
 iroh = { workspace = true }
 store = { workspace = true }
 nucleus = { workspace = true }
@@ -317,6 +317,10 @@ required-features = ["native-runtime"]
 
 [[example]]
 name = "fiote_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "fiote_castle_smoke"
 required-features = ["native-runtime"]
 
 [[example]]

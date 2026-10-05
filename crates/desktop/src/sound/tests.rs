@@ -163,6 +163,7 @@ fn sound_path_autocomplete_updates_area_enter_and_leave_independently() {
         paths: vec!["recordings/bell.wav".into(), "recordings/door.wav".into()],
         error: None,
         revision: 1,
+        stopped: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
     });
     world.get_mut::<EditMode>(root).unwrap().enabled = true;
     world.get_mut::<EditMode>(root).unwrap().areas = true;
@@ -183,16 +184,29 @@ fn sound_path_autocomplete_updates_area_enter_and_leave_independently() {
         .query_filtered::<(Entity, &ChildOf), With<EditableText>>()
         .iter(world)
         .filter(|(_, parent)| parent.parent() == panel)
-        .map(|(e, _)| e)
+        .map(|(entity, _)| entity)
         .collect();
     assert_eq!(fields.len(), 2);
+    let enter = *fields
+        .iter()
+        .find(|field| {
+            world
+                .get::<crate::actions::TutorialControl>(**field)
+                .is_some_and(|control| {
+                    control.owner == owner
+                        && control.operation
+                            == lince_interface::practice::Operation::AssignAreaSound
+                })
+        })
+        .unwrap();
+    let leave = *fields.iter().find(|field| **field != enter).unwrap();
     world
-        .get_mut::<EditableText>(fields[0])
+        .get_mut::<EditableText>(enter)
         .unwrap()
         .editor
         .set_text("recordings/bell.wav");
     world
-        .get_mut::<EditableText>(fields[1])
+        .get_mut::<EditableText>(leave)
         .unwrap()
         .editor
         .set_text("recordings/door.wav");

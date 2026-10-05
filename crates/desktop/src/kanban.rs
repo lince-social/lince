@@ -8,7 +8,7 @@ use crate::{
     area::{AreaShape, InfluenceArea, RecordProperties},
     area_mutation::{HeldPoint as HeldMembership, Preparing},
     canvas::CanvasItem,
-    cell_bridge::{CellBridge, CellMessage},
+    cell_bridge::CellMessage,
     icons::{Icon, IconButton},
     layout::{Arrangement, LayoutBox, LayoutRuntime, Rules, Sizing},
     protein_area::{Config, RecordBinding},
@@ -655,7 +655,7 @@ fn update(world: &mut World) {
         .collect();
     for (owner, board) in owners {
         if !world.get::<View>(owner).unwrap().initialized
-            && world.get_non_send::<CellBridge>().is_some()
+            && crate::practice_cells::sender(world, owner).is_some()
         {
             Command::Initialize.apply(world, owner);
         }
@@ -930,6 +930,27 @@ pub(crate) fn begin_drag(world: &mut World, card: Entity, point: DVec3) {
     world
         .resource_mut::<crate::topology::input::PointerState>()
         .drag = Some((card, point));
+}
+
+pub(crate) fn move_card(world: &mut World, owner: Entity, uid: &str, index: usize) -> Result<(), String> {
+    let board = world.get::<Kanban>(owner).ok_or("The board was removed.")?.clone();
+    let source = area(world, owner, &board.source).ok_or("The task source was removed.")?;
+    let column = board.columns.get(index).and_then(|column| area(world, owner, &column.area)).ok_or("The destination column was removed.")?;
+    if !crate::area_mutation::armed(world, column) { return Err("Wait for the board to finish loading its column actions.".into()); }
+    if !crate::area_mutation::tracks(world, column, uid) { return Err("Wait for the task's initial position to be observed.".into()); }
+    let card = world.query_filtered::<(Entity, &RecordBinding), With<RecordCard>>().iter(world).find(|(_, binding)| binding.area == source && binding.uid == uid).map(|(entity, _)| entity).ok_or("Wait for the sample task to appear.")?;
+    if world.get::<crate::protein_area::placement::Pending>(card).is_some() { return Err("Wait for task placement to finish.".into()); }
+    let point = crate::topology::position(world, column).ok_or("The column has no position.")?;
+    world.init_resource::<crate::topology::input::PointerState>();
+    begin_drag(world, card, point);
+    crate::topology::set_position(world, card, point);
+    world.resource_mut::<crate::topology::input::PointerState>().drag = None;
+    Ok(())
+}
+
+pub(crate) fn column_entity(world: &mut World, owner: Entity, index: usize) -> Option<Entity> {
+    let id = world.get::<Kanban>(owner)?.columns.get(index)?.area.clone();
+    area(world, owner, &id)
 }
 
 fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {

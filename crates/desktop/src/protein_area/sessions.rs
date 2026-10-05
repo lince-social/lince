@@ -278,6 +278,9 @@ pub(super) fn update(world: &mut World) {
         .collect();
     retained.extend(crate::workspace_sync::organs(world));
     retained.extend(crate::time_castle::organs(world));
+    if let Some(cells) = world.get_resource::<crate::practice_cells::PracticeCells>() {
+        retained.extend(cells.cells.keys().cloned());
+    }
     world
         .resource_mut::<Runtime>()
         .sessions

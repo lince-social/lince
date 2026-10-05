@@ -904,12 +904,7 @@ pub(crate) fn submit(
     if crate::laboratory::suspended(world, record.area) {
         return Err("Workspace is suspended".into());
     }
-    let engine = world
-        .get_resource::<crate::app::CellHandle>()
-        .ok_or("Local storage is unavailable")?
-        .0
-        .engine
-        .clone();
+    let engine = crate::practice_cells::engine(world, &record.source).ok_or("Cell storage is unavailable")?;
     let channel = crate::protein_area::editor_sender(world, record);
     let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
     let mut bindings = world
@@ -1049,12 +1044,6 @@ fn set_text(world: &mut World, entity: Entity, value: &str, positions: Option<(u
 }
 
 fn update(world: &mut World) {
-    let Some(engine) = world
-        .get_resource::<crate::app::CellHandle>()
-        .map(|handle| handle.0.engine.clone())
-    else {
-        return;
-    };
     let Some(mut bindings) = world.remove_resource::<Bindings>() else {
         return;
     };
@@ -1069,6 +1058,7 @@ fn update(world: &mut World) {
         .collect();
     views.sort_by_key(|(entity, _)| focus != Some(*entity));
     for (entity, binding) in &views {
+        let Some(engine) = crate::practice_cells::engine(world, &binding.record.source) else { continue };
         let key = key(&binding.record);
         if focus != Some(*entity) && !visible(world, *entity) {
             continue;
@@ -1161,6 +1151,7 @@ fn update(world: &mut World) {
         })
         .unwrap_or_default();
     for (key, document) in &mut bindings.documents {
+        let Some(engine) = crate::practice_cells::engine(world, &document.source) else { continue };
         if document
             .sender
             .as_ref()

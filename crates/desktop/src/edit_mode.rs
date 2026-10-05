@@ -79,10 +79,25 @@ impl Action for EditAction {
         use crate::actions::PracticeIntent;
         use lince_interface::practice::Operation;
         match self {
-            Self::Open | Self::Toggle => PracticeIntent::Feature(Operation::OpenEdit),
-            Self::AddSand(SandKind::Square | SandKind::Text) => PracticeIntent::Feature(Operation::PlaceSand),
+            Self::Open | Self::Toggle => PracticeIntent::Navigation,
+            Self::AddSand(SandKind::Square | SandKind::Text) => {
+                PracticeIntent::Feature(Operation::PlaceSand)
+            }
             Self::EditSand(entity) => PracticeIntent::Object(*entity),
-            Self::Close | Self::Workspaces | Self::SwitchWorkspace(_) | Self::Store | Self::Canvas | Self::Areas => PracticeIntent::Navigation,
+            Self::Area(crate::area_panel::AreaAction::Select(entity)) => {
+                PracticeIntent::Object(*entity)
+            }
+            Self::Area(
+                crate::area_panel::AreaAction::Add(_) | crate::area_panel::AreaAction::Draw(_),
+            ) => PracticeIntent::Feature(Operation::PlaceArea),
+            Self::Area(_) => PracticeIntent::SelectedArea,
+            Self::Text(_) => PracticeIntent::EditedSand,
+            Self::Close
+            | Self::Workspaces
+            | Self::SwitchWorkspace(_)
+            | Self::Store
+            | Self::Canvas
+            | Self::Areas => PracticeIntent::Navigation,
             _ => PracticeIntent::Target,
         }
     }
@@ -699,17 +714,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             world.get_mut::<EditMode>(root).unwrap().confirm_remove = None;
         }
         EditAction::AddSand(kind) => {
-            let active = world.get::<Workspaces>(root).unwrap().active;
-            let center = world.get::<CanvasView>(root).unwrap().center;
-            if !center.is_finite() {
-                return;
-            }
-            let initial = if kind == SandKind::Square {
-                ""
-            } else {
-                kind.name()
-            };
-            spawn_sand(world, root, active, kind, initial, center);
+            place_sand(world, root, kind);
         }
         EditAction::RemoveSand(sand) => {
             let active = world.get::<Workspaces>(root).unwrap().active;
@@ -819,6 +824,22 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         let panel = world.get::<EditMode>(root).unwrap().panel;
         world.entity_mut(panel).insert(ScrollPosition(scroll));
     }
+}
+
+pub(crate) fn place_sand(world: &mut World, root: Entity, kind: SandKind) -> Option<Entity> {
+    let active = world.get::<Workspaces>(root)?.active;
+    let center = world.get::<CanvasView>(root)?.center;
+    if !center.is_finite() {
+        return None;
+    }
+    let initial = if kind == SandKind::Square {
+        ""
+    } else {
+        kind.name()
+    };
+    let entity = spawn_sand(world, root, active, kind, initial, center);
+    crate::instinct::practice::track_sand(world, root, entity, kind);
+    Some(entity)
 }
 
 pub(crate) fn toggle_customization(world: &mut World, root: Entity) {

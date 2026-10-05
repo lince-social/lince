@@ -53,20 +53,8 @@ pub(super) fn execute(world: &mut World, root: Entity, operation: Operation) -> 
         Operation::EditText => {
             pair(world, root);
             let text = find(world, root, Role::Text).unwrap();
-            let blocks: Vec<_> = world
-                .query_filtered::<Entity, With<crate::sand_text::SandText>>()
-                .iter(world)
-                .filter(|entity| {
-                    world
-                        .get::<ChildOf>(*entity)
-                        .is_some_and(|parent| parent.parent() == text)
-                })
-                .collect();
-            for block in blocks {
-                if let Some(mut label) = world.get_mut::<Text>(block) {
-                    label.0 = "My practice note".into();
-                }
-            }
+            crate::edit_mode::EditAction::Open.apply(world, root);
+            crate::sand_text_editor::set_text(world, root, text, "My practice note")?;
             if find(world, root, Role::Note).is_none() {
                 let note = crate::sand_store::spawn_sand(
                     world,
@@ -91,10 +79,12 @@ pub(super) fn execute(world: &mut World, root: Entity, operation: Operation) -> 
             } else {
                 values.0.remove(&crate::tokens::Token::Surface);
             }
-            world.entity_mut(sample).insert((
-                values,
-                crate::token_style::background(crate::tokens::Token::Surface),
-            ));
+            crate::token_style::set_overrides(world, sample, values);
+            world
+                .entity_mut(sample)
+                .insert(crate::token_style::background(
+                    crate::tokens::Token::Surface,
+                ));
         }
         Operation::InspectShortcuts => {
             crate::edit_mode::EditAction::Open.apply(world, root);
@@ -103,14 +93,20 @@ pub(super) fn execute(world: &mut World, root: Entity, operation: Operation) -> 
         Operation::ScaleArea | Operation::DisableAreaEffect | Operation::InspectArea => {
             pair(world, root);
             let owner = area(world, root, Role::Area)?;
+            crate::edit_mode::EditAction::Open.apply(world, root);
+            crate::edit_mode::EditAction::Areas.apply(world, root);
+            crate::edit_mode::EditAction::Area(crate::area_panel::AreaAction::Select(owner))
+                .apply(world, root);
             if operation == Operation::ScaleArea {
-                world.get_mut::<InfluenceArea>(owner).unwrap().scale = 1.5;
+                crate::area_effects::ui::set_scale(world, owner, 1.5);
                 let sample = find(world, root, Role::Square).unwrap();
                 crate::topology::set_position(world, sample, DVec3::new(360.0, 0.0, 0.0));
             } else if operation == Operation::DisableAreaEffect {
-                let mut value = world.get_mut::<InfluenceArea>(owner).unwrap();
-                value.scale = 1.0;
-                value.enabled = false;
+                crate::area_effects::ui::set_scale(world, owner, 1.0);
+                if world.get::<InfluenceArea>(owner).unwrap().enabled {
+                    crate::edit_mode::EditAction::Area(crate::area_panel::AreaAction::Enabled)
+                        .apply(world, root);
+                }
             } else {
                 crate::edit_mode::EditAction::Open.apply(world, root);
                 crate::edit_mode::EditAction::Areas.apply(world, root);
@@ -207,9 +203,10 @@ pub(super) fn complete(world: &mut World, root: Entity, operation: Operation) ->
                         .is_some_and(|config| config.columns == 1)
                 })
         }
+        Operation::ReadVocabulary => find(world, root, Role::Feature)
+            .is_some_and(|owner| crate::ontology::sample_visible(world, owner)),
         Operation::ReadRecord
         | Operation::ApplyAssertion
-        | Operation::ReadVocabulary
         | Operation::OpenRecordViews
         | Operation::ReadFacts => {
             world
@@ -250,9 +247,13 @@ pub(super) fn begin_record(
     let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
     let (sender, receiver) = mpsc::channel();
     let task = handle.spawn(async move {
-        let result = record_example(&runtime.engine, operation, &uid, &related)
-            .await
-            .map_err(|error| error.to_string());
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            record_example(&runtime.engine, operation, &uid, &related),
+        )
+        .await
+        .map_err(|_| "The sample action timed out. Retry, Skip or Close.".to_owned())
+        .and_then(|result| result.map_err(|error| error.to_string()));
         let _ = sender.send(result);
         if let Some(wake) = wake {
             wake.ring();
@@ -291,6 +292,92 @@ async fn record_example(
             .await?;
     }
     work::change(engine, operation, uid).await?;
+    if operation == Operation::ReadRecord {
+        let unit = concept(engine, "practice-session", Vec::new()).await?;
+        engine
+            .act(
+                CellAction::SetUnit {
+                    target: uid.into(),
+                    unit: Some(unit),
+                },
+                None,
+            )
+            .await?;
+    }
+    if operation == Operation::ReadFacts {
+        engine
+            .act(
+                CellAction::SetQuantityExact {
+                    target: uid.into(),
+                    amount: "0".into(),
+                },
+                None,
+            )
+            .await?;
+        for (field, value) in [
+            (engine::record_change::WorkField::Start, json!("2026-10-04")),
+            (engine::record_change::WorkField::Due, json!("2026-10-05")),
+            (engine::record_change::WorkField::Estimate, json!(30)),
+        ] {
+            engine
+                .act(
+                    CellAction::ChangeRecord {
+                        request: engine::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: uid.into(),
+                            mutation: engine::record_change::Mutation::Work { field, value },
+                        },
+                    },
+                    None,
+                )
+                .await?;
+        }
+        for running in [true, false] {
+            engine
+                .act(
+                    CellAction::ChangeRecord {
+                        request: engine::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: uid.into(),
+                            mutation: engine::record_change::Mutation::Timer { running },
+                        },
+                    },
+                    None,
+                )
+                .await?;
+        }
+    }
+    let threads = if operation == Operation::InspectFiote {
+        match store::concepts::resolve(&engine.store.pool, "thread-of").await? {
+            Some(predicate) => {
+                store::assertions::subjects_pointing_to(&engine.store.pool, &predicate, uid).await?
+            }
+            None => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+    if operation == Operation::InspectFiote && threads.is_empty() {
+        let thread = engine
+            .act(
+                CellAction::CreateThread {
+                    target: uid.into(),
+                    head: "Prepared suggestion".into(),
+                },
+                None,
+            )
+            .await?
+            .created
+            .ok_or_else(|| {
+                engine::EngineError::Consequence("The example thread was not confirmed.".into())
+            })?;
+        engine.act(CellAction::CreateMessage {
+            thread,
+            body: "Prepared example: a Fiote could suggest organizing this task before you approve a change. This message was written for practice; no AI provider was called.".into(),
+            content: Vec::new(), author: None, state: nucleus::MessageState::Finished,
+            parent: None, references: Vec::new(),
+        }, None).await?;
+    }
     let mut concepts = Vec::new();
     if matches!(
         operation,
@@ -298,6 +385,21 @@ async fn record_example(
     ) {
         let parent = concept(engine, "note", Vec::new()).await?;
         let practice = concept(engine, "practice-note", vec![parent.clone()]).await?;
+        if operation == Operation::ReadVocabulary {
+            alias(engine, &practice, "pt", "nota-de-pratica").await?;
+            alias(engine, &practice, "en", "sample-kind").await?;
+            alias(engine, &parent, "en", "sample-kind").await?;
+            if store::concepts::resolve(&engine.store.pool, "nota-de-pratica").await?
+                != Some(practice.clone())
+                || store::concepts::resolve(&engine.store.pool, "sample-kind")
+                    .await
+                    .is_ok()
+            {
+                return Err(engine::EngineError::Consequence(
+                    "The Vocabulary example was not confirmed.".into(),
+                ));
+            }
+        }
         engine
             .act(
                 CellAction::AssertRecord {
@@ -335,7 +437,7 @@ async fn record_example(
         concepts = store::concepts::list_all(&engine.store.pool).await?.into_iter().map(|row| json!({"name":row.canonical_name,"uid":row.uid,"parents":row.parents,"vocabulary":"Local"})).collect();
     }
     let query: protein::Protein = serde_json::from_value(
-        json!({"source":"record","where":[{"uid_eq":uid}],"include":{"facts":{"limit":5}},"fields":["uid","slug","head","body","quantity","assertions","start_date","due_date","work_logs"]}),
+        json!({"source":"record","where":[{"uid_eq":uid}],"include":{"facts":{"limit":5}},"fields":["uid","slug","head","body","quantity","unit","assertions","start_date","due_date","estimate_min","work_logs"]}),
     )?;
     let records = protein::execute_for(&engine.store, &query, None).await?;
     if records.len() != 1 {
@@ -344,6 +446,26 @@ async fn record_example(
         ));
     }
     Ok(json!({"record":records[0],"concepts":concepts}))
+}
+
+async fn alias(
+    engine: &engine::Engine,
+    concept: &str,
+    language: &str,
+    name: &str,
+) -> Result<(), engine::EngineError> {
+    let exists: bool = store::sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM concept_name WHERE concept_uid = ? AND lang = ? AND name = ?)",
+    )
+    .bind(concept)
+    .bind(language)
+    .bind(name)
+    .fetch_one(&engine.store.pool)
+    .await?;
+    if !exists {
+        store::concepts::add_name(&engine.store.pool, concept, language, name).await?;
+    }
+    Ok(())
 }
 
 pub(super) async fn concept(
@@ -403,13 +525,23 @@ pub(super) fn receive(world: &mut World, root: Entity) {
             world
                 .resource_mut::<crate::practice_cells::PracticeCells>()
                 .records
-                .insert(uid.clone(), source_id);
-            world
-                .get_mut::<Practice>(root)
-                .unwrap()
-                .records
-                .push(uid.clone());
-            if find(world, root, Role::Record).is_none()
+                .entry(source_id)
+                .or_default()
+                .insert(uid.clone());
+            let mut practice = world.get_mut::<Practice>(root).unwrap();
+            if !practice.records.contains(&uid) {
+                practice.records.push(uid.clone());
+            }
+            drop(practice);
+            if !matches!(
+                pending.operation,
+                Operation::CompleteTask
+                    | Operation::UndoTask
+                    | Operation::MoveTask
+                    | Operation::OpenDatedRecord
+                    | Operation::SetOperation
+                    | Operation::AddShaderExample
+            ) && find(world, root, Role::Record).is_none()
                 && let Some(entity) = crate::full_record::open(world, root, &uid, source)
             {
                 own(world, root, entity, Role::Record);
@@ -435,6 +567,30 @@ pub(super) fn receive(world: &mut World, root: Entity) {
                     config.draft.query["where"] = json!([{"all":[{"uid_eq":uid}]}]);
                 }
                 own(world, root, entity, Role::Assertions);
+                if let Some(related) = world
+                    .get::<Practice>(root)
+                    .unwrap()
+                    .records
+                    .first()
+                    .cloned()
+                {
+                    let source = crate::protein_area::Source::Organ(
+                        world.get::<Practice>(root).unwrap().source.clone(),
+                    );
+                    if let Some(entity) = crate::relation_castle::spawn(world, root) {
+                        if let Some(config) =
+                            &mut world.get_mut::<InfluenceArea>(entity).unwrap().protein
+                        {
+                            config.source = source.clone();
+                            config.draft.query["where"] =
+                                json!([{"any":[{"uid_eq":uid},{"uid_eq":related}]}]);
+                        }
+                        own(world, root, entity, Role::Auxiliary);
+                    }
+                    if let Some(entity) = crate::full_record::open(world, root, &related, source) {
+                        own(world, root, entity, Role::Auxiliary);
+                    }
+                }
             }
             world
                 .get_mut::<Practice>(root)

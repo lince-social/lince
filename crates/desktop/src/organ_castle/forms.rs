@@ -23,6 +23,7 @@ pub(super) struct Form {
     pub output: Entity,
     pub confirmation: Option<String>,
     pub pending: Option<String>,
+    pub result: Option<Value>,
 }
 
 pub(super) fn form(
@@ -64,7 +65,12 @@ pub(super) fn form(
                 ))
             }
             Kind::TextList => Some(panel::field(world, field, caption, &scope_text(&value))),
-            Kind::OptionalText => Some(panel::field(world, field, caption, value.as_str().unwrap_or_default())),
+            Kind::OptionalText => Some(panel::field(
+                world,
+                field,
+                caption,
+                value.as_str().unwrap_or_default(),
+            )),
             _ => Some(panel::field(
                 world,
                 field,
@@ -105,6 +111,7 @@ pub(super) fn form(
         output,
         confirmation: confirmation.map(str::to_owned),
         pending: None,
+        result: None,
     });
     container
 }
@@ -117,6 +124,39 @@ impl Action for Choose {
             input.value = self.0.clone();
         }
         show_choice(world, entity);
+    }
+}
+
+pub(super) fn prepare_values(world: &mut World, form: Entity, fields: &[(&str, Value)]) {
+    for (path, value) in fields {
+        let field = world.get::<Form>(form).and_then(|form| {
+            form.inputs
+                .iter()
+                .find(|(key, _)| key == path)
+                .map(|(_, field)| *field)
+        });
+        if let Some(field) = field {
+            if let Some(text) = world.get::<Input>(field).and_then(|input| input.text) {
+                let value = if matches!(
+                    world.get::<Input>(field).unwrap().kind,
+                    Kind::TextList | Kind::Scope
+                ) {
+                    scope_text(value)
+                } else {
+                    value
+                        .as_str()
+                        .map(str::to_owned)
+                        .unwrap_or_else(|| value.to_string())
+                };
+                world
+                    .get_mut::<bevy::text::EditableText>(text)
+                    .unwrap()
+                    .editor
+                    .set_text(&value);
+            } else {
+                Choose(value.clone()).apply(world, field);
+            }
+        }
     }
 }
 
@@ -185,7 +225,8 @@ impl Action for Submit {
             {
                 panel::clear(world, output);
                 label(world, output, &question);
-                if payload["action"] == "social" && payload["request"]["command"] == "save-profile" {
+                if payload["action"] == "social" && payload["request"]["command"] == "save-profile"
+                {
                     social::profile_confirmation(world, output, &payload["request"]);
                 }
                 panel::button(world, output, entity, "Confirm", Confirm(payload));
@@ -199,6 +240,10 @@ impl Action for Submit {
             report(world, output, &error);
         }
     }
+}
+
+pub(super) fn submit(world: &mut World, form: Entity) {
+    Submit.apply(world, form);
 }
 
 #[derive(Clone)]

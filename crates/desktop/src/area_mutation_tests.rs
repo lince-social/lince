@@ -231,7 +231,7 @@ async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() 
     enable(&mut app, root, area);
     let sender = app
         .world()
-        .get_non_send::<CellBridge>()
+        .get_non_send::<crate::cell_bridge::CellBridge>()
         .unwrap()
         .outgoing
         .clone();

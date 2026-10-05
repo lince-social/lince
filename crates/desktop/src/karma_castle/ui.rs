@@ -29,6 +29,64 @@ struct Search(Entity);
 #[derive(Component)]
 struct TableRow(Entity);
 
+#[derive(Component)]
+struct SelectionHeader(Entity);
+
+#[derive(Component)]
+struct RuleRow;
+
+#[derive(Component)]
+struct RowAction {
+    row: Entity,
+    owner: Entity,
+}
+
+pub(super) fn hover_actions(world: &mut World) {
+    let mut hovered = HashSet::new();
+    let mut hits: Vec<_> = world
+        .get_resource::<bevy::picking::hover::HoverMap>()
+        .map(|map| map.values().flat_map(|hits| hits.keys().copied()).collect())
+        .unwrap_or_default();
+    if let Some(focus) = world.get_resource::<InputFocus>().and_then(InputFocus::get) {
+        hits.push(focus);
+    }
+    for hit in hits {
+        let mut entity = Some(hit);
+        while let Some(current) = entity {
+            if world.get::<RuleRow>(current).is_some() {
+                hovered.insert(current);
+                break;
+            }
+            entity = world.get::<ChildOf>(current).map(ChildOf::parent);
+        }
+    }
+    let buttons: Vec<_> = world
+        .query::<(Entity, &RowAction)>()
+        .iter(world)
+        .map(|(entity, action)| (entity, action.row, action.owner))
+        .collect();
+    for (entity, row, owner) in buttons {
+        let visible = hovered.contains(&row)
+            && world
+                .get::<View>(owner)
+                .is_some_and(|view| view.pending.is_none());
+        world.entity_mut(entity).insert(if visible {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        });
+        if visible {
+            world
+                .entity_mut(entity)
+                .remove::<bevy::ui::InteractionDisabled>();
+        } else {
+            world
+                .entity_mut(entity)
+                .insert(bevy::ui::InteractionDisabled);
+        }
+    }
+}
+
 fn reset_columns(world: &mut World, owner: Entity) {
     let rows: Vec<_> = world
         .query::<(Entity, &TableRow)>()
@@ -37,8 +95,9 @@ fn reset_columns(world: &mut World, owner: Entity) {
         .map(|(entity, _)| entity)
         .collect();
     for row in rows {
-        world.get_mut::<Node>(row).unwrap().grid_template_columns =
-            vec![GridTrack::max_content(); 6];
+        let mut tracks = vec![GridTrack::max_content(); 6];
+        tracks[0] = GridTrack::px(29.0);
+        world.get_mut::<Node>(row).unwrap().grid_template_columns = tracks;
     }
 }
 
@@ -50,8 +109,10 @@ pub(super) fn fit_columns(world: &mut World) {
         .map(|(entity, row, children)| (entity, row.0, children.to_vec()))
         .collect();
     for (_, owner, children) in &rows {
-        let columns = widths.entry(*owner).or_default();
-        for (index, child) in children.iter().take(6).enumerate() {
+        let columns = widths
+            .entry(*owner)
+            .or_insert([29.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        for (index, child) in children.iter().take(6).enumerate().skip(1) {
             if let Some(node) = world.get::<ComputedNode>(*child) {
                 columns[index] = columns[index].max(node.size().x * node.inverse_scale_factor());
             }
@@ -82,9 +143,18 @@ pub(super) struct Reading {
 }
 
 #[derive(Clone)]
-pub(super) enum Command {
+pub(crate) enum Command {
     Create,
     Simulate,
+    Schedules,
+    Commands,
+    Select(String),
+    SelectAll,
+    DeleteSelected,
+    PauseSelected,
+    RequestPause(String, i64, bool),
+    ConfirmPause,
+    CancelPause,
     New,
     Cancel,
     Save,
@@ -138,6 +208,77 @@ impl Action for Command {
                 super::preview_ui::toggle(world, owner);
                 return;
             }
+            Self::Schedules => {
+                super::schedules_ui::toggle(world, owner);
+                return;
+            }
+            Self::Commands => {
+                super::commands_ui::toggle(world, owner);
+                return;
+            }
+            Self::Select(uid) => {
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                if !view.selected.remove(uid) {
+                    view.selected.insert(uid.clone());
+                }
+            }
+            Self::SelectAll => {
+                let rules = visible_rules(world, owner);
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                let all = rules.iter().all(|rule| view.selected.contains(&rule.uid));
+                for rule in rules {
+                    if all {
+                        view.selected.remove(&rule.uid);
+                    } else {
+                        view.selected.insert(rule.uid);
+                    }
+                }
+            }
+            Self::DeleteSelected => {
+                let rules = visible_rules(world, owner);
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                view.pausing.clear();
+                view.deleting = rules
+                    .into_iter()
+                    .filter(|rule| view.selected.contains(&rule.uid))
+                    .map(|rule| rule.uid)
+                    .collect();
+            }
+            Self::PauseSelected => {
+                let rules = visible_rules(world, owner);
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                view.deleting.clear();
+                view.pausing = rules
+                    .into_iter()
+                    .filter(|rule| view.selected.contains(&rule.uid) && rule.state != "paused")
+                    .map(|rule| (rule.uid, rule.revision, true))
+                    .collect();
+            }
+            Self::RequestPause(uid, revision, paused) => {
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                view.deleting.clear();
+                view.pausing = vec![(uid.clone(), *revision, *paused)];
+            }
+            Self::ConfirmPause => {
+                let next = {
+                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    view.pause_active = !view.pausing.is_empty();
+                    if view.pause_active {
+                        Some(view.pausing.remove(0))
+                    } else {
+                        None
+                    }
+                };
+                if let Some((uid, revision, paused)) = next {
+                    Self::Pause(uid, revision, paused).apply(world, owner);
+                    return;
+                }
+            }
+            Self::CancelPause => {
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                view.pausing.clear();
+                view.pause_active = false;
+            }
             Self::Create => {}
             Self::New => {
                 let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
@@ -182,6 +323,7 @@ impl Action for Command {
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.editing = Some((uid.clone(), *index));
                 view.deleting.clear();
+                view.pausing.clear();
             }
             Self::Delete(uid) => {
                 if world
@@ -191,7 +333,9 @@ impl Action for Command {
                     .iter()
                     .any(|rule| &rule.uid == uid)
                 {
-                    world.get_mut::<View>(owner).unwrap().deleting = vec![uid.clone()];
+                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    view.pausing.clear();
+                    view.deleting = vec![uid.clone()];
                 }
             }
             Self::ConfirmDelete => {
@@ -256,6 +400,7 @@ impl Action for Command {
                 };
                 match send(
                     world,
+                    owner,
                     ClientMessage::Act {
                         id: id.clone(),
                         action,
@@ -264,12 +409,19 @@ impl Action for Command {
                     Ok(()) => {
                         world.get_mut::<View>(owner).unwrap().pending = Some(id);
                     }
-                    Err(error) => status(world, owner, error),
+                    Err(error) => {
+                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        view.pause_active = false;
+                        view.pausing.clear();
+                        status(world, owner, error);
+                    }
                 }
             }
         }
         if matches!(self, Self::New) {
-            world.get_mut::<View>(owner).unwrap().deleting.clear();
+            let mut view = world.get_mut::<View>(owner).unwrap();
+            view.deleting.clear();
+            view.pausing.clear();
             let form = world.get::<View>(owner).unwrap().form;
             let scroll = world.get::<ChildOf>(form).unwrap().parent();
             world.get_mut::<ScrollPosition>(scroll).unwrap().0 = Vec2::ZERO;
@@ -345,9 +497,11 @@ fn grid(world: &mut World, parent: Entity) -> Entity {
                 width: Val::Auto,
                 min_width: px(0),
                 align_self: AlignSelf::Start,
+                padding: UiRect::horizontal(px(22)),
+                justify_content: JustifyContent::Start,
                 flex_shrink: 0.0,
                 grid_template_columns: vec![
-                    GridTrack::max_content(),
+                    GridTrack::px(29.0),
                     GridTrack::max_content(),
                     GridTrack::max_content(),
                     GridTrack::max_content(),
@@ -518,7 +672,20 @@ pub(super) fn search(world: &mut World, parent: Entity, owner: Entity) {
 
 pub(super) fn headings(world: &mut World, parent: Entity) {
     let heading = grid(world, parent);
-    stack(world, heading);
+    let selection = cell(world, heading);
+    let mut owner = parent;
+    while world.get::<KarmaCastle>(owner).is_none() {
+        owner = world.get::<ChildOf>(owner).unwrap().parent();
+    }
+    let checkbox = checkbox(
+        world,
+        selection,
+        owner,
+        Command::SelectAll,
+        "Select all rules",
+        false,
+    );
+    world.entity_mut(checkbox).insert(SelectionHeader(owner));
     for (index, title) in ["Name", "Slug", "Condition", "Threshold", "Consequence"]
         .into_iter()
         .enumerate()
@@ -567,6 +734,96 @@ pub(super) fn headings(world: &mut World, parent: Entity) {
     }
 }
 
+fn checkbox(
+    world: &mut World,
+    parent: Entity,
+    owner: Entity,
+    command: Command,
+    label: &str,
+    checked: bool,
+) -> Entity {
+    let entity = icon_button(
+        world,
+        parent,
+        owner,
+        if checked { Icon::Check } else { Icon::Square },
+        label,
+        command,
+        true,
+    );
+    size_icon(world, entity, 16.0);
+    accessible(world, entity, accesskit::Role::CheckBox, label);
+    world
+        .get_mut::<bevy::a11y::AccessibilityNode>(entity)
+        .unwrap()
+        .set_toggled(if checked {
+            accesskit::Toggled::True
+        } else {
+            accesskit::Toggled::False
+        });
+    entity
+}
+
+fn update_selection(world: &mut World, owner: Entity) {
+    let rules = visible_rules(world, owner);
+    let selected = &world.get::<View>(owner).unwrap().selected;
+    let count = rules
+        .iter()
+        .filter(|rule| selected.contains(&rule.uid))
+        .count();
+    let all = !rules.is_empty() && count == rules.len();
+    let headers: Vec<_> = world
+        .query::<(Entity, &SelectionHeader)>()
+        .iter(world)
+        .filter(|(_, header)| header.0 == owner)
+        .map(|(entity, _)| entity)
+        .collect();
+    for entity in headers {
+        let glyph = world.get::<Children>(entity).unwrap()[0];
+        let icon = if all {
+            Icon::Check
+        } else if count > 0 {
+            Icon::Minus
+        } else {
+            Icon::Square
+        };
+        let image = crate::icons::image(world, icon).unwrap_or_default();
+        world.entity_mut(glyph).insert(image);
+        world
+            .get_mut::<bevy::a11y::AccessibilityNode>(entity)
+            .unwrap()
+            .set_toggled(if all {
+                accesskit::Toggled::True
+            } else if count > 0 {
+                accesskit::Toggled::Mixed
+            } else {
+                accesskit::Toggled::False
+            });
+    }
+}
+
+fn rule_label(rule: &Rule) -> &str {
+    if !rule.name.is_empty() {
+        &rule.name
+    } else if !rule.slug.is_empty() {
+        &rule.slug
+    } else {
+        &rule.uid
+    }
+}
+
+pub(super) fn render_tools(world: &mut World, owner: Entity) {
+    let tools = world.get::<View>(owner).unwrap().tools;
+    clear(world, tools);
+    for (command, label) in [
+        (Command::Schedules, "Scheduled changes"),
+        (Command::Commands, "Commands"),
+        (Command::Simulate, "Simulation"),
+    ] {
+        button(world, tools, owner, command, label);
+    }
+}
+
 fn visible_rules(world: &World, owner: Entity) -> Vec<Rule> {
     let query = world
         .get::<KarmaCastle>(owner)
@@ -598,8 +855,27 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
     let castle = world.get::<KarmaCastle>(owner).unwrap();
     let creating = castle.draft.is_some();
     let editing = !castle.edits.is_empty();
+    let selected = visible_rules(world, owner)
+        .iter()
+        .any(|rule| view.selected.contains(&rule.uid));
+    let can_pause = visible_rules(world, owner)
+        .iter()
+        .any(|rule| view.selected.contains(&rule.uid) && rule.state != "paused");
     clear(world, controls);
-    button(world, controls, owner, Command::Simulate, "Simulation");
+    if selected && !creating && !editing {
+        for (command, label) in [
+            (Command::PauseSelected, "Pause selected"),
+            (Command::DeleteSelected, "Delete selected"),
+        ] {
+            let disabled = busy || (matches!(command, Command::PauseSelected) && !can_pause);
+            let entity = button(world, controls, owner, command, label);
+            if disabled {
+                world
+                    .entity_mut(entity)
+                    .insert(bevy::ui::InteractionDisabled);
+            }
+        }
+    }
     if creating || editing {
         for (command, title) in [
             (Command::Save, if creating { "Create" } else { "Save" }),
@@ -627,6 +903,18 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
     reset_columns(world, owner);
+    let known: HashSet<_> = world
+        .get::<View>(owner)
+        .unwrap()
+        .rules
+        .iter()
+        .map(|rule| rule.uid.clone())
+        .collect();
+    world
+        .get_mut::<View>(owner)
+        .unwrap()
+        .selected
+        .retain(|uid| known.contains(uid));
     let view = world.get::<View>(owner).unwrap();
     let (list, busy, editing) = (view.list, view.pending.is_some(), view.editing.clone());
     let rules = visible_rules(world, owner);
@@ -634,19 +922,29 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
     let edits = castle.edits.clone();
     let creating = castle.draft.is_some();
     clear(world, list);
+    update_selection(world, owner);
     for rule in rules {
         let cells = grid(world, list);
-        let delete_cell = cell(world, cells);
-        let delete = icon_button(
+        world.entity_mut(cells).insert(RuleRow);
+        let selection = cell(world, cells);
+        let selected = world
+            .get::<View>(owner)
+            .unwrap()
+            .selected
+            .contains(&rule.uid);
+        let checkbox = checkbox(
             world,
-            delete_cell,
+            selection,
             owner,
-            Icon::Close,
-            &format!("Delete {}", rule.name),
-            Command::Delete(rule.uid.clone()),
-            !busy,
+            Command::Select(rule.uid.clone()),
+            &format!("Select {}", rule_label(&rule)),
+            selected,
         );
-        size_icon(world, delete, 16.0);
+        if busy {
+            world
+                .entity_mut(checkbox)
+                .insert(bevy::ui::InteractionDisabled);
+        }
         let edited = edits
             .iter()
             .position(|draft| draft.rule.as_ref() == Some(&rule.uid));
@@ -673,22 +971,6 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     let mut node = world.get_mut::<Node>(label).unwrap();
                     node.min_width = Val::Auto;
                     node.flex_shrink = 1.0;
-                }
-                if index == 3 {
-                    let line = row(world, identity);
-                    world.get_mut::<Node>(line).unwrap().width = Val::Auto;
-                    let paused = rule.state == "paused";
-                    let toggle = icon_button(
-                        world,
-                        line,
-                        owner,
-                        if paused { Icon::Play } else { Icon::Stop },
-                        if paused { "Resume rule" } else { "Pause rule" },
-                        Command::Pause(rule.uid.clone(), rule.revision, !paused),
-                        !busy,
-                    );
-                    size_icon(world, toggle, 16.0);
-                    super::history_ui::button(world, owner, line, &rule.uid);
                 }
                 identity
             } else {
@@ -749,10 +1031,47 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                     &format!(
                         "Edit {} for {}",
                         ["condition", "threshold", "consequence", "name", "slug"][index],
-                        rule.name
+                        rule_label(&rule)
                     ),
                 );
             }
+        }
+        let paused = rule.state == "paused";
+        for (left, icon, label, command) in [
+            (
+                true,
+                if paused { Icon::Play } else { Icon::Stop },
+                if paused {
+                    "Resume rule".to_owned()
+                } else {
+                    "Pause rule".to_owned()
+                },
+                Command::RequestPause(rule.uid.clone(), rule.revision, !paused),
+            ),
+            (
+                false,
+                Icon::Close,
+                format!("Delete {}", rule_label(&rule)),
+                Command::Delete(rule.uid.clone()),
+            ),
+        ] {
+            let entity = icon_button(world, cells, owner, icon, &label, command, !busy);
+            size_icon(world, entity, 16.0);
+            {
+                let mut node = world.get_mut::<Node>(entity).unwrap();
+                node.position_type = PositionType::Absolute;
+                node.top = px(8);
+                if left {
+                    node.left = px(2);
+                } else {
+                    node.right = px(2);
+                }
+            }
+            world.entity_mut(entity).insert((
+                RowAction { row: cells, owner },
+                Visibility::Hidden,
+                bevy::ui::InteractionDisabled,
+            ));
         }
     }
     render_controls(world, owner);
@@ -783,12 +1102,38 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
         .deleting
         .first()
         .and_then(|uid| view.rules.iter().find(|rule| &rule.uid == uid))
-        .map(|rule| rule.name.clone());
+        .map(|rule| rule_label(rule).to_owned());
     if let Some(name) = deleting {
+        let count = view.deleting.len();
+        let message = if count == 1 {
+            format!("Delete {name}?")
+        } else {
+            format!("Delete {count} selected rules?")
+        };
         let line = row(world, form);
-        crate::edit_mode::label(world, line, &format!("Delete {name}?"), 14.0);
+        crate::edit_mode::label(world, line, &message, 14.0);
         button(world, line, owner, Command::ConfirmDelete, "Delete");
         button(world, line, owner, Command::CancelDelete, "Cancel");
+    }
+    let view = world.get::<View>(owner).unwrap();
+    if !view.pause_active && !view.pausing.is_empty() {
+        let count = view.pausing.len();
+        let verb = if view.pausing[0].2 { "Pause" } else { "Resume" };
+        let name = view
+            .rules
+            .iter()
+            .find(|rule| rule.uid == view.pausing[0].0)
+            .map(rule_label)
+            .unwrap_or("rule");
+        let message = if count == 1 {
+            format!("{verb} {name}?")
+        } else {
+            format!("{verb} {count} selected rules?")
+        };
+        let line = row(world, form);
+        crate::edit_mode::label(world, line, &message, 14.0);
+        button(world, line, owner, Command::ConfirmPause, verb);
+        button(world, line, owner, Command::CancelPause, "Cancel");
     }
     render_controls(world, owner);
 }
@@ -1294,6 +1639,7 @@ pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Insta
                     let id = nucleus::new_uid("karma-reading");
                     match send(
                         world,
+                        owner,
                         ClientMessage::Act {
                             id: id.clone(),
                             action: engine::actions::Action::PreviewKarmaReading { source },

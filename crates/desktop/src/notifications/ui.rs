@@ -43,6 +43,7 @@ pub(super) fn setup(world: &mut World) {
         world.entity_mut(root).insert(NotificationCenter {
             button: toggle,
             panel: None,
+            revision: 0,
         });
     }
 }
@@ -133,6 +134,7 @@ pub(crate) fn close(world: &mut World, target: Entity) {
         return;
     };
     let button = center.button;
+    center.revision = center.revision.wrapping_add(1);
     if let Some(mut focus) = world.get_resource_mut::<InputFocus>() {
         focus.set(button, FocusCause::Navigated);
     }
@@ -217,7 +219,9 @@ pub(super) fn toggle(world: &mut World, target: Entity) {
         ))
         .id();
     crate::scroll_sand::attach(world, list);
-    world.get_mut::<NotificationCenter>(root).unwrap().panel = Some(drawer);
+    let mut center = world.get_mut::<NotificationCenter>(root).unwrap();
+    center.panel = Some(drawer);
+    center.revision = center.revision.wrapping_add(1);
     if let Some(mut focus) = world.get_resource_mut::<InputFocus>() {
         focus.set(close, FocusCause::Navigated);
     }

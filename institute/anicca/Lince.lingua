@@ -1404,6 +1404,7 @@ Place a square Area around the ordinary practice Sand. Compare shape and reach a
 
 Observe attraction (@step-area-attract: 0, #instinct, #part-of @areas-of-influence) { r_1FRCBZWACYMC2X175R4SDD11EW
 Enable practice workspace physics and sample Area attraction. Wait for movement toward its target. Next applies the settings and waits for the resulting force.
+The prepared Sand carries confirmed sample data so the Area can match it. This page teaches force settings; Protein filters and property presentation come later.
 } r_1FRCBZWACYMC2X175R4SDD11EW
 
 Observe repulsion (@step-area-repel: 0, #instinct, #part-of @areas-of-influence) { r_6A86XX56DS4YVTMZVW818SYG76
@@ -1476,6 +1477,7 @@ Area inspection inspect (@step-area-inspection-inspect: 0, is #idea, #instinct, 
 
 Learn record sample (@step-learn-record-sample: 0, is #idea, #instinct, #part-of @learn-record: 1) { r_78Q4EZEZZR4VG2HARJEW4J63CS
     """Create an isolated sample note with a title, body and slug, and give it a Need of one. Open its full Record view. This practice uses a separate Cell; it cannot edit your personal Records."""
+The example measures this Need in practice sessions. Its unit is a concept that says what the number counts; the Vocabulary pages explain concepts.
 } r_78Q4EZEZZR4VG2HARJEW4J63CS
 
 Learn assertion sample (@step-learn-assertion-sample: 0, is #idea, #instinct, #part-of @learn-assertion: 1) { r_1JETEP3V4ZJXQK3TDKXQWWQCHB
@@ -1484,6 +1486,7 @@ Learn assertion sample (@step-learn-assertion-sample: 0, is #idea, #instinct, #p
 
 Learn ontology inspect (@step-learn-ontology-inspect: 0, is #idea, #instinct, #part-of @learn-ontology: 1) { r_0J8Q1MBH0Q8B5NADT06W0RFPQ8
     """Look at the sample concept practice-note in the local Vocabulary. The hierarchy and alias help explain its meaning. These sample concepts live in the isolated Cell."""
+Next opens Concepts and hierarchy in the sample Ontology Sand. nota-de-pratica is another name for practice-note. sample-kind names both note and practice-note, so Lince requires you to choose which concept you mean.
 } r_0J8Q1MBH0Q8B5NADT06W0RFPQ8
 
 Record castles open (@step-record-castles-open: 0, is #idea, #instinct, #part-of @record-castles: 1) { r_0D77DDANKJ9TKZN4CYA20B4YWX
@@ -1492,6 +1495,7 @@ Record castles open (@step-record-castles-open: 0, is #idea, #instinct, #part-of
 
 Facts inspect (@step-facts-inspect: 0, is #idea, #instinct, #part-of @facts: 1) { r_55KJNH2K3SCZ79VPJDJGPJCKY7
     """Inspect the confirmed quantity change on the sample and its time. A Fact records what changed, not just what someone planned to change."""
+Next completes the sample Need and prepares dates, a thirty-minute estimate and a stopped work log. Inspect those saved values in the Record view. Later work tools reuse these same fields.
 } r_55KJNH2K3SCZ79VPJDJGPJCKY7
 
 Protein arrangement arrange (@step-protein-arrangement-arrange: 0, is #idea, #instinct, #part-of @protein-arrangement: 1) { r_0MS7HDNZCKMDVDFGKEENYG3GRY
@@ -1534,6 +1538,35 @@ Dismiss sample feedback (@step-notifications-dismiss: 0, #instinct, #part-of @no
     """Dismiss only the sample notification. Dismissing feedback removes it from the visible list; it does not undo the saved action that it described."""
 } r_74Z42F9Q06ZHPX3TNPJKV35G1N
 
+Save a practice clock (@step-frequency-create: 0, #instinct, #part-of @frequency: 1) { r_01M463D8001Q27PVX4WHC02C3A
+    """Save the prepared one-minute Frequency and inspect its next occurrence. Cadence says how the clock repeats; the starting time says where it begins. This sample lives in the separate practice Cell. Next uses the same Save control as you."""
+} r_01M463D8001Q27PVX4WHC02C3A
+
+
+Preview a small Rule (@step-karma-preview: 0, #instinct, #part-of @learn-karma: 1) { r_07BZQDMNDDQDGRKMFPJP4GCYBW
+    Read the prepared condition, threshold and consequence. The condition reads the sample Need, the threshold accepts a negative quantity, and the consequence sets that same sample to zero. Run the preview and inspect the resulting change before saving.
+} r_07BZQDMNDDQDGRKMFPJP4GCYBW
+
+Try the Rule in practice (@step-karma-run: 0, #instinct, #part-of @learn-karma: 2) { r_0SPSJ62NCWYDM96DX3YQDFFTNT
+    Save the Rule in the separate practice Cell. Change the prepared note to -2 and watch the Rule bring it to zero. Next performs these same actions. Inspect the confirmed result in the Record view.
+} r_0SPSJ62NCWYDM96DX3YQDFFTNT
+
+Pause and inspect the Rule (@step-karma-pause: 0, #instinct, #part-of @learn-karma: 3) { r_0586YE4X8JV7N378XD05TRMD64
+    Pause the sample Rule and inspect its history. Pausing prevents new automatic work; it preserves the changes already confirmed. The practice example remains separate from your own Records.
+} r_0586YE4X8JV7N378XD05TRMD64
+
+Preview a daily habit (@step-habits-preview: 0, #instinct, #part-of @habits: 1) { r_079BZSRBXARCDNT34ZPEYMDYT8
+    Use the daily-task helper to preview a Record, a daily Frequency and its reset Rule. Inspect their slugs and the chosen local time. The preview reports conflicts before writing anything.
+} r_079BZSRBXARCDNT34ZPEYMDYT8
+
+Import the prepared habit (@step-habits-import: 0, #instinct, #part-of @habits: 2) { r_0H1E94BKDR1RHX143MNFE33THK
+    Import the conflict-free preview into the practice Cell. The helper creates the same Record, Frequency and Rule you inspected. This practice import does not add a habit to your personal Cell.
+} r_0H1E94BKDR1RHX143MNFE33THK
+
+Meet the habit Need (@step-habits-complete: 0, #instinct, #part-of @habits: 3) { r_0H387NS5SRP9M5GPFA5FX4ST6S
+    Mark the sample habit completed and wait for its saved quantity to become zero. The reset Rule describes the next daily Need; completing one occurrence does not erase its clock or history.
+} r_0H387NS5SRP9M5GPFA5FX4ST6S
+
 Move, resize and pin a sample (@step-interface-move-sand: 0, is #idea, #instinct, #part-of @sands: 3) { r_24N8JXSY7PAAX0RSMFV8A2B88A
     """Move the sample Square, make it wider, then pin it. Selection chooses a presentation on the canvas. Removing that presentation does not delete a Record it may show."""
 } r_24N8JXSY7PAAX0RSMFV8A2B88A
@@ -1541,3 +1574,208 @@ Move, resize and pin a sample (@step-interface-move-sand: 0, is #idea, #instinct
 Separate the sample composition (@step-interface-ungroup-castle: 0, is #idea, #instinct, #part-of @castles: 2) { r_6HFCZJJTHQGVKXBMDTCYPTC3M4
     """Ungroup the sample pieces and detach the text from its enclosing row. Compare the independent pieces with the previous Castle. Grouping moves pieces together; an enclosing layout arranges them."""
 } r_6HFCZJJTHQGVKXBMDTCYPTC3M4
+
+Save the sample Command (@step-commands-save: 0, is #idea, #instinct, #part-of @commands: 1) { r_0JKSXB56HT7AZJ1AYG539PT60D
+Save the prepared Command. Its fixed script prints the number 7 in the separate practice directory. A Command stores what should run and where. Review the script before saving; Next uses the same Save control.
+} r_0JKSXB56HT7AZJ1AYG539PT60D
+
+Run and inspect a Signal (@step-commands-run: 0, is #idea, #instinct, #part-of @commands: 2) { r_0DB2Y01B7FJ8R9DWB6XTPE9ZC6
+Run the saved sample Command and inspect its output and history. A successful numeric result becomes a Signal that a Rule can read. This example only prints 7. Next uses the same Run control and waits for the confirmed result; Retry, Skip and Close remain available.
+} r_0DB2Y01B7FJ8R9DWB6XTPE9ZC6
+
+Step a prepared simulation (@step-simulation-event: 0, is #idea, #instinct, #part-of @simulation: 1) { r_01M464ZA5S3T6SV5A9EJ05G72B
+    Use Next event on the built-in daily example, then inspect its paused event evidence. A simulation copies or prepares data to explore what would happen. It does not apply these changes to your personal Records. Next uses that same one-event action.
+} r_01M464ZA5S3T6SV5A9EJ05G72B
+
+Stop and inspect the run (@step-simulation-stop: 0, is #idea, #instinct, #part-of @simulation: 2) { r_01M464ZA5S3T6SV5A9EJ05G72C
+    Stop the sample run and inspect its saved evidence. A stopped run reports the period it actually covered; stopping is not a claim that every check passed. Pause, timeline, replay and comparison controls let you examine an example at your own pace.
+} r_01M464ZA5S3T6SV5A9EJ05G72C
+
+Inspect an optional Fiote (@step-fiote-inspect: 0, is #idea, #instinct, #part-of @learn-fiote: 1) { r_01M464ZA5S3T6SV5A9EJ05G72D
+    Open AI connections on the prepared Fiote and inspect its provider and model choices. Read the prepared conversation to see how a suggestion can be discussed before a change. The sample message was written for practice, without calling a provider. Credentials and a live reply are optional. Stop ends a run; disconnecting its tools withdraws access. Next opens the same connections view.
+} r_01M464ZA5S3T6SV5A9EJ05G72D
+
+Inspect your practice identity (@step-organ-identity: 0, is #idea, #instinct, #part-of @learn-organ: 1) { r_01M4660000000000000000073A
+Open Local settings in the prepared personal Organ. Read its name and address. A Cell stores data and runs Lince; its Organ gives that data an identity. Next opens the same settings.
+} r_01M4660000000000000000073A
+
+Switch to a prepared shared context (@step-organ-context: 0, is #idea, #instinct, #part-of @learn-organ: 2) { r_01M4660000000000000000073B
+Open the prepared shared Organ's settings. Its identity and Records are separate from the personal example. A Protein can choose which Organ it reads. Next opens that second context. Both examples are isolated from your ordinary Cell.
+} r_01M4660000000000000000073B
+
+Pair with a prepared contact (@step-contacts-pair: 0, is #idea, #instinct, #part-of @contacts: 1) { r_01M4660000000000000000073C
+Read the prepared pairing code in Add contact, then add the contact. Next submits that same form to a peer running on this computer. Read the confirmed contact in Organs: known, unknown and blocked describe trust; Proximity is a separate setting. No real contact is needed.
+} r_01M4660000000000000000073C
+
+Inspect a practice reader (@step-access-control-inspect: 0, is #idea, #instinct, #part-of @access-control: 1) { r_01M4660000000000000000073D
+Select Practice reader. Read its Role and permissions. Access determines which data and actions a person can use; opening or editing a workspace grants no Record authority. Next opens this sample user. Use the authority preview to inspect an operation before granting more permission.
+} r_01M4660000000000000000073D
+
+Share one prepared Record (@step-organ-sync-share: 0, is #idea, #instinct, #part-of @organ-sync: 1) { r_01M4660000000000000000073E
+Enable Send changes for the prepared shared Organ, then use Synchronize now. The prepared selection contains only one practice note. Wait until its Record view appears in the peer. Next uses those same controls and waits for arrival. Feed direction, selected Records and permitted fields decide what is shared. Hiding or stopping later does not remove copies already received.
+} r_01M4660000000000000000073E
+
+Inspect the prepared device list (@step-devices-inspect: 0, is #idea, #instinct, #part-of @devices: 1) { r_01M4660000000000000000073F
+Open My devices. The practice Organ has a signed device list. Read which device may run Karma and where to pause or transfer that authority. Synchronizing a Rule does not give every device permission to execute it. Next opens this list; no real keys are changed.
+} r_01M4660000000000000000073F
+
+Inspect saved outgoing mail (@step-mail-inspect: 0, is #idea, #instinct, #part-of @mail: 1) { r_01M4660000000000000000073G
+Open Mail and refresh outgoing mail. This prepared envelope is saved here and has no mailbox acceptance yet. Saving, mailbox storage and recipient receipt are separate stages. Read the status before using retry or cancellation. Next refreshes this ordinary status view. No public relay or real recipient is involved.
+} r_01M4660000000000000000073G
+
+Search a prepared discovery service (@step-discovery-search: 0, is #idea, #instinct, #part-of @discovery: 1) { r_01M4660000000000000000073H
+In Discovery, search for bicycle in the prepared local service. Read the Contribution that appears. Public announcements describe Needs or Contributions; they are not agreements. A signature identifies a posting key, not a verified claim. Next uses the same search form. Only the local practice service receives this query.
+} r_01M4660000000000000000073H
+
+Prepare an announcement draft (@step-discovery-draft: 0, is #idea, #instinct, #part-of @discovery: 2) { r_01M4660000000000000000073J
+Give a sample Contribution a title and short text, then save its draft. Read the publication choices before posting. A draft stays in your Cell until you choose publication; withdrawal cannot recall all public copies. Next saves the prepared draft through the same form, without publishing it.
+} r_01M4660000000000000000073J
+
+Open a prepared private request (@step-discovery-request: 0, is #idea, #instinct, #part-of @discovery: 3) { r_01M4660000000000000000073K
+Use Write a private introduction on the prepared bicycle announcement. Send a short introduction and inspect the saved request. Requests can be accepted or declined; they do not create a Transfer agreement. Next submits this introduction using the prepared local mailbox. No real person is contacted.
+} r_01M4660000000000000000073K
+
+Send a practice Message (@step-conversations-send: 0, is #idea, #instinct, #part-of @conversations: 1) { r_01M4660000000000000000073M
+Open the prepared conversation's thread, type Hello from Instinct practice. and send. Read the Message when it appears in the saved thread. A locally saved Message may still be waiting for delivery; the delivery status tells you more. Next uses the same composer. Tabs organize threads; replies, mentions and attachments are optional further tools.
+} r_01M4660000000000000000073M
+
+Find the call controls (@step-calls-inspect: 0, is #idea, #instinct, #part-of @calls: 1) { r_01M4660000000000000000073N
+Read the call controls in the prepared thread: audio, video and screen sharing. A live call has mute, sharing and leave controls. Calling needs membership, connectivity and available devices. This step asks only for inspection; Next confirms the prepared thread is open. No microphone, camera or screen capture is started, and missing hardware never prevents leaving or skipping.
+} r_01M4660000000000000000073N
+
+Check a prepared proposal (@step-transfer-check: 0, is #idea, #instinct, #part-of @learn-transfer: 1) { r_01M4660000000000000000073P
+Read the prepared token donation: the parties, promise and current quantities. The receiver has already agreed in this example. Choose Checked to say that you reviewed the terms; this is separate from agreement. Next uses the same control. The example has two disposable People in the practice Cell.
+} r_01M4660000000000000000073P
+
+Agree to the prepared terms (@step-transfer-agree: 0, is #idea, #instinct, #part-of @learn-transfer: 2) { r_01M4660000000000000000073Q
+Choose Agree and read the resulting agreement level. A promise describes a future change; agreeing does not prove delivery or change the token quantity. Next confirms through the same form. Revised terms need review again.
+} r_01M4660000000000000000073Q
+
+Activate a prepared occurrence (@step-transfer-activate: 0, is #idea, #instinct, #part-of @learn-transfer: 3) { r_01M4660000000000000000073R
+Choose Activate occurrence on the giver's promise. Read the confirmed occurrence and its remaining work. Delivery, receipt and settlement are further stages; an active occurrence is not proof that they happened. Next activates through the same form and waits for the saved occurrence. All of these changes belong to the disposable example.
+} r_01M4660000000000000000073R
+
+Inspect and pause proposal automation (@step-transfer-automation-pause: 0, is #idea, #instinct, #part-of @transfer-automation: 1) { r_01M4660000000000000000073S
+Read the prepared Rule that would publish this saved proposal when the sample stock becomes negative. It does not skip participant review or agreement. Find its condition, consequence and authority in the Rule Castle, then use Pause on this Rule. Next uses that same control and waits for confirmed paused state. The Transfer's agreement automation panel covers Rules that change agreement levels. Pausing stops future work; already issued work can still finish.
+} r_01M4660000000000000000073S
+
+Preview a conflicting import (@step-import-conflict: 0, is #idea, #instinct, #part-of @instinct-import: 1) { r_01M4660000000000000000073T
+Use Preview handbook import in the prepared reader. An unrelated practice Record already occupies @protein. Read the conflict: Lince must preserve the existing Record and refuse this import. Next uses the same preview. No Record is written by previewing.
+} r_01M4660000000000000000073T
+
+Cancel the preview (@step-import-cancel: 0, is #idea, #instinct, #part-of @instinct-import: 2) { r_01M4660000000000000000073V
+Choose Cancel import. The preview closes without changing the sample database. Next uses that same cancellation control. Importing text is separate from following a tutorial.
+} r_01M4660000000000000000073V
+
+Preview an independent clean import (@step-import-clean: 0, is #idea, #instinct, #part-of @instinct-import: 3) { r_01M4660000000000000000073W
+The second prepared reader uses a separate empty Cell. Preview the handbook here. Review its exact Records, slugs, quantities and Assertions before importing. Next opens this reader and previews through the ordinary control; the earlier conflicting Cell remains separate.
+} r_01M4660000000000000000073W
+
+Import the reviewed Records (@step-import-commit: 0, is #idea, #instinct, #part-of @instinct-import: 4) { r_01M4660000000000000000073X
+Choose Import these Records in the clean preview. Wait for confirmation and inspect a Record. Imported handbook Records are ordinary data, with their canonical slugs and Assertions. They do not execute lesson actions, Commands or Rules. Next uses the same atomic import. All changes are in the disposable practice Cell.
+} r_01M4660000000000000000073X
+
+Export one selected Record (@step-sync-export: 0, is #idea, #instinct, #part-of @learn-sync: 1) { r_01M4660000000000000000073Y
+In Sync, enable file sync, keep the prepared Protein and temporary directory, choose Markdown, and Save directory. Wait for Practice disk note.md to appear. Next uses these same controls and confirms the file exists. The Protein selects only this note. Continuous sync watches changes; importing a Trail once does not.
+} r_01M4660000000000000000073Y
+
+Bring a file edit back into its Record (@step-sync-incoming: 0, is #idea, #instinct, #part-of @learn-sync: 2) { r_01M4660000000000000000073Z
+Edit the exported practice file to say I edited the exported practice file. You can use Apply the example file edit to make this small change. Wait for the same Record's body to change. Next uses that example edit and waits for the incoming update. Keep the filename and file identity. When both sides change, inspect sync conflicts before choosing what to keep.
+} r_01M4660000000000000000073Z
+
+Stop the practice directory sync (@step-sync-stop: 0, is #idea, #instinct, #part-of @learn-sync: 3) { r_01M46600000000000000000740
+Turn file sync off and read Stopped. Next uses the same switch and waits for the Cell to confirm it. Existing exported files remain; stopping does not undo edits already accepted. Close also stops sample sync before offering Keep or Discard.
+} r_01M46600000000000000000740
+
+Offer a bundled file copy (@step-blob-send: 0, is #idea, #instinct, #part-of @blob-sync: 1) { r_01M46600000000000000000741
+In the sender's Blob Sync panel, read the selected blob-sample.txt and prepared peer, then Send copy. Inspect the incoming offer in the second panel. Next uses that same Send copy control and waits for the offer. This is a fixed copy of bytes, separate from synchronized Record text. The recipient has not accepted yet.
+} r_01M46600000000000000000741
+
+Accept the prepared file copy (@step-blob-accept: 0, is #idea, #instinct, #part-of @blob-sync: 2) { r_01M46600000000000000000742
+In the receiving panel, inspect the file list and choose Accept. This practice saves inside the receiving Cell's temporary received-files folder. Wait for Completed before opening the copy. Next uses the same Accept control and waits for verified completion. Decline or cancel unwanted offers; stopping cannot undo bytes already copied.
+} r_01M46600000000000000000742
+
+Inspect storage and owner backup (@step-backup-inspect: 0, is #idea, #instinct, #part-of @backup: 1) { r_01M46600000000000000000743
+Open Configuration's Storage tab. Read the database usage and encrypted owner-backup form, including what it excludes. Next opens this same tab for inspection. Do not submit a backup in this practice. Keep layouts, attachment files and custom Castle files separately when needed. A backup passphrase is needed to open the backup; directory sync is not an owner-key backup.
+} r_01M46600000000000000000743
+
+Open a prepared project file (@step-ide-open: 0, is #idea, #instinct, #part-of @ide: 1) { r_01M46600000000000000000744
+Find note.txt in the prepared project's Explorer and open it in the IDE. Read its tab and location. Opening a folder or file does not copy it into the database or create File Records. Next waits for this prepared file to open. Tabs, search and recovery are available when needed.
+} r_01M46600000000000000000744
+
+Edit and explicitly save (@step-ide-save: 0, is #idea, #instinct, #part-of @ide: 2) { r_01M46600000000000000000745
+Replace note.txt's text with An edited practice file. and a final newline, then Save. Wait for Saved. Next enters that same text and uses the normal Save control. The file belongs to this practice directory. Autosave and recovery are useful safeguards; inspect conflicts before overwriting a version changed elsewhere.
+} r_01M46600000000000000000745
+
+Inspect optional language tools (@step-language-tools-inspect: 0, is #idea, #instinct, #part-of @language-tools: 1) { r_01M46600000000000000000746
+Open Installed tools for the prepared source file. Read the server, formatter and linter choices and Connect/Disconnect controls. Next opens the same panel. Programs must be installed and configured before use; missing programs do not block this lesson. Formatting, diagnostics and completion are optional further practice on this disposable project.
+} r_01M46600000000000000000746
+
+Read another document page (@step-document-next: 0, is #idea, #instinct, #part-of @documents: 1) { r_01M46600000000000000000747
+The Document Viewer opens a bundled two-page PDF. Use Next page and read the second page. Next uses that same reading control and waits for the page to load. Zoom and page/scroll modes change how you read; opening a local document does not import it as Records.
+} r_01M46600000000000000000747
+
+Inspect Terminal controls (@step-terminal-inspect: 0, is #idea, #instinct, #part-of @terminal: 1) { r_01M46600000000000000000748
+Read Open shell, Close, Copy screen and scrolling controls. Next confirms this panel is available; this lesson starts no shell. A Terminal accepts shell input and displays output; saved Commands are reusable actions with their own results. Use Ctrl Tab to release keyboard focus. Open your own shell outside this practice when you want live shell use.
+} r_01M46600000000000000000748
+
+Inspect the file choices (@step-file-choices: 0, is #idea, #instinct, #part-of @external-files: 1) { r_01M46600000000000000000749
+Inspect the choices offered for the bundled PDF. Dropping or pasting an external item lets you choose how to use it; a viewer, editable file, image or link is chosen according to the item. Next waits for this local preview. Remote downloads are optional. Nothing is accepted by simply opening this choice.
+} r_01M46600000000000000000749
+
+Cancel an external-file choice (@step-file-cancel: 0, is #idea, #instinct, #part-of @external-files: 2) { r_01M4660000000000000000074A
+Choose Cancel. The preview and choices close without adding the document. Next uses the same cancellation control. You can make a fresh choice later; cancelling is always available while deciding what to add.
+} r_01M4660000000000000000074A
+Preview a prepared recording (@step-recorder-preview: 0, is #idea, #instinct, #part-of @recorder: 1) { r_01M4660000000000000000074B
+Choose the quiet sample and press Preview FX. Recorder plays the selected take with its current effects; recording from a microphone is optional. Next presses the same Preview control. If no playback device is available, you can inspect the controls and continue without a microphone or speaker. This sample has its own library, separate from your recordings.
+} r_01M4660000000000000000074B
+
+Stop sample playback (@step-recorder-stop: 0, is #idea, #instinct, #part-of @recorder: 2) { r_01M4660000000000000000074C
+Press Stop playback. This stops playback without deleting the take. Next uses that same control. Close also stops the sample audio and restores ordinary interaction; Keep retains the sample files, while Discard removes them.
+} r_01M4660000000000000000074C
+
+Assign a sound to an Area (@step-area-sound-assign: 0, is #idea, #instinct, #part-of @area-sound: 2) { r_01M4660000000000000000074D
+In the prepared Area, choose recordings/instinct-demo.wav for On enter. The earlier Area page explains entering and leaving; here you choose what to hear on that crossing. Next selects this sample through the same control. An empty On leave path stays silent.
+} r_01M4660000000000000000074D
+
+Preview the crossing sound (@step-area-sound-preview: 0, is #idea, #instinct, #part-of @area-sound: 3) { r_01M4660000000000000000074E
+Press Preview beside On enter to hear the selected sound without moving a Sand. Next presses that same control. If sound output is unavailable, inspect the assignment and continue. Close releases the sample audio; you can keep the prepared Area or discard it.
+} r_01M4660000000000000000074E
+Inspect a shader example (@step-shader-example: 0, is #idea, #instinct, #part-of @shaders: 1) { r_01M4660000000000000000074F
+The prepared Shader Castle opens a sample Record by its slug. Press Add glowing ball and inspect the WGSL block and its preview in the description. Next adds that same example. The Record owns the effect; changing its description changes the presentation. A graphics device is needed for the live picture; you can inspect the source and continue when rendering is unavailable. The Record and its edits belong to the sample Cell.
+} r_01M4660000000000000000074F
+
+Try spatial view (@step-topology-spatial: 0, is #idea, #instinct, #part-of @topology: 1) { r_01M4660000000000000000074G
+Switch this prepared workspace to 3D, then frame its samples with Recenter. Next uses the same view switch and framing controls. Navigation and placement still apply; depth, rotation and world pinning describe where the pieces sit. Imported models and splats are optional examples to explore later, not prerequisites for this page.
+} r_01M4660000000000000000074G
+
+Return to flat view (@step-topology-flat: 0, is #idea, #instinct, #part-of @topology: 2) { r_01M4660000000000000000074H
+Switch back to 2D. Next uses the same switch. These are two views of the same workspace, so the samples remain. Close restores the previous view if the lesson still owns that change; an independent change you make is preserved.
+} r_01M4660000000000000000074H
+
+Save a reusable Castle (@step-custom-save: 0, is #idea, #instinct, #part-of @custom-castles: 1) { r_01M4660000000000000000074J
+The prepared selection contains a Square and text. In Store, name it My practice Castle and save it to Custom. Next fills the name and uses that same Save control. This practice saves a local file in its own directory. The earlier Castle page explains composition; saving makes that composition reusable. The Organ library is another destination when you want to share a component.
+} r_01M4660000000000000000074J
+
+Add another instance (@step-custom-add: 0, is #idea, #instinct, #part-of @custom-castles: 2) { r_01M4660000000000000000074K
+Choose the saved My practice Castle entry to add a second instance. Next uses that entry's ordinary Add action. Each instance can be arranged independently. Rename, replace, delete and pushing a selected composition are later options; sharing is optional. Keep retains the sample file and instances, and Discard removes the practice.
+} r_01M4660000000000000000074K
+
+Inspect one control (@step-inspection-control: 0, is #idea, #instinct, #part-of @inspection: 1) { r_01M4660000000000000000074M
+Open General, enable Click inspection and select Pin sample. Read the action and its connection to the sample Square. Next uses that inspection selection without pinning the Square. Hover, Groups, Events and Hidden offer other views when you need them. Inspection explains what a control connects to; it does not perform the action. Close restores the inspection setting when it still belongs to this lesson.
+} r_01M4660000000000000000074M
+
+Find version and update status (@step-information-inspect: 0, is #idea, #instinct, #part-of @information: 1) { r_01M4660000000000000000074N
+Open Information and read Version, Lince directory and update status. Next opens the same panel. If the information service is disconnected, the panel explains that condition. Checking, downloading and restarting are ordinary choices for later; this lesson requires none of them.
+} r_01M4660000000000000000074N
+
+Read a Sand's credits (@step-information-credits: 0, is #idea, #instinct, #part-of @information: 2) { r_01M4660000000000000000074P
+In the prepared IDE Sand, open Licenses and credits. Next opens that same view. Dependencies embedded in Sands carry their license and attribution here; the application also has a general credits view. You can read this information without installing tools or editing a project.
+} r_01M4660000000000000000074P
+
+Inspect Laboratory resources (@step-laboratory-resources: 0, is #idea, #instinct, #part-of @laboratory: 1) { r_01M4660000000000000000074Q
+Open Laboratory and Sand resources to read the captured resource use of this prepared workspace. Next opens the same view. Normal workspaces are temporarily suspended. Read the result, then choose Next or Return to resume the tutorial; Close tutorial and Ctrl Shift Escape remain available even here. Stop ends active checks, and Return restores the normal workspace. Behavior and stress runs use temporary data and are optional; inspecting this real resource snapshot is enough for this page.
+} r_01M4660000000000000000074Q
+Enable an Area's sound (@step-area-sound-enable: 0, is #idea, #instinct, #part-of @area-sound: 1) { r_01M4660000000000000000074R
+In the prepared Area, press Enable sound area. Next uses the same control. This enables choosing separate sounds for entering and leaving; it does not assign a sound until you choose its recording path.
+} r_01M4660000000000000000074R

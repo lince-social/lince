@@ -6,6 +6,7 @@ mod tests;
 mod ui;
 mod worker;
 
+use crate::actions::Action;
 use bevy::{math::DVec2, prelude::*};
 use lince_document::{Info, Layout, Mode, Position};
 pub(crate) use persistence::{SavedDocumentViewer, snapshot};
@@ -251,4 +252,22 @@ pub(crate) fn preview_status(world: &World, owner: Entity) -> Option<Result<(), 
     } else {
         None
     }
+}
+
+pub(crate) fn next_page(world: &mut World, owner: Entity) {
+    if page_visible(world, owner, 0) {
+        ui::Control::Next.apply(world, owner);
+    }
+}
+
+pub(crate) fn page_visible(world: &World, owner: Entity, section: usize) -> bool {
+    world
+        .get::<DocumentViewer>(owner)
+        .is_some_and(|state| state.position().section == section)
+        && world.get::<View>(owner).is_some_and(|view| {
+            !view.failed
+                && !view.busy
+                && !view.tiles.is_empty()
+                && view.key.as_ref().is_some_and(|key| key.section == section)
+        })
 }

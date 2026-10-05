@@ -7,6 +7,28 @@ use store::Store;
 
 use crate::{Cell, CellRuntime, LaneHub};
 
+impl CellRuntime {
+    pub async fn start_loopback_peer(
+        &self,
+        key_path: &std::path::Path,
+    ) -> Result<tokio::task::JoinHandle<()>, Error> {
+        let secret = engine::wire::node_secret(key_path).map_err(Error::other)?;
+        let wire = Arc::new(
+            engine::wire::Wire::bind_loopback(self.engine.clone(), secret)
+                .await
+                .map_err(Error::other)?,
+        );
+        wire.set_live_handler(transport::live::LiveHost::new(
+            self.engine.clone(),
+            self.lanes.clone(),
+        ));
+        self.engine.attach_social_network(wire.clone());
+        wire.serve_enrolment();
+        *self.wire.write().await = Some(wire.clone());
+        Ok(tokio::spawn(async move { wire.serve().await }))
+    }
+}
+
 impl Cell {
     pub async fn isolated(
         store: Store,

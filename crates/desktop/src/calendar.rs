@@ -55,7 +55,7 @@ struct View {
 }
 
 #[derive(Clone, Copy)]
-enum Selector {
+pub(crate) enum Selector {
     Timezone,
     Month,
     Year(i32),
@@ -209,7 +209,7 @@ fn update(world: &mut World) {
 }
 
 #[derive(Clone)]
-enum Command {
+pub(crate) enum Command {
     ApplyTimezone,
     Create,
     Move(i32),
@@ -315,6 +315,9 @@ impl Action for Command {
             }
             Self::Record(binding) => {
                 if let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) {
+                    if let Some(record) = crate::full_record::open(world, root, &binding.uid, binding.source.clone()) {
+                        crate::instinct::practice::track_record_view(world, root, record, binding);
+                    }
                     world.trigger(crate::protein_area::RecordClicked {
                         entity: root,
                         sand: owner,

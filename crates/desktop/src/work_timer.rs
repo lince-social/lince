@@ -179,7 +179,10 @@ pub fn formatted(seconds: i64) -> String {
 fn status(world: &mut World, entity: Entity, message: &str) {
     if let Some(timer) = world.get::<WorkTimer>(entity) {
         let status = timer.status;
-        if world.get::<Text>(status).is_some_and(|text| text.0 != message) {
+        if world
+            .get::<Text>(status)
+            .is_some_and(|text| text.0 != message)
+        {
             world.get_mut::<Text>(status).unwrap().0 = message.into();
         }
     }
@@ -279,13 +282,24 @@ fn change(
 pub(crate) struct Toggle;
 
 pub(crate) fn running(world: &World, entity: Entity) -> Option<bool> {
-    world.get::<WorkTimer>(entity).map(|timer| timer.logs.iter().any(|entry| entry.end.is_none()))
+    world
+        .get::<WorkTimer>(entity)
+        .map(|timer| timer.logs.iter().any(|entry| entry.end.is_none()))
 }
 
 pub(crate) fn stopped_log(world: &World, entity: Entity) -> bool {
-    world.get::<WorkTimer>(entity).is_some_and(|timer| timer.logs.iter().any(|entry| entry.end.is_some()))
+    world
+        .get::<WorkTimer>(entity)
+        .is_some_and(|timer| timer.logs.iter().any(|entry| entry.end.is_some()))
 }
 impl Action for Toggle {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        &[
+            lince_interface::practice::Operation::StartTimer,
+            lince_interface::practice::Operation::StopTimer,
+        ]
+    }
+
     fn apply(&self, world: &mut World, entity: Entity) {
         let Some(timer) = world.get::<WorkTimer>(entity) else {
             return;
@@ -335,10 +349,12 @@ pub(crate) fn receive(world: &mut World, message: &ServerMessage) {
                 if let Some(data) = rows.first()
                     && let Some(uid) = data["uid"].as_str()
                 {
+                    let source = crate::practice_cells::source(world, entity)
+                        .map_or(Source::Local, Source::Organ);
                     world.get_mut::<WorkTimer>(entity).unwrap().binding = Some(RecordBinding {
                         area: entity,
                         uid: uid.into(),
-                        source: Source::Local,
+                        source,
                     });
                     refresh(world, entity, data);
                     status(world, entity, "Record work log");
@@ -390,18 +406,16 @@ fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::cell_bridge::CellMessage>>,
     mut wake_at: Local<Option<std::time::Instant>>,
-    mut subscriptions: Local<std::collections::HashMap<Entity, String>>,
+    mut subscriptions: Local<
+        std::collections::HashMap<Entity, (String, tokio::sync::mpsc::Sender<ClientMessage>)>,
+    >,
 ) {
-    subscriptions.retain(|entity, id| {
+    subscriptions.retain(|entity, (id, sender)| {
         world.get::<WorkTimer>(*entity).is_some()
-            || !world
-                .get_non_send::<crate::cell_bridge::CellBridge>()
-                .is_some_and(|bridge| {
-                    bridge
-                        .outgoing
-                        .try_send(ClientMessage::Unsubscribe { id: id.clone() })
-                        .is_ok()
-                })
+            || (!sender.is_closed()
+                && sender
+                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                    .is_err())
     });
     let unbuilt: Vec<_> = world
         .query_filtered::<(Entity, &crate::sand_store::StoredSand), Without<WorkTimer>>()
@@ -451,20 +465,18 @@ fn update(
                     };
                     ClientMessage::Subscribe { id: subscription.clone(), protein: serde_json::from_value(json!({"source":"record", "where":[predicate], "fields":["uid","work_logs"], "limit":1})).unwrap() }
                 };
-                let sent = world
-                    .get_non_send::<crate::cell_bridge::CellBridge>()
-                    .is_some_and(|bridge| {
-                        if !value.is_empty()
-                            && !timer.query.is_empty()
-                            && bridge
-                                .outgoing
-                                .try_send(ClientMessage::Unsubscribe { id: previous })
-                                .is_err()
-                        {
-                            return false;
-                        }
-                        bridge.outgoing.try_send(message).is_ok()
-                    });
+                let sender = crate::practice_cells::sender(world, entity);
+                let sent = sender.as_ref().is_some_and(|sender| {
+                    if !value.is_empty()
+                        && !timer.query.is_empty()
+                        && sender
+                            .try_send(ClientMessage::Unsubscribe { id: previous })
+                            .is_err()
+                    {
+                        return false;
+                    }
+                    sender.try_send(message).is_ok()
+                });
                 if sent || value.is_empty() {
                     let mut timer = world.get_mut::<WorkTimer>(entity).unwrap();
                     timer.query = value.into();
@@ -477,7 +489,7 @@ fn update(
                         refresh(world, entity, &Value::Null);
                         status(world, entity, "Standalone stopwatch");
                     } else {
-                        subscriptions.insert(entity, subscription);
+                        subscriptions.insert(entity, (subscription, sender.unwrap()));
                         ui::reconcile(world, entity);
                         status(world, entity, "Loading Record");
                     }

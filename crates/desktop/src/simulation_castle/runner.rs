@@ -38,6 +38,8 @@ pub(super) struct Progress {
     pub status: String,
     pub evidence: String,
     pub execution: Option<nucleus::execution::control::Control>,
+    pub steps: u64,
+    pub paused: bool,
 }
 
 pub(super) struct Outcome {
@@ -114,7 +116,7 @@ pub(super) async fn run(
             let destination = artifacts::next_directory(output)?;
             let (scenario, sources, _temporary) = prepare(&model, runtime.clone()).await?;
             let execution = nucleus::execution::control::Control::new(scenario.limits.rule_evaluations, scenario.limits.wall_time_ms, None);
-            progress.send_replace(Progress {status:"Preparing simulation".into(),evidence:String::new(),execution:Some(execution.clone())});
+            progress.send_replace(Progress {status:"Preparing simulation".into(),evidence:String::new(),execution:Some(execution.clone()), ..Default::default()});
             let session = Session::open_interruptible(scenario, &destination, &sources, execution).await?;
             drive(session, mode, controls, progress).await?;
             inspect_source(&destination, &model.selected_cell, runtime.as_ref()).await
@@ -393,6 +395,8 @@ async fn drive_with_controls(
             }
         }
         progress.send_replace(Progress {
+            steps: session.world.steps,
+            paused: mode == Control::Pause,
             execution: Some(session.world.control.clone()),
             status: format!(
                 "{} · {} · {} steps · {} changes · {} findings",

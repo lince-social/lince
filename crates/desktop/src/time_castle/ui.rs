@@ -1,5 +1,5 @@
 use super::*;
-use crate::actions::Action;
+use crate::actions::{Action, ActionButton};
 use bevy::text::EditableText;
 
 #[derive(Component)]
@@ -90,6 +90,18 @@ pub(super) fn populate(
         TogglePhysics,
     );
     world.entity_mut(physics).insert(CardOption(true));
+    let history = chrome::button(
+        world,
+        pages[0],
+        owner,
+        if settings.past_tasks {
+            "Past tasks: on"
+        } else {
+            "Past tasks: off"
+        },
+        TogglePast,
+    );
+    world.entity_mut(history).insert(PastOption);
     let timezone = crate::sand_panel::field(world, pages[0], "Timezone", &settings.timezone);
     chrome::button(world, pages[0], owner, "Apply settings", Apply);
     let present = crate::edit_mode::label(world, pages[0], "Now", 11.0);
@@ -128,6 +140,9 @@ struct UpcomingReady;
 
 #[derive(Component)]
 struct CardOption(bool);
+
+#[derive(Component)]
+struct PastOption;
 
 fn card_caption(settings: &Settings, physics: bool) -> &'static str {
     if physics {
@@ -297,13 +312,13 @@ pub(super) fn upcoming(
     }
     world.entity_mut(panel).despawn_children();
     world.entity_mut(panel).insert(UpcomingReady);
-    let caption = if rows.is_empty() {
-        "No upcoming work".into()
-    } else {
-        format!("Next {} things", rows.len())
-    };
-    let heading = crate::edit_mode::label(world, panel, &caption, 12.0);
-    world.get_mut::<TextColor>(heading).unwrap().0 = palette.muted;
+    if rows.is_empty() {
+        let heading = crate::edit_mode::label(world, panel, "No upcoming work", 12.0);
+        world.get_mut::<TextColor>(heading).unwrap().0 = palette.muted;
+        world
+            .entity_mut(heading)
+            .insert(TextLayout::justify(Justify::Center));
+    }
     for (id, text) in &rows {
         let button = chrome::button(world, panel, owner, text, Select(vec![id.clone()]));
         world.entity_mut(button).insert(UpcomingRow(id.clone()));
@@ -311,6 +326,7 @@ pub(super) fn upcoming(
         node.width = percent(100);
         node.min_width = px(0);
         node.flex_shrink = 0.0;
+        node.justify_content = JustifyContent::Center;
         let texts: Vec<_> = world
             .get::<Children>(button)
             .unwrap()
@@ -318,7 +334,8 @@ pub(super) fn upcoming(
             .filter(|child| world.get::<Text>(*child).is_some())
             .collect();
         for text in texts {
-            world.entity_mut(text).insert(TextLayout::linebreak(
+            world.entity_mut(text).insert(TextLayout::new(
+                Justify::Center,
                 bevy::text::LineBreak::WordOrCharacter,
             ));
             let mut node = world.get_mut::<Node>(text).unwrap();
@@ -363,6 +380,32 @@ impl Action for TogglePhysics {
             status(world, owner, message);
         }
         card_options(world, owner);
+    }
+}
+
+#[derive(Clone)]
+struct TogglePast;
+
+impl Action for TogglePast {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(mut settings) = world.get_mut::<TimeSettings>(owner) else {
+            return;
+        };
+        settings.0.past_tasks = !settings.0.past_tasks;
+        let caption = if settings.0.past_tasks {
+            "Past tasks: on"
+        } else {
+            "Past tasks: off"
+        };
+        let buttons: Vec<_> = world
+            .query::<(Entity, &PastOption, &ActionButton)>()
+            .iter(world)
+            .filter(|(_, _, action)| action.target == owner)
+            .map(|(button, _, _)| button)
+            .collect();
+        for button in buttons {
+            set_caption(world, button, caption);
+        }
     }
 }
 
@@ -758,10 +801,13 @@ mod tests {
         assert_eq!(settings.timezone, "America/Sao_Paulo");
         ToggleCards.apply(&mut world, owner);
         TogglePhysics.apply(&mut world, owner);
+        assert!(world.get::<TimeSettings>(owner).unwrap().0.past_tasks);
+        TogglePast.apply(&mut world, owner);
         let settings = &world.get::<TimeSettings>(owner).unwrap().0;
         let restored: Settings =
             serde_json::from_value(serde_json::to_value(settings).unwrap()).unwrap();
         assert!(!restored.floating_cards);
+        assert!(!restored.past_tasks);
         assert!(!restored.card_physics);
         world
             .get_mut::<EditableText>(fields[0])
@@ -806,6 +852,20 @@ mod tests {
             OverflowAxis::Clip
         );
         let children = world.get::<Children>(panel).unwrap().to_vec();
+        assert_eq!(children.len(), 8);
+        for child in &children {
+            let texts = world.get::<Children>(*child).unwrap();
+            for text in texts
+                .iter()
+                .filter(|entity| world.get::<Text>(*entity).is_some())
+            {
+                assert_eq!(
+                    world.get::<TextLayout>(text).unwrap().justify,
+                    Justify::Center
+                );
+                assert!(!world.get::<Text>(text).unwrap().0.contains("Next "));
+            }
+        }
         world.get_mut::<ScrollPosition>(panel).unwrap().0.y = 40.0;
         upcoming(&mut world, owner, 2000, true, &palette);
         assert_eq!(world.get::<Children>(panel).unwrap().to_vec(), children);

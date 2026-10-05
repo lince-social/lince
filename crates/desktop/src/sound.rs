@@ -35,7 +35,21 @@ pub(crate) enum Event {
     Recording(Entity, bool),
     Saved(Entity, String),
     Failure(String),
+    Playback(Entity, Result<(), String>),
+    Stopped(Entity),
 }
+
+#[derive(Component)]
+pub(crate) struct PlaybackResult(pub Result<(), String>);
+
+#[derive(Component)]
+pub(crate) struct PlaybackPending;
+
+#[derive(Component)]
+pub(crate) struct StopPending;
+
+#[derive(Component)]
+pub(crate) struct StoppedPlayback;
 
 #[derive(Resource)]
 pub struct Audio {
@@ -44,12 +58,15 @@ pub struct Audio {
     pub paths: Vec<String>,
     pub error: Option<String>,
     pub revision: u64,
+    stopped: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl Audio {
     pub fn open(directory: PathBuf, wake: Option<crate::wake::WakeSignal>) -> Self {
         let (sender, receiver) = mpsc::sync_channel(64);
         let (events, incoming) = mpsc::channel();
+        let stopped = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let ended = stopped.clone();
         std::thread::spawn(move || {
             let notify = |event| {
                 let _ = events.send(event);
@@ -61,6 +78,7 @@ impl Audio {
                 Ok(library) => worker(library, receiver, &notify),
                 Err(error) => notify(Event::Failure(error)),
             }
+            ended.store(true, std::sync::atomic::Ordering::Release);
         });
         Self {
             sender,
@@ -68,6 +86,7 @@ impl Audio {
             paths: Vec::new(),
             error: None,
             revision: 0,
+            stopped,
         }
     }
 
@@ -76,14 +95,49 @@ impl Audio {
             .try_send(command)
             .map_err(|e| format!("Audio is unavailable or busy: {e}"))
     }
+
+    pub(crate) fn shutdown(self) -> Arc<std::sync::atomic::AtomicBool> {
+        self.stopped.clone()
+    }
 }
 
 pub(crate) fn send(world: &World, command: Command) -> Result<(), String> {
     if crate::laboratory::active(world) {
         return Err("Audio is disabled in the Laboratory".into());
     }
-    world
-        .get_resource::<Audio>()
+    let owner = match &command {
+        Command::Record(owner, _)
+        | Command::Finish(owner)
+        | Command::Cancel(owner)
+        | Command::Stop(owner)
+        | Command::Apply(owner, _, _)
+        | Command::Play { owner, .. } => Some(*owner),
+        Command::Refresh => None,
+    };
+    match owner {
+        Some(owner) => send_to(world, owner, command),
+        None => world
+            .get_resource::<Audio>()
+            .ok_or("No Lince recording directory is configured")?
+            .send(command),
+    }
+}
+
+pub(crate) fn audio_for(world: &World, owner: Entity) -> Option<&Audio> {
+    if let Some(source) = crate::practice_cells::source(world, owner) {
+        return world
+            .get_resource::<crate::practice_cells::PracticeCells>()?
+            .audio
+            .get(&source);
+    }
+    world.get_resource::<Audio>()
+}
+
+pub(crate) fn send_to(world: &World, owner: Entity, command: Command) -> Result<(), String> {
+    if crate::laboratory::active(world) {
+        return Err("Audio is disabled in the Laboratory".into());
+    }
+    audio_for(world, owner)
         .ok_or("No Lince recording directory is configured")?
         .send(command)
 }
@@ -96,18 +150,55 @@ impl Plugin for SoundPlugin {
 }
 
 fn receive(world: &mut World) {
-    let events: Vec<_> = world
+    let mut events: Vec<_> = world
         .get_resource::<Audio>()
-        .map(|audio| audio.events.lock().unwrap().try_iter().collect())
-        .unwrap_or_default();
-    for event in events {
+        .map(|audio| audio.events.lock().unwrap().try_iter().collect::<Vec<_>>())
+        .unwrap_or_default()
+        .into_iter()
+        .map(|event| (None, event))
+        .collect();
+    if let Some(cells) = world.get_resource::<crate::practice_cells::PracticeCells>() {
+        for (source, audio) in &cells.audio {
+            events.extend(
+                audio
+                    .events
+                    .lock()
+                    .unwrap()
+                    .try_iter()
+                    .map(|event| (Some(source.clone()), event)),
+            );
+        }
+    }
+    for (source, event) in events {
         match event {
             Event::Library(paths) => {
+                if let Some(source) = source {
+                    if let Some(audio) = world
+                        .resource_mut::<crate::practice_cells::PracticeCells>()
+                        .audio
+                        .get_mut(&source)
+                    {
+                        audio.paths = paths;
+                        audio.revision += 1;
+                    }
+                    continue;
+                }
                 let mut audio = world.resource_mut::<Audio>();
                 audio.paths = paths;
                 audio.revision += 1;
             }
             Event::Failure(error) => {
+                if let Some(source) = source {
+                    if let Some(audio) = world
+                        .resource_mut::<crate::practice_cells::PracticeCells>()
+                        .audio
+                        .get_mut(&source)
+                    {
+                        audio.error = Some(error);
+                        audio.revision += 1;
+                    }
+                    continue;
+                }
                 let mut audio = world.resource_mut::<Audio>();
                 audio.error = Some(error);
                 audio.revision += 1;
@@ -124,6 +215,16 @@ fn receive(world: &mut World) {
                 crate::recorder_castle::recording(world, owner, recording)
             }
             Event::Saved(owner, path) => crate::recorder_castle::saved(world, owner, path),
+            Event::Playback(owner, result) => {
+                if world.get_entity(owner).is_ok() {
+                    world.entity_mut(owner).insert(PlaybackResult(result));
+                }
+            }
+            Event::Stopped(owner) => {
+                if world.get_entity(owner).is_ok() {
+                    world.entity_mut(owner).insert(StoppedPlayback);
+                }
+            }
         }
     }
 }
@@ -134,10 +235,17 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
     let mut cache: HashMap<String, Arc<Clip>> = HashMap::new();
     refresh(&library, notify);
     loop {
-        let command = match receiver.recv_timeout(Duration::from_millis(30)) {
-            Ok(command) => Some(command),
-            Err(mpsc::RecvTimeoutError::Disconnected) => break,
-            Err(mpsc::RecvTimeoutError::Timeout) => None,
+        let command = if output.is_none() && capture.is_none() {
+            match receiver.recv() {
+                Ok(command) => Some(command),
+                Err(_) => break,
+            }
+        } else {
+            match receiver.recv_timeout(Duration::from_millis(30)) {
+                Ok(command) => Some(command),
+                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                Err(mpsc::RecvTimeoutError::Timeout) => None,
+            }
         };
         if let Some((owner, _, input)) = &capture {
             let owner = *owner;
@@ -200,6 +308,7 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
                 if let Some(output) = &output {
                     output.stop(owner);
                 }
+                notify(Event::Stopped(owner));
                 continue;
             }
             Command::Apply(owner, path, effects) => {
@@ -247,6 +356,7 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
                         .play(owner, clip, volume, effects.is_some());
                     Ok(())
                 })();
+                notify(Event::Playback(owner, result.clone()));
                 (owner, result)
             }
         };

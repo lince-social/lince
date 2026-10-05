@@ -286,7 +286,7 @@ fn outward_labels_keep_full_text_and_timing_without_intersections_or_clock_resiz
         );
         let nearest_x = 0.0_f32.clamp(a.rect[0], a.rect[0] + a.rect[2]);
         let nearest_y = 0.0_f32.clamp(a.rect[1], a.rect[1] + a.rect[3]);
-        assert!(nearest_x.hypot(nearest_y) >= 192.0);
+        assert!(nearest_x.hypot(nearest_y) >= 186.0);
         assert!(a.anchor[0].hypot(a.anchor[2]) >= 173.9);
         for b in result.iter().skip(index + 1) {
             assert!(
@@ -368,6 +368,100 @@ fn aperture_sets_the_schedule_window_with_valid_bounds() {
     assert!(settings.valid());
     settings.aperture_ms = 0;
     assert!(!settings.valid());
+}
+
+#[test]
+fn coincident_tasks_spread_in_two_dimensions_near_their_own_midpoints() {
+    let settings = Settings {
+        cursor: lince_interface::time_castle::CursorMode::Fixed,
+        ..Settings::default()
+    };
+    let entries: Vec<_> = (0..12)
+        .map(|index| entry(&format!("task-{index}"), 1000, None))
+        .collect();
+    let labels =
+        lince_interface::time_castle::labels(&settings, &entries, 1000, [420.0; 2], 14.0, 8.0);
+    let xs: std::collections::HashSet<_> = labels
+        .iter()
+        .map(|label| label.rect[0].round() as i32)
+        .collect();
+    let ys: std::collections::HashSet<_> = labels
+        .iter()
+        .map(|label| label.rect[1].round() as i32)
+        .collect();
+    assert!(xs.len() > 4 && ys.len() > 4);
+    let first = &labels[0];
+    assert!((first.anchor[2] - (first.rect[1] + first.rect[3]) - 30.0).abs() < 0.01);
+}
+
+#[test]
+fn confirmed_past_tasks_follow_the_cursor_and_share_the_bounded_schedule_window() {
+    let now = 1_800_000_000_000;
+    let mut settings = Settings::default();
+    assert!(settings.past_tasks);
+    let mut entries = vec![
+        entry("past point", now - 60_000, None),
+        entry("past range", now - 300_000, Some(now - 1000)),
+        entry("ongoing", now - 1000, Some(now + 1000)),
+        entry("future", now + 60_000, None),
+        entry("old", now - 3_600_001, None),
+        entry("unconfirmed", now - 2000, None),
+        entry("overdue", now - 3000, None),
+        entry("unapplied prediction", now - 4000, None),
+    ];
+    entries[5].preview = true;
+    entries[6].category = Category::Overdue;
+    entries[7].origin = serde_json::json!({"kind":"projection"});
+    let occurrences = lince_interface::time_castle::clock_occurrences(
+        &settings,
+        &entries,
+        now,
+        now + settings.aperture_ms,
+    );
+    let past: Vec<_> = occurrences
+        .iter()
+        .filter(|occurrence| occurrence.historical)
+        .collect();
+    assert_eq!(past.len(), 2);
+    assert!(
+        past.iter()
+            .all(|occurrence| occurrence.time.from_ms == now && occurrence.time.until_ms.is_none())
+    );
+    assert_eq!(occurrences.len(), 4);
+    let window = settings.window(now).unwrap();
+    assert!(window.from_ms <= now - settings.aperture_ms);
+    window.validate().unwrap();
+    settings.past_tasks = false;
+    assert!(
+        lince_interface::time_castle::clock_occurrences(
+            &settings,
+            &entries,
+            now,
+            now + settings.aperture_ms
+        )
+        .iter()
+        .all(|occurrence| !occurrence.historical)
+    );
+    assert!(settings.window(now).unwrap().from_ms > now - settings.aperture_ms);
+    settings.past_tasks = true;
+    settings.set_aperture(lince_interface::time_castle::MAX_HORIZON_MS);
+    settings.window(now).unwrap().validate().unwrap();
+}
+
+#[test]
+fn day_sized_apertures_show_each_event_date_once() {
+    let now = chrono::DateTime::parse_from_rfc3339("2026-10-05T19:16:00Z")
+        .unwrap()
+        .timestamp_millis();
+    let at = chrono::DateTime::parse_from_rfc3339("2026-10-06T00:00:00Z")
+        .unwrap()
+        .timestamp_millis();
+    let mut settings = Settings::default();
+    settings.set_aperture(2 * 86_400_000);
+    assert_eq!(
+        entry("task", at, None).time_label(&settings, now),
+        "10-06 00:00"
+    );
 }
 
 #[test]

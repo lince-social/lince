@@ -17,7 +17,7 @@ struct Countdown {
 }
 
 #[derive(Clone)]
-pub(super) enum Command {
+pub(crate) enum Command {
     Create,
     New,
     Save,
@@ -31,6 +31,22 @@ pub(super) enum Command {
 }
 
 impl Action for Command {
+    fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
+        if matches!(self, Self::Save) {
+            &[lince_interface::practice::Operation::CreateFrequency]
+        } else {
+            &[]
+        }
+    }
+
+    fn tutorial_supports(&self) -> &'static [lince_interface::practice::Operation] {
+        if matches!(self, Self::Weekday(_) | Self::New | Self::Cancel) {
+            &[lince_interface::practice::Operation::CreateFrequency]
+        } else {
+            &[]
+        }
+    }
+
     fn apply(&self, world: &mut World, owner: Entity) {
         if matches!(self, Self::Create) {
             let workspace = world

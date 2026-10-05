@@ -18,6 +18,10 @@ struct View {
 struct PasswordMask(Entity);
 
 pub(in crate::custom_castle) fn show(world: &mut World, root: Entity, parent: Entity) {
+    if crate::instinct::practice::active_source(world, root).is_some() {
+        crate::edit_mode::label(world, parent, "Practice uses a separate local library. Organ publishing is available after leaving practice.", 14.0);
+        return;
+    }
     if world.get::<Library>(root).is_none() {
         world.entity_mut(root).insert(Library::default());
     }

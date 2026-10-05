@@ -19,6 +19,7 @@ tokio = { workspace = true }
 
 [build-dependencies]
 sensei = { workspace = true }
+sha2 = { workspace = true }
 
 [dev-dependencies]
 tempfile = "=3.27.0"

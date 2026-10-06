@@ -71,17 +71,27 @@ pub(super) async fn execute(
         let due = row["due_date"].as_str();
         let time = nucleus::schedule::range(start, due, row["estimate_min"].as_f64(), None)
             .map_err(invalid)?;
-        let active = row["quantity"]
+        let quantity = row["quantity"]
             .as_str()
-            .and_then(|value| nucleus::DecimalValue::parse_inferred(value).ok())
+            .and_then(|value| nucleus::DecimalValue::parse_inferred(value).ok());
+        let active = quantity
+            .as_ref()
             .is_some_and(|quantity| !quantity.is_zero());
+        let needed = quantity
+            .as_ref()
+            .is_some_and(|quantity| quantity.is_negative());
+        let undated_need = needed && start.is_none() && due.is_none();
+        let expired_need = needed
+            && time
+                .as_ref()
+                .is_some_and(|time| time.until_ms.unwrap_or(time.from_ms) < now);
         let due_time = due.and_then(|value| TimeValue::parse(value).ok());
         let overdue = active
             && due_time.as_ref().is_some_and(|due| match due {
                 TimeValue::Instant(time) => time.timestamp_millis() < now,
                 TimeValue::Date(date) => date.to_string() < today,
             });
-        let category = if overdue {
+        let category = if overdue || undated_need || expired_need {
             "overdue"
         } else if let Some(time) = &time {
             if !time.overlaps(context.window.from_ms, context.window.until_ms) {
@@ -115,7 +125,9 @@ pub(super) async fn execute(
             .and_then(|value| {
                 serde_json::from_value::<nucleus::projection::OccurrenceLink>(value.clone()).ok()
             });
-        row["origin"] = if let Some(occurrence) = occurrence {
+        row["origin"] = if undated_need {
+            json!({"kind":"need"})
+        } else if let Some(occurrence) = occurrence {
             json!({"kind":"manual", "occurrence":occurrence})
         } else {
             json!({"kind":"manual"})

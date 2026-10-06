@@ -198,6 +198,7 @@ impl CommandHost {
             return Err("Enter a Bash script of at most 65536 bytes".into());
         }
         let cwd = working_directory(&cwd)?;
+        let bash = bash_executable(std::env::var_os("PATH").as_deref())?;
         let mut runs = self.0.runs.lock().map_err(|error| error.to_string())?;
         if runs.len() >= 16 || runs.values().any(|active| active.run.command == command) {
             return Err(
@@ -216,7 +217,7 @@ impl CommandHost {
         };
         let path = journal::path(&self.0.root, &run.command, &run.id)?;
         let mut file = journal::create(&path, &run)?;
-        let mut command = CommandBuilder::new("bash");
+        let mut command = CommandBuilder::new(&bash);
         command.args(["--noprofile", "--norc", "-c", &run.script]);
         command.cwd(&cwd);
         command.env("TERM", "xterm-256color");
@@ -226,7 +227,7 @@ impl CommandHost {
         let spawned = match spawn_command(
             pty_size(80, 24, 720, 432),
             command,
-            "bash".into(),
+            bash.display().to_string(),
             run.cwd.clone(),
         ) {
             Ok(spawned) => spawned,
@@ -441,6 +442,37 @@ fn stop(handle: &TerminalHandle, pid: Option<u32>) {
     if let Ok(mut killer) = handle.killer.lock() {
         let _ = killer.kill();
     }
+}
+
+fn bash_executable(path: Option<&std::ffi::OsStr>) -> Result<PathBuf, String> {
+    let name = if cfg!(windows) { "bash.exe" } else { "bash" };
+    let candidates = path
+        .into_iter()
+        .flat_map(std::env::split_paths)
+        .map(|directory| directory.join(name))
+        .chain([
+            PathBuf::from("/run/current-system/sw/bin/bash"),
+            PathBuf::from("/bin/bash"),
+            PathBuf::from("/usr/bin/bash"),
+        ]);
+    for candidate in candidates {
+        let Ok(metadata) = candidate.metadata() else {
+            continue;
+        };
+        if !metadata.is_file() {
+            continue;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if metadata.permissions().mode() & 0o111 == 0 {
+                continue;
+            }
+        }
+        return std::path::absolute(candidate)
+            .map_err(|error| format!("Could not resolve Bash: {error}"));
+    }
+    Err("Bash was not found. Install Bash and make it available on this machine's PATH.".into())
 }
 
 fn working_directory(value: &str) -> Result<PathBuf, String> {

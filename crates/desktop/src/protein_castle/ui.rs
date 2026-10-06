@@ -53,6 +53,10 @@ impl Action for Command {
                 return;
             }
             Self::Delete => {
+                if crate::time_castle::source::editor(world, owner) {
+                    world.despawn(owner);
+                    return;
+                }
                 if let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) {
                     crate::deletion::request(world, root, vec![owner]);
                 }
@@ -118,7 +122,8 @@ impl Action for Command {
                         return;
                     }
                 };
-                if crate::protein_area::filter::editor(world, owner)
+                if (crate::protein_area::filter::editor(world, owner)
+                    || crate::time_castle::source::editor(world, owner))
                     && query.source != protein::Source::Record
                 {
                     status(world, owner, "Area filters need a Record query");
@@ -516,6 +521,10 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         return;
     }
     let draft = world.get::<ProteinCastle>(owner).unwrap().draft.clone();
+    let clock_source = crate::time_castle::source::editor(world, owner);
+    if clock_source {
+        crate::time_castle::source::controls(world, parent, owner);
+    }
     for (title, path, value) in [
         ("Name", "$name", &draft.name),
         ("Slug", "$slug", &draft.slug),
@@ -526,7 +535,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
     label(world, parent, "Source", 18.0);
     let source = draft.query["source"].as_str().unwrap_or("record");
     let area_filter = crate::protein_area::filter::editor(world, owner);
-    if area_filter {
+    if area_filter || clock_source {
         label(world, parent, "Record", 14.0);
     } else {
         select(
@@ -557,6 +566,9 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             source,
             0,
         );
+    }
+    if clock_source {
+        return;
     }
     if !model::sorts(source).is_empty() {
         label(world, parent, "Sorting", 18.0);

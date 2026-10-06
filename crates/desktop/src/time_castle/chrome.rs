@@ -43,6 +43,13 @@ pub(super) fn controls_open(world: &World, owner: Entity) -> bool {
     world.get::<Chrome>(owner).is_some_and(|chrome| chrome.open)
 }
 
+pub(super) fn close_controls(world: &mut World, owner: Entity) {
+    if let Some(mut chrome) = world.get_mut::<Chrome>(owner) {
+        chrome.open = false;
+        sync(world, owner);
+    }
+}
+
 pub(super) fn presentation(world: &mut World, owner: Entity, round: bool) {
     if let Some(mut chrome) = world.get_mut::<Chrome>(owner)
         && chrome.round != round

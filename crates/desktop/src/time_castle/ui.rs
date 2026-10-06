@@ -6,7 +6,9 @@ use bevy::text::EditableText;
 pub(super) struct CursorChoice(pub CursorMode);
 
 pub(super) fn origin_label(entry: &Entry, settings: &Settings) -> String {
-    if entry.origin["kind"] == "manual" {
+    if entry.origin["kind"] == "need" {
+        "Outstanding quantity on this Record".into()
+    } else if entry.origin["kind"] == "manual" {
         "Scheduled on this Record".into()
     } else if entry.origin["cause"]["kind"] == "rule" {
         entry.origin["cause"]["occurrence"]["intended_at_ms"]
@@ -57,7 +59,7 @@ pub(super) fn populate(
     let pages = world.get::<chrome::Chrome>(owner).unwrap().pages;
     let controls = crate::sand_panel::row(world, pages[0]);
     chrome::button(world, controls, owner, "Untwist / Coil", Toggle);
-    chrome::button(world, controls, owner, "Schedule source", SourceNext);
+    chrome::button(world, controls, owner, "Schedule source", SourceEditor);
     chrome::button(world, controls, owner, "Theme and tokens", Customize);
     let cursor = crate::sand_panel::row(world, pages[0]);
     for (caption, mode) in [
@@ -539,37 +541,10 @@ impl Action for Apply {
 }
 
 #[derive(Clone)]
-struct SourceNext;
-impl Action for SourceNext {
+struct SourceEditor;
+impl Action for SourceEditor {
     fn apply(&self, world: &mut World, owner: Entity) {
-        let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
-            return;
-        };
-        let workspace = world
-            .get::<crate::workspace::WorkspaceMember>(owner)
-            .map(|member| member.0);
-        let mut ids: Vec<_> = world
-            .query::<(
-                &crate::area::InfluenceArea,
-                &ChildOf,
-                &crate::workspace::WorkspaceMember,
-            )>()
-            .iter(world)
-            .filter(|(area, parent, member)| {
-                parent.parent() == root && Some(member.0) == workspace && area.protein.is_some()
-            })
-            .map(|(area, _, _)| area.id.clone())
-            .collect();
-        ids.sort();
-        let Some(mut settings) = world.get_mut::<TimeSettings>(owner) else {
-            return;
-        };
-        settings.0.area = settings
-            .0
-            .area
-            .as_ref()
-            .and_then(|id| ids.iter().position(|next| next == id))
-            .map_or_else(|| ids.first().cloned(), |index| ids.get(index + 1).cloned());
+        source::open(world, owner);
     }
 }
 

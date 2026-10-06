@@ -50,7 +50,7 @@ pub fn plane_point(world: &World, root: Entity, point: Vec2, elevation: f64) -> 
     )
 }
 
-pub fn pointer(
+pub(crate) fn pointer(
     mut events: MessageReader<WindowEvent>,
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
     camera: Option<Res<SceneCamera>>,
@@ -64,10 +64,12 @@ pub fn pointer(
         ),
         With<SpatialRoot>,
     >,
-    (surfaces, arrows, schedule_picks): (
+    (surfaces, arrows, schedule_picks, clocks, cards): (
         Query<&Surface>,
         Query<(), With<crate::arrow_sand::ArrowSand>>,
         Query<(), With<crate::time_castle::SchedulePick>>,
+        Query<(), With<crate::time_castle::TimeSettings>>,
+        Query<(), With<crate::time_castle::AttachedCard>>,
     ),
     owners: Query<(&VisualOwner, &GlobalTransform)>,
     parents: Query<&ChildOf>,
@@ -201,13 +203,40 @@ pub fn pointer(
             }
         }
         let filter = |entity| {
-            owners
-                .get(entity)
-                .is_ok_and(|(owner, _)| !areas.contains(owner.0) && !arrows.contains(owner.0))
+            owners.get(entity).is_ok_and(|(owner, _)| {
+                !areas.contains(owner.0)
+                    && !arrows.contains(owner.0)
+                    && (!clocks.contains(owner.0)
+                        || schedule_picks.contains(entity)
+                        || surfaces
+                            .get(owner.0)
+                            .is_ok_and(|surface| entity == surface.face || entity == surface.body))
+            })
         };
-        if let Some((mesh, hit)) = raycast
-            .cast_ray(ray, &MeshRayCastSettings::default().with_filter(&filter))
-            .first()
+        let hits = raycast.cast_ray(
+            ray,
+            &MeshRayCastSettings::default()
+                .with_filter(&filter)
+                .never_early_exit(),
+        );
+        let selected = hits.first().and_then(|closest| {
+            if owners
+                .get(closest.0)
+                .is_ok_and(|(owner, _)| clocks.contains(owner.0))
+            {
+                hits.iter()
+                    .find(|(mesh, hit)| {
+                        hit.distance <= closest.1.distance + 0.1
+                            && owners
+                                .get(*mesh)
+                                .is_ok_and(|(owner, _)| cards.contains(owner.0))
+                    })
+                    .or(Some(closest))
+            } else {
+                Some(closest)
+            }
+        });
+        if let Some((mesh, hit)) = selected
             && f64::from(hit.distance) < nearest
             && let Ok((owner, _)) = owners.get(*mesh)
         {

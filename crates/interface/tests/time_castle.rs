@@ -411,6 +411,10 @@ fn confirmed_past_tasks_follow_the_cursor_and_share_the_bounded_schedule_window(
     ];
     entries[5].preview = true;
     entries[6].category = Category::Overdue;
+    for index in [0, 1, 4] {
+        entries[index].quantity = "0".into();
+    }
+    entries[6].quantity = "1".into();
     entries[7].origin = serde_json::json!({"kind":"projection"});
     let occurrences = lince_interface::time_castle::clock_occurrences(
         &settings,
@@ -446,6 +450,59 @@ fn confirmed_past_tasks_follow_the_cursor_and_share_the_bounded_schedule_window(
     settings.past_tasks = true;
     settings.set_aperture(lince_interface::time_castle::MAX_HORIZON_MS);
     settings.window(now).unwrap().validate().unwrap();
+}
+
+#[test]
+fn outstanding_needs_survive_the_history_window_and_clear_when_satisfied() {
+    let now = 1_800_000_000_000;
+    let mut settings = Settings::default();
+    let mut need = entry("floss", now - 86_400_000, None);
+    need.origin = serde_json::json!({"kind":"need"});
+    need.category = Category::Overdue;
+    need.time = None;
+    need.quantity = "-2".into();
+    let mut old_occurrence = entry("yesterday", now - 86_400_000, None);
+    old_occurrence.record_uid = need.record_uid.clone();
+    let future = entry("tomorrow", now + 60_000, None);
+    let mut entries = vec![need, old_occurrence, future];
+    let occurrences = lince_interface::time_castle::clock_occurrences(
+        &settings,
+        &entries,
+        now,
+        now + settings.aperture_ms,
+    );
+    assert_eq!(occurrences.len(), 2);
+    let cursor = occurrences
+        .iter()
+        .find(|occurrence| occurrence.historical)
+        .unwrap();
+    assert_eq!(cursor.index, 0);
+    assert_eq!(cursor.anchor_ms(), now);
+    assert_eq!(entries[0].time_label(&settings, now), "Needed: 2");
+    settings.past_tasks = false;
+    assert_eq!(
+        lince_interface::time_castle::clock_occurrences(
+            &settings,
+            &entries,
+            now,
+            now + settings.aperture_ms,
+        )
+        .len(),
+        1
+    );
+    settings.past_tasks = true;
+    entries[0].quantity = "0".into();
+    entries[1].quantity = "0".into();
+    assert_eq!(
+        lince_interface::time_castle::clock_occurrences(
+            &settings,
+            &entries,
+            now,
+            now + settings.aperture_ms,
+        )
+        .len(),
+        1
+    );
 }
 
 #[test]

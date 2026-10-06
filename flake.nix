@@ -800,7 +800,7 @@
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
               '';
 
-              postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
+              postFixup = lib.optionalString pkgs.stdenv.isLinux ''
                 wrapProgram "$out/bin/lince" ${
                   lib.escapeShellArgs (
                     lib.optionals ui [
@@ -809,11 +809,13 @@
                       ":"
                       (lib.makeLibraryPath interfaceLinuxBuildInputs)
                     ]
-                    ++ lib.optionals (system == "x86_64-linux") [
+                    ++ [
                       "--prefix"
                       "PATH"
                       ":"
-                      (lib.makeBinPath [ self.packages.${system}.goose ])
+                      (lib.makeBinPath (
+                        [ pkgs.bash ] ++ lib.optional (system == "x86_64-linux") self.packages.${system}.goose
+                      ))
                     ]
                   )
                 }
@@ -884,7 +886,7 @@
               postFixup = ''
                 wrapProgram "$out/bin/lince" \
                   --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}" \
-                  --prefix PATH : "${lib.makeBinPath [ self.packages.${system}.goose ]}"
+                  --prefix PATH : "${lib.makeBinPath [ pkgs.bash self.packages.${system}.goose ]}"
               '';
               doInstallCheck = true;
               installCheckPhase = ''

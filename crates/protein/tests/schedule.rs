@@ -38,6 +38,105 @@ async fn task(engine: &Engine, slug: &str, work: serde_json::Value, quantity: f6
 }
 
 #[tokio::test]
+async fn current_undated_needs_use_live_quantity_and_obey_source_and_visibility() {
+    let engine = Engine::open_memory().await.unwrap();
+    let record = engine
+        .act(
+            Action::CreateRecord {
+                slug: Some("floss".into()),
+                kind: nucleus::RecordKind::Plain,
+                head: "Passar Fio Dental".into(),
+                body: String::new(),
+                quantity: -1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+    let window = Window {
+        from_ms: now,
+        until_ms: now + 3_600_000,
+        timezone: "UTC".into(),
+    };
+    let query = protein::schedule::query(
+        window.clone(),
+        vec![protein::Predicate::UidEq(record.clone())],
+    );
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    let need = rows.iter().find(|row| row["record_uid"] == record).unwrap();
+    assert_eq!(need["origin"]["kind"], "need");
+    assert_eq!(need["category"], "overdue");
+    assert_eq!(need["quantity"], "-1");
+    assert!(need["time"].is_null());
+    assert_eq!(need["preview"], false);
+    let filtered = protein::schedule::query(
+        window.clone(),
+        vec![protein::Predicate::SlugEq("other".into())],
+    );
+    assert!(
+        protein::execute(&engine.store, &filtered)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != record)
+    );
+    let visitor = task(&engine, "visitor", json!({}), 0.0).await;
+    assert!(
+        protein::execute_for(&engine.store, &query, Some(&visitor))
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != record)
+    );
+    engine
+        .act(
+            Action::AddQuantity {
+                target: record.clone(),
+                delta: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        protein::execute(&engine.store, &query)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != record)
+    );
+    let dated = task(&engine, "missed-range", json!({
+        "start": chrono::DateTime::from_timestamp_millis(now - 86_400_000).unwrap().to_rfc3339(),
+        "estimate_min": 10,
+    }), -1.0).await;
+    let query = protein::schedule::query(window, vec![protein::Predicate::UidEq(dated.clone())]);
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    let missed = rows.iter().find(|row| row["record_uid"] == dated).unwrap();
+    assert_eq!(missed["category"], "overdue");
+    assert_eq!(missed["time"]["from_ms"], now - 86_400_000);
+    engine
+        .act(
+            Action::AddQuantity {
+                target: dated.clone(),
+                delta: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        protein::execute(&engine.store, &query)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != dated)
+    );
+}
+
+#[tokio::test]
 async fn schedule_keeps_points_intervals_all_day_and_overdue_separate() {
     let engine = Engine::open_memory().await.unwrap();
     let now = chrono::Utc::now();
@@ -171,9 +270,13 @@ async fn schedule_cache_obeys_half_open_windows_and_source_invalidation() {
     );
     let query = protein::schedule::query(context.window.clone(), Vec::new());
     let rows = protein::execute(&engine.store, &query).await.unwrap();
+    assert!(
+        rows.iter()
+            .any(|row| row["record_uid"] == uid && row["origin"]["kind"] == "need")
+    );
     assert_eq!(
         rows.iter()
-            .filter(|row| row["kind"] == "schedule-entry")
+            .filter(|row| row["kind"] == "schedule-entry" && row["origin"]["kind"] != "need")
             .count(),
         1
     );
@@ -209,7 +312,7 @@ async fn schedule_cache_obeys_half_open_windows_and_source_invalidation() {
     let rows = protein::execute(&engine.store, &query).await.unwrap();
     let scheduled: Vec<_> = rows
         .iter()
-        .filter(|row| row["kind"] == "schedule-entry")
+        .filter(|row| row["kind"] == "schedule-entry" && row["origin"]["kind"] != "need")
         .collect();
     assert_eq!(scheduled.len(), 1);
     assert_eq!(scheduled[0]["record_uid"], actual);

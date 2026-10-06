@@ -24,6 +24,12 @@ pub(super) struct Annotation {
 struct Layout {
     labels: Vec<model::Label>,
     position: bevy::math::DVec2,
+    settings: Settings,
+    entries: Vec<Entry>,
+    size: Vec2,
+    rotation: [f64; 4],
+    unwind: f32,
+    cooling: f32,
 }
 
 pub(super) fn update(
@@ -163,15 +169,72 @@ pub(super) fn update(
                 advance: &advance,
             },
         );
-        world.entity_mut(owner).insert(Layout {
-            labels: labels.clone(),
-            position: item.position,
-        });
         labels
     } else {
         world.get::<Layout>(owner).unwrap().labels.clone()
     };
-    world.get_mut::<Layout>(owner).unwrap().position = item.position;
+    let entries = &world.get::<View>(owner).unwrap().entries;
+    let wake = world.get::<Layout>(owner).is_none_or(|layout| {
+        layout.position != item.position
+            || layout.rotation != spatial.rotation
+            || layout.settings != settings
+            || layout.entries != *entries
+            || layout.size != size
+            || layout.unwind != unwind
+            || layout
+                .labels
+                .iter()
+                .map(|label| (&label.id, label.occurrence.historical))
+                .ne(labels
+                    .iter()
+                    .map(|label| (&label.id, label.occurrence.historical)))
+    });
+    let held = previous.iter().any(|entity| {
+        crate::canvas_pan::dragged(world) == Some(*entity)
+            || world
+                .get_resource::<crate::topology::input::PointerState>()
+                .is_some_and(|pointer| pointer.drag.is_some_and(|(card, _)| card == *entity))
+    });
+    let seconds = world
+        .get::<motion::Motion>(owner)
+        .map_or(0.0, |motion| motion.seconds);
+    let cooling = if wake || held {
+        8.0
+    } else {
+        (world.get::<Layout>(owner).unwrap().cooling - seconds.max(0.0)).max(0.0)
+    };
+    let heat = cooling / 8.0;
+    let entries = world
+        .get::<Layout>(owner)
+        .is_none_or(|layout| layout.entries != *entries)
+        .then(|| entries.clone());
+    if let Some(mut layout) = world.get_mut::<Layout>(owner) {
+        if changed {
+            layout.labels.clone_from(&labels);
+        }
+        if let Some(entries) = entries {
+            layout.entries = entries;
+        }
+        if layout.settings != settings {
+            layout.settings.clone_from(&settings);
+        }
+        layout.position = item.position;
+        layout.size = size;
+        layout.rotation = spatial.rotation;
+        layout.unwind = unwind;
+        layout.cooling = cooling;
+    } else {
+        world.entity_mut(owner).insert(Layout {
+            labels: labels.clone(),
+            position: item.position,
+            settings: settings.clone(),
+            entries: entries.unwrap(),
+            size,
+            rotation: spatial.rotation,
+            unwind,
+            cooling,
+        });
+    }
     if !settings.floating_cards {
         labels.retain(|label| hovered.as_ref() == Some(&label.id));
     }
@@ -198,9 +261,6 @@ pub(super) fn update(
             labels.push(annotation.label.clone());
         }
     }
-    let seconds = world
-        .get::<motion::Motion>(owner)
-        .map_or(0.0, |motion| motion.seconds);
     let mut neighbors = Neighbors::default();
     for entity in &previous {
         if let Some(annotation) = world.get::<Annotation>(*entity) {
@@ -369,8 +429,9 @@ pub(super) fn update(
                     size.min_element() * 0.4,
                 );
                 let push = neighbors.push(entity, rect, palette.gap);
+                let position = Vec2::new(rect[0], rect[1]);
                 target = repel_clock(
-                    rest + push,
+                    position + (rest - position) * heat.powi(2) + push * (2.0 * heat),
                     Vec2::new(label.rect[2], label.rect[3]) * 0.5,
                     size.min_element() * 0.4,
                 )
@@ -383,7 +444,12 @@ pub(super) fn update(
             } else if settings.card_physics && settings.floating_cards {
                 annotation.spring.position[0] += displacement.x as f32;
                 annotation.spring.position[1] += displacement.z as f32;
-                active |= advance_card(&mut annotation.spring, target, seconds);
+                if heat > 0.0 || band.retiring {
+                    active |= advance_card(&mut annotation.spring, target, seconds);
+                    active |= cooling > 0.0;
+                } else {
+                    annotation.spring.velocity = [0.0; 2];
+                }
             } else {
                 annotation.spring = lince_interface::motion::Spring::new(target);
             }
@@ -544,7 +610,14 @@ fn advance_card(
         spring.velocity = [0.0; 2];
         return false;
     }
-    spring.advance_with_frequency(target, seconds, 6.0)
+    let mut remaining = seconds.clamp(0.0, 1.0);
+    let mut active = false;
+    while remaining > 0.0 {
+        let step = remaining.min(0.1);
+        active = spring.advance_with_frequency(target, step, 6.0);
+        remaining -= step;
+    }
+    active
 }
 
 impl Neighbors {
@@ -633,6 +706,188 @@ mod tests {
                 .length()
                 >= 186.0
         );
+    }
+
+    #[test]
+    fn crowded_cards_separate_before_cooling_to_rest() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Font>>();
+        world.init_resource::<crate::theme::Typography>();
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let root = world.spawn_empty().id();
+        let owner = world
+            .spawn((
+                Node::default(),
+                ChildOf(root),
+                crate::workspace::WorkspaceMember(1),
+                CanvasItem {
+                    position: bevy::math::DVec2::ZERO,
+                    size: Vec2::splat(420.0),
+                },
+            ))
+            .id();
+        populate(&mut world, owner);
+        let now = chrono::DateTime::parse_from_rfc3339("2026-10-06T20:14:00Z")
+            .unwrap()
+            .timestamp_millis();
+        world.get_mut::<View>(owner).unwrap().entries = [
+            ("Morning task", 10, Some(10)),
+            ("Overlapping work", 15, Some(10)),
+            ("Send update", 15, None),
+            ("Stretch break", 15, None),
+            ("Review design details", 18, Some(6)),
+            ("Appointment", 40, None),
+            (
+                "Prepare a thoughtful response to the design review",
+                48,
+                Some(8),
+            ),
+            ("Future point", 30, None),
+            ("Later work", 34, Some(5)),
+            ("Final check", 55, None),
+            ("Current task", -2, Some(9)),
+            ("Completed review", -20, Some(8)),
+            ("Past point", -10, None),
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(index, (head, start, duration))| Entry {
+            id: format!("task-{index}"),
+            record_uid: format!("r:{index}"),
+            head: head.into(),
+            quantity: "-1".into(),
+            category: model::Category::Timed,
+            time: Some(nucleus::schedule::TimeRange {
+                from_ms: now + start * 60_000,
+                until_ms: duration.map(|duration| now + (start + duration) * 60_000),
+            }),
+            origin: serde_json::json!({"kind":"manual"}),
+            preview: false,
+            start_date: None,
+            due_date: None,
+        })
+        .collect();
+        world.get_mut::<TimeSettings>(owner).unwrap().0.card_physics = false;
+        motion::update(&mut world, owner, now, 3_600_000, true);
+        world.get_mut::<TimeSettings>(owner).unwrap().0.card_physics = true;
+        let palette = palette::Palette::resolve(&world, owner);
+        for frame in 0..600 {
+            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+            update(
+                &mut world,
+                owner,
+                now,
+                Vec2::splat(420.0),
+                true,
+                frame == 0,
+                &palette,
+            );
+        }
+        let cards = world.get::<Annotations>(owner).unwrap().0.clone();
+        assert_eq!(cards.len(), 13);
+        assert_eq!(world.get::<Layout>(owner).unwrap().cooling, 0.0);
+        for (index, card) in cards.iter().enumerate() {
+            let a = world.get::<CanvasItem>(*card).unwrap();
+            for other in &cards[index + 1..] {
+                let b = world.get::<CanvasItem>(*other).unwrap();
+                let overlap = (a.size + b.size).as_dvec2() * 0.5
+                    - (a.position - b.position).abs()
+                    - bevy::math::DVec2::splat(14.0);
+                assert!(
+                    overlap.min_element() <= 0.0,
+                    "{} and {} overlap",
+                    world.get::<Annotation>(*card).unwrap().id,
+                    world.get::<Annotation>(*other).unwrap().id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cards_cool_without_collisions_ignore_cursor_ticks_and_wake_when_the_clock_moves() {
+        let mut world = World::new();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let root = world.spawn_empty().id();
+        let owner = world
+            .spawn((
+                Node::default(),
+                ChildOf(root),
+                crate::workspace::WorkspaceMember(1),
+                CanvasItem {
+                    position: bevy::math::DVec2::ZERO,
+                    size: Vec2::splat(420.0),
+                },
+            ))
+            .id();
+        populate(&mut world, owner);
+        let now = 1_800_000_000_000;
+        world.get_mut::<View>(owner).unwrap().entries = vec![Entry {
+            id: "need".into(),
+            record_uid: "r:need".into(),
+            head: "Outstanding need".into(),
+            quantity: "-1".into(),
+            category: model::Category::Overdue,
+            time: None,
+            origin: serde_json::json!({"kind":"need"}),
+            preview: false,
+            start_date: None,
+            due_date: None,
+        }];
+        let palette = palette::Palette::resolve(&world, owner);
+        motion::update(&mut world, owner, now, 3_600_000, true);
+        for frame in 0..600 {
+            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+            update(
+                &mut world,
+                owner,
+                now + frame * 100,
+                Vec2::splat(420.0),
+                true,
+                true,
+                &palette,
+            );
+        }
+        let card = world.get::<Annotations>(owner).unwrap().0[0];
+        let stopped = world.get::<CanvasItem>(card).unwrap().position;
+        assert_eq!(world.get::<Layout>(owner).unwrap().cooling, 0.0);
+        for frame in 600..720 {
+            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+            update(
+                &mut world,
+                owner,
+                now + frame * 100,
+                Vec2::splat(420.0),
+                true,
+                true,
+                &palette,
+            );
+        }
+        assert_eq!(world.get::<CanvasItem>(card).unwrap().position, stopped);
+        assert_eq!(
+            world.get::<Annotation>(card).unwrap().spring.velocity,
+            [0.0; 2]
+        );
+        world.get_mut::<CanvasItem>(owner).unwrap().position.x += 100.0;
+        update(
+            &mut world,
+            owner,
+            now + 72_000,
+            Vec2::splat(420.0),
+            true,
+            false,
+            &palette,
+        );
+        assert!(world.get::<Layout>(owner).unwrap().cooling > 0.0);
+        assert!(
+            world
+                .get::<CanvasItem>(card)
+                .unwrap()
+                .position
+                .distance(stopped)
+                < 10.0
+        );
+        assert!(world.get::<motion::Motion>(owner).unwrap().active);
     }
 
     #[test]

@@ -81,13 +81,34 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
         .collect()
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScheduleSource {
+    pub cell: crate::records::Source,
+    pub draft: crate::queries::ProteinDraft,
+}
+
+impl ScheduleSource {
+    pub fn valid(&self) -> bool {
+        (match &self.cell {
+            crate::records::Source::Local => true,
+            crate::records::Source::Organ(uid) => !uid.is_empty() && uid.len() <= 128,
+        }) && self
+            .draft
+            .compile()
+            .is_ok_and(|query| query.source == protein::Source::Record)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Settings {
     pub aperture_ms: i64,
     pub horizon_ms: i64,
     pub timezone: String,
     pub area: Option<String>,
+    #[serde(default)]
+    pub source: Option<ScheduleSource>,
     pub mode: Mode,
     #[serde(default)]
     pub cursor: CursorMode,
@@ -112,6 +133,7 @@ impl Default for Settings {
             horizon_ms: 3_600_000,
             timezone: "UTC".into(),
             area: None,
+            source: None,
             mode: Mode::Coiled,
             cursor: CursorMode::Moving,
             floating_cards: true,
@@ -168,7 +190,7 @@ impl Settings {
     }
 
     pub fn valid(&self) -> bool {
-        if !self.sound.valid() {
+        if !self.sound.valid() || self.source.as_ref().is_some_and(|source| !source.valid()) {
             return false;
         }
         (1000..=MAX_HORIZON_MS).contains(&self.aperture_ms)
@@ -341,6 +363,18 @@ pub struct Entry {
 }
 
 impl Entry {
+    pub fn outstanding_at(&self, now: i64, timezone: &str) -> bool {
+        !self.preview
+            && matches!(self.origin["kind"].as_str(), Some("manual" | "need"))
+            && nucleus::DecimalValue::parse_inferred(&self.quantity)
+                .is_ok_and(|quantity| quantity.is_negative())
+            && (self.category_at(now, timezone) == Category::Overdue
+                || self
+                    .time
+                    .as_ref()
+                    .is_some_and(|time| time.until_ms.unwrap_or(time.from_ms) < now))
+    }
+
     pub fn sound_cue(
         &self,
         scope: u64,
@@ -393,6 +427,9 @@ impl Entry {
     }
 
     pub fn time_label(&self, settings: &Settings, now: i64) -> String {
+        if self.outstanding_at(now, &settings.timezone) {
+            return format!("Needed: {}", self.quantity.trim_start_matches('-'));
+        }
         let Some(time) = &self.time else {
             return [self.start_date.as_deref(), self.due_date.as_deref()]
                 .into_iter()

@@ -86,6 +86,49 @@ fn output(events: &[Event]) -> Vec<u8> {
         .collect()
 }
 
+#[test]
+fn bash_runs_with_a_path_containing_only_unrelated_tools() {
+    let fixture = Fixture::new();
+    let unrelated = fixture.root.join("goose/bin");
+    std::fs::create_dir_all(&unrelated).unwrap();
+    let path = std::env::join_paths([unrelated]).unwrap();
+    let bash = bash_executable(Some(&path)).unwrap();
+    assert!(bash.is_absolute());
+    let mut command = CommandBuilder::new(bash);
+    command.args(["--noprofile", "--norc", "-c", "printf standalone"]);
+    command.env("PATH", path);
+    command.cwd(&fixture.root);
+    let mut spawned = spawn_command(
+        pty_size(80, 24, 0, 0),
+        command,
+        "bash".into(),
+        fixture.root.display().to_string(),
+    )
+    .unwrap();
+    assert_eq!(spawned.child.wait().unwrap().exit_code(), 0);
+    let mut output = String::new();
+    spawned.reader.read_to_string(&mut output).unwrap();
+    assert_eq!(output, "standalone");
+}
+
+#[cfg(unix)]
+#[test]
+fn bash_lookup_skips_nonexecutables_and_preserves_path_priority() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    let first = fixture.root.join("first");
+    let second = fixture.root.join("second");
+    for directory in [&first, &second] {
+        std::fs::create_dir(directory).unwrap();
+        std::fs::write(directory.join("bash"), "").unwrap();
+    }
+    std::fs::set_permissions(second.join("bash"), std::fs::Permissions::from_mode(0o755)).unwrap();
+    let path = std::env::join_paths([&first, &second]).unwrap();
+    assert_eq!(bash_executable(Some(&path)).unwrap(), second.join("bash"));
+    std::fs::set_permissions(first.join("bash"), std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(bash_executable(Some(&path)).unwrap(), first.join("bash"));
+}
+
 #[tokio::test]
 async fn detached_runs_keep_script_directory_and_full_output_in_one_file() {
     let fixture = Fixture::new();

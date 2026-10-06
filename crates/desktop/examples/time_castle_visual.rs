@@ -389,6 +389,27 @@ async fn main() {
             .any(|text| text.0.starts_with("Next ") && text.0.ends_with(" things"))
     );
     capture(&mut app, &directory, "01-default");
+    settle(&mut app, 4.0);
+    let stopped = cards(app.world_mut(), clock);
+    settle(&mut app, 3.0);
+    for (card, item, _) in &stopped {
+        assert_eq!(
+            app.world().get::<CanvasItem>(*card).unwrap().position,
+            item.position
+        );
+    }
+    for (index, (_, a, title)) in stopped.iter().enumerate() {
+        for (_, b, other) in &stopped[index + 1..] {
+            let overlap = (a.size + b.size).as_dvec2() * 0.5
+                - (a.position - b.position).abs()
+                - DVec2::splat(14.0);
+            assert!(
+                overlap.min_element() <= 0.0,
+                "Settled cards overlap: {title} and {other}"
+            );
+        }
+    }
+    capture(&mut app, &directory, "01c-cooled");
     let upcoming = app
         .world_mut()
         .query::<(Entity, &ChildOf, &ScrollPosition)>()
@@ -419,13 +440,14 @@ async fn main() {
     activate(app.world_mut(), clock, "Clock controls");
     activate(app.world_mut(), clock, "Past tasks: off");
     activate(app.world_mut(), clock, "Hide clock controls");
-    settle(&mut app, 4.0);
+    settle(&mut app, 10.0);
     let (card, item, _) = cards(app.world_mut(), clock)
         .into_iter()
         .find(|(_, _, title)| title == "Morning task")
         .unwrap();
     let from = screen(app.world(), item.position);
     cursor(&mut app, Some(from));
+    capture(&mut app, &directory, "03b-past-restored");
     assert_eq!(
         app.world()
             .resource::<PointerState>()
@@ -465,6 +487,25 @@ async fn main() {
         DVec2::ZERO
     );
     capture(&mut app, &directory, "04-card-held");
+    let corner = app.world().get::<CanvasItem>(clock).unwrap().position + DVec2::splat(195.0);
+    let point = screen(app.world(), corner);
+    cursor(&mut app, Some(point));
+    cursor(&mut app, Some(point));
+    assert!(
+        app.world()
+            .get::<CanvasItem>(card)
+            .unwrap()
+            .position
+            .distance(corner)
+            < 0.1
+    );
+    let hit = app.world().resource::<PointerState>().hit.unwrap().0;
+    assert!(
+        cards(app.world_mut(), clock)
+            .iter()
+            .any(|(card, _, _)| *card == hit)
+    );
+    capture(&mut app, &directory, "04b-card-over-transparent-corner");
     button(&mut app, ButtonState::Released);
     cursor(&mut app, None);
     settle(&mut app, 7.0);
@@ -607,7 +648,7 @@ async fn main() {
                 kind: nucleus::RecordKind::Plain,
                 head: "Karma scheduled task".into(),
                 body: String::new(),
-                quantity: -1.0,
+                quantity: 0.0,
             },
             None,
         )
@@ -631,7 +672,7 @@ async fn main() {
             engine::actions::Action::CreateRecurrence {
                 target: uid,
                 consequences: vec![nucleus::karma::Consequence::AddQuantity {
-                    delta: Some(nucleus::fact::zero_delta()),
+                    delta: Some(nucleus::DecimalValue::parse_inferred("-1").unwrap()),
                 }],
                 condition: None,
                 gate: None,
@@ -659,7 +700,173 @@ async fn main() {
     capture(&mut app, &directory, "14-karma-added");
     settle(&mut app, 20.0);
     capture(&mut app, &directory, "15-karma-settled");
-    println!(
-        "PASS: schedule feed, past toggle, primary drag, release, clock movement, camera pan, DPI/zoom, hover cards, physics toggle, motion captures"
+    let floss = engine
+        .act(
+            engine::actions::Action::CreateRecord {
+                slug: Some("floss-clock-visual".into()),
+                kind: nucleus::RecordKind::Plain,
+                head: "Passar Fio Dental".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let due = chrono::DateTime::from_timestamp_millis(
+        (chrono::Utc::now().timestamp_millis().div_euclid(1000) + 30) * 1000,
+    )
+    .unwrap();
+    engine
+        .act(
+            engine::actions::Action::CreateRecurrence {
+                target: floss.clone(),
+                consequences: vec![nucleus::karma::Consequence::SetQuantity {
+                    value: Some(nucleus::DecimalValue::parse_inferred("-1").unwrap()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
+                note: None,
+                cadence: nucleus::karma::Cadence::every_days(1),
+                anchor_at: Some(due.to_rfc3339()),
+                request_id: Some("floss-clock-visual".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    engine.advance_karma_time(chrono::Utc::now()).await.unwrap();
+    let started = Instant::now();
+    while !cards(app.world_mut(), clock)
+        .iter()
+        .any(|(_, _, title)| title == "Passar Fio Dental")
+    {
+        assert!(
+            started.elapsed().as_secs() < 60,
+            "Future floss need did not arrive"
+        );
+        step(&mut app);
+    }
+    assert!(
+        chrono::Utc::now() < due,
+        "Future need was not shown before its time"
     );
+    capture(&mut app, &directory, "16-floss-future");
+    while chrono::Utc::now() <= due {
+        step(&mut app);
+    }
+    let started = Instant::now();
+    while store::facts::level(&engine.store.pool, &floss)
+        .await
+        .unwrap()
+        .is_zero()
+    {
+        assert!(
+            started.elapsed().as_secs() < 10,
+            "Daily Karma need did not execute"
+        );
+        engine.advance_karma_time(chrono::Utc::now()).await.unwrap();
+        step(&mut app);
+    }
+    assert_eq!(
+        store::facts::level(&engine.store.pool, &floss)
+            .await
+            .unwrap()
+            .to_string(),
+        "-1"
+    );
+    let started = Instant::now();
+    loop {
+        let matching: Vec<_> = cards(app.world_mut(), clock)
+            .into_iter()
+            .filter(|(_, _, title)| title == "Passar Fio Dental")
+            .collect();
+        if matching.len() == 1 && card_text(app.world(), matching[0].0, "Needed: 1") {
+            break;
+        }
+        assert!(
+            started.elapsed().as_secs() < 60,
+            "Outstanding floss need did not reach the cursor"
+        );
+        step(&mut app);
+    }
+    settle(&mut app, 10.0);
+    capture(&mut app, &directory, "17-floss-outstanding");
+    engine
+        .act(
+            engine::actions::Action::AddQuantity {
+                target: floss,
+                delta: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let started = Instant::now();
+    loop {
+        let matching: Vec<_> = cards(app.world_mut(), clock)
+            .into_iter()
+            .filter(|(_, _, title)| title == "Passar Fio Dental")
+            .collect();
+        if matching
+            .iter()
+            .all(|(card, _, _)| !card_text(app.world(), *card, "Needed: 1"))
+        {
+            break;
+        }
+        assert!(
+            started.elapsed().as_secs() < 60,
+            "Satisfied need retained its outstanding quantity"
+        );
+        step(&mut app);
+    }
+    capture(&mut app, &directory, "18-floss-satisfied");
+    activate(app.world_mut(), clock, "Clock controls");
+    activate(app.world_mut(), clock, "Schedule source");
+    settle(&mut app, 1.0);
+    let editor = app
+        .world_mut()
+        .query_filtered::<Entity, With<lince_desktop::protein_castle::ProteinCastle>>()
+        .single(app.world())
+        .unwrap();
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<Entity, With<lince_desktop::protein_castle::ProteinCastle>>()
+            .iter(app.world())
+            .count(),
+        1
+    );
+    capture(&mut app, &directory, "19-source-editor");
+    app.world_mut()
+        .get_mut::<lince_desktop::protein_castle::ProteinCastle>(editor)
+        .unwrap()
+        .draft
+        .query["where"] = serde_json::json!([{"all":[{"text_contains":"Passar Fio Dental"}]}]);
+    activate(app.world_mut(), editor, "Apply schedule source");
+    assert!(app.world().get_entity(editor).is_err());
+    let started = Instant::now();
+    while cards(app.world_mut(), clock).len() != 1 {
+        assert!(
+            started.elapsed().as_secs() < 60,
+            "Configured source filter did not reach the clock"
+        );
+        step(&mut app);
+    }
+    assert_eq!(cards(app.world_mut(), clock)[0].2, "Passar Fio Dental");
+    settle(&mut app, 2.0);
+    capture(&mut app, &directory, "20-source-applied");
+    println!(
+        "PASS: schedule feed, past toggle, primary drag, release, clock movement, camera pan, DPI/zoom, hover cards, physics toggle, cooling, future Karma need becoming outstanding and satisfied, temporary source editor and applied filter"
+    );
+}
+
+fn card_text(world: &World, card: Entity, value: &str) -> bool {
+    world.get::<Children>(card).is_some_and(|children| {
+        children
+            .iter()
+            .any(|child| world.get::<Text>(child).is_some_and(|text| text.0 == value))
+    })
 }

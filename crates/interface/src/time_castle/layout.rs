@@ -157,9 +157,27 @@ pub fn clock_occurrences(
 ) -> Vec<Occurrence> {
     let mut result = occurrences(entries, now, until, &settings.timezone);
     if settings.past_tasks {
+        let mut outstanding = BTreeSet::new();
+        for (index, entry) in entries.iter().enumerate() {
+            if entry.outstanding_at(now, &settings.timezone)
+                && outstanding.insert(entry.record_uid.clone())
+            {
+                result.push(Occurrence {
+                    index,
+                    time: TimeRange {
+                        from_ms: now,
+                        until_ms: None,
+                    },
+                    lane: 0,
+                    profile: Vec::new(),
+                    historical: true,
+                });
+            }
+        }
         let from = settings.history_from(now);
         for (index, entry) in entries.iter().enumerate() {
             if entry.preview
+                || outstanding.contains(&entry.record_uid)
                 || entry.origin["kind"] != "manual"
                 || entry.category_at(now, &settings.timezone) != Category::Timed
             {
@@ -286,7 +304,7 @@ pub fn labels_with_metrics(
         if entry.preview {
             time.push_str(" · projected");
         }
-        if occurrence.historical {
+        if occurrence.historical && !entry.outstanding_at(now, &settings.timezone) {
             time.push_str(" · past");
         }
         let time = wrap(&time, width - 16.0, metrics.advance);

@@ -82,6 +82,22 @@ pub(crate) fn populate(
     if local {
         panel::button(world, title, owner, "Run", Control::Run);
     }
+    let identity = panel::column(world, owner);
+    let label = crate::edit_mode::label(world, identity, "Slug", 13.0);
+    world
+        .entity_mut(label)
+        .insert(crate::record_binding::BindingStatus);
+    let slug = editor(
+        world,
+        identity,
+        data["slug"].as_str().unwrap_or_default(),
+        false,
+        &binding,
+        "slug",
+    );
+    if local {
+        crate::protein_area::attach_scalar(world, slug, binding.clone(), "slug", data);
+    }
     crate::edit_mode::label(world, owner, "Bash script", 13.0);
     let script = editor(
         world,
@@ -184,7 +200,9 @@ fn editor(
         crate::sand::Unsaved(false),
     ));
     let status = multiline.then(|| crate::edit_mode::label(world, parent, "Opening Record…", 12.0));
-    crate::record_binding::attach(world, entity, binding.clone(), property, status);
+    if matches!(property, "head" | "body") {
+        crate::record_binding::attach(world, entity, binding.clone(), property, status);
+    }
     if multiline {
         let font = crate::terminal::code_font(world);
         world.entity_mut(entity).insert(font);

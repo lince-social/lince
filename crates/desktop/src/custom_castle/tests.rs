@@ -446,6 +446,7 @@ fn composed_time_castle_keeps_its_standalone_log() {
         timezone: "America/Sao_Paulo".into(),
         mode: lince_interface::time_castle::Mode::Straight,
         area: Some(area_id.clone()),
+        source: None,
         cursor: lince_interface::time_castle::CursorMode::Fixed,
         sound: Default::default(),
     };

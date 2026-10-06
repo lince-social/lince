@@ -47,6 +47,31 @@ pub(super) struct PropertyEditor {
     attempted: Option<String>,
 }
 
+pub(super) fn attach_scalar(
+    world: &mut World,
+    entity: Entity,
+    binding: RecordBinding,
+    property: &str,
+    data: &Value,
+) {
+    if let Some(parent) = world.get::<ChildOf>(entity).map(ChildOf::parent) {
+        world
+            .entity_mut(parent)
+            .insert(PropertyContainer(property.into()));
+    }
+    world.entity_mut(entity).insert((
+        PropertyEditor {
+            property: property.into(),
+            observed: display(&data[property]),
+            baseline: baseline(data, property),
+            pending: None,
+            attempted: None,
+        },
+        binding,
+    ));
+    super::history::attach_text(world, entity);
+}
+
 pub(super) fn save_indicators(
     mut fields: Query<(
         &PropertyEditor,

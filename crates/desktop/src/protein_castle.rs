@@ -76,6 +76,7 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedProteinCastl
         .iter(world)
         .filter(|(entity, parent, _, _, _)| {
             parent.parent() == root
+                && !crate::time_castle::source::editor(world, *entity)
                 && world
                     .get::<crate::protein_area::QueryEditor>(*entity)
                     .is_none()
@@ -318,6 +319,9 @@ pub(crate) fn status(world: &mut World, owner: Entity, message: impl Into<String
 }
 
 fn run(world: &mut World, owner: Entity) {
+    if crate::time_castle::source::run_editor(world, owner) {
+        return;
+    }
     if crate::protein_area::run_editor(world, owner) {
         return;
     }

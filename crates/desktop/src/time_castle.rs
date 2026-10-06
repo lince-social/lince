@@ -7,6 +7,7 @@ mod palette;
 mod render;
 mod scene;
 pub use scene::SchedulePick;
+pub(crate) mod source;
 mod ui;
 
 #[cfg(test)]
@@ -195,8 +196,23 @@ fn source_query(
         .get::<TimeSettings>(owner)
         .ok_or("Time Castle closed")?
         .0;
+    if let Some(source) = &settings.source {
+        let source = source.clone();
+        if !source.valid() {
+            return Err("Invalid clock schedule source".into());
+        }
+        if crate::practice_cells::source(world, owner)
+            .is_some_and(|cell| source.cell != Source::Organ(cell))
+        {
+            return Err("Choose a Protein from this practice Cell.".into());
+        }
+        return Ok((source.cell, source.draft.compile()?.filter));
+    }
     let Some(id) = settings.area.clone() else {
-        return Ok((crate::practice_cells::source(world, owner).map_or(Source::Local, Source::Organ), Vec::new()));
+        return Ok((
+            crate::practice_cells::source(world, owner).map_or(Source::Local, Source::Organ),
+            Vec::new(),
+        ));
     };
     let root = world
         .get::<ChildOf>(owner)
@@ -217,7 +233,9 @@ fn source_query(
         })
         .and_then(|(area, _, _)| area.protein.clone())
         .ok_or("Selected Protein Area is unavailable")?;
-    if crate::practice_cells::source(world, owner).is_some_and(|source| area.source != Source::Organ(source)) {
+    if crate::practice_cells::source(world, owner)
+        .is_some_and(|source| area.source != Source::Organ(source))
+    {
         return Err("Choose a Protein from this practice Cell.".into());
     }
     let query = area.query()?;

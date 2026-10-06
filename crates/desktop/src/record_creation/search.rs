@@ -608,7 +608,11 @@ mod tests {
                 .act(
                     engine::actions::Action::CreateRecord {
                         slug: Some(slug.into()),
-                        kind: nucleus::RecordKind::Plain,
+                        kind: if slug == "alpha" {
+                            nucleus::RecordKind::Command
+                        } else {
+                            nucleus::RecordKind::Plain
+                        },
                         head: head.into(),
                         body: "Description".into(),
                         quantity: 0.0,
@@ -673,6 +677,14 @@ mod tests {
             .unwrap();
         assert!(config.enabled);
         assert_eq!(config.draft.query["where"][0]["all"][0]["uid_eq"], uid);
+        let command = serde_json::from_value(
+            json!({"source":"record", "where":[{"uid_eq":uid}], "fields":["kind"]}),
+        )
+        .unwrap();
+        assert_eq!(
+            protein::execute(&engine.store, &command).await.unwrap()[0]["kind"],
+            "command"
+        );
         app.world_mut()
             .resource_mut::<ButtonInput<KeyCode>>()
             .reset_all();
@@ -681,7 +693,7 @@ mod tests {
         let query = serde_json::from_value(json!({"source":"record", "where":[{"kind_eq":"plain"}], "fields":["uid"],"limit":null})).unwrap();
         assert_eq!(
             protein::execute(&engine.store, &query).await.unwrap().len(),
-            3
+            2
         );
     }
 

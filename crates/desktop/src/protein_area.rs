@@ -145,6 +145,16 @@ pub(crate) fn save_date(world: &mut World, editor: Entity, date: &str) -> Result
     rows::pick_date(world, editor, date)
 }
 
+pub(crate) fn attach_scalar(
+    world: &mut World,
+    editor: Entity,
+    binding: RecordBinding,
+    property: &str,
+    data: &Value,
+) {
+    rows::attach_scalar(world, editor, binding, property, data);
+}
+
 #[derive(Component, Clone, Debug)]
 pub struct RecordBinding {
     pub area: Entity,

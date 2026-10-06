@@ -241,6 +241,110 @@ pub(crate) fn fixture() -> (App, Entity, Entity) {
     (app, root, owner)
 }
 
+#[tokio::test]
+async fn command_record_castles_save_clear_and_refresh_slugs() {
+    use bevy::text::EditableText;
+    let (mut app, _, owner) = fixture();
+    let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    let uid = engine
+        .act(
+            engine::actions::Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Command,
+                head: "Sync Personal Lince".into(),
+                body: "printf standalone".into(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    crate::sand_panel::tests::connect(&mut app, engine.clone());
+    app.add_plugins(crate::record_binding::RecordBindingPlugin);
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(crate::full_record::config(&uid, Source::Local));
+    until(&mut app, |world| {
+        world
+            .resource::<Runtime>()
+            .areas
+            .get(&owner)
+            .is_some_and(|state| state.row_entities.contains_key(&uid))
+    })
+    .await;
+    let editor = app
+        .world_mut()
+        .query_filtered::<Entity, With<rows::PropertyEditor>>()
+        .single(app.world())
+        .unwrap();
+    app.world_mut()
+        .entity_mut(editor)
+        .remove::<(ComputedNode, InheritedVisibility)>();
+    for slug in ["sync-personal-lince", ""] {
+        app.world_mut()
+            .get_mut::<EditableText>(editor)
+            .unwrap()
+            .editor
+            .set_text(slug);
+        until(&mut app, |world| {
+            world.resource::<Runtime>().areas[&owner].data[0]["slug"]
+                == if slug.is_empty() {
+                    Value::Null
+                } else {
+                    json!(slug)
+                }
+        })
+        .await;
+        let query = serde_json::from_value(
+            json!({"source":"record", "where":[{"uid_eq":uid}], "fields":["slug"]}),
+        )
+        .unwrap();
+        assert_eq!(
+            protein::execute(&engine.store, &query).await.unwrap()[0]["slug"],
+            if slug.is_empty() {
+                Value::Null
+            } else {
+                json!(slug)
+            }
+        );
+    }
+    engine
+        .act(
+            engine::actions::Action::SetSlug {
+                target: uid,
+                slug: Some("updated-elsewhere".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    until(&mut app, |world| {
+        world
+            .get::<EditableText>(editor)
+            .unwrap()
+            .value()
+            .to_string()
+            == "updated-elsewhere"
+    })
+    .await;
+    assert_eq!(
+        engine
+            .doc_text(&app.world().get::<RecordBinding>(editor).unwrap().uid)
+            .await
+            .unwrap(),
+        ("Sync Personal Lince".into(), "printf standalone".into())
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Slug")
+    );
+}
+
 #[test]
 fn castle_content_is_capped_and_manual_resizing_survives_row_layout() {
     use crate::canvas::CanvasItem;

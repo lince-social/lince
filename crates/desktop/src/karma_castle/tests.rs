@@ -12,7 +12,7 @@ fn field() -> SharedField {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
@@ -79,7 +79,7 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn typing_filters_shared_conditions_and_basic_records_without_copying_identity() {
     let rules = vec![Rule {
         uid: "rule".into(),
@@ -129,7 +129,7 @@ fn typing_filters_shared_conditions_and_basic_records_without_copying_identity()
     ));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn tokens_and_countdowns_keep_precise_dates_and_update_each_second() {
     let parts = model::fragments("-1 * freq(@weekly) * @balance = @target");
     let names: Vec<_> = parts
@@ -151,7 +151,7 @@ fn tokens_and_countdowns_keep_precise_dates_and_update_each_second() {
     assert!(model::frequency_hint(&json!({"status":"paused"}), 0).contains("no scheduled beat"));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn new_form_is_first_and_unlinking_clears_only_the_chosen_field() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
@@ -206,7 +206,7 @@ fn new_form_is_first_and_unlinking_clears_only_the_chosen_field() {
     assert!(saved[0].valid());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn large_libraries_bound_suggestions_and_preserve_expression_prefixes() {
     let records: Vec<_> = (0..10_000)
         .map(|index| json!({"slug":format!("record-{index}")}))
@@ -223,7 +223,7 @@ fn large_libraries_bound_suggestions_and_preserve_expression_prefixes() {
     );
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn consequence_suggestions_offer_complete_record_destinations_without_assignment_syntax() {
     let choices = model::suggestions(
         RuleFieldKind::Consequence,
@@ -246,7 +246,7 @@ fn consequence_suggestions_offer_complete_record_destinations_without_assignment
     assert!(all.iter().all(|choice| !matches!(choice, Suggestion::Element(value) if value.contains("result") || value.contains('='))));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn completing_a_frequency_inside_its_call_does_not_nest_it() {
     assert_eq!(
         model::insert_at(
@@ -267,7 +267,7 @@ fn completing_a_frequency_inside_its_call_does_not_nest_it() {
     );
 }
 
-#[tokio::test]
+#[cfg_attr(test, tokio::test)]
 async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     for slug in ["source", "target"] {
@@ -414,7 +414,7 @@ async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     .unwrap();
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn cells_edit_individually_and_rows_confirm_deletion() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
@@ -548,7 +548,7 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
     assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn row_actions_are_hidden_until_hover_and_selection_requires_confirmation() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
@@ -639,7 +639,7 @@ fn row_actions_are_hidden_until_hover_and_selection_requires_confirmation() {
     assert!(world.get::<View>(owner).unwrap().selected.is_empty());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
@@ -652,10 +652,21 @@ fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
     let owner = spawn(world, root, 1, DVec2::ZERO, KarmaCastle::default());
     let form = world.get::<View>(owner).unwrap().form;
     let scroll = world.get::<ChildOf>(form).unwrap().parent();
-    let children = world.get::<Children>(scroll).unwrap();
-    let schedules = children[3];
-    let simulation = children[4];
-    let commands = children[6];
+    let panel = |name: &str| {
+        world
+            .get::<Children>(scroll)
+            .unwrap()
+            .iter()
+            .find(|entity| {
+                world
+                    .get::<Name>(*entity)
+                    .is_some_and(|value| value.as_str() == name)
+            })
+            .unwrap()
+    };
+    let schedules = panel("Karma schedules");
+    let simulation = panel("Karma simulation");
+    let commands = panel("Karma commands");
     for (panel, command) in [
         (schedules, ui::Command::Schedules),
         (simulation, ui::Command::Simulate),
@@ -671,7 +682,7 @@ fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
     assert_eq!(world.get::<Children>(tools).unwrap().len(), 3);
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
@@ -859,4 +870,19 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
             .text(),
         "balance-rule"
     );
+}
+
+crate::laboratory_cases! {
+    header_filter_hides_unmatched_rules_without_changing_the_draft,
+    typing_filters_shared_conditions_and_basic_records_without_copying_identity,
+    tokens_and_countdowns_keep_precise_dates_and_update_each_second,
+    new_form_is_first_and_unlinking_clears_only_the_chosen_field,
+    large_libraries_bound_suggestions_and_preserve_expression_prefixes,
+    consequence_suggestions_offer_complete_record_destinations_without_assignment_syntax,
+    completing_a_frequency_inside_its_call_does_not_nest_it,
+    async castle_saves_through_the_cell_and_receives_live_protein_fields,
+    cells_edit_individually_and_rows_confirm_deletion,
+    row_actions_are_hidden_until_hover_and_selection_requires_confirmation,
+    auxiliary_panels_start_hidden_and_header_buttons_toggle_them,
+    table_text_has_visible_glyphs_and_editing_preserves_cell_bounds,
 }

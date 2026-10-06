@@ -4,8 +4,7 @@ mod karma;
 mod model;
 mod persistence;
 mod runtime;
-#[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 mod ui;
 
 use bevy::{math::DVec2, prelude::*};

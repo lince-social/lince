@@ -316,6 +316,10 @@ name = "time_castle_linux_smoke"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "time_castle_visual"
+required-features = ["native-runtime"]
+
+[[example]]
 name = "fiote_smoke"
 required-features = ["native-runtime"]
 
@@ -326,3 +330,7 @@ required-features = ["native-runtime"]
 [[example]]
 name = "castle_transition_smoke"
 required-features = ["instinct"]
+
+[[example]]
+name = "components_smoke"
+required-features = ["native-runtime"]

@@ -290,6 +290,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         selected: None,
         rows: HashMap::new(),
     });
+    ui::devices(world, sand);
     sand
 }
 

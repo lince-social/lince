@@ -1,6 +1,6 @@
 use super::*;
 
-#[test]
+#[cfg_attr(test, test)]
 fn ordinary_decision_and_claim_forms_match_the_engine_actions() {
     let transfer = json!({"uid":"transfer","revision":2});
     for (action, fields) in [
@@ -47,7 +47,7 @@ fn ordinary_decision_and_claim_forms_match_the_engine_actions() {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn donation_and_trade_presets_describe_addressed_routes() {
     for (preset, count) in [("Donation", 1), ("Trade", 2), ("Sale", 2)] {
         let mut form = model::composer("ana", preset);
@@ -78,7 +78,7 @@ fn draft() -> Form {
     form
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn item_text_and_disclosure_survive_composing_without_a_source() {
     let mut form = model::composer("person-ana", "Donation");
     form.data["promises"][0]["item"]["title"] = json!("City bike");
@@ -100,7 +100,7 @@ fn item_text_and_disclosure_survive_composing_without_a_source() {
     );
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn counteroffer_keeps_unavailable_terms_out_of_editing_and_review() {
     let row = json!({"uid":"transfer","head":"Apples","revision":1,"agreement_type":"full",
         "promises":[{"uid":"p","title":"Apples","description":"Fresh",
@@ -126,7 +126,7 @@ fn counteroffer_keeps_unavailable_terms_out_of_editing_and_review() {
     ));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn explicit_routes_keep_their_identity_and_observers_stay_private() {
     let mut form = draft();
     form.data["promises"][0]["item"]["exchange"] =
@@ -147,7 +147,7 @@ fn explicit_routes_keep_their_identity_and_observers_stay_private() {
     assert_eq!(payload["dependencies"][0]["upstream"], "road-transfer");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn presets_produce_typed_actions_and_validation_keeps_invalid_input() {
     for preset in model::PRESETS {
         let mut form = model::composer("person-ana", preset);
@@ -184,7 +184,7 @@ fn presets_produce_typed_actions_and_validation_keeps_invalid_input() {
     assert!(form.payload().is_err());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn signed_edit_preserves_creator_locations_dependencies_and_counteroffer_actor() {
     let row = json!({"uid":"transfer-1","revision":4,"head":"Projected name","agreement_type":"full",
         "revision_evidence":{"current":{"terms":{
@@ -204,7 +204,7 @@ fn signed_edit_preserves_creator_locations_dependencies_and_counteroffer_actor()
     assert!(serde_json::from_value::<engine::actions::Action>(action).is_ok());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn settlement_review_rejects_changed_quantity_identity_and_incomplete_evidence() {
     let form = Form::action(
         "Settle",
@@ -250,7 +250,7 @@ fn app() -> App {
     app
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn native_inbox_forms_live_snapshots_and_workspace_roundtrip() {
     let mut app = app();
     let root = app
@@ -358,7 +358,7 @@ fn native_inbox_forms_live_snapshots_and_workspace_roundtrip() {
     assert_eq!(model::depth(&cycle[0], &cycle), 1);
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn private_ratio_builds_only_the_private_policy_action() {
     let mut form = model::Form::action(
         "My accounting",
@@ -381,7 +381,7 @@ fn private_ratio_builds_only_the_private_policy_action() {
     assert!(form.payload().is_err());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn grouped_need_editor_keeps_private_units_and_the_whole_review() {
     let mut form = model::Form::action(
         "This outcome meets",
@@ -410,7 +410,7 @@ fn grouped_need_editor_keeps_private_units_and_the_whole_review() {
     assert!(form.payload().is_err());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn cancellation_forms_keep_the_reviewed_exact_amount_and_revision() {
     for payload in [
         json!({"action":"propose-transfer-cancellation","transfer":"transfer","occurrence":"occurrence","expected_revision":4,"expected_remaining_quantity":{"scale":3,"value":"0.125"},"person":"owner","request_id":"propose"}),
@@ -429,7 +429,7 @@ fn cancellation_forms_keep_the_reviewed_exact_amount_and_revision() {
     assert_eq!(model::status(&cancelled), "cancelled");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn required_child_review_keeps_the_parent_revision_and_explicit_choice() {
     let action = json!({"action":"set-transfer-child-requirement", "transfer":"parent", "child":"child",
         "required":false, "expected_revision":9, "person":"ana", "request_id":null});
@@ -443,7 +443,7 @@ fn required_child_review_keeps_the_parent_revision_and_explicit_choice() {
     );
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn observer_composer_keeps_private_commitments_and_offers_transfer_outcomes() {
     let mut form = model::composer("dora", "Dependency plan");
     form.data["agreement"] = json!("dependency");
@@ -475,7 +475,7 @@ fn observer_composer_keeps_private_commitments_and_offers_transfer_outcomes() {
     ));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn loan_proposals_are_reviewed_ordinary_actions() {
     let source = json!({"uid":"loan","revision":2});
     let item = json!({"title":"Bike","delta":1.0,"unit":null,"exchange":"bike-loan","giver":"ana","receiver":"beto","accepted_loan":{"origin":"origin","until_ms":1_800_000_000_000i64}});
@@ -497,4 +497,22 @@ fn loan_proposals_are_reviewed_ordinary_actions() {
             assert_eq!(item.exchange.as_ref().unwrap().receiver, "ana");
         }
     }
+}
+
+crate::laboratory_cases! {
+    ordinary_decision_and_claim_forms_match_the_engine_actions,
+    donation_and_trade_presets_describe_addressed_routes,
+    item_text_and_disclosure_survive_composing_without_a_source,
+    counteroffer_keeps_unavailable_terms_out_of_editing_and_review,
+    explicit_routes_keep_their_identity_and_observers_stay_private,
+    presets_produce_typed_actions_and_validation_keeps_invalid_input,
+    signed_edit_preserves_creator_locations_dependencies_and_counteroffer_actor,
+    settlement_review_rejects_changed_quantity_identity_and_incomplete_evidence,
+    native_inbox_forms_live_snapshots_and_workspace_roundtrip,
+    private_ratio_builds_only_the_private_policy_action,
+    grouped_need_editor_keeps_private_units_and_the_whole_review,
+    cancellation_forms_keep_the_reviewed_exact_amount_and_revision,
+    required_child_review_keeps_the_parent_revision_and_explicit_choice,
+    observer_composer_keeps_private_commitments_and_offers_transfer_outcomes,
+    loan_proposals_are_reviewed_ordinary_actions,
 }

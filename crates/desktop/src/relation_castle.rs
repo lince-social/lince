@@ -119,7 +119,7 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         root,
         parent,
         "Relation Castle",
-        "Records connected by assertion arrows, pulled toward their spawn center and kept apart.",
+        "Connected Records pull toward one another, settle around their spawn center and repel overlapping cards.",
         Add,
         |world, _| {
             let entity = world

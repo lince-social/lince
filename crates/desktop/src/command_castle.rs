@@ -1,6 +1,5 @@
 mod history;
-#[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 use crate::{
     actions::Action,

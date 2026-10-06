@@ -155,7 +155,10 @@ fn exercise(world: &mut World) {
                             .single(world)
                             .unwrap();
                         lince_desktop::workspace_config::set_physics(
-                            world, root, 1, state.relation_physics,
+                            world,
+                            root,
+                            1,
+                            state.relation_physics,
                         );
                         activate(world, "Close edit mode");
                         if state.tabs_only {
@@ -274,7 +277,7 @@ fn exercise(world: &mut World) {
             assert!(failures.is_empty(), "Behavior failures: {failures:?}");
             assert!(lab.reports[0].complete);
             assert_eq!(lab.reports[0].graphics.name, lab.resources.graphics.name);
-            assert_eq!(lab.reports[0].stops.len(), 6);
+            assert_eq!(lab.reports[0].stops.len(), SandKind::ALL.len() * 2);
             assert_eq!(
                 world
                     .get::<CanvasItem>(state.sand.unwrap())
@@ -324,7 +327,7 @@ fn exercise(world: &mut World) {
             let saved = lince_desktop::sand_text::snapshot(world, state.sand.unwrap());
             assert_eq!(saved[0].text, "Keep this draft");
             println!(
-                "Laboratory smoke passed: all edit tabs, Sand store reopening, graphics device, resource counts, asset failure, shared behavior suite, six rendered stress workloads, suspension and restoration."
+                "Laboratory smoke passed: all edit tabs, Sand store reopening, graphics device, resource counts, asset failure, shared behavior suite, all rendered Sand stress workloads, suspension and restoration."
             );
             world.write_message(AppExit::Success);
             state.stage = 5;

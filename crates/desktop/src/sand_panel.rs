@@ -2,7 +2,6 @@ use crate::actions::Action;
 use bevy::prelude::*;
 pub(crate) use lince_interface::controls::{clear, column, row, status, value};
 
-#[cfg(test)]
 pub(crate) mod tests;
 
 pub(crate) fn button(

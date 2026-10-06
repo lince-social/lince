@@ -290,7 +290,7 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         "Command Castle",
         "Run a Bash Record locally, interact with its terminal and reopen recent runs.",
         AddCommand,
-        |world, _| preview(world, false),
+        |world, _| preview_command(world),
     );
     crate::sand_store::castle_entry(
         world,
@@ -299,7 +299,7 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         "Fiote Castle",
         "An agent with its prompt in the description and a session in each thread.",
         AddFiote,
-        |world, _| preview(world, false),
+        |world, _| preview_fiote(world),
     );
     crate::sand_store::castle_entry(
         world,
@@ -310,6 +310,61 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         AddCastle,
         |world, _| preview(world, false),
     );
+}
+
+fn preview_command(world: &mut World) -> Entity {
+    let entity = preview(world, false);
+    let children: Vec<_> = world.get::<Children>(entity).unwrap().iter().collect();
+    for child in children {
+        world.despawn(child);
+    }
+    world
+        .get_mut::<crate::canvas::CanvasItem>(entity)
+        .unwrap()
+        .size = Vec2::new(820.0, 640.0);
+    crate::command_castle::populate(
+        world,
+        entity,
+        &Config {
+            command: Some(Default::default()),
+            ..Config::records()
+        },
+        &json!({"kind":"command", "head":"Command", "body":"printf 'Hello\\n'\n"}),
+        RecordBinding {
+            area: entity,
+            uid: nucleus::new_uid("r"),
+            source: Source::Local,
+        },
+    );
+    entity
+}
+
+fn preview_fiote(world: &mut World) -> Entity {
+    let entity = preview(world, false);
+    let children: Vec<_> = world.get::<Children>(entity).unwrap().iter().collect();
+    for child in children {
+        world.despawn(child);
+    }
+    let mut area = crate::area::InfluenceArea::new(
+        crate::area::AreaShape::Square,
+        DVec2::ZERO,
+        DVec2::new(520.0, 640.0),
+    );
+    area.protein = Some(Config {
+        fiote: true,
+        ..Config::records()
+    });
+    world.entity_mut(entity).insert(area);
+    crate::fiote::session::populate(
+        world,
+        entity,
+        RecordBinding {
+            area: entity,
+            uid: nucleus::new_uid("r"),
+            source: Source::Local,
+        },
+    );
+    entity
 }
 
 fn preview(world: &mut World, threads: bool) -> Entity {

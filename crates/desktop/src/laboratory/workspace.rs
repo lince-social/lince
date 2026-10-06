@@ -28,6 +28,7 @@ pub struct Laboratory {
     pub status: String,
     pub resources: super::ResourceSnapshot,
     resources_open: bool,
+    component_index: Option<usize>,
     resource_sort: super::resources::ResourceSort,
     resource_page: usize,
     stress: Option<StressRun>,
@@ -53,7 +54,9 @@ pub fn normal(world: &World) -> bool {
 }
 
 pub(crate) fn resources_visible(world: &World) -> bool {
-    world.get_resource::<Laboratory>().is_some_and(|lab| lab.root.is_some() && lab.resources_open)
+    world
+        .get_resource::<Laboratory>()
+        .is_some_and(|lab| lab.root.is_some() && lab.resources_open)
 }
 
 pub fn suspended(world: &World, mut entity: Entity) -> bool {
@@ -82,6 +85,9 @@ pub enum LaboratoryAction {
     Resources,
     SortResources,
     NextResources,
+    Components,
+    PreviousComponent,
+    NextComponent,
 }
 
 impl Action for LaboratoryAction {
@@ -137,6 +143,18 @@ impl Action for LaboratoryAction {
                 };
             }
             Self::Export => export(world),
+            Self::Components | Self::PreviousComponent | Self::NextComponent if !busy(world) => {
+                let index = world.resource::<Laboratory>().component_index.unwrap_or(0);
+                let count = super::components::count(world);
+                let index = match self {
+                    Self::PreviousComponent => (index + count - 1) % count,
+                    Self::NextComponent => (index + 1) % count,
+                    _ => index,
+                };
+                let root = world.resource::<Laboratory>().root.unwrap();
+                world.resource_mut::<Laboratory>().component_index = Some(index);
+                super::components::show(world, root, index);
+            }
             Self::Resources => {
                 let mut lab = world.resource_mut::<Laboratory>();
                 lab.resources_open = !lab.resources_open;
@@ -233,6 +251,7 @@ pub fn open(world: &mut World) {
     lab.frame = None;
     lab.refresh = None;
     lab.closing = false;
+    lab.component_index = None;
     lab.status = "Other workspaces are suspended. Tests use temporary data.".into();
 }
 
@@ -272,6 +291,8 @@ pub fn close(world: &mut World) {
         focus.set(entity, FocusCause::Navigated);
     }
     lab.closing = false;
+    lab.component_index = None;
+    world.remove_resource::<super::components::Fixtures>();
     world.insert_resource(lab);
 }
 
@@ -307,6 +328,15 @@ fn stop(world: &mut World) {
 }
 
 fn start_stress(world: &mut World) {
+    let previews: Vec<_> = world
+        .query_filtered::<Entity, With<super::components::ComponentGallery>>()
+        .iter(world)
+        .collect();
+    for preview in previews {
+        world.despawn(preview);
+    }
+    world.remove_resource::<super::components::Fixtures>();
+
     let lab = world.resource::<Laboratory>();
     if !lab.config.validate() {
         world.resource_mut::<Laboratory>().status = "Invalid stress limits".into();
@@ -321,6 +351,7 @@ fn start_stress(world: &mut World) {
     let run = StressRun::new(lab.config, lab.rendered, viewport);
     let rendered = lab.rendered;
     let mut lab = world.resource_mut::<Laboratory>();
+    lab.component_index = None;
     lab.stress = Some(run);
     lab.frame = None;
     lab.status = "Adding Sands; measuring each load after warmup".into();
@@ -403,6 +434,7 @@ fn render(world: &mut World) {
     let status = lab.status.clone();
     let config = lab.config;
     let resources_open = lab.resources_open;
+    let components_open = lab.component_index.is_some();
     let mut lines = vec![super::GraphicsDevice::read(world).label()];
     if lab.resources_open {
         lines.extend(lab.resources.lines(lab.resource_sort, lab.resource_page));
@@ -532,6 +564,7 @@ fn render(world: &mut World) {
             ("Sand limit", LaboratoryAction::Limit),
             ("Export results", LaboratoryAction::Export),
             ("Sand resources", LaboratoryAction::Resources),
+            ("Components", LaboratoryAction::Components),
             ("Sort resources", LaboratoryAction::SortResources),
             ("Next Sands", LaboratoryAction::NextResources),
             ("Return", LaboratoryAction::Close),
@@ -565,8 +598,13 @@ fn render(world: &mut World) {
         config.max_sands,
         lines.join("\n")
     );
-    world.get_mut::<Node>(panel).unwrap().max_height =
-        percent(if resources_open { 85 } else { 45 });
+    world.get_mut::<Node>(panel).unwrap().max_height = percent(if components_open {
+        40
+    } else if resources_open {
+        85
+    } else {
+        45
+    });
     for mut node in world
         .query_filtered::<&mut Node, With<ResourceControl>>()
         .iter_mut(world)

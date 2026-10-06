@@ -89,7 +89,7 @@ pub struct StoredSand {
 #[derive(Component)]
 pub struct SandCredits(pub &'static [crate::credits::Attribution]);
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 struct StoreFont(Handle<Font>);
 
 impl FromWorld for StoreFont {
@@ -240,6 +240,11 @@ pub(crate) fn entry(
         .spawn((
             crate::castle::Castle,
             StoreEntry(kind),
+            StoreComponent {
+                title: kind.name().into(),
+                description: kind.description().into(),
+                size,
+            },
             ChildOf(parent),
             Node {
                 width: percent(100),
@@ -279,6 +284,15 @@ pub(crate) fn entry(
         .id();
     let (mut scene, scene_root) = preview::scene(world);
     let source = spawn_sand(&mut scene, scene_root, 1, kind, kind.name(), DVec2::ZERO);
+    if kind == SandKind::Operation {
+        let input = scene.get::<StoredSand>(source).unwrap().content.unwrap();
+        scene
+            .get_mut::<bevy::text::EditableText>(input)
+            .unwrap()
+            .editor
+            .set_text("@record");
+    }
+
     if matches!(
         kind,
         SandKind::Square | SandKind::Text | SandKind::EditableText | SandKind::WorkTimer
@@ -311,6 +325,11 @@ pub(crate) fn entry(
         let scale = (68.0 / size.x).min(60.0 / size.y).min(1.0);
         world.get_mut::<Node>(miniature).unwrap().border =
             UiRect::all(px(crate::sand::BUTTON_BORDER_WIDTH / scale));
+        world
+            .entity_mut(miniature)
+            .insert(preview::PreviewBorder(UiRect::all(px(
+                crate::sand::BUTTON_BORDER_WIDTH,
+            ))));
         world.entity_mut(miniature).insert((
             crate::token_style::background(crate::tokens::Token::SandBackground),
             crate::token_style::border(crate::tokens::Token::SandBorder),
@@ -383,6 +402,13 @@ pub(crate) fn entry(
     }
 }
 
+#[derive(Component, Clone)]
+pub struct StoreComponent {
+    pub title: String,
+    pub description: String,
+    pub size: Vec2,
+}
+
 pub(crate) fn castle_entry(
     world: &mut World,
     root: Entity,
@@ -402,6 +428,11 @@ pub(crate) fn castle_entry(
             crate::castle::Castle,
             crate::sand::button(0),
             crate::actions::ActionButton::new(root, crate::actions![action]),
+            StoreComponent {
+                title: title.into(),
+                description: description.into(),
+                size,
+            },
             crate::token_style::border(crate::tokens::Token::Accent),
             ChildOf(parent),
             Node {

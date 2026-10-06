@@ -2,7 +2,7 @@ use super::*;
 use crate::sand_panel::tests::{app, settle};
 use serde_json::json;
 
-#[tokio::test]
+#[cfg_attr(test, tokio::test)]
 async fn removing_castle_keeps_run_alive_and_reopening_restores_history() {
     let directory = std::env::temp_dir().join(nucleus::new_uid("castle-test"));
     std::fs::create_dir(&directory).unwrap();
@@ -30,7 +30,8 @@ async fn removing_castle_keeps_run_alive_and_reopening_restores_history() {
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
         information: None,
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
     };
     let mut app = app();
     app.insert_resource(crate::app::CellHandle(runtime.clone()))
@@ -161,7 +162,7 @@ async fn removing_castle_keeps_run_alive_and_reopening_restores_history() {
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn settings_survive_castle_configuration_roundtrip() {
     let config = crate::protein_area::Config {
         command: Some(Settings {
@@ -177,7 +178,7 @@ fn settings_survive_castle_configuration_roundtrip() {
     assert_eq!(Settings::default().cwd, "~");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn remote_command_has_no_local_execution_controls() {
     let mut app = app();
     let owner = app.world_mut().spawn(Node::default()).id();
@@ -200,4 +201,10 @@ fn remote_command_has_no_local_execution_controls() {
             .count(),
         0
     );
+}
+
+crate::laboratory_cases! {
+    async removing_castle_keeps_run_alive_and_reopening_restores_history,
+    settings_survive_castle_configuration_roundtrip,
+    remote_command_has_no_local_execution_controls,
 }

@@ -143,8 +143,16 @@ pub(super) fn content(
         crate::edit_mode::label(world, button, "Open Record", 14.0);
     }
     super::presentation::controls(world, row);
-    if config.record_cards && let Some(binding) = binding.clone() {
-        crate::sand_panel::button(world, row, row, "Extensions…", crate::record_extensions::Open(binding));
+    if config.record_cards
+        && let Some(binding) = binding.clone()
+    {
+        crate::sand_panel::button(
+            world,
+            row,
+            row,
+            "Extensions…",
+            crate::record_extensions::Open(binding),
+        );
     }
     if config.delete_button {
         if let Some(binding) = binding {
@@ -235,7 +243,8 @@ pub(super) fn fields(
         }
         let text = display(&data[&property.property]);
         let editable = property.editable && binding.is_some();
-        if let Some((schema, field)) = nucleus::record_extension::column_binding(&property.property) {
+        if let Some((schema, field)) = nucleus::record_extension::column_binding(&property.property)
+        {
             if let Some(binding) = binding.clone() {
                 crate::record_extensions::field(world, container, binding, schema, field, editable);
             }
@@ -532,7 +541,9 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                     world.entity_mut(entity).insert(RemoteRecord);
                 }
                 if crate::practice_cells::owns_source(world, &config.source) {
-                    world.entity_mut(entity).insert(crate::practice_cells::PracticeRecord);
+                    world
+                        .entity_mut(entity)
+                        .insert(crate::practice_cells::PracticeRecord);
                 }
                 state.row_entities.insert(uid.clone(), entity);
                 entity
@@ -1019,7 +1030,7 @@ pub(super) fn layout(world: &mut World) {
             .map(|index| heights.get(&(area, index)).copied().unwrap_or(0.0) + config.gap)
             .sum::<f32>();
         let inset = if config.group_with_source { 0.0 } else { 12.0 };
-        let position = if config.fiote && config.group_with_source && index == 0 {
+        let position = if config.group_with_source && index == 0 {
             DVec2::from_array(influence.center)
         } else {
             origin

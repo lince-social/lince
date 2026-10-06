@@ -40,6 +40,43 @@ fn set(world: &mut World, form: Entity, path: &str, value: &str) {
 }
 
 #[test]
+fn fresh_device_can_create_an_organ_before_roster_subscription_replies() {
+    let (mut app, owner) = fixture();
+    let create = find(app.world_mut(), "roster-create-organ");
+    let payload = forms::payload(app.world(), create).unwrap();
+    assert!(matches!(
+        serde_json::from_value::<engine::actions::Action>(payload).unwrap(),
+        engine::actions::Action::RosterCreateOrgan
+    ));
+    receive(
+        app.world_mut(),
+        &ServerMessage::Snapshot {
+            id: subscription(owner, "roster"),
+            rows: vec![],
+        },
+    );
+    find(app.world_mut(), "roster-create-organ");
+    receive(
+        app.world_mut(),
+        &ServerMessage::Update {
+            id: subscription(owner, "roster"),
+            rows: vec![json!({"uid":"local","slug":"local-organ","extension":{"version":1,"cells":[{"cell_uid":"desktop","label":"Desktop","capabilities":["karma"]}]}})],
+        },
+    );
+    assert!(
+        app.world_mut()
+            .query::<&forms::Form>()
+            .iter(app.world())
+            .all(|form| form.payload["action"] != "roster-create-organ")
+    );
+    let executor = find(app.world_mut(), "roster-set-karma-execution");
+    assert_eq!(
+        forms::payload(app.world(), executor).unwrap()["cell_uid"],
+        "desktop"
+    );
+}
+
+#[test]
 fn scopes_preserve_all_named_and_minimum_states() {
     assert_eq!(forms::scope(&json!("all"), "head").unwrap(), Value::Null);
     assert_eq!(forms::scope(&json!("none"), "head").unwrap(), json!([]));

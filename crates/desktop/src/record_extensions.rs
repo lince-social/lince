@@ -1536,18 +1536,31 @@ impl Action for Add {
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
-    crate::description::button(
-        world,
-        parent,
-        root,
-        "Extension Editor · Schemas, fields and state labels",
-        Add(Mode::Editor),
-    );
-    crate::description::button(
-        world,
-        parent,
-        root,
-        "Dropdown Sand · Single or multiple choices",
-        Add(Mode::Dropdown),
-    );
+    for (title, description, mode) in [
+        (
+            "Extension Editor",
+            "Schemas, fields and state labels",
+            Mode::Editor,
+        ),
+        (
+            "Dropdown Sand",
+            "Single or multiple choices",
+            Mode::Dropdown,
+        ),
+    ] {
+        let entry = crate::description::button(
+            world,
+            parent,
+            root,
+            &format!("{title} · {description}"),
+            Add(mode),
+        );
+        world
+            .entity_mut(entry)
+            .insert(crate::sand_store::StoreComponent {
+                title: title.into(),
+                description: description.into(),
+                size: Vec2::new(660.0, 640.0),
+            });
+    }
 }

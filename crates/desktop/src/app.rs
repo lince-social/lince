@@ -25,7 +25,7 @@ pub fn run_native_interface(
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
-    let mut app = interface_app_at(data_dir.join("interface-assets"));
+    let mut app = interface_app_at(data_dir.join("interface-assets"), false);
     app.insert_resource(backup_handoff);
     app.insert_resource(crate::sound::Audio::open(
         data_dir.to_path_buf(),
@@ -64,10 +64,18 @@ pub fn connected_app(runtime: cell::CellRuntime) -> App {
 pub fn interface_app() -> App {
     interface_app_at(
         std::env::temp_dir().join(format!("lince-desktop-assets-{}", std::process::id())),
+        false,
     )
 }
 
-fn interface_app_at(directory: std::path::PathBuf) -> App {
+pub fn offscreen_interface_app() -> App {
+    interface_app_at(
+        std::env::temp_dir().join(format!("lince-desktop-assets-{}", std::process::id())),
+        true,
+    )
+}
+
+fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
     use bevy::asset::{
         AssetApp,
         io::{AssetSource, AssetSourceBuilder},
@@ -79,101 +87,110 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         AssetSourceBuilder::new(move || AssetSource::get_default_reader(reader_path.clone())()),
     );
     app.insert_resource(crate::topology::assets::AssetDirectory(directory));
-    app.add_plugins(
-        DefaultPlugins
-            .build()
-            .disable::<LogPlugin>()
-            .set(RenderPlugin {
-                render_creation: bevy::render::settings::WgpuSettings {
-                    memory_hints: bevy::render::settings::MemoryHints::MemoryUsage,
-                    ..default()
-                }
-                .into(),
-                synchronous_pipeline_compilation: true,
+    let plugins = DefaultPlugins
+        .build()
+        .disable::<LogPlugin>()
+        .set(RenderPlugin {
+            render_creation: bevy::render::settings::WgpuSettings {
+                memory_hints: bevy::render::settings::MemoryHints::MemoryUsage,
                 ..default()
-            })
-            .set(WindowPlugin {
-                close_when_requested: false,
-                exit_condition: bevy::window::ExitCondition::DontExit,
-                primary_window: Some(Window {
-                    title: "Lince".into(),
-                    resolution: (800, 640).into(),
-                    ..default()
-                }),
+            }
+            .into(),
+            synchronous_pipeline_compilation: true,
+            ..default()
+        })
+        .set(WindowPlugin {
+            close_when_requested: false,
+            exit_condition: bevy::window::ExitCondition::DontExit,
+            primary_window: Some(Window {
+                title: "Lince".into(),
+                resolution: (800, 640).into(),
                 ..default()
             }),
-    )
-    .add_plugins(crate::topology::splats::SplatPlugin)
-    .add_plugins((
-        TabNavigationPlugin,
-        ThemePlugin,
-        crate::castle::CastlePlugin,
-        crate::icons::IconPlugin,
-        SandPlugin,
-        crate::sand_text::SandTextPlugin,
-        EffectPlugin,
-        CanvasPlugin,
-        crate::canvas_controls::CanvasControlsPlugin,
-        crate::workspace::WorkspacePlugin,
-        crate::edit_mode::EditModePlugin,
-        crate::notifications::NotificationsPlugin,
-        crate::inspection::InspectionPlugin,
-        crate::area::AreasPlugin,
-        crate::physics::WorkspacePhysicsPlugin,
-    ))
-    .insert_resource(ClearColor(PAPER))
-    .add_plugins((
-        crate::information::InformationPlugin,
-        crate::access_control::AccessControlPlugin,
-        crate::sync_castle::SyncCastlePlugin,
-        crate::protein_castle::ProteinCastlePlugin,
-        crate::protein_area::ProteinAreaPlugin,
-        crate::record_binding::RecordBindingPlugin,
-        crate::work_timer::WorkTimerPlugin,
-        crate::calendar::CalendarPlugin,
-        crate::kanban::KanbanPlugin,
-        crate::laboratory::LaboratoryPlugin,
-        crate::topology::TopologyPlugin,
-        crate::description::DescriptionPlugin,
-        crate::instinct::InstinctPlugin,
-        crate::thread_castle::ThreadCastlePlugin,
-    ))
-    .add_plugins(crate::workspace_sync::WorkspaceSyncPlugin)
-    .add_plugins(crate::tutorial::TutorialPlugin)
-    .add_plugins(crate::karma_castle::KarmaCastlePlugin)
-    .add_plugins(crate::accessibility::AccessibilityPlugin)
-    .add_plugins(crate::component_push::ComponentPushPlugin)
-    .add_plugins(crate::simulation_castle::SimulationCastlePlugin)
-    .add_plugins(crate::sound::SoundPlugin)
-    .add_plugins(crate::sound_area::SoundAreaPlugin)
-    .add_plugins(crate::recorder_castle::RecorderCastlePlugin)
-    .add_plugins(crate::document_viewer::DocumentViewerPlugin)
-    .add_plugins(crate::media_sand::MediaSandPlugin)
-    .add_plugins(crate::drawing::DrawingPlugin)
-    .add_plugins(crate::record_extensions::ExtensionPlugin)
-    .add_plugins(crate::external_drop::ExternalDropPlugin)
-    .add_plugins(crate::file_explorer::FileExplorerPlugin)
-    .add_plugins(crate::ide::IdePlugin)
-    .add_plugins(crate::frequency_castle::FrequencyCastlePlugin)
-    .add_plugins(crate::transfer_castle::TransferCastlePlugin)
-    .add_plugins(crate::castle_feed::FeedPlugin)
-    .add_plugins(crate::assertion_castle::AssertionCastlePlugin)
-    .add_plugins(crate::shader_castle::ShaderCastlePlugin)
-    .add_plugins(crate::fiote::session::Plugin)
-    .add_plugins((
-        crate::freedoom::FreedoomPlugin,
-        crate::terminal::TerminalPlugin,
-        crate::command_castle::CommandCastlePlugin,
-        crate::configuration::ConfigurationPlugin,
-        crate::owner_backup::BackupPlugin,
-        crate::organ_castle::OrganCastlePlugin,
-        crate::todo::TodoPlugin,
-        crate::ontology::OntologyPlugin,
-    ))
-    .insert_resource(idle_settings())
-    .add_systems(Startup, camera);
-    let wake =
-        crate::wake::from_proxy(app.world().resource::<bevy::winit::EventLoopProxyWrapper>());
+            ..default()
+        });
+    let plugins = if offscreen {
+        plugins
+            .disable::<bevy::winit::WinitPlugin>()
+            .disable::<bevy::render::pipelined_rendering::PipelinedRenderingPlugin>()
+    } else {
+        plugins
+    };
+    app.add_plugins(plugins);
+    app.add_plugins(crate::topology::splats::SplatPlugin)
+        .add_plugins((
+            TabNavigationPlugin,
+            ThemePlugin,
+            crate::castle::CastlePlugin,
+            crate::icons::IconPlugin,
+            SandPlugin,
+            crate::sand_text::SandTextPlugin,
+            EffectPlugin,
+            CanvasPlugin,
+            crate::canvas_controls::CanvasControlsPlugin,
+            crate::workspace::WorkspacePlugin,
+            crate::edit_mode::EditModePlugin,
+            crate::notifications::NotificationsPlugin,
+            crate::inspection::InspectionPlugin,
+            crate::area::AreasPlugin,
+            crate::physics::WorkspacePhysicsPlugin,
+        ))
+        .insert_resource(ClearColor(PAPER))
+        .add_plugins((
+            crate::information::InformationPlugin,
+            crate::access_control::AccessControlPlugin,
+            crate::sync_castle::SyncCastlePlugin,
+            crate::protein_castle::ProteinCastlePlugin,
+            crate::protein_area::ProteinAreaPlugin,
+            crate::record_binding::RecordBindingPlugin,
+            crate::work_timer::WorkTimerPlugin,
+            crate::calendar::CalendarPlugin,
+            crate::kanban::KanbanPlugin,
+            crate::laboratory::LaboratoryPlugin,
+            crate::topology::TopologyPlugin,
+            crate::description::DescriptionPlugin,
+            crate::instinct::InstinctPlugin,
+            crate::thread_castle::ThreadCastlePlugin,
+        ))
+        .add_plugins(crate::workspace_sync::WorkspaceSyncPlugin)
+        .add_plugins(crate::tutorial::TutorialPlugin)
+        .add_plugins(crate::karma_castle::KarmaCastlePlugin)
+        .add_plugins(crate::accessibility::AccessibilityPlugin)
+        .add_plugins(crate::component_push::ComponentPushPlugin)
+        .add_plugins(crate::simulation_castle::SimulationCastlePlugin)
+        .add_plugins(crate::sound::SoundPlugin)
+        .add_plugins(crate::sound_area::SoundAreaPlugin)
+        .add_plugins(crate::recorder_castle::RecorderCastlePlugin)
+        .add_plugins(crate::document_viewer::DocumentViewerPlugin)
+        .add_plugins(crate::media_sand::MediaSandPlugin)
+        .add_plugins(crate::drawing::DrawingPlugin)
+        .add_plugins(crate::record_extensions::ExtensionPlugin)
+        .add_plugins(crate::external_drop::ExternalDropPlugin)
+        .add_plugins(crate::file_explorer::FileExplorerPlugin)
+        .add_plugins(crate::ide::IdePlugin)
+        .add_plugins(crate::frequency_castle::FrequencyCastlePlugin)
+        .add_plugins(crate::transfer_castle::TransferCastlePlugin)
+        .add_plugins(crate::castle_feed::FeedPlugin)
+        .add_plugins(crate::assertion_castle::AssertionCastlePlugin)
+        .add_plugins(crate::shader_castle::ShaderCastlePlugin)
+        .add_plugins(crate::fiote::session::Plugin)
+        .add_plugins((
+            crate::freedoom::FreedoomPlugin,
+            crate::terminal::TerminalPlugin,
+            crate::command_castle::CommandCastlePlugin,
+            crate::configuration::ConfigurationPlugin,
+            crate::owner_backup::BackupPlugin,
+            crate::organ_castle::OrganCastlePlugin,
+            crate::todo::TodoPlugin,
+            crate::ontology::OntologyPlugin,
+        ))
+        .insert_resource(idle_settings())
+        .add_systems(Startup, camera);
+    let wake = if offscreen {
+        crate::wake::WakeSignal::new(|| {})
+    } else {
+        crate::wake::from_proxy(app.world().resource::<bevy::winit::EventLoopProxyWrapper>())
+    };
     app.insert_resource(wake);
     app
 }

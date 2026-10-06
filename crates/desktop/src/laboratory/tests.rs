@@ -140,7 +140,7 @@ fn laboratory_stress_is_temporary_bounded_and_never_saved_as_a_user_workspace() 
         budget_ms: 1000.0,
     };
     LaboratoryAction::Stress.apply(app.world_mut(), laboratory);
-    for _ in 0..200 {
+    for _ in 0..SandKind::ALL.len() * 2 * 32 {
         app.update();
         if !app.world().resource::<Laboratory>().reports.is_empty() {
             break;
@@ -290,7 +290,67 @@ fn resource_snapshot_preserves_physics_counts_and_exports_without_draft_contents
     LaboratoryAction::Close.apply(app.world_mut(), root);
 }
 
+#[cfg_attr(test, test)]
+fn component_gallery_browses_builtins_without_touching_user_sands() {
+    let (mut app, root) = fixture();
+    let sand = spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::EditableText,
+        "Keep my draft",
+        DVec2::ZERO,
+    );
+    LaboratoryAction::Open.apply(app.world_mut(), root);
+    let lab_root = app.world().resource::<Laboratory>().root.unwrap();
+    app.world_mut()
+        .entity_mut(lab_root)
+        .insert(ComputedUiRenderTargetInfo::default());
+    LaboratoryAction::Components.apply(app.world_mut(), lab_root);
+    let preview = app
+        .world_mut()
+        .query::<(&Name, &UiTransform)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "Laboratory component preview")
+        .unwrap()
+        .1;
+    assert_eq!(preview.scale, Vec2::ONE);
+    let (mut scene, _) = super::components::scene(app.world_mut());
+    let count = super::components::entries(&mut scene).len();
+    for _ in 0..count {
+        LaboratoryAction::NextComponent.apply(app.world_mut(), lab_root);
+    }
+    LaboratoryAction::PreviousComponent.apply(app.world_mut(), lab_root);
+    let galleries = app
+        .world_mut()
+        .query_filtered::<Entity, With<super::components::ComponentGallery>>()
+        .iter(app.world())
+        .count();
+    assert_eq!(galleries, 1);
+    assert_eq!(
+        crate::sand_text::snapshot(app.world(), sand)[0].text,
+        "Keep my draft"
+    );
+    LaboratoryAction::Close.apply(app.world_mut(), lab_root);
+    assert!(
+        !app.world()
+            .contains_resource::<super::components::Fixtures>()
+    );
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<Entity, With<super::components::ComponentGallery>>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    assert_eq!(
+        crate::sand_text::snapshot(app.world(), sand)[0].text,
+        "Keep my draft"
+    );
+}
+
 crate::laboratory_cases! {
+    component_gallery_browses_builtins_without_touching_user_sands,
     laboratory_suspends_all_roots_and_restores_drafts_cameras_focus_and_physics,
     laboratory_stress_is_temporary_bounded_and_never_saved_as_a_user_workspace,
     stop_restores_idle_updates_and_exit_saves_only_the_original_scene,

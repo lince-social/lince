@@ -1,9 +1,15 @@
 use bevy::{prelude::*, text::EditableText};
 
+#[derive(Component, Clone, Copy)]
+pub(crate) struct PreviewBorder(pub UiRect);
+
 pub(crate) fn scene(world: &mut World) -> (World, Entity) {
     let mut scene = World::new();
+    world.init_resource::<super::StoreFont>();
+    scene.insert_resource(world.resource::<super::StoreFont>().clone());
     crate::description::preview_fonts(world, &mut scene);
     crate::ide::preview_font(world, &mut scene);
+    crate::terminal::preview_fonts(world, &mut scene);
     scene.insert_resource(crate::theme::Typography(
         world.resource::<crate::theme::Typography>().0.clone(),
     ));
@@ -26,6 +32,9 @@ fn copy<T: Component + Clone>(source: &World, from: Entity, world: &mut World, t
 pub(crate) fn snapshot(source: &World, from: Entity, world: &mut World, parent: Entity) -> Entity {
     let to = world.spawn((ChildOf(parent), Pickable::IGNORE)).id();
     copy::<Node>(source, from, world, to);
+    if let Some(border) = source.get::<PreviewBorder>(from) {
+        world.get_mut::<Node>(to).unwrap().border = border.0;
+    }
     copy::<TextSpan>(source, from, world, to);
     if let Some(input) = source.get::<EditableText>(from) {
         world
@@ -106,6 +115,10 @@ pub(crate) fn fit(world: &mut World, entity: Entity, size: Vec2) {
         .insert(UiTransform::from_scale(Vec2::splat(scale)));
     let mut pending = vec![entity];
     while let Some(entity) = pending.pop() {
+        if let Some(node) = world.get::<Node>(entity) {
+            let border = node.border;
+            world.entity_mut(entity).insert(PreviewBorder(border));
+        }
         if let Some(mut node) = world.get_mut::<Node>(entity) {
             let node = &mut *node;
             for edge in [

@@ -9,6 +9,7 @@ pub(crate) fn app() -> App {
     app
 }
 
+#[cfg(test)]
 pub(crate) fn connect(app: &mut App, engine: std::sync::Arc<engine::Engine>) -> cell::CellRuntime {
     let runtime = cell::CellRuntime {
         commands: Default::default(),
@@ -16,7 +17,8 @@ pub(crate) fn connect(app: &mut App, engine: std::sync::Arc<engine::Engine>) -> 
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     app.insert_resource(crate::wake::WakeSignal::new(|| {}))
@@ -42,7 +44,7 @@ pub(crate) async fn settle(app: &mut App, done: impl Fn(&World) -> bool) {
     panic!("Sand did not settle: {labels:?}");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
     use crate::sand_store::{SandKind, SandPreview};
     let mut app = app();
@@ -92,4 +94,8 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
             "Missing preview control: {caption}"
         );
     }
+}
+
+crate::laboratory_cases! {
+    migrated_sand_previews_render_without_live_sands_or_input_controls,
 }

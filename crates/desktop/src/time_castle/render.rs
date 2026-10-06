@@ -225,7 +225,7 @@ fn svg(
             .unwrap_or_else(|| "--:--".into());
         let scale = (palette.font / 16.0).clamp(0.8, 1.25);
         svg.push_str(&format!("<text x='0' y='{}' fill='{ink}' font-family='Lato' text-anchor='middle' font-size='{}'>{current}</text>", -radius * 0.63, 26.0 * scale));
-        let motto_radius = radius * 0.86;
+        let motto_radius = radius * 0.8;
         let x = motto_radius * 0.6_f32.sin();
         let y = motto_radius * 0.6_f32.cos();
         svg.push_str(&format!("<g opacity='{}'><g transform='translate(-14 {}) scale(0.875)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><defs><path id='memento-arc' d='M {} {y} A {motto_radius} {motto_radius} 0 0 0 {x} {y}'/></defs><text fill='{ink}' font-family='Lato' font-size='11' letter-spacing='2' text-anchor='middle'><textPath href='#memento-arc' startOffset='50%'>memento mori</textPath></text></g>", 1.0 - view.unwind * 2.0, size.y * 0.25 - 14.0, -x));

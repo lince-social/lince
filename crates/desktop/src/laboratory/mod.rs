@@ -1,4 +1,5 @@
 mod catalogue;
+pub mod components;
 mod stress;
 mod workspace;
 
@@ -10,7 +11,6 @@ pub use workspace::{
 };
 
 use serde::Serialize;
-pub(crate) use workspace::resources_visible;
 use std::{
     panic::{AssertUnwindSafe, catch_unwind},
     sync::{
@@ -21,6 +21,7 @@ use std::{
     thread,
     time::Instant,
 };
+pub(crate) use workspace::resources_visible;
 
 pub struct Case {
     pub name: &'static str,
@@ -187,6 +188,9 @@ impl Drop for BehaviorRun {
 macro_rules! laboratory_cases {
     (@add $cases:ident;) => {};
     (@add $cases:ident; $(#[$meta:meta])* async $name:ident, $($rest:tt)*) => {
+        $crate::laboratory_cases!(@add $cases; $(#[$meta])* async $name timeout 30, $($rest)*);
+    };
+    (@add $cases:ident; $(#[$meta:meta])* async $name:ident timeout $seconds:literal, $($rest:tt)*) => {
         $(#[$meta])*
         $cases.push($crate::laboratory::Case {
             name: concat!(module_path!(), "::", stringify!($name)),
@@ -195,7 +199,7 @@ macro_rules! laboratory_cases {
                 $name();
                 #[cfg(not(test))]
                 _runtime.block_on(async {
-                    tokio::time::timeout(std::time::Duration::from_secs(30), $name())
+                    tokio::time::timeout(std::time::Duration::from_secs($seconds), $name())
                         .await.expect("behavior check timed out");
                 });
             },

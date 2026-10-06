@@ -75,6 +75,7 @@ fn update_at(world: &mut World, now: std::time::Instant) {
             .find(|(_, corner)| corner.0 == bar)
             .map(|(entity, _)| entity);
         let corner = corner.unwrap_or_else(|| {
+            world.init_resource::<Assets<Image>>();
             world.init_resource::<CornerImage>();
             let image = world.resource::<CornerImage>().0.clone();
             let mut accessibility =
@@ -190,11 +191,10 @@ fn update_at(world: &mut World, now: std::time::Instant) {
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn corner_reveals_on_hover_and_preserves_keyboard_access() {
         let mut world = World::new();
         world.init_resource::<Assets<Image>>();
@@ -276,7 +276,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn editing_keeps_the_complete_toolbar_visible() {
         let (mut app, root) = crate::edit_mode::tests::fixture();
         app.world_mut()
@@ -294,7 +294,7 @@ mod tests {
         assert_eq!(node.max_width, Val::Vw(96.0));
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn corner_color_and_transparency_follow_saved_tokens() {
         let mut world = World::new();
         world.init_resource::<Assets<Image>>();
@@ -325,5 +325,10 @@ mod tests {
         assert!(Token::ControlsCornerTransparency.parse("101").is_none());
         assert!(Token::ControlsCornerTransparency.parse("-1").is_none());
         assert!(Token::ControlsCornerTransparency.parse("NaN").is_none());
+    }
+    crate::laboratory_cases! {
+        corner_reveals_on_hover_and_preserves_keyboard_access,
+        editing_keeps_the_complete_toolbar_visible,
+        corner_color_and_transparency_follow_saved_tokens,
     }
 }

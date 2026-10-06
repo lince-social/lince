@@ -109,6 +109,9 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     let panel = ui::stack(world, parent);
     world
         .entity_mut(panel)
+        .insert(Name::new("Karma simulation"));
+    world
+        .entity_mut(panel)
         .insert(crate::token_style::border(crate::tokens::Token::TableGrid));
     {
         let mut node = world.get_mut::<Node>(panel).unwrap();

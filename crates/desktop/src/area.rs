@@ -280,15 +280,16 @@ impl InfluenceArea {
 
     pub fn contains(&self, point: DVec2) -> bool {
         let point = (point - DVec2::from_array(self.center)) / DVec2::from_array(self.size);
-        if !point.is_finite()
-            || point.abs().max_element() > 0.5
-            || (!self.include_right_edge && point.x == 0.5)
-        {
+        if !point.is_finite() || point.abs().max_element() > 0.5 + f64::EPSILON * 16.0 {
+            return false;
+        }
+        let point = point.clamp(DVec2::splat(-0.5), DVec2::splat(0.5));
+        if !self.include_right_edge && point.x == 0.5 {
             return false;
         }
         match &self.shape {
             AreaShape::Square => true,
-            AreaShape::Circle => point.length_squared() <= 0.25,
+            AreaShape::Circle => point.length_squared() <= 0.25 + f64::EPSILON * 16.0,
             AreaShape::Polygon(points) => polygon_contains(points, point),
         }
     }

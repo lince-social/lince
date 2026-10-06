@@ -32,12 +32,12 @@ impl engine::social::Network for LocalService {
 
 #[derive(Default)]
 pub(super) struct State {
-    receiver: Option<Mutex<mpsc::Receiver<Result<Prepared, String>>>>,
+    pub(super) receiver: Option<Mutex<mpsc::Receiver<Result<Prepared, String>>>>,
     pub(super) data: Option<Value>,
-    failed: bool,
+    pub(super) failed: bool,
 }
 
-struct Prepared {
+pub(super) struct Prepared {
     source: String,
     runtime: cell::CellRuntime,
     servers: Vec<crate::practice_cells::Worker>,

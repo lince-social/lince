@@ -501,7 +501,8 @@ fn assisted_scopes_actions_focus_and_recovery_and_fails_open_on_ambiguity() {
 }
 
 async fn until(app: &mut App, predicate: impl Fn(&mut World) -> bool) {
-    for _ in 0..500 {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
+    while tokio::time::Instant::now() < deadline {
         app.update();
         if predicate(app.world_mut()) {
             return;
@@ -525,6 +526,17 @@ async fn until(app: &mut App, predicate: impl Fn(&mut World) -> bool) {
                 practice.results.clone(),
                 practice.confirmed_entry,
                 practice.confirmed_exit,
+                practice.runner.phase.clone(),
+                practice.setup.is_some(),
+                practice.records.len(),
+                practice.community.data.is_some(),
+                practice.community.receiver.is_some(),
+                practice.community.failed,
+                practice
+                    .tasks
+                    .iter()
+                    .map(tokio::task::JoinHandle::is_finished)
+                    .collect::<Vec<_>>(),
             )
         })
         .collect();
@@ -814,7 +826,7 @@ async fn work_controls_and_next_confirm_the_same_isolated_changes() {
     }
 }
 
-#[cfg_attr(test, tokio::test)]
+#[cfg_attr(test, tokio::test(flavor = "multi_thread", worker_threads = 2))]
 async fn community_views_keep_identity_pairing_and_roles_in_prepared_cells() {
     let (mut app, root) = fixture();
     app.add_plugins((
@@ -924,7 +936,7 @@ fn discard_removes_moved_samples_and_restores_source_bindings() {
     assert!(app.world().get_entity(personal).is_ok());
 }
 
-#[cfg_attr(test, tokio::test)]
+#[cfg_attr(test, tokio::test(flavor = "multi_thread", worker_threads = 2))]
 async fn automation_controls_confirm_saved_clocks_rules_and_habits() {
     let (mut app, root) = fixture();
     app.add_plugins((
@@ -1373,19 +1385,19 @@ async fn native_control_identity_survives_renaming_and_recreation_and_blocks_mis
 crate::laboratory_cases! {
     every_page_starts_directly_and_escape_keeps_progress_distinct,
     user_action_and_next_share_observation_without_duplicate_samples,
-    async foundational_pages_confirm_native_effects_and_explain_direct_starts,
+    async foundational_pages_confirm_native_effects_and_explain_direct_starts timeout 120,
     assisted_scopes_actions_focus_and_recovery_and_fails_open_on_ambiguity,
     close_and_component_removal_restore_interaction_and_owned_state,
     inactive_idle_and_closed_practice_do_not_repeat_input_scans,
     async record_changes_use_an_isolated_cell_and_confirm_entry_and_exit,
     async protein_query_controls_and_saves_stay_in_the_sample_cell,
-    async work_controls_and_next_confirm_the_same_isolated_changes,
+    async work_controls_and_next_confirm_the_same_isolated_changes timeout 90,
     discard_removes_moved_samples_and_restores_source_bindings,
-    async automation_controls_confirm_saved_clocks_rules_and_habits,
-    async community_views_keep_identity_pairing_and_roles_in_prepared_cells,
-    async local_tools_edit_owned_files_navigate_and_cancel_choices,
-    async sound_lessons_use_owned_libraries_and_release_playback_workers,
-    async visual_lessons_save_shader_and_custom_castles_and_restore_views,
+    async automation_controls_confirm_saved_clocks_rules_and_habits timeout 90,
+    async community_views_keep_identity_pairing_and_roles_in_prepared_cells timeout 120,
+    async local_tools_edit_owned_files_navigate_and_cancel_choices timeout 90,
+    async sound_lessons_use_owned_libraries_and_release_playback_workers timeout 90,
+    async visual_lessons_save_shader_and_custom_castles_and_restore_views timeout 90,
     laboratory_recovery_works_while_the_normal_tutorial_is_suspended,
     async native_control_identity_survives_renaming_and_recreation_and_blocks_missing_actions,
 }

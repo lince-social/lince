@@ -36,7 +36,8 @@ async fn connected() -> (App, Entity, Entity, std::sync::Arc<engine::Engine>) {
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(runtime))
@@ -206,7 +207,16 @@ async fn castle_filters_sorts_saves_loads_and_tracks_backend_changes() {
         .await
         .unwrap();
     until(&mut app, |world| {
-        world.get::<ProteinResults>(castle).unwrap().revision > revision
+        let result = world.get::<ProteinResults>(castle).unwrap();
+        result.revision > revision
+            && result.rows.iter().any(|row| {
+                row["uid"] == ids[0]
+                    && (row["quantity"].as_f64() == Some(5.0)
+                        || row["quantity"].as_str().is_some_and(|quantity| {
+                            nucleus::DecimalValue::parse_inferred(quantity)
+                                .is_ok_and(|value| value.to_f64() == 5.0)
+                        }))
+            })
     })
     .await;
     assert_eq!(

@@ -882,12 +882,22 @@ impl Wire {
             node_id: self.node_id().to_string(),
             root_key,
             label: organ.map(|organ| organ.head),
-            addrs: self
-                .endpoint
-                .addr()
-                .ip_addrs()
-                .map(|addr| addr.to_string())
-                .collect(),
+            addrs: if self
+                .private
+                .is_some_and(|config| !config.listen_addr.ip().is_unspecified())
+            {
+                self.endpoint
+                    .bound_sockets()
+                    .into_iter()
+                    .map(|addr| addr.to_string())
+                    .collect()
+            } else {
+                self.endpoint
+                    .addr()
+                    .ip_addrs()
+                    .map(|addr| addr.to_string())
+                    .collect()
+            },
         })
     }
 
@@ -3833,6 +3843,14 @@ mod private_wire {
             assert_eq!(wire.reach(), Reach::Local);
             assert_eq!(wire.endpoint.bound_sockets().len(), 1);
             assert!(wire.endpoint.bound_sockets()[0].ip().is_loopback());
+            assert_eq!(
+                wire.pairing_invite().await.unwrap().addrs,
+                wire.endpoint
+                    .bound_sockets()
+                    .into_iter()
+                    .map(|addr| addr.to_string())
+                    .collect::<Vec<_>>()
+            );
             assert!(wire.engine.nearby.lock().unwrap().is_none());
             assert!(wire.nearby.current().is_empty());
             assert!(wire.endpoint.addr().relay_urls().next().is_none());

@@ -35,8 +35,13 @@ pub(crate) const CREDITS: &[crate::credits::Attribution] = &[
     },
 ];
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 struct Mono(Handle<Font>, Handle<Font>);
+
+pub(crate) fn preview_fonts(world: &mut World, preview: &mut World) {
+    world.init_resource::<Mono>();
+    preview.insert_resource(world.resource::<Mono>().clone());
+}
 
 pub(crate) fn code_font(world: &mut World) -> TextFont {
     world.init_resource::<Mono>();
@@ -212,7 +217,7 @@ impl Action for Command {
     }
 }
 
-pub(crate) fn displayed_text(world: &World, owner: Entity) -> String {
+pub fn displayed_text(world: &World, owner: Entity) -> String {
     world
         .get::<TerminalSand>(owner)
         .and_then(|terminal| terminal.frame.as_ref())

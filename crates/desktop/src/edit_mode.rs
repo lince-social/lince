@@ -1072,6 +1072,75 @@ pub(crate) fn control(
     entity
 }
 
+pub(crate) fn builtin_store_entries(
+    world: &mut World,
+    root: Entity,
+    sands_group: Entity,
+    castles_group: Entity,
+) -> (Vec<Entity>, Vec<Entity>) {
+    let mut sand_entries = Vec::new();
+    for kind in SandKind::ALL
+        .into_iter()
+        .filter(|kind| *kind != SandKind::Sync)
+    {
+        crate::sand_store::entry(world, root, sands_group, kind, None);
+        sand_entries.push(*world.get::<Children>(sands_group).unwrap().last().unwrap());
+    }
+    let mut castle_entries = Vec::new();
+    let entry = store_group(world, castles_group);
+    crate::drawing::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::record_extensions::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::sand_store::entry(world, root, entry, SandKind::Sync, None);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::instinct::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::protein_castle::store_entries(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::karma_castle::store_entry(world, root, entry);
+    crate::frequency_castle::store_entry(world, root, entry);
+    crate::transfer_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::full_record::store_entry(world, root, entry);
+    crate::relation_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::recorder_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::document_viewer::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::file_explorer::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::ide::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::shader_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::assertion_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::calendar::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::simulation_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
+    crate::kanban::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    (sand_entries, castle_entries)
+}
+
 pub(crate) fn render_panel(world: &mut World, root: Entity) {
     render_panel_content(world, root);
     let panel = world.get::<EditMode>(root).unwrap().panel;
@@ -1343,68 +1412,10 @@ fn render_panel_content(world: &mut World, root: Entity) {
         }
         let sands_heading = label(world, panel, "Sands", 18.0);
         let sands_group = store_group(world, panel);
-        let mut sand_entries = Vec::new();
-        for kind in SandKind::ALL
-            .into_iter()
-            .filter(|kind| *kind != SandKind::Sync)
-        {
-            crate::sand_store::entry(world, root, sands_group, kind, None);
-            sand_entries.push(*world.get::<Children>(sands_group).unwrap().last().unwrap());
-        }
         let castles_heading = label(world, panel, "Castles", 18.0);
         let castles_group = store_group(world, panel);
-        let mut castle_entries = Vec::new();
-        let entry = store_group(world, castles_group);
-        crate::drawing::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::record_extensions::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::sand_store::entry(world, root, entry, SandKind::Sync, None);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::instinct::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::protein_castle::store_entries(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::karma_castle::store_entry(world, root, entry);
-        crate::frequency_castle::store_entry(world, root, entry);
-        crate::transfer_castle::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::full_record::store_entry(world, root, entry);
-        crate::relation_castle::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::recorder_castle::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::document_viewer::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::file_explorer::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::ide::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::shader_castle::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::assertion_castle::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::calendar::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::simulation_castle::store_entry(world, root, entry);
-        castle_entries.push(entry);
-        let entry = store_group(world, castles_group);
-        crate::kanban::store_entry(world, root, entry);
-        castle_entries.push(entry);
+        let (sand_entries, mut castle_entries) =
+            builtin_store_entries(world, root, sands_group, castles_group);
         let entry = store_group(world, castles_group);
         crate::custom_castle::store_entries(world, root, entry);
         castle_entries.push(entry);

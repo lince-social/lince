@@ -678,7 +678,7 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         label(
             world,
             parent,
-            "Karma runs on this device by default. Create a roster or join another device to manage which devices run Karma.",
+            "First create your Organ on this device to generate its root key, then issue an enrolment QR for your phone. To join an existing Organ instead, use its enrolment code below.",
         );
         form(
             world,
@@ -691,6 +691,7 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
                 "Create this Organ's identity? Joining another Organ afterward requires a fresh device profile.",
             ),
         );
+        return;
     }
     label(
         world,

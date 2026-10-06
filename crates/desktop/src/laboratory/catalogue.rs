@@ -25,6 +25,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::canvas_clip::tests::laboratory_cases(&mut cases);
     crate::canvas_colors::tests::laboratory_cases(&mut cases);
     crate::canvas_controls::tests::laboratory_cases(&mut cases);
+    crate::canvas_controls::corner::tests::laboratory_cases(&mut cases);
     crate::canvas_resize::tests::laboratory_cases(&mut cases);
     crate::canvas_selection::tests::laboratory_cases(&mut cases);
     crate::castle::tests::laboratory_cases(&mut cases);
@@ -59,6 +60,12 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::workspace::storage::tests::laboratory_cases(&mut cases);
     crate::workspace::tests::laboratory_cases(&mut cases);
     crate::workspace_config::tests::laboratory_cases(&mut cases);
+    super::components::laboratory_cases(&mut cases);
+    crate::command_castle::tests::laboratory_cases(&mut cases);
+    crate::frequency_castle::tests::laboratory_cases(&mut cases);
+    crate::transfer_castle::tests::laboratory_cases(&mut cases);
+    crate::karma_castle::tests::laboratory_cases(&mut cases);
+    crate::sand_panel::tests::laboratory_cases(&mut cases);
     super::tests::laboratory_cases(&mut cases);
     super::stress::tests::laboratory_cases(&mut cases);
     super::resource_tests::laboratory_cases(&mut cases);

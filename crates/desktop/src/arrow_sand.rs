@@ -4,6 +4,8 @@ use bevy::{
     prelude::*,
 };
 
+mod relation;
+
 #[derive(Component, Clone, Debug)]
 pub struct ArrowSand {
     pub from: Entity,
@@ -26,6 +28,7 @@ impl Plugin for ArrowSandPlugin {
             Update,
             update
                 .after(crate::physics::SimulateWorkspaces)
+                .after(crate::topology::view::synchronize)
                 .before(crate::topology::presentation::synchronize),
         );
     }
@@ -203,7 +206,7 @@ pub(crate) fn endpoints(world: &World, from: Entity, to: Entity) -> Option<(DVec
 mod tests {
     use super::*;
 
-    fn record(world: &mut World, root: Entity, position: DVec2, size: Vec2) -> Entity {
+    pub(super) fn record(world: &mut World, root: Entity, position: DVec2, size: Vec2) -> Entity {
         world
             .spawn((
                 CanvasItem { position, size },
@@ -286,7 +289,7 @@ mod tests {
 
 pub(crate) fn update(world: &mut World) {
     let arrows: Vec<_> = world
-        .query::<(Entity, &ArrowSand)>()
+        .query_filtered::<(Entity, &ArrowSand), bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>>()
         .iter(world)
         .map(|(entity, arrow)| (entity, arrow.clone()))
         .collect();
@@ -302,7 +305,18 @@ pub(crate) fn update(world: &mut World) {
             world.despawn(entity);
             continue;
         }
-        let Some((from, to)) = endpoints(world, arrow.from, arrow.to) else {
+        let relation = world
+            .get::<crate::relation_castle::RelationLink>(entity)
+            .is_some();
+        let ends = if relation {
+            relation::endpoints(world, arrow.from, arrow.to)
+        } else {
+            endpoints(world, arrow.from, arrow.to)
+        };
+        let Some((from, to)) = ends else {
+            if relation && let Some(mut visibility) = world.get_mut::<Visibility>(entity) {
+                visibility.set_if_neq(Visibility::Hidden);
+            }
             if world.get::<Node>(entity).unwrap().display != Display::None {
                 world.get_mut::<Node>(entity).unwrap().display = Display::None;
             }
@@ -313,10 +327,17 @@ pub(crate) fn update(world: &mut World) {
                 .get::<crate::protein_area::placement::Pending>(*end)
                 .is_some()
         }) {
+            if relation && let Some(mut visibility) = world.get_mut::<Visibility>(entity) {
+                visibility.set_if_neq(Visibility::Hidden);
+            }
             continue;
         }
         if world.get::<Node>(entity).unwrap().display != Display::Flex {
             world.get_mut::<Node>(entity).unwrap().display = Display::Flex;
+        }
+        if relation && crate::topology::presentation::ready(world) {
+            relation::update(world, entity, parent, &arrow, from, to);
+            continue;
         }
         let delta = to - from;
         let length = delta.length() as f32;

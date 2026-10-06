@@ -28,7 +28,7 @@ fn frequency(draft: &Draft) -> Frequency {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn simple_editor_preserves_exact_anchor_policies_and_identity() {
     let mut row = frequency(&draft());
     row.definition.missed = nucleus::karma::MissedPolicy::Skip;
@@ -43,7 +43,7 @@ fn simple_editor_preserves_exact_anchor_policies_and_identity() {
     assert!(edit.definition().unwrap_err().contains("linked Karma"));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn calendar_definitions_round_trip_without_flattening() {
     let mut draft = draft();
     draft.fields[2] = "1 month".into();
@@ -73,7 +73,7 @@ fn calendar_definitions_round_trip_without_flattening() {
     );
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn malformed_zero_fractional_and_oversized_inputs_do_not_create_schedules() {
     for value in [
         "0 days",
@@ -99,7 +99,7 @@ fn malformed_zero_fractional_and_oversized_inputs_do_not_create_schedules() {
     assert!(draft.definition().is_err());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn combined_intervals_round_trip_and_keep_subsecond_precision() {
     for (text, expected) in [
         (
@@ -141,7 +141,7 @@ fn combined_intervals_round_trip_and_keep_subsecond_precision() {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn weekdays_apply_after_all_time_components_and_survive_edits() {
     let mut draft = draft();
     draft.fields[2] = "1 month + 1 day + 10s + 100ms".into();
@@ -176,7 +176,7 @@ fn weekdays_apply_after_all_time_components_and_survive_edits() {
     assert!(model::schedule(&row).contains("then Mon"));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn countdown_uses_scheduler_time_and_stops_at_due_now() {
     let mut row = frequency(&draft());
     let before = row.clone();
@@ -189,7 +189,7 @@ fn countdown_uses_scheduler_time_and_stops_at_due_now() {
     assert_eq!(model::next(&row, 0), "No scheduled beat");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn editor_shows_the_next_date_without_moving_an_unchanged_schedule() {
     let mut row = frequency(&draft());
     row.next_at_ms = Some(1_790_251_200_000);
@@ -207,7 +207,7 @@ fn editor_shows_the_next_date_without_moving_an_unchanged_schedule() {
     assert_ne!(edit.definition().unwrap().cadence, row.definition.cadence);
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn header_is_compact_and_live_dates_do_not_overwrite_user_edits() {
     let mut app = app();
     let root = app
@@ -281,7 +281,7 @@ fn header_is_compact_and_live_dates_do_not_overwrite_user_edits() {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn rows_keep_indicator_name_slug_and_icons_on_one_line() {
     let mut app = app();
     let world = app.world_mut();
@@ -346,7 +346,7 @@ fn rows_keep_indicator_name_slug_and_icons_on_one_line() {
     }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn large_lists_only_render_one_page_and_filter_without_rebuilding_the_draft() {
     let mut app = app();
     let root = app
@@ -391,7 +391,7 @@ fn app() -> App {
     app
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn drafts_stay_first_survive_live_updates_and_persist() {
     let mut app = app();
     let root = app
@@ -443,7 +443,7 @@ fn drafts_stay_first_survive_live_updates_and_persist() {
     );
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[cfg_attr(test, tokio::test(flavor = "multi_thread", worker_threads = 2))]
 async fn native_castle_creates_edits_reads_and_confirms_deletion_through_cell() {
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     engine
@@ -460,7 +460,8 @@ async fn native_castle_creates_edits_reads_and_confirms_deletion_through_cell() 
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     let mut app = app();
@@ -546,7 +547,7 @@ async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     .unwrap();
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn creation_controls_replace_the_plus_only_in_the_header() {
     let mut app = app();
     let world = app.world_mut();
@@ -570,4 +571,20 @@ fn creation_controls_replace_the_plus_only_in_the_header() {
     ui::Command::Cancel.apply(world, owner);
     assert!(world.get::<FrequencyCastle>(owner).unwrap().draft.is_none());
     assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+}
+
+crate::laboratory_cases! {
+    async native_castle_creates_edits_reads_and_confirms_deletion_through_cell,
+    simple_editor_preserves_exact_anchor_policies_and_identity,
+    calendar_definitions_round_trip_without_flattening,
+    malformed_zero_fractional_and_oversized_inputs_do_not_create_schedules,
+    combined_intervals_round_trip_and_keep_subsecond_precision,
+    weekdays_apply_after_all_time_components_and_survive_edits,
+    countdown_uses_scheduler_time_and_stops_at_due_now,
+    editor_shows_the_next_date_without_moving_an_unchanged_schedule,
+    header_is_compact_and_live_dates_do_not_overwrite_user_edits,
+    rows_keep_indicator_name_slug_and_icons_on_one_line,
+    large_lists_only_render_one_page_and_filter_without_rebuilding_the_draft,
+    drafts_stay_first_survive_live_updates_and_persist,
+    creation_controls_replace_the_plus_only_in_the_header,
 }

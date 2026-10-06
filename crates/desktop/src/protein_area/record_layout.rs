@@ -255,13 +255,19 @@ fn toolbar_visibility(
         };
         entity = parent.parent();
     };
-    let active = world
-        .get_resource::<bevy::picking::hover::HoverMap>()
-        .is_some_and(|hover| {
-            hover
-                .values()
-                .any(|hits| hits.keys().copied().any(contains))
-        })
+    let relations = world
+        .get::<RecordBinding>(row)
+        .and_then(|binding| world.get::<InfluenceArea>(binding.area))
+        .and_then(|area| area.protein.as_ref())
+        .is_some_and(|config| config.relations);
+    let active = !relations
+        && world
+            .get_resource::<bevy::picking::hover::HoverMap>()
+            .is_some_and(|hover| {
+                hover
+                    .values()
+                    .any(|hits| hits.keys().copied().any(contains))
+            })
         || world
             .get_resource::<bevy::input_focus::InputFocus>()
             .and_then(|focus| focus.get())
@@ -528,8 +534,27 @@ pub(crate) mod tests {
         update(app.world_mut());
         assert_eq!(
             app.world().get::<Node>(sections.toolbar).unwrap().display,
-            Display::Flex
+            Display::None
         );
+        assert!(
+            !app.world()
+                .get::<crate::record_presentation::RecordPresentation>(row)
+                .unwrap()
+                .expanded
+        );
+        for entity in app.world().get::<Children>(row).unwrap().iter() {
+            if app.world().get::<ActionButton>(entity).is_some()
+                || app
+                    .world()
+                    .get::<super::super::presentation::Controls>(entity)
+                    .is_some()
+            {
+                assert_eq!(
+                    app.world().get::<Node>(entity).unwrap().display,
+                    Display::None
+                );
+            }
+        }
         app.world_mut()
             .resource_mut::<bevy::picking::hover::HoverMap>()
             .clear();

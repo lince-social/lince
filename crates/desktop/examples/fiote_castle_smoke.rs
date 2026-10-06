@@ -19,6 +19,8 @@ use std::{collections::HashSet, sync::Arc};
 
 #[derive(Resource)]
 struct Trial {
+    name: &'static str,
+    heading: &'static str,
     stage: u8,
     ticks: usize,
     root: Option<Entity>,
@@ -88,7 +90,7 @@ fn exercise(world: &mut World) {
                                 children.iter().any(|child| {
                                     world
                                         .get::<Text>(child)
-                                        .is_some_and(|text| text.0 == "Fiote Castle")
+                                        .is_some_and(|text| text.0 == trial.name)
                                 })
                             })
                         })
@@ -105,7 +107,7 @@ fn exercise(world: &mut World) {
             let area = world
                 .query::<(Entity, &InfluenceArea)>()
                 .iter(world)
-                .find(|(_, area)| area.name == "Fiote Castle")
+                .find(|(_, area)| area.name == trial.name)
                 .map(|(entity, _)| entity);
             if let Some(area) = area {
                 trial.area = Some(area);
@@ -131,7 +133,7 @@ fn exercise(world: &mut World) {
                     && world
                         .query::<&Text>()
                         .iter(world)
-                        .any(|text| text.0 == "Fiotes")
+                        .any(|text| text.0 == trial.heading)
                 {
                     if trial.saved.is_none() {
                         trial.saved = Some(
@@ -142,9 +144,12 @@ fn exercise(world: &mut World) {
                             .unwrap(),
                         );
                     }
-                    eprintln!("Fiote Castle visible: {row}");
+                    eprintln!("{} visible: {row}", trial.name);
                     let item = world.get::<lince_desktop::canvas::CanvasItem>(row).unwrap();
-                    eprintln!("Fiote geometry: {:?}, {:?}", item.position, item.size);
+                    eprintln!(
+                        "{} geometry: {:?}, {:?}",
+                        trial.name, item.position, item.size
+                    );
                     if trial.restored {
                         assert_eq!(
                             item.position.to_array(),
@@ -171,7 +176,11 @@ fn exercise(world: &mut World) {
                                 .filter(|pixel| pixel[3] != 0)
                                 .collect();
                             assert!(colors.len() > 8, "Fiote's rendered surface is empty");
-                            eprintln!("Fiote controls rendered with {} colors", colors.len());
+                            eprintln!(
+                                "{} controls rendered with {} colors",
+                                trial.name,
+                                colors.len()
+                            );
                             commands.entity(event.entity).despawn();
                             trial.stage = 5;
                             trial.ticks = 0;
@@ -217,9 +226,12 @@ fn exercise(world: &mut World) {
                     .iter(world)
                     .any(|binding| binding.area == trial.area.unwrap())
             );
-            eprintln!("Fiote Castle and its spawned content deleted");
+            eprintln!("{} and its spawned content deleted", trial.name);
             if trial.restored {
-                eprintln!("Saved Fiote Castle reopened, rendered and deleted successfully");
+                eprintln!(
+                    "Saved {} reopened, rendered and deleted successfully",
+                    trial.name
+                );
                 world.write_message(AppExit::Success);
             } else {
                 let root = trial.root.unwrap();
@@ -282,6 +294,16 @@ fn main() {
         std::process::exit(1);
     });
     app.insert_resource(Trial {
+        name: if std::env::args().any(|arg| arg == "--command") {
+            "Command Castle"
+        } else {
+            "Fiote Castle"
+        },
+        heading: if std::env::args().any(|arg| arg == "--command") {
+            "Bash script"
+        } else {
+            "Fiotes"
+        },
         stage: 0,
         ticks: 0,
         root: None,

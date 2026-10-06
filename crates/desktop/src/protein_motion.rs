@@ -49,6 +49,7 @@ struct State {
     center: DVec3,
     rotation: DQuat,
     members: Vec<Member>,
+    links: Vec<(Entity, Entity)>,
     alpha: f64,
 }
 
@@ -136,6 +137,23 @@ pub(crate) fn prepare(world: &mut World) {
             revision,
         });
     }
+    let mut links: HashMap<Entity, Vec<(Entity, Entity)>> = HashMap::new();
+    for (link, arrow) in world
+        .query::<(
+            &crate::relation_castle::RelationLink,
+            &crate::arrow_sand::ArrowSand,
+        )>()
+        .iter(world)
+    {
+        if sources.contains_key(&link.owner) {
+            let pair = if arrow.from < arrow.to {
+                (arrow.from, arrow.to)
+            } else {
+                (arrow.to, arrow.from)
+            };
+            links.entry(link.owner).or_default().push(pair);
+        }
+    }
     motion.states.retain(|owner, _| groups.contains_key(owner));
     let dt = world
         .get_resource::<Time<Real>>()
@@ -143,6 +161,9 @@ pub(crate) fn prepare(world: &mut World) {
         .clamp(0.0, 0.05);
     for (owner, mut members) in groups {
         members.sort_by_key(|member| member.entity);
+        let mut edges = links.remove(&owner).unwrap_or_default();
+        edges.sort_unstable();
+        edges.dedup();
         let settings = sources[&owner].clone();
         let center = crate::topology::position(world, owner).unwrap_or_default();
         let rotation = crate::topology::spatial(world, owner).rotation();
@@ -151,9 +172,11 @@ pub(crate) fn prepare(world: &mut World) {
             center,
             rotation,
             members: Vec::new(),
+            links: Vec::new(),
             alpha: 1.0,
         });
         if state.members != members
+            || state.links != edges
             || state.settings != settings
             || state.center != center
             || state.rotation != rotation
@@ -161,6 +184,7 @@ pub(crate) fn prepare(world: &mut World) {
             state.alpha = 1.0;
         }
         state.members = members;
+        state.links = edges;
         state.settings = settings;
         state.center = center;
         state.rotation = rotation;
@@ -169,6 +193,7 @@ pub(crate) fn prepare(world: &mut World) {
         }
         let forces = forces(
             &state.members,
+            &state.links,
             center,
             rotation,
             &state.settings,
@@ -186,6 +211,7 @@ pub(crate) fn prepare(world: &mut World) {
 
 fn forces(
     members: &[Member],
+    links: &[(Entity, Entity)],
     center: DVec3,
     rotation: DQuat,
     settings: &Settings,
@@ -216,6 +242,23 @@ fn forces(
             forces[first] += force;
             forces[second] -= force;
         }
+    }
+    let indices: HashMap<_, _> = members
+        .iter()
+        .enumerate()
+        .map(|(index, member)| (member.entity, index))
+        .collect();
+    for (from, to) in links {
+        let (Some(&first), Some(&second)) = (indices.get(from), indices.get(to)) else {
+            continue;
+        };
+        let delta = members[second].position - members[first].position;
+        let distance = delta.length();
+        let spacing =
+            f64::from((members[first].size.length() + members[second].size.length()) * 0.5) + 40.0;
+        let force = delta.normalize_or_zero() * ((distance - spacing) * 8.0);
+        forces[first] += force;
+        forces[second] -= force;
     }
     members
         .iter()
@@ -282,8 +325,119 @@ mod tests {
     }
 
     #[test]
+    fn links_pull_both_records_wake_sleeping_graphs_and_respect_pins_and_membership() {
+        let mut world = World::new();
+        let root = world.spawn(crate::workspace::Workspaces::default()).id();
+        let owner = crate::relation_castle::spawn(&mut world, root).unwrap();
+        world
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .protein
+            .as_mut()
+            .unwrap()
+            .motion = Some(Settings {
+            center: 0.0,
+            repulsion: 0.0,
+            ..default()
+        });
+        let first = record(&mut world, root, owner, 0, DVec2::new(-500.0, 0.0));
+        let second = record(&mut world, root, owner, 1, DVec2::new(500.0, 0.0));
+        for _ in 0..400 {
+            prepare(&mut world);
+        }
+        assert_eq!(world.resource::<Motion>().states[&owner].alpha, 0.0);
+        let link = world
+            .spawn((
+                crate::relation_castle::RelationLink {
+                    owner,
+                    uid: "link".into(),
+                },
+                crate::arrow_sand::ArrowSand {
+                    from: first,
+                    to: second,
+                    label: "depends-on".into(),
+                },
+            ))
+            .id();
+        prepare(&mut world);
+        let pull = world.resource::<Motion>().forces[&first];
+        assert!(pull.x > 0.0);
+        assert_eq!(pull, -world.resource::<Motion>().forces[&second]);
+        assert!(world.resource::<Motion>().states[&owner].alpha > 0.9);
+        world
+            .entity_mut(first)
+            .insert(crate::sand_placement::Pinned {
+                anchor: [0.5, 0.5],
+                scale: 1.0,
+            });
+        prepare(&mut world);
+        assert_eq!(world.resource::<Motion>().forces[&first], DVec3::ZERO);
+        assert!(world.resource::<Motion>().forces[&second].x < 0.0);
+        let other_owner = crate::relation_castle::spawn(&mut world, root).unwrap();
+        let outsider = record(&mut world, root, other_owner, 2, DVec2::new(1000.0, 0.0));
+        world
+            .get_mut::<crate::arrow_sand::ArrowSand>(link)
+            .unwrap()
+            .to = outsider;
+        prepare(&mut world);
+        assert_eq!(world.resource::<Motion>().forces[&second], DVec3::ZERO);
+        world.despawn(link);
+        prepare(&mut world);
+        assert!(world.resource::<Motion>().states[&owner].links.is_empty());
+    }
+
+    #[test]
+    fn link_attraction_balances_repulsion_without_collapsing_cards() {
+        let members = [
+            Member {
+                entity: Entity::from_raw_u32(1).unwrap(),
+                position: DVec3::ZERO,
+                size: Vec2::new(200.0, 80.0),
+                rotation: DQuat::IDENTITY.to_array(),
+                held: false,
+                revision: 0,
+            },
+            Member {
+                entity: Entity::from_raw_u32(2).unwrap(),
+                position: DVec3::new(1000.0, 0.0, 0.0),
+                size: Vec2::new(200.0, 80.0),
+                rotation: DQuat::IDENTITY.to_array(),
+                held: false,
+                revision: 0,
+            },
+        ];
+        let settings = Settings {
+            center: 0.0,
+            ..default()
+        };
+        let links = [(members[0].entity, members[1].entity)];
+        let far = forces(
+            &members,
+            &links,
+            DVec3::ZERO,
+            DQuat::IDENTITY,
+            &settings,
+            1.0,
+        );
+        assert!(far[0].1.x > 0.0);
+        assert_eq!(far[0].1, -far[1].1);
+        let mut nearby = members.clone();
+        nearby[1].position.x = 220.0;
+        let close = forces(
+            &nearby,
+            &links,
+            DVec3::ZERO,
+            DQuat::IDENTITY,
+            &settings,
+            1.0,
+        );
+        assert!(close[0].1.x < 0.0);
+        assert_eq!(close[0].1, -close[1].1);
+    }
+
+    #[test]
     fn center_repulsion_cool_and_sleep_in_both_canvas_modes() {
-        for spatial in [false, true] {
+        for (spatial, linked) in [(false, false), (true, false), (false, true), (true, true)] {
             let mut app = App::new();
             crate::laboratory::isolate(app.world_mut());
             app.add_plugins((MinimalPlugins, crate::physics::WorkspacePhysicsPlugin))
@@ -301,6 +455,19 @@ mod tests {
             let owner = crate::relation_castle::spawn(app.world_mut(), root).unwrap();
             let first = record(app.world_mut(), root, owner, 0, DVec2::new(900.0, 0.0));
             let second = record(app.world_mut(), root, owner, 1, DVec2::new(900.0, 0.0));
+            if linked {
+                app.world_mut().spawn((
+                    crate::relation_castle::RelationLink {
+                        owner,
+                        uid: "link".into(),
+                    },
+                    crate::arrow_sand::ArrowSand {
+                        from: first,
+                        to: second,
+                        label: "depends-on".into(),
+                    },
+                ));
+            }
             let unrelated = app
                 .world_mut()
                 .spawn((

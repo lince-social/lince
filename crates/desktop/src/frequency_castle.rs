@@ -1,7 +1,6 @@
 use lince_interface::frequency::{interval, model};
 mod persistence;
-#[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 mod ui;
 
 use bevy::{math::DVec2, prelude::*};

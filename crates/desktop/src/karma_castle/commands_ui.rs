@@ -85,6 +85,7 @@ pub(crate) fn sampled(world: &World, owner: Entity, slug: &str, value: &str) -> 
 
 pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     let panel = ui::stack(world, parent);
+    world.entity_mut(panel).insert(Name::new("Karma commands"));
     world.get_mut::<Node>(panel).unwrap().display = Display::None;
     world.entity_mut(owner).insert(Commands {
         panel,

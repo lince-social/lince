@@ -26,6 +26,9 @@ struct Summary {
 pub(crate) struct SummaryAtBottom;
 
 #[derive(Component)]
+struct FloatingSummary(Entity);
+
+#[derive(Component)]
 struct BehaviorRow {
     area: Entity,
     full_text: String,
@@ -351,6 +354,15 @@ pub(super) fn update(world: &mut World) {
                 .then_some((entity, area))
         })
         .collect();
+    let obsolete: Vec<_> = world
+        .query::<(Entity, &FloatingSummary)>()
+        .iter(world)
+        .filter(|(_, summary)| world.get::<InfluenceArea>(summary.0).is_none())
+        .map(|(entity, _)| entity)
+        .collect();
+    for entity in obsolete {
+        world.despawn(entity);
+    }
     for (entity, area) in areas {
         if let Some(previous) = world.entity_mut(entity).take::<Summary>() {
             world.despawn(previous.panel);
@@ -363,15 +375,14 @@ pub(super) fn update(world: &mut World) {
         }
         let rows = lines(&area);
         let (mut center, size, scale) = bounds(&area, rows.len());
-        if world.get::<SummaryAtBottom>(entity).is_some() {
-            let bottom = DVec2::new(center.x, area.size[1] - f64::from(size.y) * 0.5 - 20.0);
-            if inside(
-                &area,
-                bottom - DVec2::from_array(area.size) * 0.5,
-                size.as_dvec2() * 0.5,
-            ) {
-                center = bottom;
-            }
+        let floating = world.get::<SummaryAtBottom>(entity).is_some();
+        let parent = if floating {
+            world.get::<ChildOf>(entity).unwrap().parent()
+        } else {
+            entity
+        };
+        if floating {
+            center.y = area.size[1] + f64::from(size.y) * 0.5 + 8.0;
         }
         let panel = world
             .spawn((
@@ -387,9 +398,16 @@ pub(super) fn update(world: &mut World) {
                     ..default()
                 },
                 Pickable::IGNORE,
-                ChildOf(entity),
+                ChildOf(parent),
             ))
             .id();
+        if floating {
+            world.entity_mut(panel).insert((
+                FloatingSummary(entity),
+                GlobalZIndex(5),
+                crate::inspection::InspectionExcluded,
+            ));
+        }
         for (behavior, row) in rows {
             let rectangle = world
                 .spawn((
@@ -475,6 +493,39 @@ pub(super) fn update(world: &mut World) {
         }
         world.entity_mut(entity).insert(Summary { area, panel });
     }
+    let floating: Vec<_> = world
+        .query::<(Entity, &FloatingSummary)>()
+        .iter(world)
+        .map(|(panel, summary)| (panel, summary.0))
+        .collect();
+    for (panel, owner) in floating {
+        let root = world.get::<ChildOf>(owner).unwrap().parent();
+        let active = world
+            .get::<crate::workspace::WorkspaceMember>(owner)
+            .is_none_or(|member| {
+                world
+                    .get::<crate::workspace::Workspaces>(root)
+                    .is_none_or(|spaces| spaces.active == member.0)
+            });
+        let bounds = super::presentation::bounds(world, owner);
+        let visible = active
+            && (bounds.is_some() || !world.contains_resource::<super::presentation::SceneCamera>());
+        let mut node = world.get::<Node>(panel).unwrap().clone();
+        node.display = if visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        if let Some(bounds) = bounds {
+            let width = match node.width {
+                Val::Px(width) => width,
+                _ => 300.0,
+            };
+            node.left = px(bounds.center().x - width * 0.5);
+            node.top = px(bounds.max.y + 8.0);
+        }
+        world.get_mut::<Node>(panel).unwrap().set_if_neq(node);
+    }
 }
 
 fn editing(world: &World, area: Entity) -> bool {
@@ -485,11 +536,15 @@ fn editing(world: &World, area: Entity) -> bool {
 }
 
 fn hovered_row(world: &World) -> Option<Entity> {
-    let hits = world
-        .get_resource::<bevy::picking::hover::HoverMap>()?
-        .get(&super::input::CONTENT_POINTER)
-        .map(|hits| hits.keys().copied().collect::<Vec<_>>())
-        .unwrap_or_default();
+    let map = world.get_resource::<bevy::picking::hover::HoverMap>()?;
+    let hits: Vec<_> = [
+        super::input::CONTENT_POINTER,
+        bevy::picking::pointer::PointerId::Mouse,
+    ]
+    .into_iter()
+    .filter_map(|pointer| map.get(&pointer))
+    .flat_map(|hits| hits.keys().copied())
+    .collect();
     hits.iter().find_map(|hit| {
         let mut current = Some(*hit);
         while let Some(entity) = current {
@@ -564,7 +619,11 @@ pub(super) fn hover(world: &mut World) {
         let summary = world.get::<BehaviorRow>(row)?;
         let root = world.get::<ChildOf>(summary.area)?.parent();
         let text = summary.full_text.clone();
-        let bounds = super::presentation::bounds(world, row)?;
+        let bounds = super::presentation::bounds(world, row).or_else(|| {
+            let node = world.get::<ComputedNode>(row)?;
+            let transform = world.get::<UiGlobalTransform>(row)?;
+            Some(Rect::from_center_size(transform.translation, node.size()))
+        })?;
         let viewport = world.get::<ComputedNode>(root)?.size();
         let scale = world.get::<ComputedNode>(root)?.inverse_scale_factor();
         let (left, top, width) = preview_position(bounds, viewport, scale);
@@ -789,6 +848,20 @@ mod tests {
         };
         let area = world.get::<InfluenceArea>(source).unwrap();
         assert!(f64::from(top) - area.size[1] * 0.5 > 320.0);
+        let row = world.get::<Children>(panel).unwrap()[0];
+        let button = world.get::<BehaviorRow>(row).unwrap().button;
+        let mut hits = bevy::picking::hover::HoverMap::default();
+        hits.insert(
+            bevy::picking::pointer::PointerId::Mouse,
+            [(
+                row,
+                bevy::picking::backend::HitData::new(root, 0.0, None, None),
+            )]
+            .into(),
+        );
+        world.insert_resource(hits);
+        hover(world);
+        assert_eq!(world.get::<Node>(button).unwrap().display, Display::Flex);
         Remove(Behavior::Immunity).apply(world, source);
         assert_eq!(
             world.get::<InfluenceArea>(source).unwrap().immunity,
@@ -801,6 +874,9 @@ mod tests {
                 .protein
                 .is_some()
         );
+        world.despawn(source);
+        update(world);
+        assert!(world.get_entity(panel).is_err());
     }
 
     #[test]

@@ -4,8 +4,7 @@ mod history_ui;
 mod persistence;
 mod preview_ui;
 mod schedules_ui;
-#[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 mod ui;
 
 use bevy::{math::DVec2, prelude::*};

@@ -610,13 +610,20 @@ impl Action for Add {
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
-    crate::description::button(
+    let entry = crate::description::button(
         world,
         parent,
         root,
         "Drawing Sand · Draw, copy and export",
         Add,
     );
+    world
+        .entity_mut(entry)
+        .insert(crate::sand_store::StoreComponent {
+            title: "Drawing Sand".into(),
+            description: "Draw, copy and export".into(),
+            size: Vec2::new(680.0, 610.0),
+        });
 }
 
 fn update(world: &mut World) {

@@ -138,8 +138,6 @@ sudo ufw allow 80
 sudo ufw allow 443
 sudo systemctl enable --now caddy
 ```
-
-
 }
 
 Record (@record: 1, #instinct, #part-of @tool) {
@@ -216,7 +214,6 @@ A record's quantity can name its **unit** — kilograms, hours, a currency — b
 
 It remembers which **Organ** it came from, which is how you know whether something arrived from a group you are in or you wrote it yourself. And it keeps **when it was created and last changed**.
 }
-
 
 Assertion (@assertion: 0, #instinct, #part-of @ontology) {
 Records can be given ideas they represent:

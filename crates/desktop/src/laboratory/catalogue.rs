@@ -50,6 +50,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::protein_area::record_layout::tests::laboratory_cases(&mut cases);
     crate::sand::tests::laboratory_cases(&mut cases);
     crate::sand_placement::tests::laboratory_cases(&mut cases);
+    crate::canvas_item::tests::laboratory_cases(&mut cases);
     crate::slider::tests::laboratory_cases(&mut cases);
     crate::time_limit::tests::laboratory_cases(&mut cases);
     crate::topology::input::tests::laboratory_cases(&mut cases);

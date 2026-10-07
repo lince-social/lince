@@ -294,7 +294,7 @@ fn every_builtin_store_component_has_a_safe_nonempty_preview() {
             );
         }
         for expected in match component.title.as_str() {
-            "Command Castle" => &["Run", "Bash script"][..],
+            "Command Castle" => &["Run", "Shell script"][..],
             "Fiote Castle" => &["Manage Fiote"][..],
             _ => &[],
         } {

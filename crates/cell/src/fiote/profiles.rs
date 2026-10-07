@@ -2,6 +2,52 @@ use super::*;
 use fiote::connection::{self, Connection, Profiles};
 
 impl Host {
+    pub(super) async fn save_native_profile(
+        &self,
+        record: &str,
+        settings: &Settings,
+    ) -> Result<(), String> {
+        let _lock = self.profile_lock.lock().await;
+        let mut profiles = self.profile_status(record)?.profiles;
+        let id = if settings.account.is_empty() {
+            "native".to_string()
+        } else {
+            format!(
+                "native-{}",
+                settings.account.rsplit(':').next().unwrap_or("account")
+            )
+        };
+        let name = self
+            .vault
+            .key(&vault::slot(settings))
+            .await
+            .ok()
+            .flatten()
+            .as_ref()
+            .and_then(|key| fiote::communication::native::account_label(settings, key))
+            .unwrap_or_else(|| {
+                self.catalog
+                    .descriptor(&settings.provider)
+                    .map(|d| d.label.clone())
+                    .unwrap_or_else(|_| "Native Fiote".into())
+            });
+        let profile = connection::Profile {
+            id: id.clone(),
+            name: name.chars().take(80).collect(),
+            connection: Connection::Model {
+                settings: settings.clone(),
+            },
+        };
+        if let Some(existing) = profiles.entries.iter_mut().find(|p| p.id == id) {
+            *existing = profile;
+        } else {
+            profiles.entries.push(profile);
+        }
+        profiles.selected = Some(id);
+        profiles.validate()?;
+        save(&self.profile_path(record)?, &profiles)
+    }
+
     fn profile_path(&self, record: &str) -> Result<PathBuf, String> {
         Ok(self.path(record)?.with_extension("connections.json"))
     }
@@ -22,8 +68,14 @@ impl Host {
         };
         Ok(connection::Status {
             profiles,
-            check: None,
-            discovery: std::fs::read(self.directory.join("discovery.json")).ok().filter(|bytes| bytes.len() <= 2_097_152).and_then(|bytes| serde_json::from_slice(&bytes).ok()),
+            check: std::fs::read(self.path(record)?.with_extension("check.json"))
+                .ok()
+                .filter(|bytes| bytes.len() <= 1024 * 1024)
+                .and_then(|bytes| serde_json::from_slice(&bytes).ok()),
+            discovery: std::fs::read(self.directory.join("discovery.json"))
+                .ok()
+                .filter(|bytes| bytes.len() <= 2_097_152)
+                .and_then(|bytes| serde_json::from_slice(&bytes).ok()),
         })
     }
 
@@ -67,18 +119,27 @@ impl Host {
             connection::Request::Inspect => {}
             connection::Request::Discover { refresh_registry } => {
                 let path = self.directory.join("agent-registry.json");
-                let cached = std::fs::read(&path).ok().and_then(|bytes| fiote::communication::discovery::Registry::parse(&bytes).ok());
-                let mut registry = cached.unwrap_or_else(fiote::communication::discovery::Registry::bundled);
+                let cached = std::fs::read(&path).ok().and_then(|bytes| {
+                    fiote::communication::discovery::Registry::parse(&bytes).ok()
+                });
+                let mut registry =
+                    cached.unwrap_or_else(fiote::communication::discovery::Registry::bundled);
                 let mut error = None;
                 if refresh_registry {
                     match fiote::communication::discovery::Registry::refresh().await {
-                        Ok(current) => { save(&path, &current)?; registry = current; },
+                        Ok(current) => {
+                            save(&path, &current)?;
+                            registry = current;
+                        }
                         Err(detail) => error = Some(detail),
                     }
                 }
                 let directory = std::env::current_dir().map_err(|e| e.to_string())?;
-                let mut discovered = fiote::communication::discovery::Search::current(directory).scan(&registry);
-                if let Some(error) = error { discovered.detail = error; }
+                let mut discovered =
+                    fiote::communication::discovery::Search::current(directory).scan(&registry);
+                if let Some(error) = error {
+                    discovered.detail = error;
+                }
                 save(&self.directory.join("discovery.json"), &discovered)?;
                 status.discovery = Some(discovered);
             }
@@ -199,6 +260,152 @@ impl Host {
                 status.profiles.selected = Some(id);
                 save(&self.profile_path(record)?, &status.profiles)?;
             }
+            connection::Request::Logout { id } => {
+                if self
+                    .running
+                    .lock()
+                    .await
+                    .values()
+                    .any(|run| run.record == record)
+                {
+                    return Err("Stop active turns before signing out.".into());
+                }
+                let profile = status
+                    .profiles
+                    .entries
+                    .iter()
+                    .find(|p| p.id == id)
+                    .ok_or("This connection no longer exists.")?;
+                let Connection::Model { settings } = &profile.connection else {
+                    return Err("This connection manages authentication externally.".into());
+                };
+                if !fiote::communication::native::has_native_login(settings) {
+                    return Err("Use the connection's credential editor for API keys.".into());
+                }
+                let slot = vault::slot(settings);
+                let lock = self
+                    .refresh_locks
+                    .lock()
+                    .await
+                    .entry(slot.clone())
+                    .or_default()
+                    .clone();
+                let _guard = lock.lock().await;
+                let credential = vault::Credential {
+                    vault: self.vault.clone(),
+                    directory: self.directory.clone(),
+                    slot: slot.clone(),
+                };
+                let _process_guard =
+                    fiote::communication::auth::CredentialStore::refresh_guard(&credential).await?;
+                let key = fiote::communication::auth::CredentialStore::read(&credential).await?;
+                let (key, detail) = fiote::communication::native::logout(settings, &key).await?;
+                self.vault.put(slot, key).await?;
+                status.check = Some(connection::Check {
+                    profile: id,
+                    ready: false,
+                    detail,
+                    capabilities: Default::default(),
+                    settings: serde_json::Value::Null,
+                    stage: fiote::communication::check::Stage::Authentication,
+                });
+            }
+            connection::Request::Test { id } => {
+                let profile = status
+                    .profiles
+                    .entries
+                    .iter()
+                    .find(|p| p.id == id)
+                    .ok_or("This connection no longer exists.")?;
+                let Connection::Model { settings } = &profile.connection else {
+                    return Err(
+                        "Send a conversation message to test this external connection.".into(),
+                    );
+                };
+                let credential =
+                    if self.catalog.method(settings)?.kind == fiote::adapters::AuthKind::None {
+                        Secret::default()
+                    } else {
+                        self.vault
+                            .key(&vault::slot(settings))
+                            .await?
+                            .ok_or("Unlock this connection's credential vault.")?
+                    };
+                let lock = self
+                    .refresh_locks
+                    .lock()
+                    .await
+                    .entry(vault::slot(settings))
+                    .or_default()
+                    .clone();
+                let provider: Arc<dyn Provider> =
+                    if let Some(driver) = self.catalog.driver(&settings.provider).cloned() {
+                        Arc::new(fiote::driver::DriverProvider::new(
+                            driver,
+                            settings.clone(),
+                            credential,
+                        ))
+                    } else {
+                        fiote::communication::native::provider(
+                            settings,
+                            &credential,
+                            Some(Arc::new(vault::Credential {
+                                vault: self.vault.clone(),
+                                directory: self.directory.clone(),
+                                slot: vault::slot(settings),
+                            })),
+                            Some(lock),
+                        )?
+                    };
+                let result = tokio::time::timeout(
+                    std::time::Duration::from_secs(120),
+                    provider.complete(
+                        "This is a connection acceptance test. Do not call tools.",
+                        &[Message::User("Say hello in one short sentence.".into())],
+                        &[],
+                    ),
+                )
+                .await
+                .map_err(|_| "The inference test timed out.".to_string())
+                .and_then(|r| r);
+                let (ready, detail) = match result {
+                    Ok(reply) if reply.calls.is_empty() && !reply.text.trim().is_empty() => {
+                        if let Some(report) = reply.usage {
+                            usage::record(
+                                &self
+                                    .directory
+                                    .join(format!("connection-usage-{record}.json")),
+                                report,
+                            )?;
+                        }
+                        (
+                            true,
+                            format!(
+                                "Completed model response: {}",
+                                reply.text.chars().take(256).collect::<String>()
+                            ),
+                        )
+                    }
+                    Ok(_) => (
+                        false,
+                        "The model returned no text or unexpected tools.".into(),
+                    ),
+                    Err(error) => (false, error),
+                };
+                status.check = Some(connection::Check {
+                    profile: id.clone(),
+                    ready,
+                    detail,
+                    capabilities: connection::Capabilities::model(),
+                    settings: status
+                        .check
+                        .as_ref()
+                        .filter(|c| c.profile == id)
+                        .map(|c| c.settings.clone())
+                        .unwrap_or_default(),
+                    stage: fiote::communication::check::Stage::Inference,
+                });
+            }
             connection::Request::Check { id } => {
                 let profile = status
                     .profiles
@@ -207,13 +414,48 @@ impl Host {
                     .find(|entry| entry.id == id)
                     .ok_or("This connection no longer exists.")?;
                 let credential = if let Connection::Model { settings } = &profile.connection {
-                    if self.catalog.method(settings)?.kind != fiote::adapters::AuthKind::None && !self.vault.status().await?.1 {
+                    if self.catalog.method(settings)?.kind != fiote::adapters::AuthKind::None
+                        && !self.vault.status().await?.1
+                    {
                         self.vault.key(&vault::slot(settings)).await?
-                    } else { None }
-                } else { None };
-                let checked = fiote::communication::check::probe(profile, &self.catalog, credential.as_ref()).await;
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                let session = if let Connection::Model { settings } = &profile.connection {
+                    let slot = vault::slot(settings);
+                    let lock = self
+                        .refresh_locks
+                        .lock()
+                        .await
+                        .entry(slot.clone())
+                        .or_default()
+                        .clone();
+                    Some(fiote::communication::native::session(
+                        Arc::new(vault::Credential {
+                            vault: self.vault.clone(),
+                            directory: self.directory.clone(),
+                            slot,
+                        }),
+                        lock,
+                    )?)
+                } else {
+                    None
+                };
+                let checked = fiote::communication::check::probe_with_session(
+                    profile,
+                    &self.catalog,
+                    credential.as_ref(),
+                    session,
+                )
+                .await;
                 status.check = Some(checked);
             }
+        }
+        if let Some(check) = &status.check {
+            save(&self.path(record)?.with_extension("check.json"), check)?;
         }
         let mut response = self.status(record).await?;
         response.connections = status;

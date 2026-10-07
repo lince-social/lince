@@ -1,4 +1,5 @@
 use crate::{
+    actions::Action,
     area::{
         AreaShape, AttractionTarget, Direction, InfluenceArea, MAX_AREAS, MAX_RULES, Property,
         PropertyRule, ReachMode, ReachShape, ShapeKind, spawn_area,
@@ -126,9 +127,7 @@ pub(crate) fn insert(world: &mut World, root: Entity, mut area: InfluenceArea) -
     editor.selected = Some(entity);
     editor.cancel();
     editor.notice.clear();
-    if let Some(mut inspection) = world.get_mut::<crate::inspection::Inspection>(root) {
-        inspection.selected = Some(entity);
-    }
+    crate::canvas_item::select(world, root, entity);
     Some(entity)
 }
 
@@ -213,9 +212,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
             editor.cancel();
             editor.selected = Some(entity);
             editor.notice.clear();
-            if let Some(mut inspection) = world.get_mut::<crate::inspection::Inspection>(root) {
-                inspection.selected = Some(entity);
-            }
+            crate::canvas_item::select(world, root, entity);
         }
         AreaAction::Cancel => world.get_mut::<AreaEditor>(root).unwrap().cancel(),
         AreaAction::Finish => {
@@ -229,7 +226,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
         }
         AreaAction::Remove => {
             if let Some(entity) = selected {
-                crate::deletion::request(world, root, vec![entity]);
+                crate::canvas_item::DeleteItem.apply(world, entity);
             }
         }
         _ => {
@@ -1054,7 +1051,6 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
 
 pub(crate) mod tests {
     use super::*;
-    use crate::actions::Action;
 
     fn fixture() -> (App, Entity) {
         let mut app = App::new();
@@ -1200,6 +1196,49 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn area_editor_selection_replaces_sand_selection_for_keyboard_deletion() {
+        let (mut app, root) = fixture();
+        let sand = app
+            .world_mut()
+            .spawn((
+                crate::canvas_item::CanvasItem {
+                    position: DVec2::ZERO,
+                    size: Vec2::splat(100.0),
+                },
+                WorkspaceMember(1),
+                ChildOf(root),
+            ))
+            .id();
+        crate::canvas_item::select(app.world_mut(), root, sand);
+        EditAction::Area(AreaAction::Add(ShapeKind::Square)).apply(app.world_mut(), root);
+        let area = app
+            .world()
+            .get::<AreaEditor>(root)
+            .unwrap()
+            .selected
+            .unwrap();
+        assert_eq!(
+            crate::canvas_selection::selected(app.world(), root),
+            vec![area]
+        );
+        crate::canvas_item::select(app.world_mut(), root, sand);
+        EditAction::Area(AreaAction::Select(area)).apply(app.world_mut(), root);
+        assert_eq!(
+            crate::canvas_selection::selected(app.world(), root),
+            vec![area]
+        );
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        crate::deletion::Decision(false).apply(app.world_mut(), root);
+        assert!(app.world().get_entity(area).is_ok());
+        crate::deletion::DeleteSelected.apply(app.world_mut(), root);
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
+        assert!(app.world().get_entity(area).is_err());
+        assert!(app.world().get_entity(sand).is_ok());
+        assert!(crate::canvas_selection::selected(app.world(), root).is_empty());
+        assert_eq!(app.world().get::<AreaEditor>(root).unwrap().selected, None);
+    }
+
+    #[cfg_attr(test, test)]
     fn selecting_the_same_area_preserves_panel_fields_and_scroll() {
         let (mut app, root) = fixture();
         EditAction::Area(AreaAction::Add(ShapeKind::Square)).apply(app.world_mut(), root);
@@ -1226,7 +1265,7 @@ pub(crate) mod tests {
             children
         );
         assert_eq!(app.world().get::<ScrollPosition>(panel).unwrap().0.y, 160.0);
-        crate::sand_placement::PlacementAction::Delete.apply(app.world_mut(), entity);
+        crate::canvas_item::DeleteItem.apply(app.world_mut(), entity);
         assert!(app.world().get_entity(entity).is_ok());
         crate::deletion::Decision(true).apply(app.world_mut(), root);
         assert!(app.world().get_entity(entity).is_err());
@@ -1426,6 +1465,7 @@ pub(crate) mod tests {
         target_and_depth_controls_validate_and_preserve_offsets_on_redraw,
         reach_controls_validate_radius_and_preserve_it_when_switching_modes,
         selecting_the_same_area_preserves_panel_fields_and_scroll,
+        area_editor_selection_replaces_sand_selection_for_keyboard_deletion,
         area_editor_saves_valid_values_keeps_invalid_drafts_and_enforces_ownership,
         force_slider_changes_only_the_selected_area_and_never_arms_record_changes,
         redraw_keeps_identity_rules_and_force_and_escape_cancels_without_replacing,

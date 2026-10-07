@@ -101,6 +101,17 @@ pub fn inherited_kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
 }
 
 pub fn resolve(world: &World, entity: Entity, token: Token) -> (TokenValue, &'static str) {
+    if let Some(value) = crate::relation_castle::styles::override_value(world, entity, token) {
+        return (value, "Relation color rule");
+    }
+    resolve_base(world, entity, token)
+}
+
+pub(crate) fn resolve_base(
+    world: &World,
+    entity: Entity,
+    token: Token,
+) -> (TokenValue, &'static str) {
     let mut ancestor = Some(entity);
     let mut style_kind = None;
     while let Some(current) = ancestor {

@@ -89,8 +89,12 @@ pub(super) fn unsubscribe(world: &mut World, organ: &str, id: String) {
 pub(super) fn subscribed(world: &mut World, organ: &str, message: &ClientMessage) {
     if let Some(session) = world.resource_mut::<Runtime>().sessions.get_mut(organ) {
         match message {
-            ClientMessage::Subscribe { id, .. } | ClientMessage::WorkspaceSubscribe { id, .. } => { session.subscriptions.insert(id.clone()); }
-            ClientMessage::Unsubscribe { id } => { session.subscriptions.remove(id); }
+            ClientMessage::Subscribe { id, .. } | ClientMessage::WorkspaceSubscribe { id, .. } => {
+                session.subscriptions.insert(id.clone());
+            }
+            ClientMessage::Unsubscribe { id } => {
+                session.subscriptions.remove(id);
+            }
             _ => {}
         }
     }
@@ -99,7 +103,10 @@ pub(super) fn subscribed(world: &mut World, organ: &str, message: &ClientMessage
 pub(super) fn ensure_auxiliary(world: &mut World, organ: &str) {
     if !world.resource::<Runtime>().sessions.contains_key(organ) {
         let session = Session::open(world, organ);
-        world.resource_mut::<Runtime>().sessions.insert(organ.into(), session);
+        world
+            .resource_mut::<Runtime>()
+            .sessions
+            .insert(organ.into(), session);
     }
 }
 

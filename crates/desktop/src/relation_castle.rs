@@ -7,6 +7,8 @@ use bevy::{math::DVec2, prelude::*};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 
+pub mod styles;
+
 #[derive(Component)]
 pub(crate) struct RelationLink {
     pub owner: Entity,
@@ -98,6 +100,7 @@ pub(crate) fn reconcile(
     for entity in existing.into_values() {
         world.despawn(entity);
     }
+    styles::apply(world, owner, config, rows, records);
 }
 
 #[derive(Clone)]

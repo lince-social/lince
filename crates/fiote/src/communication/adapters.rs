@@ -8,17 +8,8 @@ use serde::{
     de::{self, Visitor},
 };
 
-static BUNDLED: std::sync::OnceLock<Driver> = std::sync::OnceLock::new();
-
-pub fn register_bundled(executable: std::path::PathBuf) {
-    let _ = BUNDLED.set(Driver {
-        executable,
-        arguments: vec!["--fiote-provider".into()],
-    });
-}
-
 pub fn bundled_executable() -> Option<std::path::PathBuf> {
-    BUNDLED.get().map(|driver| driver.executable.clone())
+    std::env::current_exe().ok()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,6 +40,7 @@ pub struct Descriptor {
 #[derive(Default)]
 pub struct Catalog {
     pub descriptors: Vec<Descriptor>,
+    pub diagnostics: Vec<String>,
     drivers: Vec<(String, Driver)>,
 }
 
@@ -99,55 +91,60 @@ impl Catalog {
             });
         }
         let path = directory.join("providers.json");
-        if let Some(driver) = BUNDLED.get() {
-            for descriptor in crate::provider_adapter::descriptors() {
-                catalog
-                    .drivers
-                    .push((descriptor.id.0.clone(), driver.clone()));
-                catalog.descriptors.push(descriptor);
-            }
-        }
+        catalog.descriptors.push(Descriptor {
+            id: ProviderKind(super::auth::PROVIDER.into()),
+            label: "ChatGPT subscription · native Fiote".into(),
+            endpoint: String::new(),
+            auth_methods: vec![AuthMethod {
+                id: "browser".into(),
+                label: "Continue with ChatGPT".into(),
+                kind: AuthKind::Browser,
+            }],
+            model_optional: true,
+        });
         match std::fs::read(path) {
-            Ok(bytes) => {
-                if bytes.len() > 65_536 {
-                    return Err("Provider adapter configuration is too large.".into());
-                }
-                let drivers: Vec<Driver> = serde_json::from_slice(&bytes)
-                    .map_err(|_| "Invalid provider adapter configuration.")?;
-                if drivers.len() > 32 {
-                    return Err("Too many provider adapters.".into());
-                }
-                for driver in drivers {
-                    for descriptor in driver.discover().await? {
-                        if descriptor.id.0.is_empty()
-                            || descriptor.id.0.len() > 128
-                            || descriptor.label.len() > 256
-                            || descriptor.auth_methods.is_empty()
-                            || descriptor.auth_methods.len() > 8
-                            || descriptor.auth_methods.iter().any(|method| {
-                                method.id.is_empty()
-                                    || method.id.len() > 128
-                                    || method.label.len() > 256
-                            })
-                        {
-                            return Err("Invalid provider descriptor.".into());
+            Ok(bytes) if bytes.len() <= 65_536 => {
+                match serde_json::from_slice::<Vec<serde_json::Value>>(&bytes) {
+                    Ok(entries) if entries.len() <= 32 => {
+                        for (index, entry) in entries.into_iter().enumerate() {
+                            let result = async {
+                                let driver: Driver = serde_json::from_value(entry).map_err(|_| "Invalid external adapter configuration.".to_string())?;
+                                let descriptors = driver.discover().await?;
+                                if descriptors.len() > 64 { return Err("Too many external provider descriptors.".into()); }
+                                let mut seen = std::collections::HashSet::new();
+                                for descriptor in &descriptors {
+                                    if descriptor.id.0.is_empty() || descriptor.id.0.len() > 128 || descriptor.label.len() > 256 || descriptor.auth_methods.is_empty() || descriptor.auth_methods.len() > 8 || descriptor.auth_methods.iter().any(|method| method.id.is_empty() || method.id.len() > 128 || method.label.len() > 256) {
+                                        return Err("Invalid external provider descriptor.".into());
+                                    }
+                                    if !seen.insert(&descriptor.id.0) || catalog.descriptors.iter().any(|existing| existing.id == descriptor.id) {
+                                        return Err("External provider identifiers conflict with an existing connection.".into());
+                                    }
+                                }
+                                for descriptor in descriptors {
+                                    catalog.drivers.push((descriptor.id.0.clone(), driver.clone()));
+                                    catalog.descriptors.push(descriptor);
+                                }
+                                Ok::<_, String>(())
+                            }.await;
+                            if let Err(error) = result {
+                                catalog
+                                    .diagnostics
+                                    .push(format!("Optional adapter {}: {error}", index + 1));
+                            }
                         }
-                        if catalog
-                            .descriptors
-                            .iter()
-                            .any(|existing| existing.id == descriptor.id)
-                        {
-                            return Err("Provider adapters returned duplicate identifiers.".into());
-                        }
-                        catalog
-                            .drivers
-                            .push((descriptor.id.0.clone(), driver.clone()));
-                        catalog.descriptors.push(descriptor);
                     }
+                    _ => catalog.diagnostics.push(
+                        "Invalid or oversized optional provider adapter configuration.".into(),
+                    ),
                 }
             }
+            Ok(_) => catalog
+                .diagnostics
+                .push("Optional provider adapter configuration exceeds 64 KiB.".into()),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error.to_string()),
+            Err(_) => catalog
+                .diagnostics
+                .push("Cannot read optional provider adapter configuration.".into()),
         }
         catalog.descriptors.sort_by(|a, b| {
             let browser = |item: &Descriptor| {

@@ -602,6 +602,30 @@ pub async fn list_active(pool: &SqlitePool) -> Result<Vec<AssertionRow>, StoreEr
     .collect()
 }
 
+pub async fn incident_to(
+    pool: &SqlitePool,
+    record_uids: &[String],
+) -> Result<Vec<AssertionRow>, StoreError> {
+    let mut assertions = std::collections::BTreeMap::new();
+    for chunk in record_uids.chunks(400) {
+        let holes = std::iter::repeat_n("?", chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql = format!(
+            "SELECT * FROM record_assertion WHERE retracted_at IS NULL AND (subject_uid IN ({holes}) OR object_uid IN ({holes})) ORDER BY uid"
+        );
+        let mut query = sqlx::query(&sql);
+        for uid in chunk.iter().chain(chunk.iter()) {
+            query = query.bind(uid);
+        }
+        for row in query.fetch_all(pool).await? {
+            let assertion = map(row)?;
+            assertions.insert(assertion.uid.clone(), assertion);
+        }
+    }
+    Ok(assertions.into_values().collect())
+}
+
 pub async fn retract(
     pool: &SqlitePool,
     uid: &str,

@@ -196,7 +196,7 @@ fn input(
             With<crate::canvas::CanvasItem>,
         )>,
     >,
-    settings: Query<(), Or<(With<Setting>, With<crate::sand_placement::PlacementMenu>)>>,
+    settings: Query<(), Or<(With<Setting>, With<crate::canvas_item::CanvasItemMenu>)>>,
     excluded: Query<(), With<InspectionExcluded>>,
     mut roots: Query<(Entity, &EditMode, &mut Inspection)>,
 ) {

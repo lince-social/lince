@@ -836,6 +836,9 @@ impl Host {
             },
         ) {
             let output = output::Output {
+                journal_path: None,
+                summary_path: None,
+                original_messages: Vec::new(),
                 context_path: None,
                 source_message: None,
                 usage_path: None,
@@ -923,7 +926,7 @@ impl Host {
                 if fresh {
                     for message in &history {
                         match message {
-                            Message::User(text) => {
+                            Message::User(text) | Message::Summary { text, .. } => {
                                 parts.push(nucleus::message::MessagePart::Text {
                                     text: format!("Earlier user message:\n{text}"),
                                 })
@@ -945,7 +948,7 @@ impl Host {
                                     text: format!("Earlier assistant reply:\n{text}"),
                                 })
                             }
-                            Message::Tool { .. } => {}
+                            Message::Tool { .. } | Message::Replay { .. } => {}
                         }
                     }
                 }

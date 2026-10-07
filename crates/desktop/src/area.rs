@@ -564,6 +564,7 @@ pub fn spawn_area(
         .get::<crate::topology::view::View>(root)
         .map_or(0.0, |view| view.plane);
     let depth = (area.depth != area.size[0].min(area.size[1])).then_some(area.depth);
+    let pickable = crate::canvas_item::area_pickable(world, root);
     Some(
         world
             .spawn((
@@ -577,7 +578,7 @@ pub fn spawn_area(
                     depth,
                     ..default()
                 },
-                Pickable::IGNORE,
+                pickable,
                 ZIndex(-2),
                 WorkspaceMember(workspace),
                 ChildOf(root),

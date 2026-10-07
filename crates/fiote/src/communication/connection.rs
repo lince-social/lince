@@ -183,6 +183,12 @@ pub enum Request {
     Check {
         id: String,
     },
+    Test {
+        id: String,
+    },
+    Logout {
+        id: String,
+    },
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

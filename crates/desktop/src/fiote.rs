@@ -13,14 +13,19 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
         license: include_str!("../licenses/rmcp-Apache-2.0.txt"),
     },
     crate::credits::Attribution {
-        name: "ureq",
-        author: "The ureq developers",
-        license: include_str!("../licenses/ureq-MIT.txt"),
+        name: "openidconnect",
+        author: "Ramos Bugs and contributors",
+        license: include_str!("../licenses/openidconnect-MIT.txt"),
     },
     crate::credits::Attribution {
-        name: "modelbridge",
-        author: "Ryan Sayer",
-        license: include_str!("../licenses/modelbridge-MIT.txt"),
+        name: "eventsource-stream",
+        author: "Julian Popescu and contributors",
+        license: include_str!("../licenses/eventsource-stream-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "jcode Retry-After",
+        author: "Jeremy Huang",
+        license: include_str!("../licenses/jcode-MIT.txt"),
     },
     crate::credits::Attribution {
         name: "Argon2",
@@ -93,10 +98,11 @@ struct Logo(Handle<Image>);
 pub fn spawn(world: &mut World, parent: Entity) -> Entity {
     if !world.contains_resource::<Logo>() {
         world.init_resource::<Assets<Image>>();
-        let image =
-            image::load_from_memory(include_bytes!("../../../institute/assets/logo/black_in_white.png"))
-                .expect("Lince logo")
-                .to_rgba8();
+        let image = image::load_from_memory(include_bytes!(
+            "../../../institute/assets/logo/black_in_white.png"
+        ))
+        .expect("Lince logo")
+        .to_rgba8();
         let handle = world.resource_mut::<Assets<Image>>().add(Image::new(
             bevy::render::render_resource::Extent3d {
                 width: image.width(),

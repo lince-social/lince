@@ -7,6 +7,37 @@ use tokio::sync::watch;
 
 pub const MAX_CONTEXT_BYTES: usize = 512 * 1024;
 
+pub fn context_bytes(messages: &[Message]) -> Result<usize, String> {
+    let mut size = 0usize;
+    for message in messages {
+        size = size.saturating_add(match message {
+            Message::RichUser { text, content } | Message::RichAssistant { text, content } => {
+                let mut size = text.len();
+                for part in content {
+                    size = size.saturating_add(match part {
+                        nucleus::message::MessagePart::Attachment {
+                            mime_type, data, ..
+                        } if mime_type.starts_with("text/") || mime_type == "application/json" => {
+                            nucleus::message::decode(data)?.len()
+                        }
+                        nucleus::message::MessagePart::Attachment { mime_type, .. } => {
+                            if mime_type.starts_with("image/") {
+                                4096
+                            } else {
+                                16384
+                            }
+                        }
+                        other => serde_json::to_vec(other).map_err(|e| e.to_string())?.len(),
+                    });
+                }
+                size
+            }
+            other => serde_json::to_vec(other).map_err(|e| e.to_string())?.len(),
+        });
+    }
+    Ok(size)
+}
+
 pub fn validate_context(system: &str, messages: &[Message]) -> Result<(), String> {
     let mut text = system.len();
     if text > MAX_CONTEXT_BYTES {
@@ -129,11 +160,28 @@ async fn turn(
     output: &dyn TextOutput,
 ) -> Result<String, String> {
     let definitions = tools.definitions();
+    let tool_bytes = serde_json::to_vec(&definitions)
+        .map_err(|_| "Cannot encode tool descriptions.")?
+        .len();
+    let previous_calls: HashSet<String> = messages
+        .iter()
+        .filter_map(|m| {
+            if let Message::Tool { id, .. } = m {
+                Some(id.clone())
+            } else {
+                None
+            }
+        })
+        .collect();
     let mut call_ids = HashSet::new();
     let mut text = String::new();
     for _ in 0..MAX_MODEL_REQUESTS {
         if *stop.borrow() {
             return Err("Stopped by you.".into());
+        }
+        tokio::select! {
+            _ = stop.changed() => return Err("Stopped by you.".into()),
+            result = tokio::time::timeout(Duration::from_secs(120), crate::conversation::prepare_with_overhead(provider, system, &mut messages, output, tool_bytes)) => { result.map_err(|_| "Automatic summary timed out; original history is preserved.")??; }
         }
         validate_context(system, &messages)?;
         output.context(&messages).await?;
@@ -154,8 +202,23 @@ async fn turn(
             }
             text.push_str(&reply.text);
         }
+        if !reply.replay.is_empty() {
+            messages.push(Message::Replay {
+                provider: provider
+                    .replay_provider()
+                    .ok_or("The provider returned replay data without its format identifier.")?
+                    .into(),
+                items: reply.replay.clone(),
+            });
+        }
         if reply.calls.is_empty() {
-            return if reply.text.trim().is_empty() {
+            let empty = reply.text.trim().is_empty();
+            messages.push(Message::Assistant {
+                text: reply.text,
+                calls: Vec::new(),
+            });
+            output.context(&messages).await?;
+            return if empty {
                 Err("The provider returned an empty reply.".into())
             } else {
                 Ok(text)
@@ -167,7 +230,10 @@ async fn turn(
             ));
         }
         for call in &reply.calls {
-            if call.id.is_empty() || !call_ids.insert(call.id.clone()) {
+            if call.id.is_empty()
+                || previous_calls.contains(&call.id)
+                || !call_ids.insert(call.id.clone())
+            {
                 return Err("The provider repeated a tool call identifier.".into());
             }
         }
@@ -175,12 +241,14 @@ async fn turn(
             text: reply.text,
             calls: reply.calls.clone(),
         });
+        output.context(&messages).await?;
         for call in reply.calls {
             if *stop.borrow() {
                 return Err(
                     "Stopped by you. Completed Record and file operations remain saved.".into(),
                 );
             }
+            output.tool_pending(&call).await?;
             let result = tools.run(&call.name, call.arguments).await;
             receipts.push(format!("{}: {}", call.name, result));
             messages.push(Message::Tool {
@@ -188,6 +256,7 @@ async fn turn(
                 name: call.name,
                 result,
             });
+            output.context(&messages).await?;
         }
     }
     Err(format!(

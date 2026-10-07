@@ -89,11 +89,18 @@ async fn genai_emits_text_before_completion_and_collects_complete_tool_arguments
     let catalog = fiote::adapters::Catalog::load(root.path()).await.unwrap();
     let settings = fiote::config::Settings {
         enabled: true,
-        provider: catalog.descriptors[0].id.clone(),
+        provider: catalog
+            .descriptors
+            .iter()
+            .find(|p| p.id.0 == "openai")
+            .unwrap()
+            .id
+            .clone(),
         auth_method: String::new(),
         model: "test-model".into(),
         endpoint: format!("http://{address}/v1/"),
         directory: Default::default(),
+        ..Default::default()
     };
     let provider =
         fiote::provider::GenaiProvider::new(&settings, &fiote::config::Secret("test".into()))

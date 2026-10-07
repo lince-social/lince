@@ -44,11 +44,13 @@ async fn tools_return_to_the_model_before_the_final_reply() {
     let provider = Script(Mutex::new(vec![
         Reply {
             usage: None,
+            replay: Vec::new(),
             text: String::new(),
             calls: vec![call("one", "hello.txt")],
         },
         Reply {
             usage: None,
+            replay: Vec::new(),
             text: "Created hello.txt".into(),
             calls: vec![],
         },
@@ -113,7 +115,8 @@ async fn cancellation_and_duplicate_call_ids_do_not_repeat_side_effects() {
     let mut tools = Registry::default();
     tools.register(CreateFile::new(root.path()).unwrap());
     let provider = Script(Mutex::new(vec![Reply {
-            usage: None,
+        usage: None,
+        replay: Vec::new(),
         text: String::new(),
         calls: vec![call("one", "first"), call("one", "second")],
     }]));
@@ -184,13 +187,17 @@ async fn genai_adapter_sends_system_history_and_tool_results() {
         provider: fiote::adapters::Catalog::load(root.path())
             .await
             .unwrap()
-            .descriptors[0]
+            .descriptors
+            .iter()
+            .find(|p| p.id.0 == "openai")
+            .unwrap()
             .id
             .clone(),
         auth_method: String::new(),
         model: "test-model".into(),
         endpoint: format!("http://{address}/v1/"),
         directory: root.path().into(),
+        ..Default::default()
     };
     let provider = fiote::provider::GenaiProvider::new(
         &settings,
@@ -222,6 +229,21 @@ async fn genai_adapter_sends_system_history_and_tool_results() {
 
 struct Endless(std::sync::atomic::AtomicUsize);
 
+struct OversizedDefinition;
+#[async_trait]
+impl Tool for OversizedDefinition {
+    fn definition(&self) -> ToolDefinition {
+        ToolDefinition {
+            name: "oversized".into(),
+            description: "x".repeat(fiote::runtime::MAX_CONTEXT_BYTES),
+            schema: json!({"type":"object"}),
+        }
+    }
+    async fn run(&self, _: Value) -> Result<Value, String> {
+        panic!("An oversized tool must not execute");
+    }
+}
+
 #[async_trait]
 impl Provider for Endless {
     async fn complete(
@@ -233,6 +255,7 @@ impl Provider for Endless {
         let count = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         Ok(Reply {
             usage: None,
+            replay: Vec::new(),
             text: String::new(),
             calls: vec![ToolCall {
                 id: count.to_string(),
@@ -268,11 +291,19 @@ async fn turn_and_context_limits_stop_before_more_provider_calls() {
         &"x".repeat(fiote::runtime::MAX_CONTEXT_BYTES + 1),
         vec![],
         &Registry::default(),
-        receiver,
+        receiver.clone(),
     )
     .await
     .unwrap_err();
     assert!(error.contains("context limit"));
+    let mut oversized = Registry::default();
+    oversized.register(OversizedDefinition);
+    assert!(
+        run(&provider, "", vec![], &oversized, receiver)
+            .await
+            .unwrap_err()
+            .contains("context limit")
+    );
     assert_eq!(
         provider.0.load(std::sync::atomic::Ordering::SeqCst),
         fiote::runtime::MAX_MODEL_REQUESTS
@@ -289,6 +320,7 @@ fn configuration_rejects_insecure_endpoints_and_debug_redacts_keys() {
         model: "a-model".into(),
         endpoint: "https://provider.example/v1/".into(),
         directory: root.path().into(),
+        ..Default::default()
     };
     settings.validate().unwrap();
     assert_eq!(settings.endpoint, "https://provider.example/v1/");

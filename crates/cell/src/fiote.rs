@@ -4,7 +4,7 @@ use engine::{
 };
 use fiote::{
     config::{Request, Secret, Settings, Status},
-    provider::{GenaiProvider, Message, Provider},
+    provider::{Message, Provider},
     tools::{CreateFile, Registry},
 };
 use nucleus::{MessageState, RecordKind};
@@ -23,10 +23,11 @@ mod agents;
 mod assignments;
 mod behavior;
 mod connections;
-mod profiles;
 mod context;
+mod history;
 mod mentions;
 mod output;
+mod profiles;
 #[cfg(test)]
 mod tests;
 mod timeline;
@@ -72,13 +73,15 @@ pub struct Host {
     provider: Option<Arc<dyn Provider>>,
     vault: Arc<vault::Vault>,
     login: Mutex<Option<Login>>,
-    adapter_turn: Arc<Mutex<()>>,
+    refresh_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     catalog: fiote::adapters::Catalog,
     connections: Mutex<HashMap<String, connections::Opened>>,
 }
 
 impl Host {
-    pub(crate) fn shared_vault(&self) -> Arc<vault::Vault> { self.vault.clone() }
+    pub(crate) fn shared_vault(&self) -> Arc<vault::Vault> {
+        self.vault.clone()
+    }
 
     async fn cancel_login(&self) {
         if let Some(login) = self.login.lock().await.take() {
@@ -96,7 +99,7 @@ impl Host {
             activation_dispatch: Mutex::new(()),
             vault: Arc::new(vault::Vault::new(engine.clone())),
             login: Mutex::new(None),
-            adapter_turn: Arc::new(Mutex::new(())),
+            refresh_locks: Default::default(),
             catalog: fiote::adapters::Catalog::load(&directory).await?,
             connections: Default::default(),
             engine,
@@ -274,6 +277,7 @@ impl Host {
             record: record.into(),
             has_key: requires_credential && vault_exists,
             requires_credential,
+            provider_diagnostics: self.catalog.diagnostics.clone(),
             providers: self.catalog.descriptors.clone(),
             vault_exists,
             locked,
@@ -393,11 +397,16 @@ impl Host {
             return Ok(Vec::new());
         };
         let rows =
-            store::assertions::recent_messages(&self.engine.store.pool, &predicate, thread, 12)
+            store::assertions::recent_messages(&self.engine.store.pool, &predicate, thread, 100001)
                 .await
                 .map_err(|e| e.to_string())?;
+        if rows.len() > 100000 {
+            return Err("This conversation exceeds 100,000 Messages. Start another conversation; its original history remains saved.".into());
+        }
         let mut messages = Vec::new();
+        let mut seen = std::collections::HashSet::new();
         for row in rows.into_iter().rev() {
+            seen.insert(row.uid.clone());
             let metadata =
                 store::records::get_extension(&self.engine.store.pool, &row.uid, "lince.message")
                     .await
@@ -406,6 +415,14 @@ impl Host {
                 metadata.as_ref().and_then(|value| value["author"].as_str()) == Some(author);
             let interrupted =
                 metadata.as_ref().and_then(|value| value["state"].as_str()) == Some("interrupted");
+            if assistant
+                && let Some(frames) = self
+                    .restore_frames(&row.uid, &row.body, &messages, &seen)
+                    .await?
+            {
+                messages.extend(frames);
+                continue;
+            }
             let body = if interrupted {
                 format!("[Interrupted turn]\n{}", row.body)
             } else {
@@ -728,18 +745,34 @@ impl Service for Host {
                     );
                 }
                 self.vault.unlock(password).await?;
-                let mut connection = self
-                    .catalog
-                    .driver(&settings.provider)
-                    .ok_or("This provider has no browser login adapter.")?
-                    .connect()
+                let (url, task) = if fiote::communication::native::has_native_login(&settings) {
+                    let previous = if settings.account.is_empty() {
+                        None
+                    } else {
+                        self.vault.key(&vault::slot(&settings)).await?
+                    };
+                    let attempt = fiote::communication::native::login(
+                        &mut settings,
+                        &self.directory,
+                        previous.as_ref(),
+                    )
                     .await?;
-                let url = connection.login(&settings).await?;
+                    (attempt.url.clone(), tokio::spawn(attempt.finish()))
+                } else {
+                    let mut connection = self
+                        .catalog
+                        .driver(&settings.provider)
+                        .ok_or("This provider has no browser login adapter.")?
+                        .connect()
+                        .await?;
+                    let url = connection.login(&settings).await?;
+                    (url, tokio::spawn(connection.finish_login()))
+                };
                 *login = Some(Login {
                     record: record.clone(),
                     url,
                     settings,
-                    task: tokio::spawn(connection.finish_login()),
+                    task,
                 });
                 record
             }
@@ -757,8 +790,40 @@ impl Service for Host {
                 };
                 if let Some(pending) = pending {
                     let key = pending.task.await.map_err(|_| "Browser login stopped.")??;
-                    self.configure(&record, pending.settings, Some(key), None)
+                    let mut settings = pending.settings;
+                    if fiote::communication::native::has_native_login(&settings) {
+                        self.configure(&record, settings.clone(), Some(key.clone()), None)
+                            .await?;
+                        self.save_native_profile(&record, &settings).await?;
+                        if !fiote::communication::native::account_ready(&settings, &key)? {
+                            return Err("Signed in to ChatGPT; the registration is saved, but plan usage was not granted. Choose Sign in again to enable it.".into());
+                        }
+                    }
+                    if fiote::communication::native::has_native_login(&settings)
+                        && settings.model.is_empty()
+                    {
+                        let provider = fiote::communication::native::provider(
+                            &settings,
+                            &key,
+                            Some(Arc::new(vault::Credential {
+                                vault: self.vault.clone(),
+                                directory: self.directory.clone(),
+                                slot: vault::slot(&settings),
+                            })),
+                            None,
+                        )?;
+                        let model = provider
+                            .models()
+                            .await?
+                            .into_iter()
+                            .next()
+                            .ok_or("No model is available to this ChatGPT account.")?;
+                        settings.model = model.id;
+                        settings.context_budget_bytes = model.context_budget_bytes;
+                    }
+                    self.configure(&record, settings.clone(), Some(key), None)
                         .await?;
+                    self.save_native_profile(&record, &settings).await?;
                 }
                 record
             }
@@ -937,7 +1002,6 @@ impl Host {
             }
         });
         let system = self.session_instructions(&record.uid, thread).await?;
-        fiote::runtime::validate_context(&system, &messages)?;
         let mut tools = Registry::default();
         if !config.settings.directory.as_os_str().is_empty() {
             tools.register(CreateFile::new(&config.settings.directory)?);
@@ -954,14 +1018,8 @@ impl Host {
         })
         .with_instructions(system.clone());
         native.register(&mut tools);
-        self.save_context(thread, &record.uid, &messages, &tools)
-            .await?;
+        self.save_context(thread, &record.uid, &[], &tools).await?;
         let driver = self.catalog.driver(&config.settings.provider).cloned();
-        let adapter_turn = if driver.is_some() {
-            Some(self.adapter_turn.clone().try_lock_owned().map_err(|_| "Another provider adapter session is working. Wait for it to finish or stop it first.")?)
-        } else {
-            None
-        };
         let key = if self.catalog.method(&config.settings)?.kind == fiote::adapters::AuthKind::None
         {
             Secret::default()
@@ -981,7 +1039,26 @@ impl Host {
         let provider: Arc<dyn Provider> = match (&self.provider, &adapter) {
             (Some(provider), _) => provider.clone(),
             (_, Some(provider)) => provider.clone(),
-            _ => Arc::new(GenaiProvider::new(&config.settings, &key)?),
+            _ => {
+                let slot = vault::slot(&config.settings);
+                let lock = self
+                    .refresh_locks
+                    .lock()
+                    .await
+                    .entry(slot.clone())
+                    .or_default()
+                    .clone();
+                fiote::communication::native::provider(
+                    &config.settings,
+                    &key,
+                    Some(Arc::new(vault::Credential {
+                        vault: self.vault.clone(),
+                        directory: self.directory.clone(),
+                        slot,
+                    })),
+                    Some(lock),
+                )?
+            }
         };
         for message in &messages {
             if let Message::RichUser { content, .. } | Message::RichAssistant { content, .. } =
@@ -990,6 +1067,8 @@ impl Host {
                 provider.validate_content(content)?;
             }
         }
+        let original_messages = messages.clone();
+        let messages = self.summarized_history(thread, &messages)?;
         let mut outcome = self
             .engine
             .act(
@@ -1065,6 +1144,31 @@ impl Host {
             }
             return Ok(Some(outcome));
         }
+        let source_message = outcome.created.clone();
+        let journal_path = history::path(&self.directory, &reply);
+        if let Err(error) = save(
+            &journal_path,
+            &history::Journal {
+                source: source_message.clone(),
+                ..Default::default()
+            },
+        ) {
+            let body = format!("Fiote could not start its native journal: {error}");
+            outcome.warnings.push(body.clone());
+            self.engine
+                .act(
+                    Action::ReviseMessage {
+                        message: reply,
+                        body,
+                        state: MessageState::Interrupted,
+                    },
+                    None,
+                )
+                .await
+                .map_err(|e| e.to_string())?;
+            return Ok(Some(outcome));
+        }
+        let summary_path = self.directory.join(format!("summary-{thread}.json"));
         let (stop, receiver) = watch::channel(false);
         running.insert(
             thread.into(),
@@ -1080,11 +1184,12 @@ impl Host {
         let attached = native.attach_message(&reply).await;
         let usage_path = usage::path(&self.directory, &thread);
         let context_path = self.directory.join(format!("context-{thread}.json"));
-        let source_message = outcome.created.clone();
         native.set_source_message(outcome.created.as_deref());
         tokio::spawn(async move {
-            let _adapter_turn = adapter_turn;
             let output = output::Output {
+                journal_path: Some(journal_path),
+                summary_path: Some(summary_path),
+                original_messages,
                 context_path: Some(context_path),
                 source_message,
                 usage_path: Some(usage_path),

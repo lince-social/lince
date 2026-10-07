@@ -4,6 +4,37 @@ use serde_json::json;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
 #[tokio::test]
+async fn native_refresh_guards_serialize_separate_connections_and_release_on_drop() {
+    use fiote::communication::auth::CredentialStore;
+    let (host, _, root, _, _) = fixture(false).await;
+    let first = vault::Credential {
+        vault: host.vault.clone(),
+        slot: "same-native-account".into(),
+        directory: root.path().into(),
+    };
+    let second = vault::Credential {
+        vault: host.vault.clone(),
+        slot: "same-native-account".into(),
+        directory: root.path().into(),
+    };
+    let guard = first.refresh_guard().await.unwrap().unwrap();
+    assert!(
+        tokio::time::timeout(std::time::Duration::from_millis(80), second.refresh_guard())
+            .await
+            .is_err()
+    );
+    drop(guard);
+    assert!(second.refresh_guard().await.unwrap().is_some());
+    let other = vault::Credential {
+        vault: host.vault.clone(),
+        slot: "different-native-account".into(),
+        directory: root.path().into(),
+    };
+    let _guard = first.refresh_guard().await.unwrap().unwrap();
+    assert!(other.refresh_guard().await.unwrap().is_some());
+}
+
+#[tokio::test]
 #[ignore = "Requires LINCE_TEST_AGENT_BIN pointing to lince-acp-test-agent; uses no model"]
 async fn agent_login_check_and_conversation_workflow() {
     let (host, _, root, record, thread) = fixture(false).await;
@@ -499,7 +530,9 @@ struct Script {
 
 #[async_trait::async_trait]
 impl Provider for Script {
-    fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> { nucleus::message::validate(content) }
+    fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> {
+        nucleus::message::validate(content)
+    }
     async fn complete(
         &self,
         prompt: &str,
@@ -516,6 +549,7 @@ impl Provider for Script {
         match messages.last().unwrap() {
             Message::User(body) if body == "create a file" => Ok(Reply {
                 usage: None,
+                replay: Vec::new(),
                 text: String::new(),
                 calls: vec![ToolCall {
                     id: "call-1".into(),
@@ -528,12 +562,14 @@ impl Provider for Script {
                 assert_eq!(result["ok"], true);
                 Ok(Reply {
                     usage: None,
+                    replay: Vec::new(),
                     text: "Created hello.txt".into(),
                     calls: vec![],
                 })
             }
             _ => Ok(Reply {
                 usage: None,
+                replay: Vec::new(),
                 text: "Hello!".into(),
                 calls: vec![],
             }),
@@ -604,6 +640,7 @@ async fn fixture(block: bool) -> (Arc<Host>, Arc<Script>, tempfile::TempDir, Str
             model: "test-model".into(),
             endpoint: String::new(),
             directory: root.path().into(),
+            ..Default::default()
         },
         api_key: Some(Secret("secret-test-value".into())),
         password: Some(Secret("test-password".into())),
@@ -975,8 +1012,8 @@ async fn mentioning_a_fiote_replies_in_the_record_with_only_recent_context() {
     {
         let observed = script.observed.lock().unwrap();
         let (system, messages) = &observed[0];
-        assert_eq!(messages.len(), 13);
-        assert!(matches!(&messages[0], Message::User(body) if body == "Earlier message 8"));
+        assert_eq!(messages.len(), 21);
+        assert!(matches!(&messages[0], Message::User(body) if body == "Earlier message 0"));
         assert!(system.contains(&record));
         assert!(system.contains("Be useful. This is my prompt."));
     }
@@ -1189,6 +1226,7 @@ impl Provider for FactConversation {
                 assert_eq!(result["ok"], true, "{result}");
                 return Ok(Reply {
                     usage: None,
+                    replay: Vec::new(),
                     text: "Recorded the lunch expense through the normal Action.".into(),
                     calls: vec![],
                 });
@@ -1196,6 +1234,7 @@ impl Provider for FactConversation {
             _ => {
                 return Ok(Reply {
                     usage: None,
+                    replay: Vec::new(),
                     text: "We can discuss other things without recording a Fact.".into(),
                     calls: vec![],
                 });
@@ -1203,6 +1242,7 @@ impl Provider for FactConversation {
         };
         Ok(Reply {
             usage: None,
+            replay: Vec::new(),
             text: String::new(),
             calls: vec![ToolCall {
                 id: format!("fact-call-{}", messages.len()),
@@ -1332,6 +1372,7 @@ impl Provider for StreamingScript {
         output.update("Hello from Fiote").await?;
         Ok(Reply {
             usage: None,
+            replay: Vec::new(),
             text: "Hello from Fiote".into(),
             calls: vec![],
         })
@@ -1454,6 +1495,7 @@ impl Provider for NativeScript {
                 assert_eq!(result["ok"], true, "{result}");
                 return Ok(Reply {
                     usage: None,
+                    replay: Vec::new(),
                     text: "Updated the task description and quantity.".into(),
                     calls: vec![],
                 });
@@ -1462,6 +1504,7 @@ impl Provider for NativeScript {
         };
         Ok(Reply {
             usage: None,
+            replay: Vec::new(),
             text: String::new(),
             calls: vec![ToolCall {
                 id: format!("call-{}", messages.len()),
@@ -1633,7 +1676,7 @@ async fn local_thread_runs_tools_and_persists_attributed_replies_with_session_is
             .unwrap()
             .contains("secret-test-value")
     );
-    assert_eq!(reopened.history(&thread, &record).await.unwrap().len(), 2);
+    assert_eq!(reopened.history(&thread, &record).await.unwrap().len(), 4);
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -2779,31 +2822,292 @@ async fn six_valid_media_files_are_retained_in_ordinary_and_fiote_conversations(
     use base64::Engine as _;
     use nucleus::message::MessagePart;
     let (host, script, _root, _agent, fiote_thread) = fixture(false).await;
-    let target = host.engine.act(Action::CreateRecord { slug: None, kind: RecordKind::Plain, head: "Ordinary conversation".into(), body: String::new(), quantity: 0.0 }, None).await.unwrap().created.unwrap();
-    let ordinary_thread = host.engine.act(Action::CreateThread { target, head: "Files".into() }, None).await.unwrap().created.unwrap();
+    let target = host
+        .engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: "Ordinary conversation".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let ordinary_thread = host
+        .engine
+        .act(
+            Action::CreateThread {
+                target,
+                head: "Files".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
     let files: [(&str, &str, &[u8]); 6] = [
-        ("note.txt", "text/plain", include_bytes!("../../../desktop/tests/fixtures/fiote/note.txt")),
-        ("table.csv", "text/csv", include_bytes!("../../../desktop/tests/fixtures/fiote/table.csv")),
-        ("document.pdf", "application/pdf", include_bytes!("../../../desktop/tests/fixtures/fiote/document.pdf")),
-        ("photo.png", "image/png", include_bytes!("../../../desktop/tests/fixtures/fiote/photo.png")),
-        ("audio.wav", "audio/wav", include_bytes!("../../../desktop/tests/fixtures/fiote/audio.wav")),
-        ("video.mp4", "video/mp4", include_bytes!("../../../desktop/tests/fixtures/fiote/video.mp4")),
+        (
+            "note.txt",
+            "text/plain",
+            include_bytes!("../../../desktop/tests/fixtures/fiote/note.txt"),
+        ),
+        (
+            "table.csv",
+            "text/csv",
+            include_bytes!("../../../desktop/tests/fixtures/fiote/table.csv"),
+        ),
+        (
+            "document.pdf",
+            "application/pdf",
+            include_bytes!("../../../desktop/tests/fixtures/fiote/document.pdf"),
+        ),
+        (
+            "photo.png",
+            "image/png",
+            include_bytes!("../../../desktop/tests/fixtures/fiote/photo.png"),
+        ),
+        (
+            "audio.wav",
+            "audio/wav",
+            include_bytes!("../../../desktop/tests/fixtures/fiote/audio.wav"),
+        ),
+        (
+            "video.mp4",
+            "video/mp4",
+            include_bytes!("../../../desktop/tests/fixtures/fiote/video.mp4"),
+        ),
     ];
     for (name, mime_type, bytes) in files {
-        let content = vec![MessagePart::Attachment { name: name.into(), mime_type: mime_type.into(), data: base64::engine::general_purpose::STANDARD.encode(bytes) }];
+        let content = vec![MessagePart::Attachment {
+            name: name.into(),
+            mime_type: mime_type.into(),
+            data: base64::engine::general_purpose::STANDARD.encode(bytes),
+        }];
         for thread in [&ordinary_thread, &fiote_thread] {
-            let reply = local(&host).handle(ClientMessage::Act { id: nucleus::new_uid("send"), action: Action::CreateMessage { thread: thread.clone(), body: format!("Inspect {name}"), author: None, state: MessageState::Finished, parent: None, references: vec![], content: content.clone() } }).await;
-            assert!(matches!(reply.first(), Some(ServerMessage::ActionOk { .. })), "{reply:?}");
+            let reply = local(&host)
+                .handle(ClientMessage::Act {
+                    id: nucleus::new_uid("send"),
+                    action: Action::CreateMessage {
+                        thread: thread.clone(),
+                        body: format!("Inspect {name}"),
+                        author: None,
+                        state: MessageState::Finished,
+                        parent: None,
+                        references: vec![],
+                        content: content.clone(),
+                    },
+                })
+                .await;
+            assert!(
+                matches!(reply.first(), Some(ServerMessage::ActionOk { .. })),
+                "{reply:?}"
+            );
             wait(&host).await;
-            let message = rows(&host, thread).await.into_iter().find(|row| row.body == format!("Inspect {name}")).unwrap();
-            let loaded = store::message_content::load(&host.engine.store.pool, &message.uid).await.unwrap();
+            let message = rows(&host, thread)
+                .await
+                .into_iter()
+                .find(|row| row.body == format!("Inspect {name}"))
+                .unwrap();
+            let loaded = store::message_content::load(&host.engine.store.pool, &message.uid)
+                .await
+                .unwrap();
             assert_eq!(loaded, content);
-            let MessagePart::Attachment { data, .. } = &loaded[0] else { panic!("attachment"); };
-            assert_eq!(nucleus::message::digest(&nucleus::message::decode(data).unwrap()), nucleus::message::digest(bytes));
+            let MessagePart::Attachment { data, .. } = &loaded[0] else {
+                panic!("attachment");
+            };
+            assert_eq!(
+                nucleus::message::digest(&nucleus::message::decode(data).unwrap()),
+                nucleus::message::digest(bytes)
+            );
         }
         assert!(script.observed.lock().unwrap().iter().any(|(_, messages)| messages.iter().any(|message| matches!(message, Message::RichUser { content: delivered, .. } if delivered == &content))));
     }
     assert_eq!(rows(&host, &ordinary_thread).await.len(), 6);
     assert_eq!(rows(&host, &fiote_thread).await.len(), 12);
     assert!(!host.running.lock().await.contains_key(&ordinary_thread));
+}
+
+#[tokio::test]
+async fn native_history_restores_tool_exchanges_and_invalidates_edits_without_repeating_effects() {
+    let (host, _, root, record, thread) = fixture(false).await;
+    host.send(&thread, "create a file").await.unwrap().unwrap();
+    wait(&host).await;
+    let messages = host.history(&thread, &record).await.unwrap();
+    assert_eq!(messages.len(), 4);
+    assert!(matches!(&messages[1],Message::Assistant { calls,.. } if calls.len() == 1));
+    assert!(matches!(&messages[2],Message::Tool { result,.. } if result["ok"] == true));
+    let reopened = Host::open(host.engine.clone(), root.path().join("settings"))
+        .await
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(reopened.history(&thread, &record).await.unwrap()).unwrap(),
+        serde_json::to_value(&messages).unwrap()
+    );
+    let rows = rows(&host, &thread).await;
+    let user = rows.iter().find(|row| row.body == "create a file").unwrap();
+    host.engine
+        .act(
+            Action::EditRecordText {
+                target: user.uid.clone(),
+                head: None,
+                body: Some("Revised user instruction".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let revised = reopened.history(&thread, &record).await.unwrap();
+    assert!(
+        !revised
+            .iter()
+            .any(|message| matches!(message, Message::Tool { .. }))
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("hello.txt")).unwrap(),
+        "Hello from Fiote"
+    );
+}
+
+#[tokio::test]
+async fn native_history_reports_an_unknown_tool_outcome_without_executing_it_again() {
+    let (host, _, root, record, thread) = fixture(false).await;
+    host.send(&thread, "create a file").await.unwrap().unwrap();
+    wait(&host).await;
+    let reply = rows(&host, &thread)
+        .await
+        .into_iter()
+        .find(|row| row.body == "Created hello.txt")
+        .unwrap();
+    let path = history::path(&host.directory, &reply.uid);
+    let mut journal = history::load(&path).unwrap().unwrap();
+    let Message::Assistant { calls, .. } = &journal.frames[0] else {
+        panic!("Expected an assistant tool call");
+    };
+    journal.pending = Some(calls[0].clone());
+    journal.frames.truncate(1);
+    save(&path, &journal).unwrap();
+    let restored = host.history(&thread, &record).await.unwrap();
+    assert!(restored.iter().any(
+        |message| matches!(message,Message::Tool { result,.. } if result["outcome"] == "unknown")
+    ));
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("hello.txt")).unwrap(),
+        "Hello from Fiote"
+    );
+}
+
+#[tokio::test]
+async fn subscription_sse_runs_lince_tools_and_retains_the_exchange_for_the_next_message() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let (mut host, _, _root, record, thread) = fixture(false).await;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}/v1/", listener.local_addr().unwrap());
+    let target = record.clone();
+    let server = tokio::spawn(async move {
+        for request_index in 0..3 {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut bytes = Vec::new();
+            let request = loop {
+                let mut chunk = [0; 4096];
+                let count = socket.read(&mut chunk).await.unwrap();
+                assert!(count > 0);
+                bytes.extend_from_slice(&chunk[..count]);
+                if let Some(split) = bytes.windows(4).position(|b| b == b"\r\n\r\n") {
+                    let header = String::from_utf8(bytes[..split].to_vec()).unwrap();
+                    let length = header
+                        .lines()
+                        .find_map(|l| {
+                            l.to_lowercase()
+                                .strip_prefix("content-length: ")
+                                .and_then(|s| s.parse::<usize>().ok())
+                        })
+                        .unwrap_or(0);
+                    if bytes.len() >= split + 4 + length {
+                        assert!(header.starts_with("POST /v1/responses "));
+                        break serde_json::from_slice::<serde_json::Value>(
+                            &bytes[split + 4..split + 4 + length],
+                        )
+                        .unwrap();
+                    }
+                }
+            };
+            assert_eq!(request["tools"][0]["name"], "lince");
+            if request_index > 0 {
+                let result = request["input"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["type"] == "function_call_output")
+                    .unwrap();
+                let result: serde_json::Value =
+                    serde_json::from_str(result["output"].as_str().unwrap()).unwrap();
+                assert_eq!(result["ok"], true);
+            }
+            let output = if request_index == 0 {
+                vec![
+                    json!({"type":"function_call","call_id":"subscription-read","id":"fc_read","namespace":"lince","name":"lince_read_record","arguments":json!({"record_uid":target}).to_string()}),
+                ]
+            } else {
+                vec![
+                    json!({"type":"message","role":"assistant","content":[{"type":"output_text","text":"I read the Fiote Record through Lince."}]}),
+                ]
+            };
+            let body = format!(
+                "data: {}\n\n",
+                json!({"type":"response.completed","response":{"status":"completed","output":output,"usage":{"input_tokens":10,"output_tokens":5,"total_tokens":15}}})
+            );
+            socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len()).as_bytes()).await.unwrap();
+        }
+    });
+    let credential = fiote::communication::auth::Account {
+        client_id: "oaiapp_fixture".into(),
+        subject: "fixture".into(),
+        email: None,
+        host_id: "urn:uuid:fixture".into(),
+        access_token: Secret("fixture-access".into()),
+        refresh_token: Secret::default(),
+        id_token: Secret::default(),
+        scopes: vec!["chatgpt.tokens.use.direct".into()],
+        expires_at: u64::MAX,
+    }
+    .encode()
+    .unwrap();
+    let provider = fiote::communication::chatgpt::ChatGpt::at(
+        Settings {
+            model: "fixture-model".into(),
+            ..Default::default()
+        },
+        fiote::communication::auth::Session {
+            auth: fiote::communication::auth::Auth::production().unwrap(),
+            store: Arc::new(fiote::communication::auth::MemoryCredential(Mutex::new(
+                credential,
+            ))),
+            lock: Default::default(),
+        },
+        &endpoint,
+    )
+    .unwrap();
+    Arc::get_mut(&mut host).unwrap().provider = Some(Arc::new(provider));
+    host.send(&thread, "Read your Fiote Record.")
+        .await
+        .unwrap()
+        .unwrap();
+    wait(&host).await;
+    assert!(host.history(&thread,&record).await.unwrap().iter().any(|m| matches!(m,Message::Tool { name,result,.. } if name=="lince_read_record" && result["ok"]==true)));
+    host.send(&thread, "Do you remember the result?")
+        .await
+        .unwrap()
+        .unwrap();
+    wait(&host).await;
+    assert_eq!(
+        rows(&host, &thread).await[0].body,
+        "I read the Fiote Record through Lince."
+    );
+    server.await.unwrap();
 }

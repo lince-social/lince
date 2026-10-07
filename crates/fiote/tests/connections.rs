@@ -88,7 +88,8 @@ async fn api_model_discovery_uses_the_configured_endpoint_without_an_inference_r
     let check = probe(&profile, &catalog, Some(&Secret("fixture-key".into()))).await;
     assert!(check.ready, "{}", check.detail);
     assert_eq!(check.stage, Stage::ModelDiscovery);
-    assert_eq!(check.settings["models"][0], "my-own-model");
+    assert_eq!(check.capabilities.settings, Support::Supported);
+    assert_eq!(check.settings["models"][0]["id"], "my-own-model");
     assert!(check.detail.contains("inference"));
     server.await.unwrap();
 }

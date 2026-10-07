@@ -31,10 +31,35 @@ pub struct Settings {
     pub model: String,
     pub endpoint: String,
     pub directory: PathBuf,
+    #[serde(default)]
+    pub account: String,
+    #[serde(default)]
+    pub reasoning: Option<String>,
+    #[serde(default)]
+    pub fast: bool,
+    #[serde(default)]
+    pub context_budget_bytes: Option<usize>,
 }
 
 impl Settings {
     pub fn validate(&mut self) -> Result<(), String> {
+        if self
+            .context_budget_bytes
+            .is_some_and(|budget| budget < 8192 || budget > crate::runtime::MAX_CONTEXT_BYTES)
+        {
+            return Err("Choose a context budget between 8 KiB and 512 KiB.".into());
+        }
+        if self.account.len() > 160 || self.account.chars().any(char::is_control) {
+            return Err("Invalid native account identifier.".into());
+        }
+        if self.reasoning.as_deref().is_some_and(|value| {
+            !matches!(
+                value,
+                "none" | "minimal" | "low" | "medium" | "high" | "xhigh"
+            )
+        }) {
+            return Err("Choose an available reasoning effort.".into());
+        }
         self.model = self.model.trim().to_string();
         if self.model.len() > 256 {
             return Err("Choose a model name (at most 256 bytes).".into());
@@ -246,6 +271,8 @@ pub struct Status {
     pub login_pending: bool,
     pub providers: Vec<crate::adapters::Descriptor>,
     pub requires_credential: bool,
+    #[serde(default)]
+    pub provider_diagnostics: Vec<String>,
     pub tool_connections: Vec<ToolConnection>,
 }
 

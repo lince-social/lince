@@ -1,10 +1,13 @@
 pub mod acp;
 pub mod adapters;
+pub mod auth;
+pub mod chatgpt;
 pub mod check;
 pub mod connection;
 pub mod discovery;
 pub mod driver;
 pub mod extensions;
+pub mod native;
 pub mod provider;
-pub mod provider_adapter;
+pub mod retry;
 pub mod speech;

@@ -488,6 +488,9 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         );
         return;
     };
+    if config.relations && !filtering {
+        crate::relation_castle::styles::controls(world, panel, owner, &config.relation_styles);
+    }
     if !filtering {
         if !config.fiote && config.command.is_none() && !config.relations {
             crate::sand_panel::button(

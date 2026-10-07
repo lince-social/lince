@@ -783,6 +783,7 @@
                   [
                     pkgs.clang
                     pkgs.libclang
+                    pkgs.python3
                   ]
                   ++ lib.remove pkgs.pkg-config interfaceLinuxNativeBuildInputs
                 );
@@ -800,7 +801,7 @@
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
               '';
 
-              postFixup = lib.optionalString pkgs.stdenv.isLinux ''
+              postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
                 wrapProgram "$out/bin/lince" ${
                   lib.escapeShellArgs (
                     lib.optionals ui [
@@ -813,9 +814,7 @@
                       "--prefix"
                       "PATH"
                       ":"
-                      (lib.makeBinPath (
-                        [ pkgs.bash ] ++ lib.optional (system == "x86_64-linux") self.packages.${system}.goose
-                      ))
+                      (lib.makeBinPath [ pkgs.bash ])
                     ]
                   )
                 }
@@ -886,7 +885,7 @@
               postFixup = ''
                 wrapProgram "$out/bin/lince" \
                   --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}" \
-                  --prefix PATH : "${lib.makeBinPath [ pkgs.bash self.packages.${system}.goose ]}"
+                  --prefix PATH : "${lib.makeBinPath [ pkgs.bash ]}"
               '';
               doInstallCheck = true;
               installCheckPhase = ''

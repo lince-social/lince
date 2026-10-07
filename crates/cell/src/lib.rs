@@ -32,8 +32,6 @@ pub use ::fiote::connection as fiote_connection;
 pub use ::fiote::communication as fiote_communication;
 pub use ::fiote::acp::Config as FioteAgentConfig;
 pub use ::fiote::acp::terminal::TerminalRequest as FioteTerminalRequest;
-pub use ::fiote::adapters::register_bundled as register_provider_adapter;
-pub use ::fiote::provider_adapter::serve as serve_provider_adapter;
 pub use transport::mcp::bridge_stdio;
 pub use ::fiote::config::{
     Request as FioteRequest, Secret as FioteSecret,

@@ -98,7 +98,7 @@ pub(crate) fn populate(
     if local {
         crate::protein_area::attach_scalar(world, slug, binding.clone(), "slug", data);
     }
-    crate::edit_mode::label(world, owner, "Bash script", 13.0);
+    crate::edit_mode::label(world, owner, "Shell script", 13.0);
     let script = editor(
         world,
         owner,

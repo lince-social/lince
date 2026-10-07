@@ -86,47 +86,56 @@ fn output(events: &[Event]) -> Vec<u8> {
         .collect()
 }
 
+#[cfg(unix)]
 #[test]
-fn bash_runs_with_a_path_containing_only_unrelated_tools() {
+fn login_shell_loads_user_profile_and_finds_tools_outside_service_path() {
+    use std::os::unix::fs::PermissionsExt;
     let fixture = Fixture::new();
-    let unrelated = fixture.root.join("goose/bin");
-    std::fs::create_dir_all(&unrelated).unwrap();
-    let path = std::env::join_paths([unrelated]).unwrap();
-    let bash = bash_executable(Some(&path)).unwrap();
-    assert!(bash.is_absolute());
-    let mut command = CommandBuilder::new(bash);
-    command.args(["--noprofile", "--norc", "-c", "printf standalone"]);
-    command.env("PATH", path);
-    command.cwd(&fixture.root);
+    let home = fixture.root.join("home");
+    let tools = home.join("tools");
+    let service = fixture.root.join("service-bin");
+    std::fs::create_dir_all(&tools).unwrap();
+    std::fs::create_dir(&service).unwrap();
+    let bash = std::env::split_paths(&std::env::var_os("PATH").unwrap())
+        .map(|directory| directory.join("bash"))
+        .find(|path| path.is_file())
+        .unwrap();
+    let git = tools.join("git");
+    std::fs::write(
+        &git,
+        format!(
+            "#!{}\nprintf 'tool:%s\\n' \"$PROFILE_SENTINEL\"\n",
+            bash.display()
+        ),
+    )
+    .unwrap();
+    std::fs::set_permissions(&git, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(
+        home.join(".bash_profile"),
+        "export PATH=\"$HOME/tools\"\nexport PROFILE_SENTINEL=loaded\n",
+    )
+    .unwrap();
+    let script =
+        "git\nprintf 'cwd:%s\\n' \"$PWD\"\nprintf '%s\\n' 'literal $HOME; untouched'\nexit 7";
+    let mut command = shell_command(bash.to_str().unwrap(), script, &fixture.root);
+    command.env("HOME", &home);
+    command.env("PATH", &service);
     let mut spawned = spawn_command(
         pty_size(80, 24, 0, 0),
         command,
-        "bash".into(),
+        bash.display().to_string(),
         fixture.root.display().to_string(),
     )
     .unwrap();
-    assert_eq!(spawned.child.wait().unwrap().exit_code(), 0);
+    assert_eq!(spawned.child.wait().unwrap().exit_code(), 7);
     let mut output = String::new();
     spawned.reader.read_to_string(&mut output).unwrap();
-    assert_eq!(output, "standalone");
-}
-
-#[cfg(unix)]
-#[test]
-fn bash_lookup_skips_nonexecutables_and_preserves_path_priority() {
-    use std::os::unix::fs::PermissionsExt;
-    let fixture = Fixture::new();
-    let first = fixture.root.join("first");
-    let second = fixture.root.join("second");
-    for directory in [&first, &second] {
-        std::fs::create_dir(directory).unwrap();
-        std::fs::write(directory.join("bash"), "").unwrap();
-    }
-    std::fs::set_permissions(second.join("bash"), std::fs::Permissions::from_mode(0o755)).unwrap();
-    let path = std::env::join_paths([&first, &second]).unwrap();
-    assert_eq!(bash_executable(Some(&path)).unwrap(), second.join("bash"));
-    std::fs::set_permissions(first.join("bash"), std::fs::Permissions::from_mode(0o755)).unwrap();
-    assert_eq!(bash_executable(Some(&path)).unwrap(), first.join("bash"));
+    assert!(output.contains("tool:loaded"), "{output}");
+    assert!(
+        output.contains(&format!("cwd:{}", fixture.root.display())),
+        "{output}"
+    );
+    assert!(output.contains("literal $HOME; untouched"), "{output}");
 }
 
 #[tokio::test]

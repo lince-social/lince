@@ -43,12 +43,12 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
     crate::edit_mode::label(
         world,
         content,
-        "Choose your own compatible harness, a supported local/API model, or tools for an external AI client. Check does not send a prompt.",
+        "Native Fiote uses your subscription, API key, or local model directly. Optional ACP connects an installed agent. Check lists models; Test response sends a small prompt.",
         13.0,
     );
     for (label, route) in [
-        ("New harness connection", Route::Harness),
-        ("New local/API model", Route::Model),
+        ("New native API / local connection", Route::Model),
+        ("New optional ACP connection", Route::Harness),
         ("External AI tools", Route::External),
     ] {
         crate::description::button(
@@ -62,7 +62,14 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             },
         );
     }
-    crate::description::button(world, content, owner, "Model login options", ModelLogin);
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Continue with ChatGPT",
+        NativeLogin { settings: None },
+    );
+    crate::description::button(world, content, owner, "Other native providers", ModelLogin);
     crate::description::button(
         world,
         content,
@@ -90,6 +97,9 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         }),
     );
     let Some(saved) = saved else { return };
+    for diagnostic in &saved.provider_diagnostics {
+        crate::edit_mode::label(world, content, diagnostic, 13.0);
+    }
     if let Some(discovery) = &saved.connections.discovery {
         crate::edit_mode::label(world, content, &discovery.detail, 13.0);
         for candidate in discovery.candidates.iter().filter(|entry| {
@@ -168,6 +178,40 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         ] {
             crate::description::button(world, row, owner, label, Control(command));
         }
+        if let Connection::Model { settings } = &profile.connection {
+            crate::description::button(
+                world,
+                row,
+                owner,
+                "Test response",
+                Control(Request::Test {
+                    id: profile.id.clone(),
+                }),
+            );
+            if cell::fiote_communication::native::has_native_login(settings) {
+                crate::description::button(
+                    world,
+                    row,
+                    owner,
+                    "Sign in again",
+                    NativeLogin {
+                        settings: Some(settings.clone()),
+                    },
+                );
+                crate::description::button(
+                    world,
+                    row,
+                    owner,
+                    "Sign out",
+                    Control(Request::Logout {
+                        id: profile.id.clone(),
+                    }),
+                );
+            }
+            if saved.connections.profiles.selected.as_deref() == Some(&profile.id) {
+                native_options(world, content, owner, saved, settings);
+            }
+        }
         let route = match profile.connection {
             Connection::Harness { .. } => Route::Harness,
             Connection::Model { .. } => Route::Model,
@@ -201,6 +245,14 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             ),
             13.0,
         );
+        if !check.ready && saved.agent.is_some() {
+            crate::edit_mode::label(
+                world,
+                content,
+                "This optional agent failed. Choose a native Fiote connection above to use an LLM directly.",
+                13.0,
+            );
+        }
     }
     if saved
         .connections
@@ -269,7 +321,16 @@ impl Action for Edit {
         let profile = self.profile.clone();
         let mut fields = Vec::new();
         let mut add = |world: &mut World, title: &str, initial: String| {
-            let entity = field(world, content, title, false);
+            let group = world
+                .spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    },
+                    ChildOf(content),
+                ))
+                .id();
+            let entity = field(world, group, title, false);
             world
                 .get_mut::<EditableText>(entity)
                 .unwrap()
@@ -396,15 +457,10 @@ impl Action for Edit {
                 );
                 add(
                     world,
-                    "Working directory",
+                    "Folder for new files · optional",
                     settings
                         .map(|settings| settings.directory.to_string_lossy().into_owned())
-                        .unwrap_or_else(|| {
-                            std::env::current_dir()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .into_owned()
-                        }),
+                        .unwrap_or_default(),
                 );
             }
             Route::External => {
@@ -426,6 +482,12 @@ impl Action for Edit {
             original: profile,
         });
         if self.route == Route::Model {
+            let form = world.get::<Form>(owner).unwrap();
+            for field in [form.fields[0], form.fields[2], form.fields[3]] {
+                if let Some(parent) = world.get::<ChildOf>(field).map(|parent| parent.parent()) {
+                    world.get_mut::<Node>(parent).unwrap().display = Display::None;
+                }
+            }
             let providers = world
                 .get::<Panel>(owner)
                 .and_then(|panel| panel.saved.as_ref())
@@ -501,7 +563,17 @@ fn profile(world: &World, owner: Entity) -> Result<Profile, String> {
             Connection::Harness { config }
         }
         Route::Model => {
-            let mut settings = FioteSettings::default();
+            let mut settings = form
+                .original
+                .as_ref()
+                .and_then(|profile| {
+                    if let Connection::Model { settings } = &profile.connection {
+                        Some(settings.clone())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default();
             settings.enabled = true;
             settings.provider.0 = text(2)?;
             settings.auth_method = text(3)?;
@@ -701,7 +773,7 @@ mod tests {
                 .discovery
                 .is_some()
         );
-        click(app.world_mut(), "New harness connection");
+        click(app.world_mut(), "New optional ACP connection");
         let fields = app.world().get::<Form>(owner).unwrap().fields.clone();
         assert_eq!(fields.len(), 6);
         let values = [
@@ -768,6 +840,173 @@ mod tests {
                 .entries
                 .is_empty()
         );
+        host.stop_all().await;
+    }
+
+    #[tokio::test]
+    async fn native_api_controls_connect_check_and_receive_a_completed_response_without_an_agent() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!("http://{}/v1/", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            for route in ["GET /v1/models ", "POST /v1/chat/completions "] {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut bytes = Vec::new();
+                loop {
+                    let mut chunk = [0; 4096];
+                    let count = socket.read(&mut chunk).await.unwrap();
+                    assert!(count > 0);
+                    bytes.extend_from_slice(&chunk[..count]);
+                    if let Some(split) = bytes.windows(4).position(|b| b == b"\r\n\r\n") {
+                        let headers = String::from_utf8(bytes[..split].to_vec()).unwrap();
+                        let length = headers
+                            .lines()
+                            .find_map(|l| {
+                                l.to_lowercase()
+                                    .strip_prefix("content-length: ")
+                                    .and_then(|s| s.parse::<usize>().ok())
+                            })
+                            .unwrap_or(0);
+                        if bytes.len() >= split + 4 + length {
+                            assert!(headers.starts_with(route));
+                            break;
+                        }
+                    }
+                }
+                let body = if route.starts_with("GET") {
+                    r#"{"data":[{"id":"fixture-local"}]}"#
+                } else {
+                    r#"{"id":"fixture","object":"chat.completion","created":1,"model":"fixture-local","choices":[{"index":0,"finish_reason":"stop","message":{"role":"assistant","content":"Native hello"}}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}"#
+                };
+                socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len()).as_bytes()).await.unwrap();
+            }
+        });
+        let directory = tempfile::tempdir().unwrap();
+        let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+        let record = engine
+            .act(
+                engine::actions::Action::CreateAgent {
+                    head: "Native UI fixture".into(),
+                    operated_by: None,
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let host = std::sync::Arc::new(
+            cell::fiote::Host::open(engine.clone(), directory.path().join("settings"))
+                .await
+                .unwrap(),
+        );
+        let runtime = cell::CellRuntime {
+            speech: None,
+            commands: Default::default(),
+            store: engine.store.clone(),
+            engine,
+            lanes: std::sync::Arc::new(cell::LaneHub::new()),
+            wire: Default::default(),
+            information: None,
+            fiote: Some(host.clone()),
+        };
+        let mut app = App::new();
+        app.init_resource::<Assets<Font>>()
+            .init_resource::<crate::theme::Typography>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .add_message::<crate::cell_bridge::CellMessage>()
+            .add_plugins(Plugin);
+        app.world_mut().insert_non_send(crate::cell_bridge::connect(
+            runtime,
+            crate::wake::WakeSignal::new(|| {}),
+        ));
+        let root = app.world_mut().spawn_empty().id();
+        populate(
+            app.world_mut(),
+            root,
+            RecordBinding {
+                area: root,
+                uid: record.clone(),
+                source: Source::Local,
+            },
+        );
+        deliver(&mut app).await;
+        let owner = app
+            .world_mut()
+            .query_filtered::<Entity, With<Panel>>()
+            .single(app.world())
+            .unwrap();
+        connections::Open.apply(app.world_mut(), owner);
+        deliver(&mut app).await;
+        click(app.world_mut(), "New native API / local connection");
+        click(app.world_mut(), "OpenAI · Custom endpoint without a key");
+        let fields = app.world().get::<Form>(owner).unwrap().fields.clone();
+        for (index, value) in [
+            (0, "native-fixture"),
+            (1, "My local model"),
+            (4, endpoint.as_str()),
+            (5, "fixture-local"),
+            (6, ""),
+        ] {
+            app.world_mut()
+                .get_mut::<EditableText>(fields[index])
+                .unwrap()
+                .editor
+                .set_text(value);
+        }
+        click(app.world_mut(), "Save profile");
+        deliver(&mut app).await;
+        click(app.world_mut(), "Connect saved profile / unlock");
+        deliver(&mut app).await;
+        assert!(
+            app.world()
+                .get::<Panel>(owner)
+                .unwrap()
+                .saved
+                .as_ref()
+                .unwrap()
+                .agent
+                .is_none()
+        );
+        click(app.world_mut(), "Check saved profile");
+        deliver(&mut app).await;
+        assert!(
+            app.world()
+                .get::<Panel>(owner)
+                .unwrap()
+                .saved
+                .as_ref()
+                .unwrap()
+                .connections
+                .check
+                .as_ref()
+                .unwrap()
+                .ready
+        );
+        click(app.world_mut(), "Back to connections");
+        deliver(&mut app).await;
+        click(app.world_mut(), "fixture-local");
+        deliver(&mut app).await;
+        click(app.world_mut(), "Test response");
+        deliver(&mut app).await;
+        let check = app
+            .world()
+            .get::<Panel>(owner)
+            .unwrap()
+            .saved
+            .as_ref()
+            .unwrap()
+            .connections
+            .check
+            .as_ref()
+            .unwrap();
+        assert!(check.ready, "{}", check.detail);
+        assert_eq!(
+            check.stage,
+            cell::fiote_communication::check::Stage::Inference
+        );
+        assert!(check.detail.contains("Native hello"));
+        server.await.unwrap();
         host.stop_all().await;
     }
 
@@ -945,5 +1184,212 @@ mod polling_tests {
             "http://127.0.0.1:9000/v1"
         );
         assert_eq!(app.world().resource::<InputFocus>().get(), Some(input));
+    }
+}
+
+#[derive(Clone)]
+struct NativeLogin {
+    settings: Option<FioteSettings>,
+}
+impl Action for NativeLogin {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(panel) = world.get::<Panel>(owner) else {
+            return;
+        };
+        if panel.pending.is_some() {
+            return;
+        }
+        let Some(provider) = panel
+            .saved
+            .as_ref()
+            .and_then(|s| {
+                s.providers
+                    .iter()
+                    .find(|p| p.id.0 == cell::fiote_communication::auth::PROVIDER)
+            })
+            .cloned()
+        else {
+            return;
+        };
+        let method = provider.auth_methods[0].clone();
+        world.entity_mut(owner).remove::<Form>();
+        {
+            let mut panel = world.get_mut::<Panel>(owner).unwrap();
+            panel.provider = Some(provider);
+            panel.method = Some(method);
+        }
+        super::show(world, owner, Step::Credentials);
+        if let Some(settings) = &self.settings {
+            world
+                .entity_mut(owner)
+                .insert(Reauthorize(settings.clone()));
+            let field = world.get::<Panel>(owner).unwrap().fields[0];
+            world
+                .get_mut::<EditableText>(field)
+                .unwrap()
+                .editor
+                .set_text(&settings.model);
+        } else {
+            world.entity_mut(owner).remove::<Reauthorize>();
+        }
+    }
+}
+#[derive(Component)]
+pub(super) struct Reauthorize(pub FioteSettings);
+
+#[derive(Clone)]
+struct NativeSetting {
+    model: Option<String>,
+    reasoning: Option<Option<String>>,
+    fast: Option<bool>,
+}
+impl Action for NativeSetting {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(panel) = world.get::<Panel>(owner) else {
+            return;
+        };
+        if panel.pending.is_some() {
+            return;
+        }
+        let Some(mut settings) = panel
+            .saved
+            .as_ref()
+            .and_then(|saved| {
+                saved.connections.profiles.entries.iter().find(|profile| {
+                    saved.connections.profiles.selected.as_deref() == Some(&profile.id)
+                })
+            })
+            .and_then(|profile| match &profile.connection {
+                Connection::Model { settings } => Some(settings.clone()),
+                _ => None,
+            })
+        else {
+            return;
+        };
+        if let Some(model) = &self.model {
+            settings.model = model.clone();
+            settings.context_budget_bytes = panel
+                .saved
+                .as_ref()
+                .and_then(|saved| saved.connections.check.as_ref())
+                .and_then(|check| check.settings.get("models"))
+                .and_then(|models| {
+                    serde_json::from_value::<Vec<cell::fiote_communication::provider::Model>>(
+                        models.clone(),
+                    )
+                    .ok()
+                })
+                .and_then(|models| models.into_iter().find(|m| m.id == *model))
+                .and_then(|model| model.context_budget_bytes);
+            settings.reasoning = None;
+            settings.fast = false;
+        }
+        if let Some(reasoning) = &self.reasoning {
+            settings.reasoning = reasoning.clone();
+        }
+        if let Some(fast) = self.fast {
+            settings.fast = fast;
+        }
+        let record = panel.binding.uid.clone();
+        request(
+            world,
+            owner,
+            FioteRequest::Configure {
+                record,
+                settings,
+                api_key: None,
+                password: None,
+            },
+        );
+    }
+}
+fn native_options(
+    world: &mut World,
+    content: Entity,
+    owner: Entity,
+    saved: &FioteStatus,
+    settings: &FioteSettings,
+) {
+    crate::edit_mode::label(
+        world,
+        content,
+        &format!("Native model: {}", settings.model),
+        13.0,
+    );
+    let models: Vec<cell::fiote_communication::provider::Model> = saved
+        .connections
+        .check
+        .as_ref()
+        .filter(|check| {
+            saved.connections.profiles.selected.as_deref() == Some(check.profile.as_str())
+        })
+        .and_then(|check| check.settings.get("models"))
+        .and_then(|models| serde_json::from_value(models.clone()).ok())
+        .unwrap_or_default();
+    if models.is_empty() {
+        crate::edit_mode::label(
+            world,
+            content,
+            "Check this connection to load account models and their advertised settings.",
+            13.0,
+        );
+    }
+    for model in &models {
+        crate::description::button(
+            world,
+            content,
+            owner,
+            &model.name,
+            NativeSetting {
+                model: Some(model.id.clone()),
+                reasoning: None,
+                fast: None,
+            },
+        );
+        if model.id == settings.model {
+            for level in &model.reasoning {
+                crate::description::button(
+                    world,
+                    content,
+                    owner,
+                    &format!("Thinking: {level}"),
+                    NativeSetting {
+                        model: None,
+                        reasoning: Some(Some(level.clone())),
+                        fast: None,
+                    },
+                );
+            }
+            if !model.reasoning.is_empty() {
+                crate::description::button(
+                    world,
+                    content,
+                    owner,
+                    "Thinking: model default",
+                    NativeSetting {
+                        model: None,
+                        reasoning: Some(None),
+                        fast: None,
+                    },
+                );
+            }
+            if model.fast {
+                crate::description::button(
+                    world,
+                    content,
+                    owner,
+                    if settings.fast {
+                        "Fast: on · turn off"
+                    } else {
+                        "Fast: off · turn on"
+                    },
+                    NativeSetting {
+                        model: None,
+                        reasoning: None,
+                        fast: Some(!settings.fast),
+                    },
+                );
+            }
+        }
     }
 }

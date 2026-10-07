@@ -225,14 +225,16 @@ fn svg(
             .unwrap_or_else(|| "--:--".into());
         let scale = (palette.font / 16.0).clamp(0.8, 1.25);
         svg.push_str(&format!("<text x='0' y='{}' fill='{ink}' font-family='Lato' text-anchor='middle' font-size='{}'>{current}</text>", -radius * 0.63, 26.0 * scale));
-        let (motto_radius, x, y) = motto_arc(radius * 0.8);
-        svg.push_str(&format!("<g opacity='{}'><g transform='translate(-14 {}) scale(0.875)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><defs><path id='memento-arc' d='M {} {y} A {motto_radius} {motto_radius} 0 0 0 {x} {y}'/></defs><text fill='{ink}' font-family='Lato' font-size='11' letter-spacing='2' text-anchor='middle'><textPath href='#memento-arc' startOffset='50%'>memento mori</textPath></text></g>", 1.0 - view.unwind * 2.0, size.y * 0.25 - 14.0, -x));
+        let (motto_radius, x, y) = motto_arc();
+        let center = radius * 0.8 - motto_radius;
+        svg.push_str(&format!("<g opacity='{}' transform='translate(0 {center})'><g transform='translate(-14 -14) scale(0.875)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><defs><path id='memento-arc' d='M {} {y} A {motto_radius} {motto_radius} 0 0 0 {x} {y}'/></defs><text fill='{ink}' font-family='Lato' font-size='11' letter-spacing='2' text-anchor='middle'><textPath href='#memento-arc' startOffset='50%'>memento mori</textPath></text></g>", 1.0 - view.unwind * 2.0, -x));
     }
     svg.push_str("</svg>");
     svg
 }
 
-fn motto_arc(bottom: f32) -> (f32, f32, f32) {
+fn motto_arc() -> (f32, f32, f32) {
+    const ANGLE: f32 = 5.0 * std::f32::consts::PI / 12.0;
     static RADIUS: std::sync::OnceLock<f32> = std::sync::OnceLock::new();
     let radius = *RADIUS.get_or_init(|| {
         let face = ttf_parser::Face::parse(
@@ -249,14 +251,9 @@ fn motto_arc(bottom: f32) -> (f32, f32, f32) {
             * 11.0
             / f32::from(face.units_per_em())
             + 22.0;
-        width / (2.0 * std::f32::consts::FRAC_PI_3)
+        width / (2.0 * ANGLE)
     });
-    let angle = std::f32::consts::FRAC_PI_3;
-    (
-        radius,
-        radius * angle.sin(),
-        bottom - radius + radius * angle.cos(),
-    )
+    (radius, radius * ANGLE.sin(), radius * ANGLE.cos())
 }
 
 fn fonts(cjk: bool) -> std::sync::Arc<resvg::usvg::fontdb::Database> {
@@ -633,12 +630,12 @@ mod tests {
     }
 
     #[test]
-    fn motto_ends_turn_sixty_degrees_and_keep_the_baseline_below_the_skull() {
-        let (radius, x, y) = motto_arc(134.4);
-        assert!(((x / radius).asin().to_degrees() - 60.0).abs() < 0.01);
-        assert!((y - radius * 0.5 + radius - 134.4).abs() < 0.01);
-        assert!(x > 35.0 && x < 55.0);
-        assert!(y > 100.0 && y < 120.0);
+    fn motto_ends_turn_seventy_five_degrees_around_the_skull_center() {
+        let (radius, x, y) = motto_arc();
+        assert!(((x / radius).asin().to_degrees() - 75.0).abs() < 0.01);
+        assert!((x.hypot(y) - radius).abs() < 0.01);
+        assert!(x > 25.0 && x < 40.0);
+        assert!(y > 5.0 && y < 12.0);
     }
 
     #[test]

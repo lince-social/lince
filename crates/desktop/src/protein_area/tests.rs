@@ -241,6 +241,109 @@ pub(crate) fn fixture() -> (App, Entity, Entity) {
     (app, root, owner)
 }
 
+#[test]
+fn relation_color_context_refresh_preserves_records_links_and_positions() {
+    use crate::relation_castle::styles::{Color, Colors, Mode, Rule, Target};
+    let (mut app, _, owner) = fixture();
+    let previous = crate::relation_castle::config();
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(previous.clone());
+    let first = nucleus::new_uid("r");
+    let second = nucleus::new_uid("r");
+    let assertion = nucleus::new_uid("a");
+    let link = json!({"uid":assertion,"from":first,"to":second,"kind":"depends-on"});
+    app.world_mut().resource_mut::<Runtime>().areas.insert(owner, State {
+        applied:Some(previous.clone()), subscription:Some("old".into()), ready:true, dirty:true,
+        data:vec![json!({"uid":first,"kind":"plain","head":"First","quantity":"5","links":[link.clone()]}),json!({"uid":second,"kind":"plain","head":"Second","quantity":"5","links":[link]})],
+        ..default()
+    });
+    rows::reconcile(app.world_mut(), owner);
+    let records = app.world().resource::<Runtime>().areas[&owner]
+        .row_entities
+        .clone();
+    let entity = records[&first];
+    let position = DVec2::new(125.0, 250.0);
+    rows::place(app.world_mut(), entity, position, Vec2::new(320.0, 120.0));
+    crate::topology::set_position(
+        app.world_mut(),
+        entity,
+        bevy::math::DVec3::new(position.x, 0.0, position.y),
+    );
+    let arrows: Vec<_> = app
+        .world_mut()
+        .query_filtered::<Entity, With<crate::relation_castle::RelationLink>>()
+        .iter(app.world())
+        .collect();
+    assert_eq!(arrows.len(), 1);
+    let mut updated = previous.clone();
+    updated.relation_styles.rules.push(Rule {
+        name: "Always colored".into(),
+        enabled: true,
+        target: Target::Card,
+        mode: Mode::All,
+        conditions: vec![],
+        colors: Colors {
+            background: Some(Color::Token(crate::tokens::Token::Warning)),
+            ..default()
+        },
+    });
+    assert!(refresh_relation_styles(
+        app.world_mut(),
+        owner,
+        Some(&previous),
+        &updated
+    ));
+    let state = &app.world().resource::<Runtime>().areas[&owner];
+    assert_eq!(state.row_entities, records);
+    assert!(
+        state
+            .pending
+            .iter()
+            .any(|message| matches!(message,ClientMessage::Unsubscribe { id } if id == "old"))
+    );
+    assert!(state.pending.iter().any(|message| matches!(message,ClientMessage::Subscribe { protein,.. } if protein.include.relation_context.is_some())));
+    rows::reconcile(app.world_mut(), owner);
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner].row_entities,
+        records
+    );
+    assert_eq!(
+        app.world()
+            .get::<crate::canvas::CanvasItem>(entity)
+            .unwrap()
+            .position,
+        position
+    );
+    assert!(app.world().get::<Colors>(entity).is_some());
+    assert!(
+        app.world()
+            .get::<crate::relation_castle::RelationLink>(arrows[0])
+            .is_some()
+    );
+    updated.relation_styles.rules.clear();
+    let applied = app.world().resource::<Runtime>().areas[&owner]
+        .applied
+        .clone()
+        .unwrap();
+    assert!(refresh_relation_styles(
+        app.world_mut(),
+        owner,
+        Some(&applied),
+        &updated
+    ));
+    rows::reconcile(app.world_mut(), owner);
+    assert!(app.world().get::<Colors>(entity).is_none());
+    updated.width += 10.0;
+    assert!(!refresh_relation_styles(
+        app.world_mut(),
+        owner,
+        Some(&previous),
+        &updated
+    ));
+}
+
 #[tokio::test]
 async fn command_record_castles_save_clear_and_refresh_slugs() {
     use bevy::text::EditableText;

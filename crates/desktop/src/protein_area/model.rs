@@ -21,6 +21,8 @@ pub struct Config {
     #[serde(default)]
     pub relations: bool,
     #[serde(default)]
+    pub relation_styles: crate::relation_castle::styles::Settings,
+    #[serde(default)]
     pub motion: Option<crate::protein_motion::Settings>,
     #[serde(default)]
     pub fiote: bool,
@@ -59,6 +61,7 @@ impl Default for Config {
             presentation: None,
             hide_filled: false,
             relations: false,
+            relation_styles: Default::default(),
             motion: None,
             fiote: false,
             command: None,
@@ -129,6 +132,7 @@ impl Config {
                 .as_ref()
                 .is_none_or(crate::protein_motion::Settings::valid)
             && (!self.relations || self.record_cards)
+            && self.relation_styles.valid()
             && (self.motion.is_none() || (!self.group_with_source && !self.grouping.active()))
             && self
                 .viewport_height
@@ -179,6 +183,12 @@ impl Config {
                 direction: protein::LinkDirection::Both,
                 depth: 1,
             });
+            if !self.relation_styles.rules.is_empty() {
+                fields.extend(["quantity", "unit", "relation_context"].map(str::to_string));
+                query.include.relation_context = Some(protein::relation_context::Include {
+                    families: self.relation_styles.families(),
+                });
+            }
         }
         if self
             .bindings

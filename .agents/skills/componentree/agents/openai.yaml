@@ -1,0 +1,4 @@
+interface:
+  display_name: "componentree"
+  short_description: "Find shared feature families before coding"
+  default_prompt: "Use $componentree to apply an architecture of making different features share some common util, trait or some domain specific system. Understand the subject and feature being talked about and apply to it."

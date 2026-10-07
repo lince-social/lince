@@ -273,7 +273,7 @@ fn exercise(world: &mut World) {
                 }
 
                 for expected in match result.component.as_str() {
-                    "Command Castle" => &["Run", "Bash script"][..],
+                    "Command Castle" => &["Run", "Shell script"][..],
                     "Fiote Castle" => &["Manage Fiote"][..],
                     _ => &[],
                 } {
@@ -467,7 +467,7 @@ fn exercise(world: &mut World) {
                 world
                     .query::<&Text>()
                     .iter(world)
-                    .any(|text| text.0 == "Bash script")
+                    .any(|text| text.0 == "Shell script")
             );
             world
                 .spawn(Screenshot::primary_window())

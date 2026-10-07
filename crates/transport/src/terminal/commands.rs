@@ -195,10 +195,9 @@ impl CommandHost {
 
     fn start(&self, command: String, script: String, cwd: String) -> Result<Response, String> {
         if script.trim().is_empty() || script.len() > 65536 || script.contains('\0') {
-            return Err("Enter a Bash script of at most 65536 bytes".into());
+            return Err("Enter a shell script of at most 65536 bytes".into());
         }
         let cwd = working_directory(&cwd)?;
-        let bash = bash_executable(std::env::var_os("PATH").as_deref())?;
         let mut runs = self.0.runs.lock().map_err(|error| error.to_string())?;
         if runs.len() >= 16 || runs.values().any(|active| active.run.command == command) {
             return Err(
@@ -217,32 +216,23 @@ impl CommandHost {
         };
         let path = journal::path(&self.0.root, &run.command, &run.id)?;
         let mut file = journal::create(&path, &run)?;
-        let mut command = CommandBuilder::new(&bash);
-        command.args(["--noprofile", "--norc", "-c", &run.script]);
-        command.cwd(&cwd);
-        command.env("TERM", "xterm-256color");
-        command.env("COLORTERM", "truecolor");
-        command.env_remove("BASH_ENV");
-        command.env_remove("ENV");
-        let spawned = match spawn_command(
-            pty_size(80, 24, 720, 432),
-            command,
-            bash.display().to_string(),
-            run.cwd.clone(),
-        ) {
-            Ok(spawned) => spawned,
-            Err(error) => {
-                journal::append(
-                    &mut file,
-                    &Event::Finished {
-                        finished_ms: now(),
-                        exit_code: None,
-                        error: Some(error.clone()),
-                    },
-                )?;
-                return Err(error);
-            }
-        };
+        let shell = CommandBuilder::new_default_prog().get_shell();
+        let command = shell_command(&shell, &run.script, &cwd);
+        let spawned =
+            match spawn_command(pty_size(80, 24, 720, 432), command, shell, run.cwd.clone()) {
+                Ok(spawned) => spawned,
+                Err(error) => {
+                    journal::append(
+                        &mut file,
+                        &Event::Finished {
+                            finished_ms: now(),
+                            exit_code: None,
+                            error: Some(error.clone()),
+                        },
+                    )?;
+                    return Err(error);
+                }
+            };
         let pid = spawned.child.process_id();
         let journal = Arc::new(Mutex::new(file));
         let (input, incoming) = std::sync::mpsc::sync_channel::<Vec<u8>>(8);
@@ -444,35 +434,16 @@ fn stop(handle: &TerminalHandle, pid: Option<u32>) {
     }
 }
 
-fn bash_executable(path: Option<&std::ffi::OsStr>) -> Result<PathBuf, String> {
-    let name = if cfg!(windows) { "bash.exe" } else { "bash" };
-    let candidates = path
-        .into_iter()
-        .flat_map(std::env::split_paths)
-        .map(|directory| directory.join(name))
-        .chain([
-            PathBuf::from("/run/current-system/sw/bin/bash"),
-            PathBuf::from("/bin/bash"),
-            PathBuf::from("/usr/bin/bash"),
-        ]);
-    for candidate in candidates {
-        let Ok(metadata) = candidate.metadata() else {
-            continue;
-        };
-        if !metadata.is_file() {
-            continue;
-        }
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if metadata.permissions().mode() & 0o111 == 0 {
-                continue;
-            }
-        }
-        return std::path::absolute(candidate)
-            .map_err(|error| format!("Could not resolve Bash: {error}"));
-    }
-    Err("Bash was not found. Install Bash and make it available on this machine's PATH.".into())
+fn shell_command(shell: &str, script: &str, cwd: &Path) -> CommandBuilder {
+    let mut command = CommandBuilder::new(shell);
+    #[cfg(unix)]
+    command.args(["-l", "-i", "-c", script]);
+    #[cfg(windows)]
+    command.args(["/C", script]);
+    command.cwd(cwd);
+    command.env("TERM", "xterm-256color");
+    command.env("COLORTERM", "truecolor");
+    command
 }
 
 fn working_directory(value: &str) -> Result<PathBuf, String> {

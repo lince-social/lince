@@ -288,7 +288,7 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         root,
         parent,
         "Command Castle",
-        "Run a Bash Record locally, interact with its terminal and reopen recent runs.",
+        "Run a shell script with your normal shell environment, interact with its terminal and reopen recent runs.",
         AddCommand,
         |world, _| preview_command(world),
     );

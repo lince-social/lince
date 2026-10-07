@@ -514,7 +514,11 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                 content,
                 owner,
                 if method.kind == FioteAuthKind::Browser {
-                    "Continue in browser"
+                    if provider.id.0 == cell::fiote_communication::auth::PROVIDER {
+                        "Continue with ChatGPT"
+                    } else {
+                        "Continue in browser"
+                    }
                 } else {
                     "Connect"
                 },
@@ -703,15 +707,24 @@ impl Action for Continue {
             }
             let provider = panel.provider.as_ref().ok_or("Choose a provider.")?;
             let method = panel.method.as_ref().ok_or("Choose a login method.")?;
-            let settings = FioteSettings {
+            let mut settings = FioteSettings {
                 enabled: true,
                 provider: provider.id.clone(),
                 auth_method: method.id.clone(),
                 model: value(world, fields[0])?,
                 endpoint: value(world, fields[3])?,
                 directory: value(world, fields[4])?.into(),
+                ..Default::default()
             };
             if method.kind == FioteAuthKind::Browser {
+                if let Some(previous) = world
+                    .get::<connections::Reauthorize>(owner)
+                    .filter(|previous| previous.0.provider == settings.provider)
+                {
+                    settings.account = previous.0.account.clone();
+                    settings.reasoning = previous.0.reasoning.clone();
+                    settings.fast = previous.0.fast;
+                }
                 return Ok(FioteRequest::BrowserStart {
                     record,
                     password: FioteSecret(value(world, fields[2])?),

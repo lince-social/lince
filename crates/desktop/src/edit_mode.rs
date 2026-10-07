@@ -726,7 +726,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
                     .is_some_and(|member| member.0 == active)
                 && world.get::<StoredSand>(sand).is_some()
             {
-                crate::deletion::request(world, root, vec![sand]);
+                crate::canvas_item::DeleteItem.apply(world, sand);
             }
         }
         EditAction::EditSand(sand) => crate::sand_text_editor::open(world, root, sand),

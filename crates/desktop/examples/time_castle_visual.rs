@@ -225,6 +225,16 @@ fn screen(world: &World, position: DVec2) -> Vec2 {
 }
 
 async fn fixture() -> Arc<engine::Engine> {
+    if let Some(path) = std::env::args()
+        .find_map(|argument| argument.strip_prefix("--fixture-copy=").map(str::to_owned))
+    {
+        assert!(std::path::Path::new(&path).starts_with("/tmp"));
+        return Arc::new(
+            engine::Engine::open(&format!("sqlite://{path}"))
+                .await
+                .unwrap(),
+        );
+    }
     let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
     let organ = store::organs::local(&engine.store.pool)
         .await
@@ -361,7 +371,12 @@ async fn main() {
         DVec2::ZERO,
     );
     let started = Instant::now();
-    while cards(app.world_mut(), clock).len() != 13 {
+    let copied = std::env::args().any(|argument| argument.starts_with("--fixture-copy="));
+    while if copied {
+        cards(app.world_mut(), clock).is_empty()
+    } else {
+        cards(app.world_mut(), clock).len() != 13
+    } {
         assert!(
             started.elapsed().as_secs() < 60,
             "Schedule data did not arrive"
@@ -389,6 +404,39 @@ async fn main() {
             .any(|text| text.0.starts_with("Next ") && text.0.ends_with(" things"))
     );
     capture(&mut app, &directory, "01-default");
+    if std::env::args().any(|argument| argument == "--aperture-probe") {
+        let initial: Vec<_> = cards(app.world_mut(), clock)
+            .into_iter()
+            .map(|(_, item, title)| (title, item.position.to_array()))
+            .collect();
+        println!("Initial cards: {initial:?}");
+        for (before, after) in [("60", "120"), ("120", "1440"), ("1440", "60")] {
+            activate(app.world_mut(), clock, "Clock controls");
+            let field = app
+                .world_mut()
+                .query::<(Entity, &bevy::text::EditableText)>()
+                .iter(app.world())
+                .find(|(_, text)| text.value().to_string() == before)
+                .unwrap()
+                .0;
+            app.world_mut()
+                .get_mut::<bevy::text::EditableText>(field)
+                .unwrap()
+                .editor
+                .set_text(after);
+            activate(app.world_mut(), clock, "Apply settings");
+            activate(app.world_mut(), clock, "Hide clock controls");
+            settle(&mut app, 10.0);
+            let titles: Vec<_> = cards(app.world_mut(), clock)
+                .into_iter()
+                .map(|(_, _, title)| title)
+                .collect();
+            println!("Aperture {after}: {titles:?}");
+            capture(&mut app, &directory, &format!("aperture-{after}"));
+        }
+        println!("Aperture probe completed");
+        return;
+    }
     settle(&mut app, 4.0);
     let stopped = cards(app.world_mut(), clock);
     settle(&mut app, 3.0);

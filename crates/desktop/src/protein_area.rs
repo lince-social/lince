@@ -251,6 +251,7 @@ impl Plugin for ProteinAreaPlugin {
                 PostUpdate,
                 (
                     ui::inputs,
+                    crate::relation_castle::styles::inputs,
                     presentation::inputs,
                     history::update,
                     rows::commit_edits,
@@ -413,6 +414,44 @@ fn start(world: &mut World, owner: Entity, config: Config) {
         state.status = "Stopped".into();
     }
     world.resource_mut::<Runtime>().areas.insert(owner, state);
+}
+
+fn refresh_relation_styles(
+    world: &mut World,
+    owner: Entity,
+    previous: Option<&Config>,
+    config: &Config,
+) -> bool {
+    let Some(previous) = previous.filter(|previous| previous.relations && config.relations) else {
+        return false;
+    };
+    let mut comparable = previous.clone();
+    comparable
+        .relation_styles
+        .clone_from(&config.relation_styles);
+    if comparable != *config {
+        return false;
+    }
+    let Ok(protein) = query(world, owner, config) else {
+        return false;
+    };
+    let subscription = id(world);
+    let state = world
+        .resource_mut::<Runtime>()
+        .into_inner()
+        .areas
+        .get_mut(&owner)
+        .unwrap();
+    state.applied = Some(config.clone());
+    state.dirty = true;
+    if let Some(id) = state.subscription.replace(subscription.clone()) {
+        state.pending.push_back(ClientMessage::Unsubscribe { id });
+    }
+    state.pending.push_back(ClientMessage::Subscribe {
+        id: subscription,
+        protein,
+    });
+    true
 }
 
 fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
@@ -794,7 +833,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                     .is_none_or(|old| !old.same_template(&config));
                 state.applied = Some(config);
                 state.dirty = true;
-            } else {
+            } else if !refresh_relation_styles(world, owner, previous.as_ref(), &config) {
                 start(world, owner, config);
             }
         }

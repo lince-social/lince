@@ -59,20 +59,7 @@ impl Plugin for CanvasSelectionPlugin {
     }
 }
 
-pub(crate) fn eligible(world: &World, root: Entity, entity: Entity) -> bool {
-    crate::instinct::practice::permits_target(world, entity)
-        && world.get::<CanvasItem>(entity).is_some()
-        && !crate::inspection::excluded(world, entity)
-        && world
-            .get::<ChildOf>(entity)
-            .is_some_and(|parent| parent.parent() == root)
-        && world.get::<Workspaces>(root).is_none_or(|spaces| {
-            world
-                .get::<WorkspaceMember>(entity)
-                .map_or(spaces.entries[0].id, |member| member.0)
-                == spaces.active
-        })
-}
+pub(crate) use crate::canvas_item::eligible;
 
 pub(crate) fn group_members(world: &World, root: Entity, entity: Entity) -> Vec<Entity> {
     let group = world.get::<SandGroup>(entity);
@@ -129,13 +116,21 @@ pub(crate) fn selected(world: &World, root: Entity) -> Vec<Entity> {
         })
 }
 
-fn set_selection(world: &mut World, root: Entity, mut entities: Vec<Entity>) {
+pub(crate) fn set_selection(world: &mut World, root: Entity, mut entities: Vec<Entity>) {
+    entities.retain(|entity| eligible(world, root, *entity));
     entities.sort();
     entities.dedup();
     if world
         .get::<SandSelection>(root)
         .is_none_or(|selection| selection.0 != entities)
     {
+        let area = entities
+            .first()
+            .copied()
+            .filter(|entity| world.get::<crate::area::InfluenceArea>(*entity).is_some());
+        if let Some(mut editor) = world.get_mut::<crate::area_panel::AreaEditor>(root) {
+            editor.selected = area;
+        }
         if let Some(mut inspection) = world.get_mut::<Inspection>(root) {
             inspection.selected = entities.first().copied();
         }
@@ -1115,7 +1110,7 @@ pub(crate) mod tests {
         use crate::sand_placement::{Placement, PlacementAction};
 
         let (mut app, root, first, second) = fixture();
-        app.add_plugins(crate::sand_placement::PlacementPlugin);
+        app.add_plugins(crate::canvas_item::CanvasItemPlugin);
         let other = app
             .world_mut()
             .spawn((

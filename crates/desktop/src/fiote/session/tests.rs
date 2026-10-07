@@ -40,6 +40,7 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
         login_pending: false,
         providers: vec![],
         requires_credential: false,
+        provider_diagnostics: Vec::new(),
         tool_connections: vec![],
     }
 }
@@ -54,9 +55,18 @@ fn disconnected_fiote_login_and_send_offer_generic_routes() {
         .add_plugins(Plugin);
     let world = app.world_mut();
     let parent = world.spawn(Node::default()).id();
-    let binding = RecordBinding { area: parent, uid: nucleus::new_uid("r"), source: Source::Local };
+    let binding = RecordBinding {
+        area: parent,
+        uid: nucleus::new_uid("r"),
+        source: Source::Local,
+    };
     populate(world, parent, binding.clone());
-    let owner = world.query::<(Entity, &Panel)>().iter(world).next().unwrap().0;
+    let owner = world
+        .query::<(Entity, &Panel)>()
+        .iter(world)
+        .next()
+        .unwrap()
+        .0;
     let mut saved = fixture_status(&binding.uid);
     saved.agent = None;
     saved.agent_info = None;
@@ -69,9 +79,24 @@ fn disconnected_fiote_login_and_send_offer_generic_routes() {
     show(world, owner, Step::Closed);
     assert!(!ready(world, &binding));
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Connections);
-    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "New harness connection"));
-    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "New local/API model"));
-    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "External AI tools"));
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "New optional ACP connection")
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "New native API / local connection")
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "External AI tools")
+    );
 }
 
 #[test]
@@ -269,7 +294,16 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         .unwrap();
     assert!(app.world().get::<Panel>(owner).unwrap().step == Step::Connections);
     deliver(&mut app).await;
-    let login = app.world_mut().query::<(&crate::actions::ActionButton, &bevy::a11y::AccessibilityNode)>().iter(app.world()).find(|(_, node)| node.label() == Some("Model login options")).map(|(button, _)| button.clone()).unwrap();
+    let login = app
+        .world_mut()
+        .query::<(
+            &crate::actions::ActionButton,
+            &bevy::a11y::AccessibilityNode,
+        )>()
+        .iter(app.world())
+        .find(|(_, node)| node.label() == Some("Other native providers"))
+        .map(|(button, _)| button.clone())
+        .unwrap();
     login.actions.run(app.world_mut(), login.target);
     assert!(app.world().get::<Panel>(owner).unwrap().step == Step::Providers);
     app.world_mut()

@@ -54,7 +54,7 @@ impl Host {
         .await
         .map_err(|e| e.to_string())?;
         let messages = self::messages(messages);
-        let value = serde_json::json!({"thread":thread,"fiote":record,"scope":"Starting input supplied by Lince, not the provider's full internal memory or subsequent tool results","messages":messages,"tools":tools.definitions().into_iter().map(|tool| tool.name).collect::<Vec<_>>(),"task":task,"activation":activation,"history_window":12,"saved_at":nucleus::execution::now().to_rfc3339(),"external_memory":"not exposed"});
+        let value = serde_json::json!({"thread":thread,"fiote":record,"scope":"Starting input supplied by Lince, not the provider's full internal memory or subsequent tool results","messages":messages,"tools":tools.definitions().into_iter().map(|tool| tool.name).collect::<Vec<_>>(),"task":task,"activation":activation,"history_window":"complete native conversation; automatically summarized when needed","saved_at":nucleus::execution::now().to_rfc3339(),"external_memory":"not exposed"});
         if serde_json::to_vec(&value).map_err(|e| e.to_string())?.len() > 1024 * 1024 {
             return Err("Context inspection exceeds 1 MiB".into());
         }

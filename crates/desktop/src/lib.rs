@@ -79,6 +79,9 @@ pub mod topology;
 pub mod sand_placement;
 
 #[cfg(feature = "native-runtime")]
+pub mod canvas_item;
+
+#[cfg(feature = "native-runtime")]
 pub mod canvas_background;
 
 #[cfg(feature = "native-runtime")]

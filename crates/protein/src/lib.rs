@@ -59,6 +59,7 @@ pub struct Protein {
 
 mod conjunction;
 pub mod record_schema;
+pub mod relation_context;
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -205,6 +206,8 @@ pub enum DateComparison {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Include {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub relation_context: Option<relation_context::Include>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub record_after: Option<String>,
     pub facts: Option<FactsInclude>,
@@ -505,6 +508,11 @@ fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
 const MAX_FILTER_INDENT: usize = 10;
 
 pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
+    if let Some(include) = &protein.include.relation_context {
+        if protein.source != Source::Record || protein.aggregate.is_some() || !include.valid() {
+            return Err(store::StoreError::Protocol("Invalid Relation color context".into()));
+        }
+    }
     if protein.include.extension.as_ref().is_some_and(|extension| extension.namespace.starts_with("lince.social.")) {
         return Err(store::StoreError::Protocol("Private social state is available only through scoped social controls".into()));
     }
@@ -1433,6 +1441,11 @@ async fn execute_records(
         .collect();
     let work = store::records::all_extensions(&store.pool, "work").await?;
     let mut projected = record_schema::attach(store, protein, &rows, visible, &work).await?;
+    let mut relation_context = if let Some(include) = &protein.include.relation_context {
+        relation_context::attach(store, &rows, visible, include, &concept_names).await?
+    } else {
+        HashMap::new()
+    };
     let protected_transfers =
         if protein.include.facts.is_some() || protein.include.promises.is_some() {
             protected_transfer_history(store, subject).await?
@@ -1470,6 +1483,9 @@ async fn execute_records(
         .await?;
         if let Some(Value::Object(fields)) = projected.remove(&r.uid) {
             row.as_object_mut().unwrap().extend(fields);
+        }
+        if let Some(context) = relation_context.remove(&r.uid) {
+            row["relation_context"] = context;
         }
         narrow_to_fields(&mut row, protein.fields.as_deref());
         out.push(row);

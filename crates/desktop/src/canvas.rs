@@ -17,13 +17,7 @@ impl Default for CanvasView {
     }
 }
 
-#[derive(Component, Clone, Copy, Reflect)]
-#[reflect(Component)]
-#[require(Node)]
-pub struct CanvasItem {
-    pub position: DVec2,
-    pub size: Vec2,
-}
+pub use crate::canvas_item::CanvasItem;
 
 impl CanvasView {
     pub const MIN_ZOOM: f64 = 0.1;
@@ -72,7 +66,7 @@ impl Plugin for CanvasPlugin {
             crate::canvas_pan::CanvasPanPlugin,
             crate::canvas_selection::CanvasSelectionPlugin,
             crate::canvas_background::CanvasBackgroundPlugin,
-            crate::sand_placement::PlacementPlugin,
+            crate::canvas_item::CanvasItemPlugin,
             crate::canvas_host::Plugin,
         ))
         .register_type::<CanvasView>()

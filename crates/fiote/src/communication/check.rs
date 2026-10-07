@@ -2,7 +2,7 @@ use super::{
     acp,
     adapters::{AuthKind, Catalog},
     connection::{Capabilities, Check, Connection, Profile, Support},
-    provider::GenaiProvider,
+    provider::{GenaiProvider, Provider},
 };
 use crate::config::Secret;
 use serde::{Deserialize, Serialize};
@@ -18,9 +18,19 @@ pub enum Stage {
     Authentication,
     Session,
     ModelDiscovery,
+    Inference,
 }
 
 pub async fn probe(profile: &Profile, catalog: &Catalog, credential: Option<&Secret>) -> Check {
+    probe_with_session(profile, catalog, credential, None).await
+}
+
+pub async fn probe_with_session(
+    profile: &Profile,
+    catalog: &Catalog,
+    credential: Option<&Secret>,
+    session: Option<super::auth::Session>,
+) -> Check {
     let mut check = Check {
         profile: profile.id.clone(),
         ready: false,
@@ -75,6 +85,24 @@ pub async fn probe(profile: &Profile, catalog: &Catalog, credential: Option<&Sec
                             AuthKind::Browser => "Complete this connection's browser login and unlock its credential vault.".into(),
                             _ => "Unlock the vault and save an API key for this connection.".into(),
                         })
+                    } else if settings.provider.0 == super::auth::PROVIDER {
+                        check.capabilities.tools = Support::Supported;
+                        check.capabilities.resume = Support::Supported;
+                        check.capabilities.images = Support::Unknown;
+                        check.capabilities.embedded_content = Support::Unknown;
+                        check.stage = Stage::ModelDiscovery;
+                        match super::chatgpt::ChatGpt::new(settings, session.unwrap_or_else(|| super::auth::Session {
+                            auth: super::auth::Auth::production().expect("valid fixed native issuer"),
+                            store: std::sync::Arc::new(super::auth::MemoryCredential(tokio::sync::Mutex::new(credential.cloned().unwrap_or_default()))),
+                            lock: Default::default(),
+                        })) {
+                            Err(error) => Err(error),
+                            Ok(provider) => provider.models().await.map(|models| {
+                                check.capabilities.settings = Support::Supported;
+                                check.settings = json!({"models":models});
+                                "ChatGPT account listed its models; inference, selected model entitlement and modalities have not been tested.".into()
+                            }),
+                        }
                     } else if catalog.driver(&settings.provider).is_some() {
                         check.capabilities.images = Support::Unsupported;
                         check.capabilities.embedded_content = Support::Unsupported;
@@ -83,8 +111,9 @@ pub async fn probe(profile: &Profile, catalog: &Catalog, credential: Option<&Sec
                         check.stage = Stage::ModelDiscovery;
                         match GenaiProvider::new(&settings, &credential.cloned().unwrap_or_default()) {
                             Err(error) => Err(error),
-                            Ok(provider) => provider.check_models().await.map(|models| {
-                                let selected = models.contains(&settings.model);
+                            Ok(provider) => Provider::models(&provider).await.map(|models| {
+                                check.capabilities.settings = Support::Supported;
+                                let selected = models.iter().any(|model| model.id == settings.model);
                                 check.settings = json!({"models":models});
                                 if selected { "Endpoint listed the chosen model; inference, tool use and modalities remain untested." } else { "Endpoint model discovery succeeded; selected alias/model entitlement and inference remain unverified." }.into()
                             }),

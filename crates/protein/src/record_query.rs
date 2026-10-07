@@ -357,7 +357,8 @@ fn validate_projection(
     query: &Protein,
     budget: &mut Budget<'_>,
 ) -> Result<RecordProjection, QueryError> {
-    if query.include.record_after.is_some()
+    if query.include.relation_context.is_some()
+        || query.include.record_after.is_some()
         || query.include.facts.is_some()
         || query.include.promises.is_some()
         || query.include.links.is_some()

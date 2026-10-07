@@ -8,6 +8,16 @@ use genai::chat::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Model {
+    pub id: String,
+    pub name: String,
+    pub reasoning: Vec<String>,
+    pub fast: bool,
+    #[serde(default)]
+    pub context_budget_bytes: Option<usize>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolCall {
     pub id: String,
@@ -18,6 +28,14 @@ pub struct ToolCall {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
+    Summary {
+        covered: usize,
+        text: String,
+    },
+    Replay {
+        provider: String,
+        items: Vec<Value>,
+    },
     User(String),
     RichUser {
         text: String,
@@ -48,6 +66,8 @@ pub struct ToolDefinition {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Reply {
     #[serde(default)]
+    pub replay: Vec<Value>,
+    #[serde(default)]
     pub usage: Option<nucleus::operation::Usage>,
     pub text: String,
     pub calls: Vec<ToolCall>,
@@ -55,6 +75,13 @@ pub struct Reply {
 
 #[async_trait]
 pub trait TextOutput: Send + Sync {
+    async fn summary(&self, _covered: usize, _text: &str) -> Result<(), String> {
+        Ok(())
+    }
+    async fn tool_pending(&self, _call: &ToolCall) -> Result<(), String> {
+        Ok(())
+    }
+
     async fn context(&self, _messages: &[Message]) -> Result<(), String> {
         Ok(())
     }
@@ -75,6 +102,16 @@ impl TextOutput for DiscardText {
 
 #[async_trait]
 pub trait Provider: Send + Sync {
+    fn replay_provider(&self) -> Option<&str> {
+        None
+    }
+    async fn models(&self) -> Result<Vec<Model>, String> {
+        Err("This provider does not expose model discovery.".into())
+    }
+
+    fn context_budget_bytes(&self) -> usize {
+        crate::runtime::MAX_CONTEXT_BYTES
+    }
     fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> {
         if content.is_empty() {
             Ok(())
@@ -108,6 +145,7 @@ pub trait Provider: Send + Sync {
 pub struct GenaiProvider {
     client: genai::Client,
     target: genai::ServiceTarget,
+    budget: usize,
 }
 
 impl GenaiProvider {
@@ -143,6 +181,9 @@ impl GenaiProvider {
             .build()
             .map_err(|_| "Cannot initialize the provider connection.")?;
         Ok(Self {
+            budget: settings
+                .context_budget_bytes
+                .unwrap_or(crate::runtime::MAX_CONTEXT_BYTES),
             client: genai::Client::builder().with_reqwest(http).build(),
             target: genai::ServiceTarget {
                 endpoint: genai::resolver::Endpoint::from_owned(settings.endpoint.clone()),
@@ -155,6 +196,10 @@ impl GenaiProvider {
 
 fn message(value: &Message) -> Result<ChatMessage, String> {
     Ok(match value {
+        Message::Replay { .. } => ChatMessage::assistant(String::new()),
+        Message::Summary { text, .. } => ChatMessage::user(format!(
+            "Summary of earlier conversation (historical context):\n{text}"
+        )),
         Message::User(text) => ChatMessage::user(text.clone()),
         Message::RichUser { text, content } | Message::RichAssistant { text, content } => {
             let mut parts = vec![ContentPart::Text(text.clone())];
@@ -227,6 +272,23 @@ fn message(value: &Message) -> Result<ChatMessage, String> {
 
 #[async_trait]
 impl Provider for GenaiProvider {
+    fn context_budget_bytes(&self) -> usize {
+        self.budget
+    }
+    async fn models(&self) -> Result<Vec<Model>, String> {
+        self.check_models().await.map(|models| {
+            models
+                .into_iter()
+                .map(|id| Model {
+                    name: id.clone(),
+                    id,
+                    reasoning: Vec::new(),
+                    fast: false,
+                    context_budget_bytes: None,
+                })
+                .collect()
+        })
+    }
     fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> {
         nucleus::message::validate(content)?;
         for part in content {
@@ -263,6 +325,7 @@ impl Provider for GenaiProvider {
         let request = ChatRequest::new(
             messages
                 .iter()
+                .filter(|message| !matches!(message, Message::Replay { .. }))
                 .map(message)
                 .collect::<Result<Vec<_>, _>>()?,
         )
@@ -304,7 +367,12 @@ impl Provider for GenaiProvider {
                 signatures: call.thought_signatures,
             })
             .collect();
-        Ok(Reply { text, calls, usage })
+        Ok(Reply {
+            text,
+            calls,
+            usage,
+            replay: Vec::new(),
+        })
     }
 
     async fn stream(
@@ -324,6 +392,7 @@ impl Provider for GenaiProvider {
         let request = ChatRequest::new(
             messages
                 .iter()
+                .filter(|message| !matches!(message, Message::Replay { .. }))
                 .map(message)
                 .collect::<Result<Vec<_>, _>>()?,
         )
@@ -414,7 +483,12 @@ impl Provider for GenaiProvider {
                             signatures: call.thought_signatures,
                         })
                         .collect();
-                    return Ok(Reply { text, calls, usage });
+                    return Ok(Reply {
+                        text,
+                        calls,
+                        usage,
+                        replay: Vec::new(),
+                    });
                 }
                 Some(Ok(_)) => {}
                 Some(Err(_)) | None => {

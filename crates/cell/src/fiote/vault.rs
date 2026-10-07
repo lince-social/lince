@@ -210,7 +210,61 @@ impl Vault {
 
 pub fn slot(settings: &Settings) -> String {
     format!(
-        "{}:{}:{}",
-        settings.provider.0, settings.auth_method, settings.endpoint
+        "{}:{}:{}:{}",
+        settings.provider.0, settings.auth_method, settings.endpoint, settings.account
     )
+}
+
+pub(super) struct Credential {
+    pub vault: Arc<Vault>,
+    pub slot: String,
+    pub directory: std::path::PathBuf,
+}
+#[async_trait::async_trait]
+impl fiote::communication::auth::CredentialStore for Credential {
+    async fn refresh_guard(&self) -> Result<Option<std::fs::File>, String> {
+        use sha2::{Digest, Sha256};
+        use std::fs::TryLockError;
+        let account: String = Sha256::digest(self.slot.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        let path = self.directory.join(format!("refresh-{account}.lock"));
+        let mut options = std::fs::File::options();
+        options.create(true).read(true).write(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let file = options
+            .open(path)
+            .map_err(|_| "Cannot open the account refresh lock.")?;
+        tokio::time::timeout(std::time::Duration::from_secs(20), async {
+            loop {
+                match file.try_lock() {
+                    Ok(()) => return Ok(Some(file)),
+                    Err(TryLockError::WouldBlock) => {
+                        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                    }
+                    Err(TryLockError::Error(_)) => {
+                        return Err("Cannot lock this account for refresh.".into());
+                    }
+                }
+            }
+        })
+        .await
+        .map_err(|_| "Another Lince process is refreshing this account. Retry shortly.")?
+    }
+    async fn read(&self) -> Result<Secret, String> {
+        self.vault
+            .key(&self.slot)
+            .await?
+            .ok_or_else(|| "Sign in to this native account first.".into())
+    }
+    async fn replace(&self, previous: &Secret, next: Secret) -> Result<(), String> {
+        self.vault
+            .refreshed(self.slot.clone(), next, previous.clone())
+            .await
+    }
 }

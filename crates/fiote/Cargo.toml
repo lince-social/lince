@@ -28,8 +28,12 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 cap-std = "=4.0.3"
 genai = "=0.6.5"
-modelbridge = "=0.5.2"
-reqwest = { workspace = true, features = ["multipart"] }
+openidconnect = { version = "=4.0.1", default-features = false }
+eventsource-stream = "=0.2.3"
+httpdate = "=1.0.3"
+uuid = { workspace = true }
+sha2 = { workspace = true }
+reqwest = { workspace = true, features = ["multipart", "stream", "form"] }
 tempfile = "=3.27.0"
 url = "2.5.8"
 serde = { workspace = true }
@@ -38,6 +42,7 @@ tokio = { workspace = true }
 zeroize = { workspace = true }
 
 [dev-dependencies]
+chrono = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 
 [build-dependencies]

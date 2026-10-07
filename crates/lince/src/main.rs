@@ -15,9 +15,6 @@ fn main() -> Result<(), Error> {
         return tokio::runtime::Builder::new_current_thread().enable_all().build()?
             .block_on(cell::bridge_stdio()).map_err(Error::other);
     }
-    if has_arg(&args, "--fiote-provider") {
-        return cell::serve_provider_adapter();
-    }
     if has_arg(&args, "--simulation") {
         let result = std::thread::Builder::new()
             .name("lince-simulation".into())
@@ -39,7 +36,6 @@ fn main() -> Result<(), Error> {
         };
         std::process::exit(i32::from(code));
     }
-    cell::register_provider_adapter(env::current_exe()?);
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_help();
         return Ok(());

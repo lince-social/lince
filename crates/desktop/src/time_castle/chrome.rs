@@ -59,6 +59,28 @@ pub(super) fn presentation(world: &mut World, owner: Entity, round: bool) {
     }
 }
 
+pub(super) fn face(world: &mut World, owner: Entity, size: Vec2, layout: &face::Face) {
+    let Some(chrome) = world.get::<Chrome>(owner) else {
+        return;
+    };
+    let (center, visible) = (chrome.center, chrome.round && !chrome.open);
+    let mut node = world.get_mut::<Node>(center).unwrap();
+    let display = if visible && layout.memento.is_some() {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    if node.display != display {
+        node.display = display;
+    }
+    if let Some(rect) = layout.memento {
+        let top = px(size.y * 0.5 + rect.min.y + 14.0);
+        if node.top != top {
+            node.top = top;
+        }
+    }
+}
+
 pub(super) fn availability(world: &mut World, owner: Entity, complete: bool) {
     let Some(button) = world.get::<Chrome>(owner).map(|chrome| chrome.button) else {
         return;

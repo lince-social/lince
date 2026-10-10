@@ -304,13 +304,14 @@ impl State {
                         .unwrap()
                         .id
                 };
-                let mut affected = Vec::new();
-                for placement in &mut next.placements {
-                    if placement.workspace == *workspace {
-                        placement.workspace = destination;
-                        affected.push(placement.id.clone());
-                    }
-                }
+                let affected = next
+                    .placements
+                    .iter()
+                    .filter(|placement| placement.workspace == *workspace)
+                    .map(|placement| placement.id.clone())
+                    .collect();
+                next.placements
+                    .retain(|placement| placement.workspace != *workspace);
                 next.workspaces.retain(|w| w.id != *workspace);
                 next.active_workspace = destination;
                 Ok((affected, Some(destination)))
@@ -447,7 +448,7 @@ mod tests {
         assert_eq!(restored.snapshot.placements[0].id, placement);
     }
     #[test]
-    fn removing_a_workspace_moves_contents_and_keeps_last_workspace() {
+    fn removing_a_workspace_removes_contents_and_keeps_last_workspace() {
         let mut state = state();
         let create = mutate(
             &state,
@@ -631,7 +632,7 @@ mod tests {
         };
         assert_eq!(receipt.affected_count, 299);
         assert_eq!(receipt.affected_placements.len(), 256);
-        assert!(state.snapshot.placements.iter().all(|p| p.workspace == 2));
+        assert!(state.snapshot.placements.is_empty());
     }
     #[test]
     fn deleted_workspace_identifiers_are_never_reassigned() {

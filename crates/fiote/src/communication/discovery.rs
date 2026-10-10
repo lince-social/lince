@@ -33,6 +33,7 @@ pub enum Availability {
     Installed,
     BridgeMissing,
     RuntimeMissing,
+    RuntimeUnsupported,
     Unavailable,
 }
 
@@ -134,7 +135,6 @@ impl Search {
             .unwrap_or_default();
         if let Some(home) = std::env::var_os("HOME") {
             paths.push(PathBuf::from(&home).join(".local/bin"));
-            paths.push(PathBuf::from(home).join(".local/share/lince/agents/node_modules/.bin"));
         }
         paths.retain(|path| path.is_absolute());
         paths.truncate(96);
@@ -189,11 +189,11 @@ impl Search {
                 .get(&agent.id)
                 .and_then(|alias| alias["native"].as_str())
                 .and_then(|name| self.find(name));
-            let installation = package.map(|package| {
+            let installation = package.and_then(|package| {
                 if package_route == "npx" {
-                    format!("npm install --prefix ~/.local/share/lince/agents {package}")
+                    None
                 } else {
-                    format!("uv tool install {package}")
+                    Some(format!("uv tool install {package}"))
                 }
             });
             let args = distribution["args"].as_array();
@@ -243,7 +243,22 @@ impl Search {
             let runtime_missing = runtime
                 .as_deref()
                 .is_some_and(|runtime| self.find(runtime).is_none());
-            let availability = if runtime_missing {
+            let candidate_config = executable.clone().map(|command| acp::Config {
+                require_vault: false,
+                command,
+                args,
+                directory: self.directory.clone(),
+                additional_directories: Vec::new(),
+                environment,
+                session_meta: Default::default(),
+                options: BTreeMap::new(),
+            });
+            let node = candidate_config
+                .as_ref()
+                .is_some_and(|config| config.requires_node());
+            let availability = if node {
+                Availability::RuntimeUnsupported
+            } else if runtime_missing {
                 Availability::RuntimeMissing
             } else if executable.is_some() {
                 Availability::Installed
@@ -254,21 +269,13 @@ impl Search {
             };
             let detail = match availability {
                 Availability::Installed => "Installed executable found; authentication, capabilities and inference need Check and a real turn.".into(),
-                Availability::BridgeMissing => "Your AI is installed, but its ACP bridge is missing. Install the ecosystem adapter or select another compatible executable.".into(),
+                Availability::BridgeMissing => "Your AI is installed, but its ACP bridge is missing. Choose a native Fiote connection or supply a compatible executable that does not require Node.js.".into(),
                 Availability::RuntimeMissing => format!("The ACP executable requires the missing runtime {}. Put that runtime on the connection's PATH.", runtime.unwrap_or_default()),
                 Availability::Unavailable => "No installed executable found. You can supply another command or install this ACP agent.".into(),
+                Availability::RuntimeUnsupported => "Node.js agent launchers are not supported. Use a native Fiote connection or an ACP executable that does not require Node.js.".into(),
             };
-            let config = if availability == Availability::Installed && args.len() <= 32 {
-                executable.clone().map(|command| acp::Config {
-                    require_vault: false,
-                    command,
-                    args,
-                    directory: self.directory.clone(),
-                    additional_directories: Vec::new(),
-                    environment,
-                    session_meta: Default::default(),
-                    options: BTreeMap::new(),
-                })
+            let config = if availability == Availability::Installed {
+                candidate_config.filter(|config| config.args.len() <= 32)
             } else {
                 None
             };

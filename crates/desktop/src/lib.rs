@@ -58,6 +58,8 @@ pub mod frequency_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod access_control;
+#[cfg(feature = "native-runtime")]
+pub mod visibility_castle;
 pub mod workspace_sync;
 
 #[cfg(feature = "native-runtime")]
@@ -194,6 +196,9 @@ pub mod wake;
 
 #[cfg(feature = "native-runtime")]
 pub mod cell_bridge;
+
+#[cfg(feature = "native-runtime")]
+pub mod location;
 
 #[cfg(feature = "native-runtime")]
 pub mod component_push;

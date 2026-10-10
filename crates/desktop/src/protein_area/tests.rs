@@ -2,6 +2,20 @@ use super::*;
 use bevy::math::DVec2;
 use serde_json::json;
 
+#[test]
+fn laboratory_feed_detaches_before_replacing_a_conversation() {
+    let mut world = World::new();
+    world.init_resource::<Runtime>();
+    let owner = world.spawn_empty().id();
+    laboratory_attach(&mut world, owner, json!({"uid":"record","threads":[]}));
+    assert!(world.get::<LaboratoryFeed>(owner).is_some());
+    assert!(world.resource::<Runtime>().areas.contains_key(&owner));
+    laboratory_detach(&mut world, owner);
+    assert!(world.get::<LaboratoryFeed>(owner).is_none());
+    assert!(!world.resource::<Runtime>().areas.contains_key(&owner));
+    laboratory_detach(&mut world, owner);
+}
+
 #[tokio::test]
 async fn relation_protein_spawns_live_assertion_arrows_and_restores_record_positions() {
     use engine::actions::Action as Backend;

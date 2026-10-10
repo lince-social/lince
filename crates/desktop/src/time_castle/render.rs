@@ -149,7 +149,12 @@ fn svg(
         let point = Vec3::from_array(settings.position(at, now, size.to_array(), view.unwind));
         let cross = Vec3::from_array(settings.transverse(at, now, view.unwind));
         let major = tick.major;
-        let start = point - cross * if major { 11.0 } else { 5.0 };
+        let scale = if view.unwind >= 0.5 {
+            1.0
+        } else {
+            (radius / 128.0).min(1.0)
+        };
+        let start = point - cross * if major { 11.0 } else { 5.0 } * scale;
         let end = point;
         svg.push_str(&format!(
             "<path d='M {} {} L {} {}' stroke='{}' stroke-width='0.8'/>",
@@ -159,14 +164,18 @@ fn svg(
             end.z,
             if major { &muted } else { &track }
         ));
-        if major {
+        if major && (view.unwind >= 0.5 || radius >= 128.0) {
             let label = tick.label;
             let label_point = point - cross * 23.0;
             svg.push_str(&format!("<text x='{}' y='{}' dominant-baseline='central' text-anchor='middle' fill='{muted}' font-size='10' font-family='Lato'>{label}</text>", label_point.x, label_point.z));
         }
     }
-    let occurrences = model::clock_occurrences(settings, &view.entries, now, now + duration);
-    for occurrence in occurrences.into_iter().filter(|_| geometry) {
+    let occurrences = if geometry {
+        model::clock_occurrences(settings, &view.entries, now, now + duration)
+    } else {
+        Vec::new()
+    };
+    for occurrence in occurrences {
         let entry = &view.entries[occurrence.index];
         let points =
             occurrence_points(settings, &occurrence, palette.width, now, size, view.unwind);
@@ -223,37 +232,21 @@ fn svg(
                     .to_string()
             })
             .unwrap_or_else(|| "--:--".into());
-        let scale = (palette.font / 16.0).clamp(0.8, 1.25);
-        svg.push_str(&format!("<text x='0' y='{}' fill='{ink}' font-family='Lato' text-anchor='middle' font-size='{}'>{current}</text>", -radius * 0.63, 26.0 * scale));
-        let (motto_radius, x, y) = motto_arc();
-        let center = radius * 0.8 - motto_radius;
-        svg.push_str(&format!("<g opacity='{}' transform='translate(0 {center})'><g transform='translate(-14 -14) scale(0.875)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><defs><path id='memento-arc' d='M {} {y} A {motto_radius} {motto_radius} 0 0 0 {x} {y}'/></defs><text fill='{ink}' font-family='Lato' font-size='11' letter-spacing='2' text-anchor='middle'><textPath href='#memento-arc' startOffset='50%'>memento mori</textPath></text></g>", 1.0 - view.unwind * 2.0, -x));
+        let layout = face::Face::new(
+            size,
+            palette.font,
+            settings.aperture_ms <= 60_000,
+            face::Face::rows(settings, &view.entries, now),
+        );
+        svg.push_str(&format!("<text x='0' y='{}' fill='{ink}' font-family='Lato' text-anchor='middle' dominant-baseline='central' font-size='{}'>{current}</text>", layout.time.center().y, layout.font));
+        if let Some(memento) = layout.memento {
+            let (motto_radius, x, y) = face::motto_arc();
+            let center = memento.min.y + 14.0;
+            svg.push_str(&format!("<g opacity='{}' transform='translate(0 {center})'><g transform='translate(-14 -14) scale(0.875)' stroke='{ink}' stroke-width='1.3' stroke-linejoin='round'><path d='M16 2C7 2 3 7 3 13C3 18 6 21 9 22V29H23V22C26 21 29 18 29 13C29 7 25 2 16 2Z'/><circle cx='10' cy='13' r='3'/><circle cx='22' cy='13' r='3'/><path d='M16 17L13 21H19Z M9 24H23 M12 24V29 M16 24V29 M20 24V29'/></g><defs><path id='memento-arc' d='M {} {y} A {motto_radius} {motto_radius} 0 0 0 {x} {y}'/></defs><text fill='{ink}' font-family='Lato' font-size='11' letter-spacing='2' text-anchor='middle'><textPath href='#memento-arc' startOffset='50%'>memento mori</textPath></text></g>", 1.0 - view.unwind * 2.0, -x));
+        }
     }
     svg.push_str("</svg>");
     svg
-}
-
-fn motto_arc() -> (f32, f32, f32) {
-    const ANGLE: f32 = 5.0 * std::f32::consts::PI / 12.0;
-    static RADIUS: std::sync::OnceLock<f32> = std::sync::OnceLock::new();
-    let radius = *RADIUS.get_or_init(|| {
-        let face = ttf_parser::Face::parse(
-            include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf"),
-            0,
-        )
-        .unwrap();
-        let width = "memento mori"
-            .chars()
-            .filter_map(|ch| face.glyph_index(ch))
-            .filter_map(|glyph| face.glyph_hor_advance(glyph))
-            .map(f32::from)
-            .sum::<f32>()
-            * 11.0
-            / f32::from(face.units_per_em())
-            + 22.0;
-        width / (2.0 * ANGLE)
-    });
-    (radius, radius * ANGLE.sin(), radius * ANGLE.cos())
 }
 
 fn fonts(cjk: bool) -> std::sync::Arc<resvg::usvg::fontdb::Database> {
@@ -512,15 +505,29 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
         let stamp = (
             settings.clone(),
             revision,
-            now / (settings.aperture_ms / 12).clamp(16, 1000),
+            now / if settings.cursor == CursorMode::Moving
+                && unwind == 0.0
+                && settings.aperture_ms > 60_000
+                && settings.aperture_ms % 720_000 == 0
+            {
+                60_000
+            } else {
+                (settings.aperture_ms / 12).clamp(16, 1000)
+            },
             [
                 (size.x * density).round() as u32,
                 (size.y * density).round() as u32,
+                size.x.to_bits(),
+                size.y.to_bits(),
             ],
             unwind.to_bits(),
             spatial,
+            face::Face::rows(&settings, &world.get::<View>(owner).unwrap().entries, now),
         );
         let changed = world.get::<View>(owner).unwrap().rendered.as_ref() != Some(&stamp);
+        let tick_changed = world
+            .get::<motion::Motion>(owner)
+            .is_none_or(|motion| motion.tick != now / 1000);
         let duration = if spatial {
             settings.horizon_ms
         } else {
@@ -574,14 +581,14 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
             now,
             size,
             round || !settings.floating_cards,
-            changed,
+            changed || tick_changed,
             &palette,
         );
         let following = world
             .get::<motion::Motion>(owner)
             .is_some_and(|motion| motion.active);
         animated |= following;
-        if changed || moving || following {
+        if changed || moving || tick_changed {
             scene::update(world, owner, &settings, now, size, spatial);
         }
         scene::annotations(world, owner, &labels, &palette);
@@ -630,12 +637,12 @@ mod tests {
     }
 
     #[test]
-    fn motto_ends_turn_seventy_five_degrees_around_the_skull_center() {
-        let (radius, x, y) = motto_arc();
-        assert!(((x / radius).asin().to_degrees() - 75.0).abs() < 0.01);
+    fn motto_is_a_semicircle_centered_on_the_skull() {
+        let (radius, x, y) = face::motto_arc();
+        assert!(((x / radius).asin().to_degrees() - 90.0).abs() < 0.01);
         assert!((x.hypot(y) - radius).abs() < 0.01);
         assert!(x > 25.0 && x < 40.0);
-        assert!(y > 5.0 && y < 12.0);
+        assert_eq!(y, 0.0);
     }
 
     #[test]
@@ -658,7 +665,7 @@ mod tests {
             false,
         );
         assert_eq!(svg.matches("<circle cx='0' cy='0'").count(), 1);
-        assert_eq!(svg.matches("dominant-baseline='central'").count(), 12);
+        assert_eq!(svg.matches("dominant-baseline='central'").count(), 13);
         assert!(!svg.contains("simulation"));
         assert!(!svg.contains("Scheduled work"));
         assert!(svg.contains("memento mori"));
@@ -678,6 +685,38 @@ mod tests {
                 .count()
                 > 100
         );
+    }
+
+    #[test]
+    fn small_faces_keep_only_the_digital_time_including_seconds() {
+        let mut world = World::new();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let owner = world
+            .spawn((Node::default(), TimeSettings(Settings::default())))
+            .id();
+        populate(&mut world, owner);
+        let palette = palette::Palette::resolve(&world, owner);
+        for aperture_ms in [60_000, 72_000_000] {
+            let settings = Settings {
+                aperture_ms,
+                ..Settings::default()
+            };
+            for size in [64.0, 80.0, 120.0] {
+                let svg = svg(
+                    &settings,
+                    world.get::<View>(owner).unwrap(),
+                    1_800_000,
+                    Vec2::splat(size),
+                    1.0,
+                    &palette,
+                    false,
+                );
+                assert_eq!(svg.matches("<text ").count(), 1);
+                assert!(!svg.contains("memento mori"));
+                assert!(rasterize(&svg, Vec2::splat(size), 1.0).is_some());
+            }
+        }
     }
 
     #[test]

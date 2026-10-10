@@ -26,6 +26,7 @@ pub struct Laboratory {
     pub reports: Vec<StressReport>,
     pub config: StressConfig,
     pub status: String,
+    pub fiote_target: Option<String>,
     pub resources: super::ResourceSnapshot,
     resources_open: bool,
     component_index: Option<usize>,
@@ -180,6 +181,7 @@ impl Action for LaboratoryAction {
 pub struct LaboratoryPlugin;
 impl Plugin for LaboratoryPlugin {
     fn build(&self, app: &mut App) {
+        super::fiote::install(app);
         app.init_resource::<Laboratory>()
             .add_systems(First, tick)
             .add_systems(Update, render);
@@ -190,6 +192,7 @@ pub fn open(world: &mut World) {
     if active(world) {
         return;
     }
+    let fiote_target=crate::fiote::session::selected_record(world);
     let resources = super::resources::capture(world);
     let mut roots: Vec<_> = world
         .query_filtered::<(Entity, &Node), With<BoxRoot>>()
@@ -240,6 +243,7 @@ pub fn open(world: &mut World) {
         .id();
     let mut lab = world.resource_mut::<Laboratory>();
     lab.root = Some(root);
+    lab.fiote_target=fiote_target;
     lab.resources = resources;
     lab.resources_open = false;
     lab.resource_page = 0;
@@ -298,10 +302,11 @@ pub fn close(world: &mut World) {
 
 fn busy(world: &World) -> bool {
     let lab = world.resource::<Laboratory>();
-    lab.stress.is_some() || lab.behavior.as_ref().is_some_and(|run| !run.finished())
+    lab.stress.is_some() || lab.behavior.as_ref().is_some_and(|run| !run.finished()) || super::fiote::busy(world)
 }
 
 fn stop(world: &mut World) {
+    super::fiote::cancel(world);
     let mut lab = world.resource_mut::<Laboratory>();
     lab.full = false;
     if let Some(run) = &mut lab.behavior
@@ -583,6 +588,7 @@ fn render(world: &mut World) {
                 world.entity_mut(button).insert(ResourceControl);
             }
         }
+        crate::description::button(world, buttons, root, "Test real Fiote conversation", super::fiote::Open);
         world.spawn((
             StatusText,
             Text::new(""),
@@ -643,6 +649,7 @@ fn export(world: &mut World) {
         "behavior_cancelled": lab.behavior.as_ref().is_some_and(|run| run.cancelled),
         "stress": lab.reports,
         "running_stress": lab.stress.as_ref().map(|run| &run.report),
+        "fiote": super::fiote::exported(world),
     });
     let directory = world
         .get_resource::<crate::workspace::WorkspaceFile>()

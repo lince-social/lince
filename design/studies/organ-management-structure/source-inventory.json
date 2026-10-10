@@ -1,0 +1,1851 @@
+{
+  "baseline": "Existing Rust Castle, including nested Configuration and social tools",
+  "captured_forms": [
+    {
+      "page": "add",
+      "command": "add-known-organ",
+      "source": "crates/desktop/src/organ_castle/ui.rs:32",
+      "title": "Add known contact"
+    },
+    {
+      "page": "records",
+      "command": "edit-record-text",
+      "source": "crates/desktop/src/organ_castle/ui.rs:130",
+      "title": "Save Organ"
+    },
+    {
+      "page": "records",
+      "command": "delete-record",
+      "source": "crates/desktop/src/organ_castle/ui.rs:142",
+      "title": "Delete Organ"
+    },
+    {
+      "page": "contact",
+      "command": "rename-organ-contact",
+      "source": "crates/desktop/src/organ_castle/ui.rs:212",
+      "title": "Rename locally"
+    },
+    {
+      "page": "contact-policy",
+      "command": "set-contact-trust",
+      "source": "crates/desktop/src/organ_castle/ui.rs:221",
+      "title": "Save trust"
+    },
+    {
+      "page": "contact-policy",
+      "command": "set-contact-proximity",
+      "source": "crates/desktop/src/organ_castle/ui.rs:235",
+      "title": "Save proximity"
+    },
+    {
+      "page": "contact-policy",
+      "command": "set-sync-policy",
+      "source": "crates/desktop/src/organ_castle/ui.rs:249",
+      "title": "Save feed direction"
+    },
+    {
+      "page": "contact-policy",
+      "command": "set-contact-delivery",
+      "source": "crates/desktop/src/organ_castle/ui.rs:273",
+      "title": "Save delivery choice"
+    },
+    {
+      "page": "contact",
+      "command": "reconnect-contact",
+      "source": "crates/desktop/src/organ_castle/ui.rs:276",
+      "title": "Reconnect and refresh device list"
+    },
+    {
+      "page": "contact",
+      "command": "sync-now",
+      "source": "crates/desktop/src/organ_castle/ui.rs:277",
+      "title": "Synchronize now"
+    },
+    {
+      "page": "contact-policy",
+      "command": "hide-record-from-contact",
+      "source": "crates/desktop/src/organ_castle/ui.rs:319",
+      "title": "Hide Record"
+    },
+    {
+      "page": "contact-policy",
+      "command": "hide-record-from-contact",
+      "source": "crates/desktop/src/organ_castle/ui.rs:337",
+      "title": "Unhide Record"
+    },
+    {
+      "page": "contact",
+      "command": "start-conversation",
+      "source": "crates/desktop/src/organ_castle/ui.rs:391",
+      "title": "Start conversation"
+    },
+    {
+      "page": "contact-access",
+      "command": "audit-contact",
+      "source": "crates/desktop/src/organ_castle/ui.rs:401",
+      "title": "Audit contact's roster"
+    },
+    {
+      "page": "contact-access",
+      "command": "grant-organ-login",
+      "source": "crates/desktop/src/organ_castle/ui.rs:408",
+      "title": "Grant login"
+    },
+    {
+      "page": "contact-access",
+      "command": "revoke-organ-login",
+      "source": "crates/desktop/src/organ_castle/ui.rs:417",
+      "title": "Revoke login"
+    },
+    {
+      "page": "contact",
+      "command": "forget-organ-contact",
+      "source": "crates/desktop/src/organ_castle/ui.rs:433",
+      "title": "Forget contact"
+    },
+    {
+      "page": "contact-files",
+      "command": "set-extension",
+      "source": "crates/desktop/src/organ_castle/ui.rs:491",
+      "title": "Save File Sync"
+    },
+    {
+      "page": "contact-files",
+      "command": "file-sync-status",
+      "source": "crates/desktop/src/organ_castle/ui.rs:519",
+      "title": "Check File Sync conflicts"
+    },
+    {
+      "page": "nearby",
+      "command": "nearby-chat",
+      "source": "crates/desktop/src/organ_castle/ui.rs:627",
+      "title": "Chat"
+    },
+    {
+      "page": "nearby",
+      "command": "nearby-pair",
+      "source": "crates/desktop/src/organ_castle/ui.rs:638",
+      "title": "Add known"
+    },
+    {
+      "page": "devices",
+      "command": "roster-create-organ",
+      "source": "crates/desktop/src/organ_castle/ui.rs:683",
+      "title": "Create my Organ"
+    },
+    {
+      "page": "devices",
+      "command": "roster-rename-cell",
+      "source": "crates/desktop/src/organ_castle/ui.rs:722",
+      "title": "Save device name"
+    },
+    {
+      "page": "devices",
+      "command": "roster-set-karma-execution",
+      "source": "crates/desktop/src/organ_castle/ui.rs:757",
+      "title": "Disable Karma on this device"
+    },
+    {
+      "page": "devices",
+      "command": "roster-set-karma-execution",
+      "source": "crates/desktop/src/organ_castle/ui.rs:759",
+      "title": "Use this device as the only Karma executor"
+    },
+    {
+      "page": "devices",
+      "command": "roster-set-karma-execution",
+      "source": "crates/desktop/src/organ_castle/ui.rs:761",
+      "title": "Allow this device to run Karma alongside the others"
+    },
+    {
+      "page": "devices",
+      "command": "roster-revoke-cell",
+      "source": "crates/desktop/src/organ_castle/ui.rs:777",
+      "title": "Remove device"
+    },
+    {
+      "page": "devices",
+      "command": "set-cell-config",
+      "source": "crates/desktop/src/organ_castle/ui.rs:795",
+      "title": "Set cell config"
+    },
+    {
+      "page": "devices",
+      "command": "roster-status",
+      "source": "crates/desktop/src/organ_castle/ui.rs:798",
+      "title": "Refresh device status and waiting visitors"
+    },
+    {
+      "page": "enrol",
+      "command": "roster-enrol-token",
+      "source": "crates/desktop/src/organ_castle/ui.rs:810",
+      "title": "Issue device enrolment code"
+    },
+    {
+      "page": "enrol",
+      "command": "roster-join-organ",
+      "source": "crates/desktop/src/organ_castle/ui.rs:817",
+      "title": "Join my existing Organ"
+    },
+    {
+      "page": "recovery",
+      "command": "root-key-export",
+      "source": "crates/desktop/src/organ_castle/ui.rs:834",
+      "title": "Export root key"
+    },
+    {
+      "page": "recovery",
+      "command": "root-key-detach",
+      "source": "crates/desktop/src/organ_castle/ui.rs:843",
+      "title": "Detach root key"
+    },
+    {
+      "page": "mail",
+      "command": "mailbox-set-copies",
+      "source": "crates/desktop/src/organ_castle/ui.rs:862",
+      "title": "Save mailbox copy policy"
+    },
+    {
+      "page": "carriers",
+      "command": "mailbox-answer-request",
+      "source": "crates/desktop/src/organ_castle/ui.rs:914",
+      "title": "Answer carrying request"
+    },
+    {
+      "page": "carriers",
+      "command": "mailbox-use-invite",
+      "source": "crates/desktop/src/organ_castle/ui.rs:926",
+      "title": "Use carrying invite"
+    },
+    {
+      "page": "mail",
+      "command": "mailbox-retry-saved",
+      "source": "crates/desktop/src/organ_castle/ui.rs:977",
+      "title": "Retry recovery"
+    },
+    {
+      "page": "add",
+      "command": "scan-file",
+      "source": "crates/desktop/src/organ_castle/qr.rs:89",
+      "title": "Read QR image"
+    },
+    {
+      "page": "add",
+      "command": "scan-camera",
+      "source": "crates/desktop/src/organ_castle/qr.rs:100",
+      "title": "Scan with camera"
+    },
+    {
+      "page": "discover",
+      "command": "overview",
+      "source": "crates/desktop/src/organ_castle/social.rs:99",
+      "title": "Refresh My posts and services"
+    },
+    {
+      "page": "requests",
+      "command": "requests",
+      "source": "crates/desktop/src/organ_castle/social.rs:108",
+      "title": "Requests and private conversations"
+    },
+    {
+      "page": "servers",
+      "command": "inspect-service",
+      "source": "crates/desktop/src/organ_castle/social.rs:118",
+      "title": "Inspect a social server"
+    },
+    {
+      "page": "requests",
+      "command": "reset-private-sessions",
+      "source": "crates/desktop/src/organ_castle/social.rs:132",
+      "title": "Reset this device's live private messaging keys"
+    },
+    {
+      "page": "posts",
+      "command": "prepare-from-record",
+      "source": "crates/desktop/src/organ_castle/social.rs:143",
+      "title": "Prepare from an existing Need/Contribution"
+    },
+    {
+      "page": "discover",
+      "command": "search",
+      "source": "crates/desktop/src/organ_castle/social.rs:157",
+      "title": "Search local announcements"
+    },
+    {
+      "page": "posts",
+      "command": "save-draft",
+      "source": "crates/desktop/src/organ_castle/social.rs:298",
+      "title": "Save announcement draft"
+    },
+    {
+      "page": "profile",
+      "command": "import-profile-image-data",
+      "source": "crates/desktop/src/organ_castle/social.rs:338",
+      "title": "Prepare public profile image"
+    },
+    {
+      "page": "profile",
+      "command": "save-profile",
+      "source": "crates/desktop/src/organ_castle/social.rs:428",
+      "title": "Save shared public profile"
+    },
+    {
+      "page": "profile",
+      "command": "overview",
+      "source": "crates/desktop/src/organ_castle/social.rs:489",
+      "title": "Reload public profile"
+    },
+    {
+      "page": "profile",
+      "command": "rotate-profile-authority",
+      "source": "crates/desktop/src/organ_castle/social.rs:499",
+      "title": "Change public editing authority"
+    },
+    {
+      "page": "profile",
+      "command": "withdraw-profile",
+      "source": "crates/desktop/src/organ_castle/social.rs:523",
+      "title": "Withdraw public profile from its hosts"
+    },
+    {
+      "page": "requests",
+      "command": "discard-private",
+      "source": "crates/desktop/src/organ_castle/social.rs:715",
+      "title": "Discard unreadable ciphertext"
+    },
+    {
+      "page": "requests",
+      "command": "resume-request",
+      "source": "crates/desktop/src/organ_castle/social.rs:747",
+      "title": "Resume this introduction on this device"
+    },
+    {
+      "page": "requests",
+      "command": "archive-request",
+      "source": "crates/desktop/src/organ_castle/social.rs:761",
+      "title": "Discard saved introduction"
+    },
+    {
+      "page": "requests",
+      "command": "private-delivery-status",
+      "source": "crates/desktop/src/organ_castle/social.rs:809",
+      "title": "Review delivery or resume this saved message"
+    },
+    {
+      "page": "requests",
+      "command": "send-private",
+      "source": "crates/desktop/src/organ_castle/social.rs:833",
+      "title": "Send private reply"
+    },
+    {
+      "page": "requests",
+      "command": "reveal-profile",
+      "source": "crates/desktop/src/organ_castle/social.rs:849",
+      "title": "Reveal my Organ profile in this conversation"
+    },
+    {
+      "page": "requests",
+      "command": "connect-participant",
+      "source": "crates/desktop/src/organ_castle/social.rs:891",
+      "title": "Connect as known contacts"
+    },
+    {
+      "page": "requests",
+      "command": "decide-request",
+      "source": "crates/desktop/src/organ_castle/social.rs:923",
+      "title": "Decide request"
+    },
+    {
+      "page": "requests",
+      "command": "archive-request",
+      "source": "crates/desktop/src/organ_castle/social.rs:939",
+      "title": "Archive this private conversation"
+    },
+    {
+      "page": "requests",
+      "command": "unblock-participant",
+      "source": "crates/desktop/src/organ_castle/social.rs:962",
+      "title": "Unblock this private identity"
+    },
+    {
+      "page": "requests",
+      "command": "requests",
+      "source": "crates/desktop/src/organ_castle/social.rs:978",
+      "title": "Next Requests page"
+    },
+    {
+      "page": "posts",
+      "command": "reply-key-status",
+      "source": "crates/desktop/src/organ_castle/social.rs:1073",
+      "title": "Private reply key status"
+    },
+    {
+      "page": "posts",
+      "command": "prepare-reply-keys",
+      "source": "crates/desktop/src/organ_castle/social.rs:1082",
+      "title": "Prepare this device's private reply keys"
+    },
+    {
+      "page": "posts",
+      "command": "save-draft",
+      "source": "crates/desktop/src/organ_castle/social.rs:1101",
+      "title": "Use preserved draft Record: Record"
+    },
+    {
+      "page": "posts",
+      "command": "preview",
+      "source": "crates/desktop/src/organ_castle/social.rs:1123",
+      "title": "Preview"
+    },
+    {
+      "page": "posts",
+      "command": "archive-post",
+      "source": "crates/desktop/src/organ_castle/social.rs:1133",
+      "title": "Archive ended announcement"
+    },
+    {
+      "page": "posts",
+      "command": "post-page",
+      "source": "crates/desktop/src/organ_castle/social.rs:1146",
+      "title": "Next My posts page"
+    },
+    {
+      "page": "posts",
+      "command": "publish",
+      "source": "crates/desktop/src/organ_castle/social.rs:1282",
+      "title": "Publish this exact preview"
+    },
+    {
+      "page": "discover",
+      "command": "preview",
+      "source": "crates/desktop/src/organ_castle/social.rs:1326",
+      "title": "Preview saved announcement"
+    },
+    {
+      "page": "discover",
+      "command": "open-request",
+      "source": "crates/desktop/src/organ_castle/social.rs:1389",
+      "title": "Write a private introduction"
+    },
+    {
+      "page": "discover",
+      "command": "fetch-profile",
+      "source": "crates/desktop/src/organ_castle/social.rs:1421",
+      "title": "View public Organ profile"
+    },
+    {
+      "page": "discover",
+      "command": "search",
+      "source": "crates/desktop/src/organ_castle/social.rs:1449",
+      "title": "Continue browsing announcements"
+    },
+    {
+      "page": "discover",
+      "command": "fetch-profile-image",
+      "source": "crates/desktop/src/organ_castle/social.rs:1519",
+      "title": "Load public {key}"
+    },
+    {
+      "page": "hosting",
+      "command": "configure-services",
+      "source": "crates/desktop/src/organ_castle/social.rs:1836",
+      "title": "Save social service roles"
+    },
+    {
+      "page": "servers",
+      "command": "save-server",
+      "source": "crates/desktop/src/organ_castle/social.rs:1904",
+      "title": "Remember server roles"
+    },
+    {
+      "page": "gossip",
+      "command": "configure-gossip",
+      "source": "crates/desktop/src/organ_castle/social.rs:1959",
+      "title": "Save this device's gossip participation"
+    },
+    {
+      "page": "gossip",
+      "command": "set-gossip-contact",
+      "source": "crates/desktop/src/organ_castle/social.rs:2014",
+      "title": "Clear retained gossip consent"
+    },
+    {
+      "page": "gossip",
+      "command": "set-gossip-contact",
+      "source": "crates/desktop/src/organ_castle/social.rs:2030",
+      "title": "Save separate contact gossip consent"
+    },
+    {
+      "page": "servers",
+      "command": "inspect-service",
+      "source": "crates/desktop/src/organ_castle/social.rs:2086",
+      "title": "Inspect remembered server"
+    },
+    {
+      "page": "servers",
+      "command": "remove-server",
+      "source": "crates/desktop/src/organ_castle/social.rs:2095",
+      "title": "Remove remembered server"
+    },
+    {
+      "page": "servers",
+      "command": "search",
+      "source": "crates/desktop/src/organ_castle/social.rs:2108",
+      "title": "Browse chosen servers"
+    },
+    {
+      "page": "servers",
+      "command": "search",
+      "source": "crates/desktop/src/organ_castle/social.rs:2119",
+      "title": "Search chosen servers"
+    },
+    {
+      "page": "contact-search",
+      "command": "configure-ask",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:9",
+      "title": "Save this device's contact search participation"
+    },
+    {
+      "page": "contact-search",
+      "command": "ask-status",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:24",
+      "title": "Refresh contact query progress"
+    },
+    {
+      "page": "contact-search",
+      "command": "set-ask-contact",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:38",
+      "title": "Clear removed or blocked contact's query consent"
+    },
+    {
+      "page": "contact-search",
+      "command": "set-ask-contact",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:54",
+      "title": "Save this contact's separate query permissions"
+    },
+    {
+      "page": "contact-search",
+      "command": "start-ask",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:97",
+      "title": "Ask contact"
+    },
+    {
+      "page": "contact-search",
+      "command": "cancel-ask",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:170",
+      "title": "Cancel this contact query"
+    },
+    {
+      "page": "contact-search",
+      "command": "ask-results",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:181",
+      "title": "View this query's saved answers"
+    },
+    {
+      "page": "contact-search",
+      "command": "clear-asks",
+      "source": "crates/desktop/src/organ_castle/social/ask.rs:192",
+      "title": "Clear finished local contact-query history"
+    },
+    {
+      "page": "discover",
+      "command": "search",
+      "source": "crates/desktop/src/organ_castle/social/discovery_sources.rs:54",
+      "title": "Review the next local conflict page"
+    },
+    {
+      "page": "moderation",
+      "command": "mute-post",
+      "source": "crates/desktop/src/organ_castle/social/moderation.rs:22",
+      "title": "Mute post"
+    },
+    {
+      "page": "moderation",
+      "command": "remove-listing",
+      "source": "crates/desktop/src/organ_castle/social/moderation.rs:53",
+      "title": "Remove a listing on this host"
+    },
+    {
+      "page": "moderation",
+      "command": "unmute",
+      "source": "crates/desktop/src/organ_castle/social/moderation.rs:101",
+      "title": "Show this target again"
+    },
+    {
+      "page": "moderation",
+      "command": "mutes",
+      "source": "crates/desktop/src/organ_castle/social/moderation.rs:113",
+      "title": "Next hidden targets"
+    },
+    {
+      "page": "moderation",
+      "command": "restore-listing",
+      "source": "crates/desktop/src/organ_castle/social/moderation.rs:141",
+      "title": "Restore this listing if still valid"
+    },
+    {
+      "page": "moderation",
+      "command": "removed-listings",
+      "source": "crates/desktop/src/organ_castle/social/moderation.rs:155",
+      "title": "Next removed listings"
+    },
+    {
+      "page": "moderation",
+      "command": "preview-report",
+      "source": "crates/desktop/src/organ_castle/social/reports.rs:16",
+      "title": "Preview a report to one operator"
+    },
+    {
+      "page": "moderation",
+      "command": "send-report",
+      "source": "crates/desktop/src/organ_castle/social/reports.rs:93",
+      "title": "Send this exact report"
+    },
+    {
+      "page": "moderation",
+      "command": "clear-reports",
+      "source": "crates/desktop/src/organ_castle/social/reports.rs:136",
+      "title": "Clear my report work"
+    },
+    {
+      "page": "moderation",
+      "command": "dismiss-report",
+      "source": "crates/desktop/src/organ_castle/social/reports.rs:182",
+      "title": "Dismiss this report"
+    },
+    {
+      "page": "moderation",
+      "command": "remove-listing",
+      "source": "crates/desktop/src/organ_castle/social/reports.rs:194",
+      "title": "Remove this host's current listing"
+    },
+    {
+      "page": "moderation",
+      "command": "received-reports",
+      "source": "crates/desktop/src/organ_castle/social/reports.rs:215",
+      "title": "Next received reports"
+    },
+    {
+      "page": "requests",
+      "command": "resend-expired-private",
+      "source": "crates/desktop/src/organ_castle/social/resend.rs:67",
+      "title": "Resend this expired Message"
+    },
+    {
+      "page": "requests",
+      "command": "resume-private",
+      "source": "crates/desktop/src/organ_castle/social/resend.rs:87",
+      "title": "Resume this saved Message on this device"
+    },
+    {
+      "page": "searches",
+      "command": "save-subscription",
+      "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:4",
+      "title": "Save this search filter"
+    },
+    {
+      "page": "searches",
+      "command": "subscriptions",
+      "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:102",
+      "title": "Saved searches and notification settings"
+    },
+    {
+      "page": "searches",
+      "command": "configure-subscriptions",
+      "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:127",
+      "title": "Enable periodic checks on this device"
+    },
+    {
+      "page": "searches",
+      "command": "search",
+      "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:207",
+      "title": "Search these chosen directories now"
+    },
+    {
+      "page": "searches",
+      "command": "subscriptions",
+      "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:223",
+      "title": "Next saved filters"
+    }
+  ],
+  "pages": {
+    "identity": [
+      {
+        "control": "Save identity",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "configuration-save-identity"
+      }
+    ],
+    "records": [
+      {
+        "control": "Save Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs:130",
+        "prototype_operation": "edit-record-text"
+      },
+      {
+        "control": "Delete Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs:142",
+        "prototype_operation": "delete-record"
+      },
+      {
+        "control": "Save Organ Record",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "edit-record-text-save-organ-record"
+      },
+      {
+        "control": "Delete Organ Record",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "delete-record-delete-organ-record"
+      },
+      {
+        "control": "Reload selected Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "reload-organ"
+      }
+    ],
+    "pairing": [
+      {
+        "control": "Copy pairing code",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "copy-pairing"
+      }
+    ],
+    "contacts": [],
+    "contact": [
+      {
+        "control": "Rename locally",
+        "source": "crates/desktop/src/organ_castle/ui.rs:212",
+        "prototype_operation": "rename-organ-contact"
+      },
+      {
+        "control": "Reconnect and refresh device list",
+        "source": "crates/desktop/src/organ_castle/ui.rs:276",
+        "prototype_operation": "reconnect-contact"
+      },
+      {
+        "control": "Synchronize now",
+        "source": "crates/desktop/src/organ_castle/ui.rs:277",
+        "prototype_operation": "sync-now"
+      },
+      {
+        "control": "Start conversation",
+        "source": "crates/desktop/src/organ_castle/ui.rs:391",
+        "prototype_operation": "start-conversation"
+      },
+      {
+        "control": "Forget contact",
+        "source": "crates/desktop/src/organ_castle/ui.rs:433",
+        "prototype_operation": "forget-organ-contact"
+      },
+      {
+        "control": "Open conversation",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "open-conversation"
+      },
+      {
+        "control": "Open live Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "open-live-organ"
+      }
+    ],
+    "contact-policy": [
+      {
+        "control": "Save trust",
+        "source": "crates/desktop/src/organ_castle/ui.rs:221",
+        "prototype_operation": "set-contact-trust"
+      },
+      {
+        "control": "Save proximity",
+        "source": "crates/desktop/src/organ_castle/ui.rs:235",
+        "prototype_operation": "set-contact-proximity"
+      },
+      {
+        "control": "Save feed direction",
+        "source": "crates/desktop/src/organ_castle/ui.rs:249",
+        "prototype_operation": "set-sync-policy"
+      },
+      {
+        "control": "Save delivery choice",
+        "source": "crates/desktop/src/organ_castle/ui.rs:273",
+        "prototype_operation": "set-contact-delivery"
+      },
+      {
+        "control": "Hide Record",
+        "source": "crates/desktop/src/organ_castle/ui.rs:319",
+        "prototype_operation": "hide-record-from-contact"
+      },
+      {
+        "control": "Unhide Record",
+        "source": "crates/desktop/src/organ_castle/ui.rs:337",
+        "prototype_operation": "hide-record-from-contact-unhide-record"
+      },
+      {
+        "control": "Save outgoing fields",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "set-contact-scope"
+      },
+      {
+        "control": "Save incoming fields",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "set-contact-accept-scope"
+      },
+      {
+        "control": "Unhide Record",
+        "source": "crates/desktop/src/organ_castle/social/../ui.rs",
+        "prototype_operation": "unhide-record"
+      }
+    ],
+    "contact-access": [
+      {
+        "control": "Audit contact's roster",
+        "source": "crates/desktop/src/organ_castle/ui.rs:401",
+        "prototype_operation": "audit-contact"
+      },
+      {
+        "control": "Grant login",
+        "source": "crates/desktop/src/organ_castle/ui.rs:408",
+        "prototype_operation": "grant-organ-login"
+      },
+      {
+        "control": "Revoke login",
+        "source": "crates/desktop/src/organ_castle/ui.rs:417",
+        "prototype_operation": "revoke-organ-login"
+      },
+      {
+        "control": "Shared workspaces",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "open-workspaces"
+      },
+      {
+        "control": "Sign out of live Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "logout-organ"
+      }
+    ],
+    "contact-files": [
+      {
+        "control": "Save File Sync",
+        "source": "crates/desktop/src/organ_castle/ui.rs:491",
+        "prototype_operation": "set-extension"
+      },
+      {
+        "control": "Check File Sync conflicts",
+        "source": "crates/desktop/src/organ_castle/ui.rs:519",
+        "prototype_operation": "file-sync-status"
+      }
+    ],
+    "add": [
+      {
+        "control": "Add known contact",
+        "source": "crates/desktop/src/organ_castle/ui.rs:32",
+        "prototype_operation": "add-known-organ"
+      },
+      {
+        "control": "Read QR image",
+        "source": "crates/desktop/src/organ_castle/qr.rs:89",
+        "prototype_operation": "scan-file"
+      },
+      {
+        "control": "Scan with camera",
+        "source": "crates/desktop/src/organ_castle/qr.rs:100",
+        "prototype_operation": "scan-camera"
+      },
+      {
+        "control": "Stop camera scan",
+        "source": "crates/desktop/src/organ_castle/qr.rs:105",
+        "prototype_operation": "stop-camera-add"
+      }
+    ],
+    "nearby": [
+      {
+        "control": "Chat",
+        "source": "crates/desktop/src/organ_castle/ui.rs:627",
+        "prototype_operation": "nearby-chat"
+      },
+      {
+        "control": "Add known",
+        "source": "crates/desktop/src/organ_castle/ui.rs:638",
+        "prototype_operation": "nearby-pair"
+      }
+    ],
+    "devices": [
+      {
+        "control": "Create my Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs:683",
+        "prototype_operation": "roster-create-organ"
+      },
+      {
+        "control": "Save device name",
+        "source": "crates/desktop/src/organ_castle/ui.rs:722",
+        "prototype_operation": "roster-rename-cell"
+      },
+      {
+        "control": "Disable Karma on this device",
+        "source": "crates/desktop/src/organ_castle/ui.rs:757",
+        "prototype_operation": "roster-set-karma-execution"
+      },
+      {
+        "control": "Use this device as the only Karma executor",
+        "source": "crates/desktop/src/organ_castle/ui.rs:759",
+        "prototype_operation": "roster-set-karma-execution-use-this-device-as-the-only-karma-executor"
+      },
+      {
+        "control": "Allow this device to run Karma alongside the others",
+        "source": "crates/desktop/src/organ_castle/ui.rs:761",
+        "prototype_operation": "roster-set-karma-execution-allow-this-device-to-run-karma-alongside-the-others"
+      },
+      {
+        "control": "Remove device",
+        "source": "crates/desktop/src/organ_castle/ui.rs:777",
+        "prototype_operation": "roster-revoke-cell"
+      },
+      {
+        "control": "Set cell config",
+        "source": "crates/desktop/src/organ_castle/ui.rs:795",
+        "prototype_operation": "set-cell-config"
+      },
+      {
+        "control": "Refresh device status and waiting visitors",
+        "source": "crates/desktop/src/organ_castle/ui.rs:798",
+        "prototype_operation": "roster-status"
+      },
+      {
+        "control": "Stop Karma on this Cell",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "karma-stop"
+      },
+      {
+        "control": "Run permitted Karma on this Cell",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "karma-run"
+      },
+      {
+        "control": "Use this device as the only Karma executor",
+        "source": "crates/desktop/src/organ_castle/social/../ui.rs",
+        "prototype_operation": "karma-only"
+      },
+      {
+        "control": "Allow this device to run Karma alongside the others",
+        "source": "crates/desktop/src/organ_castle/social/../ui.rs",
+        "prototype_operation": "karma-alongside"
+      }
+    ],
+    "enrol": [
+      {
+        "control": "Issue device enrolment code",
+        "source": "crates/desktop/src/organ_castle/ui.rs:810",
+        "prototype_operation": "roster-enrol-token"
+      },
+      {
+        "control": "Join my existing Organ",
+        "source": "crates/desktop/src/organ_castle/ui.rs:817",
+        "prototype_operation": "roster-join-organ"
+      },
+      {
+        "control": "Read QR image",
+        "source": "crates/desktop/src/organ_castle/qr.rs:89",
+        "prototype_operation": "enrol-scan-file"
+      },
+      {
+        "control": "Scan with camera",
+        "source": "crates/desktop/src/organ_castle/qr.rs:100",
+        "prototype_operation": "enrol-scan-camera"
+      },
+      {
+        "control": "Stop camera scan",
+        "source": "crates/desktop/src/organ_castle/qr.rs:105",
+        "prototype_operation": "stop-camera-enrol"
+      }
+    ],
+    "recovery": [
+      {
+        "control": "Export root key",
+        "source": "crates/desktop/src/organ_castle/ui.rs:834",
+        "prototype_operation": "root-key-export"
+      },
+      {
+        "control": "Detach root key",
+        "source": "crates/desktop/src/organ_castle/ui.rs:843",
+        "prototype_operation": "root-key-detach"
+      },
+      {
+        "control": "Back up and reopen Lince",
+        "source": "crates/desktop/src/owner_backup.rs",
+        "prototype_operation": "owner-backup"
+      }
+    ],
+    "network": [
+      {
+        "control": "Find devices on this Wi-Fi",
+        "source": "crates/desktop/src/configuration.rs",
+        "prototype_operation": "find-lan"
+      },
+      {
+        "control": "Save discovery and restart connections",
+        "source": "crates/desktop/src/configuration.rs",
+        "prototype_operation": "save-discovery"
+      },
+      {
+        "control": "Save peer port",
+        "source": "crates/desktop/src/configuration.rs",
+        "prototype_operation": "save-peer-port"
+      }
+    ],
+    "storage": [
+      {
+        "control": "Save disk budget",
+        "source": "crates/desktop/src/configuration.rs",
+        "prototype_operation": "save-disk-budget"
+      },
+      {
+        "control": "Save directory",
+        "source": "crates/desktop/src/configuration.rs",
+        "prototype_operation": "save-directory"
+      },
+      {
+        "control": "Reload sync settings",
+        "source": "crates/desktop/src/configuration.rs",
+        "prototype_operation": "reload-sync"
+      }
+    ],
+    "copies": [
+      {
+        "control": "Choose files",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "prepare-copy"
+      },
+      {
+        "control": "Choose folder",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "prepare-folder"
+      },
+      {
+        "control": "Clear selection",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "copy-clear"
+      },
+      {
+        "control": "Send copy",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "send-copy"
+      },
+      {
+        "control": "Accept and save copy",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "accept-copy"
+      },
+      {
+        "control": "Change save folder",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "copy-folder"
+      },
+      {
+        "control": "Decline copy",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "decline-copy"
+      },
+      {
+        "control": "Cancel copy",
+        "source": "crates/desktop/src/sync_castle/blobs.rs",
+        "prototype_operation": "cancel-copy"
+      }
+    ],
+    "workspaces": [
+      {
+        "control": "Connect or reload workspaces",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-connect"
+      },
+      {
+        "control": "Sign in",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-login"
+      },
+      {
+        "control": "Sign out",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-logout"
+      },
+      {
+        "control": "Open a separate permitted view",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-view"
+      },
+      {
+        "control": "Create hosted workspace",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-create"
+      },
+      {
+        "control": "Edit read ceiling or write grant",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-selector"
+      },
+      {
+        "control": "Preview policy admission",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-policy-preview"
+      },
+      {
+        "control": "Add policy grant",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-grant"
+      },
+      {
+        "control": "Allow assertion additions or removals",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-assertions"
+      },
+      {
+        "control": "Propose policy change",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-policy"
+      },
+      {
+        "control": "Add Text, Record or Area",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-element"
+      },
+      {
+        "control": "Propose Record changes",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-record"
+      },
+      {
+        "control": "Propose new Record or deletion",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-record-create-delete"
+      },
+      {
+        "control": "Propose selected Area behavior",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-area"
+      },
+      {
+        "control": "Preview operation and Record consequences",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-preview"
+      },
+      {
+        "control": "Save draft on this computer",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-draft"
+      },
+      {
+        "control": "Recover local drafts",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-drafts"
+      },
+      {
+        "control": "Discard draft",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-discard"
+      },
+      {
+        "control": "Submit operation",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-submit"
+      },
+      {
+        "control": "Review changes and history",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-history"
+      },
+      {
+        "control": "Revise and resubmit as my change",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-revise"
+      },
+      {
+        "control": "Preview as original Actor",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-actor-preview"
+      },
+      {
+        "control": "Approve against current revision",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-approve"
+      },
+      {
+        "control": "Reject change",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-reject"
+      },
+      {
+        "control": "Older or latest changes",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-history-page"
+      },
+      {
+        "control": "Delete hosted workspace",
+        "source": "crates/desktop/src/workspace_sync.rs",
+        "prototype_operation": "workspace-delete"
+      }
+    ],
+    "sync-tools": [
+      {
+        "control": "Latest activity",
+        "source": "crates/desktop/src/information/sync.rs",
+        "prototype_operation": "sync-latest"
+      },
+      {
+        "control": "Older activity",
+        "source": "crates/desktop/src/information/sync.rs",
+        "prototype_operation": "sync-older"
+      },
+      {
+        "control": "Set history retention",
+        "source": "crates/desktop/src/information/sync.rs",
+        "prototype_operation": "sync-retain"
+      },
+      {
+        "control": "Clear recent history",
+        "source": "crates/desktop/src/information/sync.rs",
+        "prototype_operation": "sync-clear"
+      }
+    ],
+    "moves": [
+      {
+        "control": "Preview complete move",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "move-preview"
+      },
+      {
+        "control": "Offer previewed move",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "move-offer"
+      },
+      {
+        "control": "Accept invitation",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "offer-accept"
+      },
+      {
+        "control": "Decline privately",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "offer-decline"
+      },
+      {
+        "control": "Cancel replica offer",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "replica-cancel"
+      },
+      {
+        "control": "Accept move and complete set",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "move-accept"
+      },
+      {
+        "control": "Decline move privately",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "move-decline"
+      },
+      {
+        "control": "Cancel move",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "move-cancel"
+      },
+      {
+        "control": "Accept Transfer invitation",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "transfer-accept"
+      },
+      {
+        "control": "Reject Transfer invitation",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "transfer-reject"
+      },
+      {
+        "control": "Accept file copy",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "offer-copy-accept"
+      },
+      {
+        "control": "Cancel file copy",
+        "source": "crates/desktop/src/sync_castle/offers.rs",
+        "prototype_operation": "offer-copy-cancel"
+      }
+    ],
+    "mail": [
+      {
+        "control": "Save mailbox copy policy",
+        "source": "crates/desktop/src/organ_castle/ui.rs:862",
+        "prototype_operation": "mailbox-set-copies"
+      },
+      {
+        "control": "Retry recovery",
+        "source": "crates/desktop/src/organ_castle/ui.rs:977",
+        "prototype_operation": "mailbox-retry-saved"
+      },
+      {
+        "control": "Refresh outgoing mail",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-outbound"
+      },
+      {
+        "control": "Collect mail now",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-collect-now"
+      },
+      {
+        "control": "Check saved message recovery",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-saved-status"
+      }
+    ],
+    "carriers": [
+      {
+        "control": "Answer carrying request",
+        "source": "crates/desktop/src/organ_castle/ui.rs:914",
+        "prototype_operation": "mailbox-answer-request"
+      },
+      {
+        "control": "Use carrying invite",
+        "source": "crates/desktop/src/organ_castle/ui.rs:926",
+        "prototype_operation": "mailbox-use-invite"
+      },
+      {
+        "control": "Refresh carried mail",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-status"
+      },
+      {
+        "control": "Refresh requests",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-requests"
+      },
+      {
+        "control": "Refresh pickup points",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-pickup-points"
+      },
+      {
+        "control": "Issue carrying invite",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-issue-invite"
+      },
+      {
+        "control": "Offer to carry mail",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-carry-for"
+      },
+      {
+        "control": "Ask them to carry mail",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-ask-carry"
+      },
+      {
+        "control": "Add pickup point",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-add-pickup"
+      },
+      {
+        "control": "Send mail now",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-mail-now"
+      },
+      {
+        "control": "Stop carrying",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-stop-carrying"
+      },
+      {
+        "control": "Remove pickup point",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "mailbox-remove-pickup"
+      }
+    ],
+    "discover": [
+      {
+        "control": "Refresh My posts and services",
+        "source": "crates/desktop/src/organ_castle/social.rs:99",
+        "prototype_operation": "overview"
+      },
+      {
+        "control": "Search local announcements",
+        "source": "crates/desktop/src/organ_castle/social.rs:157",
+        "prototype_operation": "search"
+      },
+      {
+        "control": "Preview saved announcement",
+        "source": "crates/desktop/src/organ_castle/social.rs:1326",
+        "prototype_operation": "preview"
+      },
+      {
+        "control": "Write a private introduction",
+        "source": "crates/desktop/src/organ_castle/social.rs:1389",
+        "prototype_operation": "open-request"
+      },
+      {
+        "control": "View public Organ profile",
+        "source": "crates/desktop/src/organ_castle/social.rs:1421",
+        "prototype_operation": "fetch-profile"
+      },
+      {
+        "control": "Continue browsing announcements",
+        "source": "crates/desktop/src/organ_castle/social.rs:1449",
+        "prototype_operation": "search-continue-browsing-announcements"
+      },
+      {
+        "control": "Load public {key}",
+        "source": "crates/desktop/src/organ_castle/social.rs:1519",
+        "prototype_operation": "fetch-profile-image"
+      },
+      {
+        "control": "Review the next local conflict page",
+        "source": "crates/desktop/src/organ_castle/social/discovery_sources.rs:54",
+        "prototype_operation": "search-review-the-next-local-conflict-page"
+      }
+    ],
+    "posts": [
+      {
+        "control": "Prepare from an existing Need/Contribution",
+        "source": "crates/desktop/src/organ_castle/social.rs:143",
+        "prototype_operation": "prepare-from-record"
+      },
+      {
+        "control": "Save announcement draft",
+        "source": "crates/desktop/src/organ_castle/social.rs:298",
+        "prototype_operation": "save-draft"
+      },
+      {
+        "control": "Private reply key status",
+        "source": "crates/desktop/src/organ_castle/social.rs:1073",
+        "prototype_operation": "reply-key-status"
+      },
+      {
+        "control": "Prepare this device's private reply keys",
+        "source": "crates/desktop/src/organ_castle/social.rs:1082",
+        "prototype_operation": "prepare-reply-keys"
+      },
+      {
+        "control": "Use preserved draft Record: Record",
+        "source": "crates/desktop/src/organ_castle/social.rs:1101",
+        "prototype_operation": "save-draft-use-preserved-draft-record-record"
+      },
+      {
+        "control": "Preview",
+        "source": "crates/desktop/src/organ_castle/social.rs:1123",
+        "prototype_operation": "preview"
+      },
+      {
+        "control": "Archive ended announcement",
+        "source": "crates/desktop/src/organ_castle/social.rs:1133",
+        "prototype_operation": "archive-post"
+      },
+      {
+        "control": "Next My posts page",
+        "source": "crates/desktop/src/organ_castle/social.rs:1146",
+        "prototype_operation": "post-page"
+      },
+      {
+        "control": "Publish this exact preview",
+        "source": "crates/desktop/src/organ_castle/social.rs:1282",
+        "prototype_operation": "publish"
+      },
+      {
+        "control": "Preview publication or update",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "preview-active"
+      },
+      {
+        "control": "Preview pause",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "preview-paused"
+      },
+      {
+        "control": "Preview fulfilled",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "preview-fulfilled"
+      },
+      {
+        "control": "Preview withdrawal",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "preview-withdrawn"
+      }
+    ],
+    "requests": [
+      {
+        "control": "Requests and private conversations",
+        "source": "crates/desktop/src/organ_castle/social.rs:108",
+        "prototype_operation": "requests"
+      },
+      {
+        "control": "Reset this device's live private messaging keys",
+        "source": "crates/desktop/src/organ_castle/social.rs:132",
+        "prototype_operation": "reset-private-sessions"
+      },
+      {
+        "control": "Discard unreadable ciphertext",
+        "source": "crates/desktop/src/organ_castle/social.rs:715",
+        "prototype_operation": "discard-private"
+      },
+      {
+        "control": "Resume this introduction on this device",
+        "source": "crates/desktop/src/organ_castle/social.rs:747",
+        "prototype_operation": "resume-request"
+      },
+      {
+        "control": "Discard saved introduction",
+        "source": "crates/desktop/src/organ_castle/social.rs:761",
+        "prototype_operation": "archive-request"
+      },
+      {
+        "control": "Review delivery or resume this saved message",
+        "source": "crates/desktop/src/organ_castle/social.rs:809",
+        "prototype_operation": "private-delivery-status"
+      },
+      {
+        "control": "Send private reply",
+        "source": "crates/desktop/src/organ_castle/social.rs:833",
+        "prototype_operation": "send-private"
+      },
+      {
+        "control": "Reveal my Organ profile in this conversation",
+        "source": "crates/desktop/src/organ_castle/social.rs:849",
+        "prototype_operation": "reveal-profile"
+      },
+      {
+        "control": "Connect as known contacts",
+        "source": "crates/desktop/src/organ_castle/social.rs:891",
+        "prototype_operation": "connect-participant"
+      },
+      {
+        "control": "Decide request",
+        "source": "crates/desktop/src/organ_castle/social.rs:923",
+        "prototype_operation": "decide-request"
+      },
+      {
+        "control": "Archive this private conversation",
+        "source": "crates/desktop/src/organ_castle/social.rs:939",
+        "prototype_operation": "archive-request-archive-this-private-conversation"
+      },
+      {
+        "control": "Unblock this private identity",
+        "source": "crates/desktop/src/organ_castle/social.rs:962",
+        "prototype_operation": "unblock-participant"
+      },
+      {
+        "control": "Next Requests page",
+        "source": "crates/desktop/src/organ_castle/social.rs:978",
+        "prototype_operation": "requests-next-requests-page"
+      },
+      {
+        "control": "Resend this expired Message",
+        "source": "crates/desktop/src/organ_castle/social/resend.rs:67",
+        "prototype_operation": "resend-expired-private"
+      },
+      {
+        "control": "Resume this saved Message on this device",
+        "source": "crates/desktop/src/organ_castle/social/resend.rs:87",
+        "prototype_operation": "resume-private"
+      },
+      {
+        "control": "Accept conversation",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "accept"
+      },
+      {
+        "control": "Decline request",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "decline"
+      },
+      {
+        "control": "Block participant",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "block"
+      },
+      {
+        "control": "Close conversation",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "close"
+      }
+    ],
+    "profile": [
+      {
+        "control": "Prepare public profile image",
+        "source": "crates/desktop/src/organ_castle/social.rs:338",
+        "prototype_operation": "import-profile-image-data"
+      },
+      {
+        "control": "Save shared public profile",
+        "source": "crates/desktop/src/organ_castle/social.rs:428",
+        "prototype_operation": "save-profile"
+      },
+      {
+        "control": "Reload public profile",
+        "source": "crates/desktop/src/organ_castle/social.rs:489",
+        "prototype_operation": "overview"
+      },
+      {
+        "control": "Change public editing authority",
+        "source": "crates/desktop/src/organ_castle/social.rs:499",
+        "prototype_operation": "rotate-profile-authority"
+      },
+      {
+        "control": "Withdraw public profile from its hosts",
+        "source": "crates/desktop/src/organ_castle/social.rs:523",
+        "prototype_operation": "withdraw-profile"
+      }
+    ],
+    "searches": [
+      {
+        "control": "Save this search filter",
+        "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:4",
+        "prototype_operation": "save-subscription"
+      },
+      {
+        "control": "Saved searches and notification settings",
+        "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:102",
+        "prototype_operation": "subscriptions"
+      },
+      {
+        "control": "Enable periodic checks on this device",
+        "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:127",
+        "prototype_operation": "configure-subscriptions"
+      },
+      {
+        "control": "Search these chosen directories now",
+        "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:207",
+        "prototype_operation": "search"
+      },
+      {
+        "control": "Next saved filters",
+        "source": "crates/desktop/src/organ_castle/social/subscriptions.rs:223",
+        "prototype_operation": "subscriptions-next-saved-filters"
+      },
+      {
+        "control": "Review retained matches",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "subscription-results"
+      },
+      {
+        "control": "Clear displayed matches",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "clear-subscription-matches"
+      },
+      {
+        "control": "Remove saved filter",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "remove-subscription"
+      }
+    ],
+    "contact-search": [
+      {
+        "control": "Save this device's contact search participation",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:9",
+        "prototype_operation": "configure-ask"
+      },
+      {
+        "control": "Refresh contact query progress",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:24",
+        "prototype_operation": "ask-status"
+      },
+      {
+        "control": "Clear removed or blocked contact's query consent",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:38",
+        "prototype_operation": "set-ask-contact"
+      },
+      {
+        "control": "Save this contact's separate query permissions",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:54",
+        "prototype_operation": "set-ask-contact-save-this-contact-s-separate-query-permissions"
+      },
+      {
+        "control": "Ask contact",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:97",
+        "prototype_operation": "start-ask"
+      },
+      {
+        "control": "Cancel this contact query",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:170",
+        "prototype_operation": "cancel-ask"
+      },
+      {
+        "control": "View this query's saved answers",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:181",
+        "prototype_operation": "ask-results"
+      },
+      {
+        "control": "Clear finished local contact-query history",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs:192",
+        "prototype_operation": "clear-asks"
+      },
+      {
+        "control": "Save this contact\u2019s separate query permissions",
+        "source": "crates/desktop/src/organ_castle/social/ask.rs",
+        "prototype_operation": "ask-consent"
+      }
+    ],
+    "servers": [
+      {
+        "control": "Inspect a social server",
+        "source": "crates/desktop/src/organ_castle/social.rs:118",
+        "prototype_operation": "inspect-service"
+      },
+      {
+        "control": "Remember server roles",
+        "source": "crates/desktop/src/organ_castle/social.rs:1904",
+        "prototype_operation": "save-server"
+      },
+      {
+        "control": "Inspect remembered server",
+        "source": "crates/desktop/src/organ_castle/social.rs:2086",
+        "prototype_operation": "inspect-service-inspect-remembered-server"
+      },
+      {
+        "control": "Remove remembered server",
+        "source": "crates/desktop/src/organ_castle/social.rs:2095",
+        "prototype_operation": "remove-server"
+      },
+      {
+        "control": "Browse chosen servers",
+        "source": "crates/desktop/src/organ_castle/social.rs:2108",
+        "prototype_operation": "search"
+      },
+      {
+        "control": "Search chosen servers",
+        "source": "crates/desktop/src/organ_castle/social.rs:2119",
+        "prototype_operation": "search-search-chosen-servers"
+      }
+    ],
+    "gossip": [
+      {
+        "control": "Save this device's gossip participation",
+        "source": "crates/desktop/src/organ_castle/social.rs:1959",
+        "prototype_operation": "configure-gossip"
+      },
+      {
+        "control": "Clear retained gossip consent",
+        "source": "crates/desktop/src/organ_castle/social.rs:2014",
+        "prototype_operation": "set-gossip-contact"
+      },
+      {
+        "control": "Save separate contact gossip consent",
+        "source": "crates/desktop/src/organ_castle/social.rs:2030",
+        "prototype_operation": "set-gossip-contact-save-separate-contact-gossip-consent"
+      },
+      {
+        "control": "Save separate contact gossip consent",
+        "source": "crates/desktop/src/organ_castle/social/../social.rs",
+        "prototype_operation": "gossip-consent"
+      }
+    ],
+    "moderation": [
+      {
+        "control": "Mute post",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs:22",
+        "prototype_operation": "mute-post"
+      },
+      {
+        "control": "Remove a listing on this host",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs:53",
+        "prototype_operation": "remove-listing"
+      },
+      {
+        "control": "Show this target again",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs:101",
+        "prototype_operation": "unmute"
+      },
+      {
+        "control": "Next hidden targets",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs:113",
+        "prototype_operation": "mutes"
+      },
+      {
+        "control": "Restore this listing if still valid",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs:141",
+        "prototype_operation": "restore-listing"
+      },
+      {
+        "control": "Next removed listings",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs:155",
+        "prototype_operation": "removed-listings"
+      },
+      {
+        "control": "Preview a report to one operator",
+        "source": "crates/desktop/src/organ_castle/social/reports.rs:16",
+        "prototype_operation": "preview-report"
+      },
+      {
+        "control": "Send this exact report",
+        "source": "crates/desktop/src/organ_castle/social/reports.rs:93",
+        "prototype_operation": "send-report"
+      },
+      {
+        "control": "Clear my report work",
+        "source": "crates/desktop/src/organ_castle/social/reports.rs:136",
+        "prototype_operation": "clear-reports"
+      },
+      {
+        "control": "Dismiss this report",
+        "source": "crates/desktop/src/organ_castle/social/reports.rs:182",
+        "prototype_operation": "dismiss-report"
+      },
+      {
+        "control": "Remove this host's current listing",
+        "source": "crates/desktop/src/organ_castle/social/reports.rs:194",
+        "prototype_operation": "remove-listing-remove-this-host-s-current-listing"
+      },
+      {
+        "control": "Next received reports",
+        "source": "crates/desktop/src/organ_castle/social/reports.rs:215",
+        "prototype_operation": "received-reports"
+      },
+      {
+        "control": "Hide this announcement",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs",
+        "prototype_operation": "mute-post-single"
+      },
+      {
+        "control": "Hide this public author",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs",
+        "prototype_operation": "mute-post-author"
+      },
+      {
+        "control": "Hidden announcements and authors",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs",
+        "prototype_operation": "mutes-hidden-announcements-and-authors"
+      },
+      {
+        "control": "Review this host\u2019s removed listings",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs",
+        "prototype_operation": "removed-listings-review-this-host-s-removed-listings"
+      },
+      {
+        "control": "My submitted reports",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs",
+        "prototype_operation": "reports"
+      },
+      {
+        "control": "Review this operator\u2019s report inbox",
+        "source": "crates/desktop/src/organ_castle/social/moderation.rs",
+        "prototype_operation": "received-reports-review-this-operator-s-report-inbox"
+      }
+    ],
+    "hosting": [
+      {
+        "control": "Save social service roles",
+        "source": "crates/desktop/src/organ_castle/social.rs:1836",
+        "prototype_operation": "configure-services"
+      },
+      {
+        "control": "Refresh social service health",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "service-health"
+      },
+      {
+        "control": "Rebuild public search index",
+        "source": "crates/desktop/src/organ_castle/social.rs",
+        "prototype_operation": "rebuild-public-index"
+      }
+    ],
+    "credits": [
+      {
+        "control": "View native QR and media attributions",
+        "source": "crates/desktop/src/organ_castle/ui.rs",
+        "prototype_operation": "credits"
+      }
+    ]
+  }
+}

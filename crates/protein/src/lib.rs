@@ -596,6 +596,9 @@ pub async fn transfer_delivery_projection(
     recipient_person_uid: &str,
     recipient_organ_uid: &str,
 ) -> Result<Value, ProteinError> {
+    if store::visibility::hidden_from_organ(&store.pool, recipient_organ_uid).await?.contains(transfer_uid) {
+        return Err(transfer_query_error("protein_transfer_visibility_denied", "The Organ cannot view this Transfer's Record data"));
+    }
     let policies =
         store::transfer_delivery::policies_for_transfer(&store.pool, transfer_uid).await?;
     if !policies.iter().any(|policy| {

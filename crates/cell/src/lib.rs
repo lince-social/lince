@@ -9,6 +9,7 @@ pub mod fiote;
 pub mod speech;
 pub mod information;
 pub mod sync_runner;
+pub mod location;
 pub mod social_host;
 pub mod owner_backup;
 pub mod isolated;
@@ -234,6 +235,7 @@ impl Cell {
         tasks.push(sync_runner::spawn_ask(runtime.clone()));
         tasks.push(sync_runner::spawn_subscriptions(runtime.clone()));
         tasks.push(sync_runner::spawn_presence(runtime.clone()));
+        tasks.push(sync_runner::spawn_location(runtime.clone()));
         tasks.push(wire_supervisor::spawn(runtime.clone(), key_dir));
 
         Ok(Cell {
@@ -411,6 +413,7 @@ async fn bind_wire(
         lanes.clone(),
     ));
     engine.attach_social_network(wire.clone());
+    engine.attach_location_network(wire.clone());
     wire.serve_enrolment();
     let serving = wire.clone();
     tasks.push(tokio::spawn(async move { serving.serve().await }));

@@ -661,6 +661,261 @@ async fn wait(host: &Host) {
 }
 
 #[tokio::test]
+async fn saved_node_agent_is_rejected_and_native_configuration_restores_conversation() {
+    let (host, _, root, record, thread) = fixture(false).await;
+    let native = host.load(&record).unwrap().unwrap();
+    let mut legacy = native.clone();
+    legacy.agent = Some(
+        serde_json::from_value(json!({
+            "command":"node","args":["missing-agent.js"],"directory":root.path()
+        }))
+        .unwrap(),
+    );
+    save(&host.path(&record).unwrap(), &legacy).unwrap();
+    let error = host.send(&thread, "Hello").await.unwrap_err();
+    assert!(error.contains("Node.js"), "{error}");
+    assert!(!error.contains("MODULE_NOT_FOUND"));
+    assert!(host.running.lock().await.is_empty());
+    host.handle(Request::Configure {
+        record,
+        settings: native.settings,
+        api_key: None,
+        password: None,
+    })
+    .await
+    .unwrap();
+    host.send(&thread, "Hello").await.unwrap().unwrap();
+    wait(&host).await;
+    let history = host.history(&thread, &native.author).await.unwrap();
+    assert!(history.iter().any(|message| matches!(
+        message,
+        Message::Assistant { .. } | Message::RichAssistant { .. }
+    )));
+}
+
+#[tokio::test]
+async fn laboratory_hello_is_persisted_without_changing_fiote_settings() {
+    let (host, _, _root, record, _) = fixture(false).await;
+    let original = host.load(&record).unwrap().unwrap();
+    let options = laboratory::Options {
+        record: Some(record.clone()),
+        model: Some("test-override".into()),
+        ..Default::default()
+    };
+    let laboratory::Preparation::Ready(prepared) = host.laboratory_prepare(&options).await.unwrap()
+    else {
+        panic!("Expected a configured native connection")
+    };
+    let thread = prepared.report.thread.as_deref().unwrap();
+    assert_eq!(prepared.report.model, "test-override");
+    assert_eq!(
+        host.load(&record).unwrap().unwrap().settings.model,
+        original.settings.model
+    );
+    host.send(thread, laboratory::HELLO).await.unwrap().unwrap();
+    let (_cancel, receiver) = watch::channel(false);
+    let report = host
+        .laboratory_verify(prepared.report.clone(), receiver)
+        .await;
+    assert_eq!(report.outcome, "passed", "{report:?}");
+    assert_eq!(report.reply, "Hello!");
+    assert!(report.persisted);
+    assert!(!report.tools_enabled);
+    let context = host.inspect_context(thread).await.unwrap().unwrap();
+    assert_eq!(context["tools"], json!([]));
+    let serialized = serde_json::to_string(&report).unwrap();
+    assert!(!serialized.contains("secret-test-value"));
+    assert!(!serialized.contains("test-password"));
+    assert!(!serialized.contains("This is my prompt"));
+}
+
+#[tokio::test]
+async fn laboratory_separate_target_reuses_credentials_and_locked_vault_requests_setup() {
+    let (host, _, _root, record, _) = fixture(false).await;
+    let options = laboratory::Options {
+        record: Some(record.clone()),
+        separate: true,
+        ..Default::default()
+    };
+    let laboratory::Preparation::Ready(prepared) = host.laboratory_prepare(&options).await.unwrap()
+    else {
+        panic!("Expected ready")
+    };
+    assert_ne!(prepared.report.record.as_deref(), Some(record.as_str()));
+    let thread = prepared.report.thread.as_deref().unwrap();
+    host.send(thread, laboratory::HELLO).await.unwrap().unwrap();
+    let (_cancel, receiver) = watch::channel(false);
+    assert_eq!(
+        host.laboratory_verify(prepared.report, receiver)
+            .await
+            .outcome,
+        "passed"
+    );
+    host.vault.lock().await;
+    assert!(matches!(
+        host.laboratory_prepare(&options).await.unwrap(),
+        laboratory::Preparation::Setup { .. }
+    ));
+}
+
+#[tokio::test]
+async fn laboratory_profile_override_preserves_disabled_configuration_and_detects_deleted_thread() {
+    let (host, _, _root, record, _) = fixture(false).await;
+    let mut original = host.load(&record).unwrap().unwrap();
+    host.save_native_profile(&record, &original.settings).await.unwrap();
+    let profile = host
+        .profile_status(&record)
+        .unwrap()
+        .profiles
+        .selected
+        .unwrap();
+    original.settings.enabled = false;
+    save(&host.path(&record).unwrap(), &original).unwrap();
+    let options = laboratory::Options {
+        record: Some(record.clone()),
+        profile: Some(profile),
+        ..Default::default()
+    };
+    let laboratory::Preparation::Ready(prepared) = host.laboratory_prepare(&options).await.unwrap()
+    else {
+        panic!("Expected ready from the saved native profile");
+    };
+    assert!(!host.load(&record).unwrap().unwrap().settings.enabled);
+    host.send(prepared.report.thread.as_deref().unwrap(), laboratory::HELLO)
+        .await.unwrap().unwrap();
+    let (_cancel, receiver) = watch::channel(false);
+    assert_eq!(host.laboratory_verify(prepared.report.clone(), receiver).await.outcome, "passed");
+    assert!(!host.load(&record).unwrap().unwrap().settings.enabled);
+    host.engine
+        .act(
+            Action::DeleteRecord {
+                target: prepared.report.thread.clone().unwrap(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let (_cancel, receiver) = watch::channel(false);
+    let report = host.laboratory_verify(prepared.report, receiver).await;
+    assert_eq!(report.outcome, "failed");
+    assert_eq!(report.stage, "persistence");
+    assert!(!report.persisted);
+}
+
+#[tokio::test]
+async fn laboratory_timeout_and_cancel_do_not_pass_partial_replies() {
+    for cancelled in [false, true] {
+        let (host, _, _root, record, _) = fixture(true).await;
+        let options = laboratory::Options {
+            record: Some(record),
+            ..Default::default()
+        };
+        let laboratory::Preparation::Ready(prepared) =
+            host.laboratory_prepare(&options).await.unwrap()
+        else {
+            panic!("Expected ready")
+        };
+        host.send(
+            prepared.report.thread.as_deref().unwrap(),
+            laboratory::HELLO,
+        )
+        .await
+        .unwrap();
+        let (_cancel, receiver) = watch::channel(cancelled);
+        let report = host
+            .laboratory_verify_with_timeout(
+                prepared.report,
+                receiver,
+                std::time::Duration::from_millis(30),
+            )
+            .await;
+        assert_eq!(
+            report.outcome,
+            if cancelled { "cancelled" } else { "failed" }
+        );
+        assert!(!report.persisted);
+        wait(&host).await;
+    }
+}
+
+struct LaboratoryProvider {
+    fail: bool,
+}
+
+#[async_trait::async_trait]
+impl Provider for LaboratoryProvider {
+    async fn complete(
+        &self,
+        _: &str,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        assert!(tools.is_empty(), "Laboratory exposed model tools");
+        if self.fail {
+            return Err("authentication rejected secret-test-value".into());
+        }
+        if let Some(Message::Tool { result, .. }) = messages.last() {
+            assert_eq!(result["ok"], false);
+            return Ok(Reply {
+                text: "Hello after rejected tool".into(),
+                ..Default::default()
+            });
+        }
+        Ok(Reply {
+            calls: vec![ToolCall {
+                id: "forbidden-file".into(),
+                name: "create_file".into(),
+                arguments: json!({"path":"must-not-exist.txt","content":"changed"}),
+                signatures: None,
+            }],
+            ..Default::default()
+        })
+    }
+}
+
+#[tokio::test]
+async fn laboratory_rejects_tool_calls_and_errors_cannot_count_as_replies() {
+    for fail in [false, true] {
+        let (mut host, _, root, record, _) = fixture(false).await;
+        Arc::get_mut(&mut host).unwrap().provider = Some(Arc::new(LaboratoryProvider { fail }));
+        let options = laboratory::Options {
+            record: Some(record),
+            ..Default::default()
+        };
+        let laboratory::Preparation::Ready(prepared) =
+            host.laboratory_prepare(&options).await.unwrap()
+        else {
+            panic!("Expected ready")
+        };
+        host.send(
+            prepared.report.thread.as_deref().unwrap(),
+            laboratory::HELLO,
+        )
+        .await
+        .unwrap();
+        let (_cancel, receiver) = watch::channel(false);
+        let report = host
+            .laboratory_verify_with_timeout(
+                prepared.report,
+                receiver,
+                std::time::Duration::from_secs(3),
+            )
+            .await;
+        assert_eq!(
+            report.outcome,
+            if fail { "failed" } else { "passed" },
+            "{report:?}"
+        );
+        assert!(!root.path().join("must-not-exist.txt").exists());
+        assert!(
+            !serde_json::to_string(&report)
+                .unwrap()
+                .contains("secret-test-value")
+        );
+    }
+}
+
+#[tokio::test]
 async fn activations_coalesce_while_busy_and_keep_individual_causes() {
     let (host, _, _root, record, manual) = fixture(true).await;
     host.send(&manual, "Keep working until stopped")

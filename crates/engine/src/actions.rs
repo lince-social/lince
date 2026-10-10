@@ -42,6 +42,8 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
+    Location { request: nucleus::location::Command },
+    Visibility { request: nucleus::visibility::Command },
     Workspace { request: crate::workspace_sync::Request },
     InspectRecordAuthority { person: String, record_uid: String },
     SandPackage {
@@ -1978,6 +1980,9 @@ impl Engine {
         Box<dyn std::future::Future<Output = Result<ActionOutcome, EngineError>> + Send + '_>,
     > {
         Box::pin(async move {
+            if let Action::Location { request } = action {
+                return self.access_scope(false, self.location_request(request, actor.as_deref())).await;
+            }
             if let Action::PreviewKarmaProposal { request } = action {
                 let report = self.preview_karma_proposal(request, actor, now).await?;
                 return Ok(ActionOutcome {
@@ -4311,6 +4316,8 @@ impl Engine {
             | Action::SetPersonStanding { .. }
             | Action::SetPersonReadFilter { .. }
             | Action::SetRoleReadRules { .. }
+            | Action::Location { .. }
+            | Action::Visibility { .. }
             | Action::Workspace { .. }
             | Action::InspectRecordAuthority { .. }
             | Action::SetRolePolicy { .. }

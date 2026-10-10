@@ -208,6 +208,26 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
 }
 
 #[test]
+fn visibility_castle_restores_its_record_and_scope_without_policy_contents() {
+    let (mut app, root) = fixture();
+    let sand = crate::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::Visibility, "", DVec2::ZERO);
+    let panel = app.world().get::<StoredSand>(sand).unwrap().content.unwrap();
+    let record = nucleus::new_uid("r");
+    lince_interface::visibility::set_target(app.world_mut(), panel, &record, nucleus::visibility::Data::LiveLocation);
+    let saved = capture_content(app.world(), sand);
+    saved.validate(&registry(), false).unwrap();
+    let copy = spawn(app.world_mut(), root, 1, DVec2::ZERO, &saved).unwrap();
+    let panel = app.world().get::<StoredSand>(copy).unwrap().content.unwrap();
+    let selected = lince_interface::visibility::selection(app.world(), panel).unwrap();
+    assert_eq!(selected.record_uid, record);
+    assert_eq!(selected.data, nucleus::visibility::Data::LiveLocation);
+    let raw = serde_json::to_string(&saved).unwrap();
+    assert!(!raw.contains("policy"));
+    assert!(!raw.contains("captured_at_ms"));
+    assert_eq!(capture_content(app.world(), copy), saved);
+}
+
+#[test]
 fn primary_text_survives_empty_default_text_areas_and_reusable_copies() {
     let (mut app, root) = fixture();
     for kind in [SandKind::Text, SandKind::EditableText] {
@@ -1010,4 +1030,54 @@ fn canvas_automation_cannot_move_or_delete_hosted_replicas_using_the_panels_sess
         app.world().get::<CanvasItem>(entity).unwrap().position,
         DVec2::ZERO
     );
+}
+
+#[test]
+fn native_workspace_removal_keeps_sands_in_trash_and_undo_restores_the_workspace() {
+    let (mut app, root) = fixture();
+    let sand = crate::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::EditableText,
+        "Trash draft",
+        DVec2::new(12.0, 34.0),
+    );
+    let mut state = api::State::new(capture(app.world_mut(), root).unwrap(), registry()).unwrap();
+    execute(
+        app.world_mut(),
+        root,
+        &mut state,
+        api::Mutation::CreateWorkspace {
+            name: "Second".into(),
+        },
+    );
+    let receipt = execute(
+        app.world_mut(),
+        root,
+        &mut state,
+        api::Mutation::RemoveWorkspace { workspace: 1 },
+    );
+    assert!(state.snapshot.placements.is_empty());
+    assert!(app.world().get_entity(sand).is_ok());
+    assert_eq!(app.world().get::<WorkspaceMember>(sand).unwrap().0, 1);
+    assert_eq!(app.world().get::<Workspaces>(root).unwrap().trash.len(), 1);
+    execute(
+        app.world_mut(),
+        root,
+        &mut state,
+        api::Mutation::Undo {
+            receipt: receipt.request_id,
+        },
+    );
+    assert!(
+        app.world()
+            .get::<Workspaces>(root)
+            .unwrap()
+            .trash
+            .is_empty()
+    );
+    assert!(app.world().get_entity(sand).is_ok());
+    assert_eq!(state.snapshot.placements.len(), 1);
+    assert_eq!(state.snapshot.placements[0].workspace, 1);
 }

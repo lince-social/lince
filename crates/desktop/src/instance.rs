@@ -105,6 +105,27 @@ pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
     }))
 }
 
+pub fn claim_headless(data_dir: &Path) -> io::Result<File> {
+    std::fs::create_dir_all(data_dir)?;
+    let canonical = data_dir.canonicalize()?;
+    use std::hash::{Hash, Hasher};
+    let mut hash = std::collections::hash_map::DefaultHasher::new();
+    canonical.hash(&mut hash);
+    let path = control_directory(&canonical)?.join(format!("{:016x}.lock", hash.finish()));
+    let mut options = OpenOptions::new();
+    options.read(true).write(true).create(true).truncate(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options
+            .mode(0o600)
+            .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32);
+    }
+    let file = options.open(path)?;
+    file.try_lock().map_err(|_| io::Error::other("Close Lince before running a separate headless live test; or run it inside Laboratory."))?;
+    Ok(file)
+}
+
 fn path_error(error: io::Error, operation: &str, path: &Path) -> io::Error {
     io::Error::new(
         error.kind(),
@@ -261,6 +282,15 @@ async fn listen(
 pub(crate) mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn headless_claim_excludes_another_owner_without_opening_a_socket() {
+        let directory = tempfile::tempdir().unwrap();
+        let first = claim_headless(directory.path()).unwrap();
+        assert!(claim_headless(directory.path()).is_err());
+        drop(first);
+        assert!(claim_headless(directory.path()).is_ok());
+    }
 
     #[cfg_attr(test, tokio::test)]
     async fn second_launch_wakes_the_owner_and_lock_lasts_until_shutdown() {

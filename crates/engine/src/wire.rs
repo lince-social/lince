@@ -1,4 +1,5 @@
 mod presence;
+mod location;
 mod groups;
 mod discovery;
 mod siblings;
@@ -30,6 +31,8 @@ pub const ALPN_SYNC: &[u8] = b"lince/sync/2";
 pub const ALPN_THREAD: &[u8] = b"lince/thread/2";
 
 pub const ALPN_LIVE: &[u8] = b"lince/live/2";
+
+pub const ALPN_LOCATION: &[u8] = b"lince/location/1";
 
 pub const ALPN_HELLO: &[u8] = b"lince/hello/1";
 
@@ -242,6 +245,7 @@ impl Nearby {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum WireRequest {
+    Location { request: nucleus::location::PeerRequest },
     SandPackages { query: nucleus::sand_package::Query },
     Presence {
         records: Vec<String>,
@@ -399,6 +403,7 @@ pub struct SuccessionCert {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ok", rename_all = "snake_case")]
 pub enum WireResponse {
+    Location { data: serde_json::Value },
     OrganAccessStatus { status: store::organ_access::Status },
     SandPackages { response: nucleus::sand_package::Response },
     MoveStatus { state: String, receipt: Option<String> },
@@ -588,6 +593,7 @@ impl Wire {
                 ALPN_SYNC.to_vec(),
                 ALPN_THREAD.to_vec(),
                 ALPN_LIVE.to_vec(),
+                ALPN_LOCATION.to_vec(),
                 ALPN_HELLO.to_vec(),
                 ALPN_MAILBOX.to_vec(),
                 ALPN_SOCIAL.to_vec(),
@@ -1547,6 +1553,7 @@ impl Wire {
                     live_connection.close(0u32.into(), b"live session ended");
                 });
             }
+            (ALPN_LOCATION, _) => {}
             (ALPN_THREAD, true) => {}
             (ALPN_THREAD, false) if !identified => {
                 let enrolling = store::roster::enrolment_is_open(&self.engine.store.pool)
@@ -1575,7 +1582,7 @@ impl Wire {
                 Err(_) => return Ok(()),
             };
             let raw = recv
-                .read_to_end(MAX_FRAME_BYTES)
+                .read_to_end(if alpn.as_slice() == ALPN_LOCATION { 16 * 1024 } else { MAX_FRAME_BYTES })
                 .await
                 .map_err(|error| EngineError::Consequence(format!("peer frame: {error}")))?;
             if (was_sibling && self.sibling_organ(&peer.to_string()).await.as_deref() != Some(from_organ.as_str()))
@@ -1587,6 +1594,9 @@ impl Wire {
                 return Ok(());
             }
             let response = match serde_json::from_slice::<WireRequest>(&raw) {
+                Ok(request) if alpn.as_slice() == ALPN_LOCATION && !matches!(request, WireRequest::Location { .. }) => {
+                    WireResponse::Refused { code: "wrong_door".into(), message: "Only location requests are served on this connection".into() }
+                }
                 Ok(request)
                     if alpn.as_slice() == ALPN_LIVE
                         && !matches!(
@@ -1621,6 +1631,7 @@ impl Wire {
                 Ok(request)
                     if !known
                         && alpn.as_slice() != ALPN_MAILBOX
+                        && alpn.as_slice() != ALPN_LOCATION
                         && !matches!(
                             request,
                             WireRequest::Introduction
@@ -1728,6 +1739,12 @@ impl Wire {
             if !authorized {return WireResponse::Refused {code:"move_device_required".into(),message:"Reconnect to refresh the sender's authorized device list".into()};}
         }
         match request {
+            WireRequest::Location { request } => {
+                match self.engine.location_peer(authenticated, peer, request).await {
+                    Ok(data) => WireResponse::Location { data },
+                    Err(error) => WireResponse::Refused { code: "location_denied".into(), message: error.to_string() },
+                }
+            }
             WireRequest::SandPackages { query } => {
                 match self.engine.public_sand_packages(authenticated, query).await {
                     Ok(response) => WireResponse::SandPackages { response },

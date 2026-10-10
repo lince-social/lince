@@ -67,6 +67,11 @@ impl Vault {
         *self.opened.lock().await = None;
     }
 
+    pub(super) async fn unlocked_password(&self) -> Option<Secret> {
+        self.status().await.ok()?;
+        self.opened.lock().await.as_ref().map(|open| open.password.clone())
+    }
+
     pub async fn unlock(&self, password: Secret) -> Result<(), String> {
         if password.0.is_empty() || password.0.len() > 4096 {
             return Err("Enter a vault password of at most 4096 bytes.".into());

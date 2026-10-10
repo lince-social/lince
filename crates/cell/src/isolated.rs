@@ -23,6 +23,7 @@ impl CellRuntime {
             self.lanes.clone(),
         ));
         self.engine.attach_social_network(wire.clone());
+        self.engine.attach_location_network(wire.clone());
         wire.serve_enrolment();
         *self.wire.write().await = Some(wire.clone());
         Ok(tokio::spawn(async move { wire.serve().await }))

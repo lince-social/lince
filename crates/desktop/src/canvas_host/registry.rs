@@ -47,6 +47,11 @@ pub fn registry() -> Vec<api::Descriptor> {
                     },
                 );
             }
+            if kind == SandKind::Visibility {
+                settings.insert("visibility".into(), api::Setting::Text {
+                    default: serde_json::to_string(&lince_interface::visibility::Selection { record_uid: String::new(), data: nucleus::visibility::Data::Record }).unwrap(), max_bytes: 1024,
+                });
+            }
             if matches!(
                 kind,
                 SandKind::Text | SandKind::EditableText | SandKind::Square

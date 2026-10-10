@@ -283,7 +283,7 @@ pub async fn set_proximity(
     organ_uid: &str,
     proximity: u32,
 ) -> Result<(), StoreError> {
-    sqlx::query("UPDATE organ_contact SET proximity = ? WHERE record_uid = ?")
+    sqlx::query("UPDATE organ_contact SET proximity = ?, share_seen_seq = NULL WHERE record_uid = ?")
         .bind(proximity as i64)
         .bind(organ_uid)
         .execute(pool)

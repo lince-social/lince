@@ -26,6 +26,7 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tempfile = "=3.27.0"
 
 [dev-dependencies]
+async-trait = { workspace = true }
 fiote = { workspace = true }
 lince-interface = { workspace = true, default-features = false, features = ["models"] }
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Workflow"
+  short_description: "Explore one UI design question with clickable alternatives"
+  default_prompt: "Use $design-workflow to explore this Lince UI with one focused design objective, shared-token prototypes, and a recorded decision."

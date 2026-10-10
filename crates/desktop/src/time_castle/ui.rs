@@ -223,10 +223,7 @@ pub(super) fn upcoming_panel(world: &mut World, owner: Entity) -> Entity {
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                left: percent(28),
-                top: percent(36),
-                width: percent(44),
-                height: percent(34),
+                display: Display::None,
                 flex_direction: FlexDirection::Column,
                 row_gap: px(6),
                 overflow: Overflow::scroll_y(),
@@ -251,12 +248,33 @@ pub(super) fn upcoming(
 ) {
     let view = world.get::<View>(owner).unwrap();
     let panel = view.upcoming;
-    let visible = visible && !chrome::controls_open(world, owner);
-    world.get_mut::<Node>(panel).unwrap().display = if visible {
+    let size = render::size(world, view.viewport);
+    let layout = face::Face::clock(world, owner, now, size, palette.font);
+    chrome::face(world, owner, size, &layout);
+    let visible = visible && layout.upcoming.is_some() && !chrome::controls_open(world, owner);
+    let mut node = world.get_mut::<Node>(panel).unwrap();
+    let display = if visible {
         Display::Flex
     } else {
         Display::None
     };
+    if node.display != display {
+        node.display = display;
+    }
+    if let Some(rect) = layout.upcoming {
+        let bounds = [
+            px(size.x * 0.5 + rect.min.x),
+            px(size.y * 0.5 + rect.min.y),
+            px(rect.width()),
+            px(rect.height()),
+        ];
+        if [node.left, node.top, node.width, node.height] != bounds {
+            node.left = bounds[0];
+            node.top = bounds[1];
+            node.width = bounds[2];
+            node.height = bounds[3];
+        }
+    }
     if !visible {
         return;
     }
@@ -323,7 +341,10 @@ pub(super) fn upcoming(
     }
     for (id, text) in &rows {
         let button = chrome::button(world, panel, owner, text, Select(vec![id.clone()]));
-        world.entity_mut(button).insert(UpcomingRow(id.clone()));
+        world
+            .entity_mut(button)
+            .remove::<crate::token_style::BackgroundToken>()
+            .insert((UpcomingRow(id.clone()), BackgroundColor(Color::NONE)));
         let mut node = world.get_mut::<Node>(button).unwrap();
         node.width = percent(100);
         node.min_width = px(0);
@@ -829,6 +850,12 @@ mod tests {
         let children = world.get::<Children>(panel).unwrap().to_vec();
         assert_eq!(children.len(), 8);
         for child in &children {
+            assert_eq!(world.get::<BackgroundColor>(*child).unwrap().0, Color::NONE);
+            assert!(
+                world
+                    .get::<crate::token_style::BackgroundToken>(*child)
+                    .is_none()
+            );
             let texts = world.get::<Children>(*child).unwrap();
             for text in texts
                 .iter()
@@ -845,6 +872,9 @@ mod tests {
         upcoming(&mut world, owner, 2000, true, &palette);
         assert_eq!(world.get::<Children>(panel).unwrap().to_vec(), children);
         assert_eq!(world.get::<ScrollPosition>(panel).unwrap().0.y, 40.0);
+        world.clear_trackers();
+        upcoming(&mut world, owner, 2000, true, &palette);
+        assert!(!world.entity(panel).get_ref::<Node>().unwrap().is_changed());
         upcoming(&mut world, owner, 2000, false, &palette);
         assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
     }

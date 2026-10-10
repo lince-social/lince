@@ -68,6 +68,9 @@ pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
                 serde_json::json!(serde_json::to_string(&todo).unwrap()),
             );
         }
+        if let Some(selection) = sand.content.and_then(|panel| lince_interface::visibility::selection(world, panel)) {
+            settings.insert("visibility".into(), serde_json::json!(serde_json::to_string(&selection).unwrap()));
+        }
         if matches!(
             sand.kind,
             SandKind::Text | SandKind::EditableText | SandKind::Square
@@ -260,6 +263,11 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                 .iter()
                 .filter(|entity| {
                     world.get::<CanvasItem>(*entity).is_some()
+                        && world.get::<WorkspaceMember>(*entity).is_none_or(|member| {
+                            world.get::<Workspaces>(root).is_some_and(|spaces| {
+                                spaces.entries.iter().any(|space| space.id == member.0)
+                            })
+                        })
                         && world
                             .get::<crate::external_drop::Preview>(*entity)
                             .is_none()

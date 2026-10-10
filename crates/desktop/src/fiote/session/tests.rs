@@ -45,6 +45,210 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
     }
 }
 
+fn panel_fixture(step: Step) -> (App, Entity, FioteStatus) {
+    let mut app = App::new();
+    app.init_resource::<Assets<Font>>()
+        .init_resource::<crate::theme::Typography>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<crate::cell_bridge::CellMessage>()
+        .add_plugins(Plugin);
+    let world = app.world_mut();
+    let parent = world.spawn(Node::default()).id();
+    let binding = RecordBinding {
+        area: parent,
+        uid: nucleus::new_uid("r"),
+        source: Source::Local,
+    };
+    populate(world, parent, binding.clone());
+    let owner = world
+        .query::<(Entity, &Panel)>()
+        .iter(world)
+        .next()
+        .unwrap()
+        .0;
+    let saved = fixture_status(&binding.uid);
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone());
+    show(world, owner, step);
+    (app, owner, saved)
+}
+
+#[test]
+fn saved_node_connection_opens_native_setup_instead_of_sending() {
+    let (mut app, owner, mut saved) = panel_fixture(Step::Closed);
+    let world = app.world_mut();
+    saved.agent.as_mut().unwrap().command = "node".into();
+    saved.connections.check = Some(cell::fiote_connection::Check {
+        profile: "old-node".into(),
+        ready: false,
+        stage: cell::fiote_communication::check::Stage::Handshake,
+        detail: "Cannot find codex-acp/dist/index.js".into(),
+        capabilities: Default::default(),
+        settings: serde_json::json!({}),
+    });
+    let binding = world.get::<Panel>(owner).unwrap().binding.clone();
+    let mut panel = world.get_mut::<Panel>(owner).unwrap();
+    panel.automatic = true;
+    panel.saved = Some(saved);
+    assert!(!ready(world, &binding));
+    assert!(world.get::<Panel>(owner).unwrap().step == Step::Connections);
+    for label in [
+        "Continue with ChatGPT",
+        "New native API / local connection",
+        "Disconnect Node.js connection",
+    ] {
+        assert!(
+            world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0 == label),
+            "{label}"
+        );
+    }
+    assert!(
+        !world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0.contains("Cannot find codex-acp"))
+    );
+}
+
+#[test]
+fn browser_login_link_and_copy_feedback_survive_stale_acp_status_updates() {
+    let (mut app, owner, mut saved) = panel_fixture(Step::Browser);
+    let world = app.world_mut();
+    let url = "https://login.example/authorize?state=fixture&code_challenge=challenge";
+    saved.login_pending = true;
+    world.get_mut::<Panel>(owner).unwrap().step = Step::Credentials;
+    apply_status(world, owner, saved.clone());
+    let status = world.get::<Panel>(owner).unwrap().status;
+    assert!(world.get::<Panel>(owner).unwrap().step == Step::Browser);
+    assert_eq!(
+        world.get::<Text>(status).unwrap().0,
+        "Finish signing in in your browser."
+    );
+    saved.login_url = Some(url.into());
+    saved.agent_info.as_mut().unwrap()["connectionCheck"] = serde_json::json!({
+        "ready":false, "detail":"Cannot find codex-acp/dist/index.js"
+    });
+    saved.agent_info.as_mut().unwrap()["deviceCode"] = serde_json::json!({
+        "verificationUri":"https://agent.example/login"
+    });
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone());
+    show(world, owner, Step::Browser);
+    let content = world.get::<Panel>(owner).unwrap().content;
+    let status = world.get::<Panel>(owner).unwrap().status;
+    let children: Vec<_> = world.get::<Children>(content).unwrap().iter().collect();
+    let copy = world
+        .query::<(Entity, &Text)>()
+        .iter(world)
+        .find(|(_, text)| text.0 == "Copy login link")
+        .unwrap()
+        .0;
+    let button = world.get::<ChildOf>(copy).unwrap().parent();
+    world
+        .resource_mut::<InputFocus>()
+        .set(button, FocusCause::Pressed);
+    let action = world
+        .get::<crate::actions::ActionButton>(button)
+        .unwrap()
+        .clone();
+    action.actions.run(world, action.target);
+    let feedback = world.get::<Text>(status).unwrap().0.clone();
+    assert!(feedback.starts_with("Could not copy the login link."));
+    for index in 0..3 {
+        saved.agent_info.as_mut().unwrap()["poll"] = index.into();
+        apply_status(world, owner, saved.clone());
+        assert!(world.get::<Panel>(owner).unwrap().step == Step::Browser);
+        assert_eq!(
+            world
+                .get::<Children>(content)
+                .unwrap()
+                .iter()
+                .collect::<Vec<_>>(),
+            children
+        );
+        assert_eq!(world.get::<Text>(status).unwrap().0, feedback);
+        assert_eq!(world.resource::<InputFocus>().get(), Some(button));
+        assert!(world.query::<&Text>().iter(world).any(|text| text.0 == url));
+        assert!(
+            !world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0.contains("Cannot find codex-acp"))
+        );
+    }
+    saved.login_url = Some("https://login.example/authorize?state=new".into());
+    apply_status(world, owner, saved);
+    assert!(!world.entities().contains(button));
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "https://login.example/authorize?state=new")
+    );
+}
+
+#[test]
+fn laboratory_browser_shows_the_copyable_native_url_from_the_connection_picker() {
+    let (mut app, owner, saved) = panel_fixture(Step::Connections);
+    let world = app.world_mut();
+    let area = world.get::<Panel>(owner).unwrap().binding.area;
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved);
+    let url = "https://login.example/authorize?state=laboratory";
+    laboratory_browser(world, area, url);
+    assert!(world.get::<Panel>(owner).unwrap().step == Step::Browser);
+    assert_eq!(world.get::<Panel>(owner).unwrap().saved.as_ref().unwrap().login_url.as_deref(), Some(url));
+    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "Copy login link"));
+}
+
+#[test]
+fn unchanged_connection_polls_keep_controls_and_focus() {
+    let (mut app, owner, mut saved) = panel_fixture(Step::Connections);
+    let world = app.world_mut();
+    saved.connections.check = Some(cell::fiote_connection::Check {
+        profile: "fixture".into(),
+        ready: false,
+        stage: cell::fiote_communication::check::Stage::Handshake,
+        detail: "Cannot find codex-acp/dist/index.js".into(),
+        capabilities: Default::default(),
+        settings: serde_json::json!({}),
+    });
+    apply_status(world, owner, saved.clone());
+    let content = world.get::<Panel>(owner).unwrap().content;
+    let children: Vec<_> = world.get::<Children>(content).unwrap().iter().collect();
+    let label = world
+        .query::<(Entity, &Text)>()
+        .iter(world)
+        .find(|(_, text)| text.0 == "Continue with ChatGPT")
+        .unwrap()
+        .0;
+    let button = world.get::<ChildOf>(label).unwrap().parent();
+    world
+        .resource_mut::<InputFocus>()
+        .set(button, FocusCause::Pressed);
+    for _ in 0..3 {
+        apply_status(world, owner, saved.clone());
+        assert_eq!(
+            world
+                .get::<Children>(content)
+                .unwrap()
+                .iter()
+                .collect::<Vec<_>>(),
+            children
+        );
+        assert_eq!(world.resource::<InputFocus>().get(), Some(button));
+    }
+    saved.connections.check.as_mut().unwrap().detail = "New check result".into();
+    update_connections(world, &saved);
+    assert!(!world.entities().contains(button));
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0.contains("New check result"))
+    );
+}
+
 #[test]
 fn disconnected_fiote_login_and_send_offer_generic_routes() {
     let mut app = App::new();
@@ -294,6 +498,24 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         .unwrap();
     assert!(app.world().get::<Panel>(owner).unwrap().step == Step::Connections);
     deliver(&mut app).await;
+    let status = app.world().get::<Panel>(owner).unwrap().status;
+    for message in [
+        FioteRequest::Inspect {
+            record: record.clone(),
+        },
+        FioteRequest::BrowserPoll {
+            record: record.clone(),
+        },
+    ] {
+        app.world_mut().get_mut::<Text>(status).unwrap().0 = "Stable login feedback".into();
+        request(app.world_mut(), owner, message);
+        assert!(app.world().get::<Panel>(owner).unwrap().pending.is_some());
+        assert_eq!(
+            app.world().get::<Text>(status).unwrap().0,
+            "Stable login feedback"
+        );
+        deliver(&mut app).await;
+    }
     let login = app
         .world_mut()
         .query::<(

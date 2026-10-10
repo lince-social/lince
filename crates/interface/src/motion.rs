@@ -1,3 +1,35 @@
+#[derive(Clone, Copy, Debug)]
+pub struct Cooling {
+    remaining: f32,
+    duration: f32,
+}
+
+impl Cooling {
+    pub fn new(duration: f32) -> Self {
+        assert!(duration.is_finite() && duration > 0.0);
+        Self {
+            remaining: 0.0,
+            duration,
+        }
+    }
+
+    pub fn wake(&mut self) {
+        self.remaining = self.duration;
+    }
+
+    pub fn advance(&mut self, seconds: f32) {
+        self.remaining = if seconds.is_finite() {
+            (self.remaining - seconds.max(0.0)).max(0.0)
+        } else {
+            0.0
+        };
+    }
+
+    pub fn heat(self) -> f32 {
+        self.remaining / self.duration
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Spring<const N: usize> {
     pub position: [f32; N],
@@ -55,6 +87,23 @@ impl<const N: usize> Spring<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cooling_uses_elapsed_time_and_only_interaction_restarts_it() {
+        for step in [1.0_f32 / 30.0, 1.0 / 60.0, 1.0 / 144.0] {
+            let mut cooling = Cooling::new(8.0);
+            assert_eq!(cooling.heat(), 0.0);
+            cooling.wake();
+            for _ in 0..(4.0 / step).round() as usize {
+                cooling.advance(step);
+            }
+            assert!((cooling.heat() - 0.5).abs() < 0.001);
+            cooling.advance(20.0);
+            assert_eq!(cooling.heat(), 0.0);
+            cooling.wake();
+            assert_eq!(cooling.heat(), 1.0);
+        }
+    }
 
     #[test]
     fn springs_follow_changed_targets_without_jumping_and_eventually_sleep() {

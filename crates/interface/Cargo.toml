@@ -10,12 +10,13 @@ description = "Shared presentation models and Bevy UI primitives for Lince hosts
 
 [features]
 default = ["ui"]
-ui = ["dep:bevy", "dep:fontique", "dep:tokio"]
+ui = ["dep:bevy", "dep:fontique", "dep:tokio", "dep:nucleus", "dep:chrono", "dep:accesskit", "bevy/bevy_picking"]
 models = ["dep:nucleus", "dep:protein", "dep:chrono", "dep:qrcode", "dep:pulldown-cmark"]
 behavior-checks = ["ui"]
 images = ["dep:image", "dep:reqwest", "dep:base64"]
 
 [dependencies]
+accesskit = { version = "=0.24.1", optional = true }
 bevy = { version = "=0.19.1", default-features = false, features = ["std", "bevy_asset", "bevy_text", "bevy_ui", "bevy_ui_widgets", "bevy_input_focus"], optional = true }
 fontique = { version = "=0.9.0", default-features = false, optional = true }
 tokio = { version = "1.53.1", default-features = false, features = ["rt", "time"], optional = true }

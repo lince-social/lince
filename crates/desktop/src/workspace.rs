@@ -37,8 +37,27 @@ pub struct Workspaces {
     pub(crate) canvas_state: Option<nucleus::canvas::State>,
     pub active: u64,
     pub entries: Vec<Workspace>,
+    pub(crate) trash: Vec<TrashedWorkspace>,
+    pub(crate) trash_retention_days: u16,
     pub error: Option<String>,
     pub(crate) saved_records: HashMap<String, SavedRecord>,
+}
+
+#[derive(Clone)]
+pub(crate) struct TrashedWorkspace {
+    pub workspace: Workspace,
+    pub deleted_at: u64,
+}
+
+pub(crate) fn default_trash_retention_days() -> u16 {
+    10
+}
+
+pub(crate) fn unix_time() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }
 
 impl Default for Workspaces {
@@ -57,6 +76,8 @@ impl Default for Workspaces {
                 colors: Default::default(),
                 color_overrides: [false; 2],
             }],
+            trash: Vec::new(),
+            trash_retention_days: default_trash_retention_days(),
             error: None,
             saved_records: HashMap::new(),
         }
@@ -98,6 +119,8 @@ struct SavedSand {
     time_castle: Option<lince_interface::time_castle::Settings>,
     #[serde(default)]
     todo: Option<crate::todo::SavedTodo>,
+    #[serde(default)]
+    visibility: Option<lince_interface::visibility::Selection>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -126,6 +149,10 @@ struct Document {
     shortcuts: crate::shortcuts::Settings,
     active: u64,
     workspaces: Vec<Workspace>,
+    #[serde(default)]
+    deleted_workspaces: std::collections::BTreeMap<u64, u64>,
+    #[serde(default = "default_trash_retention_days")]
+    trash_retention_days: u16,
     sands: Vec<SavedSand>,
     records: Vec<SavedRecord>,
     #[serde(default)]
@@ -250,6 +277,9 @@ impl Document {
             && !ids.is_empty()
             && ids.len() == self.workspaces.len()
             && ids.contains(&self.active)
+            && (1..=365).contains(&self.trash_retention_days)
+            && !self.deleted_workspaces.contains_key(&self.active)
+            && self.deleted_workspaces.keys().all(|id| ids.contains(id))
             && self.workspaces.iter().all(Workspace::valid)
             && self
                 .sands
@@ -288,6 +318,7 @@ impl SavedSand {
                 .todo
                 .as_ref()
                 .is_none_or(|todo| self.kind == SandKind::Todo && todo.valid())
+            && self.visibility.as_ref().is_none_or(|selection| self.kind == SandKind::Visibility && selection.valid())
     }
 }
 
@@ -405,7 +436,18 @@ fn initialize(world: &mut World) {
                 world.insert_resource(document.controls);
                 world.insert_resource(document.shortcuts);
                 spaces.active = document.active;
-                spaces.entries = document.workspaces;
+                spaces.trash_retention_days = document.trash_retention_days;
+                spaces.entries.clear();
+                for workspace in document.workspaces {
+                    if let Some(deleted_at) = document.deleted_workspaces.get(&workspace.id) {
+                        spaces.trash.push(TrashedWorkspace {
+                            workspace,
+                            deleted_at: *deleted_at,
+                        });
+                    } else {
+                        spaces.entries.push(workspace);
+                    }
+                }
                 spaces.saved_records = document
                     .records
                     .into_iter()
@@ -504,6 +546,13 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::AccessControl {
                         content = Some(crate::access_control::populate(world, root, entity));
                     }
+                    if sand.kind == SandKind::Visibility {
+                        let panel = crate::visibility_castle::populate(world, root, entity);
+                        if let Some(selection) = &sand.visibility {
+                            lince_interface::visibility::set_target(world, panel, &selection.record_uid, selection.data);
+                        }
+                        content = Some(panel);
+                    }
                     if sand.kind == SandKind::Sync {
                         content = Some(crate::sync_castle::populate(world, root, entity));
                     }
@@ -578,6 +627,7 @@ fn initialize(world: &mut World) {
         world
             .entity_mut(root)
             .remove::<crate::instinct::SeedInstinct>();
+        purge_trash(world, root, unix_time());
         crate::workspace_config::initialize(world, root);
         if seed {
             crate::instinct::spawn(world, root, 1, DVec2::ZERO, Default::default());
@@ -672,6 +722,7 @@ pub fn create(world: &mut World, root: Entity) {
     let Some(id) = spaces
         .entries
         .iter()
+        .chain(spaces.trash.iter().map(|entry| &entry.workspace))
         .map(|entry| entry.id)
         .max()
         .unwrap_or(0)
@@ -732,19 +783,78 @@ pub fn remove(world: &mut World, root: Entity, removed: u64) -> bool {
         switch(world, root, next);
     }
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
-    spaces.entries.retain(|entry| entry.id != removed);
-    for record in spaces.saved_records.values_mut() {
-        if record.workspace == removed {
-            record.workspace = next;
-        }
-    }
-    let mut items = world.query::<(&ChildOf, &mut WorkspaceMember)>();
-    for (parent, mut member) in items.iter_mut(world) {
-        if parent.parent() == root && member.0 == removed {
-            member.0 = next;
-        }
-    }
+    let index = spaces
+        .entries
+        .iter()
+        .position(|entry| entry.id == removed)
+        .unwrap();
+    let workspace = spaces.entries.remove(index);
+    spaces.trash.push(TrashedWorkspace {
+        workspace,
+        deleted_at: unix_time(),
+    });
     true
+}
+
+pub(crate) fn restore_trash(world: &mut World, root: Entity, id: u64) -> bool {
+    purge_trash(world, root, unix_time());
+    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let Some(index) = spaces
+        .trash
+        .iter()
+        .position(|entry| entry.workspace.id == id)
+    else {
+        return false;
+    };
+    let entry = spaces.trash.remove(index);
+    spaces.entries.push(entry.workspace);
+    switch(world, root, id);
+    true
+}
+
+fn purge_trash(world: &mut World, root: Entity, now: u64) {
+    let retention =
+        u64::from(world.get::<Workspaces>(root).unwrap().trash_retention_days) * 24 * 60 * 60;
+    let expired: HashSet<_> = world
+        .get::<Workspaces>(root)
+        .unwrap()
+        .trash
+        .iter()
+        .filter(|entry| now.saturating_sub(entry.deleted_at) >= retention)
+        .map(|entry| entry.workspace.id)
+        .collect();
+    if expired.is_empty() {
+        return;
+    }
+    let entities: Vec<_> = world
+        .query::<(Entity, &ChildOf, &WorkspaceMember)>()
+        .iter(world)
+        .filter(|(_, parent, member)| parent.parent() == root && expired.contains(&member.0))
+        .map(|(entity, _, _)| entity)
+        .collect();
+    for entity in entities {
+        crate::record_view::hide_placement(world, root, entity);
+        world.despawn(entity);
+    }
+    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    spaces
+        .trash
+        .retain(|entry| !expired.contains(&entry.workspace.id));
+    let hidden: Vec<_> = spaces
+        .saved_records
+        .values()
+        .filter(|record| expired.contains(&record.workspace))
+        .map(|record| record.uid.clone())
+        .collect();
+    spaces.hidden_records.extend(hidden);
+    spaces
+        .saved_records
+        .retain(|_, record| !expired.contains(&record.workspace));
+    if let Some(mut layouts) = world.get_mut::<crate::layout::records::SavedLayouts>(root) {
+        layouts
+            .0
+            .retain(|saved| !expired.contains(&saved.workspace));
+    }
 }
 
 pub fn remove_active(world: &mut World, root: Entity) -> bool {
@@ -781,7 +891,14 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     let canvas_id = spaces.canvas_id.clone();
     let hidden_records = spaces.hidden_records.clone();
     let canvas_state = spaces.canvas_state.clone();
+    let trash_retention_days = spaces.trash_retention_days;
+    let deleted_workspaces = spaces
+        .trash
+        .iter()
+        .map(|entry| (entry.workspace.id, entry.deleted_at))
+        .collect();
     let mut workspaces = spaces.entries.clone();
+    workspaces.extend(spaces.trash.iter().map(|entry| entry.workspace.clone()));
     let camera = world.get::<CanvasView>(root).unwrap();
     let current = workspaces
         .iter_mut()
@@ -829,6 +946,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 timer: world.get::<crate::work_timer::LocalTimer>(entity).cloned(),
                 time_castle: world.get::<crate::time_castle::TimeSettings>(entity).map(|settings| settings.0.clone()),
                 todo: crate::todo::snapshot(world, entity),
+                visibility: sand.content.and_then(|panel| lince_interface::visibility::selection(world, panel)),
                 workspace: member.0,
                 position: item.position.to_array(),
                 size: item.size.to_array(),
@@ -868,6 +986,8 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         shortcuts: world.resource::<crate::shortcuts::Settings>().clone(),
         active,
         workspaces,
+        deleted_workspaces,
+        trash_retention_days,
         sands,
         records,
         areas,
@@ -926,6 +1046,7 @@ pub(crate) fn persist(world: &mut World) {
     else {
         return;
     };
+    purge_trash(world, root, unix_time());
     let quitting = !world.resource::<Messages<AppExit>>().is_empty();
     if world.resource::<WorkspaceFile>().writer.is_none() {
         let wake = world.get_resource::<crate::wake::WakeSignal>().cloned();
@@ -1691,7 +1812,7 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn removing_workspace_moves_sands_without_deleting_record_drafts_or_other_boxes() {
+    fn removing_workspace_keeps_sands_in_trash_without_touching_other_boxes() {
         let (mut app, root) = fixture(None);
         let world = app.world_mut();
         let sand = crate::sand_store::spawn_sand(
@@ -1704,13 +1825,100 @@ pub(crate) mod tests {
         );
         let other_root = world.spawn_empty().id();
         let other = world.spawn((WorkspaceMember(1), ChildOf(other_root))).id();
+        let record = world
+            .spawn((
+                CanvasItem {
+                    position: DVec2::ZERO,
+                    size: Vec2::splat(100.0),
+                },
+                ChildOf(root),
+            ))
+            .id();
+        place_record(world, root, record, "trashed-record");
+        assert!(crate::workspace_config::set_physics(world, root, 1, true));
         create(world, root);
         switch(world, root, 1);
         assert!(remove_active(world, root));
-        assert_eq!(world.get::<WorkspaceMember>(sand).unwrap().0, 2);
+        assert_eq!(world.get::<WorkspaceMember>(sand).unwrap().0, 1);
+        assert!(!switch(world, root, 1));
+        assert!(!crate::workspace_config::rules_enabled(world, root, 1));
+        assert!(!crate::workspace_config::enabled(world, root, 1));
+        assert_eq!(world.get::<Workspaces>(root).unwrap().trash.len(), 1);
         assert_eq!(world.get::<WorkspaceMember>(other).unwrap().0, 1);
         assert!(!remove_active(world, root));
         assert!(world.get_entity(sand).is_ok());
+        assert!(restore_trash(world, root, 1));
+        assert_eq!(world.get::<Workspaces>(root).unwrap().active, 1);
+        assert!(remove_active(world, root));
+        let deleted_at = world.get::<Workspaces>(root).unwrap().trash[0].deleted_at;
+        purge_trash(world, root, deleted_at + 10 * 24 * 60 * 60 - 1);
+        assert!(world.get_entity(sand).is_ok());
+        purge_trash(world, root, deleted_at + 10 * 24 * 60 * 60);
+        assert!(world.get_entity(sand).is_err());
+        assert!(world.get_entity(other).is_ok());
+        assert!(world.get_entity(record).is_err());
+        assert!(
+            world
+                .get::<Workspaces>(root)
+                .unwrap()
+                .hidden_records
+                .contains("trashed-record")
+        );
+        assert!(world.get::<Workspaces>(root).unwrap().trash.is_empty());
+        assert!(snapshot(world, root).validate());
+    }
+
+    #[cfg_attr(test, test)]
+    fn trashed_workspaces_restore_drafts_cameras_and_retention_after_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        crate::sand_store::spawn_sand(
+            app.world_mut(),
+            root,
+            1,
+            SandKind::EditableText,
+            "trashed draft",
+            DVec2::new(100.0, 200.0),
+        );
+        app.world_mut().get_mut::<CanvasView>(root).unwrap().center = DVec2::new(30.0, 40.0);
+        create(app.world_mut(), root);
+        app.world_mut()
+            .get_mut::<Workspaces>(root)
+            .unwrap()
+            .trash_retention_days = 12;
+        assert!(remove(app.world_mut(), root, 1));
+        let captured = crate::canvas_host::capture(app.world_mut(), root).unwrap();
+        assert!(captured.placements.is_empty());
+        assert_eq!(captured.workspaces.len(), 1);
+        flush(&mut app);
+        drop(app);
+        let (mut app, root) = fixture(Some(path));
+        let spaces = app.world().get::<Workspaces>(root).unwrap();
+        assert_eq!(spaces.active, 2);
+        assert_eq!(spaces.trash_retention_days, 12);
+        assert_eq!(spaces.trash.len(), 1);
+        assert_eq!(spaces.trash[0].workspace.id, 1);
+        assert!(restore_trash(app.world_mut(), root, 1));
+        assert_eq!(
+            app.world().get::<CanvasView>(root).unwrap().center,
+            DVec2::new(30.0, 40.0)
+        );
+        let world = app.world_mut();
+        let (sand, member) = world
+            .query::<(&StoredSand, &WorkspaceMember)>()
+            .single(world)
+            .unwrap();
+        assert_eq!(member.0, 1);
+        assert_eq!(
+            world
+                .get::<EditableText>(sand.content.unwrap())
+                .unwrap()
+                .value()
+                .to_string(),
+            "trashed draft"
+        );
+        assert!(snapshot(world, root).validate());
     }
 
     #[cfg_attr(test, test)]
@@ -2128,7 +2336,8 @@ pub(crate) mod tests {
         resized_bounds_survive_restart_without_changing_text_areas,
         protein_castles_restore_workspace_geometry_and_unfinished_queries,
         switching_restores_each_camera_and_keeps_live_drafts,
-        removing_workspace_moves_sands_without_deleting_record_drafts_or_other_boxes,
+        removing_workspace_keeps_sands_in_trash_without_touching_other_boxes,
+        trashed_workspaces_restore_drafts_cameras_and_retention_after_restart,
         restart_restores_notes_workspaces_cameras_and_record_layouts_without_idle_writes,
         token_layers_and_dragged_sizes_survive_restart,
         malformed_saved_state_is_reported_and_never_overwritten,

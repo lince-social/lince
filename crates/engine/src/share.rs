@@ -272,6 +272,7 @@ pub async fn feed_carries(
     op: &store::sync_ops::OpRow,
 ) -> Result<Option<Vec<String>>, EngineError> {
     let records = store::visibility::records_of_op(&engine.store.pool, &op.tbl, &op.uid).await?;
+    if records.iter().any(|record| feed.hidden.contains(record)) { return Ok(None); }
     if records.is_empty() {
         return Ok(Some(Vec::new()));
     }

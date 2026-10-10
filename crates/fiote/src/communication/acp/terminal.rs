@@ -60,10 +60,12 @@ impl LoginTerminal {
         {
             return Err("The agent's terminal login command is too large.".into());
         }
+        let mut validated = config.clone();
+        validated.validate()?;
         let pair = native_pty_system()
             .openpty(size(80, 24)?)
             .map_err(|error| error.to_string())?;
-        let mut command = CommandBuilder::new(launch::resolve(config)?);
+        let mut command = CommandBuilder::new(launch::resolve(&validated)?);
         command.args(&config.args);
         command.args(&method.args);
         command.cwd(&config.directory);

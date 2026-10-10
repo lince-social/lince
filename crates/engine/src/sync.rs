@@ -283,9 +283,12 @@ impl Engine {
         if nucleus::social::private_sync_field(&op.tbl, &op.field)
             && store::organs::local(&self.store.pool).await?.is_none_or(|organ| organ.uid != batch.from_organ)
         {
-            return Ok(Some("private social state is synchronized only within its own Organ"));
+            return Ok(Some("private state is synchronized only within its own Organ"));
         }
         if let Some(signed) = self.roster_of(&batch.from_organ).await? {
+            if op.tbl == "data_visibility" && !signed.roster.cells.iter().any(|cell| cell.cell_uid == op.actor_cell && cell.may(crate::roster::CAP_WRITE)) {
+                return Ok(Some("only an authorized writing Cell may synchronize visibility policy"));
+            }
             if !signed
                 .roster
                 .cells
@@ -610,7 +613,8 @@ impl Engine {
                         touched.extend(outcome.touched);
                     }
                 }
-                ("record_extension", OpKind::Set | OpKind::Tombstone)
+                ("data_visibility", OpKind::Set)
+                | ("record_extension", OpKind::Set | OpKind::Tombstone)
                 | ("record_assertion", OpKind::Set | OpKind::Tombstone)
                 | ("concept", OpKind::Set | OpKind::Tombstone) => {
                     let field = if op.tbl == "record_assertion" {
@@ -1033,6 +1037,9 @@ impl Engine {
             let mut kept = Vec::new();
             for row in rows {
                 match sync_ops::get_by_seq(pool, row.seq).await? {
+                    Some(op) if store::visibility::op_hidden_from(pool, &feed.hidden, &op.tbl, &op.uid).await? => {
+                        sync_ops::outbox_delete(pool, &row).await?;
+                    }
                     Some(op) if !contact.sync_out && op.replica_root.is_none() => {
                         sync_ops::outbox_delete(pool, &row).await?;
                     }
@@ -1328,6 +1335,14 @@ impl Engine {
         };
         let mut out = Materialised::default();
         match (op.tbl.as_str(), kind) {
+            ("data_visibility", OpKind::Set) => {
+                let data: nucleus::visibility::Data = serde_json::from_value(serde_json::Value::String(op.field.clone()))?;
+                let saved: nucleus::visibility::SavedPolicy = serde_json::from_value(json_value(op.value.as_deref()))?;
+                store::sync_apply::ensure_record_stub(pool, &op.uid, "plain", &op.organ_uid, replica_root, Some(op.hlc)).await?;
+                store::data_visibility::import(pool, &op.uid, data, &saved).await?;
+                out.applied += 1;
+                out.touched.push(op.uid.clone());
+            }
             ("record", OpKind::Set) if op.field.starts_with("property:") => {
                 if store::sync_apply::record_deleted(pool, &op.uid).await? != Some(true)
                     && self.materialise_property_op(op).await?

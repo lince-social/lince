@@ -104,11 +104,19 @@ fn broken_symlinks_non_executables_and_missing_script_runtime_are_not_ready() {
     program(&root.path().join("codex-acp"), "#!/usr/bin/env node\n");
     assert_eq!(
         search.scan(&registry()).candidates[0].availability,
-        Availability::RuntimeMissing
+        Availability::RuntimeUnsupported
     );
     program(&root.path().join("node"), "#!/bin/sh\nexit 0\n");
     assert_eq!(
         search.scan(&registry()).candidates[0].availability,
-        Availability::Installed
+        Availability::RuntimeUnsupported
+    );
+    let discovered = search.scan(&registry());
+    assert!(discovered.candidates[0].config.is_none());
+    assert!(discovered.candidates[0].installation.is_none());
+    program(&root.path().join("codex-acp"), "#!/usr/bin/env python3\n");
+    assert_eq!(
+        search.scan(&registry()).candidates[0].availability,
+        Availability::RuntimeMissing
     );
 }

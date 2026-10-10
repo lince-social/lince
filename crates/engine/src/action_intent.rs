@@ -269,7 +269,7 @@ impl Engine {
 
         let intent_uid = if matches!(
             &action,
-            Action::CreateUser { .. } | Action::UpdateUser { .. }
+            Action::CreateUser { .. } | Action::UpdateUser { .. } | Action::Location { .. }
         ) {
             nucleus::new_uid("sai")
         } else {
@@ -318,6 +318,9 @@ impl Engine {
         &self,
         verified: VerifiedActionIntent,
     ) -> Result<ActionOutcome, EngineError> {
+        if let Action::Location { request } = verified.action {
+            return self.access_scope(false, self.location_request(request, Some(&verified.person_uid))).await;
+        }
         if matches!(&verified.action, Action::PreviewKarmaProposal { .. }) {
             return self.act_verified_preview(verified).await;
         }

@@ -2,6 +2,7 @@ mod annotations;
 mod audio;
 mod chrome;
 mod events;
+mod face;
 mod motion;
 mod palette;
 mod render;
@@ -50,7 +51,7 @@ struct View {
     unwind: f32,
     animation_at: std::time::Instant,
     image: Option<Handle<Image>>,
-    rendered: Option<(Settings, u64, i64, [u32; 2], u32, bool)>,
+    rendered: Option<(Settings, u64, i64, [u32; 4], u32, bool, usize)>,
     scene: Option<Entity>,
     fallback: bool,
     projection: Option<nucleus::projection::Status>,
@@ -285,9 +286,11 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                         })
                         .map(|entry| entry.id.clone())
                         .collect();
-                    view.entries = entries;
+                    if view.entries != entries {
+                        view.entries = entries;
+                        view.revision = view.revision.wrapping_add(1);
+                    }
                     view.source = source.clone();
-                    view.revision = view.revision.wrapping_add(1);
                     view.entries
                         .iter()
                         .find(|entry| view.selected.len() == 1 && view.selected.contains(&entry.id))
@@ -420,17 +423,35 @@ fn update(
         let query = protein::schedule::query(window.clone(), filter);
         let key = serde_json::to_string(&query).unwrap();
         let changed = previous.is_none_or(|feed| feed.source != source || feed.key != key);
+        let filter_key = |query: &protein::Protein| {
+            serde_json::to_value(
+                query
+                    .filter
+                    .iter()
+                    .filter(|filter| !matches!(filter, protein::Predicate::ProjectionWindow(_)))
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap()
+        };
+        let same_source = changed
+            && previous.is_some_and(|feed| {
+                feed.source == source
+                    && feed.window.timezone == window.timezone
+                    && filter_key(&feed.query) == filter_key(&query)
+            });
         if changed {
             if let Some(feed) = world.resource_mut::<Feeds>().active.remove(&owner) {
                 world.resource_mut::<Feeds>().closing.push(feed);
             }
             let mut view = world.get_mut::<View>(owner).unwrap();
-            view.entries.clear();
+            if !same_source {
+                view.entries.clear();
+                view.selected.clear();
+                view.page = 0;
+                view.revision = view.revision.wrapping_add(1);
+            }
             view.projection = None;
-            view.selected.clear();
-            view.page = 0;
             view.source = source.clone();
-            view.revision = view.revision.wrapping_add(1);
             world.resource_mut::<Feeds>().active.insert(
                 owner,
                 Feed {
@@ -583,6 +604,55 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn identical_schedule_refreshes_do_not_invalidate_the_clock_layout() {
+        let mut world = World::new();
+        world.init_resource::<Feeds>();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let owner = world.spawn(Node::default()).id();
+        populate(&mut world, owner);
+        let (sender, _receiver) = tokio::sync::mpsc::channel(1);
+        world
+            .resource_mut::<Feeds>()
+            .active
+            .insert(owner, feed(sender));
+        let rows = vec![serde_json::json!({
+            "uid":"need", "kind":"schedule-entry", "record_uid":"r:need",
+            "head":"Floss", "quantity":"-1", "category":"overdue",
+            "time":null, "origin":{"kind":"need"}, "preview":false
+        })];
+        receive(
+            &mut world,
+            &Source::Local,
+            &ServerMessage::Snapshot {
+                id: "closed-clock".into(),
+                rows: rows.clone(),
+            },
+        );
+        let revision = world.get::<View>(owner).unwrap().revision;
+        assert_eq!(world.get::<View>(owner).unwrap().entries.len(), 1);
+        receive(
+            &mut world,
+            &Source::Local,
+            &ServerMessage::Update {
+                id: "closed-clock".into(),
+                rows,
+            },
+        );
+        assert_eq!(world.get::<View>(owner).unwrap().revision, revision);
+        receive(
+            &mut world,
+            &Source::Local,
+            &ServerMessage::Update {
+                id: "closed-clock".into(),
+                rows: Vec::new(),
+            },
+        );
+        assert!(world.get::<View>(owner).unwrap().entries.is_empty());
+        assert_eq!(world.get::<View>(owner).unwrap().revision, revision + 1);
+    }
 
     fn feed(sender: tokio::sync::mpsc::Sender<ClientMessage>) -> Feed {
         let window = Settings::default()

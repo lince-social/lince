@@ -135,6 +135,11 @@ pub(crate) fn spawn(
             if todo.as_ref().is_some_and(|todo| !todo.valid()) {
                 return Err("Invalid Todo state.".into());
             }
+            let visibility = settings.get("visibility").and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<lince_interface::visibility::Selection>).transpose().map_err(|_| "Invalid Visibility selection.")?;
+            if visibility.as_ref().is_some_and(|selection| !selection.valid() || kind != SandKind::Visibility) {
+                return Err("Invalid Visibility selection.".into());
+            }
             let entity = crate::sand_store::spawn_sand(
                 world,
                 root,
@@ -146,6 +151,10 @@ pub(crate) fn spawn(
                     .unwrap_or_default(),
                 position,
             );
+            if let Some(selection) = visibility {
+                let panel = world.get::<StoredSand>(entity).and_then(|sand| sand.content).ok_or("Visibility editor is unavailable.")?;
+                lince_interface::visibility::set_target(world, panel, &selection.record_uid, selection.data);
+            }
             if let Some(saved_texts) = saved_texts {
                 let existing: Vec<_> = world
                     .get::<Children>(entity)

@@ -47,7 +47,14 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn requires_node(&self) -> bool {
+        launch::requires_node(self)
+    }
+
     pub fn validate(&mut self) -> Result<(), String> {
+        if self.requires_node() {
+            return Err("Node.js agent launchers are not supported. Open AI connections and choose a native Fiote subscription, API key, or local model connection.".into());
+        }
         if self.command.as_os_str().is_empty()
             || self.args.len() > 32
             || self.environment.len() > 32

@@ -25,6 +25,7 @@ mod behavior;
 mod connections;
 mod context;
 mod history;
+pub mod laboratory;
 mod mentions;
 mod output;
 mod profiles;
@@ -79,6 +80,11 @@ pub struct Host {
 }
 
 impl Host {
+    pub fn with_provider(mut self, provider: Arc<dyn Provider>) -> Self {
+        self.provider=Some(provider);
+        self
+    }
+
     pub(crate) fn shared_vault(&self) -> Arc<vault::Vault> {
         self.vault.clone()
     }
@@ -930,6 +936,8 @@ impl Host {
                 .await
                 .map_err(|e| e.to_string())?;
         let mentioned = self.mentioned_fiote(body).await?;
+        let laboratory = store::records::get_extension(&self.engine.store.pool, thread, laboratory::NAMESPACE)
+            .await.map_err(|error| error.to_string())?;
         let is_mention = mentioned.is_some();
         let mut selected = mentioned;
         for record in parents {
@@ -944,7 +952,7 @@ impl Host {
                 continue;
             }
             if let Some(config) = self.load(&record.uid)?
-                && config.settings.enabled
+                && (config.settings.enabled || laboratory.as_ref().is_some_and(|policy| policy["record"] == record.uid))
             {
                 if selected.is_some() {
                     return Err("This thread belongs to more than one enabled Fiote.".into());
@@ -952,9 +960,15 @@ impl Host {
                 selected = Some((record, config));
             }
         }
-        let Some((record, config)) = selected else {
+        let Some((record, mut config)) = selected else {
             return Ok(None);
         };
+        if let Some(policy) = &laboratory {
+            if policy["record"] != record.uid { return Err("Laboratory thread belongs to another Fiote.".into()); }
+            config.settings=serde_json::from_value(policy["settings"].clone()).map_err(|_| "Invalid Laboratory connection settings.")?;
+            config.agent=None;
+            self.catalog.validate(&mut config.settings)?;
+        }
         if self.record(thread).await?.kind != RecordKind::Thread.as_str() {
             return Err("Choose a thread for this conversation.".into());
         }
@@ -1003,7 +1017,7 @@ impl Host {
         });
         let system = self.session_instructions(&record.uid, thread).await?;
         let mut tools = Registry::default();
-        if !config.settings.directory.as_os_str().is_empty() {
+        if laboratory.is_none() && !config.settings.directory.as_os_str().is_empty() {
             tools.register(CreateFile::new(&config.settings.directory)?);
         }
         let native = transport::Session::local(
@@ -1018,7 +1032,8 @@ impl Host {
         })
         .with_instructions(system.clone());
         native.register(&mut tools);
-        self.save_context(thread, &record.uid, &[], &tools).await?;
+        let laboratory_tools = laboratory.as_ref().map(|_| Registry::default());
+        self.save_context(thread, &record.uid, &[], laboratory_tools.as_ref().unwrap_or(&tools)).await?;
         let driver = self.catalog.driver(&config.settings.provider).cloned();
         let key = if self.catalog.method(&config.settings)?.kind == fiote::adapters::AuthKind::None
         {
@@ -1203,7 +1218,7 @@ impl Host {
                         provider.as_ref(),
                         &system,
                         messages,
-                        &tools,
+                        laboratory_tools.as_ref().unwrap_or(&tools),
                         receiver,
                         &output,
                     )

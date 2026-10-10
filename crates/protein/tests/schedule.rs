@@ -137,6 +137,137 @@ async fn current_undated_needs_use_live_quantity_and_obey_source_and_visibility(
 }
 
 #[tokio::test]
+async fn refreshing_forecast_preserves_future_work_and_applies_live_changes() {
+    let engine = Engine::open_memory().await.unwrap();
+    let now = chrono::Utc::now().timestamp_millis();
+    let uid = task(&engine, "floss", json!({}), -1.0).await;
+    let context = Context {
+        actor: None,
+        window: Window {
+            from_ms: now,
+            until_ms: now + 3_600_000,
+            timezone: "UTC".into(),
+        },
+    };
+    let entry = Scheduled {
+        id: "next-floss".into(),
+        record: TypedUid::new(ReferenceKind::Record, &uid).unwrap(),
+        time: TimeRange {
+            from_ms: now + 1_800_000,
+            until_ms: None,
+        },
+        quantity: Quantity {
+            value: nucleus::DecimalValue::parse_inferred("-1").unwrap(),
+            unit: None,
+        },
+        cause: Cause::Rule {
+            occurrence: RuleOccurrence {
+                rule_uid: nucleus::new_uid("rec"),
+                revision: 1,
+                event_id: "next".into(),
+                frequency: None,
+                intended_at_ms: Some(now + 1_800_000),
+            },
+            consequence: 0,
+        },
+        head: "floss".into(),
+        slug: Some("floss".into()),
+        record_kind: "plain".into(),
+        preview: false,
+    };
+    let source = store::projection::revision(&engine.store.pool)
+        .await
+        .unwrap();
+    assert!(
+        store::projection::publish_schedule(
+            &engine.store.pool,
+            &context,
+            source,
+            now,
+            now + 3_600_000,
+            None,
+            &[],
+            &[entry]
+        )
+        .await
+        .unwrap()
+    );
+    let query = protein::schedule::query(context.window.clone(), Vec::new());
+    engine
+        .act(
+            Action::AddQuantity {
+                target: uid.clone(),
+                delta: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(rows.last().unwrap()["status"]["kind"], "updating");
+    assert!(rows.iter().any(|row| row["uid"] == "next-floss"));
+    assert!(rows.iter().all(|row| row["origin"]["kind"] != "need"));
+    let filtered = protein::schedule::query(
+        context.window.clone(),
+        vec![protein::Predicate::SlugEq("other".into())],
+    );
+    assert!(
+        protein::execute(&engine.store, &filtered)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != uid)
+    );
+    engine
+        .act(
+            Action::DeleteRecord {
+                target: uid.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        protein::execute(&engine.store, &query)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row["record_uid"] != uid)
+    );
+    let current = store::projection::revision(&engine.store.pool)
+        .await
+        .unwrap();
+    assert!(
+        store::projection::publish_schedule(
+            &engine.store.pool,
+            &context,
+            current,
+            now,
+            now + 3_600_000,
+            None,
+            &[],
+            &[]
+        )
+        .await
+        .unwrap()
+    );
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(rows.last().unwrap()["status"]["kind"], "ready");
+    assert!(rows.iter().all(|row| row["kind"] != "schedule-entry"));
+    let unsupported = protein::schedule::query(
+        context.window,
+        vec![protein::Predicate::Any(vec![protein::Predicate::SlugEq(
+            "floss".into(),
+        )])],
+    );
+    let rows = protein::execute(&engine.store, &unsupported).await.unwrap();
+    assert_eq!(
+        rows.last().unwrap()["status"]["reason"]["kind"],
+        "unsupported-filter"
+    );
+}
+
+#[tokio::test]
 async fn schedule_keeps_points_intervals_all_day_and_overdue_separate() {
     let engine = Engine::open_memory().await.unwrap();
     let now = chrono::Utc::now();

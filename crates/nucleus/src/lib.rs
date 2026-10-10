@@ -1,4 +1,5 @@
 pub mod sand_package;
+pub mod visibility;
 pub mod action_intent;
 pub mod description_asset;
 pub mod drawing;
@@ -17,6 +18,7 @@ pub mod karma;
 pub mod nearby;
 pub mod message;
 pub mod place;
+pub mod location;
 pub mod promise;
 pub mod record;
 pub mod record_extension;

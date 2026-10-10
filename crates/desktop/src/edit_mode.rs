@@ -54,6 +54,8 @@ pub enum EditAction {
     ReloadWorkspaceSettings,
     SwitchWorkspace(u64),
     RemoveWorkspace(u64),
+    RestoreWorkspace(u64),
+    SetTrashRetention(u16),
     ConfirmRemoveWorkspace,
     CancelRemoveWorkspace,
     AddSand(SandKind),
@@ -697,6 +699,17 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         EditAction::SwitchWorkspace(id) => {
             workspace::switch(world, root, id);
         }
+        EditAction::SetTrashRetention(days) => {
+            if (1..=365).contains(&days) {
+                world
+                    .get_mut::<Workspaces>(root)
+                    .unwrap()
+                    .trash_retention_days = days;
+            }
+        }
+        EditAction::RestoreWorkspace(workspace) => {
+            workspace::restore_trash(world, root, workspace);
+        }
         EditAction::RemoveWorkspace(workspace) => {
             let spaces = world.get::<Workspaces>(root).unwrap();
             if spaces.entries.len() > 1 && spaces.entries.iter().any(|entry| entry.id == workspace)
@@ -994,6 +1007,8 @@ pub(crate) fn control(
         | EditAction::Text(TextAction::Remove) => Some(Icon::Close),
         EditAction::CreateWorkspace => Some(Icon::Plus),
         EditAction::ConfirmRemoveWorkspace => Some(Icon::Check),
+        EditAction::RestoreWorkspace(_) => Some(Icon::Reset),
+        EditAction::SetTrashRetention(_) => None,
         EditAction::Credits => Some(Icon::Credits),
         EditAction::Information | EditAction::Shortcuts => Some(Icon::Info),
         EditAction::General => Some(Icon::General),
@@ -1051,6 +1066,7 @@ pub(crate) fn control(
             SandKind::Operation => Icon::Forward,
             SandKind::WorkTimer => Icon::Play,
             SandKind::AccessControl => Icon::Person,
+            SandKind::Visibility => Icon::Person,
             SandKind::Sync => Icon::Reset,
             SandKind::Freedoom => Icon::Play,
             SandKind::Terminal => Icon::Forward,
@@ -1323,6 +1339,8 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 let editor = world
                     .spawn((bundle, EditField::WorkspaceName, ChildOf(row)))
                     .id();
+                let font = world.resource::<Typography>().text(15.0);
+                world.entity_mut(editor).insert(font);
                 world.entity_mut(editor).insert(EditableText {
                     allow_newlines: false,
                     visible_lines: Some(1.0),
@@ -1352,6 +1370,52 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 );
             }
         }
+        let trash = world.get::<Workspaces>(root).unwrap().trash.clone();
+        let retention_days = world.get::<Workspaces>(root).unwrap().trash_retention_days;
+        label(
+            world,
+            panel,
+            &format!("Trash · kept for {retention_days} days"),
+            15.0,
+        );
+        let retention_row = crate::area_panel::row(world, panel);
+        if retention_days > 1 {
+            control(
+                world,
+                root,
+                retention_row,
+                EditAction::SetTrashRetention(retention_days - 1),
+                "Keep 1 day less",
+            );
+        }
+        if retention_days < 365 {
+            control(
+                world,
+                root,
+                retention_row,
+                EditAction::SetTrashRetention(retention_days + 1),
+                "Keep 1 day more",
+            );
+        }
+        for entry in trash {
+            let days = (u64::from(retention_days) * 24 * 60 * 60)
+                .saturating_sub(workspace::unix_time().saturating_sub(entry.deleted_at))
+                .div_ceil(24 * 60 * 60);
+            let row = crate::area_panel::row(world, panel);
+            label(
+                world,
+                row,
+                &format!("{} · {days} days left", entry.workspace.name),
+                15.0,
+            );
+            control(
+                world,
+                root,
+                row,
+                EditAction::RestoreWorkspace(entry.workspace.id),
+                &format!("Restore {}", entry.workspace.name),
+            );
+        }
         if let Some(removed) = confirm {
             if let Some(name) = entries
                 .iter()
@@ -1361,7 +1425,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 label(
                     world,
                     panel,
-                    &format!("Remove {name}? Its Sands will move to another workspace."),
+                    &format!(
+                        "Remove {name}? It and its Sands will stay in Trash for {retention_days} days."
+                    ),
                     14.0,
                 );
                 control(
@@ -1369,7 +1435,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     root,
                     panel,
                     EditAction::ConfirmRemoveWorkspace,
-                    "Remove and move Sands",
+                    "Move workspace to Trash",
                 );
                 control(
                     world,
@@ -2195,6 +2261,19 @@ pub(crate) mod tests {
             })
             .collect();
         assert_eq!(deletes.len(), 2);
+        let name = app.world().get::<EditMode>(root).unwrap().name.unwrap();
+        let active_font = app.world().get::<TextFont>(name).unwrap().clone();
+        let switch = app
+            .world_mut()
+            .query::<(Entity, &EditControl)>()
+            .iter(app.world())
+            .find(|(_, control)| control.action == EditAction::SwitchWorkspace(1))
+            .unwrap()
+            .0;
+        let text = app.world().get::<Children>(switch).unwrap()[0];
+        let inactive_font = app.world().get::<TextFont>(text).unwrap();
+        assert_eq!(active_font.font, inactive_font.font);
+        assert_eq!(active_font.font_size, inactive_font.font_size);
         for (delete, _, row) in &deletes {
             assert_eq!(
                 app.world().get::<Children>(*row).unwrap().last(),
@@ -2224,6 +2303,24 @@ pub(crate) mod tests {
         assert_eq!(spaces.active, 2);
         assert_eq!(spaces.entries.len(), 1);
         assert_eq!(spaces.entries[0].id, 2);
+        assert_eq!(spaces.trash.len(), 1);
+        activate(&mut app, root, EditAction::SetTrashRetention(11));
+        assert_eq!(
+            app.world()
+                .get::<Workspaces>(root)
+                .unwrap()
+                .trash_retention_days,
+            11
+        );
+        activate(&mut app, root, EditAction::RestoreWorkspace(1));
+        assert_eq!(app.world().get::<Workspaces>(root).unwrap().active, 1);
+        assert!(
+            app.world()
+                .get::<Workspaces>(root)
+                .unwrap()
+                .trash
+                .is_empty()
+        );
     }
 
     crate::laboratory_cases! {

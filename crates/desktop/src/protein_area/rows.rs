@@ -142,6 +142,9 @@ pub(super) fn content(
         world.entity_mut(row).insert(crate::full_record::RecordCard);
     }
     fields(world, row, config, data, binding.clone(), sections.as_ref());
+    if config.record_cards && let Some(binding) = &binding && matches!(binding.source, Source::Local) {
+        crate::location::record_controls(world, row, &binding.uid, None, None);
+    }
     if config.record_cards
         && let Some(binding) = binding.clone()
         && matches!(binding.source, Source::Local)

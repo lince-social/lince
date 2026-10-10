@@ -7,6 +7,7 @@ use std::process::{Command, Stdio};
 mod android;
 mod android_clean;
 mod android_smoke;
+mod design;
 mod prune;
 
 type Result<T> = std::result::Result<T, String>;
@@ -30,6 +31,7 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
+        Some("design") => design::dispatch(&root, &extra),
         Some("android") => android::dispatch(&root, &extra),
         Some("android-clean") => android_clean::run(&root, &extra),
         Some("android-smoke") => android_smoke::run(&root, &extra),
@@ -112,7 +114,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <dev|check|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview>"
+                "cargo xtask <design|dev|check|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -122,6 +124,7 @@ fn dispatch() -> Result<()> {
                 "android-clean previews retired Android cache files; --apply removes them; --builds also clears compiled artifacts."
             );
             println!("dev passes additional arguments to Lince.");
+            println!("design help lists focused HTML studies and native preview commands.");
             println!(
                 "check and test forward arguments to Cargo; test-all runs every workspace target."
             );

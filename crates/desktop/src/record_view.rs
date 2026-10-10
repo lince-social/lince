@@ -366,6 +366,7 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
             ))
             .id();
         crate::edit_mode::label(world, button, "Open Record", 14.0);
+        crate::location::record_controls(world, card, uid, None, None);
         if crate::record_binding::enabled(world) {
             crate::record_binding::attach(
                 world,

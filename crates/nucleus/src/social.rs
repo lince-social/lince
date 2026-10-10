@@ -18,7 +18,7 @@ pub const MAX_LIFETIME: i64 = 7 * 86400;
 pub const CONVERSATION_VECTOR_PREFIX: &str = "lince.own-conversation/";
 
 pub fn private_sync_field(table: &str, field: &str) -> bool {
-    table == "record_extension" && field.starts_with("lince.social.")
+    table == "data_visibility" || (table == "record_extension" && field.starts_with("lince.social."))
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

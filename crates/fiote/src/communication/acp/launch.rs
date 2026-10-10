@@ -1,5 +1,113 @@
 use super::*;
+use std::io::Read;
 use std::path::Path;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config(command: PathBuf, directory: &Path) -> Config {
+        serde_json::from_value(serde_json::json!({
+            "command":command,"args":[],"directory":directory
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn node_launch_commands_are_rejected_before_execution() {
+        let root = tempfile::tempdir().unwrap();
+        for command in [
+            "node",
+            "nodejs",
+            "npm",
+            "npx",
+            "agent.js",
+            "agent.mjs",
+            "agent.cjs",
+        ] {
+            let mut configured = config(command.into(), root.path());
+            let error = configured.validate().unwrap_err();
+            assert!(error.contains("Node.js"), "{command}: {error}");
+        }
+        let mut configured = config("sh".into(), root.path());
+        configured.args = vec!["-c".into(), "exec node /missing/agent.js".into()];
+        assert!(configured.validate().unwrap_err().contains("Node.js"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn node_wrappers_and_path_aliases_are_inspected_without_running_them() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let wrapper = root.path().join("codex-acp");
+        let marker = root.path().join("must-not-run");
+        for body in [
+            "#!/usr/bin/env node\nrequire('missing');\n".into(),
+            format!(
+                "#!/bin/sh\ntouch {}\nexec node /missing/agent.js\n",
+                marker.display()
+            ),
+        ] {
+            std::fs::write(&wrapper, body).unwrap();
+            std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o700)).unwrap();
+            let mut configured = config("codex-acp".into(), root.path());
+            configured
+                .environment
+                .insert("PATH".into(), root.path().to_string_lossy().into());
+            assert!(configured.validate().unwrap_err().contains("Node.js"));
+            assert!(!marker.exists());
+        }
+        std::fs::write(&wrapper, "#!/bin/sh\nexit 0\n").unwrap();
+        config(wrapper, root.path()).validate().unwrap();
+    }
+}
+
+pub(super) fn requires_node(config: &Config) -> bool {
+    fn node_program(value: &str) -> bool {
+        let value = value
+            .trim_matches(['\'', '"', ';'])
+            .trim_start_matches("#!");
+        let path = Path::new(value);
+        matches!(
+            path.file_stem().and_then(|name| name.to_str()),
+            Some("node" | "nodejs" | "npm" | "npx")
+        ) || matches!(
+            path.extension().and_then(|extension| extension.to_str()),
+            Some("js" | "cjs" | "mjs")
+        )
+    }
+    if node_program(&config.command.to_string_lossy()) {
+        return true;
+    }
+    let command = resolve(config).unwrap_or_else(|_| config.command.clone());
+    if node_program(&command.to_string_lossy()) {
+        return true;
+    }
+    if matches!(
+        config.command.file_name().and_then(|name| name.to_str()),
+        Some("env" | "sh" | "bash")
+    ) && config
+        .args
+        .iter()
+        .flat_map(|arg| arg.split_whitespace())
+        .any(node_program)
+    {
+        return true;
+    }
+    let Ok(file) = std::fs::File::open(command) else {
+        return false;
+    };
+    let mut bytes = Vec::new();
+    if file.take(8192).read_to_end(&mut bytes).is_err() || !bytes.starts_with(b"#!") {
+        return false;
+    }
+    String::from_utf8_lossy(&bytes)
+        .lines()
+        .enumerate()
+        .filter(|(index, line)| *index == 0 || !line.trim_start().starts_with('#'))
+        .flat_map(|(_, line)| line.split_whitespace())
+        .any(node_program)
+}
 
 pub(super) fn environment(config: &Config) -> BTreeMap<String, String> {
     let mut environment = config.environment.clone();

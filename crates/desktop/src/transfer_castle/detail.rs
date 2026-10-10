@@ -129,6 +129,9 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         Command::Select(String::new()),
     );
     crate::edit_mode::label(world, heading, &title(transfer), 21.0);
+    let location_transfer = text(transfer, "uid");
+    let location_person = person(world, owner);
+    crate::location::record_controls(world, parent, &location_transfer, Some(&location_transfer), Some(&location_person));
     if let Some(cell) = transfer["writing_cell_name"].as_str().or(transfer["writing_cell"].as_str()) {
         crate::edit_mode::label(world, parent, &format!("Open Cell {cell} to change this Transfer. You can simulate it here."), 13.0);
     }
@@ -486,6 +489,11 @@ fn promises(world: &mut World, owner: Entity, parent: Entity, transfer: &Value) 
         return;
     };
     for promise in array(transfer, "promises") {
+        if let Some(record) = promise["record"].as_str() {
+            let location_transfer = text(transfer, "uid");
+            let location_person = person(world, owner);
+            crate::location::record_controls(world, block, record, Some(&location_transfer), Some(&location_person));
+        }
         if promise["giver"] == person(world, owner) || promise["receiver"] == person(world, owner) {
             button(
                 world,

@@ -172,6 +172,9 @@ pub async fn pull_envelope(
         .await
         .map_err(internal)?
         .ok_or_else(|| (Refusal::Gone, "Transfer delivery is absent".into()))?;
+    if policy.state == "active" && store::visibility::hidden_from_organ(&state.store.pool, &policy.recipient_organ_uid).await.map_err(internal)?.contains(&policy.transfer_uid) {
+        return Err((Refusal::Gone, "Transfer visibility does not allow this Organ".into()));
+    }
     let policy_kind = if policy.state == "revoked" {
         "revoked"
     } else if policy.revision == 1 {
@@ -532,6 +535,9 @@ pub async fn prepare_envelope(
         .ok_or_else(|| "delivery policy disappeared".to_string())?;
     if policy.state != "active" {
         return Err("delivery policy is revoked".into());
+    }
+    if store::visibility::hidden_from_organ(&state.store.pool, &policy.recipient_organ_uid).await.map_err(|error| error.to_string())?.contains(&policy.transfer_uid) {
+        return Err("Transfer visibility does not allow this Organ".into());
     }
     let contact = store::organs::contact(&state.store.pool, &policy.recipient_organ_uid)
         .await

@@ -222,6 +222,7 @@ macro_rules! laboratory_cases {
 }
 
 mod headless;
+pub mod fiote;
 pub use headless::{HeadlessReport, run_headless};
 
 mod tests;

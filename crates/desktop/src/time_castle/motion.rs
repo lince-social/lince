@@ -73,6 +73,7 @@ pub(super) struct Motion {
     pub bands: HashMap<String, Band>,
     pub seconds: f32,
     pub active: bool,
+    pub tick: i64,
     last: Instant,
 }
 
@@ -88,10 +89,13 @@ pub(super) fn update(
             bands: HashMap::new(),
             seconds: 1.0 / 60.0,
             active: false,
+            tick: i64::MIN,
             last: Instant::now(),
         });
     }
     let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+    let tick = now / 1000;
+    let changed = changed || world.get::<Motion>(owner).unwrap().tick != tick;
     let occurrences = changed.then(|| {
         model::clock_occurrences(
             settings,
@@ -107,6 +111,7 @@ pub(super) fn update(
     let mut motion = world.get_mut::<Motion>(owner).unwrap();
     motion.seconds = motion.last.elapsed().as_secs_f32();
     motion.last = Instant::now();
+    motion.tick = tick;
     if let Some(occurrences) = occurrences {
         let entries = entries.unwrap();
         let ids: std::collections::HashSet<_> = occurrences
@@ -170,8 +175,12 @@ pub(super) fn update(
         }
         let target = [if band.retiring { 72.0 } else { 0.0 }];
         if physics {
-            active |= band.blend.advance([1.0], seconds);
-            active |= band.fall.advance(target, seconds);
+            if band.blend.position != [1.0] || band.blend.velocity != [0.0] {
+                active |= band.blend.advance([1.0], seconds);
+            }
+            if band.fall.position != target || band.fall.velocity != [0.0] {
+                active |= band.fall.advance(target, seconds);
+            }
         } else {
             band.blend = Spring::new([1.0]);
             band.fall = Spring::new(target);

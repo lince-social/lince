@@ -2,7 +2,7 @@ use bevy::{prelude::*, text::EditableText};
 use jni::{
     JNIEnv, JavaVM,
     objects::{JByteArray, JClass, JObject, JString, JValue},
-    sys::{jboolean, jint, jlong},
+    sys::{jboolean, jdouble, jint, jlong},
 };
 use std::{
     collections::VecDeque,
@@ -18,6 +18,35 @@ static EVENTS: Mutex<VecDeque<Event>> = Mutex::new(VecDeque::new());
 static WAKE: OnceLock<lince_interface::wake::WakeSignal> = OnceLock::new();
 static DECODING: AtomicBool = AtomicBool::new(false);
 static FILE_CHOICE: Mutex<Option<(u64, String, String)>> = Mutex::new(None);
+
+pub fn location(enabled: bool, milliseconds: i64, epoch: u64) -> Result<(), String> {
+    with_activity(|env, activity| {
+        env.call_method(activity, "location", "(ZJJ)V", &[JValue::Bool(enabled.into()), JValue::Long(milliseconds), JValue::Long(epoch as i64)]).map(|_| ())
+    })
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_social_lince_mobile_MainActivity_nativeLocationFix(
+    _env: JNIEnv, _class: JClass, epoch: jlong, latitude: jdouble, longitude: jdouble, accuracy: jdouble, age_ms: jlong,
+) {
+    if !(0..60_000).contains(&age_ms) { return; }
+    crate::location::sample(crate::location::Sample { epoch: epoch as u64, received: std::time::Instant::now(), result: Ok((latitude, longitude, (accuracy >= 0.0).then_some(accuracy), age_ms)), stopped: false });
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_social_lince_mobile_MainActivity_nativeLocationStatus(
+    mut env: JNIEnv, _class: JClass, epoch: jlong, message: JString,
+) {
+    if let Ok(message) = env.get_string(&message) {
+        let message: String = message.into();
+        crate::location::sample(crate::location::Sample { epoch: epoch as u64, received: std::time::Instant::now(), result: Err(message.chars().take(256).collect()), stopped: false });
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_social_lince_mobile_MainActivity_nativeLocationStop(_env: JNIEnv, _class: JClass, epoch: jlong) {
+    crate::location::sample(crate::location::Sample { epoch: epoch as u64, received: std::time::Instant::now(), result: Err("Location stopped".into()), stopped: true });
+}
 
 enum Event {
     Accessible(u64, i32),
@@ -345,17 +374,25 @@ fn with_activity<T>(
 
 pub fn edit(
     event: On<Pointer<Click>>,
-    inputs: Query<(&crate::app::Input, &EditableText)>,
+    inputs: Query<(Option<&crate::app::Input>, Option<&lince_interface::location::Editor>, &EditableText)>,
     gesture: Res<crate::scroll::Gesture>,
     state: Res<crate::app::Mobile>,
 ) {
     if gesture.moved {
         return;
     }
-    let Ok((input, text)) = inputs.get(event.entity) else {
+    let Ok((input, location, text)) = inputs.get(event.entity) else {
         return;
     };
-    open_editor(input, text, &state.scope_key());
+    if let Some(input) = input { open_editor(input, text, &state.scope_key()); }
+    else if let Some(location) = location {
+        open_location_editor(event.entity, location, text, &state.scope_key());
+    }
+}
+
+pub fn open_location_editor(entity: Entity, editor: &lince_interface::location::Editor, text: &EditableText, scope: &str) {
+    let input = crate::app::Input { key: format!("{}/{}", if editor.secret { "location-password" } else { "location-editor" }, entity.to_bits()), initial: String::new(), title: editor.title.clone() };
+    open_editor(&input, text, scope);
 }
 
 pub fn open_editor(input: &crate::app::Input, text: &EditableText, scope: &str) {
@@ -375,7 +412,7 @@ pub fn open_editor(input: &crate::app::Input, text: &EditableText, scope: &str) 
                 JValue::Object(&title),
                 JValue::Object(&value),
                 JValue::Bool(text.allow_newlines.into()),
-                JValue::Bool((input.key == "login/password").into()),
+                JValue::Bool((input.key == "login/password" || input.key.starts_with("location-password/")).into()),
             ],
         )?;
         Ok(())
@@ -489,6 +526,10 @@ pub fn receive(world: &mut World) {
                 }
                 let Some((key, scope)) = key else { continue };
                 if world.resource::<crate::app::Mobile>().scope_key() != scope {
+                    continue;
+                }
+                if let Some(entity) = key.strip_prefix("location-editor/").or_else(|| key.strip_prefix("location-password/")).and_then(|value| value.parse::<u64>().ok()).map(Entity::from_bits) {
+                    if world.get::<lince_interface::location::Editor>(entity).is_some() && let Some(mut text) = world.get_mut::<EditableText>(entity) { text.editor.set_text(&value); }
                     continue;
                 }
                 let mut query = world.query::<(&crate::app::Input, &mut EditableText)>();

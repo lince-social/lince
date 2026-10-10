@@ -19,6 +19,8 @@ pub mod collab;
 pub mod collab_guard;
 pub mod custom_component;
 pub mod presence;
+pub mod location;
+pub mod visibility;
 pub mod record_change;
 pub mod record_extensions;
 pub mod record_creation;
@@ -139,6 +141,7 @@ pub struct Engine {
     query_changed: watch::Sender<u64>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
     pub(crate) social_network: std::sync::Mutex<Option<std::sync::Weak<dyn social::Network>>>,
+    pub(crate) location: location::Runtime,
     pub(crate) social_deployment: std::sync::Mutex<Option<nucleus::social::ServiceSettings>>,
     pub(crate) social_workers: std::sync::Mutex<std::collections::BTreeMap<&'static str, social::WorkerStatus>>,
     pub(crate) social_memory_wallet_key: std::sync::Mutex<Option<[u8; 32]>>,
@@ -217,6 +220,7 @@ impl Engine {
             query_changed,
             signer: Mutex::new(None),
             social_network: std::sync::Mutex::new(None),
+            location: Default::default(),
             social_deployment: std::sync::Mutex::new(None),
             social_workers: Default::default(),
             social_memory_wallet_key: std::sync::Mutex::new(None),

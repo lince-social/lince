@@ -27,7 +27,7 @@ struct Scene {
 struct Connectors(Entity);
 
 #[derive(Component, PartialEq)]
-struct ConnectorStamp(Vec<model::Label>, Vec<String>, palette::Palette);
+struct ConnectorStamp(Vec<([f32; 3], [f32; 4], [f32; 4])>);
 
 #[derive(Component)]
 struct Hand(Entity);
@@ -428,15 +428,30 @@ pub(super) fn annotations(
     palette: &palette::Palette,
 ) {
     let stamp = ConnectorStamp(
-        labels.to_vec(),
-        world.get::<View>(owner).unwrap().selected.clone(),
-        palette.clone(),
+        labels
+            .iter()
+            .map(|label| {
+                let opacity = world
+                    .get::<motion::Motion>(owner)
+                    .and_then(|motion| motion.bands.get(&label.id))
+                    .map_or(1.0, motion::Band::opacity);
+                let color = palette::rgba(
+                    palette
+                        .event(
+                            label.occurrence.lane,
+                            world
+                                .get::<View>(owner)
+                                .unwrap()
+                                .selected
+                                .contains(&label.id),
+                        )
+                        .with_alpha(0.45 * opacity),
+                );
+                (label.anchor, label.rect, color)
+            })
+            .collect(),
     );
-    if world.get::<ConnectorStamp>(owner) == Some(&stamp)
-        && !world
-            .get::<motion::Motion>(owner)
-            .is_some_and(|motion| motion.active)
-    {
+    if world.get::<ConnectorStamp>(owner) == Some(&stamp) {
         return;
     }
     world.entity_mut(owner).insert(stamp);
@@ -558,24 +573,8 @@ pub(super) fn hand(
     };
     let radius = size.min_element() * 0.4;
     let direction = Vec3::from_array(settings.transverse(now, now, 0.0));
-    let regions = [
-        Rect::from_corners(
-            Vec2::new(-size.x * 0.22, -size.y * 0.14),
-            Vec2::new(size.x * 0.22, size.y * 0.20),
-        ),
-        Rect::from_corners(
-            Vec2::new(-radius * 0.50, -radius * 0.77),
-            Vec2::new(radius * 0.50, -radius * 0.35),
-        ),
-        Rect::from_corners(
-            Vec2::new(-20.0, size.y * 0.25 - 20.0),
-            Vec2::new(20.0, size.y * 0.25 + 20.0),
-        ),
-        Rect::from_corners(
-            Vec2::new(-radius * 0.60, radius * 0.70),
-            Vec2::new(radius * 0.60, radius * 0.94),
-        ),
-    ];
+    let layout = face::Face::clock(world, owner, now, size, palette.font);
+    let regions = [Some(layout.time), layout.upcoming, layout.memento];
     let mut ribbon = Ribbon::default();
     let cross = Vec3::new(-direction.z, 0.0, direction.x) * 0.6;
     for index in 0..48 {
@@ -586,6 +585,7 @@ pub(super) fn hand(
         let (a, b) = (at(index), at(index + 1));
         if regions
             .iter()
+            .flatten()
             .any(|region| region.contains(((a + b) * 0.5).xz()))
         {
             continue;

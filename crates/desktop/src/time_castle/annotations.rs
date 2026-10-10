@@ -29,7 +29,8 @@ struct Layout {
     size: Vec2,
     rotation: [f64; 4],
     unwind: f32,
-    cooling: f32,
+    cooling: lince_interface::motion::Cooling,
+    palette: palette::Palette,
 }
 
 pub(super) fn update(
@@ -135,7 +136,26 @@ pub(super) fn update(
     let displacement = bevy::math::DQuat::from_array(spatial.rotation).inverse()
         * bevy::math::DVec3::new(displacement.x, 0.0, displacement.y);
     let font = palette.font * 0.875;
-    let mut labels = if changed || world.get::<Layout>(owner).is_none() {
+    let changed = world.get::<Layout>(owner).is_none_or(|layout| {
+        layout.settings != settings
+            || layout.entries != world.get::<View>(owner).unwrap().entries
+            || layout.size != size
+            || layout.unwind != unwind
+            || layout.palette != *palette
+            || (changed
+                && world.get::<motion::Motion>(owner).is_some_and(|motion| {
+                    motion.bands.values().filter(|band| !band.retiring).count()
+                        != layout.labels.len()
+                        || layout.labels.iter().any(|label| {
+                            motion.bands.get(&label.id).is_none_or(|band| {
+                                band.retiring
+                                    || band.occurrence.historical != label.occurrence.historical
+                                    || band.occurrence.lane != label.occurrence.lane
+                            })
+                        })
+                }))
+    });
+    let mut labels = if changed {
         let face = world
             .get_resource::<crate::theme::Typography>()
             .and_then(|typography| {
@@ -181,6 +201,7 @@ pub(super) fn update(
             || layout.entries != *entries
             || layout.size != size
             || layout.unwind != unwind
+            || layout.palette != *palette
             || layout
                 .labels
                 .iter()
@@ -189,21 +210,21 @@ pub(super) fn update(
                     .iter()
                     .map(|label| (&label.id, label.occurrence.historical)))
     });
-    let held = previous.iter().any(|entity| {
-        crate::canvas_pan::dragged(world) == Some(*entity)
-            || world
-                .get_resource::<crate::topology::input::PointerState>()
-                .is_some_and(|pointer| pointer.drag.is_some_and(|(card, _)| card == *entity))
-    });
+    let held = previous.iter().any(|entity| is_held(world, *entity));
     let seconds = world
         .get::<motion::Motion>(owner)
         .map_or(0.0, |motion| motion.seconds);
-    let cooling = if wake || held {
-        8.0
+    let mut cooling = world
+        .get::<Layout>(owner)
+        .map_or(lince_interface::motion::Cooling::new(8.0), |layout| {
+            layout.cooling
+        });
+    if wake || held {
+        cooling.wake();
     } else {
-        (world.get::<Layout>(owner).unwrap().cooling - seconds.max(0.0)).max(0.0)
-    };
-    let heat = cooling / 8.0;
+        cooling.advance(seconds);
+    }
+    let heat = cooling.heat();
     let entries = world
         .get::<Layout>(owner)
         .is_none_or(|layout| layout.entries != *entries)
@@ -223,6 +244,9 @@ pub(super) fn update(
         layout.rotation = spatial.rotation;
         layout.unwind = unwind;
         layout.cooling = cooling;
+        if layout.palette != *palette {
+            layout.palette.clone_from(palette);
+        }
     } else {
         world.entity_mut(owner).insert(Layout {
             labels: labels.clone(),
@@ -233,6 +257,7 @@ pub(super) fn update(
             rotation: spatial.rotation,
             unwind,
             cooling,
+            palette: palette.clone(),
         });
     }
     if !settings.floating_cards {
@@ -262,20 +287,35 @@ pub(super) fn update(
         }
     }
     let mut neighbors = Neighbors::default();
-    for entity in &previous {
+    for entity in previous
+        .iter()
+        .filter(|_| heat > 0.0 && settings.card_physics && settings.floating_cards)
+    {
         if let Some(annotation) = world.get::<Annotation>(*entity) {
             neighbors.insert(*entity, annotation.label.rect);
         }
     }
     let mut active = false;
+    let mut occupied = Neighbors::default();
+    labels.sort_by_key(|label| {
+        !existing
+            .get(&label.id)
+            .is_some_and(|entity| is_held(world, *entity))
+    });
     for label in &mut labels {
         let band = world
             .get::<motion::Motion>(owner)
             .and_then(|motion| motion.bands.get(&label.id))
-            .cloned();
-        let opacity = band.as_ref().map_or(1.0, motion::Band::opacity);
-        if let Some(band) = &band {
-            label.anchor = band.anchor(&settings, now, size, palette.width, unwind);
+            .map(|band| {
+                (
+                    band.anchor(&settings, now, size, palette.width, unwind),
+                    band.opacity(),
+                    band.retiring,
+                )
+            });
+        let opacity = band.as_ref().map_or(1.0, |band| band.1);
+        if let Some((anchor, _, _)) = band {
+            label.anchor = anchor;
             if !spatial_mode {
                 label.anchor[1] = 0.0;
             }
@@ -373,13 +413,14 @@ pub(super) fn update(
             });
             entity
         });
-        if let Some(band) = &band {
+        let held = is_held(world, entity);
+        if let Some((_, _, retiring)) = band {
             let direction = Vec2::new(
                 label.rect[0] + label.rect[2] * 0.5,
                 label.rect[1] + label.rect[3] * 0.5,
             )
             .normalize_or_zero();
-            let mut target = if band.retiring {
+            let mut target = if retiring {
                 let position = world.get::<Annotation>(entity).unwrap().spring.position;
                 world.entity_mut(entity).remove::<ActionButton>();
                 [
@@ -395,10 +436,6 @@ pub(super) fn update(
                 }
                 [label.rect[0], label.rect[1]]
             };
-            let held = crate::canvas_pan::dragged(world) == Some(entity)
-                || world
-                    .get_resource::<crate::topology::input::PointerState>()
-                    .is_some_and(|pointer| pointer.drag.is_some_and(|(card, _)| card == entity));
             let held_position = held.then(|| {
                 let card = world.get::<CanvasItem>(entity).unwrap();
                 let elevation = world
@@ -415,7 +452,26 @@ pub(super) fn update(
                     offset.z as f32 - label.rect[3] * 0.5,
                 ]
             });
-            if settings.card_physics && settings.floating_cards && !band.retiring {
+            if !held
+                && !wake
+                && !retiring
+                && settings.floating_cards
+                && (label.occurrence.historical || settings.cursor == CursorMode::Fixed)
+            {
+                let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
+                let previous_anchor =
+                    Vec2::new(annotation.label.anchor[0], annotation.label.anchor[2]);
+                follow_cursor(
+                    &mut annotation.spring,
+                    previous_anchor,
+                    Vec2::new(label.anchor[0], label.anchor[2]),
+                    Vec2::new(label.rect[2], label.rect[3]) * 0.5,
+                );
+                if !settings.card_physics {
+                    target = annotation.spring.position;
+                }
+            }
+            if settings.card_physics && settings.floating_cards && !retiring && heat > 0.0 {
                 let annotation = world.get::<Annotation>(entity).unwrap();
                 let rect = [
                     annotation.spring.position[0],
@@ -444,9 +500,9 @@ pub(super) fn update(
             } else if settings.card_physics && settings.floating_cards {
                 annotation.spring.position[0] += displacement.x as f32;
                 annotation.spring.position[1] += displacement.z as f32;
-                if heat > 0.0 || band.retiring {
+                if heat > 0.0 || retiring {
                     active |= advance_card(&mut annotation.spring, target, seconds);
-                    active |= cooling > 0.0;
+                    active |= heat > 0.0;
                 } else {
                     annotation.spring.velocity = [0.0; 2];
                 }
@@ -455,6 +511,20 @@ pub(super) fn update(
             }
             label.rect[0] = annotation.spring.position[0];
             label.rect[1] = annotation.spring.position[1];
+        }
+        if settings.floating_cards {
+            if !held {
+                let separated =
+                    occupied.separate(entity, label.rect, palette.gap, size.min_element() * 0.4);
+                let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
+                for axis in 0..2 {
+                    if (separated[axis] - label.rect[axis]).abs() > 0.001 {
+                        annotation.spring.velocity[axis] = 0.0;
+                    }
+                }
+                label.rect = separated;
+            }
+            occupied.insert(entity, label.rect);
         }
         {
             let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
@@ -545,9 +615,14 @@ pub(super) fn update(
             .get_mut::<BackgroundColor>(bar)
             .unwrap()
             .set_if_neq(BackgroundColor(color));
-        world
-            .entity_mut(entity)
-            .insert(crate::topology::presentation::SurfaceOpacity(opacity));
+        if world
+            .get::<crate::topology::presentation::SurfaceOpacity>(entity)
+            .is_none_or(|previous| previous.0 != opacity)
+        {
+            world
+                .entity_mut(entity)
+                .insert(crate::topology::presentation::SurfaceOpacity(opacity));
+        }
         if let Some(material) = world
             .get::<crate::topology::presentation::Surface>(entity)
             .map(|surface| surface.material.clone())
@@ -569,6 +644,27 @@ pub(super) fn update(
 
 #[derive(Default)]
 struct Neighbors(HashMap<(i32, i32), Vec<(Entity, [f32; 4])>>);
+
+fn is_held(world: &World, entity: Entity) -> bool {
+    crate::canvas_pan::dragged(world) == Some(entity)
+        || world
+            .get_resource::<crate::topology::input::PointerState>()
+            .is_some_and(|pointer| pointer.drag.is_some_and(|(card, _)| card == entity))
+}
+
+fn follow_cursor(
+    spring: &mut lince_interface::motion::Spring<2>,
+    previous: Vec2,
+    anchor: Vec2,
+    half: Vec2,
+) {
+    let rotation = Vec2::from_angle(previous.perp_dot(anchor).atan2(previous.dot(anchor)));
+    let center = Vec2::from_array(spring.position) + half;
+    spring.position = (rotation.rotate(center) - half).to_array();
+    spring.velocity = rotation
+        .rotate(Vec2::from_array(spring.velocity))
+        .to_array();
+}
 
 fn rest_position(rect: [f32; 4], anchor: Vec2, radius: f32) -> Vec2 {
     let half = Vec2::new(rect[2], rect[3]) * 0.5;
@@ -621,6 +717,58 @@ fn advance_card(
 }
 
 impl Neighbors {
+    fn separation(&self, entity: Entity, rect: [f32; 4], gap: f32) -> Option<Vec2> {
+        let center = Vec2::new(rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5);
+        for cell in Self::cells(rect, gap) {
+            for (other, bounds) in self.0.get(&cell).into_iter().flatten() {
+                if *other == entity {
+                    continue;
+                }
+                let delta =
+                    center - Vec2::new(bounds[0] + bounds[2] * 0.5, bounds[1] + bounds[3] * 0.5);
+                let overlap = Vec2::new(
+                    (rect[2] + bounds[2]) * 0.5 + gap,
+                    (rect[3] + bounds[3]) * 0.5 + gap,
+                ) - delta.abs();
+                if overlap.min_element() > 0.0 {
+                    let axis = usize::from(overlap.y < overlap.x);
+                    let mut push = Vec2::ZERO;
+                    push[axis] = (overlap[axis] + 0.1) * if delta[axis] < 0.0 { -1.0 } else { 1.0 };
+                    return Some(push);
+                }
+            }
+        }
+        None
+    }
+
+    fn separate(&self, entity: Entity, mut rect: [f32; 4], gap: f32, radius: f32) -> [f32; 4] {
+        let half = Vec2::new(rect[2], rect[3]) * 0.5;
+        for _ in 0..32 {
+            let position = repel_clock(Vec2::new(rect[0], rect[1]), half, radius);
+            rect[0] = position.x;
+            rect[1] = position.y;
+            let Some(push) = self.separation(entity, rect, gap) else {
+                return rect;
+            };
+            rect[0] += push.x;
+            rect[1] += push.y;
+        }
+        let origin = Vec2::new(rect[0], rect[1]);
+        for attempt in 1.. {
+            let angle = attempt as f32 * 2.399_963_1;
+            let distance = (attempt as f32).sqrt() * (rect[3] + gap).max(32.0);
+            let position = origin + Vec2::from_angle(angle) * distance;
+            rect[0] = position.x;
+            rect[1] = position.y;
+            if Vec2::ZERO.clamp(position, position + half * 2.0).length() >= radius + 18.0
+                && self.separation(entity, rect, gap).is_none()
+            {
+                return rect;
+            }
+        }
+        unreachable!()
+    }
+
     fn cells(rect: [f32; 4], gap: f32) -> Vec<(i32, i32)> {
         let min = Vec2::new(rect[0] - gap, rect[1] - gap) / 256.0;
         let max = Vec2::new(rect[0] + rect[2] + gap, rect[1] + rect[3] + gap) / 256.0;
@@ -785,7 +933,7 @@ mod tests {
         }
         let cards = world.get::<Annotations>(owner).unwrap().0.clone();
         assert_eq!(cards.len(), 13);
-        assert_eq!(world.get::<Layout>(owner).unwrap().cooling, 0.0);
+        assert_eq!(world.get::<Layout>(owner).unwrap().cooling.heat(), 0.0);
         for (index, card) in cards.iter().enumerate() {
             let a = world.get::<CanvasItem>(*card).unwrap();
             for other in &cards[index + 1..] {
@@ -799,6 +947,100 @@ mod tests {
                     world.get::<Annotation>(*card).unwrap().id,
                     world.get::<Annotation>(*other).unwrap().id
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn cold_cards_stay_separated_as_past_needs_move_toward_future_tasks() {
+        let mut world = World::new();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let root = world.spawn_empty().id();
+        let owner = world
+            .spawn((
+                Node::default(),
+                ChildOf(root),
+                crate::workspace::WorkspaceMember(1),
+                CanvasItem {
+                    position: bevy::math::DVec2::ZERO,
+                    size: Vec2::splat(420.0),
+                },
+            ))
+            .id();
+        populate(&mut world, owner);
+        let now = chrono::DateTime::parse_from_rfc3339("2026-10-08T23:00:00Z")
+            .unwrap()
+            .timestamp_millis();
+        let aperture = 72_000_000;
+        {
+            let mut settings = world.get_mut::<TimeSettings>(owner).unwrap();
+            settings.0.aperture_ms = aperture;
+            settings.0.horizon_ms = aperture;
+            settings.0.timezone = "America/Sao_Paulo".into();
+        }
+        world.get_mut::<View>(owner).unwrap().entries = (0..13)
+            .map(|index| Entry {
+                id: format!("task-{index}"),
+                record_uid: format!("r:{index}"),
+                head: format!("Task {index}"),
+                quantity: "-1".into(),
+                category: if index < 8 {
+                    model::Category::Overdue
+                } else {
+                    model::Category::Timed
+                },
+                time: (index >= 8).then_some(nucleus::schedule::TimeRange {
+                    from_ms: now + 14_400_000,
+                    until_ms: None,
+                }),
+                origin: serde_json::json!({"kind": if index < 8 { "need" } else { "manual" }}),
+                preview: false,
+                start_date: None,
+                due_date: None,
+            })
+            .collect();
+        let palette = palette::Palette::resolve(&world, owner);
+        motion::update(&mut world, owner, now, aperture, true);
+        for frame in 0..600 {
+            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+            update(
+                &mut world,
+                owner,
+                now,
+                Vec2::splat(420.0),
+                true,
+                frame == 0,
+                &palette,
+            );
+        }
+        for minute in 0..=180 {
+            let now = now + minute * 60_000;
+            motion::update(&mut world, owner, now, aperture, true);
+            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+            let labels = update(
+                &mut world,
+                owner,
+                now,
+                Vec2::splat(420.0),
+                true,
+                true,
+                &palette,
+            );
+            assert_eq!(labels.len(), 13);
+            assert_eq!(world.get::<Layout>(owner).unwrap().cooling.heat(), 0.0);
+            for (index, a) in labels.iter().enumerate() {
+                for b in &labels[index + 1..] {
+                    assert!(
+                        a.rect[0] + a.rect[2] + palette.gap - 0.2 <= b.rect[0]
+                            || b.rect[0] + b.rect[2] + palette.gap - 0.2 <= a.rect[0]
+                            || a.rect[1] + a.rect[3] + palette.gap - 0.2 <= b.rect[1]
+                            || b.rect[1] + b.rect[3] + palette.gap - 0.2 <= a.rect[1],
+                        "{} and {} overlap at minute {minute}",
+                        a.id,
+                        b.id
+                    );
+                }
             }
         }
     }
@@ -850,7 +1092,16 @@ mod tests {
         }
         let card = world.get::<Annotations>(owner).unwrap().0[0];
         let stopped = world.get::<CanvasItem>(card).unwrap().position;
-        assert_eq!(world.get::<Layout>(owner).unwrap().cooling, 0.0);
+        assert_eq!(world.get::<Layout>(owner).unwrap().cooling.heat(), 0.0);
+        let anchor = world.get::<Annotation>(card).unwrap().label.anchor;
+        assert_eq!(
+            world.get::<Layout>(owner).unwrap().labels[0]
+                .occurrence
+                .time
+                .from_ms,
+            now
+        );
+        world.clear_trackers();
         for frame in 600..720 {
             world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
             update(
@@ -863,10 +1114,29 @@ mod tests {
                 &palette,
             );
         }
-        assert_eq!(world.get::<CanvasItem>(card).unwrap().position, stopped);
+        let next_anchor = world.get::<Annotation>(card).unwrap().label.anchor;
+        let rotation = Vec2::from_angle(
+            Vec2::new(anchor[0], anchor[2]).angle_to(Vec2::new(next_anchor[0], next_anchor[2])),
+        );
+        let expected = rotation.rotate(stopped.as_vec2()).as_dvec2();
+        assert!(
+            world
+                .get::<CanvasItem>(card)
+                .unwrap()
+                .position
+                .distance(expected)
+                < 0.1
+        );
         assert_eq!(
             world.get::<Annotation>(card).unwrap().spring.velocity,
             [0.0; 2]
+        );
+        assert!(
+            !world
+                .entity(card)
+                .get_ref::<crate::topology::presentation::SurfaceOpacity>()
+                .unwrap()
+                .is_changed()
         );
         world.get_mut::<CanvasItem>(owner).unwrap().position.x += 100.0;
         update(
@@ -878,13 +1148,13 @@ mod tests {
             false,
             &palette,
         );
-        assert!(world.get::<Layout>(owner).unwrap().cooling > 0.0);
+        assert!(world.get::<Layout>(owner).unwrap().cooling.heat() > 0.0);
         assert!(
             world
                 .get::<CanvasItem>(card)
                 .unwrap()
                 .position
-                .distance(stopped)
+                .distance(expected)
                 < 10.0
         );
         assert!(world.get::<motion::Motion>(owner).unwrap().active);

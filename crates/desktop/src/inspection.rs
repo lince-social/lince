@@ -504,6 +504,8 @@ pub(crate) fn edit_connection(
         EditAction::ToggleAlwaysShowControls => "Always Show Controls Clicked Toggle",
         EditAction::ReloadWorkspaceSettings => "Workspace Settings Clicked Reload",
         EditAction::SwitchWorkspace(_) => "Workspace Clicked Switch",
+        EditAction::RestoreWorkspace(_) => "Workspace Clicked Restore",
+        EditAction::SetTrashRetention(_) => "Workspace Trash Retention Clicked Change",
         EditAction::RemoveWorkspace(_) => "Workspace Clicked Confirm Removal",
         EditAction::ConfirmRemoveWorkspace => "Workspace Clicked Remove",
         EditAction::CancelRemoveWorkspace => "Workspace Clicked Keep",

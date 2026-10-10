@@ -1,0 +1,25 @@
+@font-face { font-family: Lince; src: url('/assets/Lato-Regular.ttf') format('truetype'); font-display: swap; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: calc(var(--Padding) * 2); background: var(--Surface); color: var(--Ink); font: var(--FontSize)/1.5 Lince, sans-serif; }
+main { max-width: 64rem; margin: auto; }
+h1 { font-size: 1.5em; line-height: 1.25; margin-top: 0; }
+h2 { font-size: 1.1em; }
+p { max-width: 65ch; }
+a { color: var(--Accent); }
+button, input, select, textarea { font: inherit; color: inherit; background: var(--Surface); border: var(--ControlBorder) solid var(--Ink); border-radius: var(--ControlRoundness); min-height: 44px; max-width: 100%; padding: var(--Padding); }
+button, summary, select { cursor: pointer; }
+button:disabled { cursor: wait; }
+button.primary, [role='tab'][aria-selected='true'] { border-color: var(--Accent); box-shadow: inset 0 -2px var(--Accent); }
+:focus-visible { outline: 2px solid var(--Accent); outline-offset: 3px; }
+label { display: grid; gap: var(--Spacing); }
+form, section, [role='tabpanel'] { display: grid; gap: calc(var(--Spacing) * 2); }
+[role='tablist'], .row { display: flex; flex-wrap: wrap; gap: var(--Spacing); align-items: center; }
+[role='tablist'] { margin-block: calc(var(--Spacing) * 2); }
+[hidden] { display: none !important; }
+ul { padding-inline-start: 1.3em; overflow-wrap: anywhere; }
+details { border-top: var(--ControlBorder) solid var(--Ink); padding-block: var(--Padding); }
+summary { min-height: 44px; padding-block: var(--Padding); }
+details > :not(summary) { margin-block: var(--Spacing); }
+.notice { border-inline-start: 3px solid var(--Warning); padding-inline-start: var(--Padding); }
+.error { color: var(--Error); }
+@media (max-width: 420px) { body { padding: var(--Padding); } .row > label { flex: 1 1 100%; } input, textarea { width: 100%; } }

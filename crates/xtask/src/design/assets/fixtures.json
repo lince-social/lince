@@ -1,0 +1,7 @@
+{
+  "populated": {"items": [{"id": "one", "name": "Example item"}, {"id": "two", "name": "Another item"}], "status": "ready"},
+  "empty": {"items": [], "status": "ready"},
+  "pending": {"items": [{"id": "one", "name": "Example item"}], "status": "pending"},
+  "error": {"items": [{"id": "one", "name": "Example item"}], "status": "error"},
+  "long-content": {"items": [{"id": "long", "name": "A deliberately long example item name to check wrapping and discover whether actions remain readable in narrow panels"}], "status": "ready"}
+}

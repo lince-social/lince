@@ -13,6 +13,8 @@ default = ["native-runtime"]
 instinct = ["native-runtime", "engine/instinct"]
 native-media = ["native-runtime", "dep:lince-media", "lince-media/native"]
 native-runtime = [
+    "dep:zbus",
+    "dep:futures-util",
     "dep:lince-interface",
     "dep:lince-document",
     "dep:lince-editor",
@@ -125,6 +127,8 @@ toml = { workspace = true, optional = true }
 rustix = { version = "=1.1.4", features = ["process", "fs", "param"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "=5.19.0", default-features = false, features = ["tokio"], optional = true }
+futures-util = { version = "=0.3.34", default-features = false, features = ["std"], optional = true }
 x11rb = { version = "=0.13.2", optional = true }
 raw-window-handle = { version = "=0.6.2", optional = true }
 ksni = { version = "=0.3.6", default-features = false, features = ["async-io"], optional = true }
@@ -333,4 +337,8 @@ required-features = ["instinct"]
 
 [[example]]
 name = "components_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "workspace_canvas_audit"
 required-features = ["native-runtime"]

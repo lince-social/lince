@@ -17,6 +17,7 @@ pub enum SandKind {
     Operation,
     WorkTimer,
     AccessControl,
+    Visibility,
     Sync,
     Freedoom,
     Terminal,
@@ -27,13 +28,14 @@ pub enum SandKind {
 }
 
 impl SandKind {
-    pub const ALL: [Self; 13] = [
+    pub const ALL: [Self; 14] = [
         Self::Square,
         Self::Text,
         Self::EditableText,
         Self::Operation,
         Self::WorkTimer,
         Self::AccessControl,
+        Self::Visibility,
         Self::Sync,
         Self::Freedoom,
         Self::Terminal,
@@ -50,6 +52,7 @@ impl SandKind {
             Self::Operation => "Operation",
             Self::WorkTimer => "Time Castle",
             Self::AccessControl => "Access Control",
+            Self::Visibility => "Visibility",
             Self::Sync => "Sync",
             Self::Freedoom => "Freedoom",
             Self::Terminal => "Terminal",
@@ -69,6 +72,7 @@ impl SandKind {
                 "A quiet clock for upcoming work. Unfold the timeline or open its scheduling and stopwatch controls."
             }
             Self::AccessControl => "Manage local users, Roles and permissions.",
+            Self::Visibility => "Compose Organ and proximity rules for Record data, saved places, and live locations.",
             Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
             Self::Freedoom => "Play Freedoom locally with keyboard controls.",
             Self::Terminal => "A local shell powered by libghostty.",
@@ -171,6 +175,7 @@ pub(crate) fn entry(
         SandKind::Square
         | SandKind::Operation
         | SandKind::AccessControl
+        | SandKind::Visibility
         | SandKind::Sync
         | SandKind::Freedoom
         | SandKind::Terminal
@@ -208,6 +213,7 @@ pub(crate) fn entry(
         } else if matches!(
             kind,
             SandKind::AccessControl
+                | SandKind::Visibility
                 | SandKind::Sync
                 | SandKind::Freedoom
                 | SandKind::Terminal
@@ -545,6 +551,7 @@ fn spawn_with_source(
                 } else if matches!(
                     kind,
                     SandKind::AccessControl
+                        | SandKind::Visibility
                         | SandKind::Sync
                         | SandKind::Freedoom
                         | SandKind::Terminal
@@ -579,6 +586,7 @@ fn spawn_with_source(
     let content = match kind {
         SandKind::Operation => Some(crate::operation::populate(world, root, sand)),
         SandKind::AccessControl => Some(crate::access_control::populate(world, root, sand)),
+        SandKind::Visibility => Some(crate::visibility_castle::populate(world, root, sand)),
         SandKind::Sync => Some(crate::sync_castle::populate(world, root, sand)),
         SandKind::Freedoom => Some(crate::freedoom::populate(world, root, sand)),
         SandKind::Terminal => Some(crate::terminal::populate(world, root, sand)),
@@ -603,6 +611,7 @@ fn spawn_with_source(
             | SandKind::Operation
             | SandKind::WorkTimer
             | SandKind::AccessControl
+            | SandKind::Visibility
             | SandKind::Sync
             | SandKind::Freedoom
             | SandKind::Terminal

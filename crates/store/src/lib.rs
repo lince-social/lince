@@ -36,6 +36,7 @@ pub mod organ_access;
 pub mod people;
 pub mod person_roles;
 pub mod places;
+pub mod location;
 pub mod private_contacts;
 pub mod projection;
 pub mod read_filter;
@@ -76,6 +77,7 @@ pub mod transfer_outcomes;
 pub mod transfer_children;
 pub mod transfers;
 pub mod visibility;
+pub mod data_visibility;
 
 use sqlx::SqlitePool;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};

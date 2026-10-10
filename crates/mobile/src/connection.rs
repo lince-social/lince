@@ -8,6 +8,7 @@ pub enum Event {
     Message(ServerMessage),
     Failed(String),
     Stopped,
+    LocationAuthenticated(String, Result<String, String>),
 }
 
 enum Request {
@@ -15,6 +16,7 @@ enum Request {
     Stop,
     Login(String, engine::private_password::PasswordInput),
     Logout,
+    LocationLogin(lince_interface::location::AuthenticationRequest),
 }
 
 pub struct Connection {
@@ -44,6 +46,9 @@ impl Connection {
                         })
                         .await?;
                         let runtime = cell.runtime();
+                        let mut location = crate::location::Capture::default();
+                        let mut location_interval = tokio::time::interval(std::time::Duration::from_secs(1));
+                        location_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
                         let locked = store::cells::config(&runtime.store.pool, "lince.mobile.auth").await.map_err(std::io::Error::other)?.is_some_and(|value| value["require_login"] == true);
                         let mut session = (!locked).then(|| runtime.local_session());
                         let mut signing: Option<crate::session::Signing> = None;
@@ -65,8 +70,23 @@ impl Connection {
                         if live {
                             loop {
                                 let messages = tokio::select! {
+                                    _ = location_interval.tick() => {
+                                        location.tick(&runtime.engine).await;
+                                        continue;
+                                    }
                                     request = requests.recv() => {
                                         match request {
+                                            Some(Request::LocationLogin(request)) => {
+                                                let runtime = runtime.clone();
+                                                let responses = responses.clone();
+                                                let wake = wake.clone();
+                                                tokio::spawn(async move {
+                                                    let result = runtime.authenticate_location_device(&request.node, &request.record, &request.person, request.expected_person.as_deref(), request.username, request.password).await;
+                                                    let _ = responses.send(Event::LocationAuthenticated(request.id, result));
+                                                    wake.ring();
+                                                });
+                                                continue;
+                                            }
                                             Some(Request::Message(request)) => {
                                                 let Some(session) = session.as_mut() else { continue; };
                                                 let request = match signing.as_mut() {
@@ -91,6 +111,7 @@ impl Connection {
                                                 continue;
                                             }
                                             Some(Request::Logout) => {
+                                                location.stop(&runtime.engine).await;
                                                 session = None;
                                                 signing = None;
                                                 events = cell::SyncEvents::new(&runtime.engine);
@@ -98,7 +119,7 @@ impl Connection {
                                                 wake.ring();
                                                 continue;
                                             }
-                                            Some(Request::Stop) | None => break,
+                                            Some(Request::Stop) | None => { location.stop(&runtime.engine).await; break; }
                                         }
                                     }
                                     event = events.next(session.as_ref().is_some_and(cell::Session::has_ephemeral_subscriptions)), if session.is_some() => {
@@ -107,6 +128,7 @@ impl Connection {
                                     }
                                 };
                                 if messages.iter().any(|message| matches!(message, ServerMessage::Error { code: Some(code), .. } if code == "session_expired")) {
+                                    location.stop(&runtime.engine).await;
                                     session = None;
                                     signing = None;
                                     let _ = responses.send(Event::Ready(organ.uid.clone(), setup, crate::session::Identity::Locked));
@@ -171,6 +193,10 @@ impl Connection {
                     "The connection stopped. Your edit is still here; reopen Lince.".into()
                 }
             })
+    }
+
+    pub fn authenticate_location(&self, request: lince_interface::location::AuthenticationRequest) -> Result<(), String> {
+        self.outgoing.try_send(Request::LocationLogin(request)).map_err(|_| "Wait for this device to finish its current request".into())
     }
 
     pub fn login(&self, username: String, password: String) -> Result<(), String> {

@@ -171,7 +171,16 @@ pub(super) async fn execute(
             reason: Incomplete::Budget {},
         };
     }
-    if let Some(cached) = cached {
+    let refreshing = matches!(status, Status::Updating {});
+    let has_cache = cached.is_some();
+    let schedule = if let Some(cached) = cached {
+        cached.schedule
+    } else if refreshing {
+        store::projection::previous_schedule(&store.pool, &context, now).await?
+    } else {
+        Vec::new()
+    };
+    if has_cache || !schedule.is_empty() {
         let mut filters = Vec::new();
         let mut quantities = Vec::new();
         if manual
@@ -207,7 +216,12 @@ pub(super) async fn execute(
                     )
                 })
                 .collect();
-            for entry in cached.schedule {
+            for entry in schedule {
+                if refreshing
+                    && (entry.preview || matches!(entry.cause, nucleus::simulation::Cause::Seed {}))
+                {
+                    continue;
+                }
                 if confirmed_ids.contains(&entry.id) {
                     continue;
                 }

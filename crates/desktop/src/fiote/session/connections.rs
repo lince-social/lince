@@ -97,6 +97,25 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         }),
     );
     let Some(saved) = saved else { return };
+    let node_agent = saved
+        .agent
+        .as_ref()
+        .is_some_and(|agent| agent.requires_node());
+    if node_agent {
+        crate::edit_mode::label(
+            world,
+            content,
+            "This saved connection requires Node.js. Choose a native connection above to talk to Fiote without an external agent.",
+            14.0,
+        );
+        crate::description::button(
+            world,
+            content,
+            owner,
+            "Disconnect Node.js connection",
+            Control(Request::Deselect),
+        );
+    }
     for diagnostic in &saved.provider_diagnostics {
         crate::edit_mode::label(world, content, diagnostic, 13.0);
     }
@@ -106,6 +125,19 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             entry.availability != cell::fiote_communication::discovery::Availability::Unavailable
         }) {
             crate::edit_mode::label(world, content, &candidate.name, 16.0);
+            if candidate
+                .config
+                .as_ref()
+                .is_some_and(|config| config.requires_node())
+            {
+                crate::edit_mode::label(
+                    world,
+                    content,
+                    "Node.js agent launchers are not supported. Choose a native Fiote connection above.",
+                    13.0,
+                );
+                continue;
+            }
             crate::edit_mode::label(world, content, &candidate.detail, 13.0);
             if let Some(config) = &candidate.config {
                 crate::description::button(
@@ -124,12 +156,15 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                         }),
                     },
                 );
-            } else if let Some(installation) = &candidate.installation {
+            } else if let Some(installation) = &candidate.installation
+                && !installation.starts_with("npm ")
+                && !installation.starts_with("npx ")
+            {
                 crate::edit_mode::label(world, content, installation, 13.0);
             }
         }
     }
-    if saved.agent.is_some() {
+    if saved.agent.is_some() && !node_agent {
         crate::description::button(
             world,
             content,
@@ -154,6 +189,19 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             16.0,
         );
         let row = crate::sand_panel::row(world, content);
+        if matches!(&profile.connection, Connection::Harness { config } if config.requires_node()) {
+            crate::edit_mode::label(world, row, "Requires Node.js · unsupported", 13.0);
+            crate::description::button(
+                world,
+                row,
+                owner,
+                "Remove",
+                Control(Request::Remove {
+                    id: profile.id.clone(),
+                }),
+            );
+            continue;
+        }
         for (label, command) in [
             (
                 "Check",
@@ -228,7 +276,9 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             },
         );
     }
-    if let Some(check) = &saved.connections.check {
+    if let Some(check) = &saved.connections.check
+        && !node_agent
+    {
         crate::edit_mode::label(
             world,
             content,

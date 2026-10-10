@@ -207,6 +207,7 @@ impl StressRun {
                     SandKind::Square => Vec2::splat(12.0),
                     SandKind::Operation
                     | SandKind::AccessControl
+                    | SandKind::Visibility
                     | SandKind::Sync
                     | SandKind::Freedoom
                     | SandKind::Terminal

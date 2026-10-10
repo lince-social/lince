@@ -21,11 +21,15 @@ pub fn run_native_interface(
     data_dir: &std::path::Path,
     tray_enabled: bool,
     backup_handoff: crate::owner_backup::BackupHandoff,
+    laboratory: Option<cell::fiote::laboratory::Options>,
 ) -> std::io::Result<()> {
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
     let mut app = interface_app_at(data_dir.join("interface-assets"), false);
+    if let Some(options) = laboratory {
+        app.insert_resource(crate::laboratory::fiote::Launch(options));
+    }
     app.insert_resource(backup_handoff);
     app.insert_resource(crate::sound::Audio::open(
         data_dir.to_path_buf(),
@@ -153,6 +157,8 @@ fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
             crate::thread_castle::ThreadCastlePlugin,
         ))
         .add_plugins(crate::workspace_sync::WorkspaceSyncPlugin)
+        .add_plugins(crate::location::LocationPlugin)
+        .add_plugins(crate::visibility_castle::VisibilityCastlePlugin)
         .add_plugins(crate::tutorial::TutorialPlugin)
         .add_plugins(crate::karma_castle::KarmaCastlePlugin)
         .add_plugins(crate::accessibility::AccessibilityPlugin)

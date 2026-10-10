@@ -33,6 +33,7 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
             SandKind::Square
             | SandKind::Operation
             | SandKind::AccessControl
+            | SandKind::Visibility
             | SandKind::Sync
             | SandKind::Freedoom
             | SandKind::Terminal

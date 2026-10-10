@@ -1,8 +1,11 @@
+#[cfg(feature = "ui")]
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+pub mod css;
 pub mod document;
+pub mod file;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ColorScheme {
@@ -49,6 +52,7 @@ pub enum TokenValue {
 }
 
 impl TokenValue {
+    #[cfg(feature = "ui")]
     pub fn color(self) -> Color {
         match self {
             Self::Color([r, g, b, a]) => Color::srgba_u8(r, g, b, a),
@@ -189,7 +193,8 @@ impl Token {
     }
 }
 
-#[derive(Component, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Component))]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct TokenOverrides(pub BTreeMap<Token, TokenValue>);
 
 impl TokenOverrides {
@@ -229,7 +234,8 @@ impl SandStyleKind {
     }
 }
 
-#[derive(Resource, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Resource))]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct ThemeSettings {
     pub scheme: ColorScheme,
     pub global: TokenOverrides,

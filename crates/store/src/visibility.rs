@@ -138,7 +138,7 @@ pub async fn hidden_from_organ(
     pool: &SqlitePool,
     organ_uid: &str,
 ) -> Result<HashSet<String>, StoreError> {
-    Ok(sqlx::query(
+    let mut hidden: HashSet<String> = sqlx::query(
         "SELECT target_uid AS uid FROM visibility_rule
           WHERE subject_kind = 'organ' AND subject_uid = ? AND grant_level = 'hidden'",
     )
@@ -147,7 +147,9 @@ pub async fn hidden_from_organ(
     .await?
     .into_iter()
     .map(|row| row.get("uid"))
-    .collect())
+    .collect();
+    hidden.extend(crate::data_visibility::denied_records(pool, organ_uid).await?);
+    Ok(hidden)
 }
 
 pub async fn set_hidden_from_organ(
@@ -219,7 +221,9 @@ pub async fn records_of_op(
     uid: &str,
 ) -> Result<Vec<String>, StoreError> {
     Ok(match tbl {
-        "record" => vec![uid.to_string()],
+        "record" | "record_extension" => vec![uid.to_string()],
+        "place" => sqlx::query_scalar("SELECT uid FROM record WHERE place_uid=? UNION SELECT uid FROM sync_op WHERE tbl='record' AND field='place_uid' AND json_valid(value) AND json_extract(value,'$')=?")
+            .bind(uid).bind(uid).fetch_all(pool).await?,
         "fact" => {
             sqlx::query_scalar::<_, Option<String>>("SELECT record_uid FROM fact WHERE uid = ?")
                 .bind(uid)

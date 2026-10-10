@@ -128,6 +128,7 @@ async fn rebind(state: &CellRuntime, key_dir: &std::path::Path, discovery: Disco
         Ok(wire) => {
             let wire = Arc::new(wire);
             state.engine.attach_social_network(wire.clone());
+            state.engine.attach_location_network(wire.clone());
             wire.set_live_handler(transport::live::LiveHost::new(
                 state.engine.clone(),
                 state.lanes.clone(),

@@ -286,11 +286,11 @@ pub fn labels_with_metrics(
         now.saturating_add(settings.aperture_ms),
     );
     let radius = size[0].min(size[1]) * 0.4;
-    let width = 200.0 * (font / 14.0).clamp(0.85, 1.4);
+    let maximum_width = 200.0 * (font / 14.0).clamp(0.85, 1.4);
     let mut output = Vec::<Label>::new();
     let mut cells = HashMap::<(i32, i32), Vec<[f32; 4]>>::new();
     let mut searches = HashMap::<(i32, i32), usize>::new();
-    let cell_size = width + gap;
+    let cell_size = maximum_width + gap;
     for occurrence in occurrences {
         let entry = &entries[occurrence.index];
         let title = entry
@@ -299,7 +299,7 @@ pub fn labels_with_metrics(
             .map(str::trim)
             .find(|line| !line.is_empty())
             .unwrap_or("Untitled event");
-        let lines = wrap(title, width - 16.0, metrics.advance);
+        let lines = wrap(title, maximum_width - 16.0, metrics.advance);
         let mut time = entry.time_label(settings, now);
         if entry.preview {
             time.push_str(" · projected");
@@ -307,7 +307,14 @@ pub fn labels_with_metrics(
         if occurrence.historical && !entry.outstanding_at(now, &settings.timezone) {
             time.push_str(" · past");
         }
-        let time = wrap(&time, width - 16.0, metrics.advance);
+        let time = wrap(&time, maximum_width - 16.0, metrics.advance);
+        let width = lines
+            .iter()
+            .chain(&time)
+            .map(|line| line.chars().map(metrics.advance).sum::<f32>())
+            .fold(0.0, f32::max)
+            .ceil()
+            + 16.0;
         let height = (lines.len().max(1) as f32 + time.len().max(1) as f32) * font * 1.35 + 17.0;
         let at = occurrence.anchor_ms();
         let cross = settings.transverse(at, now, 0.0);

@@ -169,6 +169,129 @@ fn cards(world: &mut World, clock: Entity) -> Vec<(Entity, CanvasItem, String)> 
         .collect()
 }
 
+fn check_card_bounds(world: &mut World, clock: Entity) {
+    let cards = cards(world, clock);
+    for (index, (entity, a, title)) in cards.iter().enumerate() {
+        for (_, b, other) in &cards[index + 1..] {
+            let overlap = (a.size + b.size).as_dvec2() * 0.5 - (a.position - b.position).abs();
+            assert!(
+                overlap.min_element() <= 0.1,
+                "Cards overlap: {title}, {other}"
+            );
+        }
+        for child in world.get::<Children>(*entity).unwrap().iter() {
+            if world.get::<Text>(child).is_some() {
+                let node = world.get::<ComputedNode>(child).unwrap();
+                let width = node.size().x * node.inverse_scale_factor();
+                assert!(
+                    width <= a.size.x - 12.0,
+                    "Card text exceeds its width: {title}: {width} > {}",
+                    a.size.x
+                );
+            }
+        }
+    }
+}
+
+fn size_probe(app: &mut App, clock: Entity, directory: &std::path::Path) {
+    let panel = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| {
+            let button = parent.parent();
+            let panel = app.world().get::<ChildOf>(button)?.parent();
+            (text.0.contains('\n')
+                && app.world().get::<CanvasItem>(button).is_none()
+                && app
+                    .world()
+                    .get::<Node>(panel)
+                    .is_some_and(|node| node.display != Display::None)
+                && app
+                    .world()
+                    .get::<ChildOf>(panel)
+                    .is_some_and(|parent| parent.parent() == clock)
+                && app
+                    .world()
+                    .get::<ActionButton>(button)
+                    .is_some_and(|action| action.target == clock))
+            .then_some(panel)
+        })
+        .unwrap();
+    let skull = app
+        .world_mut()
+        .query::<(&lince_desktop::icons::Tooltip, &ActionButton, &ChildOf)>()
+        .iter(app.world())
+        .find(|(tooltip, action, parent)| {
+            tooltip.0 == "Clock controls"
+                && action.target == clock
+                && app
+                    .world()
+                    .get::<Node>(parent.parent())
+                    .is_some_and(|node| node.display != Display::None)
+        })
+        .unwrap()
+        .2
+        .parent();
+    app.world_mut()
+        .get_mut::<TimeSettings>(clock)
+        .unwrap()
+        .0
+        .card_physics = false;
+    let mut report = Vec::new();
+    for (width, height) in [
+        (800, 800),
+        (640, 640),
+        (500, 500),
+        (420, 420),
+        (320, 320),
+        (260, 260),
+        (220, 220),
+        (180, 180),
+        (120, 120),
+        (80, 80),
+        (640, 260),
+        (260, 640),
+        (420, 420),
+    ] {
+        app.world_mut().get_mut::<CanvasItem>(clock).unwrap().size =
+            Vec2::new(width as f32, height as f32);
+        settle(app, 1.0);
+        capture(app, directory, &format!("size-{width}x{height}"));
+        check_card_bounds(app.world_mut(), clock);
+        let tasks = app.world().get::<Node>(panel).unwrap().display != Display::None;
+        let memento = app.world().get::<Node>(skull).unwrap().display != Display::None;
+        assert!(!memento || tasks);
+        if width.min(height) <= 180 {
+            assert!(!tasks && !memento);
+        }
+        if width.min(height) == 260 {
+            assert!(tasks && !memento);
+        }
+        if width.min(height) >= 420 {
+            assert!(tasks && memento);
+        }
+        report.push(serde_json::json!({"size": [width, height], "tasks": tasks, "memento": memento, "cards_do_not_overlap": true}));
+    }
+    app.world_mut()
+        .get_mut::<TimeSettings>(clock)
+        .unwrap()
+        .0
+        .card_physics = true;
+    let started = Instant::now();
+    while started.elapsed().as_secs_f32() < 9.0 {
+        step(app);
+        check_card_bounds(app.world_mut(), clock);
+    }
+    capture(app, directory, "physics-settled");
+    std::fs::write(
+        directory.join("sizes.json"),
+        serde_json::to_vec_pretty(&report).unwrap(),
+    )
+    .unwrap();
+    println!("Size probe passed: 13 resize cases, both physics settings, no card overlaps");
+}
+
 fn cursor(app: &mut App, position: Option<Vec2>) {
     let window = app
         .world_mut()
@@ -370,6 +493,20 @@ async fn main() {
         "",
         DVec2::ZERO,
     );
+    let refresh_probe = std::env::args().any(|argument| argument == "--refresh-probe");
+    if let Some(path) = std::env::args()
+        .find_map(|argument| argument.strip_prefix("--settings-copy=").map(str::to_owned))
+    {
+        assert!(std::path::Path::new(&path).starts_with("/tmp"));
+        let settings = serde_json::from_slice::<lince_interface::time_castle::Settings>(
+            &std::fs::read(path).unwrap(),
+        )
+        .unwrap();
+        assert!(settings.source.is_none() && settings.area.is_none());
+        app.world_mut()
+            .entity_mut(clock)
+            .insert(TimeSettings(settings));
+    }
     let started = Instant::now();
     let copied = std::env::args().any(|argument| argument.starts_with("--fixture-copy="));
     while if copied {
@@ -404,19 +541,175 @@ async fn main() {
             .any(|text| text.0.starts_with("Next ") && text.0.ends_with(" things"))
     );
     capture(&mut app, &directory, "01-default");
+    if std::env::args().any(|argument| argument == "--size-probe") {
+        size_probe(&mut app, clock, &directory);
+        return;
+    }
+    if refresh_probe {
+        let settings = app.world().get::<TimeSettings>(clock).unwrap().0.clone();
+        let now = chrono::Utc::now().timestamp_millis();
+        let context = nucleus::projection::Context {
+            actor: None,
+            window: settings.window(now).unwrap(),
+        };
+        let query = protein::schedule::query(context.window.clone(), Vec::new());
+        engine.request_projection(context.clone()).await.unwrap();
+        let started = Instant::now();
+        loop {
+            let rows = protein::execute(&engine.store, &query).await.unwrap();
+            if rows.last().unwrap()["status"]["kind"] == "ready" {
+                break;
+            }
+            assert!(started.elapsed().as_secs() < 60);
+            step(&mut app);
+        }
+        settle(&mut app, 10.0);
+        let before = cards(app.world_mut(), clock);
+        assert_eq!(before.len(), 13);
+        let snapshots = engine
+            .projection
+            .metrics
+            .snapshots
+            .load(std::sync::atomic::Ordering::Relaxed);
+        let source = store::projection::revision(&engine.store.pool)
+            .await
+            .unwrap();
+        for attempt in 0..3 {
+            store::peer_delivery::note(
+                &engine.store.pool,
+                "visual-organ",
+                "visual-cell",
+                "visual-node",
+                Err(format!("retry-{attempt}")),
+            )
+            .await
+            .unwrap();
+            settle(&mut app, 1.0);
+            assert_eq!(
+                store::projection::revision(&engine.store.pool)
+                    .await
+                    .unwrap(),
+                source
+            );
+            assert_eq!(cards(app.world_mut(), clock).len(), before.len());
+        }
+        assert_eq!(
+            engine
+                .projection
+                .metrics
+                .snapshots
+                .load(std::sync::atomic::Ordering::Relaxed),
+            snapshots
+        );
+        engine
+            .act(
+                engine::actions::Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Plain,
+                    head: "Clock refresh probe".into(),
+                    body: String::new(),
+                    quantity: 0.0,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        let rows = protein::execute(&engine.store, &query).await.unwrap();
+        assert_eq!(rows.last().unwrap()["status"]["kind"], "updating");
+        assert_eq!(
+            rows.iter()
+                .filter(|row| row["origin"]["kind"] == "projection")
+                .count(),
+            5
+        );
+        engine.request_projection(context.clone()).await.unwrap();
+        let started = Instant::now();
+        let mut frames = 0;
+        let mut updating_frames = 0;
+        let mut maximum_frame_ms = 0.0_f64;
+        while started.elapsed().as_secs_f32() < 24.0 {
+            let frame = Instant::now();
+            step(&mut app);
+            maximum_frame_ms = maximum_frame_ms.max(frame.elapsed().as_secs_f64() * 1000.0);
+            let current = cards(app.world_mut(), clock);
+            assert_eq!(
+                current.len(),
+                before.len(),
+                "Forecast blinked during refresh"
+            );
+            for (entity, _, _) in &before {
+                assert!(current.iter().any(|(card, _, _)| card == entity));
+            }
+            assert!(
+                !app.world_mut()
+                    .query::<&Text>()
+                    .iter(app.world())
+                    .any(|text| text.0 == "No upcoming work")
+            );
+            if app
+                .world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == "Updating future simulation")
+            {
+                updating_frames += 1;
+            }
+            frames += 1;
+        }
+        let rows = protein::execute(&engine.store, &query).await.unwrap();
+        assert_eq!(rows.last().unwrap()["status"]["kind"], "ready");
+        assert!(updating_frames > 0, "Refresh state was not exercised");
+        let after = cards(app.world_mut(), clock);
+        for (entity, item, title) in &before {
+            let next = &after.iter().find(|(card, _, _)| card == entity).unwrap().1;
+            let past = app
+                .world()
+                .get::<Children>(*entity)
+                .unwrap()
+                .iter()
+                .any(|child| {
+                    app.world()
+                        .get::<Text>(child)
+                        .is_some_and(|text| text.0.starts_with("Needed:"))
+                });
+            if past {
+                assert!((next.position.length() - item.position.length()).abs() < 0.1);
+            } else {
+                assert_eq!(next.position, item.position, "Future card moved: {title}");
+            }
+        }
+        capture(&mut app, &directory, "refresh-stable");
+        std::fs::write(directory.join("refresh-report.json"), serde_json::to_vec_pretty(&serde_json::json!({"settings": settings, "cards": before.len(), "forecast": 5, "refresh_frames": frames, "updating_frames": updating_frames, "seconds": started.elapsed().as_secs_f64(), "maximum_frame_ms": maximum_frame_ms, "forecast_retained": true, "stable_entities": true})).unwrap()).unwrap();
+        println!("Refresh probe passed: {frames} frames, all 13 cards retained");
+        return;
+    }
     if std::env::args().any(|argument| argument == "--aperture-probe") {
         let initial: Vec<_> = cards(app.world_mut(), clock)
             .into_iter()
             .map(|(_, item, title)| (title, item.position.to_array()))
             .collect();
         println!("Initial cards: {initial:?}");
-        for (before, after) in [("60", "120"), ("120", "1440"), ("1440", "60")] {
+        let minutes = app
+            .world()
+            .get::<TimeSettings>(clock)
+            .unwrap()
+            .0
+            .aperture_ms
+            / 60_000;
+        let apertures = [
+            minutes.to_string(),
+            (minutes + 60).to_string(),
+            "1440".into(),
+            minutes.to_string(),
+        ];
+        for pair in apertures.windows(2) {
+            let (before, after) = (&pair[0], &pair[1]);
             activate(app.world_mut(), clock, "Clock controls");
             let field = app
                 .world_mut()
                 .query::<(Entity, &bevy::text::EditableText)>()
                 .iter(app.world())
-                .find(|(_, text)| text.value().to_string() == before)
+                .find(|(_, text)| text.value().to_string() == *before)
                 .unwrap()
                 .0;
             app.world_mut()
@@ -426,7 +719,14 @@ async fn main() {
                 .set_text(after);
             activate(app.world_mut(), clock, "Apply settings");
             activate(app.world_mut(), clock, "Hide clock controls");
-            settle(&mut app, 10.0);
+            let started = Instant::now();
+            while started.elapsed().as_secs_f32() < 10.0 {
+                step(&mut app);
+                assert!(
+                    cards(app.world_mut(), clock).len() >= initial.len(),
+                    "Cards disappeared while changing aperture"
+                );
+            }
             let titles: Vec<_> = cards(app.world_mut(), clock)
                 .into_iter()
                 .map(|(_, _, title)| title)
@@ -441,10 +741,10 @@ async fn main() {
     let stopped = cards(app.world_mut(), clock);
     settle(&mut app, 3.0);
     for (card, item, _) in &stopped {
-        assert_eq!(
-            app.world().get::<CanvasItem>(*card).unwrap().position,
-            item.position
-        );
+        let position = app.world().get::<CanvasItem>(*card).unwrap().position;
+        if position.distance(item.position) > 0.001 {
+            assert!((position.length() - item.position.length()).abs() < 0.1);
+        }
     }
     for (index, (_, a, title)) in stopped.iter().enumerate() {
         for (_, b, other) in &stopped[index + 1..] {

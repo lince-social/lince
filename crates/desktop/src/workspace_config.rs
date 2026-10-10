@@ -59,7 +59,11 @@ pub fn rules(world: &World, root: Entity, workspace: u64) -> RuleSettings {
 }
 
 pub fn rules_enabled(world: &World, root: Entity, workspace: u64) -> bool {
-    !crate::laboratory::suspended(world, root) && !rules(world, root, workspace).paused
+    !crate::laboratory::suspended(world, root)
+        && world
+            .get::<Workspaces>(root)
+            .is_some_and(|spaces| spaces.entries.iter().any(|entry| entry.id == workspace))
+        && !rules(world, root, workspace).paused
 }
 
 pub fn set_rules(world: &mut World, root: Entity, workspace: u64, rules: RuleSettings) -> bool {

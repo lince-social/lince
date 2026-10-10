@@ -39,7 +39,10 @@ pub fn publish(world: &mut World) {
                     .unwrap_or_default()
             };
             ("edit", format!("{}: {value}", input.title), password)
-        } else if world.get::<ButtonIntent>(entity).is_some() {
+        } else if let Some(input) = world.get::<lince_interface::location::Editor>(entity) {
+            let value = if input.secret { String::new() } else { world.get::<EditableText>(entity).map(|text| text.value().to_string()).unwrap_or_default() };
+            ("edit", format!("{}: {value}", input.title), input.secret)
+        } else if world.get::<ButtonIntent>(entity).is_some() || world.get::<lince_interface::location::Button>(entity).is_some() {
             let label = world
                 .get::<Children>(entity)
                 .map(|children| {
@@ -54,6 +57,8 @@ pub fn publish(world: &mut World) {
         } else if let Some(text) = world.get::<Text>(entity) {
             if world.get::<ChildOf>(entity).is_some_and(|parent| {
                 world.get::<ButtonIntent>(parent.parent()).is_some()
+                    || world.get::<lince_interface::location::Button>(parent.parent()).is_some()
+                    || world.get::<lince_interface::location::Editor>(parent.parent()).is_some()
                     || world.get::<Input>(parent.parent()).is_some()
             }) {
                 continue;
@@ -133,6 +138,10 @@ pub fn activate(world: &mut World, token: u64, action: i32) {
     if let Some(button) = world.get::<ButtonIntent>(entity) {
         let intent = button.0.clone();
         crate::app::queue_intent(world, intent);
+    } else if world.get::<lince_interface::location::Button>(entity).is_some() {
+        lince_interface::location::click(world, entity);
+    } else if let (Some(editor), Some(text)) = (world.get::<lince_interface::location::Editor>(entity), world.get::<EditableText>(entity)) {
+        crate::android::open_location_editor(entity, editor, text, &world.resource::<crate::app::Mobile>().scope_key());
     } else if let (Some(input), Some(text)) = (
         world.get::<Input>(entity),
         world.get::<EditableText>(entity),

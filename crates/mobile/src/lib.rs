@@ -8,6 +8,7 @@ pub mod app;
 pub mod attachments;
 mod body;
 mod images;
+mod location;
 pub mod connection;
 mod kanban;
 pub mod navigation;
@@ -48,6 +49,7 @@ pub fn run(directory: std::path::PathBuf) {
             lince_interface::theme::TypographyPlugin,
             bevy::input_focus::tab_navigation::TabNavigationPlugin,
             app::MobilePlugin,
+            location::LocationPlugin,
             scroll::ScrollPlugin,
             kanban::KanbanPlugin,
         ))

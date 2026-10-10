@@ -148,11 +148,23 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
     if workspaces.is_empty() {
         return Err(io::Error::other("no readable workspaces in snapshot"));
     }
+    let deleted_workspaces: BTreeMap<u64, u64> = values
+        .remove("deleted_workspaces")
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(io::Error::other)?
+        .unwrap_or_default();
     let active = match values.remove("active").and_then(|value| value.as_u64()) {
-        Some(active) if ids.contains(&active) => active,
+        Some(active) if ids.contains(&active) && !deleted_workspaces.contains_key(&active) => {
+            active
+        }
         _ => {
             report.notes.push("Opened the first remaining workspace because the active workspace could not be restored".into());
-            workspaces[0].id
+            workspaces
+                .iter()
+                .find(|space| !deleted_workspaces.contains_key(&space.id))
+                .ok_or_else(|| io::Error::other("no active workspace in snapshot"))?
+                .id
         }
     };
     let theme = match values.remove("theme") {
@@ -346,6 +358,13 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         shortcuts,
         active,
         workspaces,
+        deleted_workspaces,
+        trash_retention_days: values
+            .remove("trash_retention_days")
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(io::Error::other)?
+            .unwrap_or_else(default_trash_retention_days),
         sands,
         records,
         areas,

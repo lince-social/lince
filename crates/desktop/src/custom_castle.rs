@@ -424,6 +424,9 @@ impl CustomCastle {
                     if *kind == SandKind::AccessControl {
                         content = Some(crate::access_control::populate(world, root, entity));
                     }
+                    if *kind == SandKind::Visibility {
+                        content = Some(crate::visibility_castle::populate(world, root, entity));
+                    }
                     for text in texts {
                         let child = crate::sand_text::spawn(world, entity, text.clone());
                         content.get_or_insert(child);
@@ -446,6 +449,7 @@ impl CustomCastle {
                             | SandKind::Operation
                             | SandKind::WorkTimer
                             | SandKind::AccessControl
+                            | SandKind::Visibility
                     ) {
                         world
                             .entity_mut(entity)

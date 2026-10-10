@@ -300,6 +300,44 @@ fn outward_labels_keep_full_text_and_timing_without_intersections_or_clock_resiz
 }
 
 #[test]
+fn cards_fit_the_measured_text_and_wrap_long_titles() {
+    use lince_interface::time_castle::{LabelMetrics, labels_with_metrics};
+    let entries = vec![
+        entry("Short", 1000, None),
+        entry(
+            "A lengthy task title that needs wrapping to stay readable",
+            1000,
+            None,
+        ),
+    ];
+    let advance = |_: char| 7.0;
+    let labels = labels_with_metrics(
+        &Settings::default(),
+        &entries,
+        0,
+        [420.0; 2],
+        14.0,
+        8.0,
+        &LabelMetrics {
+            band_width: 4.0,
+            advance: &advance,
+        },
+    );
+    for label in &labels {
+        let width = label
+            .title
+            .lines()
+            .chain(label.time.lines())
+            .map(|line| line.chars().map(advance).sum::<f32>())
+            .fold(0.0, f32::max);
+        assert_eq!(label.rect[2], width + 16.0);
+        assert!(label.rect[2] <= 200.0);
+    }
+    assert!(labels[0].rect[2] < 140.0);
+    assert!(labels[1].title.contains('\n'));
+}
+
+#[test]
 fn dense_annotations_preserve_every_occurrence_with_bounded_layout_work() {
     let settings = Settings::default();
     let entries: Vec<_> = (0..5000)

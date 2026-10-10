@@ -21,6 +21,12 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
+        if let Action::Location { request } = action {
+            return Box::pin(async move { self.location_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
+        if let Action::Visibility { request } = action {
+            return Box::pin(async move { self.visibility_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
         if let Action::InspectRecordAuthority { person, record_uid } = action {
             return Box::pin(async move { self.inspect_record_authority(actor.as_deref(), &person, &record_uid).await.map(ControlFlow::Continue) });
         }
@@ -46,7 +52,7 @@ impl Engine {
             });
         }
         match &action {
-            Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
+            Action::Visibility { .. } | Action::Location { .. } | Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
             Action::Social { .. }
             | Action::SandPackage { .. }
             | Action::ChangeRecord { .. }

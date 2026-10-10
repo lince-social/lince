@@ -26,6 +26,11 @@ public final class MainActivity extends NativeActivity {
     private static native void nativeSmoke(String command);
     private static native void nativeAccessibility(boolean enabled);
     static native void nativeAccessible(long token, int action);
+    static native void nativeLocationFix(long epoch, double latitude, double longitude, double accuracy, long ageMilliseconds);
+    static native void nativeLocationStatus(long epoch, String message);
+    static native void nativeLocationStop(long epoch);
+    private long locationEpoch;
+    private long locationDuration;
     private AccessiblePage accessible;
     private android.view.accessibility.AccessibilityManager accessibilityManager;
     private android.view.accessibility.AccessibilityManager.AccessibilityStateChangeListener accessibilityListener;
@@ -181,12 +186,50 @@ public final class MainActivity extends NativeActivity {
     @Override
     public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(request, permissions, results);
+        if (request == 42) {
+            if (locationEpoch != 0) { startLocation(); }
+            return;
+        }
         if (request != 41) { return; }
         if (results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
             openScanner();
         } else {
             nativeCameraError("Camera permission denied. You can still paste the device enrolment code.");
         }
+    }
+
+    public void location(boolean enabled, long milliseconds, long epoch) {
+        runOnUiThread(() -> {
+            if (!enabled) {
+                locationEpoch = 0;
+                stopService(new android.content.Intent(this, LocationService.class));
+                return;
+            }
+            locationEpoch = epoch;
+            locationDuration = Math.max(1, Math.min(milliseconds, 86400000));
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                if (!resumed) { nativeLocationStatus(epoch, "Open Lince to approve device location"); return; }
+                String[] permissions = android.os.Build.VERSION.SDK_INT >= 33
+                        ? new String[] {android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.POST_NOTIFICATIONS}
+                        : new String[] {android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION};
+                requestPermissions(permissions, 42);
+            } else { startLocation(); }
+        });
+    }
+
+    private void startLocation() {
+        if (locationEpoch == 0) { return; }
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            nativeLocationStatus(locationEpoch, "Location permission denied. Choose a manual source if desired.");
+            return;
+        }
+        android.content.Intent service = new android.content.Intent(this, LocationService.class);
+        service.putExtra("epoch", locationEpoch);
+        service.putExtra("duration", locationDuration);
+        try { startForegroundService(service); }
+        catch (RuntimeException error) { nativeLocationStatus(locationEpoch, "Open Lince to start device location"); }
     }
 
     private void openScanner() {

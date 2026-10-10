@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>__ALTERNATIVE__</title>
+  <link rel="stylesheet" href="/assets/prototype.css">
+</head>
+<body>
+<main>
+  <h1>__ALTERNATIVE__</h1>
+  <p class="notice">Illustrative scaffold. Replace these tasks and fixtures with the workflow being studied.</p>
+  <label>Scenario <select name="scenario" id="scenario"></select></label>
+  <div role="tablist" aria-label="Example workflow">
+    <button role="tab" id="task-tab" aria-controls="task-panel" aria-selected="true">Main task</button>
+    <button role="tab" id="context-tab" aria-controls="context-panel" aria-selected="false" tabindex="-1">Context</button>
+  </div>
+  <section role="tabpanel" id="task-panel" aria-labelledby="task-tab" data-feature="primary-task">
+    <h2>Example items</h2>
+    <p id="empty" hidden>No items yet. Add one to start.</p>
+    <ul id="items"></ul>
+    <form id="add-item">
+      <label>Item name <input name="item-name" id="item-name" required maxlength="160" autocomplete="off"></label>
+      <div class="row"><button class="primary" id="submit" type="submit">Add item</button><button id="retry" type="button" hidden>Try again</button></div>
+      <p id="status" role="status" aria-live="polite"></p>
+    </form>
+    <details data-feature="secondary-task"><summary>Optional details</summary><label>Example preference <input name="preference" placeholder="Synthetic preference"></label><p>Replace with an actual occasional task and a descriptive section name.</p></details>
+  </section>
+  <section role="tabpanel" id="context-panel" aria-labelledby="context-tab" hidden><h2>Task context</h2><p>Use this space to test whether separate context helps the primary workflow.</p></section>
+</main>
+<script src="/assets/prototype.js"></script>
+<script>
+window.designReady.then(fixtures => {
+  const scenario = document.getElementById('scenario');
+  const selected = scenario.dataset.savedValue || scenario.value;
+  Object.keys(fixtures).forEach(name => scenario.add(new Option(name, name)));
+  if (selected && fixtures[selected]) scenario.value = selected;
+  let items = [];
+  const status = document.getElementById('status');
+  const submit = document.getElementById('submit');
+  const retry = document.getElementById('retry');
+  const renderItems = () => {
+    document.getElementById('items').replaceChildren(...items.map(item => { const li = document.createElement('li'); li.textContent = item.name; return li; }));
+    document.getElementById('empty').hidden = items.length !== 0;
+  };
+  const render = () => {
+    const fixture = fixtures[scenario.value];
+    items = structuredClone(fixture.items || []);
+    renderItems();
+    submit.disabled = fixture.status === 'pending';
+    status.textContent = fixture.status === 'pending' ? 'Simulating a pending request.' : fixture.status === 'error' ? 'Simulated failure. Your draft is still here; try again.' : '';
+    status.classList.toggle('error', fixture.status === 'error');
+    retry.hidden = fixture.status !== 'error' && fixture.status !== 'pending';
+  };
+  scenario.addEventListener('change', render);
+  retry.addEventListener('click', () => { scenario.value = 'populated'; scenario.dispatchEvent(new Event('input')); render(); });
+  document.getElementById('add-item').addEventListener('submit', event => {
+    event.preventDefault();
+    if (fixtures[scenario.value].status === 'error') { status.textContent = 'Simulated failure. Your draft is still here; try again.'; return; }
+    const input = document.getElementById('item-name');
+    items.push({id: String(items.length + 1), name: input.value});
+    renderItems();
+    status.textContent = 'Added to this prototype only.';
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    input.focus();
+  });
+  render();
+}).catch(error => { document.getElementById('status').textContent = error.message; });
+</script>
+</body>
+</html>

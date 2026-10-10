@@ -51,7 +51,7 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
                     ));
                 }
             }
-            if table == "record_revision" {
+            if matches!(table.as_str(), "record_revision" | "peer_delivery") {
                 conditions.push("EXISTS (SELECT 1 FROM karma_program_revision)".into());
             }
             if table == "record_extension" {
@@ -66,7 +66,7 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
             }
             if matches!(
                 table.as_str(),
-                "record_revision" | "record_extension" | "karma_schedule_cursor"
+                "record_revision" | "record_extension" | "karma_schedule_cursor" | "peer_delivery"
             ) {
                 sqlx::query(&format!(
                     "DROP TRIGGER IF EXISTS \"projection_{operation}_{table}\""
@@ -161,6 +161,19 @@ pub async fn covered_window(
     let key = context.key().map_err(protocol)?;
     sqlx::query_as("SELECT from_ms, until_ms FROM projection_window WHERE id = 1 AND cache_key = ? AND source_revision = (SELECT revision FROM projection_source WHERE id = 1) AND expires_ms > ? AND base_ms <= ?")
         .bind(key.as_str()).bind(now_ms).bind(now_ms).fetch_optional(pool).await
+}
+
+pub async fn previous_schedule(
+    pool: &SqlitePool,
+    context: &Context,
+    now_ms: i64,
+) -> Result<Vec<Scheduled>, StoreError> {
+    let key = context.key().map_err(protocol)?;
+    let rows: Vec<String> = sqlx::query_scalar("SELECT s.payload FROM projection_schedule s JOIN projection_window w ON w.id = 1 WHERE w.cache_key = ? AND w.base_ms <= ? AND w.expires_ms > ? AND s.from_ms >= ? AND s.from_ms < ? ORDER BY s.from_ms, s.id LIMIT ?")
+        .bind(key.as_str()).bind(now_ms).bind(now_ms.saturating_sub(60_000)).bind(now_ms.max(context.window.from_ms)).bind(context.window.until_ms).bind(MAX_SPANS as i64).fetch_all(pool).await?;
+    rows.iter()
+        .map(|row| serde_json::from_str(row).map_err(protocol))
+        .collect()
 }
 
 pub async fn publish(
@@ -260,4 +273,50 @@ pub async fn publish_schedule(
 
 fn protocol(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn delivery_bookkeeping_preserves_forecasts_unless_programs_can_read_it() {
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        sqlx::raw_sql("CREATE TABLE commit_sequence (id INTEGER PRIMARY KEY, value INTEGER); INSERT INTO commit_sequence VALUES (1, 0); CREATE TABLE projection_source (id INTEGER PRIMARY KEY, revision INTEGER); INSERT INTO projection_source VALUES (1, 0); CREATE TABLE peer_delivery (attempted_at TEXT, error TEXT); CREATE TABLE record (head TEXT); CREATE TABLE karma_program_revision (revision_hash TEXT); CREATE TRIGGER projection_UPDATE_peer_delivery AFTER UPDATE ON peer_delivery BEGIN UPDATE projection_source SET revision = revision + 1; END;")
+            .execute(&pool).await.unwrap();
+        install(&pool).await.unwrap();
+        sqlx::query("INSERT INTO peer_delivery VALUES ('first', 'offline')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("UPDATE peer_delivery SET attempted_at = 'retry', error = 'still offline'")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(revision(&pool).await.unwrap(), 0);
+        sqlx::query("INSERT INTO record VALUES ('Task')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(revision(&pool).await.unwrap(), 1);
+        sqlx::query("INSERT INTO karma_program_revision VALUES ('program')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        let before = revision(&pool).await.unwrap();
+        sqlx::query("UPDATE peer_delivery SET attempted_at = 'program-visible retry'")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(revision(&pool).await.unwrap(), before + 1);
+        sqlx::query("DELETE FROM peer_delivery")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(revision(&pool).await.unwrap(), before + 2);
+    }
 }

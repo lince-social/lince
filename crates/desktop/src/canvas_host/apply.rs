@@ -86,6 +86,16 @@ pub(super) fn apply(
     let mut added = Vec::new();
     for placement in &after.placements {
         let old = before_map.get(placement.id.as_str()).copied();
+        let retained = old.is_none()
+            && world.get::<Workspaces>(root).is_some_and(|spaces| {
+                spaces.trash.iter().any(|entry| entry.workspace.id == placement.workspace)
+            })
+            && entities.get(&placement.id).is_some_and(|entity| {
+                capture_content(world, *entity) == placement.component
+            });
+        if retained {
+            continue;
+        }
         if old.is_none_or(|old| old.component != placement.component) {
             match spawn(
                 world,
@@ -141,15 +151,46 @@ pub(super) fn apply(
             .entity_mut(entity)
             .insert(Identity(placement.id.clone()));
     }
+    let removed_workspaces: std::collections::HashSet<_> = before
+        .workspaces
+        .iter()
+        .filter(|space| !after.workspaces.iter().any(|next| next.id == space.id))
+        .map(|space| space.id)
+        .collect();
+    let restored_workspaces: std::collections::HashSet<_> =
+        after.workspaces.iter().map(|space| space.id).collect();
+    let mut previous = world.get::<Workspaces>(root).unwrap().entries.clone();
+    previous.extend(
+        world
+            .get::<Workspaces>(root)
+            .unwrap()
+            .trash
+            .iter()
+            .map(|entry| entry.workspace.clone()),
+    );
+    {
+        let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+        spaces
+            .trash
+            .retain(|entry| !restored_workspaces.contains(&entry.workspace.id));
+        for workspace in previous
+            .iter()
+            .filter(|space| removed_workspaces.contains(&space.id))
+        {
+            spaces.trash.push(crate::workspace::TrashedWorkspace {
+                workspace: workspace.clone(),
+                deleted_at: crate::workspace::unix_time(),
+            });
+        }
+    }
     for old in &before.placements {
-        if !after_ids.contains(old.id.as_str()) {
+        if !after_ids.contains(old.id.as_str()) && !removed_workspaces.contains(&old.workspace) {
             if let Some(entity) = entities.remove(&old.id) {
                 crate::record_view::hide_placement(world, root, entity);
                 world.despawn(entity);
             }
         }
     }
-    let previous = world.get::<Workspaces>(root).unwrap().entries.clone();
     let entries = after
         .workspaces
         .iter()
@@ -192,11 +233,17 @@ pub(super) fn apply(
         .find(|entry| entry.id == after.active_workspace)
         .unwrap()
         .clone();
+    let trashed: std::collections::HashSet<_> = spaces
+        .trash
+        .iter()
+        .map(|entry| entry.workspace.id)
+        .collect();
     for saved in spaces.saved_records.values_mut() {
-        if !after
-            .workspaces
-            .iter()
-            .any(|space| space.id == saved.workspace)
+        if !trashed.contains(&saved.workspace)
+            && !after
+                .workspaces
+                .iter()
+                .any(|space| space.id == saved.workspace)
         {
             saved.workspace = after.active_workspace;
         }

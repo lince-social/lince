@@ -275,6 +275,10 @@ impl Engine {
                 .bind(target)
                 .execute(&mut *tx)
                 .await?;
+                if store::data_visibility::ensure_private_on(&mut tx, target, nucleus::visibility::Data::Place).await? {
+                    let saved = nucleus::visibility::SavedPolicy { controller_uid: String::new(), revision: 1, policy: Default::default() };
+                    store::sync_ops::log_local_tx(&mut tx, "data_visibility", target, "place", store::sync_ops::OpKind::Set, Some(serde_json::to_string(&saved)?)).await?;
+                }
                 store::sync_ops::log_local_tx(
                     &mut tx,
                     "record",

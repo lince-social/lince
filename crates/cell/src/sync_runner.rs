@@ -250,3 +250,16 @@ pub fn spawn_presence(state: CellRuntime) -> tokio::task::JoinHandle<()> {
         }
     })
 }
+
+pub fn spawn_location(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
+            interval.tick().await;
+            if state.engine.location_tick().await.is_err() {
+                state.engine.location_device_unavailable().await;
+            }
+        }
+    })
+}

@@ -2,6 +2,8 @@
 #![recursion_limit = "256"]
 
 mod admin;
+#[cfg(feature = "ui")]
+mod fiote_laboratory;
 
 use std::{env, io::Error, net::SocketAddr, path::PathBuf};
 
@@ -47,10 +49,14 @@ fn main() -> Result<(), Error> {
         ));
     }
     #[cfg(not(feature = "ui"))]
-    if has_arg(&args, "--laboratory-headless") {
+    if has_arg(&args, "--laboratory-headless") || has_arg(&args, "--laboratory-fiote") {
         return Err(Error::other(
             "Laboratory requires a Lince executable with the interface included.",
         ));
+    }
+    #[cfg(feature = "ui")]
+    if has_arg(&args, "--laboratory-fiote") && has_arg(&args, "--laboratory-headless") {
+        return fiote_laboratory::headless(&args);
     }
     #[cfg(feature = "ui")]
     if has_arg(&args, "--laboratory-headless") {
@@ -107,6 +113,11 @@ fn main() -> Result<(), Error> {
             .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
         match runtime.block_on(lince_desktop::instance::claim(&data_dir))? {
             Some(instance) => Some(instance),
+            None if has_arg(&args, "--laboratory-fiote") => {
+                return Err(Error::other(
+                    "Lince is already running. Open Laboratory and choose Test real Fiote conversation in that window.",
+                ));
+            }
             None => return Ok(()),
         }
     } else {
@@ -257,6 +268,7 @@ fn main() -> Result<(), Error> {
                 &data_dir,
                 !has_arg(&args, "--no-tray"),
                 backup_handoff.clone(),
+                if has_arg(&args, "--laboratory-fiote") { Some(fiote_laboratory::options(&args)?) } else { None },
             )
         };
         runtime.block_on(cell.shutdown());
@@ -353,6 +365,14 @@ fn print_help() {
         );
         println!("      --laboratory-max-sands N Limit each stress workload (default 8192)");
         println!("      --laboratory-output PATH Save the JSON report to a new file");
+        println!("      --laboratory-fiote     Guided real Fiote conversation test (uses provider usage)");
+        println!("      --laboratory-fiote --laboratory-headless  Run the same workflow without a window");
+        println!("      --laboratory-record UID  Existing Fiote to test");
+        println!("      --laboratory-separate    Create a test Fiote with the chosen connection");
+        println!("      --laboratory-profile ID  Native connection saved for that Fiote");
+        println!("      --laboratory-model ID    Override the model for this test thread only");
+        println!("      --laboratory-reasoning LEVEL  Override reasoning for this test only");
+        println!("      --laboratory-vault-password-file PATH  Protected password file for headless use");
     }
     println!("      --server         Headless: run the Cell with no window. Requires an");
     println!("                       admin account — pass one on first run:");

@@ -225,6 +225,9 @@ pub enum Intent {
     Confirm,
     CancelDelete,
     Act(engine::actions::Action),
+    OpenLocation(String, Option<String>),
+    CloseLocation,
+    ObserveLocation,
     EditKarma(Option<String>),
     SaveKarma,
     EditFrequency(Option<String>),
@@ -717,6 +720,7 @@ fn receive(world: &mut World) {
     }
     for event in events {
         match event {
+            Event::LocationAuthenticated(id, result) => { lince_interface::location::authentication_reply(world, &id, result); }
             Event::Stopped => {
                 let next = world.resource_mut::<Mobile>().next_profile.take();
                 if let Some(next) = next {
@@ -772,6 +776,7 @@ fn identity_ready(
         state.identity != identity || state.organ.is_some()
     };
     if changed {
+        crate::location::close(world);
         capture(world);
         if let Some(old) = world.resource::<Mobile>().organ.clone() {
             if let Err(error) = save(world, old.clone()) {
@@ -952,6 +957,17 @@ fn draft_directory(state: &Mobile) -> PathBuf {
 }
 
 fn receive_message(world: &mut World, message: ServerMessage) {
+    match &message {
+        ServerMessage::ActionOk { id, data, .. } if id.starts_with("location-ui_") => {
+            lince_interface::location::receive(world, id, Ok(data.clone().unwrap_or(Value::Null)));
+            return;
+        }
+        ServerMessage::Error { id, message, .. } if id.starts_with("location-ui_") => {
+            lince_interface::location::receive(world, id, Err(message.clone()));
+            return;
+        }
+        _ => {}
+    }
     match message {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
             if id == "mobile/link" {
@@ -1495,6 +1511,7 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             state.status = "Saving and closing this profile…".into();
         }
         Intent::Back => {
+            if crate::location::close(world) { return Ok(()); }
             back(world);
             subscriptions(world)?;
         }
@@ -1712,6 +1729,9 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
         }
         Intent::CancelDelete => world.resource_mut::<Mobile>().deleting = None,
         Intent::Act(action) => act(world, action, None)?,
+        Intent::OpenLocation(record, transfer) => crate::location::open(world, &record, transfer.as_deref()),
+        Intent::CloseLocation => { crate::location::close(world); }
+        Intent::ObserveLocation => crate::location::open_observer(world),
         Intent::Ask(action) => world.resource_mut::<Mobile>().deleting = Some(Intent::Act(action)),
         Intent::MoveMenu(uid) => {
             let mut state = world.resource_mut::<Mobile>();

@@ -171,6 +171,7 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<Saved> {
                         spaces
                             .entries
                             .iter()
+                            .chain(spaces.trash.iter().map(|entry| &entry.workspace))
                             .any(|space| space.id == saved.workspace)
                     })
         })

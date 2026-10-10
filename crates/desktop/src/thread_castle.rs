@@ -766,6 +766,63 @@ impl Action for Delete {
 #[derive(Clone)]
 struct Send;
 
+pub(crate) fn laboratory_submit(
+    world: &mut World,
+    castle: Entity,
+    thread: &str,
+    body: &str,
+) -> bool {
+    let Some(binding) = world
+        .get::<ThreadCastle>(castle)
+        .map(|castle| castle.binding.clone())
+    else {
+        return false;
+    };
+    if world.get::<ThreadCastle>(castle).is_some_and(|castle| {
+        castle.pages.contains_key(thread) && castle.active.as_deref() != Some(thread)
+    }) {
+        world.get_mut::<ThreadCastle>(castle).unwrap().active = Some(thread.into());
+        show_active(world, castle);
+    }
+    let form = world
+        .query::<(Entity, &ThreadForm)>()
+        .iter(world)
+        .find(|(_, form)| {
+            form.binding.area == binding.area
+                && form.binding.uid == binding.uid
+                && form.thread.as_deref() == Some(thread)
+                && form.pending.is_none()
+        })
+        .map(|(entity, form)| (entity, form.input));
+    let Some((owner, input)) = form else {
+        return false;
+    };
+    world
+        .get_mut::<EditableText>(input)
+        .unwrap()
+        .editor
+        .set_text(body);
+    Send.apply(world, owner);
+    world
+        .get::<ThreadForm>(owner)
+        .is_some_and(|form| form.pending.is_some())
+}
+
+pub(crate) fn laboratory_visible(world: &World, castle: Entity, thread: &str, body: &str) -> bool {
+    world
+        .get::<ThreadCastle>(castle)
+        .filter(|castle| castle.active.as_deref() == Some(thread))
+        .and_then(|castle| castle.pages.get(thread))
+        .and_then(|page| world.get::<Page>(*page))
+        .is_some_and(|page| {
+            page.messages.values().any(|entity| {
+                world
+                    .get::<Message>(*entity)
+                    .is_some_and(|message| message.observed_body == body)
+            })
+        })
+}
+
 #[derive(Component)]
 struct TabName {
     castle: Entity,

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lince design study</title>
+<link id="theme-css" rel="stylesheet" href="/tokens.css?scheme=Dark&kind=Square">
+<link rel="stylesheet" href="/assets/prototype.css">
+<style>
+body { padding: calc(var(--Padding) * 2); }
+header { display: grid; gap: var(--Spacing); margin-bottom: calc(var(--Spacing) * 2); }
+h1, p { margin: 0; }
+.controls { display: flex; flex-wrap: wrap; align-items: end; gap: calc(var(--Spacing) * 2); }
+.controls label { gap: 2px; }
+.controls input { width: 6em; }
+#alternatives { display: flex; align-items: start; gap: calc(var(--Spacing) * 3); overflow-x: auto; padding: var(--Padding) 2px; }
+article { flex-shrink: 0; display: grid; gap: var(--Spacing); }
+article h2 { margin: 0; }
+iframe { border: var(--ControlBorder) solid var(--Ink); background: var(--Surface); max-width: none; }
+.error { margin-block: var(--Spacing); }
+#state { min-height: 1.5em; }
+</style>
+</head>
+<body>
+<header>
+<h1 id="title">Design study</h1>
+<p id="focus"></p>
+<p>Mock data · review one dimension · saves refresh automatically</p>
+<div class="controls">
+<label>Alternative <select id="alternative"><option value="all">Compare all</option></select></label>
+<label>Viewport <select id="viewport"><option value="desktop">Desktop panel</option><option value="mobile">Mobile width</option><option value="sand">Small Sand</option><option value="custom">Custom</option></select></label>
+<label>Theme <select id="scheme"></select></label>
+</div>
+<details id="preview-settings"><summary>Preview settings</summary><div class="controls">
+<label>Sand style <select id="kind"></select></label>
+<label>Width <input id="width" type="number" min="240" max="2560" value="960"></label>
+<label>Height <input id="height" type="number" min="180" max="1600" value="720"></label>
+</div><p><a href="/assets/Lato-OFL.txt">Lato font license and credits</a></p></details>
+<p id="state" role="status" aria-live="polite"></p>
+</header>
+<div id="alternatives" aria-label="Design alternatives"></div>
+<details><summary>Acceptance scenarios</summary><ul id="scenarios"></ul></details>
+<script>
+(async () => {
+  const state = document.getElementById('state');
+  const get = async path => { const response = await fetch(path, {cache: 'no-store'}); if (!response.ok) throw new Error(await response.text()); return response; };
+  try {
+    const study = await (await get('/study.json')).json();
+    const catalogue = await (await get('/catalogue.json')).json();
+    document.title = `${study.title} · Lince design`;
+    document.getElementById('title').textContent = study.title;
+    document.getElementById('focus').textContent = `Focus: ${study.focus}. Keep other dimensions steady when comparing.`;
+    const controls = Object.fromEntries(['alternative', 'scheme', 'kind', 'viewport', 'width', 'height'].map(id => [id, document.getElementById(id)]));
+    const storageKey = `lince-design-viewer:${study.title}`;
+    let saved = {};
+    try { saved = JSON.parse(sessionStorage.getItem(storageKey) || '{}'); } catch {}
+    catalogue.schemes.forEach(scheme => controls.scheme.add(new Option(scheme.name, scheme.id)));
+    catalogue.kinds.forEach(kind => controls.kind.add(new Option(kind.name, kind.id)));
+    if (catalogue.study_theme) controls.scheme.add(new Option('Study theme.json', 'Study'));
+    study.alternatives.forEach(alternative => controls.alternative.add(new Option(alternative.title, alternative.id)));
+    for (const [id, control] of Object.entries(controls)) if (id in saved) control.value = saved[id];
+    if (!controls.scheme.value) controls.scheme.value = 'Dark';
+    if (!controls.kind.value) controls.kind.value = 'Square';
+    if (!controls.alternative.value) controls.alternative.value = 'all';
+    study.scenarios.forEach(scenario => { const li = document.createElement('li'); li.textContent = scenario; document.getElementById('scenarios').append(li); });
+    const draw = () => {
+      const width = Math.max(240, Math.min(2560, Number(controls.width.value) || 960));
+      const height = Math.max(180, Math.min(1600, Number(controls.height.value) || 720));
+      controls.width.value = width;
+      controls.height.value = height;
+      const query = new URLSearchParams({scheme: controls.scheme.value, kind: controls.kind.value, study: study.title});
+      document.getElementById('theme-css').href = `/tokens.css?${new URLSearchParams({scheme: controls.scheme.value, kind: controls.kind.value})}`;
+      const container = document.getElementById('alternatives');
+      container.replaceChildren();
+      study.alternatives.filter(alternative => controls.alternative.value === 'all' || alternative.id === controls.alternative.value).forEach(alternative => {
+        const article = document.createElement('article'); article.style.width = `${width}px`;
+        const heading = document.createElement('h2'); heading.textContent = alternative.title;
+        const hypothesis = document.createElement('p'); hypothesis.textContent = alternative.hypothesis;
+        const frame = document.createElement('iframe'); frame.title = alternative.title; frame.width = width; frame.height = height;
+        const url = new URL(alternative.file, location.href);
+        if (url.origin !== location.origin || url.pathname.startsWith('/assets/') || !url.pathname.endsWith('.html')) throw new Error('Alternative must be a local HTML file');
+        url.search = query.toString(); frame.src = url.href;
+        const coverage = document.createElement('details');
+        const summary = document.createElement('summary'); summary.textContent = 'Capability placement'; coverage.append(summary);
+        const list = document.createElement('ul');
+        study.features.forEach(feature => { const li = document.createElement('li'); li.textContent = `${feature.label}: ${alternative.placements[feature.id] || 'Missing placement'}`; list.append(li); });
+        coverage.append(list); article.append(heading, hypothesis, frame, coverage); container.append(article);
+      });
+      for (const [id, control] of Object.entries(controls)) saved[id] = control.value;
+      try { sessionStorage.setItem(storageKey, JSON.stringify(saved)); } catch {}
+      state.textContent = `${width} × ${height} logical pixels.${controls.viewport.value === 'mobile' ? ' Mobile width checks layout; validate native touch behavior separately.' : ''}`;
+    };
+    controls.viewport.addEventListener('change', () => {
+      const sizes = {desktop: [960, 720], mobile: [390, 844], sand: [376, 540]};
+      if (sizes[controls.viewport.value]) [controls.width.value, controls.height.value] = sizes[controls.viewport.value];
+      if (controls.viewport.value === 'custom') document.getElementById('preview-settings').open = true;
+    });
+    for (const [id, control] of Object.entries(controls)) control.addEventListener('change', () => {
+      if (id === 'width' || id === 'height') controls.viewport.value = 'custom';
+      draw();
+    });
+    draw();
+    let revision = await (await get('/revision')).text();
+    setInterval(async () => {
+      try {
+        const next = await (await get('/revision')).text();
+        if (next !== revision) location.reload();
+      } catch { state.textContent = 'Preview server unavailable. Restart cargo xtask design serve to continue.'; }
+    }, 1000);
+  } catch (error) { state.textContent = error.message; state.className = 'error'; }
+})();
+</script>
+</body>
+</html>

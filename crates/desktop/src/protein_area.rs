@@ -221,12 +221,98 @@ struct Runtime {
     outgoing: VecDeque<ClientMessage>,
 }
 
+#[derive(Component)]
+struct LaboratoryFeed;
+
+pub(crate) fn laboratory_attach(world: &mut World, owner: Entity, data: Value) {
+    laboratory_detach(world, owner);
+    world.entity_mut(owner).insert(LaboratoryFeed);
+    let query = serde_json::from_value(
+        serde_json::json!({"source":"record","where":[{"uid_eq":data["uid"]}],
+        "fields":["uid","head","threads"],"include":{"threads":{"messages_limit":50}},"limit":1}),
+    )
+    .unwrap();
+    let subscription = id(world);
+    world.resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(Config::records()),
+            ready: true,
+            data: vec![data],
+            subscription: Some(subscription.clone()),
+            pending: VecDeque::from([ClientMessage::Subscribe {
+                id: subscription,
+                protein: query,
+            }]),
+            ..default()
+        },
+    );
+}
+
+pub(crate) fn laboratory_detach(world: &mut World, owner: Entity) {
+    world.entity_mut(owner).remove::<LaboratoryFeed>();
+    if let Some(previous) = world.get_resource_mut::<Runtime>()
+        .and_then(|mut runtime| runtime.areas.remove(&owner))
+        && let Some(id) = previous.subscription
+        && let Some(bridge) = world.get_non_send::<CellBridge>() {
+        let _ = bridge.outgoing.try_send(ClientMessage::Unsubscribe {id});
+    }
+}
+
+fn laboratory_pump(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+) {
+    let messages: Vec<_> = cursor
+        .read(world.resource::<Messages<CellMessage>>())
+        .map(|message| message.0.clone())
+        .collect();
+    let owners: Vec<_> = world
+        .query_filtered::<Entity, With<LaboratoryFeed>>()
+        .iter(world)
+        .collect();
+    for owner in owners {
+        for message in &messages {
+            receive(world, owner, message.clone());
+        }
+        let Some(mut state) = world.resource_mut::<Runtime>().areas.remove(&owner) else {
+            continue;
+        };
+        if state.ready {
+            while let Some(message) = state.pending.pop_front() {
+                let sender = world
+                    .get_non_send::<CellBridge>()
+                    .map(|bridge| bridge.outgoing.clone());
+                match sender.map(|sender| sender.try_send(message.clone())) {
+                    Some(Ok(())) => {}
+                    Some(Err(tokio::sync::mpsc::error::TrySendError::Full(_))) => {
+                        state.pending.push_front(message);
+                        break;
+                    }
+                    _ => {
+                        state.ready = false;
+                        state.status = "Connection closed".into();
+                        break;
+                    }
+                }
+            }
+        }
+        let data = state.dirty.then(|| state.data.first().cloned()).flatten();
+        state.dirty = false;
+        world.resource_mut::<Runtime>().areas.insert(owner, state);
+        if let Some(data) = data {
+            crate::thread_castle::refresh(world, owner, &data);
+        }
+    }
+}
+
 pub struct ProteinAreaPlugin;
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UpdateProteinAreas;
 impl Plugin for ProteinAreaPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(Update, laboratory_pump.after(UpdateProteinAreas));
         if !app.is_plugin_added::<crate::assertion_editor::AssertionEditorPlugin>() {
             app.add_plugins(crate::assertion_editor::AssertionEditorPlugin);
         }
@@ -789,7 +875,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         .resource::<Runtime>()
         .areas
         .keys()
-        .filter(|entity| !configs.iter().any(|(owner, _)| owner == *entity))
+        .filter(|entity| world.get::<LaboratoryFeed>(**entity).is_none() && !configs.iter().any(|(owner, _)| owner == *entity))
         .copied()
         .collect();
     for entity in gone {
@@ -846,7 +932,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         observe(world, &Source::Local, message);
     }
     sessions::update(world);
-    let owners: Vec<_> = world.resource::<Runtime>().areas.keys().copied().collect();
+    let owners: Vec<_> = world.resource::<Runtime>().areas.keys().copied()
+        .filter(|owner| world.get::<LaboratoryFeed>(*owner).is_none()).collect();
     for owner in &owners {
         let owner = *owner;
         if world.resource::<Runtime>().areas[&owner]

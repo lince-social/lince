@@ -77,6 +77,7 @@ fn rows(world: &World, topic: &str) -> Vec<Value> {
 }
 
 fn records(world: &mut World, parent: Entity, kanban: bool) {
+    button(world, parent, "View shared location", Intent::ObserveLocation);
     crate::views::render(world, parent);
     let search = world.resource::<Mobile>().search.clone();
     input(
@@ -234,6 +235,7 @@ fn card(world: &mut World, parent: Entity, record: &Value, column: Option<usize>
 }
 
 fn record(world: &mut World, parent: Entity, uid: &str) {
+    button(world, parent, "Live location", Intent::OpenLocation(uid.into(), None));
     let Some(record) = app::row(world, "record", uid) else {
         let missing = world
             .resource::<Mobile>()

@@ -1,0 +1,1829 @@
+{
+  "title": "Organ management \u00b7 minimal structure",
+  "focus": "structure",
+  "features": [
+    {
+      "id": "identity",
+      "label": "Identity"
+    },
+    {
+      "id": "records",
+      "label": "Organ Records"
+    },
+    {
+      "id": "pairing",
+      "label": "Share my Organ"
+    },
+    {
+      "id": "contacts",
+      "label": "Contacts"
+    },
+    {
+      "id": "contact",
+      "label": "Contact"
+    },
+    {
+      "id": "contact-policy",
+      "label": "Sharing & trust"
+    },
+    {
+      "id": "contact-access",
+      "label": "Login & workspaces"
+    },
+    {
+      "id": "contact-files",
+      "label": "Contact file sync"
+    },
+    {
+      "id": "add",
+      "label": "Add contact"
+    },
+    {
+      "id": "nearby",
+      "label": "Nearby on this Wi-Fi"
+    },
+    {
+      "id": "devices",
+      "label": "My devices"
+    },
+    {
+      "id": "enrol",
+      "label": "Add or join a device"
+    },
+    {
+      "id": "recovery",
+      "label": "Keys & backup"
+    },
+    {
+      "id": "network",
+      "label": "Network & presence"
+    },
+    {
+      "id": "storage",
+      "label": "Storage & sync"
+    },
+    {
+      "id": "copies",
+      "label": "File copies"
+    },
+    {
+      "id": "workspaces",
+      "label": "Shared workspaces"
+    },
+    {
+      "id": "sync-tools",
+      "label": "Sync activity"
+    },
+    {
+      "id": "moves",
+      "label": "Moves & pending offers"
+    },
+    {
+      "id": "mail",
+      "label": "Mail delivery"
+    },
+    {
+      "id": "carriers",
+      "label": "Carriers & pickup points"
+    },
+    {
+      "id": "discover",
+      "label": "Public discovery"
+    },
+    {
+      "id": "posts",
+      "label": "My announcements"
+    },
+    {
+      "id": "requests",
+      "label": "Private requests"
+    },
+    {
+      "id": "profile",
+      "label": "Public profile"
+    },
+    {
+      "id": "searches",
+      "label": "Saved searches"
+    },
+    {
+      "id": "contact-search",
+      "label": "Ask contacts"
+    },
+    {
+      "id": "servers",
+      "label": "Chosen services"
+    },
+    {
+      "id": "gossip",
+      "label": "Public forwarding"
+    },
+    {
+      "id": "moderation",
+      "label": "Visibility & reports"
+    },
+    {
+      "id": "hosting",
+      "label": "Host a service"
+    },
+    {
+      "id": "credits",
+      "label": "Credits"
+    },
+    {
+      "id": "identity--control-1",
+      "label": "Identity / Save identity"
+    },
+    {
+      "id": "records--control-1",
+      "label": "Organ Records / Save Organ"
+    },
+    {
+      "id": "records--control-2",
+      "label": "Organ Records / Delete Organ"
+    },
+    {
+      "id": "records--control-3",
+      "label": "Organ Records / Save Organ Record"
+    },
+    {
+      "id": "records--control-4",
+      "label": "Organ Records / Delete Organ Record"
+    },
+    {
+      "id": "records--control-5",
+      "label": "Organ Records / Reload selected Organ"
+    },
+    {
+      "id": "pairing--control-1",
+      "label": "Share my Organ / Copy pairing code"
+    },
+    {
+      "id": "contact--control-1",
+      "label": "Contact / Rename locally"
+    },
+    {
+      "id": "contact--control-2",
+      "label": "Contact / Reconnect and refresh device list"
+    },
+    {
+      "id": "contact--control-3",
+      "label": "Contact / Synchronize now"
+    },
+    {
+      "id": "contact--control-4",
+      "label": "Contact / Start conversation"
+    },
+    {
+      "id": "contact--control-5",
+      "label": "Contact / Forget contact"
+    },
+    {
+      "id": "contact--control-6",
+      "label": "Contact / Open conversation"
+    },
+    {
+      "id": "contact--control-7",
+      "label": "Contact / Open live Organ"
+    },
+    {
+      "id": "contact-policy--control-1",
+      "label": "Sharing & trust / Save trust"
+    },
+    {
+      "id": "contact-policy--control-2",
+      "label": "Sharing & trust / Save proximity"
+    },
+    {
+      "id": "contact-policy--control-3",
+      "label": "Sharing & trust / Save feed direction"
+    },
+    {
+      "id": "contact-policy--control-4",
+      "label": "Sharing & trust / Save delivery choice"
+    },
+    {
+      "id": "contact-policy--control-5",
+      "label": "Sharing & trust / Hide Record"
+    },
+    {
+      "id": "contact-policy--control-6",
+      "label": "Sharing & trust / Unhide Record"
+    },
+    {
+      "id": "contact-policy--control-7",
+      "label": "Sharing & trust / Save outgoing fields"
+    },
+    {
+      "id": "contact-policy--control-8",
+      "label": "Sharing & trust / Save incoming fields"
+    },
+    {
+      "id": "contact-policy--control-9",
+      "label": "Sharing & trust / Unhide Record"
+    },
+    {
+      "id": "contact-access--control-1",
+      "label": "Login & workspaces / Audit contact's roster"
+    },
+    {
+      "id": "contact-access--control-2",
+      "label": "Login & workspaces / Grant login"
+    },
+    {
+      "id": "contact-access--control-3",
+      "label": "Login & workspaces / Revoke login"
+    },
+    {
+      "id": "contact-access--control-4",
+      "label": "Login & workspaces / Shared workspaces"
+    },
+    {
+      "id": "contact-access--control-5",
+      "label": "Login & workspaces / Sign out of live Organ"
+    },
+    {
+      "id": "contact-files--control-1",
+      "label": "Contact file sync / Save File Sync"
+    },
+    {
+      "id": "contact-files--control-2",
+      "label": "Contact file sync / Check File Sync conflicts"
+    },
+    {
+      "id": "add--control-1",
+      "label": "Add contact / Add known contact"
+    },
+    {
+      "id": "add--control-2",
+      "label": "Add contact / Read QR image"
+    },
+    {
+      "id": "add--control-3",
+      "label": "Add contact / Scan with camera"
+    },
+    {
+      "id": "add--control-4",
+      "label": "Add contact / Stop camera scan"
+    },
+    {
+      "id": "nearby--control-1",
+      "label": "Nearby on this Wi-Fi / Chat"
+    },
+    {
+      "id": "nearby--control-2",
+      "label": "Nearby on this Wi-Fi / Add known"
+    },
+    {
+      "id": "devices--control-1",
+      "label": "My devices / Create my Organ"
+    },
+    {
+      "id": "devices--control-2",
+      "label": "My devices / Save device name"
+    },
+    {
+      "id": "devices--control-3",
+      "label": "My devices / Disable Karma on this device"
+    },
+    {
+      "id": "devices--control-4",
+      "label": "My devices / Use this device as the only Karma executor"
+    },
+    {
+      "id": "devices--control-5",
+      "label": "My devices / Allow this device to run Karma alongside the others"
+    },
+    {
+      "id": "devices--control-6",
+      "label": "My devices / Remove device"
+    },
+    {
+      "id": "devices--control-7",
+      "label": "My devices / Set cell config"
+    },
+    {
+      "id": "devices--control-8",
+      "label": "My devices / Refresh device status and waiting visitors"
+    },
+    {
+      "id": "devices--control-9",
+      "label": "My devices / Stop Karma on this Cell"
+    },
+    {
+      "id": "devices--control-10",
+      "label": "My devices / Run permitted Karma on this Cell"
+    },
+    {
+      "id": "devices--control-11",
+      "label": "My devices / Use this device as the only Karma executor"
+    },
+    {
+      "id": "devices--control-12",
+      "label": "My devices / Allow this device to run Karma alongside the others"
+    },
+    {
+      "id": "enrol--control-1",
+      "label": "Add or join a device / Issue device enrolment code"
+    },
+    {
+      "id": "enrol--control-2",
+      "label": "Add or join a device / Join my existing Organ"
+    },
+    {
+      "id": "enrol--control-3",
+      "label": "Add or join a device / Read QR image"
+    },
+    {
+      "id": "enrol--control-4",
+      "label": "Add or join a device / Scan with camera"
+    },
+    {
+      "id": "enrol--control-5",
+      "label": "Add or join a device / Stop camera scan"
+    },
+    {
+      "id": "recovery--control-1",
+      "label": "Keys & backup / Export root key"
+    },
+    {
+      "id": "recovery--control-2",
+      "label": "Keys & backup / Detach root key"
+    },
+    {
+      "id": "recovery--control-3",
+      "label": "Keys & backup / Back up and reopen Lince"
+    },
+    {
+      "id": "network--control-1",
+      "label": "Network & presence / Find devices on this Wi-Fi"
+    },
+    {
+      "id": "network--control-2",
+      "label": "Network & presence / Save discovery and restart connections"
+    },
+    {
+      "id": "network--control-3",
+      "label": "Network & presence / Save peer port"
+    },
+    {
+      "id": "storage--control-1",
+      "label": "Storage & sync / Save disk budget"
+    },
+    {
+      "id": "storage--control-2",
+      "label": "Storage & sync / Save directory"
+    },
+    {
+      "id": "storage--control-3",
+      "label": "Storage & sync / Reload sync settings"
+    },
+    {
+      "id": "copies--control-1",
+      "label": "File copies / Choose files"
+    },
+    {
+      "id": "copies--control-2",
+      "label": "File copies / Choose folder"
+    },
+    {
+      "id": "copies--control-3",
+      "label": "File copies / Clear selection"
+    },
+    {
+      "id": "copies--control-4",
+      "label": "File copies / Send copy"
+    },
+    {
+      "id": "copies--control-5",
+      "label": "File copies / Accept and save copy"
+    },
+    {
+      "id": "copies--control-6",
+      "label": "File copies / Change save folder"
+    },
+    {
+      "id": "copies--control-7",
+      "label": "File copies / Decline copy"
+    },
+    {
+      "id": "copies--control-8",
+      "label": "File copies / Cancel copy"
+    },
+    {
+      "id": "workspaces--control-1",
+      "label": "Shared workspaces / Connect or reload workspaces"
+    },
+    {
+      "id": "workspaces--control-2",
+      "label": "Shared workspaces / Sign in"
+    },
+    {
+      "id": "workspaces--control-3",
+      "label": "Shared workspaces / Sign out"
+    },
+    {
+      "id": "workspaces--control-4",
+      "label": "Shared workspaces / Open a separate permitted view"
+    },
+    {
+      "id": "workspaces--control-5",
+      "label": "Shared workspaces / Create hosted workspace"
+    },
+    {
+      "id": "workspaces--control-6",
+      "label": "Shared workspaces / Edit read ceiling or write grant"
+    },
+    {
+      "id": "workspaces--control-7",
+      "label": "Shared workspaces / Preview policy admission"
+    },
+    {
+      "id": "workspaces--control-8",
+      "label": "Shared workspaces / Add policy grant"
+    },
+    {
+      "id": "workspaces--control-9",
+      "label": "Shared workspaces / Allow assertion additions or removals"
+    },
+    {
+      "id": "workspaces--control-10",
+      "label": "Shared workspaces / Propose policy change"
+    },
+    {
+      "id": "workspaces--control-11",
+      "label": "Shared workspaces / Add Text, Record or Area"
+    },
+    {
+      "id": "workspaces--control-12",
+      "label": "Shared workspaces / Propose Record changes"
+    },
+    {
+      "id": "workspaces--control-13",
+      "label": "Shared workspaces / Propose new Record or deletion"
+    },
+    {
+      "id": "workspaces--control-14",
+      "label": "Shared workspaces / Propose selected Area behavior"
+    },
+    {
+      "id": "workspaces--control-15",
+      "label": "Shared workspaces / Preview operation and Record consequences"
+    },
+    {
+      "id": "workspaces--control-16",
+      "label": "Shared workspaces / Save draft on this computer"
+    },
+    {
+      "id": "workspaces--control-17",
+      "label": "Shared workspaces / Recover local drafts"
+    },
+    {
+      "id": "workspaces--control-18",
+      "label": "Shared workspaces / Discard draft"
+    },
+    {
+      "id": "workspaces--control-19",
+      "label": "Shared workspaces / Submit operation"
+    },
+    {
+      "id": "workspaces--control-20",
+      "label": "Shared workspaces / Review changes and history"
+    },
+    {
+      "id": "workspaces--control-21",
+      "label": "Shared workspaces / Revise and resubmit as my change"
+    },
+    {
+      "id": "workspaces--control-22",
+      "label": "Shared workspaces / Preview as original Actor"
+    },
+    {
+      "id": "workspaces--control-23",
+      "label": "Shared workspaces / Approve against current revision"
+    },
+    {
+      "id": "workspaces--control-24",
+      "label": "Shared workspaces / Reject change"
+    },
+    {
+      "id": "workspaces--control-25",
+      "label": "Shared workspaces / Older or latest changes"
+    },
+    {
+      "id": "workspaces--control-26",
+      "label": "Shared workspaces / Delete hosted workspace"
+    },
+    {
+      "id": "sync-tools--control-1",
+      "label": "Sync activity / Latest activity"
+    },
+    {
+      "id": "sync-tools--control-2",
+      "label": "Sync activity / Older activity"
+    },
+    {
+      "id": "sync-tools--control-3",
+      "label": "Sync activity / Set history retention"
+    },
+    {
+      "id": "sync-tools--control-4",
+      "label": "Sync activity / Clear recent history"
+    },
+    {
+      "id": "moves--control-1",
+      "label": "Moves & pending offers / Preview complete move"
+    },
+    {
+      "id": "moves--control-2",
+      "label": "Moves & pending offers / Offer previewed move"
+    },
+    {
+      "id": "moves--control-3",
+      "label": "Moves & pending offers / Accept invitation"
+    },
+    {
+      "id": "moves--control-4",
+      "label": "Moves & pending offers / Decline privately"
+    },
+    {
+      "id": "moves--control-5",
+      "label": "Moves & pending offers / Cancel replica offer"
+    },
+    {
+      "id": "moves--control-6",
+      "label": "Moves & pending offers / Accept move and complete set"
+    },
+    {
+      "id": "moves--control-7",
+      "label": "Moves & pending offers / Decline move privately"
+    },
+    {
+      "id": "moves--control-8",
+      "label": "Moves & pending offers / Cancel move"
+    },
+    {
+      "id": "moves--control-9",
+      "label": "Moves & pending offers / Accept Transfer invitation"
+    },
+    {
+      "id": "moves--control-10",
+      "label": "Moves & pending offers / Reject Transfer invitation"
+    },
+    {
+      "id": "moves--control-11",
+      "label": "Moves & pending offers / Accept file copy"
+    },
+    {
+      "id": "moves--control-12",
+      "label": "Moves & pending offers / Cancel file copy"
+    },
+    {
+      "id": "mail--control-1",
+      "label": "Mail delivery / Save mailbox copy policy"
+    },
+    {
+      "id": "mail--control-2",
+      "label": "Mail delivery / Retry recovery"
+    },
+    {
+      "id": "mail--control-3",
+      "label": "Mail delivery / Refresh outgoing mail"
+    },
+    {
+      "id": "mail--control-4",
+      "label": "Mail delivery / Collect mail now"
+    },
+    {
+      "id": "mail--control-5",
+      "label": "Mail delivery / Check saved message recovery"
+    },
+    {
+      "id": "carriers--control-1",
+      "label": "Carriers & pickup points / Answer carrying request"
+    },
+    {
+      "id": "carriers--control-2",
+      "label": "Carriers & pickup points / Use carrying invite"
+    },
+    {
+      "id": "carriers--control-3",
+      "label": "Carriers & pickup points / Refresh carried mail"
+    },
+    {
+      "id": "carriers--control-4",
+      "label": "Carriers & pickup points / Refresh requests"
+    },
+    {
+      "id": "carriers--control-5",
+      "label": "Carriers & pickup points / Refresh pickup points"
+    },
+    {
+      "id": "carriers--control-6",
+      "label": "Carriers & pickup points / Issue carrying invite"
+    },
+    {
+      "id": "carriers--control-7",
+      "label": "Carriers & pickup points / Offer to carry mail"
+    },
+    {
+      "id": "carriers--control-8",
+      "label": "Carriers & pickup points / Ask them to carry mail"
+    },
+    {
+      "id": "carriers--control-9",
+      "label": "Carriers & pickup points / Add pickup point"
+    },
+    {
+      "id": "carriers--control-10",
+      "label": "Carriers & pickup points / Send mail now"
+    },
+    {
+      "id": "carriers--control-11",
+      "label": "Carriers & pickup points / Stop carrying"
+    },
+    {
+      "id": "carriers--control-12",
+      "label": "Carriers & pickup points / Remove pickup point"
+    },
+    {
+      "id": "discover--control-1",
+      "label": "Public discovery / Refresh My posts and services"
+    },
+    {
+      "id": "discover--control-2",
+      "label": "Public discovery / Search local announcements"
+    },
+    {
+      "id": "discover--control-3",
+      "label": "Public discovery / Preview saved announcement"
+    },
+    {
+      "id": "discover--control-4",
+      "label": "Public discovery / Write a private introduction"
+    },
+    {
+      "id": "discover--control-5",
+      "label": "Public discovery / View public Organ profile"
+    },
+    {
+      "id": "discover--control-6",
+      "label": "Public discovery / Continue browsing announcements"
+    },
+    {
+      "id": "discover--control-7",
+      "label": "Public discovery / Load public {key}"
+    },
+    {
+      "id": "discover--control-8",
+      "label": "Public discovery / Review the next local conflict page"
+    },
+    {
+      "id": "posts--control-1",
+      "label": "My announcements / Prepare from an existing Need/Contribution"
+    },
+    {
+      "id": "posts--control-2",
+      "label": "My announcements / Save announcement draft"
+    },
+    {
+      "id": "posts--control-3",
+      "label": "My announcements / Private reply key status"
+    },
+    {
+      "id": "posts--control-4",
+      "label": "My announcements / Prepare this device's private reply keys"
+    },
+    {
+      "id": "posts--control-5",
+      "label": "My announcements / Use preserved draft Record: Record"
+    },
+    {
+      "id": "posts--control-6",
+      "label": "My announcements / Preview"
+    },
+    {
+      "id": "posts--control-7",
+      "label": "My announcements / Archive ended announcement"
+    },
+    {
+      "id": "posts--control-8",
+      "label": "My announcements / Next My posts page"
+    },
+    {
+      "id": "posts--control-9",
+      "label": "My announcements / Publish this exact preview"
+    },
+    {
+      "id": "posts--control-10",
+      "label": "My announcements / Preview publication or update"
+    },
+    {
+      "id": "posts--control-11",
+      "label": "My announcements / Preview pause"
+    },
+    {
+      "id": "posts--control-12",
+      "label": "My announcements / Preview fulfilled"
+    },
+    {
+      "id": "posts--control-13",
+      "label": "My announcements / Preview withdrawal"
+    },
+    {
+      "id": "requests--control-1",
+      "label": "Private requests / Requests and private conversations"
+    },
+    {
+      "id": "requests--control-2",
+      "label": "Private requests / Reset this device's live private messaging keys"
+    },
+    {
+      "id": "requests--control-3",
+      "label": "Private requests / Discard unreadable ciphertext"
+    },
+    {
+      "id": "requests--control-4",
+      "label": "Private requests / Resume this introduction on this device"
+    },
+    {
+      "id": "requests--control-5",
+      "label": "Private requests / Discard saved introduction"
+    },
+    {
+      "id": "requests--control-6",
+      "label": "Private requests / Review delivery or resume this saved message"
+    },
+    {
+      "id": "requests--control-7",
+      "label": "Private requests / Send private reply"
+    },
+    {
+      "id": "requests--control-8",
+      "label": "Private requests / Reveal my Organ profile in this conversation"
+    },
+    {
+      "id": "requests--control-9",
+      "label": "Private requests / Connect as known contacts"
+    },
+    {
+      "id": "requests--control-10",
+      "label": "Private requests / Decide request"
+    },
+    {
+      "id": "requests--control-11",
+      "label": "Private requests / Archive this private conversation"
+    },
+    {
+      "id": "requests--control-12",
+      "label": "Private requests / Unblock this private identity"
+    },
+    {
+      "id": "requests--control-13",
+      "label": "Private requests / Next Requests page"
+    },
+    {
+      "id": "requests--control-14",
+      "label": "Private requests / Resend this expired Message"
+    },
+    {
+      "id": "requests--control-15",
+      "label": "Private requests / Resume this saved Message on this device"
+    },
+    {
+      "id": "requests--control-16",
+      "label": "Private requests / Accept conversation"
+    },
+    {
+      "id": "requests--control-17",
+      "label": "Private requests / Decline request"
+    },
+    {
+      "id": "requests--control-18",
+      "label": "Private requests / Block participant"
+    },
+    {
+      "id": "requests--control-19",
+      "label": "Private requests / Close conversation"
+    },
+    {
+      "id": "profile--control-1",
+      "label": "Public profile / Prepare public profile image"
+    },
+    {
+      "id": "profile--control-2",
+      "label": "Public profile / Save shared public profile"
+    },
+    {
+      "id": "profile--control-3",
+      "label": "Public profile / Reload public profile"
+    },
+    {
+      "id": "profile--control-4",
+      "label": "Public profile / Change public editing authority"
+    },
+    {
+      "id": "profile--control-5",
+      "label": "Public profile / Withdraw public profile from its hosts"
+    },
+    {
+      "id": "searches--control-1",
+      "label": "Saved searches / Save this search filter"
+    },
+    {
+      "id": "searches--control-2",
+      "label": "Saved searches / Saved searches and notification settings"
+    },
+    {
+      "id": "searches--control-3",
+      "label": "Saved searches / Enable periodic checks on this device"
+    },
+    {
+      "id": "searches--control-4",
+      "label": "Saved searches / Search these chosen directories now"
+    },
+    {
+      "id": "searches--control-5",
+      "label": "Saved searches / Next saved filters"
+    },
+    {
+      "id": "searches--control-6",
+      "label": "Saved searches / Review retained matches"
+    },
+    {
+      "id": "searches--control-7",
+      "label": "Saved searches / Clear displayed matches"
+    },
+    {
+      "id": "searches--control-8",
+      "label": "Saved searches / Remove saved filter"
+    },
+    {
+      "id": "contact-search--control-1",
+      "label": "Ask contacts / Save this device's contact search participation"
+    },
+    {
+      "id": "contact-search--control-2",
+      "label": "Ask contacts / Refresh contact query progress"
+    },
+    {
+      "id": "contact-search--control-3",
+      "label": "Ask contacts / Clear removed or blocked contact's query consent"
+    },
+    {
+      "id": "contact-search--control-4",
+      "label": "Ask contacts / Save this contact's separate query permissions"
+    },
+    {
+      "id": "contact-search--control-5",
+      "label": "Ask contacts / Ask contact"
+    },
+    {
+      "id": "contact-search--control-6",
+      "label": "Ask contacts / Cancel this contact query"
+    },
+    {
+      "id": "contact-search--control-7",
+      "label": "Ask contacts / View this query's saved answers"
+    },
+    {
+      "id": "contact-search--control-8",
+      "label": "Ask contacts / Clear finished local contact-query history"
+    },
+    {
+      "id": "contact-search--control-9",
+      "label": "Ask contacts / Save this contact\u2019s separate query permissions"
+    },
+    {
+      "id": "servers--control-1",
+      "label": "Chosen services / Inspect a social server"
+    },
+    {
+      "id": "servers--control-2",
+      "label": "Chosen services / Remember server roles"
+    },
+    {
+      "id": "servers--control-3",
+      "label": "Chosen services / Inspect remembered server"
+    },
+    {
+      "id": "servers--control-4",
+      "label": "Chosen services / Remove remembered server"
+    },
+    {
+      "id": "servers--control-5",
+      "label": "Chosen services / Browse chosen servers"
+    },
+    {
+      "id": "servers--control-6",
+      "label": "Chosen services / Search chosen servers"
+    },
+    {
+      "id": "gossip--control-1",
+      "label": "Public forwarding / Save this device's gossip participation"
+    },
+    {
+      "id": "gossip--control-2",
+      "label": "Public forwarding / Clear retained gossip consent"
+    },
+    {
+      "id": "gossip--control-3",
+      "label": "Public forwarding / Save separate contact gossip consent"
+    },
+    {
+      "id": "gossip--control-4",
+      "label": "Public forwarding / Save separate contact gossip consent"
+    },
+    {
+      "id": "moderation--control-1",
+      "label": "Visibility & reports / Mute post"
+    },
+    {
+      "id": "moderation--control-2",
+      "label": "Visibility & reports / Remove a listing on this host"
+    },
+    {
+      "id": "moderation--control-3",
+      "label": "Visibility & reports / Show this target again"
+    },
+    {
+      "id": "moderation--control-4",
+      "label": "Visibility & reports / Next hidden targets"
+    },
+    {
+      "id": "moderation--control-5",
+      "label": "Visibility & reports / Restore this listing if still valid"
+    },
+    {
+      "id": "moderation--control-6",
+      "label": "Visibility & reports / Next removed listings"
+    },
+    {
+      "id": "moderation--control-7",
+      "label": "Visibility & reports / Preview a report to one operator"
+    },
+    {
+      "id": "moderation--control-8",
+      "label": "Visibility & reports / Send this exact report"
+    },
+    {
+      "id": "moderation--control-9",
+      "label": "Visibility & reports / Clear my report work"
+    },
+    {
+      "id": "moderation--control-10",
+      "label": "Visibility & reports / Dismiss this report"
+    },
+    {
+      "id": "moderation--control-11",
+      "label": "Visibility & reports / Remove this host's current listing"
+    },
+    {
+      "id": "moderation--control-12",
+      "label": "Visibility & reports / Next received reports"
+    },
+    {
+      "id": "moderation--control-13",
+      "label": "Visibility & reports / Hide this announcement"
+    },
+    {
+      "id": "moderation--control-14",
+      "label": "Visibility & reports / Hide this public author"
+    },
+    {
+      "id": "moderation--control-15",
+      "label": "Visibility & reports / Hidden announcements and authors"
+    },
+    {
+      "id": "moderation--control-16",
+      "label": "Visibility & reports / Review this host\u2019s removed listings"
+    },
+    {
+      "id": "moderation--control-17",
+      "label": "Visibility & reports / My submitted reports"
+    },
+    {
+      "id": "moderation--control-18",
+      "label": "Visibility & reports / Review this operator\u2019s report inbox"
+    },
+    {
+      "id": "hosting--control-1",
+      "label": "Host a service / Save social service roles"
+    },
+    {
+      "id": "hosting--control-2",
+      "label": "Host a service / Refresh social service health"
+    },
+    {
+      "id": "hosting--control-3",
+      "label": "Host a service / Rebuild public search index"
+    },
+    {
+      "id": "credits--control-1",
+      "label": "Credits / View native QR and media attributions"
+    }
+  ],
+  "alternatives": [
+    {
+      "id": "three-destinations",
+      "title": "1 \u00b7 Three destinations",
+      "file": "alternative-1.html",
+      "hypothesis": "My Organ, Contacts and Connect stay stable. Each opens a short directory of named pages. Predictable location; more secondary links than the task hub.",
+      "placements": {
+        "identity": "My Organ \u2192 Identity",
+        "records": "My Organ \u2192 Organ Records",
+        "pairing": "My Organ \u2192 Share my Organ",
+        "contacts": "Contacts \u2192 Contacts \u2192 selected contact for trust, sharing, access and file sync",
+        "contact": "Contacts \u2192 Contact",
+        "contact-policy": "Contacts \u2192 Sharing & trust",
+        "contact-access": "Contacts \u2192 Login & workspaces",
+        "contact-files": "Contacts \u2192 Contact file sync",
+        "add": "Connect \u2192 Add contact",
+        "nearby": "Connect \u2192 Nearby on this Wi-Fi",
+        "devices": "My Organ \u2192 My devices",
+        "enrol": "My Organ \u2192 Add or join a device",
+        "recovery": "My Organ \u2192 Keys & backup",
+        "network": "My Organ \u2192 Network & presence",
+        "storage": "My Organ \u2192 Storage & sync",
+        "copies": "My Organ \u2192 File copies",
+        "workspaces": "My Organ \u2192 Shared workspaces",
+        "sync-tools": "My Organ \u2192 Sync activity",
+        "moves": "My Organ \u2192 Moves & pending offers",
+        "mail": "My Organ \u2192 Mail delivery",
+        "carriers": "My Organ \u2192 Carriers & pickup points",
+        "discover": "Connect \u2192 Public discovery",
+        "posts": "My Organ \u2192 My announcements",
+        "requests": "Contacts \u2192 Private requests",
+        "profile": "My Organ \u2192 Public profile",
+        "searches": "Connect \u2192 Saved searches",
+        "contact-search": "Contacts \u2192 Ask contacts",
+        "servers": "My Organ \u2192 Chosen services",
+        "gossip": "Contacts \u2192 Public forwarding",
+        "moderation": "Connect \u2192 Visibility & reports",
+        "hosting": "My Organ \u2192 Host a service",
+        "credits": "My Organ \u2192 Credits",
+        "identity--control-1": "My Organ \u2192 Identity \u2192 Save identity",
+        "records--control-1": "My Organ \u2192 Organ Records \u2192 Save Organ",
+        "records--control-2": "My Organ \u2192 Organ Records \u2192 Delete Organ",
+        "records--control-3": "My Organ \u2192 Organ Records \u2192 Save Organ Record",
+        "records--control-4": "My Organ \u2192 Organ Records \u2192 Delete Organ Record",
+        "records--control-5": "My Organ \u2192 Organ Records \u2192 Reload selected Organ",
+        "pairing--control-1": "My Organ \u2192 Share my Organ \u2192 Copy pairing code",
+        "contact--control-1": "Contacts \u2192 Contact \u2192 Rename locally",
+        "contact--control-2": "Contacts \u2192 Contact \u2192 Reconnect and refresh device list",
+        "contact--control-3": "Contacts \u2192 Contact \u2192 Synchronize now",
+        "contact--control-4": "Contacts \u2192 Contact \u2192 Start conversation",
+        "contact--control-5": "Contacts \u2192 Contact \u2192 Forget contact",
+        "contact--control-6": "Contacts \u2192 Contact \u2192 Open conversation",
+        "contact--control-7": "Contacts \u2192 Contact \u2192 Open live Organ",
+        "contact-policy--control-1": "Contacts \u2192 Sharing & trust \u2192 Save trust",
+        "contact-policy--control-2": "Contacts \u2192 Sharing & trust \u2192 Save proximity",
+        "contact-policy--control-3": "Contacts \u2192 Sharing & trust \u2192 Save feed direction",
+        "contact-policy--control-4": "Contacts \u2192 Sharing & trust \u2192 Save delivery choice",
+        "contact-policy--control-5": "Contacts \u2192 Sharing & trust \u2192 Hide Record",
+        "contact-policy--control-6": "Contacts \u2192 Sharing & trust \u2192 Unhide Record",
+        "contact-policy--control-7": "Contacts \u2192 Sharing & trust \u2192 Save outgoing fields",
+        "contact-policy--control-8": "Contacts \u2192 Sharing & trust \u2192 Save incoming fields",
+        "contact-policy--control-9": "Contacts \u2192 Sharing & trust \u2192 Unhide Record",
+        "contact-access--control-1": "Contacts \u2192 Login & workspaces \u2192 Audit contact's roster",
+        "contact-access--control-2": "Contacts \u2192 Login & workspaces \u2192 Grant login",
+        "contact-access--control-3": "Contacts \u2192 Login & workspaces \u2192 Revoke login",
+        "contact-access--control-4": "Contacts \u2192 Login & workspaces \u2192 Shared workspaces",
+        "contact-access--control-5": "Contacts \u2192 Login & workspaces \u2192 Sign out of live Organ",
+        "contact-files--control-1": "Contacts \u2192 Contact file sync \u2192 Save File Sync",
+        "contact-files--control-2": "Contacts \u2192 Contact file sync \u2192 Check File Sync conflicts",
+        "add--control-1": "Connect \u2192 Add contact \u2192 Add known contact",
+        "add--control-2": "Connect \u2192 Add contact \u2192 Read QR image",
+        "add--control-3": "Connect \u2192 Add contact \u2192 Scan with camera",
+        "add--control-4": "Connect \u2192 Add contact \u2192 Stop camera scan",
+        "nearby--control-1": "Connect \u2192 Nearby on this Wi-Fi \u2192 Chat",
+        "nearby--control-2": "Connect \u2192 Nearby on this Wi-Fi \u2192 Add known",
+        "devices--control-1": "My Organ \u2192 My devices \u2192 Create my Organ",
+        "devices--control-2": "My Organ \u2192 My devices \u2192 Save device name",
+        "devices--control-3": "My Organ \u2192 My devices \u2192 Disable Karma on this device",
+        "devices--control-4": "My Organ \u2192 My devices \u2192 Use this device as the only Karma executor",
+        "devices--control-5": "My Organ \u2192 My devices \u2192 Allow this device to run Karma alongside the others",
+        "devices--control-6": "My Organ \u2192 My devices \u2192 Remove device",
+        "devices--control-7": "My Organ \u2192 My devices \u2192 Set cell config",
+        "devices--control-8": "My Organ \u2192 My devices \u2192 Refresh device status and waiting visitors",
+        "devices--control-9": "My Organ \u2192 My devices \u2192 Stop Karma on this Cell",
+        "devices--control-10": "My Organ \u2192 My devices \u2192 Run permitted Karma on this Cell",
+        "devices--control-11": "My Organ \u2192 My devices \u2192 Use this device as the only Karma executor",
+        "devices--control-12": "My Organ \u2192 My devices \u2192 Allow this device to run Karma alongside the others",
+        "enrol--control-1": "My Organ \u2192 Add or join a device \u2192 Issue device enrolment code",
+        "enrol--control-2": "My Organ \u2192 Add or join a device \u2192 Join my existing Organ",
+        "enrol--control-3": "My Organ \u2192 Add or join a device \u2192 Read QR image",
+        "enrol--control-4": "My Organ \u2192 Add or join a device \u2192 Scan with camera",
+        "enrol--control-5": "My Organ \u2192 Add or join a device \u2192 Stop camera scan",
+        "recovery--control-1": "My Organ \u2192 Keys & backup \u2192 Export root key",
+        "recovery--control-2": "My Organ \u2192 Keys & backup \u2192 Detach root key",
+        "recovery--control-3": "My Organ \u2192 Keys & backup \u2192 Back up and reopen Lince",
+        "network--control-1": "My Organ \u2192 Network & presence \u2192 Find devices on this Wi-Fi",
+        "network--control-2": "My Organ \u2192 Network & presence \u2192 Save discovery and restart connections",
+        "network--control-3": "My Organ \u2192 Network & presence \u2192 Save peer port",
+        "storage--control-1": "My Organ \u2192 Storage & sync \u2192 Save disk budget",
+        "storage--control-2": "My Organ \u2192 Storage & sync \u2192 Save directory",
+        "storage--control-3": "My Organ \u2192 Storage & sync \u2192 Reload sync settings",
+        "copies--control-1": "My Organ \u2192 File copies \u2192 Choose files",
+        "copies--control-2": "My Organ \u2192 File copies \u2192 Choose folder",
+        "copies--control-3": "My Organ \u2192 File copies \u2192 Clear selection",
+        "copies--control-4": "My Organ \u2192 File copies \u2192 Send copy",
+        "copies--control-5": "My Organ \u2192 File copies \u2192 Accept and save copy",
+        "copies--control-6": "My Organ \u2192 File copies \u2192 Change save folder",
+        "copies--control-7": "My Organ \u2192 File copies \u2192 Decline copy",
+        "copies--control-8": "My Organ \u2192 File copies \u2192 Cancel copy",
+        "workspaces--control-1": "My Organ \u2192 Shared workspaces \u2192 Connect or reload workspaces",
+        "workspaces--control-2": "My Organ \u2192 Shared workspaces \u2192 Sign in",
+        "workspaces--control-3": "My Organ \u2192 Shared workspaces \u2192 Sign out",
+        "workspaces--control-4": "My Organ \u2192 Shared workspaces \u2192 Open a separate permitted view",
+        "workspaces--control-5": "My Organ \u2192 Shared workspaces \u2192 Create hosted workspace",
+        "workspaces--control-6": "My Organ \u2192 Shared workspaces \u2192 Edit read ceiling or write grant",
+        "workspaces--control-7": "My Organ \u2192 Shared workspaces \u2192 Preview policy admission",
+        "workspaces--control-8": "My Organ \u2192 Shared workspaces \u2192 Add policy grant",
+        "workspaces--control-9": "My Organ \u2192 Shared workspaces \u2192 Allow assertion additions or removals",
+        "workspaces--control-10": "My Organ \u2192 Shared workspaces \u2192 Propose policy change",
+        "workspaces--control-11": "My Organ \u2192 Shared workspaces \u2192 Add Text, Record or Area",
+        "workspaces--control-12": "My Organ \u2192 Shared workspaces \u2192 Propose Record changes",
+        "workspaces--control-13": "My Organ \u2192 Shared workspaces \u2192 Propose new Record or deletion",
+        "workspaces--control-14": "My Organ \u2192 Shared workspaces \u2192 Propose selected Area behavior",
+        "workspaces--control-15": "My Organ \u2192 Shared workspaces \u2192 Preview operation and Record consequences",
+        "workspaces--control-16": "My Organ \u2192 Shared workspaces \u2192 Save draft on this computer",
+        "workspaces--control-17": "My Organ \u2192 Shared workspaces \u2192 Recover local drafts",
+        "workspaces--control-18": "My Organ \u2192 Shared workspaces \u2192 Discard draft",
+        "workspaces--control-19": "My Organ \u2192 Shared workspaces \u2192 Submit operation",
+        "workspaces--control-20": "My Organ \u2192 Shared workspaces \u2192 Review changes and history",
+        "workspaces--control-21": "My Organ \u2192 Shared workspaces \u2192 Revise and resubmit as my change",
+        "workspaces--control-22": "My Organ \u2192 Shared workspaces \u2192 Preview as original Actor",
+        "workspaces--control-23": "My Organ \u2192 Shared workspaces \u2192 Approve against current revision",
+        "workspaces--control-24": "My Organ \u2192 Shared workspaces \u2192 Reject change",
+        "workspaces--control-25": "My Organ \u2192 Shared workspaces \u2192 Older or latest changes",
+        "workspaces--control-26": "My Organ \u2192 Shared workspaces \u2192 Delete hosted workspace",
+        "sync-tools--control-1": "My Organ \u2192 Sync activity \u2192 Latest activity",
+        "sync-tools--control-2": "My Organ \u2192 Sync activity \u2192 Older activity",
+        "sync-tools--control-3": "My Organ \u2192 Sync activity \u2192 Set history retention",
+        "sync-tools--control-4": "My Organ \u2192 Sync activity \u2192 Clear recent history",
+        "moves--control-1": "My Organ \u2192 Moves & pending offers \u2192 Preview complete move",
+        "moves--control-2": "My Organ \u2192 Moves & pending offers \u2192 Offer previewed move",
+        "moves--control-3": "My Organ \u2192 Moves & pending offers \u2192 Accept invitation",
+        "moves--control-4": "My Organ \u2192 Moves & pending offers \u2192 Decline privately",
+        "moves--control-5": "My Organ \u2192 Moves & pending offers \u2192 Cancel replica offer",
+        "moves--control-6": "My Organ \u2192 Moves & pending offers \u2192 Accept move and complete set",
+        "moves--control-7": "My Organ \u2192 Moves & pending offers \u2192 Decline move privately",
+        "moves--control-8": "My Organ \u2192 Moves & pending offers \u2192 Cancel move",
+        "moves--control-9": "My Organ \u2192 Moves & pending offers \u2192 Accept Transfer invitation",
+        "moves--control-10": "My Organ \u2192 Moves & pending offers \u2192 Reject Transfer invitation",
+        "moves--control-11": "My Organ \u2192 Moves & pending offers \u2192 Accept file copy",
+        "moves--control-12": "My Organ \u2192 Moves & pending offers \u2192 Cancel file copy",
+        "mail--control-1": "My Organ \u2192 Mail delivery \u2192 Save mailbox copy policy",
+        "mail--control-2": "My Organ \u2192 Mail delivery \u2192 Retry recovery",
+        "mail--control-3": "My Organ \u2192 Mail delivery \u2192 Refresh outgoing mail",
+        "mail--control-4": "My Organ \u2192 Mail delivery \u2192 Collect mail now",
+        "mail--control-5": "My Organ \u2192 Mail delivery \u2192 Check saved message recovery",
+        "carriers--control-1": "My Organ \u2192 Carriers & pickup points \u2192 Answer carrying request",
+        "carriers--control-2": "My Organ \u2192 Carriers & pickup points \u2192 Use carrying invite",
+        "carriers--control-3": "My Organ \u2192 Carriers & pickup points \u2192 Refresh carried mail",
+        "carriers--control-4": "My Organ \u2192 Carriers & pickup points \u2192 Refresh requests",
+        "carriers--control-5": "My Organ \u2192 Carriers & pickup points \u2192 Refresh pickup points",
+        "carriers--control-6": "My Organ \u2192 Carriers & pickup points \u2192 Issue carrying invite",
+        "carriers--control-7": "My Organ \u2192 Carriers & pickup points \u2192 Offer to carry mail",
+        "carriers--control-8": "My Organ \u2192 Carriers & pickup points \u2192 Ask them to carry mail",
+        "carriers--control-9": "My Organ \u2192 Carriers & pickup points \u2192 Add pickup point",
+        "carriers--control-10": "My Organ \u2192 Carriers & pickup points \u2192 Send mail now",
+        "carriers--control-11": "My Organ \u2192 Carriers & pickup points \u2192 Stop carrying",
+        "carriers--control-12": "My Organ \u2192 Carriers & pickup points \u2192 Remove pickup point",
+        "discover--control-1": "Connect \u2192 Public discovery \u2192 Refresh My posts and services",
+        "discover--control-2": "Connect \u2192 Public discovery \u2192 Search local announcements",
+        "discover--control-3": "Connect \u2192 Public discovery \u2192 Preview saved announcement",
+        "discover--control-4": "Connect \u2192 Public discovery \u2192 Write a private introduction",
+        "discover--control-5": "Connect \u2192 Public discovery \u2192 View public Organ profile",
+        "discover--control-6": "Connect \u2192 Public discovery \u2192 Continue browsing announcements",
+        "discover--control-7": "Connect \u2192 Public discovery \u2192 Load public {key}",
+        "discover--control-8": "Connect \u2192 Public discovery \u2192 Review the next local conflict page",
+        "posts--control-1": "My Organ \u2192 My announcements \u2192 Prepare from an existing Need/Contribution",
+        "posts--control-2": "My Organ \u2192 My announcements \u2192 Save announcement draft",
+        "posts--control-3": "My Organ \u2192 My announcements \u2192 Private reply key status",
+        "posts--control-4": "My Organ \u2192 My announcements \u2192 Prepare this device's private reply keys",
+        "posts--control-5": "My Organ \u2192 My announcements \u2192 Use preserved draft Record: Record",
+        "posts--control-6": "My Organ \u2192 My announcements \u2192 Preview",
+        "posts--control-7": "My Organ \u2192 My announcements \u2192 Archive ended announcement",
+        "posts--control-8": "My Organ \u2192 My announcements \u2192 Next My posts page",
+        "posts--control-9": "My Organ \u2192 My announcements \u2192 Publish this exact preview",
+        "posts--control-10": "My Organ \u2192 My announcements \u2192 Preview publication or update",
+        "posts--control-11": "My Organ \u2192 My announcements \u2192 Preview pause",
+        "posts--control-12": "My Organ \u2192 My announcements \u2192 Preview fulfilled",
+        "posts--control-13": "My Organ \u2192 My announcements \u2192 Preview withdrawal",
+        "requests--control-1": "Contacts \u2192 Private requests \u2192 Requests and private conversations",
+        "requests--control-2": "Contacts \u2192 Private requests \u2192 Reset this device's live private messaging keys",
+        "requests--control-3": "Contacts \u2192 Private requests \u2192 Discard unreadable ciphertext",
+        "requests--control-4": "Contacts \u2192 Private requests \u2192 Resume this introduction on this device",
+        "requests--control-5": "Contacts \u2192 Private requests \u2192 Discard saved introduction",
+        "requests--control-6": "Contacts \u2192 Private requests \u2192 Review delivery or resume this saved message",
+        "requests--control-7": "Contacts \u2192 Private requests \u2192 Send private reply",
+        "requests--control-8": "Contacts \u2192 Private requests \u2192 Reveal my Organ profile in this conversation",
+        "requests--control-9": "Contacts \u2192 Private requests \u2192 Connect as known contacts",
+        "requests--control-10": "Contacts \u2192 Private requests \u2192 Decide request",
+        "requests--control-11": "Contacts \u2192 Private requests \u2192 Archive this private conversation",
+        "requests--control-12": "Contacts \u2192 Private requests \u2192 Unblock this private identity",
+        "requests--control-13": "Contacts \u2192 Private requests \u2192 Next Requests page",
+        "requests--control-14": "Contacts \u2192 Private requests \u2192 Resend this expired Message",
+        "requests--control-15": "Contacts \u2192 Private requests \u2192 Resume this saved Message on this device",
+        "requests--control-16": "Contacts \u2192 Private requests \u2192 Accept conversation",
+        "requests--control-17": "Contacts \u2192 Private requests \u2192 Decline request",
+        "requests--control-18": "Contacts \u2192 Private requests \u2192 Block participant",
+        "requests--control-19": "Contacts \u2192 Private requests \u2192 Close conversation",
+        "profile--control-1": "My Organ \u2192 Public profile \u2192 Prepare public profile image",
+        "profile--control-2": "My Organ \u2192 Public profile \u2192 Save shared public profile",
+        "profile--control-3": "My Organ \u2192 Public profile \u2192 Reload public profile",
+        "profile--control-4": "My Organ \u2192 Public profile \u2192 Change public editing authority",
+        "profile--control-5": "My Organ \u2192 Public profile \u2192 Withdraw public profile from its hosts",
+        "searches--control-1": "Connect \u2192 Saved searches \u2192 Save this search filter",
+        "searches--control-2": "Connect \u2192 Saved searches \u2192 Saved searches and notification settings",
+        "searches--control-3": "Connect \u2192 Saved searches \u2192 Enable periodic checks on this device",
+        "searches--control-4": "Connect \u2192 Saved searches \u2192 Search these chosen directories now",
+        "searches--control-5": "Connect \u2192 Saved searches \u2192 Next saved filters",
+        "searches--control-6": "Connect \u2192 Saved searches \u2192 Review retained matches",
+        "searches--control-7": "Connect \u2192 Saved searches \u2192 Clear displayed matches",
+        "searches--control-8": "Connect \u2192 Saved searches \u2192 Remove saved filter",
+        "contact-search--control-1": "Contacts \u2192 Ask contacts \u2192 Save this device's contact search participation",
+        "contact-search--control-2": "Contacts \u2192 Ask contacts \u2192 Refresh contact query progress",
+        "contact-search--control-3": "Contacts \u2192 Ask contacts \u2192 Clear removed or blocked contact's query consent",
+        "contact-search--control-4": "Contacts \u2192 Ask contacts \u2192 Save this contact's separate query permissions",
+        "contact-search--control-5": "Contacts \u2192 Ask contacts \u2192 Ask contact",
+        "contact-search--control-6": "Contacts \u2192 Ask contacts \u2192 Cancel this contact query",
+        "contact-search--control-7": "Contacts \u2192 Ask contacts \u2192 View this query's saved answers",
+        "contact-search--control-8": "Contacts \u2192 Ask contacts \u2192 Clear finished local contact-query history",
+        "contact-search--control-9": "Contacts \u2192 Ask contacts \u2192 Save this contact\u2019s separate query permissions",
+        "servers--control-1": "My Organ \u2192 Chosen services \u2192 Inspect a social server",
+        "servers--control-2": "My Organ \u2192 Chosen services \u2192 Remember server roles",
+        "servers--control-3": "My Organ \u2192 Chosen services \u2192 Inspect remembered server",
+        "servers--control-4": "My Organ \u2192 Chosen services \u2192 Remove remembered server",
+        "servers--control-5": "My Organ \u2192 Chosen services \u2192 Browse chosen servers",
+        "servers--control-6": "My Organ \u2192 Chosen services \u2192 Search chosen servers",
+        "gossip--control-1": "Contacts \u2192 Public forwarding \u2192 Save this device's gossip participation",
+        "gossip--control-2": "Contacts \u2192 Public forwarding \u2192 Clear retained gossip consent",
+        "gossip--control-3": "Contacts \u2192 Public forwarding \u2192 Save separate contact gossip consent",
+        "gossip--control-4": "Contacts \u2192 Public forwarding \u2192 Save separate contact gossip consent",
+        "moderation--control-1": "Connect \u2192 Visibility & reports \u2192 Mute post",
+        "moderation--control-2": "Connect \u2192 Visibility & reports \u2192 Remove a listing on this host",
+        "moderation--control-3": "Connect \u2192 Visibility & reports \u2192 Show this target again",
+        "moderation--control-4": "Connect \u2192 Visibility & reports \u2192 Next hidden targets",
+        "moderation--control-5": "Connect \u2192 Visibility & reports \u2192 Restore this listing if still valid",
+        "moderation--control-6": "Connect \u2192 Visibility & reports \u2192 Next removed listings",
+        "moderation--control-7": "Connect \u2192 Visibility & reports \u2192 Preview a report to one operator",
+        "moderation--control-8": "Connect \u2192 Visibility & reports \u2192 Send this exact report",
+        "moderation--control-9": "Connect \u2192 Visibility & reports \u2192 Clear my report work",
+        "moderation--control-10": "Connect \u2192 Visibility & reports \u2192 Dismiss this report",
+        "moderation--control-11": "Connect \u2192 Visibility & reports \u2192 Remove this host's current listing",
+        "moderation--control-12": "Connect \u2192 Visibility & reports \u2192 Next received reports",
+        "moderation--control-13": "Connect \u2192 Visibility & reports \u2192 Hide this announcement",
+        "moderation--control-14": "Connect \u2192 Visibility & reports \u2192 Hide this public author",
+        "moderation--control-15": "Connect \u2192 Visibility & reports \u2192 Hidden announcements and authors",
+        "moderation--control-16": "Connect \u2192 Visibility & reports \u2192 Review this host\u2019s removed listings",
+        "moderation--control-17": "Connect \u2192 Visibility & reports \u2192 My submitted reports",
+        "moderation--control-18": "Connect \u2192 Visibility & reports \u2192 Review this operator\u2019s report inbox",
+        "hosting--control-1": "My Organ \u2192 Host a service \u2192 Save social service roles",
+        "hosting--control-2": "My Organ \u2192 Host a service \u2192 Refresh social service health",
+        "hosting--control-3": "My Organ \u2192 Host a service \u2192 Rebuild public search index",
+        "credits--control-1": "My Organ \u2192 Credits \u2192 View native QR and media attributions"
+      }
+    },
+    {
+      "id": "task-hub",
+      "title": "2 \u00b7 Task hub",
+      "file": "alternative-2.html",
+      "hypothesis": "A quiet home shows my Organ and my contacts. Add, share and manage open focused pages; a grouped All tools directory retains occasional tasks. Smallest opening view; occasional work takes an extra step.",
+      "placements": {
+        "identity": "My Organ \u2192 Identity",
+        "records": "My Organ \u2192 Organ Records",
+        "pairing": "My Organ \u2192 Share my Organ",
+        "contacts": "People \u2192 Contacts \u2192 selected contact for trust, sharing, access and file sync",
+        "contact": "People \u2192 Contact",
+        "contact-policy": "People \u2192 Sharing & trust",
+        "contact-access": "People \u2192 Login & workspaces",
+        "contact-files": "People \u2192 Contact file sync",
+        "add": "People \u2192 Add contact",
+        "nearby": "People \u2192 Nearby on this Wi-Fi",
+        "devices": "My Organ \u2192 My devices",
+        "enrol": "My Organ \u2192 Add or join a device",
+        "recovery": "My Organ \u2192 Keys & backup",
+        "network": "My Organ \u2192 Network & presence",
+        "storage": "My Organ \u2192 Storage & sync",
+        "copies": "My Organ \u2192 File copies",
+        "workspaces": "My Organ \u2192 Shared workspaces",
+        "sync-tools": "My Organ \u2192 Sync activity",
+        "moves": "My Organ \u2192 Moves & pending offers",
+        "mail": "Delivery & services \u2192 Mail delivery",
+        "carriers": "Delivery & services \u2192 Carriers & pickup points",
+        "discover": "Public presence \u2192 Public discovery",
+        "posts": "Public presence \u2192 My announcements",
+        "requests": "People \u2192 Private requests",
+        "profile": "Public presence \u2192 Public profile",
+        "searches": "Public presence \u2192 Saved searches",
+        "contact-search": "People \u2192 Ask contacts",
+        "servers": "Delivery & services \u2192 Chosen services",
+        "gossip": "Public presence \u2192 Public forwarding",
+        "moderation": "Public presence \u2192 Visibility & reports",
+        "hosting": "Delivery & services \u2192 Host a service",
+        "credits": "My Organ \u2192 Credits",
+        "identity--control-1": "My Organ \u2192 Identity \u2192 Save identity",
+        "records--control-1": "My Organ \u2192 Organ Records \u2192 Save Organ",
+        "records--control-2": "My Organ \u2192 Organ Records \u2192 Delete Organ",
+        "records--control-3": "My Organ \u2192 Organ Records \u2192 Save Organ Record",
+        "records--control-4": "My Organ \u2192 Organ Records \u2192 Delete Organ Record",
+        "records--control-5": "My Organ \u2192 Organ Records \u2192 Reload selected Organ",
+        "pairing--control-1": "My Organ \u2192 Share my Organ \u2192 Copy pairing code",
+        "contact--control-1": "People \u2192 Contact \u2192 Rename locally",
+        "contact--control-2": "People \u2192 Contact \u2192 Reconnect and refresh device list",
+        "contact--control-3": "People \u2192 Contact \u2192 Synchronize now",
+        "contact--control-4": "People \u2192 Contact \u2192 Start conversation",
+        "contact--control-5": "People \u2192 Contact \u2192 Forget contact",
+        "contact--control-6": "People \u2192 Contact \u2192 Open conversation",
+        "contact--control-7": "People \u2192 Contact \u2192 Open live Organ",
+        "contact-policy--control-1": "People \u2192 Sharing & trust \u2192 Save trust",
+        "contact-policy--control-2": "People \u2192 Sharing & trust \u2192 Save proximity",
+        "contact-policy--control-3": "People \u2192 Sharing & trust \u2192 Save feed direction",
+        "contact-policy--control-4": "People \u2192 Sharing & trust \u2192 Save delivery choice",
+        "contact-policy--control-5": "People \u2192 Sharing & trust \u2192 Hide Record",
+        "contact-policy--control-6": "People \u2192 Sharing & trust \u2192 Unhide Record",
+        "contact-policy--control-7": "People \u2192 Sharing & trust \u2192 Save outgoing fields",
+        "contact-policy--control-8": "People \u2192 Sharing & trust \u2192 Save incoming fields",
+        "contact-policy--control-9": "People \u2192 Sharing & trust \u2192 Unhide Record",
+        "contact-access--control-1": "People \u2192 Login & workspaces \u2192 Audit contact's roster",
+        "contact-access--control-2": "People \u2192 Login & workspaces \u2192 Grant login",
+        "contact-access--control-3": "People \u2192 Login & workspaces \u2192 Revoke login",
+        "contact-access--control-4": "People \u2192 Login & workspaces \u2192 Shared workspaces",
+        "contact-access--control-5": "People \u2192 Login & workspaces \u2192 Sign out of live Organ",
+        "contact-files--control-1": "People \u2192 Contact file sync \u2192 Save File Sync",
+        "contact-files--control-2": "People \u2192 Contact file sync \u2192 Check File Sync conflicts",
+        "add--control-1": "People \u2192 Add contact \u2192 Add known contact",
+        "add--control-2": "People \u2192 Add contact \u2192 Read QR image",
+        "add--control-3": "People \u2192 Add contact \u2192 Scan with camera",
+        "add--control-4": "People \u2192 Add contact \u2192 Stop camera scan",
+        "nearby--control-1": "People \u2192 Nearby on this Wi-Fi \u2192 Chat",
+        "nearby--control-2": "People \u2192 Nearby on this Wi-Fi \u2192 Add known",
+        "devices--control-1": "My Organ \u2192 My devices \u2192 Create my Organ",
+        "devices--control-2": "My Organ \u2192 My devices \u2192 Save device name",
+        "devices--control-3": "My Organ \u2192 My devices \u2192 Disable Karma on this device",
+        "devices--control-4": "My Organ \u2192 My devices \u2192 Use this device as the only Karma executor",
+        "devices--control-5": "My Organ \u2192 My devices \u2192 Allow this device to run Karma alongside the others",
+        "devices--control-6": "My Organ \u2192 My devices \u2192 Remove device",
+        "devices--control-7": "My Organ \u2192 My devices \u2192 Set cell config",
+        "devices--control-8": "My Organ \u2192 My devices \u2192 Refresh device status and waiting visitors",
+        "devices--control-9": "My Organ \u2192 My devices \u2192 Stop Karma on this Cell",
+        "devices--control-10": "My Organ \u2192 My devices \u2192 Run permitted Karma on this Cell",
+        "devices--control-11": "My Organ \u2192 My devices \u2192 Use this device as the only Karma executor",
+        "devices--control-12": "My Organ \u2192 My devices \u2192 Allow this device to run Karma alongside the others",
+        "enrol--control-1": "My Organ \u2192 Add or join a device \u2192 Issue device enrolment code",
+        "enrol--control-2": "My Organ \u2192 Add or join a device \u2192 Join my existing Organ",
+        "enrol--control-3": "My Organ \u2192 Add or join a device \u2192 Read QR image",
+        "enrol--control-4": "My Organ \u2192 Add or join a device \u2192 Scan with camera",
+        "enrol--control-5": "My Organ \u2192 Add or join a device \u2192 Stop camera scan",
+        "recovery--control-1": "My Organ \u2192 Keys & backup \u2192 Export root key",
+        "recovery--control-2": "My Organ \u2192 Keys & backup \u2192 Detach root key",
+        "recovery--control-3": "My Organ \u2192 Keys & backup \u2192 Back up and reopen Lince",
+        "network--control-1": "My Organ \u2192 Network & presence \u2192 Find devices on this Wi-Fi",
+        "network--control-2": "My Organ \u2192 Network & presence \u2192 Save discovery and restart connections",
+        "network--control-3": "My Organ \u2192 Network & presence \u2192 Save peer port",
+        "storage--control-1": "My Organ \u2192 Storage & sync \u2192 Save disk budget",
+        "storage--control-2": "My Organ \u2192 Storage & sync \u2192 Save directory",
+        "storage--control-3": "My Organ \u2192 Storage & sync \u2192 Reload sync settings",
+        "copies--control-1": "My Organ \u2192 File copies \u2192 Choose files",
+        "copies--control-2": "My Organ \u2192 File copies \u2192 Choose folder",
+        "copies--control-3": "My Organ \u2192 File copies \u2192 Clear selection",
+        "copies--control-4": "My Organ \u2192 File copies \u2192 Send copy",
+        "copies--control-5": "My Organ \u2192 File copies \u2192 Accept and save copy",
+        "copies--control-6": "My Organ \u2192 File copies \u2192 Change save folder",
+        "copies--control-7": "My Organ \u2192 File copies \u2192 Decline copy",
+        "copies--control-8": "My Organ \u2192 File copies \u2192 Cancel copy",
+        "workspaces--control-1": "My Organ \u2192 Shared workspaces \u2192 Connect or reload workspaces",
+        "workspaces--control-2": "My Organ \u2192 Shared workspaces \u2192 Sign in",
+        "workspaces--control-3": "My Organ \u2192 Shared workspaces \u2192 Sign out",
+        "workspaces--control-4": "My Organ \u2192 Shared workspaces \u2192 Open a separate permitted view",
+        "workspaces--control-5": "My Organ \u2192 Shared workspaces \u2192 Create hosted workspace",
+        "workspaces--control-6": "My Organ \u2192 Shared workspaces \u2192 Edit read ceiling or write grant",
+        "workspaces--control-7": "My Organ \u2192 Shared workspaces \u2192 Preview policy admission",
+        "workspaces--control-8": "My Organ \u2192 Shared workspaces \u2192 Add policy grant",
+        "workspaces--control-9": "My Organ \u2192 Shared workspaces \u2192 Allow assertion additions or removals",
+        "workspaces--control-10": "My Organ \u2192 Shared workspaces \u2192 Propose policy change",
+        "workspaces--control-11": "My Organ \u2192 Shared workspaces \u2192 Add Text, Record or Area",
+        "workspaces--control-12": "My Organ \u2192 Shared workspaces \u2192 Propose Record changes",
+        "workspaces--control-13": "My Organ \u2192 Shared workspaces \u2192 Propose new Record or deletion",
+        "workspaces--control-14": "My Organ \u2192 Shared workspaces \u2192 Propose selected Area behavior",
+        "workspaces--control-15": "My Organ \u2192 Shared workspaces \u2192 Preview operation and Record consequences",
+        "workspaces--control-16": "My Organ \u2192 Shared workspaces \u2192 Save draft on this computer",
+        "workspaces--control-17": "My Organ \u2192 Shared workspaces \u2192 Recover local drafts",
+        "workspaces--control-18": "My Organ \u2192 Shared workspaces \u2192 Discard draft",
+        "workspaces--control-19": "My Organ \u2192 Shared workspaces \u2192 Submit operation",
+        "workspaces--control-20": "My Organ \u2192 Shared workspaces \u2192 Review changes and history",
+        "workspaces--control-21": "My Organ \u2192 Shared workspaces \u2192 Revise and resubmit as my change",
+        "workspaces--control-22": "My Organ \u2192 Shared workspaces \u2192 Preview as original Actor",
+        "workspaces--control-23": "My Organ \u2192 Shared workspaces \u2192 Approve against current revision",
+        "workspaces--control-24": "My Organ \u2192 Shared workspaces \u2192 Reject change",
+        "workspaces--control-25": "My Organ \u2192 Shared workspaces \u2192 Older or latest changes",
+        "workspaces--control-26": "My Organ \u2192 Shared workspaces \u2192 Delete hosted workspace",
+        "sync-tools--control-1": "My Organ \u2192 Sync activity \u2192 Latest activity",
+        "sync-tools--control-2": "My Organ \u2192 Sync activity \u2192 Older activity",
+        "sync-tools--control-3": "My Organ \u2192 Sync activity \u2192 Set history retention",
+        "sync-tools--control-4": "My Organ \u2192 Sync activity \u2192 Clear recent history",
+        "moves--control-1": "My Organ \u2192 Moves & pending offers \u2192 Preview complete move",
+        "moves--control-2": "My Organ \u2192 Moves & pending offers \u2192 Offer previewed move",
+        "moves--control-3": "My Organ \u2192 Moves & pending offers \u2192 Accept invitation",
+        "moves--control-4": "My Organ \u2192 Moves & pending offers \u2192 Decline privately",
+        "moves--control-5": "My Organ \u2192 Moves & pending offers \u2192 Cancel replica offer",
+        "moves--control-6": "My Organ \u2192 Moves & pending offers \u2192 Accept move and complete set",
+        "moves--control-7": "My Organ \u2192 Moves & pending offers \u2192 Decline move privately",
+        "moves--control-8": "My Organ \u2192 Moves & pending offers \u2192 Cancel move",
+        "moves--control-9": "My Organ \u2192 Moves & pending offers \u2192 Accept Transfer invitation",
+        "moves--control-10": "My Organ \u2192 Moves & pending offers \u2192 Reject Transfer invitation",
+        "moves--control-11": "My Organ \u2192 Moves & pending offers \u2192 Accept file copy",
+        "moves--control-12": "My Organ \u2192 Moves & pending offers \u2192 Cancel file copy",
+        "mail--control-1": "Delivery & services \u2192 Mail delivery \u2192 Save mailbox copy policy",
+        "mail--control-2": "Delivery & services \u2192 Mail delivery \u2192 Retry recovery",
+        "mail--control-3": "Delivery & services \u2192 Mail delivery \u2192 Refresh outgoing mail",
+        "mail--control-4": "Delivery & services \u2192 Mail delivery \u2192 Collect mail now",
+        "mail--control-5": "Delivery & services \u2192 Mail delivery \u2192 Check saved message recovery",
+        "carriers--control-1": "Delivery & services \u2192 Carriers & pickup points \u2192 Answer carrying request",
+        "carriers--control-2": "Delivery & services \u2192 Carriers & pickup points \u2192 Use carrying invite",
+        "carriers--control-3": "Delivery & services \u2192 Carriers & pickup points \u2192 Refresh carried mail",
+        "carriers--control-4": "Delivery & services \u2192 Carriers & pickup points \u2192 Refresh requests",
+        "carriers--control-5": "Delivery & services \u2192 Carriers & pickup points \u2192 Refresh pickup points",
+        "carriers--control-6": "Delivery & services \u2192 Carriers & pickup points \u2192 Issue carrying invite",
+        "carriers--control-7": "Delivery & services \u2192 Carriers & pickup points \u2192 Offer to carry mail",
+        "carriers--control-8": "Delivery & services \u2192 Carriers & pickup points \u2192 Ask them to carry mail",
+        "carriers--control-9": "Delivery & services \u2192 Carriers & pickup points \u2192 Add pickup point",
+        "carriers--control-10": "Delivery & services \u2192 Carriers & pickup points \u2192 Send mail now",
+        "carriers--control-11": "Delivery & services \u2192 Carriers & pickup points \u2192 Stop carrying",
+        "carriers--control-12": "Delivery & services \u2192 Carriers & pickup points \u2192 Remove pickup point",
+        "discover--control-1": "Public presence \u2192 Public discovery \u2192 Refresh My posts and services",
+        "discover--control-2": "Public presence \u2192 Public discovery \u2192 Search local announcements",
+        "discover--control-3": "Public presence \u2192 Public discovery \u2192 Preview saved announcement",
+        "discover--control-4": "Public presence \u2192 Public discovery \u2192 Write a private introduction",
+        "discover--control-5": "Public presence \u2192 Public discovery \u2192 View public Organ profile",
+        "discover--control-6": "Public presence \u2192 Public discovery \u2192 Continue browsing announcements",
+        "discover--control-7": "Public presence \u2192 Public discovery \u2192 Load public {key}",
+        "discover--control-8": "Public presence \u2192 Public discovery \u2192 Review the next local conflict page",
+        "posts--control-1": "Public presence \u2192 My announcements \u2192 Prepare from an existing Need/Contribution",
+        "posts--control-2": "Public presence \u2192 My announcements \u2192 Save announcement draft",
+        "posts--control-3": "Public presence \u2192 My announcements \u2192 Private reply key status",
+        "posts--control-4": "Public presence \u2192 My announcements \u2192 Prepare this device's private reply keys",
+        "posts--control-5": "Public presence \u2192 My announcements \u2192 Use preserved draft Record: Record",
+        "posts--control-6": "Public presence \u2192 My announcements \u2192 Preview",
+        "posts--control-7": "Public presence \u2192 My announcements \u2192 Archive ended announcement",
+        "posts--control-8": "Public presence \u2192 My announcements \u2192 Next My posts page",
+        "posts--control-9": "Public presence \u2192 My announcements \u2192 Publish this exact preview",
+        "posts--control-10": "Public presence \u2192 My announcements \u2192 Preview publication or update",
+        "posts--control-11": "Public presence \u2192 My announcements \u2192 Preview pause",
+        "posts--control-12": "Public presence \u2192 My announcements \u2192 Preview fulfilled",
+        "posts--control-13": "Public presence \u2192 My announcements \u2192 Preview withdrawal",
+        "requests--control-1": "People \u2192 Private requests \u2192 Requests and private conversations",
+        "requests--control-2": "People \u2192 Private requests \u2192 Reset this device's live private messaging keys",
+        "requests--control-3": "People \u2192 Private requests \u2192 Discard unreadable ciphertext",
+        "requests--control-4": "People \u2192 Private requests \u2192 Resume this introduction on this device",
+        "requests--control-5": "People \u2192 Private requests \u2192 Discard saved introduction",
+        "requests--control-6": "People \u2192 Private requests \u2192 Review delivery or resume this saved message",
+        "requests--control-7": "People \u2192 Private requests \u2192 Send private reply",
+        "requests--control-8": "People \u2192 Private requests \u2192 Reveal my Organ profile in this conversation",
+        "requests--control-9": "People \u2192 Private requests \u2192 Connect as known contacts",
+        "requests--control-10": "People \u2192 Private requests \u2192 Decide request",
+        "requests--control-11": "People \u2192 Private requests \u2192 Archive this private conversation",
+        "requests--control-12": "People \u2192 Private requests \u2192 Unblock this private identity",
+        "requests--control-13": "People \u2192 Private requests \u2192 Next Requests page",
+        "requests--control-14": "People \u2192 Private requests \u2192 Resend this expired Message",
+        "requests--control-15": "People \u2192 Private requests \u2192 Resume this saved Message on this device",
+        "requests--control-16": "People \u2192 Private requests \u2192 Accept conversation",
+        "requests--control-17": "People \u2192 Private requests \u2192 Decline request",
+        "requests--control-18": "People \u2192 Private requests \u2192 Block participant",
+        "requests--control-19": "People \u2192 Private requests \u2192 Close conversation",
+        "profile--control-1": "Public presence \u2192 Public profile \u2192 Prepare public profile image",
+        "profile--control-2": "Public presence \u2192 Public profile \u2192 Save shared public profile",
+        "profile--control-3": "Public presence \u2192 Public profile \u2192 Reload public profile",
+        "profile--control-4": "Public presence \u2192 Public profile \u2192 Change public editing authority",
+        "profile--control-5": "Public presence \u2192 Public profile \u2192 Withdraw public profile from its hosts",
+        "searches--control-1": "Public presence \u2192 Saved searches \u2192 Save this search filter",
+        "searches--control-2": "Public presence \u2192 Saved searches \u2192 Saved searches and notification settings",
+        "searches--control-3": "Public presence \u2192 Saved searches \u2192 Enable periodic checks on this device",
+        "searches--control-4": "Public presence \u2192 Saved searches \u2192 Search these chosen directories now",
+        "searches--control-5": "Public presence \u2192 Saved searches \u2192 Next saved filters",
+        "searches--control-6": "Public presence \u2192 Saved searches \u2192 Review retained matches",
+        "searches--control-7": "Public presence \u2192 Saved searches \u2192 Clear displayed matches",
+        "searches--control-8": "Public presence \u2192 Saved searches \u2192 Remove saved filter",
+        "contact-search--control-1": "People \u2192 Ask contacts \u2192 Save this device's contact search participation",
+        "contact-search--control-2": "People \u2192 Ask contacts \u2192 Refresh contact query progress",
+        "contact-search--control-3": "People \u2192 Ask contacts \u2192 Clear removed or blocked contact's query consent",
+        "contact-search--control-4": "People \u2192 Ask contacts \u2192 Save this contact's separate query permissions",
+        "contact-search--control-5": "People \u2192 Ask contacts \u2192 Ask contact",
+        "contact-search--control-6": "People \u2192 Ask contacts \u2192 Cancel this contact query",
+        "contact-search--control-7": "People \u2192 Ask contacts \u2192 View this query's saved answers",
+        "contact-search--control-8": "People \u2192 Ask contacts \u2192 Clear finished local contact-query history",
+        "contact-search--control-9": "People \u2192 Ask contacts \u2192 Save this contact\u2019s separate query permissions",
+        "servers--control-1": "Delivery & services \u2192 Chosen services \u2192 Inspect a social server",
+        "servers--control-2": "Delivery & services \u2192 Chosen services \u2192 Remember server roles",
+        "servers--control-3": "Delivery & services \u2192 Chosen services \u2192 Inspect remembered server",
+        "servers--control-4": "Delivery & services \u2192 Chosen services \u2192 Remove remembered server",
+        "servers--control-5": "Delivery & services \u2192 Chosen services \u2192 Browse chosen servers",
+        "servers--control-6": "Delivery & services \u2192 Chosen services \u2192 Search chosen servers",
+        "gossip--control-1": "Public presence \u2192 Public forwarding \u2192 Save this device's gossip participation",
+        "gossip--control-2": "Public presence \u2192 Public forwarding \u2192 Clear retained gossip consent",
+        "gossip--control-3": "Public presence \u2192 Public forwarding \u2192 Save separate contact gossip consent",
+        "gossip--control-4": "Public presence \u2192 Public forwarding \u2192 Save separate contact gossip consent",
+        "moderation--control-1": "Public presence \u2192 Visibility & reports \u2192 Mute post",
+        "moderation--control-2": "Public presence \u2192 Visibility & reports \u2192 Remove a listing on this host",
+        "moderation--control-3": "Public presence \u2192 Visibility & reports \u2192 Show this target again",
+        "moderation--control-4": "Public presence \u2192 Visibility & reports \u2192 Next hidden targets",
+        "moderation--control-5": "Public presence \u2192 Visibility & reports \u2192 Restore this listing if still valid",
+        "moderation--control-6": "Public presence \u2192 Visibility & reports \u2192 Next removed listings",
+        "moderation--control-7": "Public presence \u2192 Visibility & reports \u2192 Preview a report to one operator",
+        "moderation--control-8": "Public presence \u2192 Visibility & reports \u2192 Send this exact report",
+        "moderation--control-9": "Public presence \u2192 Visibility & reports \u2192 Clear my report work",
+        "moderation--control-10": "Public presence \u2192 Visibility & reports \u2192 Dismiss this report",
+        "moderation--control-11": "Public presence \u2192 Visibility & reports \u2192 Remove this host's current listing",
+        "moderation--control-12": "Public presence \u2192 Visibility & reports \u2192 Next received reports",
+        "moderation--control-13": "Public presence \u2192 Visibility & reports \u2192 Hide this announcement",
+        "moderation--control-14": "Public presence \u2192 Visibility & reports \u2192 Hide this public author",
+        "moderation--control-15": "Public presence \u2192 Visibility & reports \u2192 Hidden announcements and authors",
+        "moderation--control-16": "Public presence \u2192 Visibility & reports \u2192 Review this host\u2019s removed listings",
+        "moderation--control-17": "Public presence \u2192 Visibility & reports \u2192 My submitted reports",
+        "moderation--control-18": "Public presence \u2192 Visibility & reports \u2192 Review this operator\u2019s report inbox",
+        "hosting--control-1": "Delivery & services \u2192 Host a service \u2192 Save social service roles",
+        "hosting--control-2": "Delivery & services \u2192 Host a service \u2192 Refresh social service health",
+        "hosting--control-3": "Delivery & services \u2192 Host a service \u2192 Rebuild public search index",
+        "credits--control-1": "My Organ \u2192 Credits \u2192 View native QR and media attributions"
+      }
+    },
+    {
+      "id": "two-spaces",
+      "title": "3 \u00b7 Two spaces",
+      "file": "alternative-3.html",
+      "hypothesis": "My Organ and People are the only persistent spaces. A compact page picker groups each space\u2019s tools. More space for the current page; a broad People space can make public tools harder to predict.",
+      "placements": {
+        "identity": "My Organ \u2192 Identity",
+        "records": "My Organ \u2192 Organ Records",
+        "pairing": "My Organ \u2192 Share my Organ",
+        "contacts": "People \u2192 Contacts \u2192 selected contact for trust, sharing, access and file sync",
+        "contact": "People \u2192 Contact",
+        "contact-policy": "People \u2192 Sharing & trust",
+        "contact-access": "People \u2192 Login & workspaces",
+        "contact-files": "People \u2192 Contact file sync",
+        "add": "People \u2192 Add contact",
+        "nearby": "People \u2192 Nearby on this Wi-Fi",
+        "devices": "My Organ \u2192 My devices",
+        "enrol": "My Organ \u2192 Add or join a device",
+        "recovery": "My Organ \u2192 Keys & backup",
+        "network": "My Organ \u2192 Network & presence",
+        "storage": "My Organ \u2192 Storage & sync",
+        "copies": "My Organ \u2192 File copies",
+        "workspaces": "My Organ \u2192 Shared workspaces",
+        "sync-tools": "My Organ \u2192 Sync activity",
+        "moves": "My Organ \u2192 Moves & pending offers",
+        "mail": "My Organ \u2192 Mail delivery",
+        "carriers": "My Organ \u2192 Carriers & pickup points",
+        "discover": "People \u2192 Public discovery",
+        "posts": "People \u2192 My announcements",
+        "requests": "People \u2192 Private requests",
+        "profile": "My Organ \u2192 Public profile",
+        "searches": "People \u2192 Saved searches",
+        "contact-search": "People \u2192 Ask contacts",
+        "servers": "My Organ \u2192 Chosen services",
+        "gossip": "People \u2192 Public forwarding",
+        "moderation": "People \u2192 Visibility & reports",
+        "hosting": "My Organ \u2192 Host a service",
+        "credits": "My Organ \u2192 Credits",
+        "identity--control-1": "My Organ \u2192 Identity \u2192 Save identity",
+        "records--control-1": "My Organ \u2192 Organ Records \u2192 Save Organ",
+        "records--control-2": "My Organ \u2192 Organ Records \u2192 Delete Organ",
+        "records--control-3": "My Organ \u2192 Organ Records \u2192 Save Organ Record",
+        "records--control-4": "My Organ \u2192 Organ Records \u2192 Delete Organ Record",
+        "records--control-5": "My Organ \u2192 Organ Records \u2192 Reload selected Organ",
+        "pairing--control-1": "My Organ \u2192 Share my Organ \u2192 Copy pairing code",
+        "contact--control-1": "People \u2192 Contact \u2192 Rename locally",
+        "contact--control-2": "People \u2192 Contact \u2192 Reconnect and refresh device list",
+        "contact--control-3": "People \u2192 Contact \u2192 Synchronize now",
+        "contact--control-4": "People \u2192 Contact \u2192 Start conversation",
+        "contact--control-5": "People \u2192 Contact \u2192 Forget contact",
+        "contact--control-6": "People \u2192 Contact \u2192 Open conversation",
+        "contact--control-7": "People \u2192 Contact \u2192 Open live Organ",
+        "contact-policy--control-1": "People \u2192 Sharing & trust \u2192 Save trust",
+        "contact-policy--control-2": "People \u2192 Sharing & trust \u2192 Save proximity",
+        "contact-policy--control-3": "People \u2192 Sharing & trust \u2192 Save feed direction",
+        "contact-policy--control-4": "People \u2192 Sharing & trust \u2192 Save delivery choice",
+        "contact-policy--control-5": "People \u2192 Sharing & trust \u2192 Hide Record",
+        "contact-policy--control-6": "People \u2192 Sharing & trust \u2192 Unhide Record",
+        "contact-policy--control-7": "People \u2192 Sharing & trust \u2192 Save outgoing fields",
+        "contact-policy--control-8": "People \u2192 Sharing & trust \u2192 Save incoming fields",
+        "contact-policy--control-9": "People \u2192 Sharing & trust \u2192 Unhide Record",
+        "contact-access--control-1": "People \u2192 Login & workspaces \u2192 Audit contact's roster",
+        "contact-access--control-2": "People \u2192 Login & workspaces \u2192 Grant login",
+        "contact-access--control-3": "People \u2192 Login & workspaces \u2192 Revoke login",
+        "contact-access--control-4": "People \u2192 Login & workspaces \u2192 Shared workspaces",
+        "contact-access--control-5": "People \u2192 Login & workspaces \u2192 Sign out of live Organ",
+        "contact-files--control-1": "People \u2192 Contact file sync \u2192 Save File Sync",
+        "contact-files--control-2": "People \u2192 Contact file sync \u2192 Check File Sync conflicts",
+        "add--control-1": "People \u2192 Add contact \u2192 Add known contact",
+        "add--control-2": "People \u2192 Add contact \u2192 Read QR image",
+        "add--control-3": "People \u2192 Add contact \u2192 Scan with camera",
+        "add--control-4": "People \u2192 Add contact \u2192 Stop camera scan",
+        "nearby--control-1": "People \u2192 Nearby on this Wi-Fi \u2192 Chat",
+        "nearby--control-2": "People \u2192 Nearby on this Wi-Fi \u2192 Add known",
+        "devices--control-1": "My Organ \u2192 My devices \u2192 Create my Organ",
+        "devices--control-2": "My Organ \u2192 My devices \u2192 Save device name",
+        "devices--control-3": "My Organ \u2192 My devices \u2192 Disable Karma on this device",
+        "devices--control-4": "My Organ \u2192 My devices \u2192 Use this device as the only Karma executor",
+        "devices--control-5": "My Organ \u2192 My devices \u2192 Allow this device to run Karma alongside the others",
+        "devices--control-6": "My Organ \u2192 My devices \u2192 Remove device",
+        "devices--control-7": "My Organ \u2192 My devices \u2192 Set cell config",
+        "devices--control-8": "My Organ \u2192 My devices \u2192 Refresh device status and waiting visitors",
+        "devices--control-9": "My Organ \u2192 My devices \u2192 Stop Karma on this Cell",
+        "devices--control-10": "My Organ \u2192 My devices \u2192 Run permitted Karma on this Cell",
+        "devices--control-11": "My Organ \u2192 My devices \u2192 Use this device as the only Karma executor",
+        "devices--control-12": "My Organ \u2192 My devices \u2192 Allow this device to run Karma alongside the others",
+        "enrol--control-1": "My Organ \u2192 Add or join a device \u2192 Issue device enrolment code",
+        "enrol--control-2": "My Organ \u2192 Add or join a device \u2192 Join my existing Organ",
+        "enrol--control-3": "My Organ \u2192 Add or join a device \u2192 Read QR image",
+        "enrol--control-4": "My Organ \u2192 Add or join a device \u2192 Scan with camera",
+        "enrol--control-5": "My Organ \u2192 Add or join a device \u2192 Stop camera scan",
+        "recovery--control-1": "My Organ \u2192 Keys & backup \u2192 Export root key",
+        "recovery--control-2": "My Organ \u2192 Keys & backup \u2192 Detach root key",
+        "recovery--control-3": "My Organ \u2192 Keys & backup \u2192 Back up and reopen Lince",
+        "network--control-1": "My Organ \u2192 Network & presence \u2192 Find devices on this Wi-Fi",
+        "network--control-2": "My Organ \u2192 Network & presence \u2192 Save discovery and restart connections",
+        "network--control-3": "My Organ \u2192 Network & presence \u2192 Save peer port",
+        "storage--control-1": "My Organ \u2192 Storage & sync \u2192 Save disk budget",
+        "storage--control-2": "My Organ \u2192 Storage & sync \u2192 Save directory",
+        "storage--control-3": "My Organ \u2192 Storage & sync \u2192 Reload sync settings",
+        "copies--control-1": "My Organ \u2192 File copies \u2192 Choose files",
+        "copies--control-2": "My Organ \u2192 File copies \u2192 Choose folder",
+        "copies--control-3": "My Organ \u2192 File copies \u2192 Clear selection",
+        "copies--control-4": "My Organ \u2192 File copies \u2192 Send copy",
+        "copies--control-5": "My Organ \u2192 File copies \u2192 Accept and save copy",
+        "copies--control-6": "My Organ \u2192 File copies \u2192 Change save folder",
+        "copies--control-7": "My Organ \u2192 File copies \u2192 Decline copy",
+        "copies--control-8": "My Organ \u2192 File copies \u2192 Cancel copy",
+        "workspaces--control-1": "My Organ \u2192 Shared workspaces \u2192 Connect or reload workspaces",
+        "workspaces--control-2": "My Organ \u2192 Shared workspaces \u2192 Sign in",
+        "workspaces--control-3": "My Organ \u2192 Shared workspaces \u2192 Sign out",
+        "workspaces--control-4": "My Organ \u2192 Shared workspaces \u2192 Open a separate permitted view",
+        "workspaces--control-5": "My Organ \u2192 Shared workspaces \u2192 Create hosted workspace",
+        "workspaces--control-6": "My Organ \u2192 Shared workspaces \u2192 Edit read ceiling or write grant",
+        "workspaces--control-7": "My Organ \u2192 Shared workspaces \u2192 Preview policy admission",
+        "workspaces--control-8": "My Organ \u2192 Shared workspaces \u2192 Add policy grant",
+        "workspaces--control-9": "My Organ \u2192 Shared workspaces \u2192 Allow assertion additions or removals",
+        "workspaces--control-10": "My Organ \u2192 Shared workspaces \u2192 Propose policy change",
+        "workspaces--control-11": "My Organ \u2192 Shared workspaces \u2192 Add Text, Record or Area",
+        "workspaces--control-12": "My Organ \u2192 Shared workspaces \u2192 Propose Record changes",
+        "workspaces--control-13": "My Organ \u2192 Shared workspaces \u2192 Propose new Record or deletion",
+        "workspaces--control-14": "My Organ \u2192 Shared workspaces \u2192 Propose selected Area behavior",
+        "workspaces--control-15": "My Organ \u2192 Shared workspaces \u2192 Preview operation and Record consequences",
+        "workspaces--control-16": "My Organ \u2192 Shared workspaces \u2192 Save draft on this computer",
+        "workspaces--control-17": "My Organ \u2192 Shared workspaces \u2192 Recover local drafts",
+        "workspaces--control-18": "My Organ \u2192 Shared workspaces \u2192 Discard draft",
+        "workspaces--control-19": "My Organ \u2192 Shared workspaces \u2192 Submit operation",
+        "workspaces--control-20": "My Organ \u2192 Shared workspaces \u2192 Review changes and history",
+        "workspaces--control-21": "My Organ \u2192 Shared workspaces \u2192 Revise and resubmit as my change",
+        "workspaces--control-22": "My Organ \u2192 Shared workspaces \u2192 Preview as original Actor",
+        "workspaces--control-23": "My Organ \u2192 Shared workspaces \u2192 Approve against current revision",
+        "workspaces--control-24": "My Organ \u2192 Shared workspaces \u2192 Reject change",
+        "workspaces--control-25": "My Organ \u2192 Shared workspaces \u2192 Older or latest changes",
+        "workspaces--control-26": "My Organ \u2192 Shared workspaces \u2192 Delete hosted workspace",
+        "sync-tools--control-1": "My Organ \u2192 Sync activity \u2192 Latest activity",
+        "sync-tools--control-2": "My Organ \u2192 Sync activity \u2192 Older activity",
+        "sync-tools--control-3": "My Organ \u2192 Sync activity \u2192 Set history retention",
+        "sync-tools--control-4": "My Organ \u2192 Sync activity \u2192 Clear recent history",
+        "moves--control-1": "My Organ \u2192 Moves & pending offers \u2192 Preview complete move",
+        "moves--control-2": "My Organ \u2192 Moves & pending offers \u2192 Offer previewed move",
+        "moves--control-3": "My Organ \u2192 Moves & pending offers \u2192 Accept invitation",
+        "moves--control-4": "My Organ \u2192 Moves & pending offers \u2192 Decline privately",
+        "moves--control-5": "My Organ \u2192 Moves & pending offers \u2192 Cancel replica offer",
+        "moves--control-6": "My Organ \u2192 Moves & pending offers \u2192 Accept move and complete set",
+        "moves--control-7": "My Organ \u2192 Moves & pending offers \u2192 Decline move privately",
+        "moves--control-8": "My Organ \u2192 Moves & pending offers \u2192 Cancel move",
+        "moves--control-9": "My Organ \u2192 Moves & pending offers \u2192 Accept Transfer invitation",
+        "moves--control-10": "My Organ \u2192 Moves & pending offers \u2192 Reject Transfer invitation",
+        "moves--control-11": "My Organ \u2192 Moves & pending offers \u2192 Accept file copy",
+        "moves--control-12": "My Organ \u2192 Moves & pending offers \u2192 Cancel file copy",
+        "mail--control-1": "My Organ \u2192 Mail delivery \u2192 Save mailbox copy policy",
+        "mail--control-2": "My Organ \u2192 Mail delivery \u2192 Retry recovery",
+        "mail--control-3": "My Organ \u2192 Mail delivery \u2192 Refresh outgoing mail",
+        "mail--control-4": "My Organ \u2192 Mail delivery \u2192 Collect mail now",
+        "mail--control-5": "My Organ \u2192 Mail delivery \u2192 Check saved message recovery",
+        "carriers--control-1": "My Organ \u2192 Carriers & pickup points \u2192 Answer carrying request",
+        "carriers--control-2": "My Organ \u2192 Carriers & pickup points \u2192 Use carrying invite",
+        "carriers--control-3": "My Organ \u2192 Carriers & pickup points \u2192 Refresh carried mail",
+        "carriers--control-4": "My Organ \u2192 Carriers & pickup points \u2192 Refresh requests",
+        "carriers--control-5": "My Organ \u2192 Carriers & pickup points \u2192 Refresh pickup points",
+        "carriers--control-6": "My Organ \u2192 Carriers & pickup points \u2192 Issue carrying invite",
+        "carriers--control-7": "My Organ \u2192 Carriers & pickup points \u2192 Offer to carry mail",
+        "carriers--control-8": "My Organ \u2192 Carriers & pickup points \u2192 Ask them to carry mail",
+        "carriers--control-9": "My Organ \u2192 Carriers & pickup points \u2192 Add pickup point",
+        "carriers--control-10": "My Organ \u2192 Carriers & pickup points \u2192 Send mail now",
+        "carriers--control-11": "My Organ \u2192 Carriers & pickup points \u2192 Stop carrying",
+        "carriers--control-12": "My Organ \u2192 Carriers & pickup points \u2192 Remove pickup point",
+        "discover--control-1": "People \u2192 Public discovery \u2192 Refresh My posts and services",
+        "discover--control-2": "People \u2192 Public discovery \u2192 Search local announcements",
+        "discover--control-3": "People \u2192 Public discovery \u2192 Preview saved announcement",
+        "discover--control-4": "People \u2192 Public discovery \u2192 Write a private introduction",
+        "discover--control-5": "People \u2192 Public discovery \u2192 View public Organ profile",
+        "discover--control-6": "People \u2192 Public discovery \u2192 Continue browsing announcements",
+        "discover--control-7": "People \u2192 Public discovery \u2192 Load public {key}",
+        "discover--control-8": "People \u2192 Public discovery \u2192 Review the next local conflict page",
+        "posts--control-1": "People \u2192 My announcements \u2192 Prepare from an existing Need/Contribution",
+        "posts--control-2": "People \u2192 My announcements \u2192 Save announcement draft",
+        "posts--control-3": "People \u2192 My announcements \u2192 Private reply key status",
+        "posts--control-4": "People \u2192 My announcements \u2192 Prepare this device's private reply keys",
+        "posts--control-5": "People \u2192 My announcements \u2192 Use preserved draft Record: Record",
+        "posts--control-6": "People \u2192 My announcements \u2192 Preview",
+        "posts--control-7": "People \u2192 My announcements \u2192 Archive ended announcement",
+        "posts--control-8": "People \u2192 My announcements \u2192 Next My posts page",
+        "posts--control-9": "People \u2192 My announcements \u2192 Publish this exact preview",
+        "posts--control-10": "People \u2192 My announcements \u2192 Preview publication or update",
+        "posts--control-11": "People \u2192 My announcements \u2192 Preview pause",
+        "posts--control-12": "People \u2192 My announcements \u2192 Preview fulfilled",
+        "posts--control-13": "People \u2192 My announcements \u2192 Preview withdrawal",
+        "requests--control-1": "People \u2192 Private requests \u2192 Requests and private conversations",
+        "requests--control-2": "People \u2192 Private requests \u2192 Reset this device's live private messaging keys",
+        "requests--control-3": "People \u2192 Private requests \u2192 Discard unreadable ciphertext",
+        "requests--control-4": "People \u2192 Private requests \u2192 Resume this introduction on this device",
+        "requests--control-5": "People \u2192 Private requests \u2192 Discard saved introduction",
+        "requests--control-6": "People \u2192 Private requests \u2192 Review delivery or resume this saved message",
+        "requests--control-7": "People \u2192 Private requests \u2192 Send private reply",
+        "requests--control-8": "People \u2192 Private requests \u2192 Reveal my Organ profile in this conversation",
+        "requests--control-9": "People \u2192 Private requests \u2192 Connect as known contacts",
+        "requests--control-10": "People \u2192 Private requests \u2192 Decide request",
+        "requests--control-11": "People \u2192 Private requests \u2192 Archive this private conversation",
+        "requests--control-12": "People \u2192 Private requests \u2192 Unblock this private identity",
+        "requests--control-13": "People \u2192 Private requests \u2192 Next Requests page",
+        "requests--control-14": "People \u2192 Private requests \u2192 Resend this expired Message",
+        "requests--control-15": "People \u2192 Private requests \u2192 Resume this saved Message on this device",
+        "requests--control-16": "People \u2192 Private requests \u2192 Accept conversation",
+        "requests--control-17": "People \u2192 Private requests \u2192 Decline request",
+        "requests--control-18": "People \u2192 Private requests \u2192 Block participant",
+        "requests--control-19": "People \u2192 Private requests \u2192 Close conversation",
+        "profile--control-1": "My Organ \u2192 Public profile \u2192 Prepare public profile image",
+        "profile--control-2": "My Organ \u2192 Public profile \u2192 Save shared public profile",
+        "profile--control-3": "My Organ \u2192 Public profile \u2192 Reload public profile",
+        "profile--control-4": "My Organ \u2192 Public profile \u2192 Change public editing authority",
+        "profile--control-5": "My Organ \u2192 Public profile \u2192 Withdraw public profile from its hosts",
+        "searches--control-1": "People \u2192 Saved searches \u2192 Save this search filter",
+        "searches--control-2": "People \u2192 Saved searches \u2192 Saved searches and notification settings",
+        "searches--control-3": "People \u2192 Saved searches \u2192 Enable periodic checks on this device",
+        "searches--control-4": "People \u2192 Saved searches \u2192 Search these chosen directories now",
+        "searches--control-5": "People \u2192 Saved searches \u2192 Next saved filters",
+        "searches--control-6": "People \u2192 Saved searches \u2192 Review retained matches",
+        "searches--control-7": "People \u2192 Saved searches \u2192 Clear displayed matches",
+        "searches--control-8": "People \u2192 Saved searches \u2192 Remove saved filter",
+        "contact-search--control-1": "People \u2192 Ask contacts \u2192 Save this device's contact search participation",
+        "contact-search--control-2": "People \u2192 Ask contacts \u2192 Refresh contact query progress",
+        "contact-search--control-3": "People \u2192 Ask contacts \u2192 Clear removed or blocked contact's query consent",
+        "contact-search--control-4": "People \u2192 Ask contacts \u2192 Save this contact's separate query permissions",
+        "contact-search--control-5": "People \u2192 Ask contacts \u2192 Ask contact",
+        "contact-search--control-6": "People \u2192 Ask contacts \u2192 Cancel this contact query",
+        "contact-search--control-7": "People \u2192 Ask contacts \u2192 View this query's saved answers",
+        "contact-search--control-8": "People \u2192 Ask contacts \u2192 Clear finished local contact-query history",
+        "contact-search--control-9": "People \u2192 Ask contacts \u2192 Save this contact\u2019s separate query permissions",
+        "servers--control-1": "My Organ \u2192 Chosen services \u2192 Inspect a social server",
+        "servers--control-2": "My Organ \u2192 Chosen services \u2192 Remember server roles",
+        "servers--control-3": "My Organ \u2192 Chosen services \u2192 Inspect remembered server",
+        "servers--control-4": "My Organ \u2192 Chosen services \u2192 Remove remembered server",
+        "servers--control-5": "My Organ \u2192 Chosen services \u2192 Browse chosen servers",
+        "servers--control-6": "My Organ \u2192 Chosen services \u2192 Search chosen servers",
+        "gossip--control-1": "People \u2192 Public forwarding \u2192 Save this device's gossip participation",
+        "gossip--control-2": "People \u2192 Public forwarding \u2192 Clear retained gossip consent",
+        "gossip--control-3": "People \u2192 Public forwarding \u2192 Save separate contact gossip consent",
+        "gossip--control-4": "People \u2192 Public forwarding \u2192 Save separate contact gossip consent",
+        "moderation--control-1": "People \u2192 Visibility & reports \u2192 Mute post",
+        "moderation--control-2": "People \u2192 Visibility & reports \u2192 Remove a listing on this host",
+        "moderation--control-3": "People \u2192 Visibility & reports \u2192 Show this target again",
+        "moderation--control-4": "People \u2192 Visibility & reports \u2192 Next hidden targets",
+        "moderation--control-5": "People \u2192 Visibility & reports \u2192 Restore this listing if still valid",
+        "moderation--control-6": "People \u2192 Visibility & reports \u2192 Next removed listings",
+        "moderation--control-7": "People \u2192 Visibility & reports \u2192 Preview a report to one operator",
+        "moderation--control-8": "People \u2192 Visibility & reports \u2192 Send this exact report",
+        "moderation--control-9": "People \u2192 Visibility & reports \u2192 Clear my report work",
+        "moderation--control-10": "People \u2192 Visibility & reports \u2192 Dismiss this report",
+        "moderation--control-11": "People \u2192 Visibility & reports \u2192 Remove this host's current listing",
+        "moderation--control-12": "People \u2192 Visibility & reports \u2192 Next received reports",
+        "moderation--control-13": "People \u2192 Visibility & reports \u2192 Hide this announcement",
+        "moderation--control-14": "People \u2192 Visibility & reports \u2192 Hide this public author",
+        "moderation--control-15": "People \u2192 Visibility & reports \u2192 Hidden announcements and authors",
+        "moderation--control-16": "People \u2192 Visibility & reports \u2192 Review this host\u2019s removed listings",
+        "moderation--control-17": "People \u2192 Visibility & reports \u2192 My submitted reports",
+        "moderation--control-18": "People \u2192 Visibility & reports \u2192 Review this operator\u2019s report inbox",
+        "hosting--control-1": "My Organ \u2192 Host a service \u2192 Save social service roles",
+        "hosting--control-2": "My Organ \u2192 Host a service \u2192 Refresh social service health",
+        "hosting--control-3": "My Organ \u2192 Host a service \u2192 Rebuild public search index",
+        "credits--control-1": "My Organ \u2192 Credits \u2192 View native QR and media attributions"
+      }
+    }
+  ],
+  "scenarios": [
+    "Open the Castle: understand my Organ and reach Ana without reading a tool inventory.",
+    "Share my contact pairing code, then scan a contact code: scanning fills the field without saving.",
+    "Find a nearby Organ; compare its fingerprint before adding or chatting.",
+    "Select Ana; change trust, incoming/outgoing limits and delivery independently; find workspaces and login access.",
+    "Inspect devices; distinguish signed Karma permission from local execution; issue a private enrolment code.",
+    "Find root-key export/detach and encrypted owner backup without showing secrets on the opening page.",
+    "Check mail carrier acceptance separately from recipient receipt; recover saved mail and manage pickup points.",
+    "Find public posts, profile, private requests, saved searches, consent and service administration without deleting these capabilities.",
+    "Compare fresh, pending, offline/retry, viewing-only, expired and large-list states in every alternative.",
+    "Use keyboard navigation and touch at desktop, mobile and Sand widths; check form focus and confirmation cancellation."
+  ]
+}

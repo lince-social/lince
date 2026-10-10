@@ -234,7 +234,19 @@ fn connection_setup(world: &mut World, owner: Entity) {
     let saved = world
         .get::<Panel>(owner)
         .and_then(|panel| panel.saved.as_ref());
-    if saved.is_some_and(|saved| saved.agent.is_some()) {
+    if saved.is_some_and(|saved| {
+        saved
+            .agent
+            .as_ref()
+            .is_some_and(|agent| agent.requires_node())
+    }) {
+        connections::Open.apply(world, owner);
+    } else if saved.is_some_and(|saved| {
+        saved
+            .agent
+            .as_ref()
+            .is_some_and(|agent| !agent.requires_node())
+    }) {
         show(world, owner, Step::Agent);
     } else if saved.is_some_and(|saved| {
         saved.settings.enabled && saved.requires_credential && saved.locked && saved.has_key
@@ -292,8 +304,30 @@ pub(crate) fn connections_visible(world: &mut World, area: Entity) -> bool {
     })
 }
 
+pub(crate) fn laboratory_browser(world: &mut World, area: Entity, url: &str) {
+    let owner = world.query::<(Entity, &Panel)>().iter(world)
+        .find(|(_, panel)| panel.binding.area == area)
+        .map(|(owner, _)| owner);
+    let Some(owner) = owner else { return };
+    if let Some(mut panel) = world.get_mut::<Panel>(owner)
+        && let Some(saved) = &mut panel.saved {
+        saved.login_url = Some(url.into());
+        saved.login_pending = true;
+    }
+    show(world, owner, Step::Browser);
+    if let Some(panel) = world.get::<Panel>(owner)
+        && panel.pending.is_none() {
+        let record = panel.binding.uid.clone();
+        request(world, owner, FioteRequest::Inspect {record});
+    }
+}
+
 fn request(world: &mut World, owner: Entity, message: FioteRequest) {
     let status = world.get::<Panel>(owner).unwrap().status;
+    let background = matches!(
+        &message,
+        FioteRequest::Inspect { .. } | FioteRequest::BrowserPoll { .. }
+    );
     let progress = if matches!(&message, FioteRequest::AgentCheck { .. }) {
         "Checking connection without sending a message…"
     } else {
@@ -302,7 +336,9 @@ fn request(world: &mut World, owner: Entity, message: FioteRequest) {
     match send(world, owner, message) {
         Ok(id) => {
             world.get_mut::<Panel>(owner).unwrap().pending = Some(id);
-            world.get_mut::<Text>(status).unwrap().0 = progress.into();
+            if !background {
+                world.get_mut::<Text>(status).unwrap().0 = progress.into();
+            }
         }
         Err(error) => world.get_mut::<Text>(status).unwrap().0 = error,
     }
@@ -549,6 +585,21 @@ fn show(world: &mut World, owner: Entity, step: Step) {
         Step::Browser => {
             crate::edit_mode::label(world, content, "Finish signing in in your browser.", 14.0);
             crate::description::button(world, content, owner, "Open browser again", OpenBrowser);
+            if let Some(url) = saved.as_ref().and_then(login_url) {
+                crate::description::button(world, content, owner, "Copy login link", CopyLoginLink);
+                let address = world
+                    .spawn((
+                        Node {
+                            max_height: px(96),
+                            flex_shrink: 0.0,
+                            ..default()
+                        },
+                        ChildOf(content),
+                    ))
+                    .id();
+                crate::scroll_sand::attach(world, address);
+                crate::edit_mode::label(world, address, &url, 12.0);
+            }
         }
         Step::Closed => {}
     }
@@ -764,37 +815,71 @@ impl Action for Continue {
 
 #[derive(Clone)]
 struct OpenBrowser;
+
+fn login_url(saved: &FioteStatus) -> Option<String> {
+    saved.login_url.clone().or_else(|| {
+        saved.agent_info.as_ref().and_then(|info| {
+            info["deviceCode"]["verificationUri"]
+                .as_str()
+                .map(str::to_owned)
+        })
+    })
+}
+
+#[derive(Clone)]
+struct CopyLoginLink;
+impl Action for CopyLoginLink {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(panel) = world.get::<Panel>(owner) else {
+            return;
+        };
+        let Some(url) = panel.saved.as_ref().and_then(login_url) else {
+            return;
+        };
+        let status = panel.status;
+        let copied = world
+            .get_resource_mut::<bevy::clipboard::Clipboard>()
+            .is_some_and(|mut clipboard| clipboard.set_text(url).is_ok());
+        world.get_mut::<Text>(status).unwrap().0 = if copied {
+            "Login link copied. Finish signing in in your browser."
+        } else {
+            "Could not copy the login link. Open browser again or use the displayed address."
+        }
+        .into();
+    }
+}
+
 impl Action for OpenBrowser {
     fn apply(&self, world: &mut World, owner: Entity) {
         let Some(panel) = world.get::<Panel>(owner) else {
             return;
         };
-        let Some(url) = panel.saved.as_ref().and_then(|saved| {
-            saved.login_url.clone().or_else(|| {
-                saved.agent_info.as_ref().and_then(|info| {
-                    info["deviceCode"]["verificationUri"]
-                        .as_str()
-                        .map(str::to_owned)
-                })
-            })
-        }) else {
+        let Some(url) = panel.saved.as_ref().and_then(login_url) else {
             return;
         };
-        let result = if cfg!(target_os = "windows") {
-            std::process::Command::new("rundll32")
-                .args(["url.dll,FileProtocolHandler", &url])
-                .spawn()
-        } else if cfg!(target_os = "macos") {
-            std::process::Command::new("open").arg(&url).spawn()
-        } else {
-            std::process::Command::new("xdg-open").arg(&url).spawn()
-        };
+        let result = cell::fiote::laboratory::open_browser(&url);
         if result.is_err() {
             let status = panel.status;
             world.get_mut::<Text>(status).unwrap().0 =
                 format!("Open this address in your browser: {url}");
         }
     }
+}
+
+pub(crate) fn selected_record(world: &mut World) -> Option<String> {
+    let candidates: Vec<_> = world.query::<(Entity, &Panel)>().iter(world)
+        .filter_map(|(entity, panel)| panel.saved.as_ref()
+            .filter(|saved| saved.settings.enabled)
+            .map(|saved| (entity, panel.binding.area, saved.record.clone())))
+        .collect();
+    let mut cursor=world.get_resource::<InputFocus>().and_then(|focus| focus.get());
+    while let Some(entity)=cursor {
+        if let Some((_,_,record))=candidates.iter().find(|(panel,area,_)| *panel==entity || *area==entity) {
+            return Some(record.clone());
+        }
+        cursor=world.get::<ChildOf>(entity).map(ChildOf::parent);
+    }
+    candidates.first().map(|(_,_,record)| record.clone())
 }
 
 pub fn command(world: &mut World, binding: &RecordBinding, text: &str) -> bool {
@@ -830,6 +915,9 @@ pub fn command(world: &mut World, binding: &RecordBinding, text: &str) -> bool {
 }
 
 pub fn ready(world: &mut World, binding: &RecordBinding) -> bool {
+    if crate::laboratory::fiote::connection_ready(world, binding) {
+        return true;
+    }
     let owner = world
         .query::<(Entity, &Panel)>()
         .iter(world)
@@ -851,8 +939,12 @@ pub fn ready(world: &mut World, binding: &RecordBinding) -> bool {
         });
     let ready = !fiote
         || panel.saved.as_ref().is_some_and(|saved| {
-            !saved.tool_connections.is_empty()
-                || (saved.settings.enabled && (!saved.locked || !saved.requires_credential))
+            !saved
+                .agent
+                .as_ref()
+                .is_some_and(|agent| agent.requires_node())
+                && (!saved.tool_connections.is_empty()
+                    || (saved.settings.enabled && (!saved.locked || !saved.requires_credential)))
         });
     if !ready && panel.pending.is_none() && !open_setup(world, owner) {
         connection_setup(world, owner);
@@ -1034,9 +1126,9 @@ fn update_connections(world: &mut World, status: &FioteStatus) {
         .map(|(entity, _)| entity)
         .collect();
     for owner in panels {
-        let mut panel = world.get_mut::<Panel>(owner).unwrap();
-        panel.saved = Some(status.clone());
+        let panel = world.get::<Panel>(owner).unwrap();
         let close_picker = !status.tool_connections.is_empty() && panel.step == Step::Providers;
+        apply_status(world, owner, status.clone());
         if close_picker {
             show(world, owner, Step::Closed);
         }
@@ -1125,6 +1217,13 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     let panel = world.get::<Panel>(owner).unwrap();
     let step = panel.step;
     let first = panel.saved.is_none() && panel.automatic;
+    let changed = panel.saved.as_ref().is_none_or(|previous| {
+        serde_json::to_value(previous).ok() != serde_json::to_value(&saved).ok()
+    });
+    let login_changed = panel
+        .saved
+        .as_ref()
+        .is_none_or(|previous| login_url(previous) != login_url(&saved));
     let agent_changed = panel
         .saved
         .as_ref()
@@ -1142,20 +1241,26 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         step
     };
     let browser = next == Step::Browser && step != Step::Browser;
-    world.get_mut::<Text>(label).unwrap().0 = if let Some(agent) = &saved.agent {
-        let state = saved
-            .agent_info
-            .as_ref()
-            .and_then(|info| info.get("connectionCheck"))
-            .map(|check| {
-                if check["ready"] == true {
-                    "session ready"
-                } else {
-                    "connection needs attention"
-                }
-            })
-            .unwrap_or("connection not checked");
-        format!("{} · {state} · /login", agent.command.display())
+    let status_text = if next == Step::Browser {
+        "Finish signing in in your browser.".into()
+    } else if let Some(agent) = &saved.agent {
+        if agent.requires_node() {
+            "Native connection needed · Node.js agents are not supported · /login".into()
+        } else {
+            let state = saved
+                .agent_info
+                .as_ref()
+                .and_then(|info| info.get("connectionCheck"))
+                .map(|check| {
+                    if check["ready"] == true {
+                        "session ready"
+                    } else {
+                        "connection needs attention"
+                    }
+                })
+                .unwrap_or("connection not checked");
+            format!("{} · {state} · /login", agent.command.display())
+        }
     } else if saved.settings.enabled {
         format!(
             "{} · {} · /login",
@@ -1173,6 +1278,12 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     } else {
         "Choose a Fiote and connect its agent.".into()
     };
+    if next != Step::Browser || step != Step::Browser {
+        world
+            .get_mut::<Text>(label)
+            .unwrap()
+            .set_if_neq(Text::new(status_text));
+    }
     let mut panel = world.get_mut::<Panel>(owner).unwrap();
     panel.pending = None;
     panel.binding.uid = saved.record.clone();
@@ -1185,8 +1296,9 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     if next != step
         || (first && !connections::editing(world, owner))
         || (step == Step::Agent && (agent_changed || refreshed))
-        || step == Step::Manage
-        || (step == Step::Connections && !connections::editing(world, owner))
+        || (step == Step::Manage && changed)
+        || (step == Step::Connections && changed && !connections::editing(world, owner))
+        || (step == Step::Browser && login_changed)
     {
         show(world, owner, next);
     }

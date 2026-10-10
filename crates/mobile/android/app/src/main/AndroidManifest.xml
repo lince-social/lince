@@ -3,10 +3,16 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <application android:label="@string/lince_app_name" android:hasCode="true" android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="false"
         android:icon="@mipmap/lince" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <service android:name="social.lince.mobile.LocationService" android:exported="false" android:foregroundServiceType="location" />
         <activity android:name="social.lince.mobile.RestartActivity" android:exported="false"
             android:process=":profile_restart" android:taskAffinity="${applicationId}.profile_restart"
             android:excludeFromRecents="true" android:noHistory="true"

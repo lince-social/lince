@@ -293,6 +293,8 @@ pub(crate) mod tests {
         let mut workspaces = super::super::Workspaces::default().entries;
         workspaces[0].name = name.into();
         Document {
+            deleted_workspaces: Default::default(),
+            trash_retention_days: super::super::default_trash_retention_days(),
             canvas_id: None,
             hidden_records: Default::default(),
             canvas_state: None,

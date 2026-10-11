@@ -7,6 +7,7 @@ mod karma_rules;
 mod karma_transfers;
 pub mod calendar;
 pub mod schedule;
+mod assertion_order;
 pub mod read_rules;
 pub mod record_query;
 mod transfer_application;
@@ -125,6 +126,7 @@ fn part_of_kind() -> String {
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Predicate {
     ProjectionWindow(nucleus::projection::Window),
+    RollingWindow(nucleus::projection::RollingWindow),
     All(Vec<Predicate>),
     Any(Vec<Predicate>),
     Not(Box<Predicate>),
@@ -404,9 +406,9 @@ pub async fn execute_for_with_context(
         Source::Frequency => execute_frequency(store, visible).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
         Source::KarmaRule => karma_rules::execute(store, protein, visible, subject, installed_signer_actor).await?,
-        Source::Concept => execute_concepts(store, protein).await?,
+        Source::Concept => execute_concepts(store, protein, subject).await?,
         Source::Lingua => execute_linguas(store, protein).await?,
-        Source::Assertion => execute_assertions(store, protein).await?,
+        Source::Assertion => execute_assertions(store, protein, subject).await?,
         Source::Transfer => {
             execute_transfers(
                 store,
@@ -523,6 +525,12 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
                     return Err(store::StoreError::Protocol("protein_calendar_invalid:projection window must be a top-level Calendar or Schedule filter".into()));
                 }
                 window.validate().map_err(store::StoreError::Protocol)?;
+            }
+            Predicate::RollingWindow(window) => {
+                if !matches!(source, Source::Calendar | Source::Schedule) || group_depth != 0 {
+                    return Err(store::StoreError::Protocol("Rolling windows must be top-level Calendar or Schedule filters".into()));
+                }
+                window.resolve(nucleus::execution::now().timestamp_millis()).map_err(store::StoreError::Protocol)?;
             }
             Predicate::All(children) | Predicate::Any(children) => {
                 if group_depth > MAX_FILTER_INDENT {
@@ -1345,6 +1353,15 @@ pub async fn matching_records(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
+    matching_records_for(store, protein, visible, None).await
+}
+
+async fn matching_records_for(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+    subject: Option<&str>,
+) -> Result<Vec<store::records::RecordRow>, ProteinError> {
     fn supported(predicate: &Predicate) -> bool {
         match predicate {
             Predicate::All(children) | Predicate::Any(children) => children.iter().all(supported),
@@ -1374,7 +1391,7 @@ pub async fn matching_records(
         ));
     }
     let all = store::records::list_all(&store.pool).await?;
-    let ctx = PredicateCtx::prepare(store, &protein.filter).await?;
+    let ctx = PredicateCtx::prepare(store, &protein.filter, visible, subject).await?;
     let mut rows: Vec<store::records::RecordRow> = Vec::new();
     for r in all {
         if visible.is_some_and(|v| !v.contains(&r.uid)) {
@@ -1407,7 +1424,16 @@ pub async fn select_records(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
-    let mut rows = matching_records(store, protein, visible).await?;
+    select_records_for(store, protein, visible, None).await
+}
+
+async fn select_records_for(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+    subject: Option<&str>,
+) -> Result<Vec<store::records::RecordRow>, ProteinError> {
+    let mut rows = matching_records_for(store, protein, visible, subject).await?;
     rows.retain(|row| row.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
     if protein.aggregate.is_none() {
         rows = order_records(store, rows, &protein.order).await?;
@@ -1430,22 +1456,18 @@ async fn execute_records(
     visible: Option<&HashSet<String>>,
     subject: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
-    let rows = select_records(store, protein, visible).await?;
+    let rows = select_records_for(store, protein, visible, subject).await?;
 
     if let Some(agg) = &protein.aggregate {
         return Ok(aggregate_records(&rows, agg));
     }
 
     let mut out = Vec::with_capacity(rows.len());
-    let concept_names: HashMap<String, String> = store::concepts::list_all(&store.pool)
-        .await?
-        .into_iter()
-        .map(|concept| (concept.uid, concept.canonical_name))
-        .collect();
+    let concept_names = store::vocabulary::display_names(&store.pool, subject).await?;
     let work = store::records::all_extensions(&store.pool, "work").await?;
-    let mut projected = record_schema::attach(store, protein, &rows, visible, &work).await?;
+    let mut projected = record_schema::attach(store, protein, &rows, visible, &work, &concept_names).await?;
     let mut relation_context = if let Some(include) = &protein.include.relation_context {
-        relation_context::attach(store, &rows, visible, include, &concept_names).await?
+        relation_context::attach(store, &rows, visible, include, &concept_names, subject).await?
     } else {
         HashMap::new()
     };
@@ -1482,6 +1504,8 @@ async fn execute_records(
             record_unit_uid.as_deref(),
             &protein.include,
             &protected_transfers,
+            &concept_names,
+            subject,
         )
         .await?;
         if let Some(Value::Object(fields)) = projected.remove(&r.uid) {
@@ -1589,11 +1613,31 @@ async fn order_records(
             }
         }
     }
+    let assertion_fields: Vec<_> = order.iter().filter_map(|key| match key {
+        Order::Asc(field) | Order::Desc(field) if field.starts_with('#') => Some(field.clone()),
+        _ => None,
+    }).collect();
+    let assertion_values = if assertion_fields.is_empty() {
+        HashMap::new()
+    } else {
+        let uids: Vec<_> = rows.iter().map(|row| row.uid.clone()).collect();
+        assertion_order::values(store, &uids, &assertion_fields).await?
+    };
     for key in order.iter().rev() {
         match key {
             Order::Asc(f) | Order::Desc(f) => {
                 let desc = matches!(key, Order::Desc(_));
                 rows.sort_by(|a, b| {
+                    if f.starts_with('#') {
+                        let left = assertion_values.get(&(a.uid.clone(), f.clone()));
+                        let right = assertion_values.get(&(b.uid.clone(), f.clone()));
+                        return match (left, right) {
+                            (Some(a), Some(b)) => if desc { b.cmp(a) } else { a.cmp(b) },
+                            (Some(_), None) => std::cmp::Ordering::Less,
+                            (None, Some(_)) => std::cmp::Ordering::Greater,
+                            (None, None) => std::cmp::Ordering::Equal,
+                        };
+                    }
                     let ord = record_field_cmp(a, b, f, &concept_names, &assignees, &work);
                     if desc
                         && !record_field_is_missing(a, f, &concept_names, &assignees, &work)
@@ -1729,6 +1773,8 @@ async fn attach_includes(
     record_unit_uid: Option<&str>,
     include: &Include,
     protected_transfers: &HashSet<String>,
+    concept_names: &HashMap<String, String>,
+    subject: Option<&str>,
 ) -> Result<(), ProteinError> {
     if include.availability {
         let availability =
@@ -1777,7 +1823,7 @@ async fn attach_includes(
         );
     }
     if let Some(links) = &include.links {
-        row["links"] = Value::Array(links_for_record(store, record_uid, links).await?);
+        row["links"] = Value::Array(links_for_record(store, record_uid, links, concept_names, subject).await?);
     }
     if let Some(threads) = &include.threads {
         row["threads"] =
@@ -1917,6 +1963,7 @@ fn resolve_at(value: &str) -> Option<String> {
 async fn resolve_link_kind_uids(
     store: &Store,
     links: &LinksInclude,
+    subject: Option<&str>,
 ) -> Result<Vec<String>, ProteinError> {
     let mut requested = Vec::new();
     for kind in &links.kinds {
@@ -1927,7 +1974,7 @@ async fn resolve_link_kind_uids(
     }
     let mut out = Vec::new();
     for kind in requested {
-        if let Some(uid) = store::concepts::resolve(&store.pool, &kind).await? {
+        if let Some(uid) = store::vocabulary::resolve(&store.pool, &kind, subject).await? {
             if !out.iter().any(|existing| existing == &uid) {
                 out.push(uid);
             }
@@ -1940,12 +1987,14 @@ async fn links_for_record(
     store: &Store,
     record_uid: &str,
     links: &LinksInclude,
+    concept_names: &HashMap<String, String>,
+    subject: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
     let wants_all = links.kinds.iter().any(|kind| kind.trim() == "*");
     let rows = if wants_all {
         store::assertions::all_binary(&store.pool).await?
     } else {
-        let kind_uids = resolve_link_kind_uids(store, links).await?;
+        let kind_uids = resolve_link_kind_uids(store, links, subject).await?;
         if kind_uids.is_empty() {
             return Ok(vec![]);
         }
@@ -1987,7 +2036,7 @@ async fn links_for_record(
                 "from": link.subject_uid,
                 "to": link.object_uid,
                 "kind_uid": link.predicate_uid,
-                "kind": link.predicate,
+                "kind": concept_names.get(&link.predicate_uid).unwrap_or(&link.predicate),
                 "direction": if outgoing { "out" } else { "in" },
                 "other": other,
                 "hop": hop,
@@ -2223,9 +2272,11 @@ async fn organ_name_for(
 }
 
 struct PredicateCtx {
+    person: Option<String>,
     concept_families: HashMap<String, HashSet<String>>,
     record_concepts: HashMap<String, Vec<String>>,
     anchors: HashMap<String, Option<nucleus::place::Place>>,
+    locations: HashMap<String, nucleus::vocabulary::SavedLocation>,
     relations: HashMap<(String, LinkDirection, Option<String>), HashSet<String>>,
     branches: HashMap<(String, String, bool), HashSet<String>>,
     work: Option<HashMap<String, Value>>,
@@ -2233,11 +2284,21 @@ struct PredicateCtx {
 }
 
 impl PredicateCtx {
-    async fn prepare(store: &Store, preds: &[Predicate]) -> Result<Self, ProteinError> {
+    async fn prepare(store: &Store, preds: &[Predicate], visible: Option<&HashSet<String>>, subject: Option<&str>) -> Result<Self, ProteinError> {
+        fn near(predicate: &Predicate) -> bool {
+            match predicate {
+                Predicate::Near { .. } => true,
+                Predicate::All(children) | Predicate::Any(children) => children.iter().any(near),
+                Predicate::Not(child) => near(child),
+                _ => false,
+            }
+        }
         let mut ctx = PredicateCtx {
+            person: subject.map(str::to_owned),
             concept_families: HashMap::new(),
             record_concepts: HashMap::new(),
             anchors: HashMap::new(),
+            locations: if preds.iter().any(near) { store::places::saved_locations(&store.pool, visible).await? } else { HashMap::new() },
             relations: HashMap::new(),
             branches: HashMap::new(),
             work: None,
@@ -2258,7 +2319,7 @@ impl PredicateCtx {
                         .into_iter()
                         .collect();
                 }
-                let family = match store::concepts::resolve(&store.pool, name).await? {
+                let family = match store::vocabulary::resolve(&store.pool, name, self.person.as_deref()).await? {
                     Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
                         .await?
                         .into_iter()
@@ -2269,7 +2330,7 @@ impl PredicateCtx {
             }
             Predicate::Near { of, .. } => {
                 let place = match store::records::resolve(&store.pool, of).await? {
-                    Some(r) => store::places::of_record(&store.pool, &r.uid).await?,
+                    Some(r) => self.locations.get(&r.uid).and_then(|location| location.selected.as_ref()).map(|candidate| nucleus::place::Place { lat: candidate.latitude, lon: candidate.longitude }),
                     None => None,
                 };
                 self.anchors.insert(of.clone(), place);
@@ -2284,7 +2345,7 @@ impl PredicateCtx {
                     return Ok(());
                 }
                 let root = store::records::resolve(&store.pool, record).await?;
-                let kind_uid = store::concepts::resolve(&store.pool, kind).await?;
+                let kind_uid = store::vocabulary::resolve(&store.pool, kind, self.person.as_deref()).await?;
                 let members = match (root, kind_uid) {
                     (Some(root), Some(kind_uid)) => {
                         let family =
@@ -2312,7 +2373,7 @@ impl PredicateCtx {
                 if self.relations.contains_key(&key) {
                     return Ok(());
                 }
-                let Some(kind_uid) = store::concepts::resolve(&store.pool, kind).await? else {
+                let Some(kind_uid) = store::vocabulary::resolve(&store.pool, kind, self.person.as_deref()).await? else {
                     self.relations.insert(key, HashSet::new());
                     return Ok(());
                 };
@@ -2403,7 +2464,7 @@ impl PredicateCtx {
     {
         Box::pin(async move {
             Ok(match p {
-                Predicate::ProjectionWindow(_) => false,
+                Predicate::ProjectionWindow(_) | Predicate::RollingWindow(_) => false,
                 Predicate::All(ps) => {
                     for p in ps {
                         if !self.matches_one(store, r, p).await? {
@@ -2509,7 +2570,7 @@ impl PredicateCtx {
                 Predicate::Near { of, meters } => {
                     match (
                         self.anchors.get(of).and_then(|a| *a),
-                        store::places::of_record(&store.pool, &r.uid).await?,
+                        self.locations.get(&r.uid).and_then(|location| location.selected.as_ref()).map(|candidate| nucleus::place::Place { lat: candidate.latitude, lon: candidate.longitude }),
                     ) {
                         (Some(anchor), Some(here)) => nucleus::place::near(here, anchor, *meters),
                         _ => false,
@@ -3513,11 +3574,15 @@ fn timeline_overflow() -> ProteinError {
         .into()
 }
 
-async fn execute_concepts(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
+async fn execute_concepts(store: &Store, protein: &Protein, subject: Option<&str>) -> Result<Vec<Value>, ProteinError> {
+    let names = store::vocabulary::display_names(&store.pool, subject).await?;
+    let terms = store::vocabulary::terms(&store.pool, subject).await?;
+    let sources = store::vocabulary::sources(&store.pool).await?;
+    let (write_location, binding_revision, location_concepts) = store::vocabulary::location_bindings(&store.pool).await?;
     let mut family: Option<HashSet<String>> = None;
     for p in &protein.filter {
         if let Predicate::ConceptIn(name) = p {
-            family = Some(match store::concepts::resolve(&store.pool, name).await? {
+            family = Some(match store::vocabulary::resolve(&store.pool, name, subject).await? {
                 Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
                     .await?
                     .into_iter()
@@ -3533,8 +3598,8 @@ async fn execute_concepts(store: &Store, protein: &Protein) -> Result<Vec<Value>
         }
         let name_matches = protein.filter.iter().all(|p| match p {
             Predicate::UidEq(uid) => c.uid == *uid,
-            Predicate::SlugEq(name) => c.canonical_name == *name,
-            Predicate::TextContains(text) => c.canonical_name.to_lowercase().contains(&text.to_lowercase()),
+            Predicate::SlugEq(name) => terms.iter().any(|term| term.concept_uid == c.uid && term.name == *name),
+            Predicate::TextContains(text) => terms.iter().any(|term| term.concept_uid == c.uid && term.name.to_lowercase().contains(&text.to_lowercase())),
             _ => true,
         });
         if !name_matches {
@@ -3543,7 +3608,12 @@ async fn execute_concepts(store: &Store, protein: &Protein) -> Result<Vec<Value>
         let lingua_uids = store::linguas::lingua_uids_for_concept(&store.pool, &c.uid).await?;
         out.push(json!({
             "uid": c.uid,
-            "name": c.canonical_name,
+            "name": names.get(&c.uid).unwrap_or(&c.canonical_name),
+            "source": sources.get(&c.uid),
+            "terms": terms.iter().filter(|term| term.concept_uid == c.uid).collect::<Vec<_>>(),
+            "saved_location": location_concepts.contains(&c.uid),
+            "location_write": write_location == c.uid,
+            "binding_revision": binding_revision,
             "instinct": c.instinct,
             "parents": c.parents,
             "linguas": lingua_uids,
@@ -3580,16 +3650,12 @@ async fn execute_linguas(store: &Store, protein: &Protein) -> Result<Vec<Value>,
     Ok(out)
 }
 
-async fn execute_assertions(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
-    let concept_names: HashMap<String, String> = store::concepts::list_all(&store.pool)
-        .await?
-        .into_iter()
-        .map(|concept| (concept.uid, concept.canonical_name))
-        .collect();
+async fn execute_assertions(store: &Store, protein: &Protein, subject: Option<&str>) -> Result<Vec<Value>, ProteinError> {
+    let concept_names = store::vocabulary::display_names(&store.pool, subject).await?;
     let mut family: Option<HashSet<String>> = None;
     for predicate in &protein.filter {
         if let Predicate::ConceptIn(name) = predicate {
-            family = Some(match store::concepts::resolve(&store.pool, name).await? {
+            family = Some(match store::vocabulary::resolve(&store.pool, name, subject).await? {
                 Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
                     .await?
                     .into_iter()
@@ -3989,6 +4055,7 @@ fn transfer_query_error(code: &str, detail: impl std::fmt::Display) -> ProteinEr
 fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
     match predicate {
         Predicate::ProjectionWindow(_) => "projection_window",
+        Predicate::RollingWindow(_) => "rolling_window",
         Predicate::All(_) => "all",
         Predicate::Any(_) => "any",
         Predicate::Not(_) => "not",

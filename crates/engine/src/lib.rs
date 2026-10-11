@@ -20,6 +20,8 @@ pub mod collab_guard;
 pub mod custom_component;
 pub mod presence;
 pub mod location;
+pub mod vocabulary;
+pub mod saved_location;
 pub mod visibility;
 pub mod record_change;
 pub mod record_extensions;
@@ -83,6 +85,7 @@ pub mod component_presentation;
 pub mod canvas;
 pub mod sync;
 pub mod sync_service;
+pub mod plugins;
 mod tagged_record;
 pub mod threads;
 pub mod groups;
@@ -132,6 +135,8 @@ pub struct Engine {
     calls: Mutex<calls::Calls>,
     login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
     pub sync_service: sync_service::SyncService,
+    pub plugins: tokio::sync::OnceCell<std::sync::Arc<::plugins::Host>>,
+    pub(crate) plugin_work: tokio::sync::Mutex<()>,
     pub presence: presence::Presence,
     pub workspace_presence: workspace_sync::Presence,
     bus: broadcast::Sender<Fact>,
@@ -211,6 +216,8 @@ impl Engine {
             access_gate: tokio::sync::RwLock::new(()),
             login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
             sync_service: sync_service::SyncService::default(),
+            plugins: tokio::sync::OnceCell::new(),
+            plugin_work: tokio::sync::Mutex::new(()),
             presence: presence::Presence::default(),
             workspace_presence: Default::default(),
             bus,

@@ -153,6 +153,17 @@ async fn assignees_and_assertions_do_not_reveal_an_unreadable_person() {
     store::auth::set_user_role(&engine.store.pool, &ids[2], role)
         .await
         .unwrap();
+    engine
+        .act(
+            Action::SetRolePolicy {
+                role: "schema-viewer".into(),
+                expected_revision: 0,
+                policy: json!({"read":{"uid_eq":ids[0]},"grants":[]}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
     store::visibility::grant(&engine.store.pool, "actor", Some(&ids[2]), &ids[0])
         .await
         .unwrap();
@@ -163,6 +174,17 @@ async fn assignees_and_assertions_do_not_reveal_an_unreadable_person() {
     assert_eq!(remote[0]["assignees"], json!([]));
     assert_eq!(remote[0]["assertions"], json!([]));
     store::visibility::grant(&engine.store.pool, "actor", Some(&ids[2]), &ids[1])
+        .await
+        .unwrap();
+    engine
+        .act(
+            Action::SetRolePolicy {
+                role: "schema-viewer".into(),
+                expected_revision: 1,
+                policy: json!({"read":{"any":[{"uid_eq":ids[0]},{"uid_eq":ids[1]}]},"grants":[]}),
+            },
+            None,
+        )
         .await
         .unwrap();
     let remote = protein::execute_for(&engine.store, &query, Some(&ids[2]))

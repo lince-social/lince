@@ -704,8 +704,14 @@ impl Engine {
                         .recipients
                         .iter()
                         .any(|recipient| recipient == person)));
-        self.location_permitted_view(record, &lease.session_uid, allowed, controller)
-            .await
+        self.location_permitted_view(
+            record,
+            &lease.session_uid,
+            allowed,
+            controller,
+            decision.radius_metres,
+        )
+        .await
     }
 
     pub(crate) async fn location_organ_view(
@@ -725,8 +731,14 @@ impl Engine {
             .get(record)
             .map(|session| session.lease.session_uid.clone());
         let view = if let Some(session) = session {
-            self.location_permitted_view(record, &session, decision.allowed, false)
-                .await?
+            self.location_permitted_view(
+                record,
+                &session,
+                decision.allowed,
+                false,
+                decision.radius_metres,
+            )
+            .await?
         } else {
             stopped(record)
         };
@@ -739,6 +751,7 @@ impl Engine {
         session_uid: &str,
         allowed: bool,
         controller: bool,
+        radius_metres: Option<u32>,
     ) -> Result<View, EngineError> {
         let state = self.location.state.lock().await;
         let Some(session) = state.sessions.get(record) else {
@@ -749,7 +762,7 @@ impl Engine {
         }
         let age = session.latest.as_ref().map(Observation::age_ms);
         let fresh = age.is_some_and(|age| age < MAX_FIX_AGE_MS as u64);
-        Ok(View {
+        let mut view = View {
             record_uid: record.into(),
             status: if !session.lease.approved {
                 Status::AwaitingApproval
@@ -771,7 +784,26 @@ impl Engine {
                 .filter(|_| fresh)
                 .map(|observation| observation.fix.clone()),
             age_ms: age.filter(|_| fresh),
-        })
+            radius_metres: None,
+        };
+        if !controller
+            && let Some(radius) = radius_metres
+            && let Some(fix) = &mut view.fix
+        {
+            let center = nucleus::place::approximate(
+                nucleus::place::Place {
+                    lat: fix.latitude,
+                    lon: fix.longitude,
+                },
+                radius,
+            )
+            .ok_or_else(|| invalid("Invalid approximate location area"))?;
+            fix.latitude = center.lat;
+            fix.longitude = center.lon;
+            fix.accuracy_metres = None;
+            view.radius_metres = Some(radius);
+        }
+        Ok(view)
     }
 
     async fn location_accept_fix(
@@ -1348,6 +1380,7 @@ fn stopped(record: &str) -> View {
         expires_at_ms: None,
         source_kind: None,
         fix: None,
+        radius_metres: None,
         age_ms: None,
     }
 }

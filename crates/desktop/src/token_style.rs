@@ -15,6 +15,9 @@ pub use lince_interface::style::{
 pub(crate) struct AppliedSize(pub Vec2);
 
 pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
+    if world.get::<crate::map_castle::MapSand>(entity).is_some() {
+        return Some(SandStyleKind::Square);
+    }
     if world.get::<crate::time_castle::TimeSettings>(entity).is_some() {
         return Some(SandStyleKind::TimeCastle);
     }

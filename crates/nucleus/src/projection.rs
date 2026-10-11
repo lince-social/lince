@@ -10,6 +10,53 @@ pub const MAX_STEPS: u64 = 100_000;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct RollingWindow {
+    pub past_days: u16,
+    pub future_days: u16,
+    pub timezone: String,
+}
+
+impl RollingWindow {
+    pub fn resolve(&self, now_ms: i64) -> Result<Window, String> {
+        if self.future_days == 0 || u32::from(self.past_days) + u32::from(self.future_days) > 366 {
+            return Err("Choose a future window within 366 days including history".into());
+        }
+        use chrono::TimeZone;
+        let zone: chrono_tz::Tz = self.timezone.parse().map_err(|_| "Unknown timezone")?;
+        let today = chrono::DateTime::from_timestamp_millis(now_ms)
+            .ok_or("Invalid current time")?
+            .with_timezone(&zone)
+            .date_naive();
+        let boundary = |date: chrono::NaiveDate| {
+            let midnight = date.and_hms_opt(0, 0, 0).ok_or("Invalid window date")?;
+            (0..180)
+                .find_map(|minute| {
+                    zone.from_local_datetime(&(midnight + chrono::TimeDelta::minutes(minute)))
+                        .earliest()
+                })
+                .map(|time| time.timestamp_millis())
+                .ok_or("Window date is unavailable in this timezone")
+        };
+        let window = Window {
+            from_ms: boundary(
+                today
+                    .checked_sub_days(chrono::Days::new(u64::from(self.past_days)))
+                    .ok_or("Window overflow")?,
+            )?,
+            until_ms: boundary(
+                today
+                    .checked_add_days(chrono::Days::new(u64::from(self.future_days)))
+                    .ok_or("Window overflow")?,
+            )?,
+            timezone: self.timezone.clone(),
+        };
+        window.validate()?;
+        Ok(window)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Window {
     pub from_ms: i64,
     pub until_ms: i64,

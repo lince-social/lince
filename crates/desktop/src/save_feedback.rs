@@ -106,22 +106,27 @@ fn borders_at(world: &mut World, now: Instant) {
             if feedback.border.is_none() {
                 feedback.border = border;
             }
+            let borderless = world.get::<crate::sand::Borderless>(entity).is_some();
             if let Some(mut node) = world.get_mut::<Node>(entity) {
-                let border = &mut node.border;
-                for side in [
-                    &mut border.left,
-                    &mut border.right,
-                    &mut border.top,
-                    &mut border.bottom,
-                ] {
-                    if matches!(*side, Val::Auto | Val::Px(0.0) | Val::Percent(0.0)) {
-                        *side = px(1);
+                if borderless {
+                    node.border = UiRect::bottom(px(1));
+                } else {
+                    let border = &mut node.border;
+                    for side in [
+                        &mut border.left,
+                        &mut border.right,
+                        &mut border.top,
+                        &mut border.bottom,
+                    ] {
+                        if matches!(*side, Val::Auto | Val::Px(0.0) | Val::Percent(0.0)) {
+                            *side = px(1);
+                        }
                     }
                 }
             }
         } else {
             let border = world.get_mut::<SaveFeedback>(entity).unwrap().border.take();
-            if !editable
+            if (!editable || world.get::<crate::sand::Borderless>(entity).is_some())
                 && let Some(border) = border
                 && let Some(mut node) = world.get_mut::<Node>(entity)
             {

@@ -249,7 +249,11 @@ async fn turn(
                 );
             }
             output.tool_pending(&call).await?;
-            let result = tools.run(&call.name, call.arguments).await;
+            let result = tokio::select! {
+                biased;
+                _ = stop.changed() => return Err("Stopped by you. Completed Record, file and command operations remain saved.".into()),
+                result = tools.run(&call.name, call.arguments) => result,
+            };
             receipts.push(format!("{}: {}", call.name, result));
             messages.push(Message::Tool {
                 id: call.id,

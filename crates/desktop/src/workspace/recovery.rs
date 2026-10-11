@@ -299,6 +299,7 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         crate::frequency_castle::SavedFrequencyCastle
     );
     let calendars = castles!("calendars", "Calendars", crate::calendar::SavedCalendar);
+    let maps = castles!("maps", "Maps", crate::map_castle::SavedMap);
     let instincts = castles!("instincts", "Instincts", crate::instinct::SavedInstinct);
     let assertions = entries(
         &mut values,
@@ -384,6 +385,7 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         editors,
         explorers,
         calendars,
+        maps,
         instincts,
         assertions,
         shaders,

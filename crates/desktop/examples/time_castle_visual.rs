@@ -196,28 +196,13 @@ fn check_card_bounds(world: &mut World, clock: Entity) {
 fn size_probe(app: &mut App, clock: Entity, directory: &std::path::Path) {
     let panel = app
         .world_mut()
-        .query::<(&Text, &ChildOf)>()
+        .query::<(Entity, &Name, &ChildOf)>()
         .iter(app.world())
-        .find_map(|(text, parent)| {
-            let button = parent.parent();
-            let panel = app.world().get::<ChildOf>(button)?.parent();
-            (text.0.contains('\n')
-                && app.world().get::<CanvasItem>(button).is_none()
-                && app
-                    .world()
-                    .get::<Node>(panel)
-                    .is_some_and(|node| node.display != Display::None)
-                && app
-                    .world()
-                    .get::<ChildOf>(panel)
-                    .is_some_and(|parent| parent.parent() == clock)
-                && app
-                    .world()
-                    .get::<ActionButton>(button)
-                    .is_some_and(|action| action.target == clock))
-            .then_some(panel)
+        .find(|(_, name, parent)| {
+            name.as_str() == "Clock upcoming tasks" && parent.parent() == clock
         })
-        .unwrap();
+        .unwrap()
+        .0;
     let skull = app
         .world_mut()
         .query::<(&lince_desktop::icons::Tooltip, &ActionButton, &ChildOf)>()
@@ -260,6 +245,28 @@ fn size_probe(app: &mut App, clock: Entity, directory: &std::path::Path) {
         capture(app, directory, &format!("size-{width}x{height}"));
         check_card_bounds(app.world_mut(), clock);
         let tasks = app.world().get::<Node>(panel).unwrap().display != Display::None;
+        if tasks {
+            let panel_node = app.world().get::<ComputedNode>(panel).unwrap();
+            let panel_width = panel_node.size().x * panel_node.inverse_scale_factor();
+            for (text, info, node, parent) in app
+                .world_mut()
+                .query::<(&Text, &bevy::text::TextLayoutInfo, &ComputedNode, &ChildOf)>()
+                .iter(app.world())
+            {
+                if app
+                    .world()
+                    .get::<ChildOf>(parent.parent())
+                    .is_some_and(|ancestor| ancestor.parent() == panel)
+                {
+                    assert!(
+                        info.size.x * node.inverse_scale_factor() <= panel_width - 16.0 + 2.0,
+                        "Upcoming text exceeds its fitted block: {}",
+                        text.0
+                    );
+                    assert_eq!(text.0.lines().count(), 2);
+                }
+            }
+        }
         let memento = app.world().get::<Node>(skull).unwrap().display != Display::None;
         assert!(!memento || tasks);
         if width.min(height) <= 180 {
@@ -388,6 +395,7 @@ async fn fixture() -> Arc<engine::Engine> {
         .await
         .unwrap();
     let now = chrono::Utc::now();
+    let content_probe = std::env::args().any(|argument| argument == "--content-probe");
     for (index, (head, start, duration)) in [
         ("Morning task", 10, Some(10)),
         ("Overlapping work", 15, Some(10)),
@@ -405,7 +413,7 @@ async fn fixture() -> Arc<engine::Engine> {
         ("Final check", 55, None),
         ("Current task", -2, Some(9)),
         ("Completed review", -20, Some(8)),
-        ("Past point", -10, None),
+        ("Past point", -10, if content_probe { Some(10) } else { None }),
     ]
     .into_iter()
     .enumerate()
@@ -415,7 +423,9 @@ async fn fixture() -> Arc<engine::Engine> {
                 engine::actions::Action::CreateRecord {
                     slug: Some(format!("clock-visual-{index}")),
                     kind: nucleus::RecordKind::Plain,
-                    head: head.into(),
+                    head: if index == 6 && std::env::args().any(|argument| argument == "--content-probe") {
+                        "Prepare a thoughtful response to the design review with an unusually long task title that must fit the clock".into()
+                    } else { head.into() },
                     body: String::new(),
                     quantity: -1.0,
                 },
@@ -428,7 +438,7 @@ async fn fixture() -> Arc<engine::Engine> {
         engine.act(engine::actions::Action::SetExtension {
             target: uid,
             namespace: "work".into(),
-            fds: serde_json::json!({"start": (now + chrono::TimeDelta::minutes(start)).to_rfc3339(), "estimate_min":duration}),
+            fds: serde_json::json!({"start": (now + chrono::TimeDelta::minutes(if content_probe && start == -2 { 5 } else { start })).to_rfc3339(), "estimate_min":duration}),
         }, None).await.unwrap();
     }
     engine
@@ -541,6 +551,55 @@ async fn main() {
             .any(|text| text.0.starts_with("Next ") && text.0.ends_with(" things"))
     );
     capture(&mut app, &directory, "01-default");
+    if std::env::args().any(|argument| argument == "--content-probe") {
+        size_probe(&mut app, clock, &directory);
+        app.world_mut().get_mut::<CanvasItem>(clock).unwrap().size = Vec2::splat(800.0);
+        for (name, aperture) in [
+            ("ring-seconds", 60_000),
+            ("ring-hour", 3_600_000),
+            ("ring-dates", 172_800_000),
+        ] {
+            app.world_mut()
+                .get_mut::<TimeSettings>(clock)
+                .unwrap()
+                .0
+                .set_aperture(aperture);
+            settle(&mut app, 2.0);
+            capture(&mut app, &directory, name);
+            assert!(
+                !app.world_mut()
+                    .query::<&Text>()
+                    .iter(app.world())
+                    .any(|text| text.0 == "No upcoming work")
+            );
+            let panel = app
+                .world_mut()
+                .query::<(Entity, &Name)>()
+                .iter(app.world())
+                .find(|(_, name)| name.as_str() == "Clock upcoming tasks")
+                .unwrap()
+                .0;
+            if aperture == 60_000 {
+                assert_eq!(
+                    app.world().get::<Node>(panel).unwrap().display,
+                    Display::None
+                );
+            }
+            if aperture == 3_600_000 {
+                assert!(
+                    app.world_mut()
+                        .query::<(&Text, &ChildOf)>()
+                        .iter(app.world())
+                        .any(|(text, parent)| text.0.contains('…')
+                            && app
+                                .world()
+                                .get::<ChildOf>(parent.parent())
+                                .is_some_and(|ancestor| ancestor.parent() == panel))
+                );
+            }
+        }
+        return;
+    }
     if std::env::args().any(|argument| argument == "--size-probe") {
         size_probe(&mut app, clock, &directory);
         return;

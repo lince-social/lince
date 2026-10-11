@@ -4,6 +4,7 @@ use nucleus::karma::{Cadence, CadenceStep, Consequence, DecimalValue};
 use nucleus::simulation::{Predicate, Quantity, Version};
 
 pub mod transfer;
+pub mod frequencies;
 
 pub fn daily() -> Scenario {
     let start_ms = 1_893_456_000_000;

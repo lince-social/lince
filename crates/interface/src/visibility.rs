@@ -34,6 +34,7 @@ struct Rule {
     upper: String,
     lower_inclusive: bool,
     upper_inclusive: bool,
+    radius: String,
 }
 
 impl From<&Condition> for Rule {
@@ -48,6 +49,9 @@ impl From<&Condition> for Rule {
                 .map_or_else(String::new, |bound| bound.value.to_string()),
             lower_inclusive: condition.lower.is_none_or(|bound| bound.inclusive),
             upper_inclusive: condition.upper.is_none_or(|bound| bound.inclusive),
+            radius: condition
+                .radius_metres
+                .map_or_else(String::new, |radius| radius.to_string()),
         }
     }
 }
@@ -71,6 +75,16 @@ impl Rule {
             organs: self.organs.clone(),
             lower: bound(&self.lower, self.lower_inclusive)?,
             upper: bound(&self.upper, self.upper_inclusive)?,
+            radius_metres: if self.radius.trim().is_empty() {
+                None
+            } else {
+                Some(
+                    self.radius
+                        .trim()
+                        .parse::<u32>()
+                        .map_err(|_| "Area radius must be a whole number of metres".to_string())?,
+                )
+            },
         })
     }
 }
@@ -83,6 +97,7 @@ pub struct Panel {
     include: Vec<Rule>,
     exclude: Vec<Rule>,
     fields: Vec<(bool, usize, bool, Entity)>,
+    radius_fields: Vec<(usize, Entity)>,
     pending: Option<(String, std::time::Instant)>,
     notice: String,
     choosing_record: bool,
@@ -139,6 +154,7 @@ pub fn mount(world: &mut World, parent: Entity, record: &str, data: Data) -> Ent
         include: vec![],
         exclude: vec![],
         fields: vec![],
+        radius_fields: vec![],
         pending: None,
         notice: "Choose a Record and the data whose visibility you want to control".into(),
         choosing_record: record.is_empty(),
@@ -181,6 +197,7 @@ pub fn set_target(world: &mut World, entity: Entity, record: &str, data: Data) {
     panel.include.clear();
     panel.exclude.clear();
     panel.fields.clear();
+    panel.radius_fields.clear();
     panel.choosing_record = record.is_empty();
     panel.choosing_organs = None;
     request(
@@ -265,11 +282,18 @@ fn policy(panel: &Panel) -> Result<Policy, String> {
             .map(Rule::condition)
             .collect::<Result<_, _>>()?,
     };
-    policy.validate().map_err(str::to_owned)?;
+    policy.validate_for(panel.data).map_err(str::to_owned)?;
     Ok(policy)
 }
 
 fn read_fields(world: &World, panel: &mut Panel) {
+    for &(index, entity) in &panel.radius_fields {
+        if let Some(text) = world.get::<bevy::text::EditableText>(entity)
+            && let Some(rule) = panel.include.get_mut(index)
+        {
+            rule.radius = text.value().to_string();
+        }
+    }
     for &(exclude, index, upper, entity) in &panel.fields {
         if let Some(text) = world.get::<bevy::text::EditableText>(entity) {
             let rules = if exclude {
@@ -295,6 +319,7 @@ fn draw(world: &mut World, entity: Entity) {
     read_fields(world, &mut panel);
     controls::clear(world, entity);
     panel.fields.clear();
+    panel.radius_fields.clear();
     label(world, entity, "Visibility");
     label(
         world,
@@ -344,10 +369,10 @@ fn draw(world: &mut World, entity: Entity) {
                 "This policy bounds future Record sharing. Existing roles, grants, and sync settings still apply."
             }
             Data::Place => {
-                "A saved place is retained context. Withholding it also withholds ordinary replication of its Record. Allowing replication can disclose earlier saved places in that Record's retained history."
+                "Choose an exact point or an approximate area for each inclusion. Approximate access withholds exact Record replication and address text. Linked places also require their own permission."
             }
             Data::LiveLocation => {
-                "Live coordinates expire. Named Person recipients can also view them, unless their Organ is excluded. The controller retains access."
+                "Live coordinates expire. Choose an exact point or an approximate area for each inclusion. Named recipients can also view them, unless their Organ is excluded. The controller retains exact access."
             }
         },
     );
@@ -454,6 +479,20 @@ fn draw(world: &mut World, entity: Entity) {
                 &rule.upper,
             );
             panel.fields.push((exclude, index, true, upper));
+            if !exclude && panel.data != Data::Record {
+                let radius = input(
+                    world,
+                    block,
+                    "Area radius in metres (empty = exact point; 100–100000)",
+                    &rule.radius,
+                );
+                panel.radius_fields.push((index, radius));
+                label(
+                    world,
+                    block,
+                    "Matching inclusions grant the most precise allowed view. The area center is generalized before sharing.",
+                );
+            }
             button(
                 world,
                 block,
@@ -514,9 +553,14 @@ fn draw(world: &mut World, entity: Entity) {
                             "{} · {} · proximity {} · include [{}], exclude [{}]",
                             organ.label,
                             if allowed {
-                                "Allowed by these rules"
+                                decision.radius_metres.map_or_else(
+                                    || "Allowed · exact point".to_string(),
+                                    |radius| {
+                                        format!("Allowed · approximate area, radius {radius} m")
+                                    },
+                                )
                             } else {
-                                "Denied by these rules"
+                                "Denied by these rules".to_string()
                             },
                             organ
                                 .proximity
@@ -559,6 +603,7 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
         return;
     }
     panel.fields.clear();
+    panel.radius_fields.clear();
     fn rules(panel: &mut Panel, exclude: bool) -> &mut Vec<Rule> {
         if exclude {
             &mut panel.exclude
@@ -739,6 +784,70 @@ fn maintain(world: &mut World) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn location_editor_saves_user_area_size_and_rejects_invalid_sizes() {
+        let mut world = World::new();
+        world.insert_resource(Typography(Handle::default()));
+        world.init_resource::<Messages<Request>>();
+        let parent = world.spawn_empty().id();
+        let record = nucleus::new_uid("r");
+        let panel = mount(&mut world, parent, &record, Data::Place);
+        let id = world
+            .get::<Panel>(panel)
+            .unwrap()
+            .pending
+            .as_ref()
+            .unwrap()
+            .0
+            .clone();
+        receive(
+            &mut world,
+            &id,
+            Ok(serde_json::to_value(Context {
+                record_uid: record,
+                data: Data::Place,
+                saved: None,
+                organs: vec![],
+                records: vec![],
+            })
+            .unwrap()),
+        );
+        world.resource_mut::<Messages<Request>>().clear();
+        apply(&mut world, panel, Intent::Add(false));
+        let field = world.get::<Panel>(panel).unwrap().radius_fields[0].1;
+        world
+            .get_mut::<bevy::text::EditableText>(field)
+            .unwrap()
+            .editor_mut()
+            .set_text("2500");
+        apply(&mut world, panel, Intent::Save);
+        let requests: Vec<_> = world.resource_mut::<Messages<Request>>().drain().collect();
+        assert!(
+            matches!(&requests[0].command, Command::Save { data: Data::Place, policy, .. } if policy.include[0].radius_metres == Some(2500))
+        );
+        world.get_mut::<Panel>(panel).unwrap().pending = None;
+        let field = world.get::<Panel>(panel).unwrap().radius_fields[0].1;
+        world
+            .get_mut::<bevy::text::EditableText>(field)
+            .unwrap()
+            .editor_mut()
+            .set_text("99");
+        apply(&mut world, panel, Intent::Save);
+        assert!(world.resource::<Messages<Request>>().is_empty());
+        assert!(world.get::<Panel>(panel).unwrap().notice.contains("100000"));
+        let field = world.get::<Panel>(panel).unwrap().radius_fields[0].1;
+        world
+            .get_mut::<bevy::text::EditableText>(field)
+            .unwrap()
+            .editor_mut()
+            .set_text("");
+        apply(&mut world, panel, Intent::Save);
+        let requests: Vec<_> = world.resource_mut::<Messages<Request>>().drain().collect();
+        assert!(
+            matches!(&requests[0].command, Command::Save { policy, .. } if policy.include[0].radius_metres.is_none())
+        );
+    }
 
     #[test]
     fn editor_previews_composed_rules_and_saves_the_loaded_revision() {

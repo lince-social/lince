@@ -87,7 +87,7 @@ impl Settings {
         }
         if !self.directory.as_os_str().is_empty() {
             if !self.directory.is_absolute() || !self.directory.is_dir() {
-                return Err("Choose an existing folder using its full path, or leave it empty for native Lince tools only.".into());
+                return Err("Choose an existing working directory using its full path, or leave it empty to inherit from the Fiote parent.".into());
             }
             self.directory = self.directory.canonicalize().map_err(|e| e.to_string())?;
         }
@@ -129,6 +129,10 @@ pub enum Request {
         record: String,
         prompt_parent: Option<String>,
         run_assigned: bool,
+    },
+    WorkingDirectory {
+        record: String,
+        directory: PathBuf,
     },
     RefreshInstructions {
         record: String,
@@ -244,6 +248,8 @@ pub enum Request {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Status {
     #[serde(default)]
+    pub working_directory: WorkingDirectory,
+    #[serde(default)]
     pub connections: crate::connection::Status,
     #[serde(default)]
     pub activations: Vec<serde_json::Value>,
@@ -274,6 +280,14 @@ pub struct Status {
     #[serde(default)]
     pub provider_diagnostics: Vec<String>,
     pub tool_connections: Vec<ToolConnection>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WorkingDirectory {
+    pub configured: PathBuf,
+    pub effective: Option<PathBuf>,
+    pub source: Option<String>,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

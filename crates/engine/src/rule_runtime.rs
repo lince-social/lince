@@ -112,13 +112,21 @@ impl Engine {
         if !boundary {
             return Err(invalid("this date is not a boundary of the rule Frequency"));
         }
+        let identity = match &frequency {
+            Some(uid) => {
+                let handle = frequencies::get_handle(&self.store.pool, uid)
+                    .await?
+                    .ok_or_else(|| invalid("rule Frequency is missing"))?;
+                match handle.active_activation_hash {
+                    Some(hash) => format!("frequency:{uid}:{}:{}", hash.as_str(), due.timestamp_millis()),
+                    None => format!("frequency:{uid}:{}", due.timestamp_millis()),
+                }
+            }
+            None => format!("frequency:{}:{}", rule.uid, due.timestamp_millis()),
+        };
         let event = RuleEvent {
             attempt: 0,
-            id: format!(
-                "frequency:{}:{}",
-                frequency.as_deref().unwrap_or(&rule.uid),
-                due.timestamp_millis()
-            ),
+            id: identity,
             frequency,
             at: due,
         };
@@ -391,7 +399,7 @@ impl Engine {
             if active {
                 let event = RuleEvent {
                     attempt: 0,
-                    id: format!("frequency:{uid}:{}", occurrence.logical_at.as_millis()),
+                    id: format!("frequency:{uid}:{}:{}", activation_hash.as_str(), occurrence.logical_at.as_millis()),
                     frequency: Some(uid.to_string()),
                     at: DateTime::from_timestamp_millis(occurrence.logical_at.as_millis())
                         .ok_or_else(|| invalid("invalid occurrence time"))?,

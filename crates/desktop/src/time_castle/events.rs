@@ -277,6 +277,7 @@ mod tests {
                 preview: true,
                 start_date: None,
                 due_date: None,
+                estimate_min: None,
             },
         };
         world.trigger(SandEvent {
@@ -405,6 +406,7 @@ mod tests {
                 preview: false,
                 start_date: None,
                 due_date: None,
+                estimate_min: None,
             },
         };
         crate::scoped_events::emit(

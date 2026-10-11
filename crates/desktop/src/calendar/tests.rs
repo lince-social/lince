@@ -384,6 +384,20 @@ async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_ce
         "2026-09-05"
     );
     assert_eq!(snapshot(app.world_mut(), root).len(), 1);
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(start)
+        .unwrap()
+        .editor
+        .set_text("2026-09-04");
+    until(&mut app, |world| {
+        crate::protein_area::calendar_feed(world, source)
+            .is_some_and(|(rows, _)| rows.iter().any(|row| row["start_date"] == "2026-09-04"))
+    })
+    .await;
+    assert_eq!(
+        app.world_mut().query::<&Picker>().iter(app.world()).count(),
+        1
+    );
     engine
         .act(BackendAction::DeleteRecord { target: uid }, None)
         .await
@@ -396,6 +410,7 @@ async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_ce
 }
 
 crate::laboratory_cases! {
+    record_date_popup_reuses_endpoints_without_joining_canvas_layout,
     gregorian_months_and_navigation_respect_leap_years_and_bounds,
     periods_validate_endpoints_and_records_cover_inclusive_days,
     named_events_stay_in_their_group_and_other_events_pass,
@@ -404,6 +419,122 @@ crate::laboratory_cases! {
     async real_protein_dates_feed_calendar_and_both_picker_fields_save_through_cell,
     async karma_projections_and_manual_work_render_and_pausing_a_rule_refreshes_the_calendar,
     wheel_navigation_accumulates_trackpad_pixels,
+}
+
+#[cfg_attr(test, test)]
+fn record_date_popup_reuses_endpoints_without_joining_canvas_layout() {
+    use bevy::text::EditableText;
+    let (mut app, root) = fixture();
+    let world = app.world_mut();
+    let item = crate::canvas::CanvasItem {
+        position: DVec2::new(120.0, 80.0),
+        size: Vec2::new(320.0, 240.0),
+    };
+    let row = world
+        .spawn((Node::default(), item, WorkspaceMember(1), ChildOf(root)))
+        .id();
+    let mut editors = Vec::new();
+    for (property, value) in [("start_date", "2026-10-08"), ("due_date", "2026-10-23")] {
+        let editor = world
+            .spawn((
+                crate::sand::text_editor(value, world.resource::<crate::theme::Typography>(), 0),
+                ChildOf(row),
+            ))
+            .id();
+        date_button(world, row, editor, property);
+        editors.push(editor);
+    }
+    let mut counts = Vec::new();
+    for editor in editors.iter().cycle().take(20) {
+        picker::OpenDate(*editor).apply(world, *editor);
+        assert_eq!(world.query::<&Picker>().iter(world).count(), 1);
+        assert_eq!(
+            world
+                .get::<crate::canvas::CanvasItem>(row)
+                .unwrap()
+                .position,
+            item.position
+        );
+        assert_eq!(
+            world.get::<crate::canvas::CanvasItem>(row).unwrap().size,
+            item.size
+        );
+        assert!(
+            world
+                .get::<crate::canvas_selection::SandGroup>(row)
+                .is_none()
+        );
+        counts.push(world.query::<Entity>().iter(world).count());
+    }
+    assert!(
+        counts.windows(2).all(|pair| pair[0] == pair[1]),
+        "Repeated opening leaked UI entities: {counts:?}"
+    );
+    let popup = world
+        .query_filtered::<Entity, With<Picker>>()
+        .single(world)
+        .unwrap();
+    assert!(world.get::<crate::canvas::CanvasItem>(popup).is_none());
+    assert!(world.get::<crate::castle::Castle>(popup).is_none());
+    assert!(snapshot(world, root).is_empty());
+    assert_eq!(
+        world.get::<Node>(popup).unwrap().position_type,
+        PositionType::Absolute
+    );
+    Command::Move(1).apply(world, popup);
+    let viewed = world.get::<CalendarSand>(popup).unwrap().0.clone();
+    let endpoint = world
+        .query::<(
+            Entity,
+            &crate::icons::Tooltip,
+            &crate::actions::ActionButton,
+        )>()
+        .iter(world)
+        .find(|(_, tip, action)| tip.0 == "Choose Start date" && action.target == popup)
+        .map(|(_, _, action)| action.clone())
+        .unwrap();
+    endpoint.actions.run(world, endpoint.target);
+    assert_eq!(world.get::<Picker>(popup).unwrap().editor, editors[0]);
+    assert_eq!(
+        world.get::<CalendarSand>(popup).unwrap().0.month,
+        viewed.month
+    );
+    world
+        .get_mut::<EditableText>(editors[0])
+        .unwrap()
+        .editor
+        .set_text("2026-11-02");
+    picker::sync(world, popup);
+    assert_eq!(
+        world.get::<CalendarSand>(popup).unwrap().0.start.as_deref(),
+        Some("2026-11-02")
+    );
+    assert_eq!(world.query::<&Picker>().iter(world).count(), 1);
+    assert_eq!(
+        world
+            .get::<crate::canvas::CanvasItem>(row)
+            .unwrap()
+            .position,
+        item.position
+    );
+    assert_eq!(
+        world.get::<crate::canvas::CanvasItem>(row).unwrap().size,
+        item.size
+    );
+    let days: Vec<_> = world
+        .query::<(&crate::icons::Tooltip, &Node)>()
+        .iter(world)
+        .filter(|(tip, _)| tip.0.starts_with("Select 2026-11-"))
+        .map(|(_, node)| node)
+        .collect();
+    assert_eq!(days.len(), 30);
+    assert!(
+        days.iter()
+            .all(|node| node.height == percent(100) && node.min_height == px(28))
+    );
+    Command::Close.apply(world, popup);
+    assert_eq!(world.query::<&Picker>().iter(world).count(), 0);
+    assert!(world.get::<EditableText>(editors[0]).is_some());
 }
 
 #[cfg_attr(test, tokio::test)]

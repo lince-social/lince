@@ -1,3 +1,4 @@
+pub mod text;
 pub mod credits;
 pub mod practice;
 pub mod handbook;

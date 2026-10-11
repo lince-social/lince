@@ -212,6 +212,12 @@ async fn creation_requires_permission_even_for_a_retry() {
     let role = store::auth::ensure_role(&engine.store.pool, "draft-viewer")
         .await
         .unwrap();
+    let read = store::auth::ensure_permission(&engine.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, read)
+        .await
+        .unwrap();
     let actor = store::auth::create_person_login(
         &engine.store.pool,
         "Viewer",
@@ -245,17 +251,15 @@ async fn creation_requires_permission_even_for_a_retry() {
     store::auth::grant(&engine.store.pool, role, permission)
         .await
         .unwrap();
-    assert!(
-        engine
-            .act(
-                Action::CreateRecordDraft {
-                    draft: draft.clone()
-                },
-                Some(actor.clone())
-            )
-            .await
-            .is_ok()
-    );
+    engine
+        .act(
+            Action::CreateRecordDraft {
+                draft: draft.clone(),
+            },
+            Some(actor.clone()),
+        )
+        .await
+        .unwrap();
     store::auth::revoke(&engine.store.pool, role, permission)
         .await
         .unwrap();

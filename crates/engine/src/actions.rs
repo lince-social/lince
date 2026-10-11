@@ -42,6 +42,9 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
+    Vocabulary { request: nucleus::vocabulary::Command },
+    SavedLocation { request: nucleus::vocabulary::SavedLocationCommand },
+    Plugins { request: nucleus::plugins::Command },
     Location { request: nucleus::location::Command },
     Visibility { request: nucleus::visibility::Command },
     Workspace { request: crate::workspace_sync::Request },
@@ -1980,6 +1983,9 @@ impl Engine {
         Box<dyn std::future::Future<Output = Result<ActionOutcome, EngineError>> + Send + '_>,
     > {
         Box::pin(async move {
+            if let Action::Plugins { request } = action {
+                return self.plugin_command(request, actor.as_deref()).await;
+            }
             if let Action::Location { request } = action {
                 return self.access_scope(false, self.location_request(request, actor.as_deref())).await;
             }
@@ -2006,6 +2012,9 @@ impl Engine {
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
         crate::rule_runtime::execution_checkpoint(false).await?;
+        let refresh_work = matches!(&action, Action::SetExtension { namespace, .. } if namespace == "work")
+            || matches!(&action, Action::ChangeRecord { request } if matches!(&request.mutation,
+                crate::record_change::Mutation::Work { .. } | crate::record_change::Mutation::WorkMetadata { .. }));
         let changes_rules = matches!(&action,
             Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateFrequency { .. } | Action::DeleteFrequency { .. }
@@ -2049,6 +2058,11 @@ impl Engine {
         if outcome.facts.is_empty() && !preview {
             self.query_changed
                 .send_modify(|revision| *revision = revision.wrapping_add(1));
+        }
+        if refresh_work {
+            if let Err(error) = self.refresh_projection().await {
+                tracing::warn!(%error, "work projection refresh request failed");
+            }
         }
         Ok(outcome)
     }
@@ -4084,6 +4098,8 @@ impl Engine {
 
     pub(crate) fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
+            Action::Vocabulary { .. } | Action::SavedLocation { .. } => "record:read",
+            Action::Plugins { request } => request.permission(),
             Action::Social { request } => request.permission(),
             Action::SandPackage { request } => request.permission(),
             Action::DiscardTransferDraft { .. } => "transfer:update",
@@ -4542,13 +4558,13 @@ impl Engine {
             }
             "distance" => {
                 let mut places = Vec::new();
+                let actor = crate::karma_transfers::actor();
                 for token in slug.split('|') {
-                    let uid = self.resolve(token).await?;
-                    let place = store::places::of_record(&self.store.pool, &uid)
-                        .await?
+                    let place = self.saved_location_of(token, actor.as_deref()).await?.selected
+                        .map(|candidate| nucleus::place::Place { lat: candidate.latitude, lon: candidate.longitude })
                         .ok_or_else(|| EngineError::Conflict {
                             code: "rule_condition_invalid",
-                            message: format!("`{token}` has no place"),
+                            message: format!("`{token}` needs one available selected saved location"),
                         })?;
                     places.push(place);
                 }

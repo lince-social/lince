@@ -1,37 +1,52 @@
-# Prototype workflow
+# Live composition workflow
 
-## Commands
+## Existing capabilities and gaps
 
-- `cargo xtask design new <slug> --focus structure` creates a study under `design/studies/<slug>`.
-- `cargo xtask design serve <slug> [--port 6180]` serves a local comparison page with live refresh, theme selection, and desktop/mobile/Sand viewports.
-- `cargo xtask design check <slug>` validates the manifest, local alternative files, and declared capability placements.
-- `cargo xtask design tokens [--theme path.json] [--scheme Dark] [--kind Square]` prints a full JSON theme document and CSS variables resolved for the selected kind. Use `--format json` or `--format css` for a single format. A supplied theme file determines its own scheme.
-- `cargo xtask design native <component> [--theme path.json] [--watch] [--mobile]` runs the real desktop component in an isolated preview. `--mobile` checks a narrow desktop window; it does not emulate Android behavior. Components are `square`, `text`, `editable-text`, `organ`, `time-castle`, `todo`, `configuration`, `access-control`, `sync`, `operation`, and `ontology`.
+These are starting points to inspect, not a claim that a general live Castle editor already exists:
 
-Start with the HTML loop. Native preview is for validating the chosen direction against actual Rust rendering and controls. It has no connected Cell and does not demonstrate real network, storage, camera, or backend actions. Restart clears temporary fixture state. Full app behavior and Android remain separate acceptance checks.
+- `crates/interface/src/presentation.rs` describes Record field selections, order, fills, and presentation settings. It does not describe an arbitrary component tree or control placement.
+- `crates/desktop/src/protein_area/presentation.rs` supports presentation sessions, preview/apply/undo, and captured per-record state saved in Area records.
+- `crates/desktop/src/protein_area/presentation/fields.rs` preserves existing field entities while arranging them and supports field dimensions, wrapping, and scoped tokens.
+- `crates/desktop/src/customization.rs` applies native scoped token changes. Inspect which values are persisted and which systems own their effective geometry.
+- `crates/desktop/src/layout/` and the Castle's own layout systems determine constraints, sizing, and placement. Runtime edits must participate in those systems rather than being overwritten next frame.
+- `crates/desktop/src/laboratory/` provides native behavioral cases. Captures and measurements must come from the real Bevy interface.
 
-## Study files
+`cargo xtask design native <component> [--theme path.json] [--watch] [--mobile]` is an existing isolated native preview for its supported components. Theme changes reload live; Rust edits under `--watch` compile and restart. That is useful for native inspection, but it is not a general composition editor, does not preserve temporary fixture state across restart, and is not connected to Cell. `--mobile` checks a narrow desktop window, not Android.
 
-`study.json` holds the title, one focus, retained features (`id` and `label`), alternatives (`id`, `title`, `file`, `hypothesis`, and `placements` mapping each feature ID to a clear destination), and scenario descriptions. Paths are relative to the study. The starter is illustrative scaffolding, not a generated redesign of the requested component. Replace its example tasks, fixtures, and markup with the actual workflow.
+Inspect `crates/xtask/src/design/native.rs` for supported components before launching. A Castle absent from that list needs a native fixture or preview host. Cell-dependent interactions need an isolated Cell-backed Laboratory fixture or an explicitly requested live instance.
 
-`brief.md` records intent and fixed dimensions. `decision.md` starts pending; record only an actual human choice. `fixtures.json` supplies synthetic data shared across alternatives. Optional `theme.json` uses the existing `ThemeDocument` format, including all tokens; the viewer exposes it as the Study theme. This supports preview overrides without changing global theme presets.
+The existing `design new`, `design serve`, and `design check` study commands create, serve, or validate browser artifacts. They are legacy tooling for this workflow; do not use them to generate new alternatives. Keep existing studies as historical evidence. Build or extend native tooling when needed, and document its actual interface instead of inventing a command.
 
-When Rust UI exists, record its host, nested panels, contextual controls and conditional states in a source-grounded baseline alongside the study. Map each distinct capability to a reachable page or control in every alternative. Audit loop-generated controls and alternate branches as well as literal action names; a source search or the manifest checker alone cannot establish parity. Keep a minimal opening view by relocating occasional capabilities, with explicit destinations for administration and recovery. Mark deep interaction sketches honestly rather than claiming a complete native recreation.
+## Composition and live editing
 
-Keep reviewed alternatives available. For another focus, make another study referencing the preceding decision in its brief. Do not overwrite a chosen structure while exploring style.
+Represent the composition as serializable data consumed by the same native factory used for normal Castles. The shape should follow existing Lince models; avoid creating a competing layout engine.
 
-## HTML contract
+A reusable composition needs stable semantic part identifiers, component kinds, parent/child order, layout constraints, scoped tokens, disclosure rules, and references to supported actions and data bindings. Store logical identifiers, not transient Bevy Entity numbers, closures, or an indiscriminate ECS dump. Resolve references to live entities when constructing or editing an instance.
 
-Each alternative links `/assets/prototype.css` and `/assets/prototype.js`. Styles use generated semantic variables such as `--Surface`, `--Ink`, `--Accent`, `--Spacing`, `--Padding`, `--FontSize`, and `--ControlRoundness`. Numeric variables use pixels except percentage-valued `CanvasPattern` and `ControlsCornerTransparency`; dimensionless companion values use `--Token-raw`. Colors preserve alpha. The viewer supplies `/tokens.css?scheme=Dark&kind=Square`, resolved by the same Rust theme code as native UI. Existing kind/global inheritance is retained; individual Sand and parent overrides require an explicitly supplied prototype theme rather than reading live workspace data.
+Treat a date input with its action buttons, or another behavior-coupled control, as a coherent part. Moving its parent must preserve its internal editor, observers, action targets, event boundaries, and popup ownership. Validate reparenting against these relationships; a visually correct move can change event routing.
 
-Use the shared runtime's `window.designReady` promise to read `fixtures.json` and initialize controls. A `design:theme` event signals updated theme styles. Native and browser font rendering may differ; compare hierarchy, geometry, interaction, and effective tokens rather than requiring identical pixels.
+Provide inspect/read, patch, measure/capture, undo/reset, and save operations through the native editor and an available local agent interface. Agent and human edits should use the same transaction path. Check the selected instance and composition revision before applying a patch; stale edits should be rejected without discarding drafts. Apply layout and token changes atomically, with a useful diff and an undo entry.
 
-The runtime provides keyboard tabs through `[role=tablist]` / `[role=tab]` / `[role=tabpanel]`, remembers the selected tab and named form field values across live refresh, and provides `window.designFixtures`. Give forms stable unique IDs to isolate their drafts. Native HTML details elements support optional sections. Domain interactions belong in each alternative's own small script and stay synthetic. Never put real secrets in prototype fixtures or session storage.
+Prefer updating existing entities. Change constraints and hierarchy without replacing input state, subscriptions, or timers. Rebuild only parts whose component kind actually changes, transferring compatible transient state deliberately. Keep layout ownership explicit so reconciliation or automatic sizing does not undo an edit on the next frame.
 
-The viewer chooses fixtures via the prototype's Scenario control; every alternative should use the same scenario names and data. Add domain-specific states to `fixtures.json` and implement them in each prototype. Scenarios in the manifest describe observable tasks for manual/browser review, not automatically proven behavior.
+Use one baseline with named variants for comparison. Variants change composition, not the underlying Record's data or subscriptions. Independent interactive fixtures may be appropriate for side-by-side comparisons; distinguish them from multiple editors writing to one live Record.
 
-## Validation and handoff
+## Measurements and correctness
 
-Walk the main task, each occasional capability, the empty state, pending action, failure/recovery, keyboard-only operation, narrow layout, long labels, and large lists as applicable. Compare alternatives with the same theme and viewport. Keep control labels readable; minimalism does not require hiding every label or putting every task behind another click.
+Capture both authored constraints and resolved native geometry: logical-pixel bounds, padding, gaps, borders, font configuration, viewport, scale, scroll offsets, and relevant conditional state. Let layout settle before measuring; ignore hidden nodes when evaluating visible space. Screenshots complement these measurements and do not replace them.
 
-A handoff identifies the chosen alternative and focus, feature destinations, relevant states, token changes, shared controls to reuse, native constraints, and acceptance scenarios. Do not treat a successful manifest check as browser or native validation.
+Exact preservation means reconstructing the reviewed recipe under the same inputs produces the same constraints, hierarchy, behavior bindings, and measured layout. Preserve numeric precision in save/load; do not round reviewed values or approximate them during promotion. Permit only the renderer's documented physical-pixel rounding where needed. Different fonts, viewports, scale factors, or content can change computed geometry, so record those inputs and test responsive rules separately.
+
+Do not bake every computed rectangle into absolute positioning. Preserve intrinsic sizing and flex/wrap rules; keep explicit measurements where the human chose fixed dimensions. The goal is faithful reconstruction plus responsive behavior.
+
+Exercise real workflows after structural changes: disclosure, editing while a save is pending, date endpoints, popups, scroll, focus/caret, keyboard navigation, and the Castle's specialized actions. Check for duplicate observers or popups, leaked live entities, lost bindings, clipped controls, and changes to canvas placement. Select tests proportional to the edit rather than rebuilding an exhaustive feature inventory for every spacing adjustment.
+
+## Persistence and defaults
+
+An instance override stores that Castle's reviewed composition. A custom component stores a named reusable recipe with bindings resolved for each new instance. A default chooses the recipe used by the relevant Castle factory and hosts. Make the destination explicit in the saved decision.
+
+Save and default promotion must consume the same reviewed recipe. If the existing default is hardcoded, refactor the factory to consume the composition rather than transcribing a screenshot into another hardcoded arrangement. The same layout, token, and binding code should render the live version, saved custom component, and promoted default.
+
+After saving, reload the instance and instantiate a fresh custom component or default as appropriate. Compare structural and geometry captures under identical fixtures, and verify action/binding reachability and input state behavior. Check all relevant hosts, including standalone Records and Kanban where they share the Castle. State how existing instance overrides interact with the chosen default; do not silently replace customizations.
+
+A handoff contains the reviewed composition, actual decision and destination, native captures and measurements, validation results, and any missing runtime capabilities. A future agent should be able to reproduce the chosen Castle without interpreting an image or reconstructing its layout from prose.

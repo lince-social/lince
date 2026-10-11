@@ -681,6 +681,7 @@ impl Host {
         content: &[nucleus::message::MessagePart],
         running: &mut HashMap<String, Running>,
     ) -> Result<ActionOutcome, String> {
+        let config = self.agent_working_directory(&record.uid, config).await?;
         let settings_path = self.directory.join(format!("agent-options-{thread}.json"));
         let config = live::configured(config, &settings_path)?;
         let evicted = {

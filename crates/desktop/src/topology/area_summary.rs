@@ -26,6 +26,9 @@ struct Summary {
 pub(crate) struct SummaryAtBottom;
 
 #[derive(Component)]
+pub(crate) struct SummaryInEditMode;
+
+#[derive(Component)]
 struct FloatingSummary(Entity);
 
 #[derive(Component)]
@@ -382,7 +385,7 @@ pub(super) fn update(world: &mut World) {
             entity
         };
         if floating {
-            center.y = area.size[1] + f64::from(size.y) * 0.5 + 8.0;
+            center.y = area.size[1] - f64::from(size.y) * 0.5 - 8.0;
         }
         let panel = world
             .spawn((
@@ -493,6 +496,23 @@ pub(super) fn update(world: &mut World) {
         }
         world.entity_mut(entity).insert(Summary { area, panel });
     }
+    let summaries: Vec<_> = world
+        .query::<(Entity, &Summary)>()
+        .iter(world)
+        .filter(|(entity, _)| world.get::<SummaryInEditMode>(*entity).is_some())
+        .map(|(entity, summary)| (entity, summary.panel))
+        .collect();
+    for (owner, panel) in summaries {
+        let display = if editing(world, owner) {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        let mut node = world.get_mut::<Node>(panel).unwrap();
+        if node.display != display {
+            node.display = display;
+        }
+    }
     let floating: Vec<_> = world
         .query::<(Entity, &FloatingSummary)>()
         .iter(world)
@@ -509,6 +529,7 @@ pub(super) fn update(world: &mut World) {
             });
         let bounds = super::presentation::bounds(world, owner);
         let visible = active
+            && (world.get::<SummaryInEditMode>(owner).is_none() || editing(world, owner))
             && (bounds.is_some() || !world.contains_resource::<super::presentation::SceneCamera>());
         let mut node = world.get::<Node>(panel).unwrap().clone();
         node.display = if visible {
@@ -522,7 +543,11 @@ pub(super) fn update(world: &mut World) {
                 _ => 300.0,
             };
             node.left = px(bounds.center().x - width * 0.5);
-            node.top = px(bounds.max.y + 8.0);
+            let height = match node.height {
+                Val::Px(height) => height,
+                _ => 0.0,
+            };
+            node.top = px(bounds.max.y - height - 8.0);
         }
         world.get_mut::<Node>(panel).unwrap().set_if_neq(node);
     }
@@ -826,7 +851,7 @@ mod tests {
     }
 
     #[test]
-    fn kanban_source_behaviors_remain_accessible_below_the_columns() {
+    fn kanban_behaviors_show_in_edit_mode_and_source_buttons_fit_inside() {
         let (mut app, root) = editing_app();
         let world = app.world_mut();
         let owner = crate::kanban::spawn(world, root, 1, DVec2::ZERO).unwrap();
@@ -847,7 +872,32 @@ mod tests {
             panic!("Missing summary position")
         };
         let area = world.get::<InfluenceArea>(source).unwrap();
-        assert!(f64::from(top) - area.size[1] * 0.5 > 320.0);
+        let Val::Px(height) = world.get::<Node>(panel).unwrap().height else {
+            panic!("Missing summary height")
+        };
+        assert!(top >= 0.0);
+        assert!((f64::from(top + height) + 8.0 - area.size[1]).abs() < 0.001);
+        let panels: Vec<_> = world
+            .query::<(Entity, &Summary)>()
+            .iter(world)
+            .filter(|(entity, _)| world.get::<SummaryInEditMode>(*entity).is_some())
+            .map(|(_, summary)| summary.panel)
+            .collect();
+        assert_eq!(panels.len(), lince_interface::records::KANBAN_COLUMNS.len() + 1);
+        for enabled in [false, true, false, true] {
+            world
+                .get_mut::<crate::edit_mode::EditMode>(root)
+                .unwrap()
+                .enabled = enabled;
+            update(world);
+            for panel in &panels {
+                assert_eq!(
+                    world.get::<Node>(*panel).unwrap().display,
+                    if enabled { Display::Flex } else { Display::None }
+                );
+            }
+            assert_eq!(world.get::<Summary>(source).unwrap().panel, panel);
+        }
         let row = world.get::<Children>(panel).unwrap()[0];
         let button = world.get::<BehaviorRow>(row).unwrap().button;
         let mut hits = bevy::picking::hover::HoverMap::default();

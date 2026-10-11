@@ -15,6 +15,7 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
     }
     for table in tables {
         if table.starts_with("interface_")
+            || table.starts_with("plugin_")
             || table.starts_with("sync_activity")
             || table == "karma_deadline_lease"
             || table == "commit_sequence"

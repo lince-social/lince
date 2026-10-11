@@ -148,7 +148,7 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
     if count + 8 > crate::area::MAX_AREAS {
         return None;
     }
-    let mut source = rectangle(position, DVec2::new(COLUMNS.len() as f64 * 340.0, 720.0));
+    let mut source = rectangle(position, DVec2::new(COLUMNS.len() as f64 * 680.0, 720.0));
     source.center[1] -= 40.0;
     source.name = "Kanban · Task spawning".into();
     source.immunity = crate::area_effects::Immunity::Containment;
@@ -161,8 +161,8 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
     };
     crate::area::spawn_area(world, root, workspace, source)?;
     for (index, (title, slug, quantity)) in COLUMNS.iter().enumerate() {
-        let center = position + DVec2::new((index as f64 - 3.0) * 340.0, 0.0);
-        let mut area = rectangle(center, DVec2::new(340.0, 640.0));
+        let center = position + DVec2::new((index as f64 - 3.0) * 680.0, 0.0);
+        let mut area = rectangle(center, DVec2::new(680.0, 640.0));
         area.name = (*title).into();
         area.include_right_edge = index == COLUMNS.len() - 1;
         area.change_filter = Some(config());
@@ -182,7 +182,7 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
             area: area.id.clone(),
         });
         let area = crate::area::spawn_area(world, root, workspace, area)?;
-        let mut rules = Rules::fixed(Vec2::new(340.0, 640.0));
+        let mut rules = Rules::fixed(Vec2::new(680.0, 640.0));
         rules.arrangement = Arrangement::Column;
         rules.padding = 12.0;
         rules.gap = 12.0;
@@ -262,6 +262,7 @@ pub(crate) fn restore(
             KanbanSource,
             ZIndex(-3),
             crate::topology::SummaryAtBottom,
+            crate::topology::SummaryInEditMode,
         ));
     }
     for (index, column) in board.columns.iter().enumerate() {
@@ -280,7 +281,9 @@ pub(crate) fn restore(
                     }
                 }
             }
-            world.entity_mut(column).insert(Preparing);
+            world
+                .entity_mut(column)
+                .insert((Preparing, crate::topology::SummaryInEditMode));
         }
     }
     owner

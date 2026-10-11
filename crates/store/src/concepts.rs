@@ -19,22 +19,28 @@ pub async fn create_in(
     parents: &[&str],
 ) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("c");
+    let canonical_name = crate::vocabulary::term_text(canonical_name)?;
+    let mut transaction = crate::write_tx(pool).await?;
     sqlx::query("INSERT INTO concept (uid, canonical_name, created_at) VALUES (?, ?, ?)")
         .bind(&uid)
-        .bind(canonical_name)
+        .bind(&canonical_name)
         .bind(nucleus::execution::now().to_rfc3339())
-        .execute(pool)
+        .execute(&mut *transaction)
         .await?;
     for parent in parents {
         sqlx::query("INSERT INTO concept_parent (concept_uid, parent_uid) VALUES (?, ?)")
             .bind(&uid)
             .bind(parent)
-            .execute(pool)
+            .execute(&mut *transaction)
             .await?;
     }
-    crate::linguas::adopt(pool, lingua_uid, &uid).await?;
-    crate::sync_ops::log_local(
-        pool,
+    sqlx::query("INSERT INTO lingua_concept(lingua_uid,concept_uid,adopted_at) VALUES(?,?,?)")
+        .bind(lingua_uid).bind(&uid).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *transaction).await?;
+    sqlx::query("INSERT INTO concept_source(concept_uid,lingua_uid,original_name) VALUES(?,?,?)")
+        .bind(&uid).bind(lingua_uid).bind(&canonical_name).execute(&mut *transaction).await?;
+    crate::vocabulary::add_term_on(&mut transaction, &uid, &canonical_name, "", None, true).await?;
+    crate::sync_ops::log_local_tx(
+        &mut transaction,
         "concept",
         &uid,
         "canonical_name",
@@ -42,6 +48,8 @@ pub async fn create_in(
         Some(serde_json::json!(canonical_name).to_string()),
     )
     .await?;
+    crate::vocabulary::log_shared_on(&mut transaction, &uid).await?;
+    transaction.commit().await?;
     Ok(uid)
 }
 
@@ -58,12 +66,10 @@ pub async fn add_name(
     lang: &str,
     name: &str,
 ) -> Result<(), StoreError> {
-    sqlx::query("INSERT INTO concept_name (concept_uid, lang, name) VALUES (?, ?, ?)")
-        .bind(concept_uid)
-        .bind(lang)
-        .bind(name)
-        .execute(pool)
-        .await?;
+    let mut tx = crate::write_tx(pool).await?;
+    crate::vocabulary::add_term_on(&mut tx, concept_uid, name, lang, None, false).await?;
+    crate::vocabulary::log_shared_on(&mut tx, concept_uid).await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -72,25 +78,20 @@ pub async fn rename(
     concept_uid: &str,
     canonical_name: &str,
 ) -> Result<bool, StoreError> {
-    let renamed = sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ?")
-        .bind(canonical_name)
-        .bind(concept_uid)
-        .execute(pool)
-        .await?
-        .rows_affected()
-        > 0;
-    if renamed {
-        crate::sync_ops::log_local(
-            pool,
-            "concept",
-            concept_uid,
-            "canonical_name",
-            crate::sync_ops::OpKind::Set,
-            Some(serde_json::json!(canonical_name).to_string()),
-        )
-        .await?;
+    if self::canonical_name(pool, concept_uid).await?.is_none() {
+        return Ok(false);
     }
-    Ok(renamed)
+    let mut tx = crate::write_tx(pool).await?;
+    let current: Option<(String, i64)> = sqlx::query_as("SELECT uid,revision FROM concept_term WHERE concept_uid=? AND language='' AND owner_uid IS NULL AND preferred=1 AND retired=0")
+        .bind(concept_uid).fetch_optional(&mut *tx).await?;
+    if let Some((uid, revision)) = current {
+        crate::vocabulary::edit_term_on(&mut tx, &uid, revision, canonical_name, "", true).await?;
+    } else {
+        crate::vocabulary::add_term_on(&mut tx, concept_uid, canonical_name, "", None, true).await?;
+    }
+    crate::vocabulary::log_shared_on(&mut tx, concept_uid).await?;
+    tx.commit().await?;
+    Ok(true)
 }
 
 pub async fn add_parent(
@@ -176,30 +177,7 @@ pub async fn delete(pool: &SqlitePool, concept_uid: &str) -> Result<bool, StoreE
 }
 
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<String>, StoreError> {
-    if let Some(row) = sqlx::query("SELECT uid FROM concept WHERE canonical_name = ? OR uid = ?")
-        .bind(token)
-        .bind(token)
-        .fetch_optional(pool)
-        .await?
-    {
-        return Ok(Some(row.get("uid")));
-    }
-    let mut answering: Vec<String> = sqlx::query(
-        "SELECT DISTINCT concept_uid FROM concept_name WHERE name = ? ORDER BY concept_uid",
-    )
-    .bind(token)
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(|row| row.get("concept_uid"))
-    .collect();
-    if answering.len() > 1 {
-        return Err(sqlx::Error::Protocol(format!(
-            "`{token}` is a name several concepts answer to ({}); say which one",
-            answering.join(", ")
-        )));
-    }
-    Ok(answering.pop())
+    crate::vocabulary::resolve(pool, token, None).await
 }
 
 pub async fn descendants_including(

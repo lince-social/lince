@@ -21,6 +21,10 @@ members = [
     "crates/facade",
     "crates/media",
     "crates/xtask",
+    "crates/plugins",
+    "crates/plugin-nostr",
+    "crates/plugin-files",
+    "crates/map",
 ]
 
 # `cargo build` / `cargo run` operate on `default-members` (the lince binary),
@@ -44,10 +48,12 @@ cell = { version = "=0.8.0", path = "crates/cell", package = "lince-cell" }
 simulation = { version = "=0.8.0", path = "crates/simulation", package = "lince-simulation" }
 lince-desktop = { version = "=0.8.0", path = "crates/desktop" }
 lince-interface = { version = "=0.8.0", path = "crates/interface", default-features = false }
+lince-map = { version = "=0.8.0", path = "crates/map" }
 lince-media = { version = "=0.8.0", path = "crates/media" }
 lince-facade = { version = "=0.8.0", path = "crates/facade" }
 anicca = { version = "=0.8.0", path = "crates/anicca" }
 nucleus = { version = "=0.8.0", path = "crates/nucleus" }
+plugins = { version = "=0.8.0", path = "crates/plugins", package = "lince-plugins" }
 store = { version = "=0.8.0", path = "crates/store" }
 engine = { version = "=0.8.0", path = "crates/engine" }
 protein = { version = "=0.8.0", path = "crates/protein" }

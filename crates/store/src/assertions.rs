@@ -176,6 +176,7 @@ async fn validate_new_tx(
     tx: &mut Transaction<'_, Sqlite>,
     new: &NewAssertion<'_>,
 ) -> Result<(), StoreError> {
+    crate::places::validate_location_assertion_on(tx, new.predicate_uid, new.subject_uid, new.object_uid, new.quantity.is_some(), new.unit_uid.is_some()).await?;
     if new.role == AssertionRole::Identity
         && (new.object_uid.is_some() || new.quantity.is_some() || new.unit_uid.is_some())
     {
@@ -309,6 +310,15 @@ pub async fn insert_tx(
 ) -> Result<AssertionRow, StoreError> {
     require_uid(uid, "a")?;
     validate_new_tx(tx, &new).await?;
+    let location_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=? WHERE a.subject_uid=? AND a.retracted_at IS NULL AND EXISTS(SELECT 1 FROM vocabulary_role_concept WHERE role_uid=b.role_uid AND concept_uid=?)")
+        .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).bind(new.subject_uid).bind(new.predicate_uid).fetch_one(&mut **tx).await?;
+    if location_count >= 64 { return Err(mutation_error("Choose at most 64 saved address links per Record")); }
+    let location: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM vocabulary_role_concept WHERE role_uid=? AND concept_uid=?)")
+        .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).bind(new.predicate_uid).fetch_one(&mut **tx).await?;
+    if location && crate::data_visibility::ensure_private_on(tx, new.subject_uid, nucleus::visibility::Data::Place).await? {
+        let policy = nucleus::visibility::SavedPolicy { controller_uid: String::new(), revision: 1, policy: Default::default() };
+        crate::sync_ops::log_local_tx(tx, "data_visibility", new.subject_uid, "place", OpKind::Set, Some(serde_json::to_string(&policy).map_err(|error| StoreError::Protocol(error.to_string()))?)).await?;
+    }
     let existing: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM record_assertion WHERE uid = ?
              OR (subject_uid = ? AND predicate_uid = ? AND object_uid IS ?

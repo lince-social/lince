@@ -248,6 +248,7 @@ fn destination(instance: &Instance) -> String {
         Destination::Directory { path, .. } => format!("Files: {path}"),
         Destination::Organ { uid } => format!("Organ: {uid}"),
         Destination::Interface { .. } => "Interface".into(),
+        Destination::Plugin { provider, .. } => format!("Plugin: {provider}"),
     }
 }
 

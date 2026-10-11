@@ -713,6 +713,8 @@
           interfaceLinuxBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
+              fontconfig
+              freetype
               alsa-lib
               speechd
               pipewire
@@ -747,6 +749,7 @@
                 lockFile = ./Cargo.lock;
                 outputHashes = {
                   "flexaudio-0.3.0" = "sha256-Cku6qBC22XC3xmtJ2u1oG3oUUEpX+XkP8UpSYk4qUWQ=";
+                  "galileo-0.2.1" = "sha256-4UUmoj1fK9D8+7c2MWYdUpY+WCLbG/wqgzURdBh2Pw4=";
                 };
               };
 

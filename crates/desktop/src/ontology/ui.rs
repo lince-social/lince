@@ -4,9 +4,14 @@ use crate::edit_mode::label;
 pub(super) fn populate(world: &mut World, sand: Entity) {
     let body = panel::frame(world, sand, "Ontology");
     let tabs = panel::row(world, body);
-    for (index, title) in ["Linguas", "Concepts and hierarchy", "Record assertions"]
-        .iter()
-        .enumerate()
+    for (index, title) in [
+        "Linguas",
+        "Concepts and hierarchy",
+        "Record assertions",
+        "Terms and translations",
+    ]
+    .iter()
+    .enumerate()
     {
         panel::button(world, tabs, sand, title, Command::Tab(index));
     }
@@ -32,6 +37,11 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
         tab: 0,
         page: 0,
         name: Entity::PLACEHOLDER,
+        language: Entity::PLACEHOLDER,
+        definition: Entity::PLACEHOLDER,
+        preferred: false,
+        personal: false,
+        term: String::new(),
         choices: [
             "g_local".into(),
             String::new(),
@@ -72,7 +82,56 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         .unwrap()
         .choosers
         .clear();
-    if tab < 2 {
+    if tab == 3 {
+        chooser(world, owner, parent, 0, "Source Vocabulary (Lingua)");
+        chooser(world, owner, parent, 1, "Stable Concept");
+        let name = panel::field(world, parent, "Term or original name", "");
+        let language = panel::field(
+            world,
+            parent,
+            "Language tag (en, pt-BR, el-Latn; empty for all languages)",
+            "",
+        );
+        let definition = panel::field(world, parent, "Definition for a new source Concept", "");
+        let mut view = world.get_mut::<OntologySand>(owner).unwrap();
+        view.name = name;
+        view.language = language;
+        view.definition = definition;
+        let controls = panel::row(world, parent);
+        for (title, command) in [
+            ("Create source Concept", Command::Create),
+            ("Add alternative", Command::AddTerm),
+            ("Edit selected term", Command::EditTerm),
+            ("Remove selected term", Command::RetireTerm),
+            ("Toggle preferred term", Command::Preferred),
+            ("Toggle personal term", Command::Personal),
+            ("Use this display language", Command::Language),
+        ] {
+            panel::button(world, controls, owner, title, command);
+        }
+        let bindings = panel::row(world, parent);
+        panel::button(
+            world,
+            bindings,
+            owner,
+            "Accept for saved locations",
+            Command::BindLocation(true, false),
+        );
+        panel::button(
+            world,
+            bindings,
+            owner,
+            "Use when linking addresses",
+            Command::BindLocation(true, true),
+        );
+        panel::button(
+            world,
+            bindings,
+            owner,
+            "Remove location binding",
+            Command::BindLocation(false, false),
+        );
+    } else if tab < 2 {
         chooser(world, owner, parent, 0, "Lingua");
         if tab == 1 {
             chooser(world, owner, parent, 1, "Concept");
@@ -260,13 +319,131 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     }
     let view = world.get::<OntologySand>(owner).unwrap();
     let (list, tab) = (view.list, view.tab);
-    let source = if tab == 2 { 3 } else { tab };
+    let source = if tab == 2 {
+        3
+    } else if tab == 3 {
+        1
+    } else {
+        tab
+    };
     let mut rows = view.rows[source].clone();
     rows.sort_by_key(title);
     let total = rows.len();
     let page = view.page.min(total.saturating_sub(1) / PAGE);
     let catalogs = view.rows.clone();
     panel::clear(world, list);
+    if tab == 3 {
+        let view = world.get::<OntologySand>(owner).unwrap();
+        let preferred = view.preferred;
+        let personal = view.personal;
+        let selected = view.rows[1]
+            .iter()
+            .find(|row| row["uid"] == view.choices[1])
+            .cloned();
+        label(
+            world,
+            list,
+            &format!(
+                "New term: {} · {}",
+                if preferred {
+                    "preferred"
+                } else {
+                    "alternative"
+                },
+                if personal {
+                    "personal (signed-in Person)"
+                } else {
+                    "shared on this Lince"
+                }
+            ),
+            13.0,
+        );
+        if let Some(row) = selected {
+            let source = &row["source"];
+            label(
+                world,
+                list,
+                &format!(
+                    "Source: #{} · {} · {}",
+                    source["original_name"].as_str().unwrap_or(""),
+                    source["original_language"]
+                        .as_str()
+                        .unwrap_or("all languages"),
+                    row["uid"].as_str().unwrap_or("")
+                ),
+                14.0,
+            );
+            label(
+                world,
+                list,
+                source["definition"].as_str().unwrap_or(""),
+                13.0,
+            );
+            label(
+                world,
+                list,
+                &format!(
+                    "Saved location binding: {}",
+                    if row["location_write"].as_bool().unwrap_or(false) {
+                        "accepted and used for new links"
+                    } else if row["saved_location"].as_bool().unwrap_or(false) {
+                        "accepted"
+                    } else {
+                        "unbound"
+                    }
+                ),
+                13.0,
+            );
+            let terms = row["terms"].as_array().map(Vec::as_slice).unwrap_or(&[]);
+            let page = world
+                .get::<OntologySand>(owner)
+                .unwrap()
+                .page
+                .min(terms.len().saturating_sub(1) / PAGE);
+            let selected_term = world.get::<OntologySand>(owner).unwrap().term.clone();
+            if page > 0 {
+                panel::button(world, list, owner, "Previous terms", Command::Page(false));
+            }
+            for term in terms.iter().skip(page * PAGE).take(PAGE) {
+                if let Some(uid) = term["uid"].as_str() {
+                    panel::button(
+                        world,
+                        list,
+                        owner,
+                        &format!(
+                            "#{} · {}{}{}{}",
+                            term["name"].as_str().unwrap_or(""),
+                            term["language"]
+                                .as_str()
+                                .filter(|language| !language.is_empty())
+                                .unwrap_or("all languages"),
+                            if term["preferred"].as_bool().unwrap_or(false) {
+                                " · preferred"
+                            } else {
+                                ""
+                            },
+                            if term["owner_uid"].is_string() {
+                                " · personal"
+                            } else {
+                                ""
+                            },
+                            if uid == selected_term {
+                                " · selected"
+                            } else {
+                                ""
+                            },
+                        ),
+                        Command::Term(uid.into()),
+                    );
+                }
+            }
+            if (page + 1) * PAGE < terms.len() {
+                panel::button(world, list, owner, "Next terms", Command::Page(true));
+            }
+        }
+        world.get_mut::<OntologySand>(owner).unwrap().dirty = false;
+        return;
+    }
     label(
         world,
         list,

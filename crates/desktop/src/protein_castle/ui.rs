@@ -140,6 +140,13 @@ impl Action for Command {
             Self::Source(source) => {
                 draft.query = ProteinDraft::default().query;
                 draft.query["source"] = json!(source);
+                if matches!(source.as_str(), "schedule" | "calendar") {
+                    draft.query["where"] = json!([{"rolling_window":{"past_days":0,"future_days":30,"timezone":"UTC"}},{"all":[]}]);
+                    draft.query["limit"] = Value::Null;
+                    if source == "schedule" {
+                        draft.query["order"] = json!([{"desc":"#task"}]);
+                    }
+                }
                 if !model::has_limit(source) {
                     draft.query["limit"] = Value::Null;
                 }
@@ -567,21 +574,30 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             0,
         );
     }
-    if clock_source {
-        return;
-    }
     if !model::sorts(source).is_empty() {
         label(world, parent, "Sorting", 18.0);
         let sort_head = row(world, parent);
-        icon(
-            world,
-            sort_head,
-            owner,
-            Command::Append("/order".into(), json!({"asc":model::sorts(source)[0]})),
-            Icon::Plus,
-            "Add a property sort. Earlier rules have higher priority.",
-        );
+        if !clock_source {
+            icon(
+                world,
+                sort_head,
+                owner,
+                Command::Append("/order".into(), json!({"asc":model::sorts(source)[0]})),
+                Icon::Plus,
+                "Add a property sort. Earlier rules have higher priority.",
+            );
+        }
         if source == "record" {
+            icon(
+                world,
+                sort_head,
+                owner,
+                Command::Append("/order".into(), json!({"desc":"#task"})),
+                Icon::Plus,
+                "Add a numeric assertion priority",
+            );
+        }
+        if source == "record" && !clock_source {
             icon(
                 world,
                 sort_head,
@@ -635,7 +651,18 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
                         .collect(),
                 );
                 let path = format!("/order/{index}/{key}");
-                {
+                if value.as_str().is_some_and(|field| field.starts_with('#')) {
+                    label(world, group, "Assertion (#name)", 14.0);
+                    input(
+                        world,
+                        group,
+                        owner,
+                        &path,
+                        value.as_str().unwrap_or_default(),
+                        false,
+                        "Numeric assertion, for example #task. Missing values follow numbered tasks.",
+                    );
+                } else {
                     choices(
                         world,
                         group,
@@ -648,7 +675,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             }
         }
     }
-    if area_filter {
+    if area_filter || clock_source {
         return;
     }
     if !model::groups(source).is_empty() {
@@ -814,6 +841,46 @@ fn filter(
     let Some((key, value)) = predicate.as_object().and_then(|o| o.iter().next()) else {
         return;
     };
+    if key == "rolling_window" {
+        label(world, line, "Rolling schedule window", 16.0);
+        for (field, caption) in [
+            ("past_days", "History in days"),
+            ("future_days", "Future in days"),
+            ("timezone", "Timezone, for example America/Sao_Paulo"),
+        ] {
+            let text = value[field]
+                .as_str()
+                .map(str::to_owned)
+                .unwrap_or_else(|| value[field].to_string());
+            label(world, parent, caption, 14.0);
+            input(
+                world,
+                parent,
+                owner,
+                &format!("{path}/{key}/{field}"),
+                &text,
+                false,
+                caption,
+            );
+        }
+        return;
+    }
+    if key == "projection_window" {
+        label(world, line, "Fixed schedule window", 16.0);
+        label(world, parent, &value.to_string(), 14.0);
+        button(
+            world,
+            parent,
+            owner,
+            "Use a rolling window",
+            Command::Set(
+                path.into(),
+                json!({"rolling_window":{"past_days":0,"future_days":30,"timezone":value["timezone"]}}),
+            ),
+            "Follow the current date",
+        );
+        return;
+    }
     if matches!(key.as_str(), "all" | "any") {
         if model::nested(source) {
             select(

@@ -136,7 +136,7 @@ impl Engine {
         let payload = serde_json::to_string(&(kind, &draft)).map_err(EngineError::Json)?;
         let mut family = HashSet::new();
         for assertion in &mut draft.assertions {
-            assertion.predicate = store::concepts::resolve(&self.store.pool, &assertion.predicate)
+            assertion.predicate = store::vocabulary::resolve(&self.store.pool, &assertion.predicate, actor.as_deref())
                 .await?
                 .ok_or_else(|| invalid("Choose an existing assertion"))?;
             if assertion.object.is_none() {
@@ -154,7 +154,7 @@ impl Engine {
                 }
             }
             if let Some(unit) = &mut assertion.unit {
-                *unit = store::concepts::resolve(&self.store.pool, unit)
+                *unit = store::vocabulary::resolve(&self.store.pool, unit, actor.as_deref())
                     .await?
                     .ok_or_else(|| invalid("Choose an existing unit"))?;
             }

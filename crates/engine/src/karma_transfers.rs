@@ -36,6 +36,10 @@ pub(crate) async fn scope<F: Future>(actor: Option<&str>, future: F) -> F::Outpu
     }
 }
 
+pub(crate) fn actor() -> Option<String> {
+    READINGS.try_with(|readings| readings.borrow().actor.clone()).unwrap_or(None)
+}
+
 fn invalid(message: impl ToString) -> EngineError {
     EngineError::Conflict {
         code: "karma_transfer_reading_invalid",

@@ -132,6 +132,11 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
     let location_transfer = text(transfer, "uid");
     let location_person = person(world, owner);
     crate::location::record_controls(world, parent, &location_transfer, Some(&location_transfer), Some(&location_person));
+    let map_records = std::iter::once(location_transfer.clone())
+        .chain(array(transfer, "promises").iter().filter_map(|promise| promise["record"].as_str().map(str::to_string)))
+        .chain(array(transfer, "parties").iter().filter_map(|party| party["actor"].as_str().map(str::to_string)))
+        .collect();
+    crate::map_castle::group_controls(world, parent, "Map transfer locations", map_records, Some(&location_person));
     if let Some(cell) = transfer["writing_cell_name"].as_str().or(transfer["writing_cell"].as_str()) {
         crate::edit_mode::label(world, parent, &format!("Open Cell {cell} to change this Transfer. You can simulate it here."), 13.0);
     }

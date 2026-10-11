@@ -1,6 +1,9 @@
 use super::*;
 use crate::actions::{Action, ActionButton};
 
+#[derive(Component)]
+pub(super) struct RecordActions;
+
 #[derive(Component, Clone)]
 pub(super) struct Sections {
     title: Entity,
@@ -10,10 +13,14 @@ pub(super) struct Sections {
     toolbar: Entity,
     toggle: Entity,
     arrow: Entity,
+    compact: Entity,
+    compact_label: Entity,
     empty: Entity,
     body: Entity,
     dates: Entity,
     threads: Entity,
+    actions: Entity,
+    groups: [Entity; 4],
     fiote: bool,
     presentation: crate::record_presentation::RecordPresentation,
     observed: Value,
@@ -46,6 +53,9 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         .and_then(|area| area.protein.as_ref())
         .is_some_and(|config| config.fiote);
     let title = section(world, row);
+    world
+        .entity_mut(title)
+        .insert(crate::token_style::border(crate::tokens::Token::Accent));
     let identity = section(world, row);
     {
         let mut node = world.get_mut::<Node>(identity).unwrap();
@@ -55,6 +65,12 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
     }
     let assertions = section(world, row);
     let filled = section(world, row);
+    {
+        let mut node = world.get_mut::<Node>(filled).unwrap();
+        node.flex_direction = FlexDirection::Row;
+        node.flex_wrap = FlexWrap::Wrap;
+        node.column_gap = px(8);
+    }
     let toolbar = section(world, row);
     {
         let mut node = world.get_mut::<Node>(toolbar).unwrap();
@@ -88,15 +104,44 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
             ChildOf(toolbar),
         ))
         .id();
-    crate::edit_mode::label(world, compact, "⌃", 18.0);
+    let compact_label = crate::edit_mode::label(world, compact, "Show filled properties", 14.0);
     divider(world, toolbar);
     let empty = section(world, row);
-    world.get_mut::<Node>(empty).unwrap().display = Display::None;
+    {
+        let mut node = world.get_mut::<Node>(empty).unwrap();
+        node.display = Display::None;
+        node.flex_direction = FlexDirection::Row;
+        node.flex_wrap = FlexWrap::Wrap;
+        node.column_gap = px(8);
+    }
+    let groups = ["Identity and description", "Planning", "Work", "Discussion"].map(|title| {
+        let group = section(world, empty);
+        {
+            let mut node = world.get_mut::<Node>(group).unwrap();
+            node.flex_direction = FlexDirection::Row;
+            node.flex_wrap = FlexWrap::Wrap;
+            node.column_gap = px(8);
+        }
+        let label = crate::edit_mode::label(world, group, title, 16.0);
+        world.get_mut::<Node>(label).unwrap().width = percent(100);
+        group
+    });
     let body = section(world, row);
     let threads = section(world, row);
     let dates = section(world, empty);
     world.get_mut::<Node>(dates).unwrap().flex_direction = FlexDirection::Row;
     world.get_mut::<Node>(dates).unwrap().column_gap = px(8);
+    world.get_mut::<Node>(dates).unwrap().flex_wrap = FlexWrap::Wrap;
+    let actions = section(world, row);
+    world.entity_mut(actions).insert(RecordActions);
+    let label = crate::edit_mode::label(world, actions, "Record actions", 16.0);
+    world.get_mut::<Node>(label).unwrap().width = percent(100);
+    {
+        let mut node = world.get_mut::<Node>(actions).unwrap();
+        node.flex_direction = FlexDirection::Row;
+        node.flex_wrap = FlexWrap::Wrap;
+        node.column_gap = px(8);
+    }
     world
         .entity_mut(toggle)
         .insert(ActionButton::new(row, crate::actions![Toggle]));
@@ -108,16 +153,26 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         toolbar,
         toggle,
         arrow,
+        compact,
+        compact_label,
         empty,
         body,
         dates,
         threads,
+        actions,
+        groups,
         fiote,
         presentation,
         observed: Value::Null,
     };
     world.entity_mut(row).insert(sections.clone());
     sections
+}
+
+pub(super) fn action_parent(world: &World, row: Entity) -> Entity {
+    world
+        .get::<Sections>(row)
+        .map_or(row, |sections| sections.actions)
 }
 
 fn divider(world: &mut World, parent: Entity) {
@@ -154,6 +209,16 @@ fn empty(property: &str, data: &Value) -> bool {
 
 impl Sections {
     pub(super) fn parent(&self, property: &str, data: &Value) -> Entity {
+        if self.presentation.expanded {
+            return match property {
+                "head" => self.title,
+                "start_date" | "due_date" => self.dates,
+                "threads" => self.threads,
+                "assignees" | "estimate_min" => self.groups[1],
+                "work_logs" | "work_timer" | "spent_seconds" => self.groups[2],
+                _ => self.groups[0],
+            };
+        }
         if self.presentation.hide_filled
             && !matches!(property, "head" | "start_date" | "due_date" | "threads")
         {
@@ -236,7 +301,9 @@ pub(super) fn update(world: &mut World) {
         .map(|(row, sections)| (row, sections.toolbar, sections.presentation))
         .collect();
     for (row, toolbar, presentation) in cards {
-        toolbar_visibility(world, row, toolbar, presentation);
+        if super::presentation::current(world, row).is_none() {
+            toolbar_visibility(world, row, toolbar, presentation);
+        }
     }
 }
 
@@ -278,29 +345,24 @@ fn toolbar_visibility(
         Display::Flex
     };
     let mut node = world.get_mut::<Node>(toolbar).unwrap();
-    if node.display == display {
-        return;
-    }
-    node.display = display;
-    let controls: Vec<_> = world
-        .get::<Children>(row)
-        .into_iter()
-        .flatten()
-        .copied()
-        .filter(|entity| {
-            world.get::<ActionButton>(*entity).is_some()
-                || world
-                    .get::<super::presentation::Controls>(*entity)
-                    .is_some()
-        })
-        .collect();
-    for entity in controls {
-        if let Some(mut node) = world.get_mut::<Node>(entity)
-            && node.display != display
-        {
-            node.display = display;
-        }
-    }
+    let mut next = node.clone();
+    next.display = display;
+    let minimal = presentation.hide_filled && !presentation.expanded;
+    next.position_type = if minimal {
+        PositionType::Absolute
+    } else {
+        PositionType::Relative
+    };
+    next.width = if minimal { Val::Auto } else { percent(100) };
+    next.right = if minimal { px(8) } else { Val::Auto };
+    next.top = if minimal { px(4) } else { Val::Auto };
+    node.set_if_neq(next);
+    let compact = world.get::<Sections>(row).unwrap().compact;
+    world.get_mut::<Node>(compact).unwrap().display = if minimal {
+        Display::None
+    } else {
+        Display::Flex
+    };
 }
 
 pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data: &Value) {
@@ -323,6 +385,46 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
             descendants.extend(children.iter());
         }
     }
+    if sections.presentation.expanded {
+        let order = [
+            "head",
+            "slug",
+            "quantity",
+            "assertions",
+            "body",
+            "assignees",
+            "start_date",
+            "due_date",
+            "estimate_min",
+            "work_logs",
+            "work_timer",
+            "spent_seconds",
+            "threads",
+        ];
+        properties.sort_by_key(|(_, property)| {
+            order
+                .iter()
+                .position(|key| *key == property)
+                .unwrap_or(order.len())
+        });
+    }
+    let mut ordering: HashMap<_, _> = properties
+        .iter()
+        .enumerate()
+        .map(|(index, (entity, _))| (*entity, index + 1))
+        .collect();
+    for (entity, key) in [
+        (sections.dates, "start_date"),
+        (sections.threads, "threads"),
+    ] {
+        ordering.insert(
+            entity,
+            properties
+                .iter()
+                .position(|(_, property)| property == key)
+                .map_or(usize::MAX, |index| index + 1),
+        );
+    }
     let mut filled = false;
     let mut unfilled = false;
     for (entity, property) in properties {
@@ -338,16 +440,21 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
         if world.get::<ChildOf>(entity).map(ChildOf::parent) != Some(parent) {
             world.entity_mut(entity).insert(ChildOf(parent));
         }
-        if matches!(
+        if !matches!(
             property.as_str(),
-            "start_date" | "due_date" | "quantity" | "slug"
+            "head" | "body" | "assertions" | "threads"
         ) {
             let mut node = world.get_mut::<Node>(entity).unwrap();
-            let compact = sections.presentation.hide_filled
-                && matches!(property.as_str(), "quantity" | "slug");
-            node.width = if compact { percent(100) } else { px(0) };
-            node.flex_grow = if compact { 0.0 } else { 1.0 };
+            node.width = Val::Auto;
+            node.flex_basis = px(match property.as_str() {
+                "start_date" | "due_date" => 240.0,
+                "work_logs" | "work_timer" => 280.0,
+                _ => 140.0,
+            });
+            node.flex_grow = 1.0;
+            node.flex_shrink = 1.0;
             node.min_width = px(0);
+            node.max_width = percent(100);
         }
         if property == "threads" {
             unfilled |= empty("threads", data);
@@ -362,7 +469,9 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
             }
         }
     }
-    let parent = if sections.presentation.hide_filled || empty("threads", data) {
+    let parent = if sections.presentation.expanded {
+        sections.groups[3]
+    } else if sections.presentation.hide_filled || empty("threads", data) {
         sections.empty
     } else {
         row
@@ -370,14 +479,28 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
     if world.get::<ChildOf>(sections.threads).map(ChildOf::parent) != Some(parent) {
         world.entity_mut(sections.threads).insert(ChildOf(parent));
     }
-    let parent = if sections.presentation.hide_filled || sections.fiote || empty("start_date", data)
-    {
+    let parent = if sections.presentation.expanded {
+        sections.groups[1]
+    } else if sections.presentation.hide_filled || sections.fiote || empty("start_date", data) {
         sections.empty
     } else {
         sections.filled
     };
     if world.get::<ChildOf>(sections.dates).map(ChildOf::parent) != Some(parent) {
         world.entity_mut(sections.dates).insert(ChildOf(parent));
+    }
+    if sections.presentation.expanded {
+        for parent in sections.groups.into_iter().chain([sections.dates]) {
+            let original: Vec<_> = world
+                .get::<Children>(parent)
+                .map(|children| children.iter().collect())
+                .unwrap_or_default();
+            let mut ordered = original.clone();
+            ordered.sort_by_key(|entity| ordering.get(entity).copied().unwrap_or(0));
+            if ordered != original {
+                world.entity_mut(parent).replace_children(&ordered);
+            }
+        }
     }
     for entity in [sections.identity, sections.assertions, sections.body] {
         world.get_mut::<Node>(entity).unwrap().display = if sections.presentation.hide_filled {
@@ -391,6 +514,47 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
     } else {
         Display::None
     };
+    let minimal = sections.presentation.hide_filled && !sections.presentation.expanded;
+    let managed = [
+        sections.title,
+        sections.identity,
+        sections.assertions,
+        sections.filled,
+        sections.toolbar,
+        sections.empty,
+        sections.body,
+        sections.threads,
+        sections.actions,
+    ];
+    let controls: Vec<_> = world
+        .get::<Children>(row)
+        .into_iter()
+        .flatten()
+        .copied()
+        .filter(|entity| {
+            !managed.contains(entity)
+                && world
+                    .get::<Node>(*entity)
+                    .is_some_and(|node| node.position_type != PositionType::Absolute)
+        })
+        .collect();
+    for entity in controls {
+        world.entity_mut(entity).insert(ChildOf(sections.actions));
+    }
+    world.get_mut::<Node>(sections.actions).unwrap().display = if minimal {
+        Display::None
+    } else {
+        Display::Flex
+    };
+    world.get_mut::<Node>(sections.title).unwrap().border =
+        UiRect::bottom(px(if minimal { 0 } else { 1 }));
+    world.get_mut::<Text>(sections.compact_label).unwrap().0 = if sections.presentation.hide_filled
+    {
+        "Show filled properties"
+    } else {
+        "Title only"
+    }
+    .into();
     world.get_mut::<Text>(sections.arrow).unwrap().0 = if sections.presentation.expanded {
         "⌃"
     } else {
@@ -428,6 +592,126 @@ pub(crate) mod tests {
         title_only_records_hide_properties_and_controls_until_opened,
         fiote_castle_contains_management_without_conversation,
         empty_fields_collapse_and_dates_share_a_row_without_replacing_editors,
+        new_controls_follow_disclosure_and_title_never_has_an_inner_box,
+    }
+
+    #[cfg_attr(test, test)]
+    fn new_controls_follow_disclosure_and_title_never_has_an_inner_box() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let data = json!({"uid":"record", "head":"Varrer Casa", "slug":"varrer-casa", "start_date":"2026-10-08", "due_date":"2026-10-23"});
+        app.world_mut().resource_mut::<Runtime>().areas.insert(
+            owner,
+            State {
+                applied: Some(Config {
+                    hide_filled: true,
+                    ..Config::records()
+                }),
+                data: vec![data.clone()],
+                ready: true,
+                dirty: true,
+                ..default()
+            },
+        );
+        rows::reconcile(app.world_mut(), owner);
+        let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
+        let sections = app.world().get::<Sections>(row).unwrap().clone();
+        let added = app.world_mut().spawn((Node::default(), ChildOf(row))).id();
+        let button =
+            crate::sand_panel::button(app.world_mut(), added, row, "Later feature", Toggle);
+        arrange(app.world_mut(), row, &sections, &data);
+        assert_eq!(
+            app.world().get::<ChildOf>(added).unwrap().parent(),
+            sections.actions
+        );
+        assert_eq!(
+            app.world().get::<Node>(sections.actions).unwrap().display,
+            Display::None
+        );
+        assert_eq!(
+            app.world().get::<Node>(sections.title).unwrap().border,
+            UiRect::all(px(0))
+        );
+        let title = app
+            .world_mut()
+            .query::<(Entity, &bevy::text::EditableText)>()
+            .iter(app.world())
+            .find(|(_, text)| text.value() == "Varrer Casa")
+            .unwrap()
+            .0;
+        assert!(app.world().get::<crate::sand::Borderless>(title).is_some());
+        assert_eq!(
+            app.world().get::<Node>(title).unwrap().border,
+            UiRect::all(px(0))
+        );
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(title, bevy::input_focus::FocusCause::Pressed);
+        update(app.world_mut());
+        assert_eq!(
+            app.world()
+                .get::<Node>(sections.toolbar)
+                .unwrap()
+                .position_type,
+            PositionType::Absolute
+        );
+        assert_eq!(
+            app.world().get::<Node>(sections.actions).unwrap().display,
+            Display::None
+        );
+        Toggle.apply(app.world_mut(), row);
+        assert_eq!(
+            app.world().get::<Node>(sections.actions).unwrap().display,
+            Display::Flex
+        );
+        assert_eq!(app.world().get::<ChildOf>(button).unwrap().parent(), added);
+        assert_eq!(
+            app.world().get::<Node>(sections.title).unwrap().border,
+            UiRect::bottom(px(1))
+        );
+        for section in
+            sections
+                .groups
+                .into_iter()
+                .chain([sections.empty, sections.filled, sections.dates])
+        {
+            assert_eq!(
+                app.world().get::<Node>(section).unwrap().flex_wrap,
+                FlexWrap::Wrap
+            );
+        }
+        let dates: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &rows::PropertyContainer)>()
+            .iter(app.world())
+            .filter(|(_, property)| matches!(property.0.as_str(), "start_date" | "due_date"))
+            .map(|(entity, _)| entity)
+            .collect();
+        assert_eq!(
+            app.world().get::<ChildOf>(sections.dates).unwrap().parent(),
+            sections.groups[1]
+        );
+        for date in dates {
+            let controls = app
+                .world()
+                .get::<Children>(date)
+                .unwrap()
+                .iter()
+                .find(|entity| {
+                    app.world()
+                        .get::<Children>(*entity)
+                        .is_some_and(|children| {
+                            children.iter().any(|child| {
+                                app.world().get::<bevy::text::EditableText>(child).is_some()
+                            })
+                        })
+                })
+                .unwrap();
+            assert_eq!(
+                app.world().get::<Node>(controls).unwrap().flex_wrap,
+                FlexWrap::NoWrap
+            );
+            assert_eq!(app.world().get::<Children>(controls).unwrap().len(), 3);
+        }
     }
 
     #[cfg_attr(test, test)]
@@ -799,6 +1083,7 @@ pub(crate) mod tests {
                     .parent(),
                 sections.empty,
                 sections.body,
+                sections.actions,
             ]
         );
         assert_eq!(
@@ -813,6 +1098,11 @@ pub(crate) mod tests {
             app.world().get::<Node>(sections.empty).unwrap().display,
             Display::Flex
         );
+        assert_eq!(
+            app.world().get::<ChildOf>(sections.dates).unwrap().parent(),
+            sections.groups[1]
+        );
+        Toggle.apply(app.world_mut(), row);
         app.world_mut()
             .resource_mut::<Runtime>()
             .areas

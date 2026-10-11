@@ -58,9 +58,17 @@ impl Band {
     }
 
     fn visible_time(&self, now: i64) -> nucleus::schedule::TimeRange {
-        self.occurrence
-            .time
-            .clipped(now, i64::MAX)
+        let time = if self.entry.follows_cursor() {
+            let mut time = self.entry.effective_time(now).unwrap();
+            time.until_ms = self.occurrence.time.until_ms.map(|end| {
+                time.from_ms
+                    .saturating_add(end - self.occurrence.time.from_ms)
+            });
+            time
+        } else {
+            self.occurrence.time.clone()
+        };
+        time.clipped(now, i64::MAX)
             .unwrap_or(nucleus::schedule::TimeRange {
                 from_ms: now,
                 until_ms: None,
@@ -137,7 +145,14 @@ pub(super) fn update(
                         .all(|(index, (a, b))| {
                             a.lane == b.lane
                                 && (index == 0
-                                    || (a.from_ms == b.from_ms && a.next_ms == b.next_ms))
+                                    || if entry.follows_cursor() {
+                                        a.from_ms - band.occurrence.time.from_ms
+                                            == b.from_ms - occurrence.time.from_ms
+                                            && a.next_ms - band.occurrence.time.from_ms
+                                                == b.next_ms - occurrence.time.from_ms
+                                    } else {
+                                        a.from_ms == b.from_ms && a.next_ms == b.next_ms
+                                    })
                         });
                 if !same_profile || band.entry.time != entry.time {
                     band.previous = band.occurrence.clone();
@@ -232,6 +247,7 @@ mod tests {
             preview: false,
             start_date: None,
             due_date: None,
+            estimate_min: None,
         }
     }
 
@@ -334,5 +350,36 @@ mod tests {
             Vec3::from_array(settings.position(31_000, 2000, size.to_array(), 0.0)).with_y(0.0);
         assert!((anchor.normalize() - midpoint.normalize()).length() < 0.0001);
         assert!(anchor.length() > size.x * 0.4);
+    }
+    #[test]
+    fn parallel_cursor_ranges_do_not_restart_band_motion_each_second() {
+        let mut world = World::new();
+        world.insert_resource(crate::theme::Typography(Handle::default()));
+        world.init_resource::<bevy::input_focus::InputFocus>();
+        let owner = world
+            .spawn((Node::default(), TimeSettings(Settings::default())))
+            .id();
+        populate(&mut world, owner);
+        let mut short = entry();
+        short.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":60000}});
+        let mut long = short.clone();
+        long.id = "long".into();
+        long.record_uid = "long-record".into();
+        long.origin["allocation"]["duration_ms"] = serde_json::json!(120000);
+        world.get_mut::<View>(owner).unwrap().entries = vec![short, long];
+        update(&mut world, owner, 1000, 3_600_000, true);
+        for band in world.get_mut::<Motion>(owner).unwrap().bands.values_mut() {
+            band.fall = Spring::new([0.0]);
+            band.blend = Spring::new([1.0]);
+        }
+        for now in [2000, 60000, 120000, 3_600_000] {
+            assert!(!update(&mut world, owner, now, 3_600_000, false));
+            let motion = world.get::<Motion>(owner).unwrap();
+            assert_eq!(motion.bands.len(), 2);
+            for band in motion.bands.values() {
+                assert_eq!(band.blend.position, [1.0]);
+                assert_eq!(band.visible_time(now).from_ms, now);
+            }
+        }
     }
 }

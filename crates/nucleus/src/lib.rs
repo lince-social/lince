@@ -1,5 +1,7 @@
 pub mod sand_package;
+pub mod plugins;
 pub mod visibility;
+pub mod vocabulary;
 pub mod action_intent;
 pub mod description_asset;
 pub mod drawing;

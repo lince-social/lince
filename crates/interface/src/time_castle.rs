@@ -59,9 +59,14 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
         if entry.category != Category::Timed {
             continue;
         }
-        let Some(time) = &entry.time else { continue };
-        if time.from_ms <= now && time.until_ms.is_some_and(|end| end > now) {
-            current.push((index, time.from_ms, time.until_ms.unwrap() - now));
+        let Some(time) = entry.effective_time(now) else {
+            continue;
+        };
+        if time.from_ms <= now
+            && (time.until_ms.is_some_and(|end| end > now)
+                || (time.from_ms == now && time.until_ms.is_none()))
+        {
+            current.push((index, time.from_ms, time.until_ms.unwrap_or(now) - now));
         } else if time.from_ms >= now && time.from_ms < until {
             future.push((index, time.from_ms, time.from_ms - now));
         }
@@ -69,6 +74,7 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
     let sort = |rows: &mut Vec<(usize, i64, i64)>| {
         rows.sort_by(|a, b| {
             a.1.cmp(&b.1)
+                .then_with(|| entries[a.0].allocation_cmp(&entries[b.0]))
                 .then_with(|| entries[a.0].id.cmp(&entries[b.0].id))
         })
     };
@@ -78,6 +84,18 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
         .into_iter()
         .chain(future)
         .map(|(index, _, remaining)| (index, remaining))
+        .collect()
+}
+
+pub fn clock_summaries(
+    settings: &Settings,
+    entries: &[Entry],
+    now: i64,
+    until: i64,
+) -> Vec<(usize, i64)> {
+    summaries(entries, now, until)
+        .into_iter()
+        .filter(|(index, _)| settings.past_tasks || entries[*index].origin["allocation"].is_null())
         .collect()
 }
 
@@ -360,11 +378,53 @@ pub struct Entry {
     pub start_date: Option<String>,
     #[serde(default)]
     pub due_date: Option<String>,
+    #[serde(default)]
+    pub estimate_min: Option<f64>,
 }
 
 impl Entry {
+    pub fn allocation_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let order = |entry: &Self| {
+            Some((
+                entry.origin["allocation_order"][0].as_i64()?,
+                entry.origin["allocation_order"][1].as_u64()?,
+            ))
+        };
+        match (order(self), order(other)) {
+            (Some(a), Some(b)) => a.cmp(&b),
+            _ => std::cmp::Ordering::Equal,
+        }
+    }
+
+    pub fn same_schedule(&self, other: &Self) -> bool {
+        if self == other {
+            return true;
+        }
+        if self.follows_cursor() && other.follows_cursor() {
+            let mut other = other.clone();
+            other.time = self.time.clone();
+            return self == &other;
+        }
+        false
+    }
+
+    pub fn follows_cursor(&self) -> bool {
+        self.origin["allocation"]["cursor_offset_ms"]
+            .as_i64()
+            .is_some()
+    }
+
+    pub fn effective_time(&self, now: i64) -> Option<TimeRange> {
+        if let Some(offset) = self.origin["allocation"]["cursor_offset_ms"].as_i64() {
+            let duration = self.origin["allocation"]["duration_ms"].as_i64()?;
+            return TimeRange::at_cursor(now, offset, duration);
+        }
+        self.time.clone()
+    }
+
     pub fn outstanding_at(&self, now: i64, timezone: &str) -> bool {
-        !self.preview
+        self.origin["allocation"].is_null()
+            && !self.preview
             && matches!(self.origin["kind"].as_str(), Some("manual" | "need"))
             && nucleus::DecimalValue::parse_inferred(&self.quantity)
                 .is_ok_and(|quantity| quantity.is_negative())
@@ -380,7 +440,7 @@ impl Entry {
         scope: u64,
         settings: &crate::sound::Settings,
     ) -> Option<crate::sound::Cue> {
-        if self.category == Category::AllDay {
+        if self.category == Category::AllDay || !self.origin["allocation"].is_null() {
             return None;
         }
         Some(crate::sound::Cue {
@@ -428,9 +488,17 @@ impl Entry {
 
     pub fn time_label(&self, settings: &Settings, now: i64) -> String {
         if self.outstanding_at(now, &settings.timezone) {
-            return format!("Needed: {}", self.quantity.trim_start_matches('-'));
+            let estimate = self
+                .estimate_min
+                .filter(|value| value.is_finite() && *value > 0.0)
+                .map(|value| format!(" · {value} min"))
+                .unwrap_or_default();
+            return format!(
+                "Needed: {}{estimate}",
+                self.quantity.trim_start_matches('-')
+            );
         }
-        let Some(time) = &self.time else {
+        let Some(time) = self.effective_time(now) else {
             return [self.start_date.as_deref(), self.due_date.as_deref()]
                 .into_iter()
                 .flatten()
@@ -464,6 +532,9 @@ impl Entry {
     }
 
     pub fn category_at(&self, now_ms: i64, timezone: &str) -> Category {
+        if !self.origin["allocation"].is_null() {
+            return Category::Timed;
+        }
         if self.origin["kind"] == "manual"
             && nucleus::DecimalValue::parse_inferred(&self.quantity)
                 .is_ok_and(|quantity| !quantity.is_zero())
@@ -513,7 +584,12 @@ pub fn stacks(
     let mut ordered: Vec<_> = entries
         .iter()
         .filter(|entry| entry.category_at(now_ms, timezone) == Category::Timed)
-        .filter_map(|entry| Some((entry, entry.time.as_ref()?.clipped(now_ms, until_ms)?)))
+        .filter_map(|entry| {
+            Some((
+                entry,
+                entry.effective_time(now_ms)?.clipped(now_ms, until_ms)?,
+            ))
+        })
         .collect();
     ordered.sort_by(|(a, a_time), (b, b_time)| {
         a_time

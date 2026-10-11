@@ -184,6 +184,8 @@ struct Document {
     #[serde(default)]
     calendars: Vec<crate::calendar::SavedCalendar>,
     #[serde(default)]
+    maps: Vec<crate::map_castle::SavedMap>,
+    #[serde(default)]
     kanbans: Vec<crate::kanban::SavedKanban>,
     #[serde(default)]
     instincts: Vec<crate::instinct::SavedInstinct>,
@@ -259,6 +261,7 @@ impl Document {
                 .calendars
                 .iter()
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self.maps.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self.imports.iter().all(|saved| {
                 saved.asset.valid()
                     && saved.placement.valid()
@@ -503,6 +506,9 @@ fn initialize(world: &mut World) {
                     saved.restore(world, root);
                 }
                 for saved in document.calendars {
+                    saved.restore(world, root);
+                }
+                for saved in document.maps {
                     saved.restore(world, root);
                 }
                 for saved in document.kanbans {
@@ -1006,6 +1012,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         editors: crate::ide::snapshot(world, root),
         explorers: crate::file_explorer::snapshot(world, root),
         calendars: crate::calendar::snapshot(world, root),
+        maps: crate::map_castle::snapshot(world, root),
         kanbans: crate::kanban::snapshot(world, root),
         instincts: crate::instinct::snapshot(world, root),
     }

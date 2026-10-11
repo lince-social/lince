@@ -66,7 +66,7 @@ pub fn occurrences(entries: &[Entry], now: i64, until: i64, timezone: &str) -> V
         .enumerate()
         .filter_map(|(index, entry)| {
             (entry.category_at(now, timezone) == Category::Timed).then(|| {
-                let mut time = entry.time.clone()?;
+                let mut time = entry.effective_time(now)?;
                 if time.until_ms == Some(time.from_ms) {
                     time.until_ms = None;
                 }
@@ -75,11 +75,12 @@ pub fn occurrences(entries: &[Entry], now: i64, until: i64, timezone: &str) -> V
         })
         .collect();
     ordered.sort_by(|(a, _), (b, _)| {
-        let a_time = entries[*a].time.as_ref().unwrap();
-        let b_time = entries[*b].time.as_ref().unwrap();
+        let a_time = entries[*a].effective_time(now).unwrap();
+        let b_time = entries[*b].effective_time(now).unwrap();
         a_time
             .from_ms
             .cmp(&b_time.from_ms)
+            .then_with(|| entries[*a].allocation_cmp(&entries[*b]))
             .then_with(|| {
                 (b_time.until_ms.unwrap_or(b_time.from_ms) - b_time.from_ms)
                     .cmp(&(a_time.until_ms.unwrap_or(a_time.from_ms) - a_time.from_ms))
@@ -156,8 +157,15 @@ pub fn clock_occurrences(
     until: i64,
 ) -> Vec<Occurrence> {
     let mut result = occurrences(entries, now, until, &settings.timezone);
+    if !settings.past_tasks {
+        result.retain(|occurrence| entries[occurrence.index].origin["allocation"].is_null());
+    }
     if settings.past_tasks {
-        let mut outstanding = BTreeSet::new();
+        let mut outstanding: BTreeSet<_> = entries
+            .iter()
+            .filter(|entry| !entry.origin["allocation"].is_null())
+            .map(|entry| entry.record_uid.clone())
+            .collect();
         for (index, entry) in entries.iter().enumerate() {
             if entry.outstanding_at(now, &settings.timezone)
                 && outstanding.insert(entry.record_uid.clone())

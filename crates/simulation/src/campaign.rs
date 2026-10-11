@@ -45,8 +45,8 @@ pub struct Reduction {
 }
 
 pub fn generate(index: u64) -> Scenario {
-    let family = index % 23;
-    let replicated = index / 23 % 2 == 0;
+    let family = index % 24;
+    let replicated = index / 24 % 2 == 0;
     let mut case = match family {
         0 => fixtures::daily(),
         1 => fixtures::network(true),
@@ -62,7 +62,7 @@ pub fn generate(index: u64) -> Scenario {
         11 => fixtures::transfer::nested_parents(replicated),
         12 => fixtures::transfer::observer_outcomes(replicated),
         13 => {
-            fixtures::transfer::grouped_needs(replicated, index / 46 % 2 != 0, index / 92 % 2 == 0)
+            fixtures::transfer::grouped_needs(replicated, index / 48 % 2 != 0, index / 96 % 2 == 0)
         }
         14 => fixtures::transfer::temporary_loan(replicated, false),
         15 => fixtures::transfer::extended_loan(replicated),
@@ -72,7 +72,8 @@ pub fn generate(index: u64) -> Scenario {
         19 => fixtures::transfer::donation_without_private_source(replicated),
         20 => fixtures::transfer::declined_invitation(replicated),
         21 => fixtures::transfer::private_correction_after_restart(replicated),
-        _ => fixtures::transfer::grouped_correction_after_restart(replicated),
+        22 => fixtures::transfer::grouped_correction_after_restart(replicated),
+        _ => fixtures::frequencies::shared(index / 24),
     };
     let mut entropy = index.wrapping_add(0x9e3779b97f4a7c15);
     let mut next = || {

@@ -9,6 +9,37 @@ pub struct Place {
 
 const EARTH_RADIUS_M: f64 = 6_371_000.0;
 
+pub const MIN_AREA_RADIUS_METRES: u32 = 100;
+pub const MAX_AREA_RADIUS_METRES: u32 = 100_000;
+
+pub fn valid_area_radius(radius: u32) -> bool {
+    (MIN_AREA_RADIUS_METRES..=MAX_AREA_RADIUS_METRES).contains(&radius)
+}
+
+pub fn approximate(point: Place, radius_metres: u32) -> Option<Place> {
+    if !valid_area_radius(radius_metres)
+        || !point.lat.is_finite()
+        || !point.lon.is_finite()
+        || !(-90.0..=90.0).contains(&point.lat)
+        || !(-180.0..=180.0).contains(&point.lon)
+    {
+        return None;
+    }
+    let step = (f64::from(radius_metres) / EARTH_RADIUS_M).to_degrees();
+    let center = |value: f64, span: f64| {
+        let cells = (span / step).ceil();
+        let width = span / cells;
+        let index = ((value + span / 2.0) / width)
+            .floor()
+            .clamp(0.0, cells - 1.0);
+        -span / 2.0 + (index + 0.5) * width
+    };
+    Some(Place {
+        lat: center(point.lat, 180.0),
+        lon: center((point.lon + 180.0).rem_euclid(360.0) - 180.0, 360.0),
+    })
+}
+
 pub fn distance(a: Place, b: Place) -> f64 {
     let (la1, la2) = (a.lat.to_radians(), b.lat.to_radians());
     let dlat = (b.lat - a.lat).to_radians();

@@ -11,6 +11,7 @@ use std::collections::HashSet;
 
 mod blobs;
 mod offers;
+mod plugins;
 
 pub(crate) use blobs::{accept_copy, prepare_copy, send_copy, transfer as copy_state};
 
@@ -46,7 +47,7 @@ pub struct SyncCastlePlugin;
 impl Plugin for SyncCastlePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Requests>()
-            .add_systems(Update, (blobs::update, offers::update))
+            .add_systems(Update, (blobs::update, offers::update, plugins::update))
             .add_message::<CellMessage>()
             .add_systems(Update, (receive.after(ReceiveCell), maintain).chain());
     }
@@ -365,6 +366,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     set_enabled(world, sand, false);
     blobs::populate(world, sand);
     offers::populate(world, sand);
+    plugins::populate(world, sand);
     crate::workspace_sync::populate(world, root, sand);
     crate::information::sync::panel(world, root, sand);
     sand

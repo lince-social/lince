@@ -1,5 +1,52 @@
 use super::*;
 
+#[cfg(test)]
+mod tests;
+
+#[derive(Component)]
+struct DirectoryEditor {
+    field: Entity,
+    summary: Entity,
+    original: String,
+}
+
+pub(super) fn directory_editing(world: &World, owner: Entity) -> bool {
+    world.get::<DirectoryEditor>(owner).is_some_and(|editor| {
+        value(world, editor.field).is_ok_and(|value| value != editor.original)
+    })
+}
+
+pub(super) fn directory_summary(saved: &FioteStatus) -> String {
+    if let Some(error) = &saved.working_directory.error {
+        return format!("Working directory: {error}");
+    }
+    let Some(path) = &saved.working_directory.effective else {
+        return "Working directory: none set in this branch.".into();
+    };
+    if saved.working_directory.source.as_deref() == Some(&saved.record) {
+        return format!("Working directory: {} · set on this Fiote", path.display());
+    }
+    let source = saved
+        .fiotes
+        .iter()
+        .find(|choice| Some(&choice.record) == saved.working_directory.source.as_ref());
+    format!(
+        "Working directory: {} · inherited from {}",
+        path.display(),
+        source
+            .map(|choice| choice.title.as_str())
+            .unwrap_or("parent Fiote")
+    )
+}
+
+pub(super) fn update_directory(world: &mut World, owner: Entity, saved: &FioteStatus) {
+    if let Some(summary) = world.get::<DirectoryEditor>(owner).map(|editor| editor.summary)
+        && let Some(mut text) = world.get_mut::<Text>(summary)
+    {
+        text.set_if_neq(Text::new(directory_summary(saved)));
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct Open;
 impl Action for Open {
@@ -98,6 +145,47 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         "AI connections",
         super::connections::Open,
     );
+    let summary = crate::edit_mode::label(world, content, &directory_summary(saved), 14.0);
+    let original = saved
+        .working_directory
+        .configured
+        .to_string_lossy()
+        .into_owned();
+    let directory = field(
+        world,
+        content,
+        "Working directory override · blank inherits",
+        false,
+    );
+    world
+        .get_mut::<EditableText>(directory)
+        .unwrap()
+        .editor
+        .set_text(&original);
+    world.get_mut::<EditableText>(directory).unwrap().allow_newlines = false;
+    world.entity_mut(owner).insert(DirectoryEditor {
+        field: directory,
+        summary,
+        original,
+    });
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Save working directory",
+        SaveDirectory,
+    );
+    crate::description::button(
+        world,
+        content,
+        owner,
+        if saved.behavior.prompt_parent.is_some() {
+            "Use parent directory"
+        } else {
+            "Clear working directory"
+        },
+        InheritDirectory,
+    );
     crate::description::button(
         world,
         content,
@@ -126,13 +214,13 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         world,
         content,
         &format!(
-            "Prompt parent: {}",
+            "Parent Fiote: {}",
             parent.map_or("None", |choice| choice.title.as_str())
         ),
         14.0,
     );
-    let parents = collapsed(world, content, "Change prompt parent");
-    crate::description::button(world, parents, owner, "No prompt parent", Parent(None));
+    let parents = collapsed(world, content, "Change parent Fiote");
+    crate::description::button(world, parents, owner, "No parent Fiote", Parent(None));
     for choice in saved
         .fiotes
         .iter()
@@ -272,6 +360,46 @@ impl Action for Parent {
             run_assigned: saved.behavior.run_assigned,
         };
         request(world, owner, message);
+    }
+}
+
+#[derive(Clone)]
+struct SaveDirectory;
+impl Action for SaveDirectory {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(editor) = world.get::<DirectoryEditor>(owner) else { return };
+        let Ok(directory) = value(world, editor.field) else { return };
+        let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
+        world.get_mut::<DirectoryEditor>(owner).unwrap().original = directory.clone();
+        request(
+            world,
+            owner,
+            FioteRequest::WorkingDirectory {
+                record,
+                directory: directory.into(),
+            },
+        );
+    }
+}
+
+#[derive(Clone)]
+struct InheritDirectory;
+impl Action for InheritDirectory {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
+        if let Some(editor) = world.get::<DirectoryEditor>(owner) {
+            let field = editor.field;
+            world.get_mut::<EditableText>(field).unwrap().editor.set_text("");
+            world.get_mut::<DirectoryEditor>(owner).unwrap().original.clear();
+        }
+        request(
+            world,
+            owner,
+            FioteRequest::WorkingDirectory {
+                record,
+                directory: Default::default(),
+            },
+        );
     }
 }
 
@@ -416,6 +544,7 @@ pub(super) fn instructions(world: &mut World, saved: &FioteStatus) {
 struct Select(String);
 impl Action for Select {
     fn apply(&self, world: &mut World, owner: Entity) {
+        world.entity_mut(owner).remove::<DirectoryEditor>();
         let area = world.get::<Panel>(owner).unwrap().binding.area;
         if let Some(mut area) = world.get_mut::<crate::area::InfluenceArea>(area) {
             if let Some(config) = &mut area.protein {

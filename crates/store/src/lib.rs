@@ -10,6 +10,7 @@ pub mod cells;
 pub mod peer_delivery;
 pub mod communication;
 pub mod concepts;
+pub mod vocabulary;
 pub mod config;
 pub mod contact_rate;
 pub mod contact_share;

@@ -1,3 +1,4 @@
+pub(crate) mod allocation_tests;
 mod annotations;
 mod audio;
 mod chrome;
@@ -39,7 +40,7 @@ struct View {
     entries: Vec<Entry>,
     upcoming: Entity,
     upcoming_rows: Vec<(String, String)>,
-    upcoming_stamp: Option<(u64, i64, i64, String)>,
+    upcoming_stamp: Option<(u64, i64, i64, String, u32)>,
     hovered: Option<String>,
     hover_point: Option<Vec3>,
     hover_at: std::time::Instant,
@@ -189,10 +190,18 @@ fn status(world: &mut World, owner: Entity, message: &str) {
     }
 }
 
+fn default_schedule_order(order: Vec<protein::Order>) -> Vec<protein::Order> {
+    if order.iter().any(|key| matches!(key, protein::Order::Asc(field) | protein::Order::Desc(field) if field.starts_with('#'))) {
+        order
+    } else {
+        vec![protein::Order::Desc("#task".into())]
+    }
+}
+
 fn source_query(
     world: &mut World,
     owner: Entity,
-) -> Result<(Source, Vec<protein::Predicate>), String> {
+) -> Result<(Source, Vec<protein::Predicate>, Vec<protein::Order>), String> {
     let settings = &world
         .get::<TimeSettings>(owner)
         .ok_or("Time Castle closed")?
@@ -207,12 +216,14 @@ fn source_query(
         {
             return Err("Choose a Protein from this practice Cell.".into());
         }
-        return Ok((source.cell, source.draft.compile()?.filter));
+        let query = source.draft.compile()?;
+        return Ok((source.cell, query.filter, default_schedule_order(query.order)));
     }
     let Some(id) = settings.area.clone() else {
         return Ok((
             crate::practice_cells::source(world, owner).map_or(Source::Local, Source::Organ),
             Vec::new(),
+            vec![protein::Order::Desc("#task".into())],
         ));
     };
     let root = world
@@ -240,7 +251,7 @@ fn source_query(
         return Err("Choose a Protein from this practice Cell.".into());
     }
     let query = area.query()?;
-    Ok((area.source, query.filter))
+    Ok((area.source, query.filter, default_schedule_order(query.order)))
 }
 
 pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessage) {
@@ -286,7 +297,9 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                         })
                         .map(|entry| entry.id.clone())
                         .collect();
-                    if view.entries != entries {
+                    if view.entries.len() != entries.len()
+                        || !view.entries.iter().zip(&entries).all(|(a,b)| a.same_schedule(b)) {
+
                         view.entries = entries;
                         view.revision = view.revision.wrapping_add(1);
                     }
@@ -389,7 +402,7 @@ fn update(
     }
     for owner in owners {
         let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
-        let (source, filter) = match source_query(world, owner) {
+        let (source, filter, order) = match source_query(world, owner) {
             Ok(value) => value,
             Err(error) => {
                 status(world, owner, &error);
@@ -420,7 +433,8 @@ fn update(
             status(world, owner, "Invalid clock settings");
             continue;
         };
-        let query = protein::schedule::query(window.clone(), filter);
+        let mut query = protein::schedule::query(window.clone(), filter);
+        query.order = order;
         let key = serde_json::to_string(&query).unwrap();
         let changed = previous.is_none_or(|feed| feed.source != source || feed.key != key);
         let filter_key = |query: &protein::Protein| {

@@ -112,6 +112,9 @@ impl Engine {
         let history = store::sync_activity::recent(&self.store.pool, before, now).await?;
         let (mut pending, outgoing, mut held) =
             store::sync_activity::queues(&self.store.pool).await?;
+        let (plugin_pending, plugin_outgoing, plugin_held) = self.plugin_sync_pending().await?;
+        pending.extend(plugin_pending);
+        held += plugin_held;
         let queues: Vec<_> = self
             .sync_service
             .queues
@@ -121,7 +124,9 @@ impl Engine {
             .map(|read| read())
             .collect();
         let incoming = queues.iter().map(|queue| queue.incoming).sum();
-        let outgoing = outgoing + queues.iter().map(|queue| queue.outgoing).sum::<u64>();
+        let outgoing = outgoing
+            + plugin_outgoing
+            + queues.iter().map(|queue| queue.outgoing).sum::<u64>();
         {
             let conflicts = self.file_sync_conflicts.lock().unwrap();
             let mut organs: Vec<_> = conflicts.iter().collect();

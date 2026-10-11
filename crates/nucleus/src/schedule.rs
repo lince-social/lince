@@ -1,3 +1,5 @@
+pub mod allocation;
+
 use chrono::{DateTime, Datelike, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, TimeZone};
 pub use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
@@ -63,6 +65,14 @@ pub struct TimeRange {
 }
 
 impl TimeRange {
+    pub fn at_cursor(now: i64, offset: i64, duration: i64) -> Option<Self> {
+        let start = now.checked_add(offset)?;
+        Some(Self {
+            from_ms: start,
+            until_ms: (duration > 0).then(|| start.checked_add(duration)).flatten(),
+        })
+    }
+
     pub fn overlaps(&self, from_ms: i64, until_ms: i64) -> bool {
         self.from_ms < until_ms
             && self

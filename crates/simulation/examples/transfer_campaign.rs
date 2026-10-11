@@ -15,7 +15,7 @@ fn main() -> simulation::Result<()> {
                         .get(1)
                         .map(|count| count.parse())
                         .transpose()?
-                        .unwrap_or(46);
+                        .unwrap_or(48);
                     let status = simulation::campaign::run(output, Some(count)).await?;
                     if status != 0 {
                         return Err(format!("campaign stopped with status {status}").into());

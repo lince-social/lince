@@ -571,34 +571,14 @@ pub(super) fn hand(
     else {
         return;
     };
-    let radius = size.min_element() * 0.4;
+    let ring = face::Ring::new(settings, now, size);
     let direction = Vec3::from_array(settings.transverse(now, now, 0.0));
-    let layout = face::Face::clock(world, owner, now, size, palette.font);
-    let regions = [Some(layout.time), layout.upcoming, layout.memento];
     let mut ribbon = Ribbon::default();
     let cross = Vec3::new(-direction.z, 0.0, direction.x) * 0.6;
-    for index in 0..48 {
-        let at = |index: usize| {
-            direction * (radius * 0.58 + (radius * 0.42 - 4.0) * index as f32 / 48.0)
-                + Vec3::Y * 0.3
-        };
-        let (a, b) = (at(index), at(index + 1));
-        if regions
-            .iter()
-            .flatten()
-            .any(|region| region.contains(((a + b) * 0.5).xz()))
-        {
-            continue;
-        }
-        ribbon.quad(
-            [a - cross, a + cross, b + cross, b - cross],
-            palette::rgba(palette.present),
-        );
-    }
-    let tip = direction * (radius - 1.0) + Vec3::Y * 0.3;
-    let base = direction * (radius - 7.0) + Vec3::Y * 0.3;
+    let a = direction * (ring.inner + 0.5) + Vec3::Y * 0.3;
+    let b = direction * (ring.outer - 0.5) + Vec3::Y * 0.3;
     ribbon.quad(
-        [tip, base - cross * 3.0, base + cross * 3.0, tip],
+        [a - cross, a + cross, b + cross, b - cross],
         palette::rgba(palette.present),
     );
     if let Some(entity) = world.get::<Hand>(owner).map(|hand| hand.0) {

@@ -22,10 +22,39 @@ impl ProteinDraft {
     pub fn from_protein(name: String, slug: String, query: protein::Protein) -> Self {
         let mut value = serde_json::to_value(query).unwrap();
         let filters = value["where"].as_array().unwrap();
+        let windows: Vec<_> = filters
+            .iter()
+            .filter(|filter| {
+                filter.get("projection_window").is_some() || filter.get("rolling_window").is_some()
+            })
+            .cloned()
+            .collect();
+        let filters: Vec<_> = filters
+            .iter()
+            .filter(|filter| {
+                filter.get("projection_window").is_none() && filter.get("rolling_window").is_none()
+            })
+            .cloned()
+            .collect();
         if filters.len() != 1
             || (filters[0].get("all").is_none() && filters[0].get("any").is_none())
         {
             value["where"] = json!([{"all":filters}]);
+        }
+        if !windows.is_empty() {
+            let mut combined = windows;
+            combined.extend(
+                value["where"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter(|filter| {
+                        filter.get("projection_window").is_none()
+                            && filter.get("rolling_window").is_none()
+                    })
+                    .cloned(),
+            );
+            value["where"] = json!(combined);
         }
         Self {
             name,
@@ -91,6 +120,8 @@ fn normalize(value: &mut Value, key: &str) -> Result<(), String> {
                 | "revision_lte"
                 | "revision_gt"
                 | "revision_gte"
+                | "past_days"
+                | "future_days"
         ) {
             *value = if text.trim().is_empty() && key == "limit" {
                 Value::Null
@@ -315,6 +346,18 @@ pub fn filters(source: &str) -> &'static [&'static str] {
             "near",
         ],
         "promise" => &["state_in", "uid_eq"],
+        "schedule" | "calendar" => &[
+            "text_contains",
+            "kind_eq",
+            "slug_eq",
+            "uid_eq",
+            "record_eq",
+            "quantity_eq",
+            "quantity_lt",
+            "quantity_lte",
+            "quantity_gt",
+            "quantity_gte",
+        ],
         "decision" | "auth" | "frequency" | "nearby" => &[],
         "fact" => &[
             "record_eq",
@@ -363,6 +406,7 @@ pub fn nested(source: &str) -> bool {
 pub fn sorts(source: &str) -> &'static [&'static str] {
     match source {
         "record" => SORT_FIELDS,
+        "schedule" => &["#task"],
         "transfer" => &["uid", "slug", "head", "revision", "status"],
         "karma" => &[
             "object_kind",
@@ -430,7 +474,10 @@ fn options(query: &Value) -> Result<(), String> {
                 check(child, source, seen)?;
             }
             _ => {
-                if !filters(source).contains(&key.as_str()) {
+                if !filters(source).contains(&key.as_str())
+                    && !(matches!(source, "schedule" | "calendar")
+                        && matches!(key.as_str(), "projection_window" | "rolling_window"))
+                {
                     return Err(format!(
                         "{} is not supported by {}",
                         title(key),
@@ -455,7 +502,12 @@ fn options(query: &Value) -> Result<(), String> {
             }
             required(link["kind"].as_str().unwrap_or_default())?;
         } else if let Some(field) = order.get("asc").or_else(|| order.get("desc")) {
-            if !sorts(source).contains(&field.as_str().unwrap_or_default()) {
+            if !sorts(source).contains(&field.as_str().unwrap_or_default())
+                && !(matches!(source, "record" | "schedule")
+                    && field.as_str().is_some_and(|field| {
+                        field.starts_with('#') && field.len() > 1 && field.len() <= 129
+                    }))
+            {
                 return Err("This sort property is not supported by the source".into());
             }
         }

@@ -2,6 +2,7 @@ use super::*;
 
 pub(super) fn fixture_status(record: &str) -> FioteStatus {
     FioteStatus {
+        working_directory: Default::default(),
         connections: Default::default(),
         activations: Vec::new(),
         questions: Vec::new(),
@@ -45,7 +46,7 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
     }
 }
 
-fn panel_fixture(step: Step) -> (App, Entity, FioteStatus) {
+pub(super) fn panel_fixture(step: Step) -> (App, Entity, FioteStatus) {
     let mut app = App::new();
     app.init_resource::<Assets<Font>>()
         .init_resource::<crate::theme::Typography>()

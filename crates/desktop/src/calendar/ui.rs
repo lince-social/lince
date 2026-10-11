@@ -180,7 +180,14 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             "Choose a Protein Spawn Area",
             Command::Selector(Some(Selector::Source)),
         );
-        button(world, fields, owner, &calendar.timezone, "Choose the timezone for projected dates", Command::Selector(Some(Selector::Timezone)));
+        button(
+            world,
+            fields,
+            owner,
+            &calendar.timezone,
+            "Choose the timezone for projected dates",
+            Command::Selector(Some(Selector::Timezone)),
+        );
     } else {
         picker::fields(world, owner, body);
     }
@@ -199,9 +206,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     world.get_mut::<Node>(weekdays).unwrap().column_gap = px(0);
     let source = area(world, owner);
     let dates = calendar.days();
-    let data = projection::data(world, owner).or_else(|| source
-        .and_then(|source| crate::protein_area::calendar_feed(world, source).map(|(rows, _)| rows))
-        )
+    let data = projection::data(world, owner)
+        .or_else(|| {
+            source.and_then(|source| {
+                crate::protein_area::calendar_feed(world, source).map(|(rows, _)| rows)
+            })
+        })
         .unwrap_or(&[]);
     let records = records(&calendar, data, page);
     let maximum = records.maximum;
@@ -215,6 +225,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             Node {
                 width: percent(100),
                 flex_grow: 1.0,
+                flex_basis: px(0),
                 min_height: px(0),
                 flex_direction: FlexDirection::Column,
                 ..default()
@@ -227,8 +238,9 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             .spawn((
                 Node {
                     width: percent(100),
-                    height: percent(100.0 / 6.0),
-                    min_height: px(0),
+                    flex_grow: 1.0,
+                    flex_basis: px(0),
+                    min_height: px(if picker { 28 } else { 0 }),
                     flex_shrink: 1.0,
                     ..default()
                 },
@@ -244,6 +256,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                         height: percent(100),
                         min_width: px(0),
                         min_height: px(0),
+                        flex_shrink: 0.0,
                         flex_direction: FlexDirection::Column,
                         border: UiRect::all(px(1)),
                         overflow: Overflow::clip(),
@@ -284,6 +297,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 Command::Select(value),
             );
             world.get_mut::<Node>(day).unwrap().width = percent(100);
+            if picker {
+                let mut node = world.get_mut::<Node>(day).unwrap();
+                node.height = percent(100);
+                node.justify_content = JustifyContent::Center;
+                node.align_items = AlignItems::Center;
+            }
             for (uid, title, tip) in &entries[index] {
                 if let Some(source) = source {
                     let source_kind = world
@@ -314,11 +333,18 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     }
     if let Some(source) = source {
         let footer = row(world, body);
-        let state = world.get::<projection::Feed>(owner).map_or_else(|| crate::protein_area::calendar_status(world, source).to_string(), |feed| feed.status.clone());
+        let state = world.get::<projection::Feed>(owner).map_or_else(
+            || crate::protein_area::calendar_status(world, source).to_string(),
+            |feed| feed.status.clone(),
+        );
         let count =
             crate::protein_area::calendar_feed(world, source).map_or(0, |(data, _)| data.len());
-        let label =
-            crate::edit_mode::label(world, footer, &format!("{state} · {count} Records · {}", calendar.timezone), 12.0);
+        let label = crate::edit_mode::label(
+            world,
+            footer,
+            &format!("{state} · {count} Records · {}", calendar.timezone),
+            12.0,
+        );
         world.entity_mut(label).insert(Tooltip(format!("{hidden} without a valid date or period. Results follow the Protein Area's filters and row limit.")));
         if maximum > PER_DAY {
             button(
@@ -366,7 +392,9 @@ pub(super) fn records(
     let mut counts = [0usize; 42];
     let mut hidden = 0;
     for (index, record) in data.iter().enumerate() {
-        if record["kind"] == "projection-status" { continue; }
+        if record["kind"] == "projection-status" {
+            continue;
+        }
         let Some((start, end)) = model::span_in(record, &calendar.timezone) else {
             hidden += 1;
             continue;
@@ -406,8 +434,22 @@ pub(super) fn records(
             if *count / PER_DAY == page {
                 result.days[day].push((
                     uid.into(),
-                    if record["origin"]["kind"] == "projection" { format!("{title} · {} projected", record["quantity"].as_str().unwrap_or("")) } else { title.into() },
-                    format!("{title}\n{start} – {end}\n{}", if record["origin"]["kind"] == "projection" { "Projected from Karma; may change when your data changes." } else { "Scheduled work" }),
+                    if record["origin"]["kind"] == "projection" {
+                        format!(
+                            "{title} · {} projected",
+                            record["quantity"].as_str().unwrap_or("")
+                        )
+                    } else {
+                        title.into()
+                    },
+                    format!(
+                        "{title}\n{start} – {end}\n{}",
+                        if record["origin"]["kind"] == "projection" {
+                            "Projected from Karma; may change when your data changes."
+                        } else {
+                            "Scheduled work"
+                        }
+                    ),
                 ));
             }
             *count += 1;
@@ -421,9 +463,34 @@ fn selectors(world: &mut World, owner: Entity, body: Entity, selector: Selector)
     match selector {
         Selector::Timezone => {
             let value = world.get::<CalendarSand>(owner).unwrap().0.timezone.clone();
-            crate::edit_mode::label(world, body, "Timezone, for example America/Sao_Paulo or UTC", 13.0);
-            world.spawn(crate::sand::text_editor(&value, world.resource::<crate::theme::Typography>(), 0)).insert((projection::TimezoneInput(owner), ChildOf(choices), Node { min_width: px(260), ..default() }));
-            button(world, choices, owner, "Apply", "Use this timezone", Command::ApplyTimezone);
+            crate::edit_mode::label(
+                world,
+                body,
+                "Timezone, for example America/Sao_Paulo or UTC",
+                13.0,
+            );
+            world
+                .spawn(crate::sand::text_editor(
+                    &value,
+                    world.resource::<crate::theme::Typography>(),
+                    0,
+                ))
+                .insert((
+                    projection::TimezoneInput(owner),
+                    ChildOf(choices),
+                    Node {
+                        min_width: px(260),
+                        ..default()
+                    },
+                ));
+            button(
+                world,
+                choices,
+                owner,
+                "Apply",
+                "Use this timezone",
+                Command::ApplyTimezone,
+            );
         }
         Selector::Month => {
             for (index, name) in MONTHS.iter().enumerate() {

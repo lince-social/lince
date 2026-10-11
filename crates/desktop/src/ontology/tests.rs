@@ -178,9 +178,21 @@ async fn vocabulary_hierarchy_and_assertions_round_trip_through_cell() {
             .any(|row| row["uid"] == parent)
     );
     Command::Tab(0).apply(app.world_mut(), owner);
-    apply(&mut app, owner, Command::Delete).await;
+    Command::Delete.apply(app.world_mut(), owner);
+    settle(&mut app, |world| {
+        world.get::<OntologySand>(owner).unwrap().pending.is_none()
+    })
+    .await;
+    let status = app.world().get::<OntologySand>(owner).unwrap().status;
     assert!(
-        !app.world().get::<OntologySand>(owner).unwrap().rows[0]
+        app.world()
+            .get::<Text>(status)
+            .unwrap()
+            .0
+            .contains("source of retained Concepts")
+    );
+    assert!(
+        app.world().get::<OntologySand>(owner).unwrap().rows[0]
             .iter()
             .any(|row| row["uid"] == lingua)
     );
@@ -189,6 +201,69 @@ async fn vocabulary_hierarchy_and_assertions_round_trip_through_cell() {
         world.resource::<Subscriptions>().0.is_empty()
     })
     .await;
+}
+
+#[tokio::test]
+async fn translated_terms_are_managed_through_the_native_ontology_and_cell() {
+    let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    let mut app = app();
+    connect(&mut app, engine.clone());
+    app.add_plugins(OntologyPlugin);
+    let owner = app.world_mut().spawn(Node::default()).id();
+    populate(app.world_mut(), owner, owner);
+    settle(&mut app, |world| {
+        world
+            .get::<OntologySand>(owner)
+            .unwrap()
+            .ready
+            .iter()
+            .all(|ready| *ready)
+    })
+    .await;
+    Command::Tab(3).apply(app.world_mut(), owner);
+    Command::Choose(1, nucleus::vocabulary::TOPOS_UID.into()).apply(app.world_mut(), owner);
+    name(&mut app, owner, "onde");
+    let field = app.world().get::<OntologySand>(owner).unwrap().language;
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(field)
+        .unwrap()
+        .editor
+        .set_text("pt-BR");
+    Command::Preferred.apply(app.world_mut(), owner);
+    apply(&mut app, owner, Command::AddTerm).await;
+    let term = app.world().get::<OntologySand>(owner).unwrap().rows[1]
+        .iter()
+        .find(|row| row["uid"] == nucleus::vocabulary::TOPOS_UID)
+        .unwrap()["terms"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|term| term["name"] == "onde")
+        .unwrap()["uid"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    apply(&mut app, owner, Command::Language).await;
+    assert_eq!(uid(&app, owner, 1, "onde"), nucleus::vocabulary::TOPOS_UID);
+    Command::Term(term.clone()).apply(app.world_mut(), owner);
+    name(&mut app, owner, "morada");
+    apply(&mut app, owner, Command::EditTerm).await;
+    assert_eq!(
+        uid(&app, owner, 1, "morada"),
+        nucleus::vocabulary::TOPOS_UID
+    );
+    apply(&mut app, owner, Command::RetireTerm).await;
+    assert_eq!(
+        uid(&app, owner, 1, "localização"),
+        nucleus::vocabulary::TOPOS_UID
+    );
+    assert_eq!(
+        store::vocabulary::sources(&engine.store.pool)
+            .await
+            .unwrap()[nucleus::vocabulary::TOPOS_UID]
+            .original_name,
+        "tópos"
+    );
 }
 
 #[test]

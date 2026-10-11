@@ -72,7 +72,12 @@ pub struct CalendarPlugin;
 impl Plugin for CalendarPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<crate::cell_bridge::CellMessage>()
-            .add_systems(Update, projection::receive.after(crate::cell_bridge::ReceiveCell).before(crate::protein_area::UpdateProteinAreas));
+            .add_systems(
+                Update,
+                projection::receive
+                    .after(crate::cell_bridge::ReceiveCell)
+                    .before(crate::protein_area::UpdateProteinAreas),
+            );
         app.add_systems(
             Update,
             update.after(crate::protein_area::UpdateProteinAreas),
@@ -182,13 +187,12 @@ fn update(world: &mut World) {
             && (world.get_entity(picker.row).is_err()
                 || world
                     .get::<bevy::text::EditableText>(picker.editor)
-                    .is_none()
-                || world.get::<crate::canvas_selection::SandGroup>(picker.row)
-                    != world.get::<crate::canvas_selection::SandGroup>(owner))
+                    .is_none())
         {
             world.despawn(owner);
             continue;
         }
+        picker::position(world, owner);
         let picker_key = picker::sync(world, owner);
         projection::maintain(world, owner);
         let feed = area(world, owner)
@@ -244,8 +248,14 @@ impl Action for Command {
             return;
         }
         if matches!(self, Self::Close) {
-            if world.get::<Picker>(owner).is_some() {
+            if let Some(editor) = world.get::<Picker>(owner).map(|picker| picker.editor) {
                 world.despawn(owner);
+                if world.get::<bevy::text::EditableText>(editor).is_some()
+                    && let Some(mut focus) =
+                        world.get_resource_mut::<bevy::input_focus::InputFocus>()
+                {
+                    focus.set(editor, bevy::input_focus::FocusCause::Navigated);
+                }
             } else if let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) {
                 crate::deletion::request(world, root, vec![owner]);
             }
@@ -256,9 +266,17 @@ impl Action for Command {
         };
         match self {
             Self::ApplyTimezone => {
-                let timezone = world.query::<(&projection::TimezoneInput, &bevy::text::EditableText)>().iter(world).find(|(input, _)| input.0 == owner).map(|(_, editor)| editor.value().to_string().trim().to_string());
-                let Some(timezone) = timezone else { return; };
-                if let Err(error) = nucleus::projection::Window::month(model.year, model.month, timezone.clone()) {
+                let timezone = world
+                    .query::<(&projection::TimezoneInput, &bevy::text::EditableText)>()
+                    .iter(world)
+                    .find(|(input, _)| input.0 == owner)
+                    .map(|(_, editor)| editor.value().to_string().trim().to_string());
+                let Some(timezone) = timezone else {
+                    return;
+                };
+                if let Err(error) =
+                    nucleus::projection::Window::month(model.year, model.month, timezone.clone())
+                {
                     world.get_mut::<View>(owner).unwrap().error = Some(error);
                     ui::render(world, owner);
                     return;
@@ -306,16 +324,27 @@ impl Action for Command {
                     return;
                 }
                 world.get_mut::<CalendarSand>(owner).unwrap().0 = model.clone();
-                crate::scoped_events::emit(
-                    world,
-                    owner,
-                    DATE_SELECTED,
-                    serde_json::Value::String(date.clone()),
-                );
+                if let Some(picker) = world.get::<Picker>(owner) {
+                    world.trigger(crate::scoped_events::SandEvent {
+                        entity: picker.editor,
+                        source: owner,
+                        name: DATE_SELECTED.into(),
+                        value: serde_json::Value::String(date.clone()),
+                    });
+                } else {
+                    crate::scoped_events::emit(
+                        world,
+                        owner,
+                        DATE_SELECTED,
+                        serde_json::Value::String(date.clone()),
+                    );
+                }
             }
             Self::Record(binding) => {
                 if let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) {
-                    if let Some(record) = crate::full_record::open(world, root, &binding.uid, binding.source.clone()) {
+                    if let Some(record) =
+                        crate::full_record::open(world, root, &binding.uid, binding.source.clone())
+                    {
                         crate::instinct::practice::track_record_view(world, root, record, binding);
                     }
                     world.trigger(crate::protein_area::RecordClicked {

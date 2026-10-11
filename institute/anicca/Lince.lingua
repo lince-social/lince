@@ -65,12 +65,12 @@ Installation (@installation: 0, #instinct, #part-of @tool) {
 
 Run a downloaded binary with `./lince`, or `lince` if it is on your path. From the repository, run `cargo run -p lince`. The normal desktop run needs no `.env` file or environment variables. Lince keeps its data in your user config directory by default. Use `--directory /path/to/data` to choose another place.
 
-For an isolated development Cell, run `mise dev`. It uses `test_lince` in your user config directory and port 6176. Set `LINCE_DATA_DIR` and `LINCE_PORT` for one run, or pass `--directory` and `--port` directly:
+For an isolated development Cell, run `cargo xtask dev`. It uses `test_lince` in your user config directory and port 6176. Set `LINCE_DATA_DIR` and `LINCE_PORT` to choose another directory and port. Set `LINCE_INSTINCT=1` to include the Instinct handbook and native practice:
 ```bash
-LINCE_DATA_DIR=/tmp/my-lince LINCE_PORT=6200 mise dev
-mise run dev -- --directory /tmp/my-lince --port 6200
+LINCE_INSTINCT=1 LINCE_DATA_DIR=.lince-dev cargo xtask dev
+LINCE_DATA_DIR=/tmp/my-lince LINCE_PORT=6200 cargo xtask dev
 ```
-When Nix is installed, `mise dev` enters the interface development shell on NixOS, other Linux systems, and macOS. Otherwise it uses the local Cargo toolchain. No `.env` file is needed.
+When Nix is installed, `cargo xtask dev` enters the interface development shell. Otherwise it uses the local Cargo toolchain. No `.env` file is needed. Run `cargo xtask help` to discover commands, or `cargo xtask check-instinct` to check both handbook feature paths and shared practice contracts.
 
 A headless server needs an admin account on first start. Give it a password file that only the service user can read. The NixOS module is imported as `inputs.lince.nixosModules.default`; set `services.lince.enable = true` and choose `services.lince.initialAdminPasswordFile`. The institute host at `institute/server/configuration.nix` chooses `/var/lib/lince/initial-admin-password` and listens on `127.0.0.1:6174`. Put the password file on that host before expecting the service to start. The host file assumes UEFI boot, an ext4 root filesystem labeled `nixos`, and a FAT boot filesystem labeled `ESP`. The deploy workflow checks those mounts before switching.
 
@@ -210,7 +210,6 @@ A number is deliberately unopinionated. The same field can mean stock, debt, nee
 A Record as mentioned so far is plain, basic. There are workflows that are not just modeling ideas, they need extra features. The 'kind' property is a way to specialize the Record, into being many possible things. It can be a rule, signal, transfer, decision, device, organ, person, protein, sand, conversation, thread, message, thread-invite, program, frequency, grant, and call-session. If the built-in features of Lince are not enough, one can use a record.extension to save data, and build custom logic in the sands to use that data, this is like an everything-goes field to store what you want.
 
 A record's quantity can name its **unit** — kilograms, hours, a currency — by pointing at a Concept, so "3" is never ambiguous. A Record can name a **place**, so it shows up on a map or in whatever is near you.
-- [ ] Maybe a Record can have longitute,latitude, and be given a name, so we can use it as an address, and in the links of a record of party we put like location or address link so Party #address Street4 (that has a longitude) or just plainly in the Party record, since it will also have latitude longitude. It's good to be able to use both.
 
 It remembers which **Organ** it came from, which is how you know whether something arrived from a group you are in or you wrote it yourself. And it keeps **when it was created and last changed**.
 }
@@ -231,10 +230,7 @@ Hand        #part-of      Arm
 An assertion can have the place of the Identity of a Record, being the concept that represents that apple most. When you want to understand what something is that has a bunch of assertions, you look for the main one, the Identity:
 
 Apple is #apple
-
 }
-
-
 
 Organ (@organ: 0, #instinct, #part-of @ontology, #done) { r_VAX3HA21RXF9AENHMCJTSEF1AT
 Every Record so far lived alone on one machine. This is about what happens when
@@ -303,9 +299,7 @@ graph TD
 This is why the frontend keeps **areas** (in the workspace menu) separate from each other, and why a Protein can filter by organ. The boundary is real, and it is the same boundary the next chapter has to cross.
 
 Other Organs can be saved as contacts, with unknown, known and blocked states, and a numeric Proximity property that you can use to indicate the value of your bond with them. In Transfers, you may use it to offer to people you have only a certain level of Proximity with, perhaps increasing the range of which you may donate something over time by increasing needed proximity to see such donation if closer contacts dont immediatelly want it.
-
 } r_VAX3HA21RXF9AENHMCJTSEF1AT
-
 
 Lingua (@lingua: 0, #instinct, #part-of @ontology) {
 
@@ -314,11 +308,51 @@ For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectio
 ## Vocabulary
 
 We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
+
+- [ ] **Give meanings a version history.** Keep a saved version of each Concept’s definition. Assertions should remember which version they use, so changing a definition cannot change what an older Assertion meant.
+
+- [ ] **Let people publish and adopt Vocabularies.** A person should be able to publish a collection of meanings, inspect someone else’s collection, and choose to use it. Removing a publication should leave already saved meanings usable.
+
+- [ ] **Finish terminology preferences.** Let people choose sets of terms for different contexts, hide unwanted source terms, use their own wording, and restore the original wording. Updates should preserve these choices.
+
+- [ ] **Use Concept identities throughout built-in features.** Features such as assignment and containment still depend on particular words in some places. Change them to recognize the selected meaning, so translations and personal names work consistently.
+
+- [ ] **Add controls for choosing feature meanings.** Let authorized people decide which Concepts a feature accepts and which Concept its controls write. Show the effect of a change and apply the same permission checks everywhere.
+
+- [ ] **Keep selected meanings stable throughout editing.** Rules, filters, drafts, undo, and imported/exported files should retain the chosen Concept even after its label or display language changes. Ambiguous words should ask for a selection.
+
+- [ ] **Improve the meaning inspector.** Show a Concept’s definition, origin, versions, terms, and where it is used. Make changing a label, changing a definition, and creating a different meaning clearly separate actions.
+
+- [ ] **Finish sharing terminology and accepting translation packages.** Share public definitions and terms while keeping personal wording private. Translation packages should add wording without gaining permission to change feature behavior.
+
+- [ ] **Build connections to external knowledge sources.** Create a common way for Lince to search and read other databases. Start with a test source, with permission checks, cancellation, and limits on requests and downloaded data.
+
+- [ ] **Preserve the full meaning of imported claims.** Keep their values, conditions, references, source, and revision. Connect external meanings to local Concepts explicitly, without assuming that matching words mean the same thing.
+
+- [ ] **Show local and external information together.** Let people choose sources and browse their results beside local Records. Clearly show where each result comes from, whether loading is complete, and what is available offline.
+
+- [ ] **Keep lasting links to external results.** A local annotation or relation should remain usable after temporary downloaded content is cleared. Keep a small reference Record that can later receive the full saved content.
+
+- [ ] **Add temporary storage and offline sources.** Separate disposable downloaded data from permanent Organ data. Limit storage and memory use, keep private data separated, and show what is cached or unavailable.
+
+- [ ] **Preview what will be saved into an Organ.** Show the selected content, required related data, assets, licenses, missing pieces, and estimated size before saving. Check that the person can read the source and write to the destination.
+
+- [ ] **Make saving reliable.** Save the selected material and its required dependencies together. Repeating or retrying a save should reuse the same Records, and interrupted saves should recover cleanly.
+
+- [ ] **Make saved knowledge independent of its source.** Saved content should remain readable after disconnecting and clearing temporary storage. Include its meanings, references, attribution, and required assets when syncing or exporting it.
+
+- [ ] **Let people review source updates.** Compare a new source version with the saved version and local edits. Let the person choose which changes to accept or create a separate local copy, while preserving their annotations.
+
+- [ ] **Add Wikidata support.** Search and read entities, properties, and statements, preserving their values, conditions, references, and source versions.
+
+- [ ] **Add Wikipedia support.** Search and read article revisions in the native interface, preserving source links, attribution, and licenses.
+
+- [ ] **Add local archive and dump support.** Let people browse supported offline knowledge collections through the same reading and saving workflow.
+
+- [ ] **Verify the complete experience.** Test permissions, retries, offline use, sync, export, and resource limits. Check keyboard use, multilingual input, right-to-left text, screen readers, and mobile layouts, including real devices where available.
 }
 
-
 Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
-
 Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
 
 - Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
@@ -332,8 +366,6 @@ Blood (@blood: 0, #instinct, #part-of @ontology) {
 If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
 
 This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
-
-- [ ]**Export scheduled Karma activity as `.ics`:**
 }
 
 Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
@@ -347,12 +379,8 @@ It is useful without an LLM. People author exact rules visually, use transparent
 
 A rule is one sentence long, and the parts below take that sentence apart: what it watches, when it counts as true, and what it does about it.
 
-> Deferred Karma work: let rules update existing board components and route presentations to selected devices and workspaces. Expand owner-authored Karma Trails and add automation suggestions based on recurring patterns.
-
-Ideas left to implement:
-1. **Real phone/laptop validation:** verify synced changes, concurrent edits, disconnects, restarts, and switching which Cell runs Karma. Automated device tests passed; physical-device checks remain.
-2. **Fiote workflow validation:** the other agent has implemented Karma activation. Running it with an installed provider—especially repeated activation, stopping, disabling, and restarting—still needs acceptance testing.
-3. **Deferred HTTP inputs:** authenticated requests that update Signals or invoke saved commands, with scoped access and retry protection.
+> Deferred Karma work:
+- **Deferred HTTP inputs:** authenticated requests that update Signals or invoke saved commands, with scoped access and retry protection.
 
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 
@@ -623,6 +651,8 @@ production, stock, logistics and ordering views and public commerce.
 - [ ] Access to camera can introduce hand waving controls, like pinch zoom, area selection in edit mode, select sand, delete sand. move camera angle and position...
 - [ ] Gaussian Splatter Castle: taking video of a space and turning it into very low polygon space + simplified gaussians as just the flat face of objects.
 	- [ ] (Wont enter the plan of coding topology, user will ask for this like to be coded alone in the future) Also being able to put a camera feed like the Command Signal coming in from the real switch that has the cameras in the same network as the server running this lince, or in some vps. So i can alter between cameras and see it's feed from one angle, and then continue moving around the building like a creative mode of minecraft flying.  Maybe this can be a Karma Command's Signal, that gets continuously updated, maybe we can set it to be in memory for live feed and not waste disk.
+
+- [ ] **Check what happens when a recurring task’s date is moved backward.** For example, move its next date to yesterday after yesterday’s occurrence has already run. Decide whether that edit should make the task occur again, then verify the current behavior. If a fix is needed, ensure normal retries still cannot apply the same occurrence twice. The scheduling code has changed since the notes were written, so the old explanation may no longer apply.
 
 There are several components made, here is the documentation on how to use them:
 

@@ -542,9 +542,10 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             fields.push(field(
                 world,
                 options,
-                "Folder for new files · optional",
+                "Working directory · optional",
                 false,
             ));
+            crate::edit_mode::label(world, options, "Blank inherits the parent Fiote’s working directory. Shell and file tools use your user account’s permissions.", 13.0);
             crate::description::button(
                 world,
                 content,
@@ -775,6 +776,7 @@ impl Action for Continue {
                     settings.account = previous.0.account.clone();
                     settings.reasoning = previous.0.reasoning.clone();
                     settings.fast = previous.0.fast;
+                    settings.context_budget_bytes = previous.0.context_budget_bytes;
                 }
                 return Ok(FioteRequest::BrowserStart {
                     record,
@@ -1216,6 +1218,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     }
     let panel = world.get::<Panel>(owner).unwrap();
     let step = panel.step;
+    let record_changed = panel.binding.uid != saved.record;
     let first = panel.saved.is_none() && panel.automatic;
     let changed = panel.saved.as_ref().is_none_or(|previous| {
         serde_json::to_value(previous).ok() != serde_json::to_value(&saved).ok()
@@ -1284,6 +1287,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
             .unwrap()
             .set_if_neq(Text::new(status_text));
     }
+    management::update_directory(world, owner, &saved);
     let mut panel = world.get_mut::<Panel>(owner).unwrap();
     panel.pending = None;
     panel.binding.uid = saved.record.clone();
@@ -1296,7 +1300,9 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     if next != step
         || (first && !connections::editing(world, owner))
         || (step == Step::Agent && (agent_changed || refreshed))
-        || (step == Step::Manage && changed)
+        || (step == Step::Manage
+            && changed
+            && (record_changed || !management::directory_editing(world, owner)))
         || (step == Step::Connections && changed && !connections::editing(world, owner))
         || (step == Step::Browser && login_changed)
     {

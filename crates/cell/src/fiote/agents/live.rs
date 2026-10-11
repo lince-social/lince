@@ -47,9 +47,15 @@ pub(super) async fn runtime(
         if runtime.record != record {
             return Err("This session belongs to another Fiote.".into());
         }
-        return Ok(runtime);
+        if runtime.config == *config {
+            return Ok(runtime);
+        }
     }
-    sessions.lock().await.remove(thread);
+    let previous = sessions.lock().await.remove(thread);
+    if let Some(previous) = previous {
+        previous.connection.close();
+        previous._server.close().await;
+    }
     if sessions.lock().await.len() >= 8 {
         return Err("Close an agent session before opening another.".into());
     }
@@ -303,7 +309,11 @@ impl Host {
         }
         let saved = self.load(&record)?.ok_or("Configure this Fiote first.")?;
         let config = configured(
-            saved.agent.ok_or("This Fiote does not use an ACP agent.")?,
+            self.agent_working_directory(
+                &record,
+                saved.agent.ok_or("This Fiote does not use an ACP agent.")?,
+            )
+            .await?,
             &self.directory.join(format!("agent-options-{thread}.json")),
         )?;
         let system = self.session_instructions(&record, thread).await?;

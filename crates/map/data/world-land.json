@@ -1,0 +1,8 @@
+{
+  "name": "Natural Earth 1:110m land",
+  "source": "https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson",
+  "license": "Public domain",
+  "sha256": "9e0729ee253ca7d7a5c4ae9395fb1902264c5377c52e224d13dd85010e2835d9",
+  "attribution": "Made with Natural Earth",
+  "purpose": "Bundled world overview; detailed coastlines and roads come from configured Shortbread sources."
+}

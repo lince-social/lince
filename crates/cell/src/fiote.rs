@@ -5,7 +5,7 @@ use engine::{
 use fiote::{
     config::{Request, Secret, Settings, Status},
     provider::{Message, Provider},
-    tools::{CreateFile, Registry},
+    tools::Registry,
 };
 use nucleus::{MessageState, RecordKind};
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,7 @@ mod profiles;
 mod tests;
 mod timeline;
 mod usage;
+mod working_directory;
 pub(crate) mod vault;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -258,6 +259,7 @@ impl Host {
         });
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
+            working_directory: self.working_directory_status(record).await,
             connections: self.profile_status(record)?,
             activations: self
                 .engine
@@ -532,6 +534,10 @@ impl Service for Host {
                     .clone()
             }
             Request::Directory => self.directory().await?,
+            Request::WorkingDirectory { record, directory } => {
+                self.set_working_directory(&record, directory).await?;
+                record
+            }
             Request::Create { head } => {
                 let record = self
                     .engine
@@ -1015,10 +1021,11 @@ impl Host {
                 content: content.to_vec(),
             }
         });
-        let system = self.session_instructions(&record.uid, thread).await?;
+        let mut system = self.session_instructions(&record.uid, thread).await?;
         let mut tools = Registry::default();
-        if laboratory.is_none() && !config.settings.directory.as_os_str().is_empty() {
-            tools.register(CreateFile::new(&config.settings.directory)?);
+        if laboratory.is_none() && let Some((directory, _)) = self.effective_working_directory(&record.uid).await? {
+            tools.register_workspace(&directory)?;
+            system.push_str(&format!("\n\nWorking directory: {}\nFile tools use paths relative to this directory. run_command executes shell commands in this directory with the same operating-system permissions as Lince; the working directory is not a filesystem sandbox. Use these tools to inspect, edit and test the project when requested. Read project instructions such as AGENTS.md before changing project files. Commands may change files; report their actual results and failures.", directory.display()));
         }
         let native = transport::Session::local(
             self.engine.clone(),

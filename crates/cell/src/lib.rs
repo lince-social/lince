@@ -162,6 +162,7 @@ impl Cell {
             .ok_or_else(|| IoError::other("this Cell has no Cell Record"))?;
         let key_dir = utils::config::lince_data_dir()
             .ok_or_else(|| IoError::other("Cannot find the Lince data directory"))?;
+        engine.load_plugins(key_dir.join("plugins")).await.map_err(IoError::other)?;
         social_host::configure(&engine).await?;
 
         if services {
@@ -222,6 +223,7 @@ impl Cell {
             supervisors.push(engine::file_sync::spawn_supervisor(engine.clone()));
             supervisors.push(engine.clone().run(HEARTBEAT_PERIOD_SECS));
             supervisors.push(engine.clone().start_effect_worker());
+            supervisors.push(engine.clone().start_plugin_sync());
         }
         if let Some(fiote) = &runtime.fiote { tasks.push(fiote.spawn_assignments()); }
         if services { tasks.push(transfer::spawn_worker(runtime.clone())); }

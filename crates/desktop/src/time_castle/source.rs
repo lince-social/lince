@@ -33,17 +33,18 @@ pub(super) fn open(world: &mut World, owner: Entity) {
     else {
         return;
     };
-    let (cell, filter) = match source_query(world, owner) {
+    let (cell, filter, order) = match source_query(world, owner) {
         Ok(source) => source,
         Err(error) => {
             status(world, owner, &error);
             (
                 crate::practice_cells::source(world, owner).map_or(Source::Local, Source::Organ),
                 Vec::new(),
+                vec![protein::Order::Desc("#task".into())],
             )
         }
     };
-    let draft = world
+    let mut draft = world
         .get::<TimeSettings>(owner)
         .unwrap()
         .0
@@ -53,8 +54,10 @@ pub(super) fn open(world: &mut World, owner: Entity) {
         .unwrap_or_else(|| {
             let mut query = ProteinDraft::default().compile().unwrap();
             query.filter = filter;
+            query.order = order.clone();
             ProteinDraft::from_protein("Clock schedule".into(), String::new(), query)
         });
+    draft.query["order"] = serde_json::to_value(order).unwrap();
     let position = world
         .get::<crate::canvas::CanvasView>(root)
         .map_or(bevy::math::DVec2::ZERO, |view| view.center);
@@ -127,7 +130,7 @@ pub(crate) fn controls(world: &mut World, parent: Entity, owner: Entity) {
     crate::edit_mode::label(
         world,
         parent,
-        "The clock uses these Record filters with its aperture.",
+        "Assertion sorting sets work order: #task descending puts higher numbers first. Equal priorities run together.",
         13.0,
     );
 }
@@ -234,6 +237,14 @@ mod tests {
         open(&mut world, owner);
         assert_eq!(world.get::<SourceEditors>(owner).unwrap().0, vec![editor]);
         assert!(crate::protein_castle::snapshot(&mut world, root).is_empty());
+        assert!(
+            world
+                .query::<&Text>()
+                .iter(&world)
+                .any(|text| text.0 == "Sorting")
+        );
+        world.get_mut::<ProteinCastle>(editor).unwrap().draft.query["order"] =
+            serde_json::json!([{"desc":"#priority"},{"asc":"#urgency"}]);
         world.get_mut::<ProteinCastle>(editor).unwrap().draft.query["where"] =
             serde_json::json!([{"all":[{"text_contains":"Dental"}]}]);
         assert!(world.get::<TimeSettings>(owner).unwrap().0.source.is_none());
@@ -244,7 +255,11 @@ mod tests {
             serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
         assert_eq!(restored, settings);
         assert!(restored.valid());
-        let (cell, filter) = source_query(&mut world, owner).unwrap();
+        let (cell, filter, order) = source_query(&mut world, owner).unwrap();
+        assert_eq!(
+            serde_json::to_value(order).unwrap(),
+            serde_json::json!([{ "desc": "#priority" }, { "asc": "#urgency" }])
+        );
         assert_eq!(cell, Source::Local);
         assert_eq!(
             serde_json::to_value(filter).unwrap(),
@@ -260,9 +275,20 @@ mod tests {
     #[test]
     fn cancelling_or_rejecting_a_source_does_not_change_the_clock() {
         let (mut world, _, owner) = fixture();
+        let mut draft = ProteinDraft::default();
+        draft.query["order"] = serde_json::json!([{"asc":"head"}]);
+        world.get_mut::<TimeSettings>(owner).unwrap().0.source = Some(model::ScheduleSource {
+            cell: Source::Local,
+            draft,
+        });
         let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
         open(&mut world, owner);
         let editor = world.get::<SourceEditors>(owner).unwrap().0[0];
+        assert_eq!(
+            world.get::<ProteinCastle>(editor).unwrap().draft.query["order"],
+            serde_json::json!([{"desc":"#task"}])
+        );
+
         world.get_mut::<ProteinCastle>(editor).unwrap().draft.query["source"] =
             serde_json::json!("concept");
         assert!(run_editor(&mut world, editor));

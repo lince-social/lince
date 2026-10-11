@@ -92,8 +92,8 @@ pub(super) async fn occurrences(
     existing: &HashSet<String>,
     entries: &mut Vec<Scheduled>,
 ) -> Result<i64, EngineError> {
-    let rows = store::sqlx::query("SELECT a.rowid AS position, a.event_id, a.rule_uid, a.rule_revision, a.intended_at, a.frequency_uid, r.record_uid FROM karma_rule_application a JOIN recurrence r ON r.uid = a.rule_uid WHERE a.rowid > ? AND a.status = 'applied' ORDER BY a.rowid LIMIT ?")
-        .bind(position).bind(MAX_SPANS as i64).fetch_all(pool).await?;
+    let rows = store::sqlx::query("SELECT a.rowid AS position, a.event_id, a.rule_uid, a.rule_revision, a.intended_at, a.frequency_uid, r.record_uid FROM karma_rule_application a JOIN recurrence r ON r.uid = a.rule_uid LEFT JOIN record_extension w ON w.record_uid = r.record_uid AND w.namespace = 'work' WHERE a.rowid > ? AND a.status = 'applied' AND ROUND(unixepoch(a.intended_at, 'subsec') * 1000) < ? AND (ROUND(unixepoch(a.intended_at, 'subsec') * 1000) >= ? OR ROUND(unixepoch(a.intended_at, 'subsec') * 1000) + COALESCE(ROUND((julianday(json_extract(w.fds, '$.due')) - julianday(json_extract(w.fds, '$.start'))) * 86400000), ROUND(json_extract(w.fds, '$.estimate_min') * 60000), 0) > ?) ORDER BY a.rowid LIMIT ?")
+        .bind(position).bind(context.window.until_ms).bind(context.window.from_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(pool).await?;
     let mut position = position;
     for row in rows {
         position = row.get("position");

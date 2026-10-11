@@ -36,6 +36,7 @@ pub struct Condition {
     pub organs: Vec<String>,
     pub lower: Option<Bound>,
     pub upper: Option<Bound>,
+    pub radius_metres: Option<u32>,
 }
 
 impl Condition {
@@ -58,6 +59,12 @@ impl Condition {
     }
 
     fn validate(&self) -> Result<(), &'static str> {
+        if self
+            .radius_metres
+            .is_some_and(|radius| !crate::place::valid_area_radius(radius))
+        {
+            return Err("Choose an approximate area radius between 100 and 100000 metres");
+        }
         if self.organs.len() > MAX_ORGANS_PER_CONDITION {
             return Err("Choose at most 64 Organs in each visibility condition");
         }
@@ -104,15 +111,36 @@ pub struct Decision {
     pub allowed: bool,
     pub included_by: Vec<usize>,
     pub excluded_by: Vec<usize>,
+    pub radius_metres: Option<u32>,
 }
 
 impl Policy {
+    pub fn validate_for(&self, data: Data) -> Result<(), &'static str> {
+        self.validate()?;
+        if data == Data::Record
+            && self
+                .include
+                .iter()
+                .any(|condition| condition.radius_metres.is_some())
+        {
+            return Err("Approximate areas apply to saved places and live locations");
+        }
+        Ok(())
+    }
+
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.include.len() + self.exclude.len() > MAX_CONDITIONS {
             return Err("Choose at most 64 visibility conditions");
         }
         for condition in self.include.iter().chain(&self.exclude) {
             condition.validate()?;
+        }
+        if self
+            .exclude
+            .iter()
+            .any(|condition| condition.radius_metres.is_some())
+        {
+            return Err("Exclusions deny access; choose an area size on an inclusion");
         }
         if serde_json::to_vec(self)
             .map_err(|_| "Cannot encode visibility rules")?
@@ -136,10 +164,16 @@ impl Policy {
         };
         let included_by = matches(&self.include);
         let excluded_by = matches(&self.exclude);
+        let radius_metres = included_by
+            .iter()
+            .map(|index| self.include[*index].radius_metres.unwrap_or(0))
+            .min()
+            .filter(|radius| *radius > 0);
         Decision {
             allowed: !included_by.is_empty() && excluded_by.is_empty(),
             included_by,
             excluded_by,
+            radius_metres,
         }
     }
 }
@@ -218,6 +252,7 @@ mod tests {
                     value: 2,
                     inclusive: true,
                 }),
+                ..Default::default()
             }],
         };
         policy.validate().unwrap();

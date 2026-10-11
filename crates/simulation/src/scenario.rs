@@ -414,6 +414,18 @@ impl Scenario {
                 _ => {}
             }
             match &check.predicate {
+                Predicate::QuantitiesEqual {
+                    cell,
+                    records,
+                    at_ms,
+                } if !cells.contains(cell)
+                    || records.is_empty()
+                    || records.len() > 4096
+                    || records.keys().any(|record| record.is_empty())
+                    || !(self.start_ms..=self.end_ms).contains(at_ms) =>
+                {
+                    return Err(invalid("quantities checkpoint"));
+                }
                 Predicate::Quantity { cell, record, .. }
                     if !cells.contains(cell) || record.is_empty() =>
                 {
@@ -479,6 +491,13 @@ pub fn validate_action(action: &Action) -> crate::Result<()> {
         | Action::SetExtension { .. }
         | Action::DeleteRecord { .. }
         | Action::CreateFrequency { .. }
+        | Action::CreateKarmaFrequency { .. }
+        | Action::SaveKarmaFrequency { .. }
+        | Action::ReviseKarmaFrequency { .. }
+        | Action::ActivateKarmaFrequency { .. }
+        | Action::SetKarmaFrequencyParameters { .. }
+        | Action::ResetKarmaFrequencyParameters { .. }
+        | Action::PauseKarmaFrequency { .. }
         | Action::DeleteFrequency { .. }
         | Action::CreateRecurrence { .. }
         | Action::ReviseRecurrence { .. }

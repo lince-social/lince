@@ -55,6 +55,155 @@ async fn clock_ready(engine: &Arc<engine::Engine>, context: &Context, now: i64) 
     .unwrap();
 }
 
+#[test]
+fn estimate_edits_refresh_existing_and_future_occurrences_without_replaying_effects() {
+    run(async {
+        let directory = tempfile::tempdir().unwrap();
+        let case = simulation::fixtures::daily();
+        let base = case.start_ms;
+        let day = 86_400_000;
+        let world = simulation::world::World::open(case, &directory.path().join("world"))
+            .await
+            .unwrap();
+        let node = &world.nodes["a"];
+        authorize_projection(node).await;
+        node.execution
+            .scope(async {
+                let engine = node.cell.runtime().engine.clone();
+                let stock = world.captured["stock"].clone();
+                engine
+                    .act(
+                        Action::SetExtension {
+                            target: stock.clone(),
+                            namespace: "work".into(),
+                            fds: serde_json::json!({"estimate_min":1}),
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                engine
+                    .advance_karma_time(node.execution.now())
+                    .await
+                    .unwrap();
+                let context = Context {
+                    actor: None,
+                    window: Window {
+                        from_ms: base,
+                        until_ms: base + 3 * day,
+                        timezone: "UTC".into(),
+                    },
+                };
+                clock_ready(&engine, &context, base).await;
+                let now = base + day + 120_000;
+                node.execution.set_time(now).unwrap();
+                engine
+                    .advance_karma_time(node.execution.now())
+                    .await
+                    .unwrap();
+                clock_ready(&engine, &context, now).await;
+                let applications: i64 =
+                    store::sqlx::query_scalar("SELECT COUNT(*) FROM karma_rule_application")
+                        .fetch_one(&engine.store.pool)
+                        .await
+                        .unwrap();
+                let quantity = store::records::get(&engine.store.pool, &stock)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .quantity;
+                for estimate in [10, 20] {
+                    if estimate == 10 {
+                        engine
+                            .act(
+                                Action::SetExtension {
+                                    target: stock.clone(),
+                                    namespace: "work".into(),
+                                    fds: serde_json::json!({"estimate_min":estimate}),
+                                },
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                    } else {
+                        engine
+                            .act(
+                                Action::ChangeRecord {
+                                    request: engine::record_change::Request {
+                                        id: nucleus::new_uid("op"),
+                                        record_uid: stock.clone(),
+                                        mutation: engine::record_change::Mutation::Work {
+                                            field: engine::record_change::WorkField::Estimate,
+                                            value: serde_json::json!(estimate),
+                                        },
+                                    },
+                                },
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                    }
+                    let cache = tokio::time::timeout(std::time::Duration::from_secs(20), async {
+                        loop {
+                            if let Some(cache) =
+                                store::projection::read(&engine.store.pool, &context, now)
+                                    .await
+                                    .unwrap()
+                            {
+                                break cache;
+                            }
+                            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                        }
+                    })
+                    .await
+                    .unwrap();
+                    assert!(
+                        matches!(cache.status, Status::Ready { .. }),
+                        "{:?}",
+                        cache.status
+                    );
+                    for start in [base + day, base + 2 * day] {
+                        let entry = cache
+                            .schedule
+                            .iter()
+                            .find(|entry| {
+                                entry.record.as_str() == stock && entry.time.from_ms == start
+                            })
+                            .unwrap();
+                        assert_eq!(entry.time.until_ms, Some(start + estimate * 60_000));
+                    }
+                    let snapshots = engine.projection.metrics.snapshots.load(Ordering::Relaxed);
+                    for _ in 0..20 {
+                        engine.request_projection(context.clone()).await.unwrap();
+                    }
+                    assert_eq!(
+                        engine.projection.metrics.snapshots.load(Ordering::Relaxed),
+                        snapshots
+                    );
+                    assert_eq!(
+                        store::sqlx::query_scalar::<_, i64>(
+                            "SELECT COUNT(*) FROM karma_rule_application"
+                        )
+                        .fetch_one(&engine.store.pool)
+                        .await
+                        .unwrap(),
+                        applications
+                    );
+                    assert_eq!(
+                        store::records::get(&engine.store.pool, &stock)
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .quantity,
+                        quantity
+                    );
+                }
+                engine.store.pool.close().await;
+            })
+            .await;
+    });
+}
+
 fn clock_entries(messages: Vec<cell::ServerMessage>) -> Vec<lince_interface::time_castle::Entry> {
     for message in messages {
         match message {
@@ -340,6 +489,14 @@ fn unavailable_rule_execution_preserves_manual_schedule_and_reports_incomplete()
             .unwrap();
         let node = &world.nodes["a"];
         let engine = node.cell.runtime().engine.clone();
+        store::cells::set_config(
+            &engine.store.pool,
+            "lince.karma-runtime",
+            &serde_json::json!({"running":false}),
+        )
+        .await
+        .unwrap();
+        assert!(!engine.karma_device_execution().await.unwrap().executing);
         let at = chrono::DateTime::from_timestamp_millis(base + 600_000)
             .unwrap()
             .to_rfc3339();
@@ -740,5 +897,334 @@ fn restricted_projection_does_not_reveal_private_rules_and_expiry_invalidates_ca
                 .is_none()
         );
         store.pool.close().await;
+    });
+}
+
+#[test]
+fn priority_ranges_compact_into_the_clock_aperture_and_estimate_crud_refreshes_the_cache() {
+    run(async {
+        let directory = tempfile::tempdir().unwrap();
+        let mut case = simulation::fixtures::daily();
+        for invocation in &mut case.cells[0].seed {
+            if let Action::CreateRecurrence { consequences, .. } = &mut invocation.action {
+                *consequences = vec![nucleus::karma::Consequence::SetQuantity {
+                    value: Some(nucleus::DecimalValue::parse_inferred("-1").unwrap()),
+                }];
+            }
+        }
+        let base = case.start_ms;
+        let day = 86_400_000;
+        let world = simulation::world::World::open(case, &directory.path().join("world"))
+            .await
+            .unwrap();
+        let node = &world.nodes["a"];
+        authorize_projection(node).await;
+        node.execution
+            .scope(async {
+                let engine = node.cell.runtime().engine.clone();
+                let stock = world.captured["stock"].clone();
+                let second =
+                    clock_task(&engine, "Second", serde_json::json!({"estimate_min":10})).await;
+                let third =
+                    clock_task(&engine, "Third", serde_json::json!({"estimate_min":10})).await;
+                let lingua = engine
+                    .act(
+                        Action::CreateLingua {
+                            name: "Queue priorities".into(),
+                            visibility: "public".into(),
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap()
+                    .created
+                    .unwrap();
+                let predicate = engine
+                    .act(
+                        Action::CreateConcept {
+                            lingua,
+                            name: "task".into(),
+                            parents: Vec::new(),
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap()
+                    .created
+                    .unwrap();
+                for (record, priority) in [(&stock, "1000"), (&second, "200"), (&third, "10")] {
+                    engine
+                        .act(
+                            Action::SetQuantity {
+                                target: record.clone(),
+                                value: -1.0,
+                            },
+                            None,
+                        )
+                        .await
+                        .unwrap();
+                    engine
+                        .act(
+                            Action::AssertRecord {
+                                subject: record.clone(),
+                                predicate: predicate.clone(),
+                                object: None,
+                                quantity: Some(priority.into()),
+                                unit: None,
+                            },
+                            None,
+                        )
+                        .await
+                        .unwrap();
+                }
+                engine
+                    .act(
+                        Action::SetExtension {
+                            target: stock.clone(),
+                            namespace: "work".into(),
+                            fds: serde_json::json!({"estimate_min":10}),
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                for (record, id) in [(&second, "second-reset"), (&third, "third-reset")] {
+                    engine
+                        .act(
+                            Action::CreateRecurrence {
+                                target: record.clone(),
+                                consequences: vec![nucleus::karma::Consequence::SetQuantity {
+                                    value: Some(
+                                        nucleus::DecimalValue::parse_inferred("-1").unwrap(),
+                                    ),
+                                }],
+                                condition: Some("freq(@daily)".into()),
+                                gate: Some("!=0".into()),
+                                carry: Some("value".into()),
+                                note: None,
+                                cadence: nucleus::karma::Cadence::every_days(1),
+                                anchor_at: Some(
+                                    chrono::DateTime::from_timestamp_millis(base)
+                                        .unwrap()
+                                        .to_rfc3339(),
+                                ),
+                                request_id: Some(id.into()),
+                            },
+                            None,
+                        )
+                        .await
+                        .unwrap();
+                }
+                let context = Context {
+                    actor: None,
+                    window: Window {
+                        from_ms: base,
+                        until_ms: base + 3 * day,
+                        timezone: "UTC".into(),
+                    },
+                };
+                let mut query = protein::schedule::query(context.window.clone(), Vec::new());
+                query.order = vec![protein::Order::Desc("#task".into())];
+                let mut session = node.cell.runtime().local_session();
+                session
+                    .handle(cell::ClientMessage::Subscribe {
+                        id: "recurrence-a".into(),
+                        protein: query.clone(),
+                    })
+                    .await;
+                clock_ready(&engine, &context, base).await;
+                let entries = clock_entries(session.refresh().await);
+                let settings = lince_interface::time_castle::Settings {
+                    aperture_ms: 15 * 60_000,
+                    horizon_ms: 15 * 60_000,
+                    timezone: "UTC".into(),
+                    ..Default::default()
+                };
+                let visible = |entries: &[lince_interface::time_castle::Entry], now| {
+                    lince_interface::time_castle::clock_occurrences(
+                        &settings,
+                        entries,
+                        now,
+                        now + settings.aperture_ms,
+                    )
+                    .into_iter()
+                    .filter(|occurrence| !occurrence.historical)
+                    .map(|occurrence| entries[occurrence.index].record_uid.clone())
+                    .collect::<Vec<_>>()
+                };
+                assert_eq!(visible(&entries, base), [stock.clone(), second.clone()]);
+                assert_eq!(
+                    visible(&entries, base + 120_000),
+                    [stock.clone(), second.clone()]
+                );
+                let third_need = entries
+                    .iter()
+                    .find(|entry| {
+                        entry.record_uid == third && !entry.origin["allocation"].is_null()
+                    })
+                    .unwrap();
+                assert_eq!(
+                    third_need.effective_time(base).unwrap().from_ms,
+                    base + 20 * 60_000
+                );
+                for (record, offset) in [(&stock, 0), (&second, 10 * 60_000), (&third, 20 * 60_000)]
+                {
+                    let future = entries
+                        .iter()
+                        .find(|entry| {
+                            entry.record_uid == *record
+                                && entry.origin["kind"] == "projection"
+                                && entry.time.as_ref().is_some_and(|time| {
+                                    time.from_ms >= base + day && time.from_ms < base + 2 * day
+                                })
+                        })
+                        .unwrap();
+                    assert_eq!(future.time.as_ref().unwrap().from_ms, base + day + offset);
+                }
+                let raw_revision = store::projection::revision(&engine.store.pool)
+                    .await
+                    .unwrap();
+                engine
+                    .act(
+                        Action::SetQuantity {
+                            target: stock.clone(),
+                            value: 0.0,
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                clock_ready(&engine, &context, base).await;
+                let compacted = clock_entries(session.refresh().await);
+                assert_eq!(visible(&compacted, base), [second.clone(), third.clone()]);
+                let third_need = compacted
+                    .iter()
+                    .find(|entry| {
+                        entry.record_uid == third && !entry.origin["allocation"].is_null()
+                    })
+                    .unwrap();
+                assert_eq!(
+                    third_need.effective_time(base).unwrap().from_ms,
+                    base + 10 * 60_000
+                );
+                assert!(
+                    store::projection::revision(&engine.store.pool)
+                        .await
+                        .unwrap()
+                        > raw_revision
+                );
+                for estimate in [
+                    serde_json::json!(20),
+                    serde_json::Value::Null,
+                    serde_json::json!(5),
+                ] {
+                    let before = store::projection::revision(&engine.store.pool)
+                        .await
+                        .unwrap();
+                    engine
+                        .act(
+                            Action::ChangeRecord {
+                                request: engine::record_change::Request {
+                                    id: nucleus::new_uid("op"),
+                                    record_uid: second.clone(),
+                                    mutation: engine::record_change::Mutation::Work {
+                                        field: engine::record_change::WorkField::Estimate,
+                                        value: estimate.clone(),
+                                    },
+                                },
+                            },
+                            None,
+                        )
+                        .await
+                        .unwrap();
+                    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+                        loop {
+                            if let Some(cache) =
+                                store::projection::read(&engine.store.pool, &context, base)
+                                    .await
+                                    .unwrap()
+                                && store::projection::revision(&engine.store.pool)
+                                    .await
+                                    .unwrap()
+                                    > before
+                                && matches!(cache.status, Status::Ready { .. })
+                            {
+                                break;
+                            }
+                            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                        }
+                    })
+                    .await
+                    .unwrap();
+                    let refreshed = clock_entries(session.refresh().await);
+                    let third_need = refreshed
+                        .iter()
+                        .find(|entry| {
+                            entry.record_uid == third && !entry.origin["allocation"].is_null()
+                        })
+                        .unwrap();
+                    let duration = estimate.as_i64().unwrap_or(0) * 60_000;
+                    assert_eq!(
+                        third_need.effective_time(base).unwrap().from_ms,
+                        base + duration
+                    );
+                    assert_eq!(
+                        visible(&refreshed, base).contains(&third),
+                        duration < settings.aperture_ms
+                    );
+                    let future = refreshed
+                        .iter()
+                        .find(|entry| {
+                            entry.record_uid == second
+                                && entry.origin["kind"] == "projection"
+                                && entry
+                                    .time
+                                    .as_ref()
+                                    .is_some_and(|time| time.from_ms == base + day + 10 * 60_000)
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        future.time.as_ref().unwrap().until_ms,
+                        (duration > 0).then_some(base + day + 10 * 60_000 + duration)
+                    );
+                    let following = refreshed.iter().find(|entry| entry.record_uid == third
+                        && entry.origin["kind"] == "projection" && entry.time.as_ref().is_some_and(|time| time.from_ms >= base+day && time.from_ms < base+2*day)).unwrap();
+                    assert_eq!(following.time.as_ref().unwrap().from_ms,base+day+10*60_000+duration);
+                }
+                node.execution.set_time(base + day).unwrap();
+                engine
+                    .advance_karma_time(node.execution.now())
+                    .await
+                    .unwrap();
+                clock_ready(&engine, &context, base + day).await;
+                let admitted = clock_entries(session.refresh().await);
+                let queue: Vec<_> = admitted
+                    .iter()
+                    .filter(|entry| !entry.origin["allocation"].is_null())
+                    .collect();
+                assert_eq!(queue.len(), 3);
+                let third_need = queue
+                    .iter()
+                    .find(|entry| entry.record_uid == third)
+                    .unwrap();
+                assert_eq!(
+                    third_need.effective_time(base + day).unwrap().from_ms,
+                    base + day + 15 * 60_000
+                );
+                assert_eq!(
+                    visible(&admitted, base + day),
+                    [stock.clone(), second.clone()]
+                );
+                let snapshots = engine.projection.metrics.snapshots.load(Ordering::Relaxed);
+                for second in 1..60 {
+                    visible(&entries, base + second * 1000);
+                }
+                assert_eq!(
+                    engine.projection.metrics.snapshots.load(Ordering::Relaxed),
+                    snapshots
+                );
+                engine.store.pool.close().await;
+            })
+            .await;
     });
 }

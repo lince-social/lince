@@ -5,15 +5,19 @@ use serde_json::{Value, json};
 
 use crate::{Predicate, Protein, ProteinError, Source};
 
+pub fn is_window(predicate: &Predicate) -> bool {
+    matches!(predicate, Predicate::ProjectionWindow(_) | Predicate::RollingWindow(_))
+}
+
 pub fn context(query: &Protein, actor: Option<&str>) -> Result<Context, ProteinError> {
     let mut windows = query.filter.iter().filter_map(|predicate| match predicate {
-        Predicate::ProjectionWindow(window) => Some(window),
+        Predicate::ProjectionWindow(window) => Some(Ok(window.clone())),
+        Predicate::RollingWindow(window) => Some(window.resolve(nucleus::execution::now().timestamp_millis()).map_err(invalid)),
         _ => None,
     });
     let window = windows
         .next()
-        .ok_or_else(|| invalid("Calendar requires a projection window"))?
-        .clone();
+        .ok_or_else(|| invalid("Calendar requires a projection window"))??;
     if windows.next().is_some() {
         return Err(invalid("Calendar requires one projection window"));
     }
@@ -45,7 +49,7 @@ pub(super) async fn execute(
     manual_query.limit = None;
     manual_query
         .filter
-        .retain(|predicate| !matches!(predicate, Predicate::ProjectionWindow(_)));
+        .retain(|predicate| !is_window(predicate));
     let mut rows = crate::execute_records(store, &manual_query, visible, actor).await?;
     for row in &mut rows {
         for property in ["start_date", "due_date"] {

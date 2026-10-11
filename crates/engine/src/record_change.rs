@@ -222,6 +222,22 @@ pub(crate) async fn apply_register(
         return Ok(false);
     }
     match property {
+        "location.source" => {
+            if !register.value.as_object().is_some_and(|value| value.len() == 1 && value.contains_key("assertion")) {
+                return Err(invalid("Invalid saved location selection"));
+            }
+            match &register.value["assertion"] {
+                Value::Null => {},
+                Value::String(assertion) if nucleus::valid_uid(assertion, "a") => {
+                    let subject: Option<String> = store::sqlx::query_scalar("SELECT subject_uid FROM record_assertion WHERE uid=?")
+                        .bind(assertion).fetch_optional(&mut **tx).await?;
+                    if subject.is_some_and(|subject| subject != uid) {
+                        return Err(invalid("Choose an Assertion attached to this Record"));
+                    }
+                }
+                _ => return Err(invalid("Invalid saved location Assertion identity")),
+            }
+        }
         "quantity" => {
             let offset = decimal(
                 register.value["offset"]
@@ -444,7 +460,17 @@ impl Engine {
         request: Request,
         actor: Option<&str>,
     ) -> Result<ActionOutcome, EngineError> {
-        self.access_scope(true, self.change_record_inner(request, actor))
+        self.access_scope(true, self.change_record_inner(request, actor, None))
+            .await
+    }
+
+    pub(crate) async fn change_location_binding(
+        &self,
+        request: Request,
+        actor: Option<&str>,
+        expected_revision: i64,
+    ) -> Result<ActionOutcome, EngineError> {
+        self.access_scope(true, self.change_record_inner(request, actor, Some(expected_revision)))
             .await
     }
 
@@ -452,6 +478,7 @@ impl Engine {
         &self,
         request: Request,
         actor: Option<&str>,
+        location_revision: Option<i64>,
     ) -> Result<ActionOutcome, EngineError> {
         if !nucleus::valid_uid(&request.id, "op") || !nucleus::valid_uid(&request.record_uid, "r") {
             return Err(invalid(
@@ -547,7 +574,7 @@ impl Engine {
                 | Mutation::NumberAssertion { .. }
                 | Mutation::RetractAssertion { .. }
         ) {
-            return self.change_assertion(&request, actor, &payload).await;
+            return self.change_assertion(&request, actor, &payload, location_revision).await;
         }
         let identity = store::cells::local(&self.store.pool)
             .await?
@@ -740,6 +767,7 @@ impl Engine {
         request: &Request,
         actor: Option<&str>,
         payload: &str,
+        location_revision: Option<i64>,
     ) -> Result<ActionOutcome, EngineError> {
         let uid = &request.record_uid;
         let numbering = matches!(request.mutation, Mutation::NumberAssertion { .. });
@@ -762,7 +790,7 @@ impl Engine {
                     actor,
                 )
                 .await?;
-                let predicate = store::concepts::resolve(&self.store.pool, predicate)
+                let predicate = store::vocabulary::resolve(&self.store.pool, predicate, actor)
                     .await?
                     .ok_or_else(|| invalid("Unknown assertion"))?;
                 (
@@ -790,7 +818,7 @@ impl Engine {
                     actor,
                 )
                 .await?;
-                let predicate = store::concepts::resolve(&self.store.pool, predicate)
+                let predicate = store::vocabulary::resolve(&self.store.pool, predicate, actor)
                     .await?
                     .ok_or_else(|| invalid("Unknown assertion"))?;
                 let object = match object {
@@ -799,7 +827,7 @@ impl Engine {
                 };
                 let unit = match unit {
                     Some(value) => Some(
-                        store::concepts::resolve(&self.store.pool, value)
+                        store::vocabulary::resolve(&self.store.pool, value, actor)
                             .await?
                             .ok_or_else(|| invalid("Unknown assertion unit"))?,
                     ),
@@ -932,6 +960,13 @@ impl Engine {
         let signer = self.signer.lock().await.clone();
         let serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
+        if let Some(expected_revision) = location_revision {
+            let current: (String, i64) = store::sqlx::query_as("SELECT write_concept_uid,revision FROM vocabulary_role WHERE uid=?")
+                .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).fetch_one(&mut *tx).await?;
+            if current != (predicate.clone(), expected_revision) {
+                return Err(invalid("The location bindings changed; refresh before linking an address"));
+            }
+        }
         let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], protein::authority::Operation::Update).await?;
         let prior: Option<(String, String)> = store::sqlx::query_as(
             "SELECT payload, result FROM record_change_receipt WHERE actor = ? AND change_uid = ?",

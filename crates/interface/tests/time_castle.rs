@@ -16,7 +16,24 @@ fn entry(id: &str, from: i64, until: Option<i64>) -> Entry {
         preview: false,
         start_date: None,
         due_date: None,
+        estimate_min: None,
     }
+}
+
+#[test]
+fn outstanding_cards_retain_updated_estimates() {
+    let mut need = entry("Banho", 0, None);
+    need.origin = serde_json::json!({"kind":"need"});
+    need.category = Category::Overdue;
+    need.time = None;
+    need.estimate_min = Some(10.0);
+    let restored: Entry = serde_json::from_value(serde_json::to_value(&need).unwrap()).unwrap();
+    assert_eq!(
+        restored.time_label(&Settings::default(), 1000),
+        "Needed: 1 · 10 min"
+    );
+    need.estimate_min = Some(-1.0);
+    assert_eq!(need.time_label(&Settings::default(), 1000), "Needed: 1");
 }
 
 #[test]
@@ -597,6 +614,7 @@ fn dense_stacks_are_bounded_and_preserve_all_points() {
             preview: false,
             start_date: None,
             due_date: None,
+            estimate_min: None,
         })
         .collect();
     let result = stacks(&entries, 1000, 50_001_000, 1_000_000.0, "UTC");
@@ -607,4 +625,75 @@ fn dense_stacks_are_bounded_and_preserve_all_points() {
     );
     assert!(result.iter().all(|stack| stack.time.until_ms.is_none()));
     assert!(stacks(&entries, 50_001_000, 50_002_000, 1000.0, "UTC").is_empty());
+}
+
+#[test]
+fn cursor_queue_ranges_follow_time_without_recalculation_or_duplicate_history() {
+    let now = 1_800_000;
+    let mut queued = entry("queue", now + 600_000, Some(now + 1_200_000));
+    queued.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":600000,"duration_ms":600000}});
+    let mut old = entry("old", now - 100_000, Some(now - 40_000));
+    old.record_uid = queued.record_uid.clone();
+    let settings = Settings {
+        aperture_ms: 900_000,
+        horizon_ms: 900_000,
+        ..Default::default()
+    };
+    let entries = vec![queued, old];
+    let hidden = Settings {
+        past_tasks: false,
+        ..settings.clone()
+    };
+    assert!(
+        lince_interface::time_castle::clock_summaries(&hidden, &entries, now, now + 900_000)
+            .is_empty()
+    );
+    assert!(
+        lince_interface::time_castle::clock_occurrences(&hidden, &entries, now, now + 900_000)
+            .is_empty()
+    );
+    for second in 0..120 {
+        let time = now + second * 1000;
+        let occurrences = lince_interface::time_castle::clock_occurrences(
+            &settings,
+            &entries,
+            time,
+            time + 900_000,
+        );
+        assert_eq!(occurrences.len(), 1);
+        assert!(!occurrences[0].historical);
+        assert_eq!(occurrences[0].time.from_ms, time + 600_000);
+        assert_eq!(occurrences[0].time.until_ms, Some(time + 900_000));
+        let summary = lince_interface::time_castle::summaries(&entries, time, time + 900_000);
+        assert_eq!(summary, vec![(0, 600_000)]);
+        assert!(entries[0].sound_cue(0, &Default::default()).is_none());
+    }
+}
+
+#[test]
+fn cache_window_renewal_does_not_change_an_unchanged_cursor_schedule() {
+    let mut before = entry("need",1000,Some(61000));
+    before.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":60000}});
+    let mut renewed = before.clone();
+    renewed.time = Some(TimeRange { from_ms:301000,until_ms:Some(361000) });
+    assert!(before.same_schedule(&renewed));
+    renewed.origin["allocation"]["duration_ms"] = serde_json::json!(120000);
+    assert!(!before.same_schedule(&renewed));
+    before.origin = serde_json::json!({"kind":"manual"});
+    renewed = before.clone();
+    renewed.time.as_mut().unwrap().from_ms += 1000;
+    assert!(!before.same_schedule(&renewed));
+}
+
+#[test]
+fn allocation_order_survives_zero_estimates_in_cards_and_task_summaries() {
+    let mut first = entry("z-first",1000,None);
+    first.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":0},"allocation_order":[0,0]});
+    let mut second = entry("a-second",1000,Some(61000));
+    second.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":60000},"allocation_order":[0,1]});
+    let entries = vec![first,second];
+    let settings = Settings::default();
+    assert_eq!(lince_interface::time_castle::clock_summaries(&settings,&entries,1000,61000),[(0,0),(1,60000)]);
+    let occurrences = lince_interface::time_castle::clock_occurrences(&settings,&entries,1000,61000);
+    assert_eq!(occurrences.iter().map(|occurrence| occurrence.index).collect::<Vec<_>>(),[0,1]);
 }

@@ -25,6 +25,7 @@ pub(crate) async fn attach(
     visible: Option<&HashSet<String>>,
     include: &Include,
     names: &HashMap<String, String>,
+    subject: Option<&str>,
 ) -> Result<HashMap<String, Value>, crate::ProteinError> {
     let ids: Vec<_> = records.iter().map(|record| record.uid.clone()).collect();
     let mut context: HashMap<_, Vec<Value>> =
@@ -36,7 +37,7 @@ pub(crate) async fn attach(
             continue;
         }
         let members: HashSet<_> =
-            if let Some(uid) = store::concepts::resolve(&store.pool, family).await? {
+            if let Some(uid) = store::vocabulary::resolve(&store.pool, family, subject).await? {
                 store::concepts::descendants_including(&store.pool, &uid)
                     .await?
                     .into_iter()

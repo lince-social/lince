@@ -359,7 +359,7 @@ impl Plugin for ProteinAreaPlugin {
             )
             .add_systems(
                 PostUpdate,
-                rows::layout
+                (rows::layout, crate::schedule_editor::maintain).chain()
                     .in_set(MeasureRecords)
                     .after(bevy::ui::UiSystems::PostLayout),
             );

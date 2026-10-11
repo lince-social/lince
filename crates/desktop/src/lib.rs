@@ -199,6 +199,8 @@ pub mod cell_bridge;
 
 #[cfg(feature = "native-runtime")]
 pub mod location;
+#[cfg(feature = "native-runtime")]
+pub mod map_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod component_push;

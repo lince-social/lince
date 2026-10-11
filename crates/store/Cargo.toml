@@ -16,6 +16,7 @@ serde = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
 sha2 = { workspace = true }
 tokio = { workspace = true }
+unicode-normalization = "=0.1.25"
 
 [build-dependencies]
 sensei = { workspace = true }

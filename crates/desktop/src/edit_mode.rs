@@ -1149,6 +1149,9 @@ pub(crate) fn builtin_store_entries(
     crate::calendar::store_entry(world, root, entry);
     castle_entries.push(entry);
     let entry = store_group(world, castles_group);
+    crate::map_castle::store_entry(world, root, entry);
+    castle_entries.push(entry);
+    let entry = store_group(world, castles_group);
     crate::simulation_castle::store_entry(world, root, entry);
     castle_entries.push(entry);
     let entry = store_group(world, castles_group);
@@ -2228,7 +2231,11 @@ pub(crate) mod tests {
         activate(&mut app, root, EditAction::CancelRemoveWorkspace);
         activate(&mut app, root, EditAction::RemoveWorkspace(2));
         activate(&mut app, root, EditAction::ConfirmRemoveWorkspace);
-        assert_eq!(app.world().get::<WorkspaceMember>(sand).unwrap().0, 1);
+        assert_eq!(app.world().get::<WorkspaceMember>(sand).unwrap().0, 2);
+        let spaces = app.world().get::<Workspaces>(root).unwrap();
+        assert_eq!(spaces.active, 1);
+        assert_eq!(spaces.entries.len(), 1);
+        assert_eq!(spaces.trash[0].workspace.id, 2);
         assert_eq!(
             app.world()
                 .get::<EditableText>(editor)
@@ -2237,6 +2244,11 @@ pub(crate) mod tests {
                 .to_string(),
             "Editable text"
         );
+        activate(&mut app, root, EditAction::RestoreWorkspace(2));
+        let spaces = app.world().get::<Workspaces>(root).unwrap();
+        assert_eq!(spaces.active, 2);
+        assert!(spaces.trash.is_empty());
+        assert_eq!(app.world().get::<WorkspaceMember>(sand).unwrap().0, 2);
         activate(&mut app, root, EditAction::Store);
         activate(&mut app, root, EditAction::RemoveSand(sand));
         assert!(app.world().get_entity(editor).is_ok());

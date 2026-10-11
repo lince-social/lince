@@ -295,7 +295,12 @@ pub(super) fn arrange(world: &mut World, row: Entity, view: &Presentation) {
             .get::<Children>(row)
             .into_iter()
             .flatten()
-            .filter(|entity| world.get::<Controls>(**entity).is_none())
+            .filter(|entity| {
+                world.get::<Controls>(**entity).is_none()
+                    && world
+                        .get::<super::super::record_layout::RecordActions>(**entity)
+                        .is_none()
+            })
             .filter_map(|entity| {
                 world
                     .get::<Node>(*entity)

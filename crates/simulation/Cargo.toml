@@ -11,6 +11,7 @@ description = "Isolated Lince worlds, typed evidence and reproducible scenario e
 name = "simulation"
 
 [dependencies]
+async-trait = { workspace = true }
 cell = { workspace = true }
 engine = { workspace = true }
 store = { workspace = true }
@@ -26,7 +27,6 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tempfile = "=3.27.0"
 
 [dev-dependencies]
-async-trait = { workspace = true }
 fiote = { workspace = true }
 lince-interface = { workspace = true, default-features = false, features = ["models"] }
 

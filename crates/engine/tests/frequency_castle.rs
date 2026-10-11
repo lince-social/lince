@@ -280,6 +280,10 @@ async fn read_only_frequency_viewer_cannot_mutate_or_read_hidden_definitions() {
     let engine = support::karma::engine().await;
     let uid = create(&engine).await;
     let person = support::person(&engine, "frequency-reader").await;
+    let owner = support::person(&engine, "frequency-owner").await;
+    store::visibility::grant(&engine.store.pool, "actor", Some(&owner.uid), &uid)
+        .await
+        .unwrap();
     let role = store::auth::ensure_role(&engine.store.pool, "frequency-reader")
         .await
         .unwrap();
@@ -287,6 +291,12 @@ async fn read_only_frequency_viewer_cannot_mutate_or_read_hidden_definitions() {
         .await
         .unwrap();
     store::auth::grant(&engine.store.pool, role, permission)
+        .await
+        .unwrap();
+    let record_read = store::auth::ensure_permission(&engine.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, record_read)
         .await
         .unwrap();
     store::auth::create_credential(
@@ -574,7 +584,7 @@ async fn editing_a_running_daily_to_the_past_applies_without_a_separate_activati
 }
 
 #[tokio::test]
-async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied_beat() {
+async fn saving_a_past_date_wakes_the_live_director_and_restarts_once_per_activation() {
     let engine = std::sync::Arc::new(support::karma::engine().await);
     let runtime =
         engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("live-daily-test".into())
@@ -613,6 +623,9 @@ async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied
                         .unwrap()
                         .to_string()
                         == expected
+                        && rows(&engine).await[0]["next_at_ms"]
+                            .as_i64()
+                            .is_some_and(|next| next > chrono::Utc::now().timestamp_millis())
                     {
                         break;
                     }
@@ -645,17 +658,7 @@ async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied
         )
         .await
         .unwrap();
-    let replayed = tokio::time::timeout(std::time::Duration::from_secs(10), async {
-        loop {
-            if rows(&engine).await[0]["next_at_ms"]
-                == (overdue + chrono::TimeDelta::days(1)).timestamp_millis()
-            {
-                break;
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-        }
-    })
-    .await;
+    let replayed = wait_for("-2").await;
     if replayed.is_err() {
         runner.abort();
     }
@@ -665,7 +668,7 @@ async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied
             .await
             .unwrap()
             .to_string(),
-        "-1"
+        "-2"
     );
     let row = rows(&engine).await.remove(0);
     let overdue = overdue + chrono::TimeDelta::seconds(1);
@@ -682,7 +685,7 @@ async fn saving_a_past_date_wakes_the_live_director_without_replaying_an_applied
         )
         .await
         .unwrap();
-    let second = wait_for("-2").await;
+    let second = wait_for("-3").await;
     runner.abort();
     let _ = runner.await;
     second.unwrap();

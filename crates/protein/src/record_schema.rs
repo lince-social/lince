@@ -59,6 +59,7 @@ pub(crate) async fn attach(
     records: &[RecordRow],
     visible: Option<&HashSet<String>>,
     work: &HashMap<String, Value>,
+    concept_names: &HashMap<String, String>,
 ) -> Result<HashMap<String, Value>, crate::ProteinError> {
     let wants = |key: &str| {
         query
@@ -166,7 +167,7 @@ pub(crate) async fn attach(
                     }
                 }
                 if wants("assertions") {
-                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":assertion.predicate,"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
+                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":concept_names.get(&assertion.predicate_uid).unwrap_or(&assertion.predicate),"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
                 }
             }
         }

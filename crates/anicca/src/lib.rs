@@ -1207,21 +1207,29 @@ fn decode_description_boundaries(value: &str) -> String {
 fn record_field(field: &ast::RecordField) -> String {
     use ast::RecordField::*;
     match field {
-        Identity(value) => format!("is #{}", value.predicate.0),
+        Identity(value) => format!("is #{}", concept_term(&value.predicate.0)),
         Assertion(value) => match &value.tail {
             Some(ast::AssertionTail::Link(link)) => format!(
                 "#{} {}{}",
-                value.predicate.0,
+                concept_term(&value.predicate.0),
                 reference(&link.target),
                 link.amount.as_ref().map_or(String::new(), |amount| {
                     format!(": {}", quantity(&amount.quantity))
                 })
             ),
             Some(ast::AssertionTail::Amount(amount)) => {
-                format!("#{}: {}", value.predicate.0, quantity(&amount.quantity))
+                format!("#{}: {}", concept_term(&value.predicate.0), quantity(&amount.quantity))
             }
-            None => format!("#{}", value.predicate.0),
+            None => format!("#{}", concept_term(&value.predicate.0)),
         },
+    }
+}
+
+fn concept_term(value: &str) -> String {
+    if value.is_empty() || value.chars().any(|ch| ch.is_whitespace() || "#@:,(){}\"^".contains(ch)) {
+        serde_json::to_string(value).expect("Concept term serialization")
+    } else {
+        value.into()
     }
 }
 

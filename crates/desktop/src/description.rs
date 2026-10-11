@@ -201,7 +201,11 @@ fn attach(
     let controls = world
         .spawn((
             Node {
+                width: percent(100),
+                min_width: px(0),
                 column_gap: px(6),
+                row_gap: px(6),
+                flex_wrap: FlexWrap::Wrap,
                 flex_shrink: 0.0,
                 ..default()
             },

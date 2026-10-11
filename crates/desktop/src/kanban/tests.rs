@@ -436,6 +436,12 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
         }
         let board = app.world().get::<Kanban>(owner).unwrap().clone();
         let source = area(app.world(), owner, &board.source).unwrap();
+        let source_item = app.world().get::<CanvasItem>(source).unwrap();
+        let outside =
+            source_item.position + DVec2::new(f64::from(source_item.size.x) * 0.5 + 500.0, 0.0);
+        let first = area(app.world(), owner, &board.columns[0].area).unwrap();
+        let first_item = app.world().get::<CanvasItem>(first).unwrap();
+        let inside = first_item.position + DVec2::new(f64::from(first_item.size.x) * 0.25, 0.0);
         for (index, column) in board.columns.iter().enumerate() {
             let column = area(app.world(), owner, &column.area).unwrap();
             app.world_mut()
@@ -454,7 +460,7 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
             .world_mut()
             .spawn((
                 CanvasItem {
-                    position: DVec2::new(2000.0, 0.0),
+                    position: outside,
                     size: Vec2::splat(40.0),
                 },
                 RecordProperties(json!({"uid":"r_lone", "quantity":"0"})),
@@ -462,11 +468,7 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
                 WorkspaceMember(1),
             ))
             .id();
-        for (point, attracted) in [
-            (DVec2::new(2000.0, 0.0), false),
-            (DVec2::new(-900.0, 0.0), true),
-            (DVec2::new(2000.0, 0.0), false),
-        ] {
+        for (point, attracted) in [(outside, false), (inside, true), (outside, false)] {
             crate::topology::set_position(app.world_mut(), sand, DVec3::new(point.x, 0.0, point.y));
             crate::area_effects::update(app.world_mut());
             assert_eq!(
@@ -520,7 +522,7 @@ fn source_fits_columns_and_headers_without_padding() {
     let first_item = world.get::<CanvasItem>(first).unwrap();
     assert_eq!(
         source_item.size,
-        Vec2::new(COLUMNS.len() as f32 * 340.0, 720.0)
+        Vec2::new(COLUMNS.len() as f32 * 680.0, 720.0)
     );
     assert_eq!(
         source_item.position.y - f64::from(source_item.size.y) * 0.5,

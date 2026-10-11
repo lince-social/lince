@@ -5,6 +5,18 @@ use nucleus::karma::rule_field::{RuleFieldInput, RuleFieldKind};
 use serde_json::{Value, json};
 
 #[test]
+fn schedule_drafts_keep_the_window_outside_filter_groups() {
+    let query: protein::Protein = serde_json::from_value(json!({"source":"schedule","where":[{"rolling_window":{"past_days":0,"future_days":30,"timezone":"America/Sao_Paulo"}},{"uid_eq":"shower"}],"order":[{"desc":"#task"}]})).unwrap();
+    let draft = ProteinDraft::from_protein("Personal schedule".into(),String::new(),query);
+    assert!(draft.query["where"][0].get("rolling_window").is_some());
+    assert!(draft.query["where"][1].get("all").is_some());
+    let compiled = draft.compile().unwrap();
+    assert!(matches!(compiled.filter[0],protein::Predicate::RollingWindow(_)));
+    let fixed = protein::schedule::query(nucleus::projection::Window {from_ms:1_800_000_000_000,until_ms:1_800_086_400_000,timezone:"UTC".into()},Vec::new());
+    ProteinDraft::from_protein("Fixed".into(),String::new(),fixed).compile().unwrap();
+}
+
+#[test]
 fn query_drafts_preserve_sort_precedence_and_exact_quantities_across_hosts() {
     let mut draft = ProteinDraft::default();
     draft.query["where"] = json!([{"all":[{"quantity_eq":"9007199254740993.125"}]}]);

@@ -507,11 +507,12 @@ impl Action for Edit {
                 );
                 add(
                     world,
-                    "Folder for new files · optional",
+                    "Working directory · optional",
                     settings
                         .map(|settings| settings.directory.to_string_lossy().into_owned())
                         .unwrap_or_default(),
                 );
+                crate::edit_mode::label(world, content, "Blank inherits the parent Fiote’s working directory. Shell and file tools use your user account’s permissions.", 13.0);
             }
             Route::External => {
                 crate::edit_mode::label(
@@ -1111,6 +1112,9 @@ mod tests {
         );
         let model_profile = profile(&world, model).unwrap();
         assert!(matches!(model_profile.connection, Connection::Model { .. }));
+        if let Connection::Model { settings } = &model_profile.connection {
+            assert_eq!(settings.directory, std::path::Path::new("/tmp"));
+        }
         assert!(
             !serde_json::to_string(&model_profile)
                 .unwrap()
@@ -1273,12 +1277,10 @@ impl Action for NativeLogin {
             world
                 .entity_mut(owner)
                 .insert(Reauthorize(settings.clone()));
-            let field = world.get::<Panel>(owner).unwrap().fields[0];
-            world
-                .get_mut::<EditableText>(field)
-                .unwrap()
-                .editor
-                .set_text(&settings.model);
+            let fields = world.get::<Panel>(owner).unwrap().fields.clone();
+            for (index, value) in [(0, settings.model.clone()), (3, settings.endpoint.clone()), (4, settings.directory.to_string_lossy().into_owned())] {
+                world.get_mut::<EditableText>(fields[index]).unwrap().editor.set_text(&value);
+            }
         } else {
             world.entity_mut(owner).remove::<Reauthorize>();
         }

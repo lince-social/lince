@@ -102,7 +102,25 @@ fn send(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<Request>>,
     mut places: Local<bevy::ecs::message::MessageCursor<ui::SavePlaceRequest>>,
+    mut saved: Local<bevy::ecs::message::MessageCursor<ui::SavedLocationRequest>>,
 ) {
+    let saved: Vec<_> = saved
+        .read(world.resource::<Messages<ui::SavedLocationRequest>>())
+        .cloned()
+        .collect();
+    for request in saved {
+        if let Err(error) = crate::app::send(
+            world,
+            cell::ClientMessage::Act {
+                id: request.id.clone(),
+                action: engine::actions::Action::SavedLocation {
+                    request: request.command,
+                },
+            },
+        ) {
+            ui::receive(world, &request.id, Err(error));
+        }
+    }
     let requests: Vec<_> = cursor
         .read(world.resource::<Messages<Request>>())
         .cloned()

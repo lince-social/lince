@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 mod area_reach;
 mod area_summary;
-pub(crate) use area_summary::SummaryAtBottom;
+pub(crate) use area_summary::{SummaryAtBottom, SummaryInEditMode};
 pub mod areas;
 pub mod assets;
 mod font_cache;

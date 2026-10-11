@@ -9,6 +9,11 @@ use std::{
     sync::Arc,
 };
 
+mod command;
+mod workspace;
+
+pub use command::RunCommand;
+
 #[async_trait]
 pub trait Tool: Send + Sync {
     fn definition(&self) -> ToolDefinition;
@@ -19,6 +24,13 @@ pub trait Tool: Send + Sync {
 pub struct Registry(BTreeMap<String, Arc<dyn Tool>>);
 
 impl Registry {
+    pub fn register_workspace(&mut self, directory: &Path) -> Result<(), String> {
+        self.register(CreateFile::new(directory)?);
+        workspace::register(self, directory)?;
+        self.register(RunCommand::new(directory)?);
+        Ok(())
+    }
+
     pub fn register(&mut self, tool: impl Tool + 'static) {
         self.0.insert(tool.definition().name, Arc::new(tool));
     }
@@ -61,7 +73,7 @@ impl Tool for CreateFile {
     fn definition(&self) -> ToolDefinition {
         ToolDefinition {
             name: "create_file".into(),
-            description: "Create a new UTF-8 file in the configured folder. Use a relative path. Parent folders must already exist. Existing files are never replaced.".into(),
+            description: "Create a new UTF-8 file relative to the working directory. Parent directories must already exist. Existing files are never replaced; use write_file or edit_file to change them.".into(),
             schema: json!({"type":"object", "properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"],"additionalProperties":false}),
         }
     }
@@ -75,7 +87,7 @@ impl Tool for CreateFile {
                 .components()
                 .any(|part| !matches!(part, Component::Normal(_)))
         {
-            return Err("Use a relative file path inside the configured folder.".into());
+            return Err("Use a relative file path inside the working directory.".into());
         }
         if args.content.len() > 1_048_576 {
             return Err("File content exceeds the 1 MiB limit.".into());

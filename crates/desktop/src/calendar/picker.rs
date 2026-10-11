@@ -1,8 +1,7 @@
 use super::*;
 use crate::{
     actions::ActionButton,
-    canvas_selection::SandGroup,
-    scoped_events::{EventBoundary, EventListener, SandEvent},
+    scoped_events::{EventListener, SandEvent},
 };
 use bevy::text::EditableText;
 use chrono::Datelike;
@@ -16,7 +15,12 @@ pub(super) struct DateField {
 #[derive(Clone)]
 pub(super) struct OpenDate(pub Entity);
 
-pub(crate) fn date_button(world: &mut World, row: Entity, editor: Entity, property: &str) -> Entity {
+pub(crate) fn date_button(
+    world: &mut World,
+    row: Entity,
+    editor: Entity,
+    property: &str,
+) -> Entity {
     world
         .entity_mut(editor)
         .insert((
@@ -64,7 +68,8 @@ impl Action for OpenDate {
             .map(|t| t.value().to_string())
             .unwrap_or_default();
         let mut calendar = Calendar::default();
-        calendar.timezone = crate::schedule_editor::local_timezone().unwrap_or_else(|| "UTC".into());
+        calendar.timezone =
+            crate::schedule_editor::local_timezone().unwrap_or_else(|| "UTC".into());
         if let Some(date) = nucleus::schedule::timezone_date(&current, &calendar.timezone) {
             calendar.year = date.year();
             calendar.month = date.month();
@@ -79,37 +84,96 @@ impl Action for OpenDate {
             world.get_mut::<CalendarSand>(entity).unwrap().0 = calendar;
             entity
         } else {
-            let group = if let Some(group) = world.get::<SandGroup>(row).copied() {
-                group
-            } else {
-                let mut id = [0; 16];
-                if getrandom::fill(&mut id).is_err() {
-                    return;
-                }
-                let group = SandGroup(id);
-                world.entity_mut(row).insert(group);
-                group
-            };
-            let position = world
-                .get::<crate::canvas::CanvasItem>(row)
-                .map_or(DVec2::ZERO, |item| {
-                    item.position + DVec2::new(f64::from(item.size.x) * 0.5 + 260.0, 0.0)
-                });
-            let entity = spawn(world, root, workspace, position, calendar);
-            world.entity_mut(entity).insert((
-                group,
-                EventBoundary(vec![DATE_SELECTED.into()]),
-                ZIndex(20),
-            ));
             world
-                .get_mut::<crate::canvas::CanvasItem>(entity)
-                .unwrap()
-                .size = Vec2::new(520.0, 440.0);
-            entity
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        width: px(360),
+                        height: px(400),
+                        min_width: px(0),
+                        flex_direction: FlexDirection::Column,
+                        padding: UiRect::all(px(8)),
+                        border: UiRect::all(px(1)),
+                        overflow: Overflow::clip(),
+                        ..default()
+                    },
+                    GlobalZIndex(80),
+                    crate::inspection::InspectionExcluded,
+                    crate::sand_store::SandCredits(CREDITS),
+                    crate::token_style::background(crate::tokens::Token::Surface),
+                    crate::token_style::border(crate::tokens::Token::Accent),
+                    ChildOf(root),
+                    WorkspaceMember(workspace),
+                    CalendarSand(calendar),
+                    View::default(),
+                ))
+                .id()
         };
         world.entity_mut(entity).insert(Picker { row, editor });
         sync(world, entity);
         ui::render(world, entity);
+        position(world, entity);
+    }
+}
+
+pub(super) fn position(world: &mut World, owner: Entity) {
+    let Some(picker) = world.get::<Picker>(owner) else {
+        return;
+    };
+    let row = picker.row;
+    let editor = picker.editor;
+    let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+        return;
+    };
+    let viewport = world
+        .get::<ComputedNode>(root)
+        .map(|node| node.size() * node.inverse_scale_factor())
+        .filter(|size| size.min_element() > 0.0)
+        .unwrap_or(Vec2::new(1000.0, 800.0));
+    let bounds = crate::topology::presentation::bounds(world, editor)
+        .or_else(|| crate::topology::presentation::bounds(world, row))
+        .unwrap_or(Rect::from_corners(
+            Vec2::splat(16.0),
+            Vec2::new(360.0, 80.0),
+        ));
+    let width = 360.0_f32.min((viewport.x - 16.0).max(1.0));
+    let height = 400.0_f32.min((viewport.y - 16.0).max(1.0));
+    let left = bounds.min.x.clamp(8.0, (viewport.x - width - 8.0).max(8.0));
+    let below = bounds.max.y + 8.0;
+    let top = if below + height <= viewport.y - 8.0 {
+        below
+    } else {
+        bounds.min.y - height - 8.0
+    };
+    let active = world
+        .get::<crate::workspace::Workspaces>(root)
+        .is_none_or(|spaces| {
+            world
+                .get::<WorkspaceMember>(owner)
+                .is_none_or(|member| member.0 == spaces.active)
+        });
+    let mut node = world.get::<Node>(owner).unwrap().clone();
+    node.left = px(left);
+    node.top = px(top.clamp(8.0, (viewport.y - height - 8.0).max(8.0)));
+    node.width = px(width);
+    node.height = px(height);
+    node.display = if active { Display::Flex } else { Display::None };
+    world.get_mut::<Node>(owner).unwrap().set_if_neq(node);
+}
+
+#[derive(Clone)]
+struct Endpoint(Entity);
+
+impl Action for Endpoint {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        if world.get::<DateField>(self.0).is_none() {
+            return;
+        }
+        if let Some(mut picker) = world.get_mut::<Picker>(owner) {
+            picker.editor = self.0;
+        }
+        sync(world, owner);
+        ui::render(world, owner);
     }
 }
 
@@ -133,7 +197,11 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> String {
         let value = text.value().to_string();
         key.push_str(&value);
         key.push('|');
-        let date = nucleus::schedule::timezone_date(&value, &world.get::<CalendarSand>(owner).unwrap().0.timezone).map(|date| date.to_string());
+        let date = nucleus::schedule::timezone_date(
+            &value,
+            &world.get::<CalendarSand>(owner).unwrap().0.timezone,
+        )
+        .map(|date| date.to_string());
         if field.property == "start_date" {
             start = date;
         } else {
@@ -172,10 +240,24 @@ fn selected(event: On<SandEvent>, mut commands: Commands) {
             .get::<Picker>(source)
             .is_some_and(|p| p.editor == editor)
         {
-            let current = world.get::<EditableText>(editor).map(|text| text.value().to_string()).unwrap_or_default();
-            let timezone = world.get::<CalendarSand>(source).unwrap().0.timezone.clone();
-            let result = if current.is_empty() { Ok(date.clone()) } else { nucleus::schedule::on_date(&current, &date, &timezone) };
-            if let Err(error) = result.and_then(|value| crate::protein_area::save_date(world, editor, &value)) {
+            let current = world
+                .get::<EditableText>(editor)
+                .map(|text| text.value().to_string())
+                .unwrap_or_default();
+            let timezone = world
+                .get::<CalendarSand>(source)
+                .unwrap()
+                .0
+                .timezone
+                .clone();
+            let result = if current.is_empty() {
+                Ok(date.clone())
+            } else {
+                nucleus::schedule::on_date(&current, &date, &timezone)
+            };
+            if let Err(error) =
+                result.and_then(|value| crate::protein_area::save_date(world, editor, &value))
+            {
                 world.get_mut::<View>(source).unwrap().error = Some(error);
             }
             sync(world, source);
@@ -188,6 +270,7 @@ pub(super) fn fields(world: &mut World, owner: Entity, parent: Entity) {
     let picker = world.get::<Picker>(owner).unwrap();
     let row = picker.row;
     let active = picker.editor;
+    let timezone = world.get::<CalendarSand>(owner).unwrap().0.timezone.clone();
     let fields: Vec<_> = world
         .query::<(Entity, &DateField, &EditableText)>()
         .iter(world)
@@ -210,25 +293,26 @@ pub(super) fn fields(world: &mut World, owner: Entity, parent: Entity) {
         } else {
             "End"
         };
+        let date = nucleus::schedule::timezone_date(&value, &timezone).map(|date| date.to_string());
         let text = format!(
             "{title}: {}",
             if value.is_empty() {
                 "yyyy-mm-dd"
             } else {
-                &value
+                date.as_deref().unwrap_or("Invalid date")
             }
         );
         let button = ui::button(
             world,
             bar,
-            editor,
+            owner,
             &text,
             &format!("Choose {title} date"),
             Command::Clear,
         );
         world
             .entity_mut(button)
-            .insert(ActionButton::new(editor, crate::actions![OpenDate(editor)]));
+            .insert(ActionButton::new(owner, crate::actions![Endpoint(editor)]));
         if editor == active {
             world
                 .entity_mut(button)

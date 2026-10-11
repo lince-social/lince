@@ -317,6 +317,7 @@ pub(crate) mod tests {
             editors: Vec::new(),
             explorers: Vec::new(),
             calendars: Vec::new(),
+            maps: Vec::new(),
             kanbans: Vec::new(),
             instincts: Vec::new(),
             theme: Default::default(),

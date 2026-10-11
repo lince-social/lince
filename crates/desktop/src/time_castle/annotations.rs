@@ -18,6 +18,7 @@ pub(super) struct Annotation {
     bar: Entity,
     label: model::Label,
     spring: lince_interface::motion::Spring<2>,
+    orbit: Option<(Vec2, Vec2)>,
 }
 
 #[derive(Component)]
@@ -303,6 +304,13 @@ pub(super) fn update(
             .is_some_and(|entity| is_held(world, *entity))
     });
     for label in &mut labels {
+        let cursor_attached = label.occurrence.historical
+            || world
+                .get::<View>(owner)
+                .unwrap()
+                .entries
+                .get(label.occurrence.index)
+                .is_some_and(Entry::follows_cursor);
         let band = world
             .get::<motion::Motion>(owner)
             .and_then(|motion| motion.bands.get(&label.id))
@@ -397,6 +405,7 @@ pub(super) fn update(
                 time,
                 bar,
                 label: label.clone(),
+                orbit: None,
                 spring: lince_interface::motion::Spring::new(if band.is_some() {
                     let direction = Vec2::new(
                         label.rect[0] + label.rect[2] * 0.5,
@@ -456,7 +465,8 @@ pub(super) fn update(
                 && !wake
                 && !retiring
                 && settings.floating_cards
-                && (label.occurrence.historical || settings.cursor == CursorMode::Fixed)
+                && (cursor_attached || settings.cursor == CursorMode::Fixed)
+                && (heat > 0.0 || world.get::<Annotation>(entity).unwrap().orbit.is_none())
             {
                 let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
                 let previous_anchor =
@@ -468,6 +478,24 @@ pub(super) fn update(
                     Vec2::new(label.rect[2], label.rect[3]) * 0.5,
                 );
                 if !settings.card_physics {
+                    target = annotation.spring.position;
+                }
+            }
+            {
+                let mut annotation = world.get_mut::<Annotation>(entity).unwrap();
+                if held || wake || heat > 0.0 || retiring {
+                    annotation.orbit = None;
+                } else if settings.floating_cards {
+                    let half = Vec2::new(label.rect[2], label.rect[3]) * 0.5;
+                    let anchor = Vec2::new(label.anchor[0], label.anchor[2]);
+                    let center = Vec2::from_array(annotation.spring.position) + half;
+                    let (origin, rest) = *annotation.orbit.get_or_insert((anchor, center));
+                    let rotation = if cursor_attached || settings.cursor == CursorMode::Fixed {
+                        Vec2::from_angle(origin.perp_dot(anchor).atan2(origin.dot(anchor)))
+                    } else {
+                        Vec2::X
+                    };
+                    annotation.spring.position = (rotation.rotate(rest) - half).to_array();
                     target = annotation.spring.position;
                 }
             }
@@ -913,6 +941,7 @@ mod tests {
             preview: false,
             start_date: None,
             due_date: None,
+            estimate_min: None,
         })
         .collect();
         world.get_mut::<TimeSettings>(owner).unwrap().0.card_physics = false;
@@ -998,6 +1027,7 @@ mod tests {
                 preview: false,
                 start_date: None,
                 due_date: None,
+                estimate_min: None,
             })
             .collect();
         let palette = palette::Palette::resolve(&world, owner);
@@ -1014,8 +1044,24 @@ mod tests {
                 &palette,
             );
         }
-        for minute in 0..=180 {
+        let initial_radius = world
+            .query::<&Annotation>()
+            .iter(&world)
+            .map(|card| {
+                (Vec2::from_array(card.spring.position)
+                    + Vec2::new(card.label.rect[2], card.label.rect[3]) * 0.5)
+                    .length()
+            })
+            .fold(0.0, f32::max);
+        for minute in 0..=3600 {
             let now = now + minute * 60_000;
+            for entry in &mut world.get_mut::<View>(owner).unwrap().entries {
+                if entry.category == model::Category::Timed {
+                    entry.time.as_mut().unwrap().from_ms = now + 14_400_000;
+                }
+            }
+            world.get_mut::<Layout>(owner).unwrap().entries =
+                world.get::<View>(owner).unwrap().entries.clone();
             motion::update(&mut world, owner, now, aperture, true);
             world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
             let labels = update(
@@ -1029,6 +1075,20 @@ mod tests {
             );
             assert_eq!(labels.len(), 13);
             assert_eq!(world.get::<Layout>(owner).unwrap().cooling.heat(), 0.0);
+            let radius = labels
+                .iter()
+                .map(|label| {
+                    Vec2::new(
+                        label.rect[0] + label.rect[2] * 0.5,
+                        label.rect[1] + label.rect[3] * 0.5,
+                    )
+                    .length()
+                })
+                .fold(0.0, f32::max);
+            assert!(
+                radius < initial_radius + 250.0,
+                "Cards drifted outward at minute {minute}: {radius} > {initial_radius}"
+            );
             for (index, a) in labels.iter().enumerate() {
                 for b in &labels[index + 1..] {
                     assert!(
@@ -1047,117 +1107,131 @@ mod tests {
 
     #[test]
     fn cards_cool_without_collisions_ignore_cursor_ticks_and_wake_when_the_clock_moves() {
-        let mut world = World::new();
-        world.insert_resource(crate::theme::Typography(Handle::default()));
-        world.init_resource::<bevy::input_focus::InputFocus>();
-        let root = world.spawn_empty().id();
-        let owner = world
-            .spawn((
-                Node::default(),
-                ChildOf(root),
-                crate::workspace::WorkspaceMember(1),
-                CanvasItem {
-                    position: bevy::math::DVec2::ZERO,
-                    size: Vec2::splat(420.0),
+        for allocated in [false, true] {
+            let mut world = World::new();
+            world.insert_resource(crate::theme::Typography(Handle::default()));
+            world.init_resource::<bevy::input_focus::InputFocus>();
+            let root = world.spawn_empty().id();
+            let owner = world
+                .spawn((
+                    Node::default(),
+                    ChildOf(root),
+                    crate::workspace::WorkspaceMember(1),
+                    CanvasItem {
+                        position: bevy::math::DVec2::ZERO,
+                        size: Vec2::splat(420.0),
+                    },
+                ))
+                .id();
+            populate(&mut world, owner);
+            let now = 1_800_000_000_000;
+            world.get_mut::<View>(owner).unwrap().entries = vec![Entry {
+                id: "need".into(),
+                record_uid: "r:need".into(),
+                head: "Outstanding need".into(),
+                quantity: "-1".into(),
+                category: if allocated {
+                    model::Category::Timed
+                } else {
+                    model::Category::Overdue
                 },
-            ))
-            .id();
-        populate(&mut world, owner);
-        let now = 1_800_000_000_000;
-        world.get_mut::<View>(owner).unwrap().entries = vec![Entry {
-            id: "need".into(),
-            record_uid: "r:need".into(),
-            head: "Outstanding need".into(),
-            quantity: "-1".into(),
-            category: model::Category::Overdue,
-            time: None,
-            origin: serde_json::json!({"kind":"need"}),
-            preview: false,
-            start_date: None,
-            due_date: None,
-        }];
-        let palette = palette::Palette::resolve(&world, owner);
-        motion::update(&mut world, owner, now, 3_600_000, true);
-        for frame in 0..600 {
-            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+                time: allocated.then_some(nucleus::schedule::TimeRange {
+                    from_ms: now,
+                    until_ms: Some(now + 600_000),
+                }),
+                origin: if allocated {
+                    serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":600000}})
+                } else {
+                    serde_json::json!({"kind":"need"})
+                },
+                preview: false,
+                start_date: None,
+                due_date: None,
+                estimate_min: None,
+            }];
+            let palette = palette::Palette::resolve(&world, owner);
+            motion::update(&mut world, owner, now, 3_600_000, true);
+            for frame in 0..600 {
+                world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+                update(
+                    &mut world,
+                    owner,
+                    now + frame * 100,
+                    Vec2::splat(420.0),
+                    true,
+                    true,
+                    &palette,
+                );
+            }
+            let card = world.get::<Annotations>(owner).unwrap().0[0];
+            let stopped = world.get::<CanvasItem>(card).unwrap().position;
+            assert_eq!(world.get::<Layout>(owner).unwrap().cooling.heat(), 0.0);
+            let anchor = world.get::<Annotation>(card).unwrap().label.anchor;
+            assert_eq!(
+                world.get::<Layout>(owner).unwrap().labels[0]
+                    .occurrence
+                    .time
+                    .from_ms,
+                now
+            );
+            world.clear_trackers();
+            for frame in 600..720 {
+                world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
+                update(
+                    &mut world,
+                    owner,
+                    now + frame * 100,
+                    Vec2::splat(420.0),
+                    true,
+                    true,
+                    &palette,
+                );
+            }
+            let next_anchor = world.get::<Annotation>(card).unwrap().label.anchor;
+            let rotation = Vec2::from_angle(
+                Vec2::new(anchor[0], anchor[2]).angle_to(Vec2::new(next_anchor[0], next_anchor[2])),
+            );
+            let expected = rotation.rotate(stopped.as_vec2()).as_dvec2();
+            assert!(
+                world
+                    .get::<CanvasItem>(card)
+                    .unwrap()
+                    .position
+                    .distance(expected)
+                    < 0.1
+            );
+            assert_eq!(
+                world.get::<Annotation>(card).unwrap().spring.velocity,
+                [0.0; 2]
+            );
+            assert!(
+                !world
+                    .entity(card)
+                    .get_ref::<crate::topology::presentation::SurfaceOpacity>()
+                    .unwrap()
+                    .is_changed()
+            );
+            world.get_mut::<CanvasItem>(owner).unwrap().position.x += 100.0;
             update(
                 &mut world,
                 owner,
-                now + frame * 100,
+                now + 72_000,
                 Vec2::splat(420.0),
                 true,
-                true,
+                false,
                 &palette,
             );
-        }
-        let card = world.get::<Annotations>(owner).unwrap().0[0];
-        let stopped = world.get::<CanvasItem>(card).unwrap().position;
-        assert_eq!(world.get::<Layout>(owner).unwrap().cooling.heat(), 0.0);
-        let anchor = world.get::<Annotation>(card).unwrap().label.anchor;
-        assert_eq!(
-            world.get::<Layout>(owner).unwrap().labels[0]
-                .occurrence
-                .time
-                .from_ms,
-            now
-        );
-        world.clear_trackers();
-        for frame in 600..720 {
-            world.get_mut::<motion::Motion>(owner).unwrap().seconds = 1.0 / 60.0;
-            update(
-                &mut world,
-                owner,
-                now + frame * 100,
-                Vec2::splat(420.0),
-                true,
-                true,
-                &palette,
+            assert!(world.get::<Layout>(owner).unwrap().cooling.heat() > 0.0);
+            assert!(
+                world
+                    .get::<CanvasItem>(card)
+                    .unwrap()
+                    .position
+                    .distance(expected)
+                    < 10.0
             );
+            assert!(world.get::<motion::Motion>(owner).unwrap().active);
         }
-        let next_anchor = world.get::<Annotation>(card).unwrap().label.anchor;
-        let rotation = Vec2::from_angle(
-            Vec2::new(anchor[0], anchor[2]).angle_to(Vec2::new(next_anchor[0], next_anchor[2])),
-        );
-        let expected = rotation.rotate(stopped.as_vec2()).as_dvec2();
-        assert!(
-            world
-                .get::<CanvasItem>(card)
-                .unwrap()
-                .position
-                .distance(expected)
-                < 0.1
-        );
-        assert_eq!(
-            world.get::<Annotation>(card).unwrap().spring.velocity,
-            [0.0; 2]
-        );
-        assert!(
-            !world
-                .entity(card)
-                .get_ref::<crate::topology::presentation::SurfaceOpacity>()
-                .unwrap()
-                .is_changed()
-        );
-        world.get_mut::<CanvasItem>(owner).unwrap().position.x += 100.0;
-        update(
-            &mut world,
-            owner,
-            now + 72_000,
-            Vec2::splat(420.0),
-            true,
-            false,
-            &palette,
-        );
-        assert!(world.get::<Layout>(owner).unwrap().cooling.heat() > 0.0);
-        assert!(
-            world
-                .get::<CanvasItem>(card)
-                .unwrap()
-                .position
-                .distance(expected)
-                < 10.0
-        );
-        assert!(world.get::<motion::Motion>(owner).unwrap().active);
     }
 
     #[test]
@@ -1194,6 +1268,7 @@ mod tests {
                 preview: false,
                 start_date: None,
                 due_date: None,
+                estimate_min: None,
             })
             .collect();
         let palette = palette::Palette::resolve(&world, owner);

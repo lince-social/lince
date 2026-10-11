@@ -102,6 +102,7 @@ fn svg(
             .collect()
     };
     let radius = size.min_element() * 0.4;
+    let ring = face::Ring::new(settings, now, size);
     if view.unwind < 0.95 {
         svg.push_str(&format!(
             "<circle cx='0' cy='0' r='{radius}' fill='{face}' fill-opacity='{}'/>",
@@ -120,9 +121,15 @@ fn svg(
         2048,
     );
     svg.push_str(&format!(
-        "<path d='{}' fill='none' stroke='{track}' stroke-width='1' stroke-linecap='round'/>",
+        "<path d='{}' fill='none' stroke='{muted}' stroke-width='0.5' stroke-linecap='round'/>",
         path(&base)
     ));
+    if view.unwind < 0.001 {
+        svg.push_str(&format!(
+            "<circle cx='0' cy='0' r='{}' fill='none' stroke='{muted}' stroke-width='0.5'/>",
+            ring.inner
+        ));
+    }
     let pixels = if view.unwind > 0.9 {
         size.x * density
     } else {
@@ -165,8 +172,21 @@ fn svg(
             if major { &muted } else { &track }
         ));
         if major && (view.unwind >= 0.5 || radius >= 128.0) {
-            let label = tick.label;
-            let label_point = point - cross * 23.0;
+            let label = if view.unwind < 0.001 {
+                lince_interface::text::truncate(&tick.label, ring.thickness() - 16.0, |text| {
+                    face::text_width(text, 10.0)
+                })
+                .into_owned()
+            } else {
+                tick.label
+            };
+            let label_point = point
+                - cross
+                    * if view.unwind < 0.001 {
+                        ring.thickness() * 0.5
+                    } else {
+                        23.0
+                    };
             svg.push_str(&format!("<text x='{}' y='{}' dominant-baseline='central' text-anchor='middle' fill='{muted}' font-size='10' font-family='Lato'>{label}</text>", label_point.x, label_point.z));
         }
     }
@@ -205,19 +225,13 @@ fn svg(
     let inner = now_point
         - direction
             * if view.unwind < 0.001 {
-                radius * 0.42
+                ring.thickness() - 0.5
             } else {
                 18.0
             };
-    let end = now_point - direction * if view.unwind < 0.001 { 4.0 } else { -16.0 };
+    let end = now_point - direction * if view.unwind < 0.001 { 0.5 } else { -16.0 };
     if geometry {
         svg.push_str(&format!("<path d='M {} {} L {} {}' stroke='{present}' stroke-width='1.2' stroke-linecap='round'/>", inner.x, inner.z, end.x, end.z));
-        if view.unwind < 0.001 {
-            svg.push_str(&format!(
-                "<circle cx='{}' cy='{}' r='2' fill='{present}'/>",
-                end.x, end.z
-            ));
-        }
     }
     if view.unwind < 0.5 {
         let current = chrono::DateTime::from_timestamp_millis(now)
@@ -232,12 +246,7 @@ fn svg(
                     .to_string()
             })
             .unwrap_or_else(|| "--:--".into());
-        let layout = face::Face::new(
-            size,
-            palette.font,
-            settings.aperture_ms <= 60_000,
-            face::Face::rows(settings, &view.entries, now),
-        );
+        let layout = face::Face::content(settings, &view.entries, now, size, palette.font);
         svg.push_str(&format!("<text x='0' y='{}' fill='{ink}' font-family='Lato' text-anchor='middle' dominant-baseline='central' font-size='{}'>{current}</text>", layout.time.center().y, layout.font));
         if let Some(memento) = layout.memento {
             let (motto_radius, x, y) = face::motto_arc();
@@ -646,7 +655,7 @@ mod tests {
     }
 
     #[test]
-    fn round_face_has_one_rim_and_keeps_diagnostics_inside_configuration() {
+    fn round_face_has_a_fitted_ring_and_keeps_diagnostics_inside_configuration() {
         let mut world = World::new();
         world.insert_resource(crate::theme::Typography(Handle::default()));
         world.init_resource::<bevy::input_focus::InputFocus>();
@@ -664,7 +673,7 @@ mod tests {
             &palette,
             false,
         );
-        assert_eq!(svg.matches("<circle cx='0' cy='0'").count(), 1);
+        assert_eq!(svg.matches("<circle cx='0' cy='0'").count(), 2);
         assert_eq!(svg.matches("dominant-baseline='central'").count(), 13);
         assert!(!svg.contains("simulation"));
         assert!(!svg.contains("Scheduled work"));
@@ -766,6 +775,7 @@ mod tests {
                 preview: false,
                 start_date: None,
                 due_date: None,
+                estimate_min: None,
             })
             .collect();
         world.get_mut::<View>(owner).unwrap().entries = entries.clone();

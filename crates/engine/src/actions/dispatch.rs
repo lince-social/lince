@@ -21,8 +21,17 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
+        if let Action::Vocabulary { request } = action {
+            return Box::pin(async move { self.vocabulary_command(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
+        if let Action::SavedLocation { request } = action {
+            return Box::pin(async move { self.saved_location_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue) });
+        }
         if let Action::Location { request } = action {
             return Box::pin(async move { self.location_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
+        if let Action::Plugins { request } = action {
+            return Box::pin(async move { self.plugin_command(request, actor.as_deref()).await.map(ControlFlow::Continue) });
         }
         if let Action::Visibility { request } = action {
             return Box::pin(async move { self.visibility_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
@@ -52,7 +61,7 @@ impl Engine {
             });
         }
         match &action {
-            Action::Visibility { .. } | Action::Location { .. } | Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
+            Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Plugins { .. } | Action::Visibility { .. } | Action::Location { .. } | Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
             Action::Social { .. }
             | Action::SandPackage { .. }
             | Action::ChangeRecord { .. }

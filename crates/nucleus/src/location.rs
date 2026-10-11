@@ -225,6 +225,8 @@ pub struct View {
     pub source_kind: Option<SourceKind>,
     pub fix: Option<Fix>,
     pub age_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub radius_metres: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

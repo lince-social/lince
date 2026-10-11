@@ -229,6 +229,7 @@ pub(super) fn upcoming_panel(world: &mut World, owner: Entity) -> Entity {
                 overflow: Overflow::scroll_y(),
                 ..default()
             },
+            Name::new("Clock upcoming tasks"),
             ScrollPosition::default(),
             ZIndex(5),
             ChildOf(owner),
@@ -249,7 +250,62 @@ pub(super) fn upcoming(
     let view = world.get::<View>(owner).unwrap();
     let panel = view.upcoming;
     let size = render::size(world, view.viewport);
-    let layout = face::Face::clock(world, owner, now, size, palette.font);
+    let mut layout = face::Face::clock(world, owner, now, size, palette.font);
+    let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+    let cap = layout.upcoming.map_or(0.0, |rect| rect.width());
+    let stamp = (
+        view.revision,
+        now.div_euclid(1000),
+        settings.aperture_ms,
+        settings.timezone.clone(),
+        cap.to_bits(),
+    );
+    let changed = visible
+        && layout.upcoming.is_some()
+        && !chrome::controls_open(world, owner)
+        && view.upcoming_stamp.as_ref() != Some(&stamp);
+    let next_rows: Option<Vec<_>> = if changed {
+        Some(
+            model::clock_summaries(settings, &view.entries, now, now.saturating_add(settings.aperture_ms))
+                .into_iter()
+                .map(|(index, remaining)| {
+                    let entry = &view.entries[index];
+                    let timing = format!(
+                        "{} · {}",
+                        entry.time_label(settings, now),
+                        model::countdown(remaining)
+                    );
+                    let fit = |text: &str| {
+                        lince_interface::text::truncate(text, (cap - 16.0).max(0.0), |line| {
+                            face::text_width(line, 14.0)
+                        })
+                        .into_owned()
+                    };
+                    (
+                        entry.id.clone(),
+                        format!(
+                            "{}\n{}",
+                            fit(entry.head.lines().next().unwrap_or_default()),
+                            fit(&timing)
+                        ),
+                    )
+                })
+                .collect(),
+        )
+    } else {
+        None
+    };
+    let rows = next_rows.as_deref().unwrap_or(&view.upcoming_rows);
+    if let Some(rect) = layout.upcoming.as_mut() {
+        let width = rows
+            .iter()
+            .flat_map(|(_, caption)| caption.lines())
+            .map(|line| face::text_width(line, 14.0))
+            .fold(0.0, f32::max)
+            + 16.0;
+        rect.min.x = -width.min(cap) * 0.5;
+        rect.max.x = width.min(cap) * 0.5;
+    }
     chrome::face(world, owner, size, &layout);
     let visible = visible && layout.upcoming.is_some() && !chrome::controls_open(world, owner);
     let mut node = world.get_mut::<Node>(panel).unwrap();
@@ -278,32 +334,9 @@ pub(super) fn upcoming(
     if !visible {
         return;
     }
-    let view = world.get::<View>(owner).unwrap();
-    let settings = &world.get::<TimeSettings>(owner).unwrap().0;
-    let stamp = (
-        view.revision,
-        now.div_euclid(1000),
-        settings.aperture_ms,
-        settings.timezone.clone(),
-    );
-    if view.upcoming_stamp.as_ref() == Some(&stamp) {
+    let Some(rows) = next_rows else {
         return;
-    }
-    let rows: Vec<_> = model::summaries(&view.entries, now, now + settings.aperture_ms)
-        .into_iter()
-        .map(|(index, remaining)| {
-            let entry = &view.entries[index];
-            (
-                entry.id.clone(),
-                format!(
-                    "{}\n{} · {}",
-                    headline(&entry.head),
-                    entry.time_label(settings, now),
-                    model::countdown(remaining)
-                ),
-            )
-        })
-        .collect();
+    };
     world.get_mut::<View>(owner).unwrap().upcoming_stamp = Some(stamp);
     let view = world.get::<View>(owner).unwrap();
     let ready = world.get::<UpcomingReady>(panel).is_some();
@@ -332,13 +365,6 @@ pub(super) fn upcoming(
     }
     world.entity_mut(panel).despawn_children();
     world.entity_mut(panel).insert(UpcomingReady);
-    if rows.is_empty() {
-        let heading = crate::edit_mode::label(world, panel, "No upcoming work", 12.0);
-        world.get_mut::<TextColor>(heading).unwrap().0 = palette.muted;
-        world
-            .entity_mut(heading)
-            .insert(TextLayout::justify(Justify::Center));
-    }
     for (id, text) in &rows {
         let button = chrome::button(world, panel, owner, text, Select(vec![id.clone()]));
         world
@@ -359,7 +385,7 @@ pub(super) fn upcoming(
         for text in texts {
             world.entity_mut(text).insert(TextLayout::new(
                 Justify::Center,
-                bevy::text::LineBreak::WordOrCharacter,
+                bevy::text::LineBreak::NoWrap,
             ));
             let mut node = world.get_mut::<Node>(text).unwrap();
             node.width = percent(100);
@@ -428,6 +454,9 @@ impl Action for TogglePast {
             .collect();
         for button in buttons {
             set_caption(world, button, caption);
+        }
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            view.upcoming_stamp = None;
         }
     }
 }
@@ -573,7 +602,7 @@ impl Action for SourceEditor {
 struct Refresh;
 impl Action for Refresh {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if let Ok((Source::Organ(organ), _)) = source_query(world, owner) {
+        if let Ok((Source::Organ(organ), _, _)) = source_query(world, owner) {
             crate::protein_area::reconnect_auxiliary(world, &organ);
         }
         if let Some(feed) = world.resource_mut::<Feeds>().active.get_mut(&owner) {
@@ -646,8 +675,7 @@ pub(super) fn details(world: &mut World, owner: Entity, now: i64) {
             } else {
                 entry.category_at(now, &settings.timezone) != model::Category::Timed
                     || entry
-                        .time
-                        .as_ref()
+                        .effective_time(now)
                         .is_some_and(|time| time.overlaps(now, now + settings.horizon_ms))
             }
         })
@@ -824,6 +852,42 @@ mod tests {
             .set_text("Unknown/Zone");
         Apply.apply(&mut world, owner);
         assert_eq!(world.get::<TimeSettings>(owner).unwrap().0, restored);
+    }
+
+    #[test]
+    fn empty_list_is_hidden_and_long_lines_fit_one_shared_block() {
+        let (mut world, owner) = fixture();
+        let palette = palette::Palette::resolve(&world, owner);
+        upcoming(&mut world, owner, 1000, true, &palette);
+        let panel = world.get::<View>(owner).unwrap().upcoming;
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
+        assert!(
+            !world
+                .query::<&Text>()
+                .iter(&world)
+                .any(|text| text.0 == "No upcoming work")
+        );
+        let entry = serde_json::from_value(serde_json::json!({
+            "uid": "long", "record_uid": "record-long", "head": "A very long task title that should be truncated rather than wrapped across the whole clock", "quantity": "-1", "category": "timed",
+            "time": {"from_ms": 10_000}, "origin": {"kind": "manual"}, "preview": false
+        })).unwrap();
+        world.get_mut::<View>(owner).unwrap().entries = vec![entry];
+        upcoming(&mut world, owner, 1000, true, &palette);
+        let rows = &world.get::<View>(owner).unwrap().upcoming_rows;
+        assert!(rows[0].1.contains('…'));
+        let width = rows[0]
+            .1
+            .lines()
+            .map(|line| face::text_width(line, 14.0))
+            .fold(0.0, f32::max)
+            + 16.0;
+        assert_eq!(world.get::<Node>(panel).unwrap().width, px(width));
+        for line in rows[0].1.lines() {
+            assert!(face::text_width(line, 14.0) <= width - 16.0 + 0.001);
+        }
+        world.get_mut::<View>(owner).unwrap().entries.clear();
+        upcoming(&mut world, owner, 2000, true, &palette);
+        assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
     }
 
     #[test]

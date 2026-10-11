@@ -13,6 +13,11 @@ pub mod grammar {
         pub String,
     );
     #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ConceptName(
+        #[rust_sitter::leaf(pattern = r#"[^\s#@:,(){}\"^]+|\"([^\"\\]|\\.)*\""#, transform = |v| if v.starts_with('"') { serde_json::from_str(v).expect("valid quoted Concept term") } else { v.to_string() })]
+        pub String,
+    );
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Title {
         pub first: TitleWord,
         pub rest: Vec<TitleWord>,
@@ -355,13 +360,13 @@ pub mod grammar {
             Self::Identity(IdentityField {
                 _is: (),
                 _hash: (),
-                predicate: Name(predicate),
+                predicate: ConceptName(predicate),
             })
         }
         pub fn assertion(predicate: String) -> Self {
             Self::Assertion(AssertionField {
                 _hash: (),
-                predicate: Name(predicate),
+                predicate: ConceptName(predicate),
                 tail: None,
             })
         }
@@ -373,7 +378,7 @@ pub mod grammar {
         ) -> Self {
             Self::Assertion(AssertionField {
                 _hash: (),
-                predicate: Name(predicate),
+                predicate: ConceptName(predicate),
                 tail: Some(AssertionTail::Link(LinkTail {
                     target: Reference::new(slug),
                     amount: quantity.map(|value| AssertionQuantity {
@@ -392,7 +397,7 @@ pub mod grammar {
         pub fn amount(predicate: String, quantity: String, unit: Option<String>) -> Self {
             Self::Assertion(AssertionField {
                 _hash: (),
-                predicate: Name(predicate),
+                predicate: ConceptName(predicate),
                 tail: Some(AssertionTail::Amount(AmountTail {
                     _colon: (),
                     quantity: Quantity {
@@ -412,13 +417,13 @@ pub mod grammar {
         _is: (),
         #[rust_sitter::leaf(text = "#")]
         _hash: (),
-        pub predicate: Name,
+        pub predicate: ConceptName,
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct AssertionField {
         #[rust_sitter::leaf(text = "#")]
         _hash: (),
-        pub predicate: Name,
+        pub predicate: ConceptName,
         pub tail: Option<AssertionTail>,
     }
     #[derive(Debug, Clone, PartialEq, Eq)]

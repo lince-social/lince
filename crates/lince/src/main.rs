@@ -45,7 +45,7 @@ fn main() -> Result<(), Error> {
     #[cfg(not(feature = "facade"))]
     if has_arg(&args, "--facade") {
         return Err(Error::other(
-            "Facade is not included in this executable. Run `mise facade` or compile with `--features facade`.",
+            "Facade is not included in this executable. Run `cargo xtask facade` or compile with `--features facade`.",
         ));
     }
     #[cfg(not(feature = "ui"))]

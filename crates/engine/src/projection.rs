@@ -37,6 +37,7 @@ pub struct Controller {
     queue: Arc<Mutex<Queue>>,
     task: Mutex<Option<tokio::task::JoinHandle<()>>>,
     expiry: Arc<Mutex<Option<(i64, tokio::task::JoinHandle<()>)>>>,
+    context: Mutex<Option<Context>>,
     pub metrics: Arc<Metrics>,
 }
 
@@ -52,7 +53,20 @@ impl Drop for Controller {
 }
 
 impl Engine {
-    pub async fn request_projection(self: &Arc<Self>, context: Context) -> Result<(), EngineError> {
+    pub(crate) async fn refresh_projection(&self) -> Result<(), EngineError> {
+        let context = self
+            .projection
+            .context
+            .lock()
+            .expect("projection context")
+            .clone();
+        if let Some(context) = context {
+            self.request_projection(context).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn request_projection(&self, context: Context) -> Result<(), EngineError> {
         context
             .window
             .validate()
@@ -63,6 +77,22 @@ impl Engine {
             || context.window.until_ms.saturating_sub(now) > 366 * 86_400_000
         {
             return Ok(());
+        }
+        {
+            let mut previous = self.projection.context.lock().expect("projection context");
+            let mut retained = context.clone();
+            if let Some(previous) = previous.as_ref()
+                && previous.actor == context.actor
+                && previous.window.timezone == context.window.timezone
+                && previous.window.until_ms > now
+            {
+                extend_window(
+                    &mut retained.window,
+                    previous.window.from_ms,
+                    previous.window.until_ms,
+                );
+            }
+            *previous = Some(retained);
         }
         let config = match self.configured_karma_runtime() {
             Ok(config) => config,
@@ -328,6 +358,7 @@ pub async fn calculate(
         let mut schedule_position = application_position;
         let existing_records: std::collections::HashSet<String> = store::sqlx::query_scalar("SELECT uid FROM record WHERE deleted_at IS NULL").fetch_all(&private.pool).await?.into_iter().collect();
         schedule::manual(&private.pool, context, &existing_records, &mut result.schedule, &std::collections::HashMap::new()).await?;
+        schedule::occurrences(&private.pool, context, 0, &existing_records, &mut result.schedule).await?;
         let program_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_run").fetch_one(&private.pool).await?;
         let mut active = BTreeMap::new();
         let mut changed = std::collections::BTreeSet::new();

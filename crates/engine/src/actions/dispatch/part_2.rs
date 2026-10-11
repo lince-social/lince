@@ -594,13 +594,19 @@ impl Engine {
                             "the local Lingua is the ontology's permanent private home".into(),
                         ));
                     }
-                    store::linguas::delete(&self.store.pool, &lingua_uid).await?;
+                    if let Err(error) = store::linguas::delete(&self.store.pool, &lingua_uid).await {
+                        if error.as_database_error().is_some_and(|error| error.is_foreign_key_violation()) {
+                            return Err(EngineError::Conflict { code: "lingua_in_use", message: "This Vocabulary is the source of retained Concepts. Remove adopted entries or retire their terms while preserving the source.".into() });
+                        }
+                        return Err(error.into());
+                    }
                 }
                 Action::CreateConcept {
                     lingua,
                     name,
                     parents,
                 } => {
+                    self.require_permission(actor.as_deref(), "permission:assign").await?;
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
@@ -619,12 +625,14 @@ impl Engine {
                     );
                 }
                 Action::RenameConcept { concept, name } => {
+                    self.require_permission(actor.as_deref(), "permission:assign").await?;
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
                     store::concepts::rename(&self.store.pool, &concept_uid, &name).await?;
                 }
                 Action::DeleteConcept { concept } => {
+                    self.require_permission(actor.as_deref(), "permission:assign").await?;
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
@@ -696,7 +704,7 @@ impl Engine {
                         Some(object) => Some(self.resolve(&object).await?),
                         None => None,
                     };
-                    let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
+                    let predicate_uid = store::vocabulary::resolve(&self.store.pool, &predicate, actor.as_deref())
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
                     outcome = self

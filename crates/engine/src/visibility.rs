@@ -260,7 +260,7 @@ impl Engine {
                 return Err(denied("Choose a Record first"));
             }
             policy
-                .validate()
+                .validate_for(data)
                 .map_err(|error| EngineError::Consequence(error.into()))?;
             self.require_permission(actor, "record:update").await?;
             let controller = None;
@@ -392,7 +392,8 @@ impl Engine {
         record: &str,
         data: Data,
     ) -> Result<Value, EngineError> {
-        if !self.organ_visibility(record, data, organ).await?.allowed {
+        let decision = self.organ_visibility(record, data, organ).await?;
+        if !decision.allowed {
             return Err(denied("This Organ cannot view the selected Record data"));
         }
         if data == Data::LiveLocation {
@@ -407,21 +408,63 @@ impl Engine {
         if row.organ_uid.as_deref().is_some_and(|uid| uid != local.uid) {
             return Err(denied("Read this data at the Record's owning Organ"));
         }
-        let place = if data == Data::Place
-            || self
-                .organ_visibility(record, Data::Place, organ)
+        let place_decision = if data == Data::Place {
+            decision
+        } else {
+            self.organ_visibility(record, Data::Place, organ).await?
+        };
+        let place = if place_decision.allowed {
+            let targets: Vec<String> = store::sqlx::query_scalar("SELECT DISTINCT a.object_uid FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=? WHERE a.subject_uid=? AND a.retracted_at IS NULL AND a.role='ordinary' AND a.object_uid IS NOT NULL LIMIT 64")
+                .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).bind(record).fetch_all(&self.store.pool).await?;
+            let mut visible = std::collections::HashSet::from([record.to_owned()]);
+            let mut radii = std::collections::HashMap::new();
+            for target in targets {
+                let target_place = self.organ_visibility(&target, Data::Place, organ).await?;
+                if self
+                    .organ_visibility(&target, Data::Record, organ)
+                    .await?
+                    .allowed
+                    && target_place.allowed
+                    && store::records::get(&self.store.pool, &target)
+                        .await?
+                        .is_some_and(|target| target.organ_uid.as_deref() == Some(&local.uid))
+                {
+                    radii.insert(target.clone(), target_place.radius_metres);
+                    visible.insert(target);
+                }
+            }
+            match store::places::saved_locations(&self.store.pool, Some(&visible))
                 .await?
-                .allowed
-        {
-            if let Some(uid) = row.place_uid.as_deref() {
-                let place: Option<(f64, f64, Option<String>)> =
-                    store::sqlx::query_as("SELECT lat,lon,address FROM place WHERE uid=?")
-                        .bind(uid)
-                        .fetch_optional(&self.store.pool)
-                        .await?;
-                place.map(|(latitude, longitude, address)| json!({"latitude":latitude,"longitude":longitude,"address":address}))
-            } else {
-                None
+                .remove(record)
+                .and_then(|location| location.selected)
+            {
+                Some(location) => {
+                    let radius_metres = place_decision
+                        .radius_metres
+                        .max(radii.get(&location.record_uid).copied().flatten());
+                    let point = nucleus::place::Place {
+                        lat: location.latitude,
+                        lon: location.longitude,
+                    };
+                    let point = if let Some(radius) = radius_metres {
+                        nucleus::place::approximate(point, radius)
+                            .ok_or_else(|| denied("Saved area unavailable"))?
+                    } else {
+                        point
+                    };
+                    let address = if radius_metres.is_some() {
+                        None
+                    } else if location.assertion_uid.is_some() {
+                        Some(location.head)
+                    } else {
+                        store::sqlx::query_scalar::<_, Option<String>>("SELECT p.address FROM record r JOIN place p ON p.uid=r.place_uid WHERE r.uid=?")
+                            .bind(record).fetch_optional(&self.store.pool).await?.flatten()
+                    };
+                    Some(
+                        json!({"latitude":point.lat,"longitude":point.lon,"address":address,"radius_metres":radius_metres}),
+                    )
+                }
+                None => None,
             }
         } else {
             None

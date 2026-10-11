@@ -15,7 +15,7 @@ pub async fn policy(
         .bind(record).bind(data.as_str()).fetch_optional(pool).await?;
     row.map(|(controller, revision, raw)| {
         let policy: Policy = serde_json::from_str(&raw).map_err(invalid)?;
-        policy.validate().map_err(invalid)?;
+        policy.validate_for(data).map_err(invalid)?;
         Ok(SavedPolicy {
             controller_uid: controller.unwrap_or_default(),
             revision: revision as u64,
@@ -33,7 +33,7 @@ pub async fn save_on(
     policy: &Policy,
     expected: u64,
 ) -> Result<u64, StoreError> {
-    policy.validate().map_err(invalid)?;
+    policy.validate_for(data).map_err(invalid)?;
     let revision = expected
         .checked_add(1)
         .filter(|revision| *revision <= i64::MAX as u64)
@@ -113,17 +113,27 @@ pub async fn denied_records(
         return Ok(std::collections::HashSet::new());
     }
     let proximity = proximity(pool, organ).await?;
-    let rows: Vec<(String, String)> = sqlx::query_as(
-        "SELECT record_uid,policy_json FROM data_visibility WHERE data IN ('record','place')",
+    let rows: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT record_uid,data,policy_json FROM data_visibility WHERE data IN ('record','place')",
     )
     .fetch_all(pool)
     .await?;
     let mut denied: std::collections::HashSet<String> = sqlx::query_scalar("SELECT uid FROM record WHERE place_uid IS NOT NULL AND NOT EXISTS(SELECT 1 FROM data_visibility v WHERE v.record_uid=record.uid AND v.data='place')")
         .fetch_all(pool).await?.into_iter().collect();
-    for (record, raw) in rows {
+    for (record, data, raw) in rows {
         let policy: Policy = serde_json::from_str(&raw).map_err(invalid)?;
-        policy.validate().map_err(invalid)?;
-        if proximity.is_none() || !policy.decide(organ, proximity).allowed {
+        policy
+            .validate_for(if data == "record" {
+                Data::Record
+            } else {
+                Data::Place
+            })
+            .map_err(invalid)?;
+        let decision = policy.decide(organ, proximity);
+        if proximity.is_none()
+            || !decision.allowed
+            || (data == "place" && decision.radius_metres.is_some())
+        {
             denied.insert(record);
         }
     }
@@ -147,7 +157,7 @@ pub async fn import(
     data: Data,
     saved: &SavedPolicy,
 ) -> Result<(), StoreError> {
-    saved.policy.validate().map_err(invalid)?;
+    saved.policy.validate_for(data).map_err(invalid)?;
     if saved.revision == 0 || saved.revision > i64::MAX as u64 || !saved.controller_uid.is_empty() {
         return Err(invalid("Invalid synchronized visibility policy"));
     }

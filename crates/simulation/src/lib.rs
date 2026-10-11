@@ -1,4 +1,5 @@
 pub mod artifacts;
+pub mod location_workflows;
 pub mod assumptions;
 pub mod loans;
 pub mod campaign;

@@ -158,6 +158,7 @@ fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
         ))
         .add_plugins(crate::workspace_sync::WorkspaceSyncPlugin)
         .add_plugins(crate::location::LocationPlugin)
+        .add_plugins(crate::map_castle::MapPlugin)
         .add_plugins(crate::visibility_castle::VisibilityCastlePlugin)
         .add_plugins(crate::tutorial::TutorialPlugin)
         .add_plugins(crate::karma_castle::KarmaCastlePlugin)

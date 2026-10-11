@@ -72,7 +72,7 @@ pub fn shift_checks(
             Predicate::Quantity { cell, .. } | Predicate::Nonnegative { cell, .. } => {
                 *cell = "current".into()
             }
-            Predicate::QuantityEquals { cell, at_ms, .. } => {
+            Predicate::QuantityEquals { cell, at_ms, .. } | Predicate::QuantitiesEqual { cell, at_ms, .. } => {
                 *cell = "current".into();
                 *at_ms = shifted(*at_ms, delta)?;
             }
@@ -199,6 +199,13 @@ pub async fn run(
         records.push(bind_record(engine, actor, reference).await?);
     }
     for check in &mut checks {
+        if let Predicate::QuantitiesEqual { records, .. } = &mut check.predicate {
+            let mut bound = std::collections::BTreeMap::new();
+            for (reference, quantity) in std::mem::take(records) {
+                bound.insert(bind_record(engine, actor, &reference).await?, quantity);
+            }
+            *records = bound;
+        }
         if let Predicate::Quantity { record, .. }
         | Predicate::QuantityEquals { record, .. }
         | Predicate::Nonnegative { record, .. } = &mut check.predicate

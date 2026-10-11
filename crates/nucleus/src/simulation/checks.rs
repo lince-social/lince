@@ -93,9 +93,9 @@ impl CheckDefinition {
     pub fn evaluation(&self) -> Evaluation {
         match self.options.evaluation {
             Evaluation::Default => match self.predicate {
-                Predicate::QuantityEquals { at_ms, .. } | Predicate::Converged { at_ms, .. } => {
-                    Evaluation::At { at_ms }
-                }
+                Predicate::QuantityEquals { at_ms, .. }
+                | Predicate::QuantitiesEqual { at_ms, .. }
+                | Predicate::Converged { at_ms, .. } => Evaluation::At { at_ms },
                 Predicate::Quantity { .. } => Evaluation::End,
                 _ => Evaluation::EveryChange,
             },

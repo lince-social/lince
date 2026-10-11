@@ -1,0 +1,24 @@
+[package]
+name = "lince-plugin-files"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+nucleus.workspace = true
+plugins.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["io-std"] }
+
+[dev-dependencies]
+engine.workspace = true
+store.workspace = true
+protein.workspace = true
+tempfile = "=3.27.0"
+
+[lints]
+workspace = true

@@ -3,6 +3,8 @@ use fiote::provider::{Reply, ToolCall, ToolDefinition};
 use serde_json::json;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
+mod working_directory;
+
 #[tokio::test]
 async fn native_refresh_guards_serialize_separate_connections_and_release_on_drop() {
     use fiote::communication::auth::CredentialStore;
@@ -552,7 +554,10 @@ impl Provider for Script {
                 replay: Vec::new(),
                 text: String::new(),
                 calls: vec![ToolCall {
-                    id: "call-1".into(),
+                    id: format!(
+                        "call-{}",
+                        messages.iter().filter(|message| matches!(message, Message::Tool { .. })).count() + 1
+                    ),
                     name: "create_file".into(),
                     arguments: json!({"path":"hello.txt","content":"Hello from Fiote"}),
                     signatures: None,
@@ -985,6 +990,73 @@ async fn activations_coalesce_while_busy_and_keep_individual_causes() {
             .unwrap()
             .iter()
             .all(|request| matches!(request.state.as_str(), "cancelled" | "interrupted"))
+    );
+}
+
+#[cfg(unix)]
+struct ActivationCommandProvider;
+
+#[cfg(unix)]
+#[async_trait::async_trait]
+impl Provider for ActivationCommandProvider {
+    async fn complete(
+        &self,
+        system: &str,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        assert!(system.contains("Working directory:"));
+        assert!(tools.iter().any(|tool| tool.name == "run_command"));
+        if let Some(Message::Tool { name, result, .. }) = messages.last() {
+            assert_eq!(name, "run_command");
+            assert_eq!(result["ok"], true);
+            assert_eq!(result["result"]["exit_code"], 0);
+            return Ok(Reply {
+                text: "Created Hello.txt containing world.".into(),
+                ..Default::default()
+            });
+        }
+        assert!(
+            matches!(messages.last(), Some(Message::User(body)) if body.contains("You were activated."))
+        );
+        Ok(Reply {
+            calls: vec![ToolCall {
+                id: "activation-shell".into(),
+                name: "run_command".into(),
+                arguments: json!({"command":"printf world > Hello.txt; test \"$(cat Hello.txt)\" = world"}),
+                signatures: None,
+            }],
+            ..Default::default()
+        })
+    }
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn activation_runs_native_commands_in_its_working_directory_and_persists_the_reply() {
+    let (mut host, _, root, record, _) = fixture(false).await;
+    Arc::get_mut(&mut host).unwrap().provider = Some(Arc::new(ActivationCommandProvider));
+    host.handle(Request::Activate {
+        record: record.clone(),
+        value: "1".into(),
+        request_id: "coding-activation".into(),
+    })
+    .await
+    .unwrap();
+    host.activation_tick().await.unwrap();
+    wait(&host).await;
+    host.activation_tick().await.unwrap();
+    let activations = host.engine.fiote_activations(&record).await.unwrap();
+    assert_eq!(activations[0].state, "finished");
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("Hello.txt")).unwrap(),
+        "world"
+    );
+    assert!(
+        rows(&host, activations[0].thread.as_deref().unwrap())
+            .await
+            .iter()
+            .any(|row| row.body == "Created Hello.txt containing world.")
     );
 }
 

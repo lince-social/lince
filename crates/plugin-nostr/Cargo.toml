@@ -1,0 +1,28 @@
+[package]
+name = "lince-plugin-nostr"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+nucleus.workspace = true
+plugins.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+nostr = { version = "=0.45.5", features = ["os-rng"] }
+tokio = { workspace = true, features = ["io-std", "net", "fs"] }
+tokio-tungstenite = { version = "=0.30.0", features = ["rustls-tls-webpki-roots"] }
+futures.workspace = true
+zeroize.workspace = true
+rustls = { version = "=0.23.44", default-features = false, features = ["ring", "std", "tls12"] }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+engine.workspace = true
+store.workspace = true
+protein.workspace = true
+
+[lints]
+workspace = true

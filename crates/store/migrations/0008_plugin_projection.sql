@@ -1,0 +1,12 @@
+DROP TRIGGER IF EXISTS projection_INSERT_plugin_package;
+DROP TRIGGER IF EXISTS projection_UPDATE_plugin_package;
+DROP TRIGGER IF EXISTS projection_DELETE_plugin_package;
+DROP TRIGGER IF EXISTS projection_INSERT_plugin_binding;
+DROP TRIGGER IF EXISTS projection_UPDATE_plugin_binding;
+DROP TRIGGER IF EXISTS projection_DELETE_plugin_binding;
+DROP TRIGGER IF EXISTS projection_INSERT_plugin_object;
+DROP TRIGGER IF EXISTS projection_UPDATE_plugin_object;
+DROP TRIGGER IF EXISTS projection_DELETE_plugin_object;
+DROP TRIGGER IF EXISTS projection_INSERT_plugin_outbox;
+DROP TRIGGER IF EXISTS projection_UPDATE_plugin_outbox;
+DROP TRIGGER IF EXISTS projection_DELETE_plugin_outbox;

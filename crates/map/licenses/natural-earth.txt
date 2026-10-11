@@ -1,0 +1,6 @@
+Natural Earth
+https://www.naturalearthdata.com/about/terms-of-use/
+
+Natural Earth raster and vector map data is in the public domain.
+Authors: Tom Patterson, Nathaniel Vaughn Kelso and contributors.
+Made with Natural Earth.

@@ -10,26 +10,53 @@ pub(super) struct Option {
 
 fn token(text: &str, caret: usize) -> std::option::Option<(Range<usize>, bool)> {
     let before = text.get(..caret)?;
-    let start = before
-        .char_indices()
-        .rev()
-        .find(|(_, c)| c.is_whitespace() || matches!(c, ',' | ';' | ':'))
-        .map_or(0, |(index, c)| index + c.len_utf8());
-    if start == caret {
+    let mut start = 0;
+    let mut quoted = false;
+    let mut escaped = false;
+    let mut ranges = Vec::new();
+    for (index, ch) in text.char_indices() {
+        if !quoted && (ch.is_whitespace() || matches!(ch, ',' | ';' | ':')) {
+            if start < index {
+                ranges.push(start..index);
+            }
+            start = index + ch.len_utf8();
+        } else if ch == '"' && !escaped {
+            quoted = !quoted;
+        }
+        escaped = quoted && ch == '\\' && !escaped;
+    }
+    if start < text.len() {
+        ranges.push(start..text.len());
+    }
+    let range = ranges
+        .into_iter()
+        .find(|range| range.start < caret && caret <= range.end)?;
+    let start = range.start;
+    let prefix = &text[start..caret];
+    if prefix.starts_with('^') {
         return None;
     }
-    let prefix = &text[start..caret];
     if prefix.starts_with(|ch: char| ch.is_ascii_digit() || ch == '-') {
         return None;
     }
-    let end = text[caret..]
-        .find(|c: char| c.is_whitespace() || matches!(c, ',' | ';' | ':'))
-        .map_or(text.len(), |index| caret + index);
-    let clause = before[..start]
-        .rsplit([',', ';', '\n', '#'])
-        .next()
-        .unwrap_or_default();
-    Some((start..end, prefix.starts_with('@') && !clause.contains(':')))
+    let mut amount = false;
+    let mut quoted = false;
+    let mut escaped = false;
+    for ch in before[..start].chars() {
+        if !quoted {
+            if matches!(ch, ',' | ';' | '\n' | '#') {
+                amount = false;
+            }
+            if ch == ':' {
+                amount = true;
+            }
+        }
+        if ch == '"' && !escaped {
+            quoted = !quoted;
+        }
+        escaped = quoted && ch == '\\' && !escaped;
+    }
+    Some((range, prefix.starts_with('@') && !amount))
 }
 
 pub(super) fn keys(world: &mut World) {
@@ -204,6 +231,9 @@ pub(super) fn update(world: &mut World, entity: Entity) {
             let (range, records) = range.unwrap();
             let query = value[range.start..caret]
                 .trim_start_matches(['#', '@'])
+                .trim_matches('"');
+            let query = store::vocabulary::term_text(query)
+                .unwrap_or_else(|_| query.into())
                 .to_lowercase();
             let rows = if records {
                 &field.records
@@ -217,7 +247,18 @@ pub(super) fn update(world: &mut World, entity: Entity) {
                     row["name"].as_str().unwrap_or_default()
                 };
                 let head = row["head"].as_str().unwrap_or_default();
-                if name.is_empty() || !format!("{name} {head}").to_lowercase().contains(&query) {
+                let alternatives = row["terms"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|term| term["name"].as_str())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                if name.is_empty()
+                    || !format!("{name} {head} {alternatives}")
+                        .to_lowercase()
+                        .contains(&query)
+                {
                     continue;
                 }
                 let marker = if records || value[range.clone()].starts_with('@') {
@@ -225,11 +266,24 @@ pub(super) fn update(world: &mut World, entity: Entity) {
                 } else {
                     '#'
                 };
-                let text = format!("{marker}{name}");
-                let label = if records && !head.is_empty() {
-                    format!("{text} · {head}")
+                let readable = format!("{marker}{}", syntax::term_text(name));
+                let text = if marker == '#'
+                    && let Some(uid) = row["uid"]
+                        .as_str()
+                        .filter(|uid| nucleus::valid_uid(uid, "c"))
+                {
+                    format!("{readable} ^{uid}")
                 } else {
-                    text.clone()
+                    readable.clone()
+                };
+                let label = if records && !head.is_empty() {
+                    format!("{readable} · {head}")
+                } else {
+                    format!(
+                        "{readable} · {} · {}",
+                        row["source"]["original_name"].as_str().unwrap_or(name),
+                        row["uid"].as_str().unwrap_or("")
+                    )
                 };
                 options.push(Option {
                     text,
@@ -314,6 +368,21 @@ fn redraw(world: &mut World, entity: Entity) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quoted_terms_keep_their_range_and_do_not_change_address_completion_into_units() {
+        let text = "#\"saved geographic: place\" @street4";
+        let caret = text.find("geographic").unwrap() + "geographic".len();
+        let (range, record) = token(text, caret).unwrap();
+        assert_eq!(&text[range], "#\"saved geographic: place\"");
+        assert!(!record);
+        assert!(token(text, text.len()).unwrap().1);
+        assert!(
+            !token("#cost: 2 @kilograms", "#cost: 2 @kilograms".len())
+                .unwrap()
+                .1
+        );
+    }
 
     fn type_at(world: &mut World, input: Entity, value: &str, caret: usize) {
         world.init_resource::<bevy::text::FontCx>();

@@ -35,6 +35,18 @@ fn dispatch() -> Result<()> {
         Some("android") => android::dispatch(&root, &extra),
         Some("android-clean") => android_clean::run(&root, &extra),
         Some("android-smoke") => android_smoke::run(&root, &extra),
+        Some("plugin-example") => {
+            if extra.len() != 1 {
+                return Err("usage: cargo xtask plugin-example <Lince-data-directory>".into());
+            }
+            checked(cargo_command().args(["run", "--locked", "-p", "lince-plugin-nostr", "--", "--install"]).args(&extra))
+        }
+        Some("plugin-files") => {
+            if extra.len() != 1 {
+                return Err("usage: cargo xtask plugin-files <Lince-data-directory>".into());
+            }
+            checked(cargo_command().args(["run", "--locked", "-p", "lince-plugin-files", "--", "--install"]).args(&extra))
+        }
         Some("mobile-preview") => {
             if extra.len() > 1 {
                 return Err("usage: cargo xtask mobile-preview [data-directory]".into());
@@ -105,6 +117,10 @@ fn dispatch() -> Result<()> {
                 "--facade",
             ]))
         }
+        Some("check-instinct") => {
+            no_extra(&extra)?;
+            prune::with_cleanup(&root, check_instinct)
+        }
         Some("test-all") => {
             no_extra(&extra)?;
             prune::with_cleanup(&root, || {
@@ -114,7 +130,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <design|dev|check|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview>"
+                "cargo xtask <design|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -124,13 +140,17 @@ fn dispatch() -> Result<()> {
                 "android-clean previews retired Android cache files; --apply removes them; --builds also clears compiled artifacts."
             );
             println!("dev passes additional arguments to Lince.");
+            println!("LINCE_DATA_DIR and LINCE_PORT select dev data and port; LINCE_INSTINCT=1 enables the handbook.");
+            println!(
+                "check-instinct checks both handbook feature paths and shared practice contracts."
+            );
             println!("design help lists focused HTML studies and native preview commands.");
             println!(
                 "check and test forward arguments to Cargo; test-all runs every workspace target."
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
             println!(
-                "dev, check, test and test-all prune superseded incremental snapshots before and after running."
+                "dev, check, check-instinct, test and test-all prune superseded incremental snapshots before and after running."
             );
             Ok(())
         }
@@ -155,6 +175,121 @@ fn checked(command: &mut Command) -> Result<()> {
     } else {
         Err(format!("{:?} exited with {status}", command.get_program()))
     }
+}
+
+fn check_instinct() -> Result<()> {
+    let commands: &[&[&str]] = &[
+        &["check", "--locked", "--package", "lince"],
+        &[
+            "check",
+            "--locked",
+            "--package",
+            "lince",
+            "--features",
+            "instinct",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "anicca",
+            "--test",
+            "instinct",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-interface",
+            "--no-default-features",
+            "--test",
+            "practice",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "engine",
+            "--features",
+            "instinct",
+            "--test",
+            "instinct_import",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-desktop",
+            "--features",
+            "instinct",
+            "--lib",
+            "ontology::tests::",
+            "--",
+            "--test-threads=1",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-desktop",
+            "--features",
+            "instinct",
+            "--lib",
+            "sound::tests::",
+            "--",
+            "--test-threads=1",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-desktop",
+            "--lib",
+            "description::tests::",
+            "--",
+            "--test-threads=1",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-desktop",
+            "--features",
+            "instinct",
+            "--lib",
+            "description::tests::",
+            "--",
+            "--test-threads=1",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-desktop",
+            "--features",
+            "instinct",
+            "--lib",
+            "instinct",
+            "--",
+            "--test-threads=1",
+        ],
+        &[
+            "test",
+            "--locked",
+            "--package",
+            "lince-desktop",
+            "--features",
+            "instinct",
+            "--lib",
+            "kept_cell_reopens",
+            "--",
+            "--test-threads=1",
+        ],
+    ];
+    for args in commands {
+        checked(cargo_command().args(*args))?;
+    }
+    Ok(())
 }
 
 fn dev(extra: &[std::ffi::OsString]) -> Result<()> {

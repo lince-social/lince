@@ -926,7 +926,7 @@ impl Engine {
         let concept_names: HashMap<String, String> = store::concepts::list_all(&self.store.pool)
             .await?
             .into_iter()
-            .map(|c| (c.uid, c.canonical_name))
+            .map(|c| (c.uid.clone(), c.uid))
             .collect();
         let mut object_uids: Vec<String> = assertions
             .iter()

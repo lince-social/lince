@@ -310,6 +310,9 @@ impl Engine {
             let created = store::sqlx::query("INSERT INTO concept (uid, canonical_name, created_at) VALUES (?, ?, ?) ON CONFLICT(uid) DO NOTHING").bind(uid).bind(name).bind(now.to_rfc3339()).execute(&mut *tx).await?.rows_affected() > 0;
             store::sqlx::query("INSERT INTO lingua_concept (lingua_uid, concept_uid, adopted_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING").bind(&preview.vocabulary).bind(uid).bind(now.to_rfc3339()).execute(&mut *tx).await?;
             if created {
+                store::sqlx::query("INSERT INTO concept_source(concept_uid,lingua_uid,original_name,original_language) VALUES(?,?,?,'en')")
+                    .bind(uid).bind(&preview.vocabulary).bind(name).execute(&mut *tx).await?;
+                store::vocabulary::add_term_on(&mut tx, uid, name, "en", None, true).await?;
                 store::sync_ops::log_local_tx(
                     &mut tx,
                     "concept",
@@ -319,6 +322,7 @@ impl Engine {
                     Some(json!(name).to_string()),
                 )
                 .await?;
+                store::vocabulary::log_shared_on(&mut tx, uid).await?;
             }
         }
         for record in &preview.records {

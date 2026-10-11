@@ -26,6 +26,9 @@ pub use lince_interface::controls::{
 #[derive(Component)]
 pub(crate) struct Borderless;
 
+#[derive(Component)]
+pub(crate) struct FixedGeometry;
+
 #[derive(Component, PartialEq)]
 #[require(crate::save_feedback::SaveFeedback)]
 pub(crate) struct Unsaved(pub bool);
@@ -107,6 +110,7 @@ fn button_borders(
         (
             Without<crate::canvas_controls::corner::ControlsCorner>,
             Without<Borderless>,
+            Without<FixedGeometry>,
             Or<(
                 With<WidgetButton>,
                 With<crate::actions::ActionButton>,
@@ -147,6 +151,7 @@ fn button_roundness(world: &mut World) {
         .query_filtered::<Entity, (
             With<Node>,
             Without<crate::canvas_controls::corner::ControlsCorner>,
+            Without<FixedGeometry>,
             Or<(With<WidgetButton>, With<crate::actions::ActionButton>)>,
         )>()
         .iter(world)

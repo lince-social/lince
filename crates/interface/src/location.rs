@@ -20,6 +20,12 @@ pub struct SavePlaceRequest {
 }
 
 #[derive(Message, Clone)]
+pub struct SavedLocationRequest {
+    pub id: String,
+    pub command: nucleus::vocabulary::SavedLocationCommand,
+}
+
+#[derive(Message, Clone)]
 pub struct CopyReferenceRequest {
     pub panel: Entity,
     pub reference: String,
@@ -51,6 +57,11 @@ pub struct Panel {
     longitude: String,
     place_latitude: String,
     place_longitude: String,
+    address: String,
+    saved_location: Option<nucleus::vocabulary::SavedLocation>,
+    addresses: Vec<nucleus::vocabulary::LocationCandidate>,
+    saved_pending: Option<(String, nucleus::vocabulary::SavedLocationCommand, Instant)>,
+    saved_poll: Instant,
     reference: String,
     fields: Vec<(Field, Entity)>,
     status_text: Option<Entity>,
@@ -85,6 +96,7 @@ enum Field {
     Longitude,
     PlaceLatitude,
     PlaceLongitude,
+    Address,
     Person,
     Record,
     Node,
@@ -127,6 +139,10 @@ enum Intent {
     SetPlace,
     CopyReference,
     LoadReference,
+    SearchAddress,
+    BindAddress(String),
+    SelectSaved(Option<String>),
+    RefreshSaved,
 }
 
 pub struct LocationUiPlugin;
@@ -145,6 +161,7 @@ impl Plugin for LocationUiPlugin {
         app.add_message::<Request>()
             .init_resource::<UiTick>()
             .add_message::<SavePlaceRequest>()
+            .add_message::<SavedLocationRequest>()
             .add_message::<AuthenticationRequest>()
             .add_message::<CopyReferenceRequest>()
             .add_systems(Update, maintain)
@@ -164,6 +181,7 @@ pub fn mount(
     person: Option<&str>,
     transfer: Option<&str>,
 ) -> Entity {
+    world.init_resource::<Messages<SavedLocationRequest>>();
     let entity = controls::column(world, parent);
     world.entity_mut(entity).insert(Panel {
         record: record.into(),
@@ -176,6 +194,11 @@ pub fn mount(
         longitude: String::new(),
         place_latitude: String::new(),
         place_longitude: String::new(),
+        address: String::new(),
+        saved_location: None,
+        addresses: Vec::new(),
+        saved_pending: None,
+        saved_poll: Instant::now(),
         reference: String::new(),
         fields: Vec::new(),
         status_text: None,
@@ -309,6 +332,7 @@ fn capture(world: &World, panel: &mut Panel) {
                 Field::Longitude => panel.longitude = value,
                 Field::PlaceLatitude => panel.place_latitude = value,
                 Field::PlaceLongitude => panel.place_longitude = value,
+                Field::Address => panel.address = value,
                 Field::Person => panel.person = value,
                 Field::Record => panel.record = value,
                 Field::Node => panel.node = value,
@@ -349,6 +373,87 @@ fn draw(world: &mut World, entity: Entity) {
                 input(world, entity, "Saved longitude", &panel.place_longitude),
             ));
             button(world, entity, entity, "Set saved place", Intent::SetPlace);
+            panel.fields.push((
+                Field::Address,
+                input(
+                    world,
+                    entity,
+                    "Address Record (@slug or Record ID)",
+                    &panel.address,
+                ),
+            ));
+            button(
+                world,
+                entity,
+                entity,
+                "Find saved addresses",
+                Intent::SearchAddress,
+            );
+            button(
+                world,
+                entity,
+                entity,
+                "Link address Record",
+                Intent::BindAddress(String::new()),
+            );
+            for address in &panel.addresses {
+                button(
+                    world,
+                    entity,
+                    entity,
+                    &format!(
+                        "Link {} · {:.5}, {:.5}",
+                        address.head, address.latitude, address.longitude
+                    ),
+                    Intent::BindAddress(address.record_uid.clone()),
+                );
+            }
+            if let Some(location) = &panel.saved_location {
+                let status = if let Some(selected) = &location.selected {
+                    if let Some(radius) = selected.radius_metres {
+                        format!("Approximate saved area · radius {radius} m")
+                    } else {
+                        format!(
+                            "Using {} · {:.5}, {:.5}",
+                            if selected.assertion_uid.is_none() {
+                                "this Record's coordinates"
+                            } else {
+                                &selected.head
+                            },
+                            selected.latitude,
+                            selected.longitude
+                        )
+                    }
+                } else if location.unavailable {
+                    "The selected saved location is unavailable. Choose another explicitly.".into()
+                } else if !location.candidates.is_empty() {
+                    "Choose which saved location to use.".into()
+                } else {
+                    "No saved location. Set coordinates here or link a named address Record.".into()
+                };
+                label(world, entity, &status);
+                for candidate in &location.candidates {
+                    let title = if candidate.assertion_uid.is_none() {
+                        "Use this Record's coordinates".into()
+                    } else {
+                        format!("Use {}", candidate.head)
+                    };
+                    button(
+                        world,
+                        entity,
+                        entity,
+                        &title,
+                        Intent::SelectSaved(candidate.assertion_uid.clone()),
+                    );
+                }
+            }
+            button(
+                world,
+                entity,
+                entity,
+                "Refresh saved location",
+                Intent::RefreshSaved,
+            );
             label(
                 world,
                 entity,
@@ -670,6 +775,85 @@ fn queue(world: &mut World, panel: &mut Panel, command: Command, then: Vec<Comma
     world.write_message(Request { id, command });
 }
 
+fn queue_saved(
+    world: &mut World,
+    panel: &mut Panel,
+    command: nucleus::vocabulary::SavedLocationCommand,
+) {
+    let id = nucleus::new_uid("saved-location-ui");
+    panel.saved_pending = Some((id.clone(), command.clone(), Instant::now()));
+    panel.saved_poll = Instant::now() + Duration::from_secs(10);
+    world.write_message(SavedLocationRequest { id, command });
+}
+
+fn receive_saved(world: &mut World, id: &str, data: &Result<serde_json::Value, String>) -> bool {
+    let entity = world
+        .query::<(Entity, &Panel)>()
+        .iter(world)
+        .find(|(_, panel)| {
+            panel
+                .saved_pending
+                .as_ref()
+                .is_some_and(|(pending, _, _)| pending == id)
+        })
+        .map(|(entity, _)| entity);
+    let Some(entity) = entity else {
+        return false;
+    };
+    let mut panel = world
+        .entity_mut(entity)
+        .take::<Panel>()
+        .expect("saved location panel");
+    capture(world, &mut panel);
+    let (_, command, _) = panel.saved_pending.take().expect("saved location request");
+    let mut redraw = false;
+    match data {
+        Err(error) => panel.notice = error.clone(),
+        Ok(data) => {
+            if matches!(
+                command,
+                nucleus::vocabulary::SavedLocationCommand::Search { .. }
+            ) {
+                match serde_json::from_value::<Vec<nucleus::vocabulary::LocationCandidate>>(
+                    data["addresses"].clone(),
+                ) {
+                    Ok(addresses) => {
+                        panel.addresses = addresses;
+                        panel.notice = "Choose an address Record with saved coordinates".into();
+                        redraw = true;
+                    }
+                    Err(_) => panel.notice = "The saved address response was invalid".into(),
+                }
+            } else {
+                match serde_json::from_value::<nucleus::vocabulary::SavedLocation>(data.clone()) {
+                    Ok(location) if location.record_uid == panel.record => {
+                        redraw = panel.saved_location.as_ref() != Some(&location);
+                        panel.saved_location = Some(location);
+                        if !matches!(
+                            command,
+                            nucleus::vocabulary::SavedLocationCommand::Inspect { .. }
+                        ) {
+                            panel.addresses.clear();
+                            panel.notice = "Saved location updated".into();
+                            redraw = true;
+                        }
+                    }
+                    _ => panel.notice = "The saved location response was invalid".into(),
+                }
+            }
+        }
+    }
+    panel.saved_poll = Instant::now() + Duration::from_secs(10);
+    if let Some(status) = panel.status_text {
+        controls::status(world, status, &panel.notice);
+    }
+    world.entity_mut(entity).insert(panel);
+    if redraw {
+        draw(world, entity);
+    }
+    true
+}
+
 fn apply(world: &mut World, entity: Entity, intent: Intent) {
     let Some(mut panel) = world.entity_mut(entity).take::<Panel>() else {
         return;
@@ -693,6 +877,42 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
             return Err("Stop the current session before changing its source or recipients".into());
         }
         match intent {
+            Intent::SearchAddress
+            | Intent::BindAddress(_)
+            | Intent::SelectSaved(_)
+            | Intent::RefreshSaved => {
+                use nucleus::vocabulary::SavedLocationCommand as Saved;
+                if panel.saved_pending.is_some() {
+                    return Err("Wait for the saved location change to finish".into());
+                }
+                let command = match intent {
+                    Intent::SearchAddress => Saved::Search {
+                        text: panel.address.clone(),
+                    },
+                    Intent::BindAddress(address) => Saved::Bind {
+                        record: panel.record.clone(),
+                        address: if address.is_empty() {
+                            panel.address.trim().into()
+                        } else {
+                            address
+                        },
+                    },
+                    Intent::SelectSaved(assertion) => Saved::Select {
+                        record: panel.record.clone(),
+                        assertion,
+                        expected_revision: panel
+                            .saved_location
+                            .as_ref()
+                            .map_or(0, |location| location.revision),
+                    },
+                    _ => Saved::Inspect {
+                        record: panel.record.clone(),
+                    },
+                };
+                queue_saved(world, &mut panel, command);
+                panel.notice = "Loading saved location…".into();
+                Ok(false)
+            }
             Intent::CopyReference => {
                 let context = panel
                     .context
@@ -1024,6 +1244,9 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
 }
 
 pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, String>) -> bool {
+    if receive_saved(world, id, &data) {
+        return true;
+    }
     let entity = world
         .query::<(Entity, &Panel)>()
         .iter(world)
@@ -1051,6 +1274,7 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
         }
         Ok(data) => {
             if pending.save_place {
+                panel.saved_poll = Instant::now();
                 panel.notice =
                     "Saved as the Record's place. Its saved-place visibility policy applies."
                         .into();
@@ -1135,6 +1359,27 @@ fn maintain(world: &mut World) {
             .entity_mut(entity)
             .take::<Panel>()
             .expect("location panel");
+        if panel
+            .saved_pending
+            .as_ref()
+            .is_some_and(|(_, _, sent)| sent.elapsed() > Duration::from_secs(12))
+        {
+            panel.saved_pending = None;
+            panel.notice = "Saved location request timed out".into();
+            panel.saved_poll = Instant::now() + Duration::from_secs(10);
+        }
+        if !panel.observer
+            && panel.transfer != panel.record
+            && panel.saved_pending.is_none()
+            && Instant::now() >= panel.saved_poll
+        {
+            let record = panel.record.clone();
+            queue_saved(
+                world,
+                &mut panel,
+                nucleus::vocabulary::SavedLocationCommand::Inspect { record },
+            );
+        }
         if panel
             .pending
             .as_ref()
@@ -1279,6 +1524,12 @@ fn position_text(view: Option<&(View, Instant)>) -> String {
         return "Location unavailable · last fix expired".into();
     }
     if let Some(fix) = &view.fix {
+        if let Some(radius) = view.radius_metres {
+            return format!(
+                "Approximate area · radius {radius} m · {} s old{ending}",
+                age / 1000
+            );
+        }
         let accuracy = fix
             .accuracy_metres
             .map_or(String::new(), |accuracy| format!(" · ±{accuracy:.0} m"));
@@ -1302,6 +1553,71 @@ fn position_text(view: Option<&(View, Instant)>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn linking_and_selecting_saved_addresses_send_identities_without_live_acquisition() {
+        let mut world = World::new();
+        world.insert_resource(Typography(Handle::default()));
+        world.init_resource::<Messages<Request>>();
+        world.init_resource::<Messages<SavedLocationRequest>>();
+        let parent = world.spawn_empty().id();
+        let record = nucleus::new_uid("r");
+        let panel = mount(&mut world, parent, &record, None, None);
+        {
+            let mut state = world.get_mut::<Panel>(panel).unwrap();
+            state.fields.clear();
+            state.address = "@street4".into();
+        }
+        apply(&mut world, panel, Intent::BindAddress(String::new()));
+        let mut cursor = world
+            .resource::<Messages<SavedLocationRequest>>()
+            .get_cursor();
+        let requests: Vec<_> = cursor
+            .read(world.resource::<Messages<SavedLocationRequest>>())
+            .cloned()
+            .collect();
+        assert_eq!(requests.len(), 1);
+        assert!(
+            matches!(&requests[0].command, nucleus::vocabulary::SavedLocationCommand::Bind { record: uid, address } if uid == &record && address == "@street4")
+        );
+        let assertion = nucleus::new_uid("a");
+        let candidate = nucleus::vocabulary::LocationCandidate {
+            assertion_uid: Some(assertion.clone()),
+            record_uid: nucleus::new_uid("r"),
+            head: "Street4".into(),
+            slug: Some("street4".into()),
+            latitude: 1.0,
+            longitude: 2.0,
+            radius_metres: None,
+        };
+        let location = nucleus::vocabulary::SavedLocation {
+            record_uid: record.clone(),
+            candidates: vec![candidate.clone()],
+            selected: Some(candidate),
+            explicit: true,
+            unavailable: false,
+            revision: 4,
+        };
+        assert!(receive(
+            &mut world,
+            &requests[0].id,
+            Ok(serde_json::to_value(location).unwrap())
+        ));
+        apply(
+            &mut world,
+            panel,
+            Intent::SelectSaved(Some(assertion.clone())),
+        );
+        let next: Vec<_> = cursor
+            .read(world.resource::<Messages<SavedLocationRequest>>())
+            .cloned()
+            .collect();
+        assert!(
+            matches!(&next[0].command, nucleus::vocabulary::SavedLocationCommand::Select { assertion: Some(uid), expected_revision: 4, .. } if uid == &assertion)
+        );
+        assert!(world.resource::<Messages<Request>>().is_empty());
+        assert!(world.get::<Panel>(panel).unwrap().settings.is_none());
+    }
 
     #[test]
     fn loading_a_location_reference_never_starts_viewing_or_tracking() {
@@ -1378,7 +1694,19 @@ mod tests {
                 captured_at_ms: chrono::Utc::now().timestamp_millis(),
             }),
             age_ms: Some(0),
+            radius_metres: None,
         }
+    }
+
+    #[test]
+    fn approximate_live_location_reports_area_size_without_point_or_device_accuracy() {
+        let mut area = view();
+        area.radius_metres = Some(2500);
+        let text = position_text(Some(&(area, Instant::now())));
+        assert!(text.contains("radius 2500 m"));
+        assert!(!text.contains("-23.5505"));
+        assert!(!text.contains("-46.6333"));
+        assert!(!text.contains('±'));
     }
 
     #[test]

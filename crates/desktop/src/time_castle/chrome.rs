@@ -792,6 +792,7 @@ mod tests {
                 preview: false,
                 start_date: None,
                 due_date: None,
+                estimate_min: None,
             })
             .collect();
         let ids = entries

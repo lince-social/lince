@@ -217,6 +217,28 @@ impl Checks {
                     if outcome.reason.is_some() { self.coverage[index].reason = outcome.reason; }
                     outcome.witness
                 }
+                Predicate::QuantitiesEqual { cell, records, .. } => {
+                    cells.push(cell.clone());
+                    evaluations = 0;
+                    let mut witness = None;
+                    for (record, expected) in records {
+                        let outcome = quantity::evaluate(&mut quantity::State::default(), world, quantity::Request {
+                            basis: check.options.quantity,
+                            cell, reference: record, expected: Some(expected), comparison: Comparison::Equal,
+                            continuous: false, since: runtime.quantity_cursor,
+                            budget: world.scenario.checking.evaluations.saturating_sub(self.evaluations + evaluations),
+                        }).await?;
+                        evaluations += outcome.evaluations;
+                        evidence.extend(outcome.evidence);
+                        if outcome.reason.is_some() { self.coverage[index].reason = outcome.reason; }
+                        if outcome.witness.is_some() {
+                            witness = outcome.witness;
+                            break;
+                        }
+                        if self.coverage[index].reason.is_some() { break; }
+                    }
+                    witness
+                }
                 Predicate::Nonnegative { cell, record } => {
                     cells.push(cell.clone());
                     let outcome = quantity::evaluate(&mut runtime.quantity, world, quantity::Request {

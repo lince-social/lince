@@ -220,6 +220,7 @@ fn draw(world: &mut World, entity: Entity) {
             continue;
         };
         let mut assertion = syntax::from_value(&entry);
+        if let Some(name) = entry["predicate"].as_str() { assertion.predicate = name.into(); }
         let field = world.get::<Field>(entity).unwrap();
         if let Some(object) = &mut assertion.object {
             if let Some(slug) = field

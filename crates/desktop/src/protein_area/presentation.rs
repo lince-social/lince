@@ -594,7 +594,8 @@ pub(super) fn controls(world: &mut World, row: Entity) {
     if !supported(world, row) {
         return;
     }
-    let controls = crate::sand_panel::row(world, row);
+    let parent = super::record_layout::action_parent(world, row);
+    let controls = crate::sand_panel::row(world, parent);
     world.entity_mut(controls).insert(Controls);
     crate::sand_panel::button(world, controls, row, "Change presentation…", Open(row));
     crate::sand_panel::button(world, controls, row, "Undo presentation", Undo(row));

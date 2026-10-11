@@ -489,17 +489,6 @@ pub async fn upsert_concept(
     if superseded(&mut tx, &stamp).await? {
         return Ok(());
     }
-    let name_holder: Option<String> =
-        sqlx::query("SELECT uid FROM concept WHERE canonical_name = ?")
-            .bind(canonical_name)
-            .fetch_optional(&mut *tx)
-            .await?
-            .map(|r| r.get("uid"));
-    if let Some(holder) = name_holder {
-        if holder != uid {
-            return Ok(());
-        }
-    }
     let res = sqlx::query(
         "INSERT OR IGNORE INTO concept (uid, canonical_name, origin_organ, created_at)
          VALUES (?, ?, ?, ?)",
@@ -511,7 +500,7 @@ pub async fn upsert_concept(
     .execute(&mut *tx)
     .await?;
     if res.rows_affected() == 0 {
-        sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ?")
+        sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ? AND NOT EXISTS(SELECT 1 FROM concept_source WHERE concept_uid=concept.uid)")
             .bind(canonical_name)
             .bind(uid)
             .execute(&mut *tx)

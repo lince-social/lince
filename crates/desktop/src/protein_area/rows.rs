@@ -142,8 +142,12 @@ pub(super) fn content(
         world.entity_mut(row).insert(crate::full_record::RecordCard);
     }
     fields(world, row, config, data, binding.clone(), sections.as_ref());
-    if config.record_cards && let Some(binding) = &binding && matches!(binding.source, Source::Local) {
-        crate::location::record_controls(world, row, &binding.uid, None, None);
+    let actions = super::record_layout::action_parent(world, row);
+    if config.record_cards
+        && let Some(binding) = &binding
+        && matches!(binding.source, Source::Local)
+    {
+        crate::location::record_controls(world, actions, &binding.uid, None, None);
     }
     if config.record_cards
         && let Some(binding) = binding.clone()
@@ -153,7 +157,7 @@ pub(super) fn content(
             .spawn((
                 Square,
                 ActionButton::new(row, crate::actions![crate::full_record::Simulate(binding)]),
-                ChildOf(row),
+                ChildOf(actions),
             ))
             .id();
         crate::edit_mode::label(world, button, "Simulate", 14.0);
@@ -176,7 +180,7 @@ pub(super) fn content(
     {
         crate::sand_panel::button(
             world,
-            row,
+            actions,
             row,
             "Extensions…",
             crate::record_extensions::Open(binding),
@@ -188,7 +192,7 @@ pub(super) fn content(
                 Square,
                 ActionButton::new(row, crate::actions![Delete(binding.clone())]),
                 IconButton::new(Icon::Delete, "Delete this Record"),
-                ChildOf(row),
+                ChildOf(actions),
             ));
         }
     }
@@ -235,12 +239,16 @@ pub(super) fn fields(
                     } else {
                         px((config.width - 24.0).max(24.0))
                     },
-                    height: if grow_y || grow_x {
+                    height: if config.record_cards || grow_y || grow_x {
                         Val::Auto
                     } else {
                         px(property.height)
                     },
-                    min_height: px(property.height),
+                    min_height: px(if config.record_cards {
+                        0.0
+                    } else {
+                        property.height
+                    }),
                     flex_shrink: 0.0,
                     padding: UiRect::all(px(4)),
                     overflow: match property.overflow {
@@ -343,7 +351,13 @@ pub(super) fn fields(
             let entity = world.spawn(bundle).id();
             let mut editor = world.get_mut::<EditableText>(entity).unwrap();
             editor.max_characters = Some(65_536);
-            editor.visible_lines = None;
+            editor.visible_lines =
+                if config.record_cards && !matches!(property.property.as_str(), "head" | "body") {
+                    Some(1.0)
+                } else {
+                    None
+                };
+            editor.allow_newlines = matches!(property.property.as_str(), "head" | "body");
             world.entity_mut(entity).insert((
                 PropertyEditor {
                     property: property.property.clone(),
@@ -389,7 +403,11 @@ pub(super) fn fields(
                     px((width - 8.0).max(16.0))
                 },
                 height: if editable {
-                    px((property.height - 8.0).max(24.0))
+                    px(if config.record_cards {
+                        32.0
+                    } else {
+                        (property.height - 8.0).max(24.0)
+                    })
                 } else {
                     Val::Auto
                 },
@@ -404,17 +422,37 @@ pub(super) fn fields(
                 },
                 ..default()
             },
-            TextLayout::linebreak(if horizontal && !grow_x {
-                bevy::text::LineBreak::NoWrap
-            } else {
-                bevy::text::LineBreak::WordBoundary
-            }),
+            TextLayout::linebreak(
+                if (horizontal && !grow_x)
+                    || (config.record_cards
+                        && !matches!(property.property.as_str(), "head" | "body"))
+                {
+                    bevy::text::LineBreak::NoWrap
+                } else {
+                    bevy::text::LineBreak::WordBoundary
+                },
+            ),
             ChildOf(container),
         ));
+        if config.record_cards && property.property == "head" {
+            world
+                .entity_mut(text_entity)
+                .insert(crate::sand::Borderless);
+            world.get_mut::<Node>(text_entity).unwrap().border = UiRect::all(px(0));
+        }
+        if config.record_cards && !matches!(property.property.as_str(), "head" | "body") {
+            let font = world.resource::<crate::theme::Typography>().text(16.0);
+            world.entity_mut(text_entity).insert(font);
+            world.get_mut::<Node>(text_entity).unwrap().padding = UiRect::all(px(4));
+        }
         if editable && property.overflow != OverflowMode::Clip {
             world.entity_mut(text_entity).insert(EditorSize {
                 mode: property.overflow,
-                minimum: Vec2::new((width - 8.0).max(16.0), (property.height - 8.0).max(24.0)),
+                minimum: if config.record_cards {
+                    Vec2::new(48.0, 32.0)
+                } else {
+                    Vec2::new((width - 8.0).max(16.0), (property.height - 8.0).max(24.0))
+                },
                 maximum_width: (config.width - 32.0).max(16.0),
                 observed: String::new(),
                 measuring: false,
@@ -447,10 +485,31 @@ pub(super) fn fields(
         }
         if editable && !matches!(property.property.as_str(), "head" | "body") {
             if matches!(property.property.as_str(), "start_date" | "due_date") {
+                let controls = world
+                    .spawn((
+                        Node {
+                            width: percent(100),
+                            min_width: px(0),
+                            column_gap: px(4),
+                            align_items: AlignItems::Center,
+                            flex_shrink: 0.0,
+                            ..default()
+                        },
+                        ChildOf(container),
+                    ))
+                    .id();
+                world.entity_mut(text_entity).insert(ChildOf(controls));
+                {
+                    let mut node = world.get_mut::<Node>(text_entity).unwrap();
+                    node.width = px(0);
+                    node.flex_grow = 1.0;
+                    node.flex_shrink = 1.0;
+                    node.min_width = px(48);
+                }
                 let button =
                     crate::calendar::date_button(world, row, text_entity, &property.property);
-                world.entity_mut(button).insert(ChildOf(container));
-                crate::schedule_editor::attach(world, container, text_entity);
+                world.entity_mut(button).insert(ChildOf(controls));
+                crate::schedule_editor::attach(world, controls, text_entity);
             }
         }
     }
@@ -1012,9 +1071,9 @@ pub(super) fn layout(world: &mut World) {
             .into_iter()
             .flatten()
             .filter(|child| {
-                world
-                    .get::<Node>(**child)
-                    .is_some_and(|node| node.display != Display::None)
+                world.get::<Node>(**child).is_some_and(|node| {
+                    node.display != Display::None && node.position_type != PositionType::Absolute
+                })
             })
             .filter_map(|child| world.get::<ComputedNode>(*child))
             .collect();

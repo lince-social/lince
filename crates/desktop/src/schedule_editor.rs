@@ -57,8 +57,18 @@ impl Action for Open {
         for entity in existing {
             world.despawn(entity);
         }
-        let Some(parent) = world.get::<ChildOf>(target).map(ChildOf::parent) else {
-            return;
+        let mut cursor = target;
+        let parent = loop {
+            if let Some(root) = world.get::<crate::sand::InBox>(cursor) {
+                break root.0;
+            }
+            if world.get::<crate::container::BoxRoot>(cursor).is_some() {
+                break cursor;
+            }
+            let Some(parent) = world.get::<ChildOf>(cursor) else {
+                return;
+            };
+            cursor = parent.parent();
         };
         let value = world
             .get::<EditableText>(target)
@@ -87,7 +97,7 @@ impl Action for Open {
             .spawn((
                 Node {
                     width: px(340),
-                    min_width: px(280),
+                    min_width: px(0),
                     position_type: PositionType::Absolute,
                     left: px(0),
                     top: px(34),
@@ -97,7 +107,8 @@ impl Action for Open {
                     border: UiRect::all(px(1)),
                     ..default()
                 },
-                ZIndex(80),
+                GlobalZIndex(90),
+                crate::inspection::InspectionExcluded,
                 crate::token_style::background(crate::tokens::Token::Surface),
                 crate::token_style::border(crate::tokens::Token::Accent),
                 ChildOf(parent),
@@ -145,6 +156,42 @@ impl Action for Open {
             choices,
             initial,
         });
+        crate::scroll_sand::attach(world, panel);
+        maintain(world);
+    }
+}
+
+pub(crate) fn maintain(world: &mut World) {
+    let panels: Vec<_> = world
+        .query::<(Entity, &Editor)>()
+        .iter(world)
+        .map(|(entity, editor)| (entity, editor.target))
+        .collect();
+    for (panel, target) in panels {
+        if world.get::<EditableText>(target).is_none() {
+            world.despawn(panel);
+            continue;
+        }
+        let root = world.get::<ChildOf>(panel).unwrap().parent();
+        let viewport = world
+            .get::<ComputedNode>(root)
+            .map(|node| node.size() * node.inverse_scale_factor())
+            .filter(|size| size.min_element() > 0.0)
+            .unwrap_or(Vec2::new(1000.0, 800.0));
+        let bounds = crate::topology::presentation::bounds(world, target).unwrap_or(
+            Rect::from_corners(Vec2::splat(16.0), Vec2::new(340.0, 80.0)),
+        );
+        let width = 340.0_f32.min((viewport.x - 16.0).max(1.0));
+        let height = world.get::<ComputedNode>(panel).map_or(480.0, |node| {
+            (node.size().y * node.inverse_scale_factor()).max(480.0)
+        });
+        let mut node = world.get::<Node>(panel).unwrap().clone();
+        node.width = px(width);
+        node.max_height = px((viewport.y - 16.0).max(1.0));
+        node.overflow = Overflow::scroll_y();
+        node.left = px(bounds.min.x.clamp(8.0, (viewport.x - width - 8.0).max(8.0)));
+        node.top = px((bounds.max.y + 4.0).clamp(8.0, (viewport.y - height - 8.0).max(8.0)));
+        world.get_mut::<Node>(panel).unwrap().set_if_neq(node);
     }
 }
 
@@ -282,5 +329,66 @@ struct Close;
 impl Action for Close {
     fn apply(&self, world: &mut World, owner: Entity) {
         world.despawn(owner);
+    }
+}
+
+pub(crate) mod tests {
+    use super::*;
+
+    crate::laboratory_cases! {
+        time_editor_escapes_property_clipping_and_reuses_its_target,
+    }
+
+    #[cfg_attr(test, test)]
+    fn time_editor_escapes_property_clipping_and_reuses_its_target() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Font>>();
+        world.init_resource::<crate::theme::Typography>();
+        let root = world
+            .spawn((crate::container::BoxRoot, Node::default()))
+            .id();
+        let property = world
+            .spawn((
+                Node {
+                    width: px(240),
+                    height: px(32),
+                    overflow: Overflow::clip(),
+                    ..default()
+                },
+                ChildOf(root),
+            ))
+            .id();
+        let target = world
+            .spawn((
+                crate::sand::text_editor(
+                    "2026-10-08",
+                    world.resource::<crate::theme::Typography>(),
+                    0,
+                ),
+                ChildOf(property),
+            ))
+            .id();
+        for _ in 0..5 {
+            Open.apply(&mut world, target);
+            let (panel, _) = world.query::<(Entity, &Editor)>().single(&world).unwrap();
+            assert_eq!(world.get::<ChildOf>(panel).unwrap().parent(), root);
+            assert_eq!(
+                world.get::<Node>(panel).unwrap().position_type,
+                PositionType::Absolute
+            );
+            assert_eq!(world.get::<Node>(property).unwrap().height, px(32));
+            assert_eq!(
+                world.get::<EditableText>(target).unwrap().value(),
+                "2026-10-08"
+            );
+            assert!(world.get::<crate::scroll_sand::ScrollSand>(panel).is_some());
+        }
+        let panel = world
+            .query_filtered::<Entity, With<Editor>>()
+            .single(&world)
+            .unwrap();
+        Close.apply(&mut world, panel);
+        assert!(world.get::<EditableText>(target).is_some());
+        assert_eq!(world.query::<&Editor>().iter(&world).count(), 0);
     }
 }

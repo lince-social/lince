@@ -334,6 +334,7 @@ async fn prepare(
                 check.options.window.until_ms.map(shifted).transpose()?;
             match &mut check.predicate {
                 nucleus::simulation::Predicate::QuantityEquals { at_ms, .. }
+                | nucleus::simulation::Predicate::QuantitiesEqual { at_ms, .. }
                 | nucleus::simulation::Predicate::Converged { at_ms, .. } => {
                     *at_ms = shifted(*at_ms)?
                 }

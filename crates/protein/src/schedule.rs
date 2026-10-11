@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 
 mod admitted;
+mod allocation;
 
 pub fn query(window: Window, filter: Vec<Predicate>) -> Protein {
     let mut query = crate::calendar::query(window, filter);
@@ -26,6 +27,7 @@ pub(super) async fn execute(
     }
     let mut manual = query.clone();
     manual.source = Source::Record;
+    manual.order.clear();
     manual.fields = Some(
         [
             "uid",
@@ -44,7 +46,7 @@ pub(super) async fn execute(
     manual.limit = Some(nucleus::projection::MAX_SPANS + 1);
     manual
         .filter
-        .retain(|filter| !matches!(filter, Predicate::ProjectionWindow(_)));
+        .retain(|filter| !crate::calendar::is_window(filter));
     let live = crate::execute_records(store, &manual, visible, actor).await?;
     let records: HashMap<_, _> = live
         .iter()
@@ -217,6 +219,9 @@ pub(super) async fn execute(
                 })
                 .collect();
             for entry in schedule {
+                if !entry.time.overlaps(context.window.from_ms, context.window.until_ms) {
+                    continue;
+                }
                 if refreshing
                     && (entry.preview || matches!(entry.cause, nucleus::simulation::Cause::Seed {}))
                 {
@@ -277,10 +282,27 @@ pub(super) async fn execute(
             };
         }
     }
+    let base_ms = match &status {
+        Status::Ready { base_ms, .. } | Status::Incomplete { base_ms, .. } => *base_ms,
+        Status::Updating {} => now,
+    };
+    allocation::apply(store, query, &mut output, base_ms).await?;
     output.sort_by(|a, b| {
         a["time"]["from_ms"]
             .as_i64()
             .cmp(&b["time"]["from_ms"].as_i64())
+            .then_with(|| {
+                let order = |row: &Value| {
+                    Some((
+                        row["origin"]["allocation_order"][0].as_i64()?,
+                        row["origin"]["allocation_order"][1].as_u64()?,
+                    ))
+                };
+                match (order(a), order(b)) {
+                    (Some(a), Some(b)) => a.cmp(&b),
+                    _ => std::cmp::Ordering::Equal,
+                }
+            })
             .then_with(|| a["uid"].as_str().cmp(&b["uid"].as_str()))
     });
     let limit = query

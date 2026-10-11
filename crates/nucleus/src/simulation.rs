@@ -251,6 +251,11 @@ pub enum Predicate {
         expected: Quantity,
         at_ms: i64,
     },
+    QuantitiesEqual {
+        cell: String,
+        records: std::collections::BTreeMap<String, Quantity>,
+        at_ms: i64,
+    },
     Nonnegative {
         cell: String,
         record: String,

@@ -1,0 +1,28 @@
+[package]
+name = "lince-map"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+bytes = "1"
+flate2 = "1"
+futures.workspace = true
+galileo = { git = "https://github.com/galileo-map/galileo", rev = "42550766d38faca071805f57e7317c5addf1efc3", default-features = false, features = ["wgpu", "geojson", "rustybuzz", "image"] }
+galileo-mvt = { git = "https://github.com/galileo-map/galileo", rev = "42550766d38faca071805f57e7317c5addf1efc3" }
+geojson = "0.24"
+geozero = { version = "0.13", default-features = false, features = ["with-mvt"] }
+pmtiles = { version = "=0.24.1", default-features = false, features = ["mmap-async-tokio"] }
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["fs", "net"] }
+
+[dev-dependencies]
+pmtiles = { version = "=0.24.1", default-features = false, features = ["write"] }
+tempfile = "=3.27.0"
+
+[lints]
+workspace = true

@@ -24,6 +24,11 @@ pub struct OntologySand {
     tab: usize,
     page: usize,
     name: Entity,
+    language: Entity,
+    definition: Entity,
+    preferred: bool,
+    personal: bool,
+    term: String,
     choices: [String; 6],
     choice_pages: [usize; 6],
     choosers: Vec<(Entity, usize)>,
@@ -68,6 +73,14 @@ enum Command {
     Assert,
     Identity,
     Retract(String),
+    Term(String),
+    AddTerm,
+    EditTerm,
+    RetireTerm,
+    Preferred,
+    Personal,
+    Language,
+    BindLocation(bool, bool),
 }
 
 impl Action for Command {
@@ -81,6 +94,41 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::Preferred | Self::Personal => {
+                let mut view = world.get_mut::<OntologySand>(owner).unwrap();
+                if matches!(self, Self::Preferred) {
+                    view.preferred = !view.preferred;
+                } else {
+                    view.personal = !view.personal;
+                }
+                view.dirty = true;
+            }
+            Self::Term(uid) => {
+                let term = view.rows[1]
+                    .iter()
+                    .flat_map(|row| row["terms"].as_array().into_iter().flatten())
+                    .find(|term| term["uid"] == *uid)
+                    .cloned();
+                if let Some(term) = term {
+                    let mut view = world.get_mut::<OntologySand>(owner).unwrap();
+                    view.term = uid.clone();
+                    view.preferred = term["preferred"].as_bool().unwrap_or(false);
+                    view.personal = term["owner_uid"].is_string();
+                    view.dirty = true;
+                    let fields = [
+                        (view.name, term["name"].as_str().unwrap_or("").to_owned()),
+                        (
+                            view.language,
+                            term["language"].as_str().unwrap_or("").to_owned(),
+                        ),
+                    ];
+                    for (field, text) in fields {
+                        if let Some(mut field) = world.get_mut::<bevy::text::EditableText>(field) {
+                            field.editor.set_text(&text);
+                        }
+                    }
+                }
+            }
             Self::ChoicePage(slot, next) => {
                 let mut view = world.get_mut::<OntologySand>(owner).unwrap();
                 let page = &mut view.choice_pages[*slot];
@@ -101,6 +149,10 @@ impl Action for Command {
             Self::Choose(slot, uid) => {
                 let mut view = world.get_mut::<OntologySand>(owner).unwrap();
                 view.choices[*slot] = uid.clone();
+                if *slot == 1 {
+                    view.term.clear();
+                    view.page = 0;
+                }
                 view.dirty = true;
                 if *slot == view.tab && *slot < 2 {
                     let name = view.name;
@@ -190,6 +242,73 @@ fn mutation(
         }
     };
     Ok(match command {
+        Command::Create if view.tab == 3 => Backend::Vocabulary {
+            request: nucleus::vocabulary::Command::CreateConcept {
+                vocabulary: selected(view, 0)?,
+                name: name()?,
+                language: panel::value(world, view.language)?.trim().into(),
+                definition: panel::value(world, view.definition)?.trim().into(),
+                derived_from: None,
+            },
+        },
+        Command::AddTerm => Backend::Vocabulary {
+            request: nucleus::vocabulary::Command::AddTerm {
+                concept: selected(view, 1)?,
+                name: name()?,
+                language: panel::value(world, view.language)?.trim().into(),
+                preferred: view.preferred,
+                personal: view.personal,
+            },
+        },
+        Command::EditTerm | Command::RetireTerm => {
+            let term = view.rows[1]
+                .iter()
+                .find(|row| row["uid"] == selected(view, 1).unwrap_or_default())
+                .and_then(|row| row["terms"].as_array())
+                .and_then(|terms| terms.iter().find(|term| term["uid"] == view.term))
+                .ok_or("Choose a term of the selected Concept")?;
+            let revision = term["revision"]
+                .as_i64()
+                .ok_or("Refresh the selected term")?;
+            Backend::Vocabulary {
+                request: if matches!(command, Command::EditTerm) {
+                    nucleus::vocabulary::Command::EditTerm {
+                        term: view.term.clone(),
+                        expected_revision: revision,
+                        name: name()?,
+                        language: panel::value(world, view.language)?.trim().into(),
+                        preferred: view.preferred,
+                    }
+                } else {
+                    nucleus::vocabulary::Command::RetireTerm {
+                        term: view.term.clone(),
+                        expected_revision: revision,
+                    }
+                },
+            }
+        }
+        Command::Language => Backend::Vocabulary {
+            request: nucleus::vocabulary::Command::SetLanguage {
+                language: panel::value(world, view.language)?.trim().into(),
+            },
+        },
+        Command::BindLocation(enabled, write) => {
+            let concept = selected(view, 1)?;
+            let row = view.rows[1]
+                .iter()
+                .find(|row| row["uid"] == concept)
+                .ok_or("Choose a Concept")?;
+            Backend::Vocabulary {
+                request: nucleus::vocabulary::Command::BindLocationConcept {
+                    concept,
+                    enabled: *enabled,
+                    write: *write,
+                    expected_revision: row["binding_revision"]
+                        .as_i64()
+                        .ok_or("Refresh location bindings")?,
+                },
+            }
+        }
         Command::Create if view.tab == 0 => Backend::CreateLingua {
             name: name()?,
             visibility: view.choices[5].clone(),

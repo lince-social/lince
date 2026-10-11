@@ -748,8 +748,7 @@
             ])
             ++ interfaceLinuxBuildInputs;
 
-          interfaceLinuxRuntimeTools =
-            [ pkgs.bash ] ++ lib.optionals (system == "x86_64-linux") [ self.packages.${system}.goose ];
+          interfaceLinuxRuntimeTools = [ pkgs.bash ];
 
           mkLince =
             { pname, ui }:
@@ -915,27 +914,6 @@
           packages = {
             default = lince-ui;
             inherit lince lince-ui;
-          }
-          // lib.optionalAttrs (system == "x86_64-linux") {
-            goose = pkgs.stdenvNoCC.mkDerivation {
-              pname = "goose-cli";
-              version = "1.52.0";
-              src = pkgs.fetchurl {
-                url = "https://github.com/aaif-goose/goose/releases/download/v1.52.0/goose-x86_64-unknown-linux-musl.tar.gz";
-                hash = "sha256-/chmUyhaiffcrW52c2rxaIqyzeRGYbCJMosvxAu3n58=";
-              };
-              sourceRoot = ".";
-              dontStrip = true;
-              installPhase = ''
-                install -Dm755 goose "$out/bin/goose"
-              '';
-              meta = {
-                description = "Goose ACP agent CLI";
-                license = lib.licenses.asl20;
-                mainProgram = "goose";
-                platforms = [ "x86_64-linux" ];
-              };
-            };
           };
 
           apps = {
@@ -1114,8 +1092,7 @@
                 libclang
               ])
               ++ interfaceLinuxNativeBuildInputs
-              ++ interfaceLinuxBuildInputs
-              ++ lib.optionals (system == "x86_64-linux") [ self.packages.${system}.goose ];
+              ++ interfaceLinuxBuildInputs;
 
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1
@@ -1211,8 +1188,7 @@
                 ]
               )
               ++ interfaceLinuxNativeBuildInputs
-              ++ interfaceLinuxBuildInputs
-              ++ lib.optionals (system == "x86_64-linux") [ self.packages.${system}.goose ];
+              ++ interfaceLinuxBuildInputs;
 
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1

@@ -219,48 +219,6 @@ async fn private_urls_never_enter_the_shared_question_output() {
 }
 
 #[tokio::test]
-async fn speech_transcribes_fixture_audio_without_creating_a_chat_session() {
-    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-    let (root, mut config, old) = fixture().await;
-    old.close();
-    config.environment.insert("TEST_GOOSE".into(), "1".into());
-    config.environment.insert(
-        "TEST_REQUEST_LOG".into(),
-        root.path().join("speech-requests").to_string_lossy().into(),
-    );
-    let connection = Connection::open(&config).await.unwrap();
-    let providers = fiote::speech::catalog(&connection).await.unwrap();
-    assert_eq!(providers[0].id, "local");
-    let mut bytes = std::io::Cursor::new(Vec::new());
-    {
-        let mut writer = hound::WavWriter::new(
-            &mut bytes,
-            hound::WavSpec {
-                channels: 1,
-                sample_rate: 16_000,
-                bits_per_sample: 16,
-                sample_format: hound::SampleFormat::Int,
-            },
-        )
-        .unwrap();
-        for _ in 0..1600 {
-            writer.write_sample(1000i16).unwrap();
-        }
-        writer.finalize().unwrap();
-    }
-    let audio = Secret(BASE64.encode(bytes.into_inner()));
-    assert_eq!(
-        fiote::speech::transcribe(connection, "local".into(), audio)
-            .await
-            .unwrap(),
-        "Fixture transcript"
-    );
-    let requests = std::fs::read_to_string(root.path().join("speech-requests")).unwrap();
-    assert!(!requests.contains("session/new"));
-    assert!(!requests.contains("session/prompt"));
-}
-
-#[tokio::test]
 async fn questions_validate_and_route_one_response_without_an_extra_prompt() {
     let (_root, config, connection) = fixture().await;
     let pending = connection.clone();
@@ -545,7 +503,6 @@ async fn connection_check_requires_login_and_never_sends_a_prompt() {
     let log = root.path().join("requests.log");
     config.environment.extend([
         ("TEST_CHECK_ONLY".into(), "1".into()),
-        ("TEST_GOOSE".into(), "1".into()),
         ("TEST_REQUEST_LOG".into(), log.display().to_string()),
         (
             "TEST_LOGIN_STATE".into(),
@@ -556,99 +513,45 @@ async fn connection_check_requires_login_and_never_sends_a_prompt() {
     let mut check = fiote::acp::ConnectionCheck::default();
     assert!(
         connection
-            .check(
-                &config,
-                &[serde_json::json!({"providerId":"one","acp":false})],
-                &mut check
-            )
+            .check(&config, &mut check)
             .await
             .err()
             .unwrap()
             .contains("Authentication required")
     );
     assert!(!check.ready);
-    connection
-        .extension_wait(
-            "_goose/unstable/providers/config/authenticate",
-            serde_json::json!({"providerId":"one"}),
-        )
-        .await
-        .unwrap();
+    connection.authenticate("browser").await.unwrap();
     connection.close();
     let connection = Connection::open(&config).await.unwrap();
     let mut check = fiote::acp::ConnectionCheck::default();
-    let session = connection
-        .check(
-            &config,
-            &[serde_json::json!({"providerId":"one","acp":false})],
-            &mut check,
-        )
-        .await
-        .unwrap();
+    let session = connection.check(&config, &mut check).await.unwrap();
     assert!(check.ready);
     assert_eq!(session.values()["model"], "large");
-    assert!(check.model.contains("listed by provider"));
-    assert_eq!(check.login, "Provider settings present");
+    assert_eq!(check.model, "large");
+    assert_eq!(
+        check.login,
+        "Accepted session; credentials not independently checked"
+    );
     assert_eq!(check.session, "Opened successfully");
     connection.close();
     let requests = std::fs::read_to_string(log).unwrap();
     assert!(!requests.contains("session/prompt"));
-    assert!(requests.contains("supported-models/list"));
+    assert!(requests.contains("authenticate"));
 }
 
 #[tokio::test]
-async fn connection_check_rejects_invalid_credentials_and_expired_provider_login() {
-    let (_root, mut config, connection) = fixture().await;
-    connection.close();
-    config.environment.extend([
-        ("TEST_CHECK_ONLY".into(), "1".into()),
-        ("TEST_GOOSE".into(), "1".into()),
-        ("TEST_INVALID_CREDENTIAL".into(), "1".into()),
-    ]);
-    let connection = Connection::open(&config).await.unwrap();
-    let mut check = fiote::acp::ConnectionCheck::default();
-    assert!(
-        connection
-            .check(
-                &config,
-                &[serde_json::json!({"providerId":"one","acp":false})],
-                &mut check
-            )
-            .await
-            .err()
-            .unwrap()
-            .contains("Authentication required")
-    );
-    assert!(!check.ready);
-    let providers = [serde_json::json!({"providerId":"one","acp":true})];
-    assert!(
-        connection
-            .check(&config, &providers, &mut check)
-            .await
-            .err()
-            .unwrap()
-            .contains("sign-in expired")
-    );
-    assert!(!check.ready);
-    connection.close();
-}
-
-#[tokio::test]
-async fn connection_check_distinguishes_chat_from_unavailable_tool_bridge() {
+async fn connection_check_and_session_use_the_bundled_stdio_tool_bridge() {
     let (_root, mut config, connection) = fixture().await;
     connection.close();
     config.environment.insert("TEST_NO_HTTP".into(), "1".into());
     let connection = Connection::open(&config).await.unwrap();
     let mut check = fiote::acp::ConnectionCheck::default();
-    connection.check(&config, &[], &mut check).await.unwrap();
+    connection.check(&config, &mut check).await.unwrap();
     assert!(check.ready);
     assert_eq!(check.session, "Opened successfully");
-    assert!(
-        connection
-            .session(&config, tools(), None)
-            .await
-            .unwrap_err()
-            .contains("stdio tool bridge")
+    assert_eq!(
+        connection.session(&config, tools(), None).await.unwrap(),
+        "test-session"
     );
     connection.close();
 }
@@ -717,23 +620,6 @@ async fn stopping_permission_wait_preserves_partial_text_and_prevents_the_tool()
     assert!(result.is_err());
     assert_eq!(*output.text.lock().await, "Hello from ");
     assert!(!root.path().join("hello.txt").exists());
-}
-
-#[tokio::test]
-async fn captures_device_code_without_provider_specific_logic() {
-    let (_root, _config, connection) = fixture().await;
-    connection
-        .extension_wait(
-            "_goose/unstable/providers/config/authenticate",
-            serde_json::json!({"providerId":"test"}),
-        )
-        .await
-        .unwrap();
-    assert_eq!(
-        connection.login_notice.lock().await.as_ref().unwrap()["userCode"],
-        "test-code"
-    );
-    connection.close();
 }
 
 #[tokio::test]
@@ -863,7 +749,7 @@ async fn non_http_harness_check_uses_standard_acp_without_inference() {
         .insert("TEST_REQUEST_LOG".into(), log.display().to_string());
     let connection = Connection::open(&config).await.unwrap();
     let mut check = fiote::acp::ConnectionCheck::default();
-    let options = connection.check(&config, &[], &mut check).await.unwrap();
+    let options = connection.check(&config, &mut check).await.unwrap();
     assert!(check.ready);
     assert!(!options.options.is_empty());
     assert!(

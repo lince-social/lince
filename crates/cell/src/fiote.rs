@@ -666,19 +666,6 @@ impl Service for Host {
                 self.authenticate_agent(&record, &method).await?;
                 record
             }
-            Request::AgentProvider { record, provider } => {
-                self.select_agent_provider(&record, &provider).await?;
-                self.remember_connection_configuration(&record).await?;
-                record
-            }
-            Request::AgentProviderLogin {
-                record,
-                fields,
-                password,
-            } => {
-                self.agent_provider_login(&record, fields, password).await?;
-                record
-            }
             Request::AgentQuestionAnswer {
                 record,
                 request,

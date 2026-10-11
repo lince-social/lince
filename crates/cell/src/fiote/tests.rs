@@ -41,31 +41,21 @@ async fn native_refresh_guards_serialize_separate_connections_and_release_on_dro
 async fn agent_login_check_and_conversation_workflow() {
     let (host, _, root, record, thread) = fixture(false).await;
     let log = root.path().join("requests.log");
-    let config = serde_json::from_value(json!({
+    let config: ::fiote::acp::Config = serde_json::from_value(json!({
         "command":std::env::var("LINCE_TEST_AGENT_BIN").unwrap(),"args":[],"directory":root.path(),
-        "environment":{"TEST_GOOSE":"1","TEST_HOST_WORKFLOW":"1","TEST_LOGIN_STATE":root.path().join("login"),"TEST_REQUEST_LOG":log}
+        "environment":{"TEST_HOST_WORKFLOW":"1","TEST_LOGIN_STATE":root.path().join("login"),"TEST_REQUEST_LOG":log}
     })).unwrap();
     let status = host
         .handle(Request::AgentDiscover {
             record: record.clone(),
-            config,
+            config: config.clone(),
         })
         .await
         .unwrap();
-    assert_eq!(
-        status.agent_info.unwrap()["providers"][0]["providerId"],
-        "one"
-    );
-    host.handle(Request::AgentProvider {
+    assert_eq!(status.agent_info.unwrap()["agentInfo"]["name"], "test-agent");
+    host.handle(Request::AgentAuthenticate {
         record: record.clone(),
-        provider: "one".into(),
-    })
-    .await
-    .unwrap();
-    host.handle(Request::AgentProviderLogin {
-        record: record.clone(),
-        fields: Secret("{}".into()),
-        password: None,
+        method: "browser".into(),
     })
     .await
     .unwrap();
@@ -82,7 +72,6 @@ async fn agent_login_check_and_conversation_workflow() {
             .unwrap()
             .contains("Sign-in completed")
     );
-    let config = host.load(&record).unwrap().unwrap().agent.unwrap();
     let status = host
         .handle(Request::AgentCheck {
             record: record.clone(),

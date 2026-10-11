@@ -159,7 +159,6 @@ pub struct Connection {
     task: Task,
     closed: watch::Sender<bool>,
     active: Arc<AtomicBool>,
-    pub login_notice: Arc<Mutex<Option<Value>>>,
     states: Arc<Mutex<BTreeMap<String, SessionState>>>,
 }
 
@@ -236,8 +235,6 @@ impl Connection {
         let questions = questions::Questions::default();
         let question_updates = questions.clone();
         let question_closed = closed.subscribe();
-        let login_notice = Arc::new(Mutex::new(None));
-        let login_updates = login_notice.clone();
         let states = Arc::new(Mutex::new(BTreeMap::<String, SessionState>::new()));
         let state_updates = states.clone();
         let task = Task(tokio::spawn(async move {
@@ -247,14 +244,6 @@ impl Connection {
                 .builder()
                 .on_receive_notification(
                     async move |message: UntypedMessage, _cx| {
-                        if message.method()
-                            == "_goose/unstable/providers/authentication/device-code"
-                        {
-                            if message.params().to_string().len() <= 8192 {
-                                *login_updates.lock().await = Some(message.params().clone());
-                            }
-                            return Ok(());
-                        }
                         if message.method() != "session/update" {
                             return Ok(());
                         }
@@ -331,14 +320,6 @@ impl Connection {
                                                             BooleanConfigOptionCapabilities::new(),
                                                         ),
                                                 ),
-                                            )
-                                            .meta(
-                                                serde_json::from_value::<
-                                                    serde_json::Map<String, Value>,
-                                                >(
-                                                    json!({"goose":{"customNotifications":true}})
-                                                )
-                                                .unwrap(),
                                             ),
                                     )
                                     .client_info(Implementation::new(
@@ -371,7 +352,6 @@ impl Connection {
                 task,
                 closed,
                 active,
-                login_notice,
                 states,
             })),
             result => {

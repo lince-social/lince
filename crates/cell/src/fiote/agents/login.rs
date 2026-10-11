@@ -143,18 +143,15 @@ impl Host {
         let connection = {
             let discovery = self.agents.discovery.lock().await;
             discovery
-                .get(&format!("login:{record}"))
-                .or_else(|| discovery.get(record))
+                .get(record)
                 .map(|(_, connection)| connection.clone())
                 .ok_or("Connect the agent before signing out.")?
         };
         connection.logout().await?;
         self.agents.close_record(record).await;
         let mut discovery = self.agents.discovery.lock().await;
-        for key in [record.to_string(), format!("login:{record}")] {
-            if let Some((_, connection)) = discovery.remove(&key) {
-                connection.close();
-            }
+        if let Some((_, connection)) = discovery.remove(record) {
+            connection.close();
         }
         if let Some(info) = self.agents.info.lock().await.get_mut(record) {
             info["loginResult"] =
@@ -173,16 +170,14 @@ impl Host {
             info.as_object_mut().unwrap().remove("terminalLogin");
             info["loginPending"] = false.into();
             info["loginResult"] =
-                "Sign-in cancelled. Choose Change provider / sign in to retry.".into();
+                "Sign-in cancelled. Choose Discover agent / sign in to retry.".into();
             info.as_object_mut().unwrap().remove("loginId");
             info.as_object_mut().unwrap().remove("connectionCheck");
         }
         self.agents.clear_options(record).await;
         let mut discovery = self.agents.discovery.lock().await;
-        for key in [record.to_string(), format!("login:{record}")] {
-            if let Some((_, connection)) = discovery.remove(&key) {
-                connection.close();
-            }
+        if let Some((_, connection)) = discovery.remove(record) {
+            connection.close();
         }
         Ok(())
     }

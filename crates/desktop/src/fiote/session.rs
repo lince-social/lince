@@ -383,17 +383,6 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                     .collect()
             })
             .unwrap_or_default(),
-        Step::Agent => saved
-            .as_ref()
-            .and_then(|saved| saved.agent_info.as_ref())
-            .and_then(|info| info["providers"].as_array())
-            .map(|providers| {
-                providers
-                    .iter()
-                    .filter_map(|provider| provider["name"].as_str().map(str::to_string))
-                    .collect()
-            })
-            .unwrap_or_default(),
         _ => Vec::new(),
     };
     match step {
@@ -446,7 +435,6 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                 owner,
                 content,
                 &mut fields,
-                &mut choices,
                 saved.as_ref(),
             );
         }
@@ -819,13 +807,7 @@ impl Action for Continue {
 struct OpenBrowser;
 
 fn login_url(saved: &FioteStatus) -> Option<String> {
-    saved.login_url.clone().or_else(|| {
-        saved.agent_info.as_ref().and_then(|info| {
-            info["deviceCode"]["verificationUri"]
-                .as_str()
-                .map(str::to_owned)
-        })
-    })
+    saved.login_url.clone()
 }
 
 #[derive(Clone)]
@@ -1494,9 +1476,7 @@ fn keyboard(world: &mut World) {
     let step = panel.step;
     if escape {
         Close.apply(world, owner);
-    } else if matches!(step, Step::Providers | Step::Methods)
-        || (step == Step::Agent && focus == Some(owner))
-    {
+    } else if matches!(step, Step::Providers | Step::Methods) {
         let mut panel = world.get_mut::<Panel>(owner).unwrap();
         if panel.choices.is_empty() {
             return;
@@ -1510,11 +1490,7 @@ fn keyboard(world: &mut World) {
         let selection = panel.selection;
         highlight(world, owner);
         if enter {
-            if step == Step::Agent {
-                agent::choose(world, owner, selection);
-            } else {
-                Choose(selection).apply(world, owner);
-            }
+            Choose(selection).apply(world, owner);
         }
     } else if enter && matches!(step, Step::Credentials | Step::Unlock) {
         Continue.apply(world, owner);

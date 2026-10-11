@@ -182,15 +182,6 @@ pub enum Request {
         record: String,
         method: String,
     },
-    AgentProvider {
-        record: String,
-        provider: String,
-    },
-    AgentProviderLogin {
-        record: String,
-        fields: Secret,
-        password: Option<Secret>,
-    },
     AgentQuestionAnswer {
         record: String,
         request: String,

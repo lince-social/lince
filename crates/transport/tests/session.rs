@@ -16,8 +16,7 @@ async fn speech_controls_are_local_and_work_without_a_fiote() {
         ) -> Result<transport::speech::Status, String> {
             self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             Ok(transport::speech::Status {
-                settings: Default::default(),
-                providers: Vec::new(),
+                endpoint: None,
                 ready: false,
                 detail: "fixture".into(),
                 job: None,
@@ -28,7 +27,7 @@ async fn speech_controls_are_local_and_work_without_a_fiote() {
     let service = Arc::new(Speech(std::sync::atomic::AtomicUsize::new(0)));
     let request = ClientMessage::Speech {
         id: "speech".into(),
-        request: transport::speech::Request::Inspect { settings: None },
+        request: transport::speech::Request::Inspect,
     };
     let mut remote = Session::new(engine.clone(), hub.clone(), "remote-speech", None)
         .with_speech(service.clone());

@@ -25,8 +25,6 @@ fn main() {
         std::fs::write("terminal-signed-in", "yes").unwrap();
         return;
     }
-    let goose = std::env::var_os("TEST_GOOSE").is_some()
-        || std::env::args().any(|arg| arg == "--speech-fixture");
     let login_state = std::env::var_os("TEST_LOGIN_STATE").map(std::path::PathBuf::from);
     let log_path = std::env::var("TEST_REQUEST_LOG").ok().or_else(|| {
         std::env::args().find_map(|arg| arg.strip_prefix("--log=").map(str::to_string))
@@ -57,7 +55,7 @@ fn main() {
                 assert!(
                     params["clientCapabilities"]["session"]["configOptions"]["boolean"].is_object()
                 );
-                json!({"protocolVersion":1,"agentInfo":{"name":if goose { "goose" } else { "test-agent" },"version":"1"},"agentCapabilities":{"sessionCapabilities":if std::env::var_os("TEST_DIRECTORIES").is_some() { json!({"additionalDirectories":{}}) } else { json!({}) },"promptCapabilities":{"image":true,"audio":std::env::var_os("TEST_AUDIO").is_some(),"embeddedContext":true},"loadSession":true,"mcpCapabilities":{"http":std::env::var_os("TEST_NO_HTTP").is_none()}},"authMethods":[{"id":"browser","name":"Browser login"}]})
+                json!({"protocolVersion":1,"agentInfo":{"name":"test-agent","version":"1"},"agentCapabilities":{"sessionCapabilities":if std::env::var_os("TEST_DIRECTORIES").is_some() { json!({"additionalDirectories":{}}) } else { json!({}) },"promptCapabilities":{"image":true,"audio":std::env::var_os("TEST_AUDIO").is_some(),"embeddedContext":true},"loadSession":true,"mcpCapabilities":{"http":std::env::var_os("TEST_NO_HTTP").is_none()}},"authMethods":[{"id":"browser","name":"Browser login"}]})
             }
             "test/state" => {
                 options[1]["currentValue"] = "small".into();
@@ -83,15 +81,6 @@ fn main() {
                 let answer: Value = serde_json::from_str(&input.next().unwrap().unwrap()).unwrap();
                 assert_eq!(answer["id"], "private-url");
                 answer["result"].clone()
-            }
-            "_goose/unstable/dictation/config" => {
-                json!({"providers":{"local":{"configured":true,"description":"Fixture speech","usesProviderConfig":false,"defaultModel":"fixture","selectedModel":"fixture","availableModels":[{"id":"fixture","label":"Fixture","description":"Local test"}]}}})
-            }
-            "_goose/unstable/dictation/transcribe" => {
-                assert_eq!(params["provider"], "local");
-                assert_eq!(params["mimeType"], "audio/wav");
-                fiote::speech::validate_audio(params["audio"].as_str().unwrap()).unwrap();
-                json!({"text":"Fixture transcript"})
             }
             "test/question" => {
                 send(
@@ -126,19 +115,33 @@ fn main() {
                 directory = params["cwd"].as_str().unwrap().into();
                 assert!(directory.is_absolute());
                 options = defaults.clone();
-                if !params["mcpServers"].as_array().unwrap().is_empty() {
-                    assert_eq!(params["mcpServers"][0]["type"], "http");
-                    assert_eq!(
-                        params["mcpServers"][0]["headers"][0]["name"],
-                        "Authorization"
-                    );
-                    let token = params["mcpServers"][0]["headers"][0]["value"]
-                        .as_str()
-                        .unwrap();
-                    if std::env::var_os("TEST_HOST_WORKFLOW").is_some() {
-                        assert!(token.starts_with("Bearer ") && token.len() > 16);
+                if let Some(server) = params["mcpServers"].as_array().unwrap().first() {
+                    let token = if server["type"] == "http" {
+                        assert_eq!(server["headers"][0]["name"], "Authorization");
+                        server["headers"][0]["value"]
+                            .as_str()
+                            .unwrap()
+                            .strip_prefix("Bearer ")
+                            .unwrap()
                     } else {
-                        assert_eq!(token, "Bearer test-token");
+                        assert!(server.get("type").is_none());
+                        assert!(
+                            std::path::Path::new(server["command"].as_str().unwrap()).is_absolute()
+                        );
+                        assert!(std::env::var_os("TEST_NO_HTTP").is_some());
+                        assert_eq!(server["args"], json!(["--mcp-stdio"]));
+                        let env = server["env"].as_array().unwrap();
+                        assert!(env.iter().any(|entry| entry["name"] == "LINCE_MCP_URL"));
+                        env.iter()
+                            .find(|entry| entry["name"] == "LINCE_MCP_TOKEN")
+                            .unwrap()["value"]
+                            .as_str()
+                            .unwrap()
+                    };
+                    if std::env::var_os("TEST_HOST_WORKFLOW").is_some() {
+                        assert!(token.len() > 16);
+                    } else {
+                        assert_eq!(token, "test-token");
                     }
                 }
                 if request["method"] == "session/load" {
@@ -232,33 +235,6 @@ fn main() {
                     update("cancelled tool");
                     json!({"stopReason":"cancelled"})
                 }
-            }
-            "_goose/unstable/providers/config/authenticate" => {
-                send(
-                    json!({"jsonrpc":"2.0","method":"_goose/unstable/providers/authentication/device-code","params":{"providerId":"test","userCode":"test-code","verificationUri":"https://example.com/login","expiresIn":600}}),
-                );
-                if let Some(path) = &login_state {
-                    std::fs::write(path, "signed-in").unwrap();
-                }
-                json!({"status":{"providerId":"one","isConfigured":true}})
-            }
-            "_goose/unstable/providers/config/status" => {
-                json!({"statuses":[{"providerId":"one","isConfigured":true}]})
-            }
-            "_goose/unstable/providers/setup/catalog/list" => {
-                json!({"providers":[{"providerId":"one","name":"Test account","acp":false,"setupMethod":"oauth_device_code","fields":[]}]})
-            }
-            "_goose/unstable/providers/supported-models/list" => {
-                if std::env::var_os("TEST_INVALID_CREDENTIAL").is_some() {
-                    send(
-                        json!({"jsonrpc":"2.0","id":id,"error":{"code":-32000,"message":"Authentication required"}}),
-                    );
-                    continue;
-                }
-                json!({"providerId":"one","models":["large","small"]})
-            }
-            "_goose/unstable/providers/readiness/check" => {
-                json!({"providerId":"one","ready":false,"error":"Provider sign-in expired"})
             }
             _ => json!({}),
         };

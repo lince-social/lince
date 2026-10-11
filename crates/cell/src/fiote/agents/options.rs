@@ -140,16 +140,6 @@ impl Host {
                 false
             }
         });
-        if option == "provider"
-            && fiote::communication::extensions::preserves_provider_metadata(&preview.connection)
-        {
-            if let Some(provider) = current.get(option) {
-                preview
-                    .config
-                    .session_meta
-                    .insert("provider".into(), provider.clone());
-            }
-        }
         if let Err(error) = self.configure_agent(record, preview.config.clone()).await {
             preview.connection.close();
             return Err(error);

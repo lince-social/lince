@@ -1,4 +1,4 @@
-pub use fiote::speech::{Job, Model, Provider, Request, Settings, Status};
+pub use fiote::speech::{Job, Request, Status};
 
 #[async_trait::async_trait]
 pub trait Service: Send + Sync {

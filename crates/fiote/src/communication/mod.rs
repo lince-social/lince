@@ -6,7 +6,6 @@ pub mod check;
 pub mod connection;
 pub mod discovery;
 pub mod driver;
-pub mod extensions;
 pub mod native;
 pub mod provider;
 pub mod retry;

@@ -25,7 +25,7 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
             options: Default::default(),
         }),
         agent_info: Some(
-            serde_json::json!({"providers":[{"providerId":"a","name":"First"},{"providerId":"b","name":"Second"}],"selectedProvider":{"fields":[{"key":"KEY","label":"Key","secret":true}]}}),
+            serde_json::json!({"agentInfo":{"name":"test-agent","version":"1"},"authMethods":[{"id":"browser","name":"Sign in"}]}),
         ),
         agent_activity: vec![],
         record: record.into(),
@@ -131,9 +131,6 @@ fn browser_login_link_and_copy_feedback_survive_stale_acp_status_updates() {
     saved.agent_info.as_mut().unwrap()["connectionCheck"] = serde_json::json!({
         "ready":false, "detail":"Cannot find codex-acp/dist/index.js"
     });
-    saved.agent_info.as_mut().unwrap()["deviceCode"] = serde_json::json!({
-        "verificationUri":"https://agent.example/login"
-    });
     world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone());
     show(world, owner, Step::Browser);
     let content = world.get::<Panel>(owner).unwrap().content;
@@ -198,8 +195,23 @@ fn laboratory_browser_shows_the_copyable_native_url_from_the_connection_picker()
     let url = "https://login.example/authorize?state=laboratory";
     laboratory_browser(world, area, url);
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Browser);
-    assert_eq!(world.get::<Panel>(owner).unwrap().saved.as_ref().unwrap().login_url.as_deref(), Some(url));
-    assert!(world.query::<&Text>().iter(world).any(|text| text.0 == "Copy login link"));
+    assert_eq!(
+        world
+            .get::<Panel>(owner)
+            .unwrap()
+            .saved
+            .as_ref()
+            .unwrap()
+            .login_url
+            .as_deref(),
+        Some(url)
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Copy login link")
+    );
 }
 
 #[test]
@@ -305,7 +317,7 @@ fn disconnected_fiote_login_and_send_offer_generic_routes() {
 }
 
 #[test]
-fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
+fn external_login_setup_preserves_fields_during_polling_without_prompting() {
     let mut app = App::new();
     app.init_resource::<Assets<Font>>()
         .init_resource::<crate::theme::Typography>()
@@ -342,19 +354,19 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
     });
     assert!(command(world, &binding, "/login"));
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Agent);
-    let key = world.get::<Panel>(owner).unwrap().fields[4];
+    let key = world.get::<Panel>(owner).unwrap().fields[0];
     world
         .get_mut::<EditableText>(key)
         .unwrap()
         .editor
-        .set_text("entered-secret");
+        .set_text("edited-agent");
     apply_status(world, owner, saved.clone());
-    assert_eq!(world.get::<Panel>(owner).unwrap().fields[4], key);
+    assert_eq!(world.get::<Panel>(owner).unwrap().fields[0], key);
     assert_eq!(
         world.get::<EditableText>(key).unwrap().value(),
-        "entered-secret"
+        "edited-agent"
     );
-    assert_eq!(world.get::<Panel>(owner).unwrap().fields.len(), 5);
+    assert_eq!(world.get::<Panel>(owner).unwrap().fields.len(), 4);
     assert!(
         world
             .query::<&Text>()
@@ -387,25 +399,11 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
             .iter(world)
             .any(|text| text.0.contains("No model tokens are used"))
     );
-    let mut picker = saved.clone();
-    picker
-        .agent_info
-        .as_mut()
-        .unwrap()
-        .as_object_mut()
-        .unwrap()
-        .remove("selectedProvider");
-    apply_status(world, owner, picker);
-    world
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ArrowDown);
-    keyboard(world);
-    assert_eq!(world.get::<Panel>(owner).unwrap().selection, 1);
     assert!(
-        !world
+        world
             .query::<&Text>()
             .iter(world)
-            .any(|text| text.0.contains("entered-secret"))
+            .any(|text| text.0 == "Sign in")
     );
     let mut locked = saved;
     locked.requires_credential = true;

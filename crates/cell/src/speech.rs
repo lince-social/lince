@@ -1,7 +1,6 @@
-pub use transport::speech::Service;
+use ::fiote::speech;
 pub use ::fiote::speech::endpoint;
-pub use ::fiote::speech::{Job, Model, Provider, Request, Settings, Status};
-use ::fiote::{acp, speech};
+pub use ::fiote::speech::{Job, Request, Status};
 use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
@@ -9,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::Mutex;
+pub use transport::speech::Service;
 
 pub struct Host {
     path: PathBuf,
@@ -17,14 +17,8 @@ pub struct Host {
 }
 
 struct State {
-    endpoint: Option<speech::endpoint::Settings>,
-    endpoint_saved: Option<speech::endpoint::Settings>,
+    endpoint: Option<endpoint::Settings>,
     endpoint_ready: bool,
-    settings: Settings,
-    saved: Settings,
-    committed: bool,
-    connection: Option<Arc<acp::Connection>>,
-    providers: Vec<Provider>,
     job: Option<Running>,
     used: VecDeque<String>,
 }
@@ -34,6 +28,7 @@ struct Running {
     task: Option<tokio::task::JoinHandle<Result<String, String>>>,
     updated: Instant,
 }
+
 impl Drop for Running {
     fn drop(&mut self) {
         if let Some(task) = &self.task {
@@ -51,16 +46,7 @@ impl Host {
         path: PathBuf,
         vault: Option<Arc<crate::fiote::vault::Vault>>,
     ) -> Result<Self, String> {
-        let settings = if path.exists() {
-            let bytes = std::fs::read(&path).map_err(|error| error.to_string())?;
-            if bytes.len() > 32_768 {
-                return Err("Speech settings exceed their size limit.".into());
-            }
-            serde_json::from_slice(&bytes).map_err(|error| error.to_string())?
-        } else {
-            Settings::default()
-        };
-        let endpoint: Option<speech::endpoint::Settings> =
+        let endpoint: Option<endpoint::Settings> =
             match std::fs::read(path.with_extension("endpoint.json")) {
                 Ok(bytes) => {
                     if bytes.len() > 32_768 {
@@ -75,20 +61,27 @@ impl Host {
             vault,
             path,
             state: Mutex::new(State {
-                endpoint_saved: endpoint.clone(),
                 endpoint_ready: endpoint
                     .as_ref()
                     .is_some_and(|settings| !settings.requires_key),
                 endpoint,
-                saved: settings.clone(),
-                settings,
-                committed: true,
-                connection: None,
-                providers: Vec::new(),
                 job: None,
                 used: VecDeque::new(),
             }),
         })
+    }
+
+    async fn endpoint_key(
+        &self,
+        endpoint: &endpoint::Settings,
+    ) -> Result<Option<::fiote::config::Secret>, String> {
+        if !endpoint.requires_key {
+            return Ok(None);
+        }
+        match &self.vault {
+            Some(vault) if !vault.status().await?.1 => vault.key(&endpoint.slot()).await,
+            _ => Ok(None),
+        }
     }
 }
 
@@ -96,27 +89,10 @@ impl Host {
 impl transport::speech::Service for Host {
     async fn handle(&self, request: Request) -> Result<Status, String> {
         let mut state = self.state.lock().await;
-        let request = match request {
-            Request::StartEndpoint {
-                job,
-                settings,
-                audio,
-            } => {
-                if state.endpoint.as_ref() != Some(&settings) {
-                    return Err("Transcription endpoint settings changed while recording. No audio was sent. Check the current endpoint before recording again.".into());
-                }
-                Request::Start {
-                    job,
-                    settings: state.settings.clone(),
-                    audio,
-                }
-            }
-            Request::Start { .. } if state.endpoint.is_some() => {
-                return Err("Use the selected transcription endpoint settings when submitting this recording. No audio was sent.".into());
-            }
-            request => request,
-        };
-        let include_job = matches!(&request, Request::Start { .. } | Request::Poll { .. });
+        let include_job = matches!(
+            &request,
+            Request::StartEndpoint { .. } | Request::Poll { .. }
+        );
         if let Some(running) = state.job.as_mut() {
             if running.task.as_ref().is_some_and(|task| task.is_finished()) {
                 let result = running
@@ -139,15 +115,9 @@ impl transport::speech::Service for Host {
             .as_ref()
             .is_some_and(|job| job.updated.elapsed() > Duration::from_secs(600))
         {
-            if state.job.as_ref().is_some_and(|job| job.result.pending) {
-                if let Some(connection) = state.connection.take() {
-                    connection.close();
-                }
-            }
             state.job = None;
         }
         match request {
-            Request::StartEndpoint { .. } => unreachable!(),
             Request::ConfigureEndpoint {
                 mut settings,
                 credential,
@@ -176,14 +146,8 @@ impl transport::speech::Service for Host {
                     return Err("Unlock the vault and save the transcription key before configuring this endpoint.".into());
                 }
                 save_value(&self.path.with_extension("endpoint.json"), &Some(&settings))?;
-                if let Some(connection) = state.connection.take() {
-                    connection.close();
-                }
-                state.providers.clear();
-                state.endpoint_saved = Some(settings.clone());
                 state.endpoint = Some(settings);
                 state.endpoint_ready = true;
-                state.committed = true;
             }
             Request::UnlockEndpoint { password } => {
                 self.vault
@@ -192,59 +156,16 @@ impl transport::speech::Service for Host {
                     .unlock(password)
                     .await?;
             }
-            Request::Inspect { settings } => {
+            Request::Inspect => {
                 idle(&state)?;
-                if settings.is_none() && state.endpoint_saved.is_some() {
-                    state.endpoint = state.endpoint_saved.clone();
-                    state.committed = true;
-                    state.endpoint_ready = self
-                        .endpoint_key(state.endpoint.as_ref().unwrap())
-                        .await?
-                        .is_some()
-                        || !state.endpoint.as_ref().unwrap().requires_key;
-                    return Ok(status(&state));
-                }
-                state.endpoint = None;
-                let preview = settings.is_some();
-                let settings = settings.unwrap_or_else(|| state.saved.clone());
-                let (connection, providers) = speech::discover(&settings).await?;
-                if let Some(old) = state.connection.replace(connection) {
-                    old.close();
-                }
-                state.providers = providers;
-                state.settings = settings;
-                state.committed = !preview;
             }
-            Request::Configure {
-                settings,
-                credential,
-            } => {
-                idle(&state)?;
-                let (connection, providers) = speech::discover(&settings).await?;
-                let providers =
-                    speech::configure(&connection, &settings, &providers, credential).await?;
-                save(&self.path, &settings)?;
-                save_value(
-                    &self.path.with_extension("endpoint.json"),
-                    &Option::<speech::endpoint::Settings>::None,
-                )?;
-                state.endpoint = None;
-                state.endpoint_saved = None;
-                if let Some(old) = state.connection.replace(connection) {
-                    old.close();
-                }
-                state.providers = providers;
-                state.saved = settings.clone();
-                state.settings = settings;
-                state.committed = true;
-            }
-            Request::Start {
+            Request::StartEndpoint {
                 job,
                 settings,
                 audio,
             } => {
-                if settings != state.settings {
-                    return Err("Speech settings changed while recording. No audio was sent. Check the current settings before recording again.".into());
+                if state.endpoint.as_ref() != Some(&settings) {
+                    return Err("Transcription endpoint settings changed while recording. No audio was sent. Check the current endpoint before recording again.".into());
                 }
                 if !nucleus::valid_uid(&job, "speech") {
                     return Err("Invalid dictation request identifier.".into());
@@ -260,36 +181,14 @@ impl transport::speech::Service for Host {
                     return Err("This recording has already been submitted. Start a new recording to transcribe again.".into());
                 }
                 idle(&state)?;
-                if !state.committed {
-                    return Err("Save speech settings before recording.".into());
-                }
                 speech::validate_audio(&audio.0)?;
-                let task = if let Some(settings) = &state.endpoint {
-                    let key = self.endpoint_key(settings).await?;
-                    if settings.requires_key && key.is_none() {
-                        return Err(
-                            "Unlock the transcription credential vault. No audio was sent.".into(),
-                        );
-                    }
-                    tokio::spawn(speech::endpoint::transcribe(settings.clone(), key, audio))
-                } else {
-                    if state
-                        .connection
-                        .as_ref()
-                        .is_none_or(|connection| connection.is_closed())
-                    {
-                        let (connection, providers) = speech::discover(&state.settings).await?;
-                        state.connection = Some(connection);
-                        state.providers = providers;
-                    } else {
-                        state.providers =
-                            speech::catalog(state.connection.as_ref().unwrap()).await?;
-                    }
-                    speech::ready(&state.settings, &state.providers)?;
-                    let connection = state.connection.as_ref().unwrap().clone();
-                    let provider = state.settings.provider.clone();
-                    tokio::spawn(speech::transcribe(connection, provider, audio))
-                };
+                let key = self.endpoint_key(&settings).await?;
+                if settings.requires_key && key.is_none() {
+                    return Err(
+                        "Unlock the transcription credential vault. No audio was sent.".into(),
+                    );
+                }
+                let task = tokio::spawn(endpoint::transcribe(settings, key, audio));
                 state.used.push_back(job.clone());
                 if state.used.len() > 32 {
                     state.used.pop_front();
@@ -306,25 +205,12 @@ impl transport::speech::Service for Host {
                 });
             }
             Request::Poll { job } => {
-                let running = state
+                if state
                     .job
-                    .as_mut()
-                    .filter(|running| running.result.id == job)
-                    .ok_or("This dictation result is no longer available.")?;
-                if running.task.as_ref().is_some_and(|task| task.is_finished()) {
-                    let result = running
-                        .task
-                        .take()
-                        .unwrap()
-                        .await
-                        .map_err(|error| error.to_string())
-                        .and_then(|result| result);
-                    running.result.pending = false;
-                    running.updated = Instant::now();
-                    match result {
-                        Ok(text) => running.result.text = Some(text),
-                        Err(error) => running.result.error = Some(error),
-                    }
+                    .as_ref()
+                    .is_none_or(|running| running.result.id != job)
+                {
+                    return Err("This dictation result is no longer available.".into());
                 }
             }
             Request::Cancel { job } => {
@@ -342,13 +228,7 @@ impl transport::speech::Service for Host {
                     .as_ref()
                     .is_some_and(|running| running.result.id == job)
                 {
-                    let was_pending = state.job.as_ref().unwrap().result.pending;
                     state.job = None;
-                    if was_pending {
-                        if let Some(connection) = state.connection.take() {
-                            connection.close();
-                        }
-                    }
                 }
             }
         }
@@ -364,21 +244,6 @@ impl transport::speech::Service for Host {
     }
 }
 
-impl Host {
-    async fn endpoint_key(
-        &self,
-        endpoint: &speech::endpoint::Settings,
-    ) -> Result<Option<::fiote::config::Secret>, String> {
-        if !endpoint.requires_key {
-            return Ok(None);
-        }
-        match &self.vault {
-            Some(vault) if !vault.status().await?.1 => vault.key(&endpoint.slot()).await,
-            _ => Ok(None),
-        }
-    }
-}
-
 fn idle(state: &State) -> Result<(), String> {
     if state.job.as_ref().is_some_and(|job| job.result.pending) {
         Err("Finish or cancel the current dictation first.".into())
@@ -388,35 +253,20 @@ fn idle(state: &State) -> Result<(), String> {
 }
 
 fn status(state: &State) -> Status {
-    let readiness = if state.endpoint.is_some() {
-        if state.endpoint_ready {
-            Ok(())
-        } else {
-            Err("Unlock the vault and configure the transcription key.".into())
-        }
+    let ready = state.endpoint.is_some() && state.endpoint_ready;
+    let detail = if state.endpoint.is_none() {
+        "Configure a transcription endpoint before recording."
+    } else if !state.endpoint_ready {
+        "Unlock the vault and configure the transcription key."
     } else {
-        speech::ready(&state.settings, &state.providers)
-    };
-    let ready = state.committed && readiness.is_ok();
-    let detail = if !state.committed {
-        "Save these speech settings before recording.".into()
-    } else if let Err(error) = readiness {
-        error
-    } else {
-        "Speech configuration is ready. This check sends no audio and does not verify a billed transcription. Speech usage and cost are not reported by this tool.".into()
+        "Speech configuration is ready. This check sends no audio and does not verify a billed transcription. Speech usage and cost are not reported by this tool."
     };
     Status {
         endpoint: state.endpoint.clone(),
-        settings: state.settings.clone(),
-        providers: state.providers.clone(),
         ready,
-        detail,
+        detail: detail.into(),
         job: state.job.as_ref().map(|job| job.result.clone()),
     }
-}
-
-fn save(path: &Path, settings: &Settings) -> Result<(), String> {
-    save_value(path, settings)
 }
 
 fn save_value(path: &Path, settings: &impl serde::Serialize) -> Result<(), String> {
@@ -436,61 +286,87 @@ fn save_value(path: &Path, settings: &impl serde::Serialize) -> Result<(), Strin
 }
 
 #[cfg(test)]
-mod tests {
+mod endpoint_tests {
     use super::*;
     use transport::speech::Service;
+
     #[tokio::test]
-    #[ignore = "Requires LINCE_TEST_AGENT_BIN; transcribes a local fixture without a Fiote or model"]
-    async fn speech_works_without_fiote_deduplicates_and_clears_private_results() {
+    async fn unconfigured_speech_reports_setup_without_starting_an_agent() {
         let root = tempfile::tempdir().unwrap();
-        let log = root.path().join("speech-log");
-        let settings = Settings {
-            command: std::env::var("LINCE_TEST_AGENT_BIN").unwrap().into(),
-            args: vec![
-                "--speech-fixture".into(),
-                format!("--log={}", log.display()),
-            ],
-            directory: root.path().into(),
-            provider: "local".into(),
+        let host = Host::open(root.path().join("speech.json")).unwrap();
+        let status = host.handle(Request::Inspect).await.unwrap();
+        assert!(!status.ready);
+        assert!(status.endpoint.is_none());
+        assert!(status.job.is_none());
+        assert!(status.detail.contains("Configure a transcription endpoint"));
+    }
+
+    #[tokio::test]
+    async fn endpoint_transcription_deduplicates_and_clears_private_results() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("speech.json");
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = endpoint::Settings {
+            url: format!(
+                "http://{}/audio/transcriptions",
+                listener.local_addr().unwrap()
+            ),
             model: "fixture".into(),
             allow_cloud: false,
+            requires_key: false,
         };
-        let host = Host::open(root.path().join("speech.json")).unwrap();
-        let status = host
-            .handle(Request::Configure {
-                settings: settings.clone(),
-                credential: None,
-            })
-            .await
-            .unwrap();
-        assert!(status.ready, "{}", status.detail);
-        let mut preview = settings.clone();
-        preview.allow_cloud = true;
-        let status = host
-            .handle(Request::Inspect {
-                settings: Some(preview.clone()),
-            })
-            .await
-            .unwrap();
-        assert_eq!(status.settings, preview);
-        assert!(!status.ready);
-        let status = host
-            .handle(Request::Inspect { settings: None })
-            .await
-            .unwrap();
-        assert_eq!(status.settings, settings);
-        assert!(status.ready);
+        let requests = Arc::new(AtomicUsize::new(0));
+        let observed = requests.clone();
+        let server = tokio::spawn(async move {
+            loop {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                let mut bytes = Vec::new();
+                loop {
+                    let mut chunk = [0; 4096];
+                    let length = stream.read(&mut chunk).await.unwrap();
+                    assert!(length > 0);
+                    bytes.extend_from_slice(&chunk[..length]);
+                    if let Some(offset) = bytes.windows(4).position(|part| part == b"\r\n\r\n") {
+                        let header = String::from_utf8(bytes[..offset].to_vec()).unwrap();
+                        let length = header
+                            .lines()
+                            .find_map(|line| {
+                                line.to_ascii_lowercase()
+                                    .strip_prefix("content-length: ")
+                                    .and_then(|value| value.parse::<usize>().ok())
+                            })
+                            .unwrap();
+                        if bytes.len() >= offset + 4 + length {
+                            assert!(header.starts_with("POST /audio/transcriptions "));
+                            break;
+                        }
+                    }
+                    assert!(bytes.len() < 65_536);
+                }
+                observed.fetch_add(1, Ordering::SeqCst);
+                let body = "{\"text\":\"Fixture transcript\"}";
+                stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).as_bytes()).await.unwrap();
+            }
+        });
+        let host = Host::open(path.clone()).unwrap();
+        host.handle(Request::ConfigureEndpoint {
+            settings: endpoint.clone(),
+            credential: None,
+            password: None,
+        })
+        .await
+        .unwrap();
         let job = nucleus::new_uid("speech");
-        let request = Request::Start {
+        let request = Request::StartEndpoint {
             job: job.clone(),
-            settings: settings.clone(),
-            audio: ::fiote::config::Secret(
-                "UklGRjQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YRAAAAABAQEBAQEBAQEBAQEBAQEB"
-                    .into(),
-            ),
+            settings: endpoint.clone(),
+            audio: ::fiote::config::Secret("UklGRjQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YRAAAAABAQEBAQEBAQEBAQEBAQEBAQEB".into()),
         };
         host.handle(request.clone()).await.unwrap();
-        let result = tokio::time::timeout(Duration::from_secs(5), async {
+        host.handle(request.clone()).await.unwrap();
+        let status = tokio::time::timeout(Duration::from_secs(5), async {
             loop {
                 let status = host
                     .handle(Request::Poll { job: job.clone() })
@@ -505,56 +381,32 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(
-            result.job.unwrap().text.as_deref(),
+            status.job.unwrap().text.as_deref(),
             Some("Fixture transcript")
         );
+        assert_eq!(requests.load(Ordering::SeqCst), 1);
+        assert!(host.handle(Request::Inspect).await.unwrap().job.is_none());
         assert!(
-            host.handle(request.clone())
+            host.handle(Request::Cancel { job: job.clone() })
                 .await
                 .unwrap()
                 .job
-                .unwrap()
-                .text
-                .is_some()
+                .is_none()
         );
-        let status = host
-            .handle(Request::Cancel { job: job.clone() })
-            .await
-            .unwrap();
-        assert!(status.job.is_none());
         assert!(host.handle(request).await.is_err());
         assert!(host.handle(Request::Poll { job }).await.is_err());
-        let restarted = Host::open(root.path().join("speech.json")).unwrap();
-        assert_eq!(
-            restarted
-                .handle(Request::Inspect { settings: None })
-                .await
-                .unwrap()
-                .settings,
-            settings
-        );
-        let requests = std::fs::read_to_string(log).unwrap();
-        assert_eq!(
-            requests
-                .lines()
-                .filter(|line| *line == "_goose/unstable/dictation/transcribe")
-                .count(),
-            1
-        );
-        assert!(!requests.contains("session/prompt"));
-        assert!(!requests.contains("session/new"));
+        let restarted = Host::open(path.clone()).unwrap();
+        let status = restarted.handle(Request::Inspect).await.unwrap();
+        assert!(status.ready);
+        assert_eq!(status.endpoint, Some(endpoint));
+        assert!(status.job.is_none());
         assert!(
-            !std::fs::read_to_string(root.path().join("speech.json"))
+            !std::fs::read_to_string(path.with_extension("endpoint.json"))
                 .unwrap()
                 .contains("Fixture transcript")
         );
+        server.abort();
     }
-}
-
-#[cfg(test)]
-mod endpoint_tests {
-    use super::*;
-    use transport::speech::Service;
 
     #[tokio::test]
     async fn endpoint_configuration_is_independent_of_harness_and_contains_no_key() {
@@ -589,23 +441,9 @@ mod endpoint_tests {
             .unwrap_err()
             .contains("settings changed while recording")
         );
-        assert!(
-            host.handle(Request::Start {
-                job: nucleus::new_uid("speech"),
-                settings: status.settings,
-                audio: fiote::config::Secret("invalid".into()),
-            })
-            .await
-            .unwrap_err()
-            .contains("selected transcription endpoint settings")
-        );
         let host = Host::open(path).unwrap();
-        let status = host
-            .handle(Request::Inspect { settings: None })
-            .await
-            .unwrap();
+        let status = host.handle(Request::Inspect).await.unwrap();
         assert!(status.ready);
         assert_eq!(status.endpoint, Some(endpoint));
-        assert!(status.providers.is_empty());
     }
 }

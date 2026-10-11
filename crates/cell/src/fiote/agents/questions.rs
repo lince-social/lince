@@ -158,7 +158,7 @@ impl Agents {
             .lock()
             .await
             .iter()
-            .filter(|(key, _)| key.as_str() == record || key.as_str() == format!("login:{record}"))
+            .filter(|(key, _)| key.as_str() == record)
             .map(|(_, (_, connection))| (None, connection.clone()))
             .collect();
         let mut connections = connections;
@@ -193,7 +193,7 @@ impl Agents {
             .lock()
             .await
             .iter()
-            .filter(|(key, _)| key.as_str() == record || key.as_str() == format!("login:{record}"))
+            .filter(|(key, _)| key.as_str() == record)
             .map(|(_, (_, connection))| connection.clone())
             .collect();
         connections.extend(

@@ -1,5 +1,4 @@
 use super::*;
-use serde_json::json;
 
 pub(super) mod options;
 
@@ -76,7 +75,6 @@ pub(super) fn show(
     owner: Entity,
     content: Entity,
     fields: &mut Vec<Entity>,
-    choices: &mut Vec<Entity>,
     saved: Option<&FioteStatus>,
 ) {
     let configured = saved.and_then(|saved| saved.agent.clone());
@@ -145,7 +143,7 @@ pub(super) fn show(
         .insert((Draft(draft), Directories(directories)));
     crate::description::button(world, content, owner, "Check connection · no tokens", Check);
     connection_status(world, content, saved);
-    crate::description::button(world, content, owner, "Change provider / sign in", Discover);
+    crate::description::button(world, content, owner, "Discover agent / sign in", Discover);
     crate::description::button(
         world,
         content,
@@ -157,7 +155,7 @@ pub(super) fn show(
         crate::edit_mode::label(
             world,
             content,
-            "Start with Change provider / sign in, or check an agent you already configured.",
+            "Discover the agent to sign in, or check an agent you already configured.",
             14.0,
         );
         return;
@@ -165,93 +163,15 @@ pub(super) fn show(
     if let Some(error) = info["setupError"].as_str() {
         crate::edit_mode::label(world, content, error, 14.0);
     }
-    if info["selectedProvider"].is_null() {
-        if let Some(providers) = info["providers"].as_array() {
-            let list = world
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        max_height: px(240),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    ChildOf(content),
-                ))
-                .id();
-            crate::scroll_sand::attach(world, list);
-            for provider in providers {
-                let (Some(id), Some(name)) =
-                    (provider["providerId"].as_str(), provider["name"].as_str())
-                else {
-                    continue;
-                };
-                let button =
-                    crate::description::button(world, list, owner, name, ChooseProvider(id.into()));
-                let mut node = world.get_mut::<Node>(button).unwrap();
-                node.height = px(32);
-                node.flex_shrink = 0.0;
-                choices.push(world.get::<Children>(button).unwrap()[0]);
-            }
+    if let Some(methods) = info["authMethods"].as_array() {
+        for method in methods {
+            let (Some(id), Some(name)) = (method["id"].as_str(), method["name"].as_str()) else {
+                continue;
+            };
+            crate::description::button(world, content, owner, name, Authenticate(id.into()));
         }
     }
-    let selected = &info["selectedProvider"];
-    if let Some(name) = selected["name"].as_str() {
-        crate::edit_mode::label(world, content, &format!("Connection: {name}"), 16.0);
-        if let Some(description) = selected["description"].as_str() {
-            crate::edit_mode::label(world, content, description, 14.0);
-        }
-    }
-    let login = info.get("loginAgent").unwrap_or(info);
-    if !cell::fiote_communication::extensions::provider_setup_available(login) {
-        if let Some(methods) = login["authMethods"].as_array() {
-            for method in methods {
-                let (Some(id), Some(name)) = (method["id"].as_str(), method["name"].as_str())
-                else {
-                    continue;
-                };
-                {
-                    crate::description::button(
-                        world,
-                        content,
-                        owner,
-                        name,
-                        Authenticate(id.into()),
-                    );
-                }
-            }
-        }
-    }
-    if selected["acp"] != true {
-        let definitions = selected["fields"].as_array();
-        if let Some(definitions) = definitions {
-            for definition in definitions {
-                let input = field(
-                    world,
-                    content,
-                    definition["label"].as_str().unwrap_or("Provider field"),
-                    definition["secret"] == true,
-                );
-                if let Some(text) = definition["defaultValue"].as_str() {
-                    world
-                        .get_mut::<EditableText>(input)
-                        .unwrap()
-                        .editor
-                        .set_text(text);
-                }
-                fields.push(input);
-            }
-        }
-        if definitions.is_some_and(|fields| !fields.is_empty())
-            || selected["setupMethod"]
-                .as_str()
-                .is_some_and(|method| method.contains("oauth"))
-        {
-            crate::description::button(world, content, owner, "Connect provider", ProviderLogin);
-        }
-    }
-    if info["agentCapabilities"]["auth"]["logout"].is_object()
-        || login["agentCapabilities"]["auth"]["logout"].is_object()
-    {
+    if info["agentCapabilities"]["auth"]["logout"].is_object() {
         crate::description::button(world, content, owner, "Sign out of agent", Logout);
     } else {
         crate::edit_mode::label(
@@ -273,18 +193,6 @@ pub(super) fn show(
             },
             14.0,
         );
-        if let (Some(code), Some(url)) = (
-            info["deviceCode"]["userCode"].as_str(),
-            info["deviceCode"]["verificationUri"].as_str(),
-        ) {
-            crate::edit_mode::label(
-                world,
-                content,
-                &format!("Open {url}\nEnter code: {code}"),
-                16.0,
-            );
-            crate::description::button(world, content, owner, "Open sign-in page", OpenBrowser);
-        }
     }
     if let Some(result) = info["loginResult"].as_str() {
         crate::edit_mode::label(world, content, result, 14.0);
@@ -339,23 +247,9 @@ fn connection_status(world: &mut World, content: Entity, saved: Option<&FioteSta
     crate::edit_mode::label(
         world,
         content,
-        "Checks agent startup, provider setup and session access without sending a message. No model tokens are used. Generation and quota are not tested. Check again after changing settings.",
+        "Checks agent startup and session access without sending a message. No model tokens are used. Generation and quota are not tested. Check again after changing settings.",
         14.0,
     );
-}
-
-pub(super) fn choose(world: &mut World, owner: Entity, index: usize) {
-    let provider = world
-        .get::<Panel>(owner)
-        .and_then(|panel| panel.saved.as_ref())
-        .and_then(|saved| saved.agent_info.as_ref())
-        .and_then(|info| info["providers"].as_array())
-        .and_then(|providers| providers.get(index))
-        .and_then(|provider| provider["providerId"].as_str())
-        .map(str::to_string);
-    if let Some(provider) = provider {
-        ChooseProvider(provider).apply(world, owner);
-    }
 }
 
 fn submit(world: &mut World, owner: Entity, configure: bool) {
@@ -431,46 +325,6 @@ impl Action for Connect {
     }
 }
 #[derive(Clone)]
-struct ChooseProvider(String);
-impl Action for ChooseProvider {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        let panel = world.get::<Panel>(owner).unwrap();
-        if panel.pending.is_some() {
-            return;
-        }
-        let status = panel.status;
-        let current = match config(world, owner) {
-            Ok(current) => current,
-            Err(error) => {
-                world.get_mut::<Text>(status).unwrap().0 = error;
-                return;
-            }
-        };
-        if world.get::<Draft>(owner).is_some_and(|draft| {
-            draft.0.command != current.command
-                || draft.0.args != current.args
-                || draft.0.directory != current.directory
-                || draft.0.environment != current.environment
-        }) {
-            world.get_mut::<Text>(status).unwrap().0 =
-                "Discover connections again after changing the agent or working folder.".into();
-            return;
-        }
-        let record = panel.binding.uid.clone();
-        request(
-            world,
-            owner,
-            FioteRequest::AgentProvider {
-                record,
-                provider: self.0.clone(),
-            },
-        );
-        if world.get::<Panel>(owner).unwrap().pending.is_some() {
-            world.entity_mut(owner).insert(RefreshDraft);
-        }
-    }
-}
-#[derive(Clone)]
 struct Authenticate(String);
 impl Action for Authenticate {
     fn apply(&self, world: &mut World, owner: Entity) {
@@ -500,59 +354,6 @@ impl Action for Logout {
         request(world, owner, FioteRequest::AgentLogout { record });
     }
 }
-#[derive(Clone)]
-struct ProviderLogin;
-impl Action for ProviderLogin {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        let panel = world.get::<Panel>(owner).unwrap();
-        if panel.pending.is_some() {
-            return;
-        }
-        let status = panel.status;
-        let result = (|| {
-            let entry = &panel
-                .saved
-                .as_ref()
-                .ok_or("Discover the agent first.")?
-                .agent_info
-                .as_ref()
-                .ok_or("Choose a connection first.")?["selectedProvider"];
-            let mut values = serde_json::Map::new();
-            let definitions = entry["fields"].as_array().cloned().unwrap_or_default();
-            for (index, definition) in definitions.iter().enumerate() {
-                values.insert(
-                    definition["key"]
-                        .as_str()
-                        .ok_or("Invalid provider field.")?
-                        .into(),
-                    value(world, panel.fields[4 + index])?.into(),
-                );
-            }
-            Ok::<_, String>(FioteRequest::AgentProviderLogin {
-                record: panel.binding.uid.clone(),
-                fields: FioteSecret(json!(values).to_string()),
-                password: None,
-            })
-        })();
-        match result {
-            Ok(message) => {
-                let fields = world.get::<Panel>(owner).unwrap().fields.clone();
-                for field in fields {
-                    if world.get::<SecretField>(field).is_some() {
-                        world
-                            .get_mut::<EditableText>(field)
-                            .unwrap()
-                            .editor
-                            .set_text("");
-                    }
-                }
-                request(world, owner, message);
-            }
-            Err(error) => world.get_mut::<Text>(status).unwrap().0 = error,
-        }
-    }
-}
-
 pub(super) fn activity(world: &mut World, saved: &FioteStatus) {
     let controls: Vec<_> = world
         .query::<(Entity, &ThreadControl)>()

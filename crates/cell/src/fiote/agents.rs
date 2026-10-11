@@ -47,24 +47,7 @@ impl Agents {
     }
 
     pub async fn info(&self, record: &str) -> Option<Value> {
-        let mut info = self.info.lock().await.get(record).cloned()?;
-        if info["loginPending"] == true {
-            let connection = self
-                .discovery
-                .lock()
-                .await
-                .get(record)
-                .map(|(_, connection)| connection.clone());
-            if let Some(connection) = connection {
-                info["deviceCode"] = connection
-                    .login_notice
-                    .lock()
-                    .await
-                    .clone()
-                    .unwrap_or(Value::Null);
-            }
-        }
-        Some(info)
+        self.info.lock().await.get(record).cloned()
     }
 
     pub async fn activity(&self, record: &str) -> Vec<AgentActivity> {
@@ -260,235 +243,6 @@ impl acp::Output for Output<'_> {
 }
 
 impl Host {
-    pub(super) async fn agent_provider_login(
-        &self,
-        record: &str,
-        fields: Secret,
-        _password: Option<Secret>,
-    ) -> Result<(), String> {
-        if self
-            .agents
-            .info
-            .lock()
-            .await
-            .get(record)
-            .is_some_and(|info| info["loginPending"] == true)
-        {
-            return Err("Finish the current agent login first.".into());
-        }
-        let entry = self
-            .agents
-            .info
-            .lock()
-            .await
-            .get(record)
-            .and_then(|info| info.get("selectedProvider"))
-            .cloned()
-            .ok_or("Choose an agent provider first.")?;
-        let provider = entry["providerId"]
-            .as_str()
-            .ok_or("The provider has no identifier.")?
-            .to_string();
-        let values: std::collections::BTreeMap<String, String> =
-            serde_json::from_str(&fields.0).map_err(|_| "Invalid provider fields.")?;
-        if values.len() > 32 || fields.0.len() > 65_536 {
-            return Err("Provider credentials exceed their size limit.".into());
-        }
-        let allowed = entry["fields"]
-            .as_array()
-            .ok_or("The provider has no field definitions.")?;
-        if values
-            .keys()
-            .any(|key| !allowed.iter().any(|field| field["key"] == *key))
-        {
-            return Err("Only this provider's discovered fields may be saved.".into());
-        }
-        if allowed.iter().any(|field| {
-            field["required"] == true
-                && values
-                    .get(field["key"].as_str().unwrap_or(""))
-                    .is_none_or(|value| value.is_empty())
-        }) {
-            return Err("Fill in this provider's required fields.".into());
-        }
-        let connection = self
-            .agents
-            .discovery
-            .lock()
-            .await
-            .get(record)
-            .map(|(_, connection)| connection.clone())
-            .ok_or("Discover the agent first.")?;
-        let oauth = matches!(
-            entry["setupMethod"].as_str(),
-            Some("oauth_browser" | "oauth_device_code" | "host_with_oauth_fallback")
-        );
-        if let Some(info) = self
-            .agents
-            .info
-            .lock()
-            .await
-            .get_mut(record)
-            .and_then(Value::as_object_mut)
-        {
-            info.remove("connectionCheck");
-        }
-        if !values.is_empty() {
-            let updates: Vec<_> = values
-                .into_iter()
-                .map(|(key, value)| json!({"key":key,"value":value}))
-                .collect();
-            let result = fiote::communication::extensions::save_provider_fields(&connection, &provider, updates).await?;
-            if !oauth && result["status"]["isConfigured"] != true {
-                return Err(
-                    "The provider still needs required settings before it can sign in.".into(),
-                );
-            }
-            if let Some(info) = self.agents.info.lock().await.get_mut(record) {
-                info["loginResult"] =
-                    "Provider settings saved. Check connection without using model tokens.".into();
-                info.as_object_mut().unwrap().remove("connectionCheck");
-            }
-        }
-        if oauth {
-            let info = self.agents.info.clone();
-            let login_id = login::start(&self.agents, record).await?;
-            let record = record.to_string();
-            *connection.login_notice.lock().await = None;
-            tokio::spawn(async move {
-                let result = tokio::time::timeout(
-                    std::time::Duration::from_secs(600),
-                    fiote::communication::extensions::authenticate_provider(&connection, &provider),
-                )
-                .await
-                .map_err(|_| "Sign-in timed out. Try again.".to_string())
-                .and_then(|result| result)
-                .and_then(|response| {
-                    if response["status"]["isConfigured"] != true {
-                        Err("The provider did not confirm its sign-in. Try again.".into())
-                    } else {
-                        Ok(())
-                    }
-                });
-                login::finish(info, record, login_id, result).await;
-            });
-        }
-        Ok(())
-    }
-
-    pub(super) async fn select_agent_provider(
-        &self,
-        record: &str,
-        provider: &str,
-    ) -> Result<(), String> {
-        if self
-            .running
-            .lock()
-            .await
-            .values()
-            .any(|run| run.record == record)
-        {
-            return Err("Stop this Fiote before changing its agent.".into());
-        }
-        if self
-            .agents
-            .info
-            .lock()
-            .await
-            .get(record)
-            .is_some_and(|info| info["loginPending"] == true)
-        {
-            return Err("Finish the current agent login first.".into());
-        }
-        let entry = self
-            .agents
-            .info
-            .lock()
-            .await
-            .get(record)
-            .and_then(|info| info["providers"].as_array())
-            .and_then(|providers| {
-                providers
-                    .iter()
-                    .find(|entry| entry["providerId"] == provider)
-            })
-            .cloned()
-            .ok_or("Choose a connection from the agent's discovered providers.")?;
-        let (mut config, connection) = self
-            .agents
-            .discovery
-            .lock()
-            .await
-            .get(record)
-            .cloned()
-            .ok_or("Discover the agent first.")?;
-        config
-            .session_meta
-            .insert("provider".into(), provider.into());
-        config.options.clear();
-        config.require_vault = false;
-        if let Some((_, previous)) = self
-            .agents
-            .discovery
-            .lock()
-            .await
-            .remove(&format!("login:{record}"))
-        {
-            previous.close();
-        }
-        if let Some(info) = self
-            .agents
-            .info
-            .lock()
-            .await
-            .get_mut(record)
-            .and_then(Value::as_object_mut)
-        {
-            info.remove("loginAgent");
-            info.remove("loginResult");
-        }
-        if entry["acp"] == true {
-            let binary = entry["binaryName"]
-                .as_str()
-                .ok_or("This provider does not report its companion executable.")?;
-            let auth_config = acp::Config {
-                require_vault: false,
-                additional_directories: Vec::new(),
-                command: binary.into(),
-                args: vec![],
-                directory: config.directory.clone(),
-                environment: Default::default(),
-                session_meta: Default::default(),
-                options: Default::default(),
-            };
-            let auth = acp::Connection::open(&auth_config).await?;
-            let info = serde_json::to_value(&auth.info).map_err(|error| error.to_string())?;
-            self.agents
-                .info
-                .lock()
-                .await
-                .get_mut(record)
-                .ok_or("Agent discovery expired.")?["loginAgent"] = info;
-            self.agents
-                .discovery
-                .lock()
-                .await
-                .insert(format!("login:{record}"), (auth_config, auth));
-        }
-        self.agents
-            .info
-            .lock()
-            .await
-            .get_mut(record)
-            .ok_or("Agent discovery expired.")?["selectedProvider"] = entry;
-        self.agents
-            .discovery
-            .lock()
-            .await
-            .insert(record.into(), (config.clone(), connection));
-        self.configure_agent(record, config).await
-    }
-
     pub(super) async fn discover_agent(
         &self,
         record: &str,
@@ -505,22 +259,8 @@ impl Host {
             }
         }
         let connection = acp::Connection::open(&config).await?;
-        let mut info = serde_json::to_value(&connection.info).map_err(|error| error.to_string())?;
-        match fiote::communication::extensions::provider_catalog(&connection).await {
-            Ok(Some(providers)) => info["providers"] = providers,
-            Ok(None) => {},
-            Err(error) => info["setupError"] = error.into(),
-        }
+        let info = serde_json::to_value(&connection.info).map_err(|error| error.to_string())?;
         self.agents.info.lock().await.insert(record.into(), info);
-        if let Some((_, previous)) = self
-            .agents
-            .discovery
-            .lock()
-            .await
-            .remove(&format!("login:{record}"))
-        {
-            previous.close();
-        }
         if let Some((_, previous)) = self
             .agents
             .discovery
@@ -600,9 +340,6 @@ impl Host {
             if let Some((_, connection)) = discovery.remove(record) {
                 connection.close();
             }
-            if let Some((_, connection)) = discovery.remove(&format!("login:{record}")) {
-                connection.close();
-            }
             self.agents.info.lock().await.remove(record);
         }
         drop(discovery);
@@ -637,8 +374,7 @@ impl Host {
         }
         let connections = self.agents.discovery.lock().await;
         let (config, connection) = connections
-            .get(&format!("login:{record}"))
-            .or_else(|| connections.get(record))
+            .get(record)
             .map(|(config, connection)| (config.clone(), connection.clone()))
             .ok_or("Discover the agent before signing in.")?;
         drop(connections);
@@ -653,7 +389,6 @@ impl Host {
                 .start_terminal_login(record, config, method.clone())
                 .await;
         }
-        fiote::communication::extensions::validate_standard_auth(&connection)?;
         let method = method.id().to_string();
         let info = self.agents.info.clone();
         let login_id = login::start(&self.agents, record).await?;

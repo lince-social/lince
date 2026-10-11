@@ -58,7 +58,7 @@ pub async fn probe_with_session(
                             check.capabilities = Capabilities::harness(&agent);
                             check.stage = Stage::Session;
                             let mut status = acp::ConnectionCheck::default();
-                            let result = agent.check(config, &[], &mut status).await;
+                            let result = agent.check(config, &mut status).await;
                             agent.close();
                             result.map(|options| {
                                 check.capabilities.settings = (!options.options.is_empty()).into();

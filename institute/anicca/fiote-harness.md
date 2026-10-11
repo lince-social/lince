@@ -1,6 +1,6 @@
 # Fiote native harness
 
-Fiote now owns its Rust conversation and tool loop. Native ChatGPT subscription, API key, and compatible local connections require no installed agent, Codex, Node, ACP launcher, or Goose. Optional ACP, external provider adapters, and scoped MCP remain available. Native connections use existing Lince Actions and authority; their working directory starts empty.
+Fiote now owns its Rust conversation and tool loop. Native ChatGPT subscription, API key, and compatible local connections require no installed agent, Codex, Node, or ACP launcher. Optional ACP, external provider adapters, and scoped MCP remain available. Native connections use existing Lince Actions and authority; their working directory starts empty.
 
 ## Completed acceptance
 
@@ -34,6 +34,6 @@ The real Action probe is crates/cell/examples/native_action_acceptance.rs. Run t
 
 Subscriptions need a provider-supported native contract. ChatGPT's documented OSS route is implemented; unrelated subscriptions do not become interchangeable through OAuth alone. Claude subscriptions prohibit third-party native harness use under current provider rules; API keys or an optional user-owned agent remain routes. ChatGPT plan preview supports eligible text/images/files, with no audio/video/transcription or hosted tools. Local connections need a running model endpoint; Fiote does not bundle model weights or a general coding shell.
 
-Genai, OpenID Connect, and SSE crates supply the existing protocol primitives. The small Retry-After algorithm was adapted from MIT jcode commit a61c38ee9dd945fe9f930fa09c7f3454a2ae4110. Its license and attribution, plus OIDC/SSE dependency terms, are included in the Fiote Sand. eventsource-stream declares MIT OR Apache-2.0 without a standalone license file; the selected MIT terms and package author are included. No pi_agent_rust code was copied because of its restrictive license rider. Goose remains an optional ecosystem integration.
+Genai, OpenID Connect, and SSE crates supply the existing protocol primitives. The small Retry-After algorithm was adapted from MIT jcode commit a61c38ee9dd945fe9f930fa09c7f3454a2ae4110. Its license and attribution, plus OIDC/SSE dependency terms, are included in the Fiote Sand. eventsource-stream declares MIT OR Apache-2.0 without a standalone license file; the selected MIT terms and package author are included. No pi_agent_rust code was copied because of its restrictive license rider.
 
 Sources: [OpenAI registration](https://developers.openai.com/siwc/token-sharing-open-source/sign-in), [models/inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference), [accounts](https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions), [preview limits](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations), [Claude credential rules](https://code.claude.com/docs/en/legal-and-compliance#authentication-and-credential-use).

@@ -1,7 +1,7 @@
 use crate::{actions::Action, sand_panel as panel};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bevy::{prelude::*, text::EditableText};
-use cell::speech::{Request, Settings, Status};
+use cell::speech::{Request, Status};
 use std::{
     sync::{Mutex, mpsc},
     time::{Duration, Instant},
@@ -33,14 +33,11 @@ struct Composer {
     input: Entity,
     status: Entity,
     settings_panel: Entity,
-    catalog: Entity,
-    fields: [Entity; 5],
     endpoint_fields: [Entity; 4],
     requires_key: bool,
     key_label: Entity,
     cloud_label: Entity,
     cloud: bool,
-    provider: String,
     saved: Option<Status>,
     pending: Option<String>,
     job: Option<String>,
@@ -62,8 +59,7 @@ impl Drop for Composer {
 
 #[derive(Component)]
 struct Recording {
-    endpoint: Option<cell::speech::endpoint::Settings>,
-    settings: Settings,
+    endpoint: cell::speech::endpoint::Settings,
     control: mpsc::SyncSender<bool>,
     result: Mutex<mpsc::Receiver<Result<String, String>>>,
     started: Instant,
@@ -99,49 +95,44 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
     crate::edit_mode::label(
         world,
         settings_panel,
-        "Speech settings apply to all message drafts, including threads without Fiote. Stopping sends temporary audio to the selected provider; cloud transcription may cost money. Audio is not attached to the message.",
+        "Speech settings apply to all message drafts, including threads without Fiote. Stopping sends temporary audio to the saved endpoint; cloud transcription may cost money. Audio is not attached to the message.",
         13.0,
     );
-    crate::edit_mode::label(world, settings_panel, "Compatible transcription endpoint", 18.0);
+    crate::edit_mode::label(
+        world,
+        settings_panel,
+        "Compatible transcription endpoint",
+        18.0,
+    );
     let endpoint_fields = [
         panel::field(world, settings_panel, "Full transcription URL", ""),
         panel::field(world, settings_panel, "Transcription model", ""),
         crate::fiote::session::field(world, settings_panel, "Transcription API key (vault)", true),
         crate::fiote::session::field(world, settings_panel, "Vault password", true),
     ];
-    let key_label = crate::edit_mode::label(world, settings_panel, "Endpoint API key required: no", 13.0);
-    panel::button(world, settings_panel, owner, "Toggle endpoint key requirement", Command::KeyRequired);
-    panel::button(world, settings_panel, owner, "Save transcription endpoint", Command::SaveEndpoint);
-    panel::button(world, settings_panel, owner, "Unlock transcription vault", Command::UnlockEndpoint);
-    crate::edit_mode::label(world, settings_panel, "Optional speech harness", 18.0);
-    let settings = Settings::default();
-    let fields = [
-        panel::field(
-            world,
-            settings_panel,
-            "Speech agent executable",
-            &settings.command.to_string_lossy(),
-        ),
-        panel::field(world, settings_panel, "Arguments (JSON list)", "[\"acp\"]"),
-        panel::field(
-            world,
-            settings_panel,
-            "Agent working directory",
-            &settings.directory.to_string_lossy(),
-        ),
-        panel::field(
-            world,
-            settings_panel,
-            "Speech model · choose below or use agent default",
-            "",
-        ),
-        crate::fiote::session::field(
-            world,
-            settings_panel,
-            "Speech API key · optional, stored by the agent",
-            true,
-        ),
-    ];
+    let key_label =
+        crate::edit_mode::label(world, settings_panel, "Endpoint API key required: no", 13.0);
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Toggle endpoint key requirement",
+        Command::KeyRequired,
+    );
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Save transcription endpoint",
+        Command::SaveEndpoint,
+    );
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Unlock transcription vault",
+        Command::UnlockEndpoint,
+    );
     let cloud_label =
         crate::edit_mode::label(world, settings_panel, "Cloud transcription: off", 13.0);
     panel::button(
@@ -151,22 +142,13 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
         "Toggle permission to send audio to cloud",
         Command::Cloud,
     );
-    let controls = panel::row(world, settings_panel);
     panel::button(
         world,
-        controls,
+        settings_panel,
         owner,
-        "Check available speech providers",
+        "Check saved endpoint",
         Command::Check,
     );
-    panel::button(
-        world,
-        controls,
-        owner,
-        "Save speech settings",
-        Command::Save,
-    );
-    let catalog = panel::column(world, settings_panel);
     let microphone_label =
         crate::edit_mode::label(world, settings_panel, "Microphone: system default", 13.0);
     panel::button(
@@ -187,14 +169,11 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
         input,
         status,
         settings_panel,
-        catalog,
-        fields,
         endpoint_fields,
         requires_key: false,
         key_label,
         cloud_label,
         cloud: false,
-        provider: String::new(),
         saved: None,
         pending: None,
         job: None,
@@ -209,21 +188,6 @@ pub(crate) fn active(world: &World, owner: Entity) -> bool {
         || world
             .get::<Composer>(owner)
             .is_some_and(|composer| composer.job.is_some())
-}
-
-fn settings(world: &World, owner: Entity) -> Result<Settings, String> {
-    let composer = world
-        .get::<Composer>(owner)
-        .ok_or("The message draft is closed.")?;
-    Ok(Settings {
-        command: panel::value(world, composer.fields[0])?.into(),
-        args: serde_json::from_str(&panel::value(world, composer.fields[1])?)
-            .map_err(|_| "Agent arguments must be a JSON list.")?,
-        directory: panel::value(world, composer.fields[2])?.into(),
-        provider: composer.provider.clone(),
-        model: panel::value(world, composer.fields[3])?,
-        allow_cloud: composer.cloud,
-    })
 }
 
 fn send(world: &mut World, owner: Entity, request: Request) -> Result<(), String> {
@@ -250,7 +214,6 @@ enum Command {
     Settings,
     Cloud,
     Check,
-    Save,
     Insert,
     Microphones,
     SaveEndpoint,
@@ -303,7 +266,7 @@ impl Action for Command {
                     Display::Flex
                 };
                 if world.get::<Composer>(owner).unwrap().saved.is_none() {
-                    send(world, owner, Request::Inspect { settings: None })?;
+                    send(world, owner, Request::Inspect)?;
                     panel::status(
                         world,
                         status,
@@ -323,22 +286,60 @@ impl Action for Command {
                     let mut composer = world.get_mut::<Composer>(owner).unwrap();
                     composer.requires_key = !composer.requires_key;
                     let (label, enabled) = (composer.key_label, composer.requires_key);
-                    panel::status(world, label, if enabled { "Endpoint API key required: yes" } else { "Endpoint API key required: no" });
+                    panel::status(
+                        world,
+                        label,
+                        if enabled {
+                            "Endpoint API key required: yes"
+                        } else {
+                            "Endpoint API key required: no"
+                        },
+                    );
                 }
                 Self::SaveEndpoint => {
                     let fields = composer.endpoint_fields;
-                    let mut settings = cell::speech::endpoint::Settings { url: panel::value(world, fields[0])?, model: panel::value(world, fields[1])?, allow_cloud: composer.cloud, requires_key: composer.requires_key };
+                    let mut settings = cell::speech::endpoint::Settings {
+                        url: panel::value(world, fields[0])?,
+                        model: panel::value(world, fields[1])?,
+                        allow_cloud: composer.cloud,
+                        requires_key: composer.requires_key,
+                    };
                     settings.validate()?;
                     let credential = panel::value(world, fields[2])?;
                     let password = panel::value(world, fields[3])?;
-                    send(world, owner, Request::ConfigureEndpoint { settings, credential: (!credential.is_empty()).then_some(cell::FioteSecret(credential)), password: (!password.is_empty()).then_some(cell::FioteSecret(password)) })?;
-                    for field in &fields[2..] { world.get_mut::<EditableText>(*field).unwrap().editor.set_text(""); }
+                    send(
+                        world,
+                        owner,
+                        Request::ConfigureEndpoint {
+                            settings,
+                            credential: (!credential.is_empty())
+                                .then_some(cell::FioteSecret(credential)),
+                            password: (!password.is_empty()).then_some(cell::FioteSecret(password)),
+                        },
+                    )?;
+                    for field in &fields[2..] {
+                        world
+                            .get_mut::<EditableText>(*field)
+                            .unwrap()
+                            .editor
+                            .set_text("");
+                    }
                 }
                 Self::UnlockEndpoint => {
                     let field = composer.endpoint_fields[3];
                     let password = panel::value(world, field)?;
-                    send(world, owner, Request::UnlockEndpoint { password: cell::FioteSecret(password) })?;
-                    world.get_mut::<EditableText>(field).unwrap().editor.set_text("");
+                    send(
+                        world,
+                        owner,
+                        Request::UnlockEndpoint {
+                            password: cell::FioteSecret(password),
+                        },
+                    )?;
+                    world
+                        .get_mut::<EditableText>(field)
+                        .unwrap()
+                        .editor
+                        .set_text("");
                 }
                 Self::Microphones => {
                     let parent = composer.microphones;
@@ -376,38 +377,12 @@ impl Action for Command {
                     );
                 }
                 Self::Check => {
-                    let settings = settings(world, owner)?;
-                    send(
-                        world,
-                        owner,
-                        Request::Inspect {
-                            settings: Some(settings),
-                        },
-                    )?;
+                    send(world, owner, Request::Inspect)?;
                     panel::status(
                         world,
                         status,
                         "Checking speech setup without sending audio…",
                     );
-                }
-                Self::Save => {
-                    let settings = settings(world, owner)?;
-                    let input = world.get::<Composer>(owner).unwrap().fields[4];
-                    let key = panel::value(world, input)?;
-                    send(
-                        world,
-                        owner,
-                        Request::Configure {
-                            settings,
-                            credential: (!key.is_empty()).then_some(cell::FioteSecret(key)),
-                        },
-                    )?;
-                    world
-                        .get_mut::<EditableText>(input)
-                        .unwrap()
-                        .editor
-                        .set_text("");
-                    panel::status(world, status, "Saving speech settings…");
                 }
                 Self::Record => {
                     #[cfg(feature = "native-media")]
@@ -433,19 +408,27 @@ impl Action for Command {
                     }
                     let composer = world.get::<Composer>(owner).unwrap();
                     if composer.saved.as_ref().is_none_or(|saved| !saved.ready) {
-                        return Err("Open Speech settings, choose a configured speech provider, then save and check it.".into());
+                        return Err("Open Speech settings, configure a transcription endpoint, then save and check it.".into());
                     }
                     let saved = composer.saved.as_ref().unwrap();
-                    if let Some(endpoint) = &saved.endpoint {
-                        let fields = composer.endpoint_fields;
-                        let mut draft = cell::speech::endpoint::Settings { url: panel::value(world, fields[0])?, model: panel::value(world, fields[1])?, allow_cloud: composer.cloud, requires_key: composer.requires_key };
-                        draft.validate()?;
-                        if &draft != endpoint { return Err("Save the changed transcription endpoint before recording.".into()); }
-                    } else if settings(world, owner)? != saved.settings {
-                        return Err("Save the changed speech settings before recording.".into());
+                    let endpoint = saved
+                        .endpoint
+                        .as_ref()
+                        .ok_or("Save a transcription endpoint before recording.")?;
+                    let fields = composer.endpoint_fields;
+                    let mut draft = cell::speech::endpoint::Settings {
+                        url: panel::value(world, fields[0])?,
+                        model: panel::value(world, fields[1])?,
+                        allow_cloud: composer.cloud,
+                        requires_key: composer.requires_key,
+                    };
+                    draft.validate()?;
+                    if &draft != endpoint {
+                        return Err(
+                            "Save the changed transcription endpoint before recording.".into()
+                        );
                     }
-                    let endpoint = composer.saved.as_ref().unwrap().endpoint.clone();
-                    let frozen_settings = composer.saved.as_ref().unwrap().settings.clone();
+                    let endpoint = endpoint.clone();
                     let (control, commands) = mpsc::sync_channel(1);
                     let microphone = composer.microphone.clone();
                     let (finished, result) = mpsc::channel();
@@ -459,7 +442,6 @@ impl Action for Command {
                     });
                     world.entity_mut(owner).insert(Recording {
                         endpoint,
-                        settings: frozen_settings,
                         control,
                         result: Mutex::new(result),
                         started: Instant::now(),
@@ -533,9 +515,6 @@ fn encode(clip: crate::sound::library::Clip) -> Result<String, String> {
 }
 
 #[derive(Clone)]
-struct Provider(String);
-
-#[derive(Clone)]
 struct Microphone(Option<String>);
 impl Action for Microphone {
     fn apply(&self, world: &mut World, owner: Entity) {
@@ -557,114 +536,6 @@ impl Action for Microphone {
         );
     }
 }
-impl Action for Provider {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        if active(world, owner) {
-            return;
-        }
-        let Some(mut composer) = world.get_mut::<Composer>(owner) else {
-            return;
-        };
-        composer.provider = self.0.clone();
-        let model = composer
-            .saved
-            .as_ref()
-            .and_then(|saved| {
-                saved
-                    .providers
-                    .iter()
-                    .find(|provider| provider.id == self.0)
-            })
-            .map(|provider| provider.selected_model.clone())
-            .unwrap_or_default();
-        let field = composer.fields[3];
-        world
-            .get_mut::<EditableText>(field)
-            .unwrap()
-            .editor
-            .set_text(&model);
-        catalog(world, owner);
-    }
-}
-
-#[derive(Clone)]
-struct Model(String);
-impl Action for Model {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        if active(world, owner) {
-            return;
-        }
-        if let Some(field) = world
-            .get::<Composer>(owner)
-            .map(|composer| composer.fields[3])
-        {
-            world
-                .get_mut::<EditableText>(field)
-                .unwrap()
-                .editor
-                .set_text(&self.0);
-        }
-    }
-}
-
-fn catalog(world: &mut World, owner: Entity) {
-    let composer = world.get::<Composer>(owner).unwrap();
-    let (parent, saved, selected) = (
-        composer.catalog,
-        composer.saved.clone(),
-        composer.provider.clone(),
-    );
-    world.entity_mut(parent).despawn_children();
-    let Some(saved) = saved else { return };
-    if !saved
-        .providers
-        .iter()
-        .any(|provider| provider.local && provider.configured)
-    {
-        crate::edit_mode::label(
-            world,
-            parent,
-            "No ready local transcription backend is reported by this installation.",
-            13.0,
-        );
-    }
-    for provider in &saved.providers {
-        panel::button(
-            world,
-            parent,
-            owner,
-            &format!(
-                "{}{} · {} · {}",
-                if provider.id == selected {
-                    "Selected: "
-                } else {
-                    ""
-                },
-                provider.id,
-                if provider.local { "local" } else { "cloud" },
-                if provider.configured {
-                    "configured"
-                } else {
-                    "needs setup"
-                }
-            ),
-            Provider(provider.id.clone()),
-        );
-        if provider.id == selected {
-            crate::edit_mode::label(world, parent, &provider.description, 12.0);
-            for model in &provider.models {
-                panel::button(
-                    world,
-                    parent,
-                    owner,
-                    &format!("Use {}", model.label),
-                    Model(model.id.clone()),
-                );
-            }
-        }
-    }
-}
-
 fn insert(world: &mut World, owner: Entity) -> Result<(), String> {
     let composer = world.get::<Composer>(owner).ok_or("The draft is closed.")?;
     let Some(transcript) = composer.transcript.as_ref() else {
@@ -800,42 +671,51 @@ pub(crate) fn update(
                     }
                     world.get_mut::<Composer>(owner).unwrap().saved = Some(saved);
                 } else {
-                    let fields = composer.fields;
                     let cloud_label = composer.cloud_label;
-                    composer.cloud = saved.endpoint.as_ref().map_or(saved.settings.allow_cloud, |endpoint| endpoint.allow_cloud);
-                    composer.provider = saved.settings.provider.clone();
+                    composer.cloud = saved
+                        .endpoint
+                        .as_ref()
+                        .is_some_and(|endpoint| endpoint.allow_cloud);
                     composer.saved = Some(saved.clone());
                     let endpoint_fields = composer.endpoint_fields;
                     let key_label = composer.key_label;
                     if let Some(endpoint) = &saved.endpoint {
                         composer.requires_key = endpoint.requires_key;
                         let enabled = endpoint.requires_key;
-                        for (field, value) in endpoint_fields[..2].iter().zip([&endpoint.url, &endpoint.model]) { world.get_mut::<EditableText>(*field).unwrap().editor.set_text(value); }
-                        panel::status(world, key_label, if enabled { "Endpoint API key required: yes" } else { "Endpoint API key required: no" });
-                    }
-                    for (field, value) in fields[..4].iter().zip([
-                        saved.settings.command.to_string_lossy().to_string(),
-                        serde_json::to_string(&saved.settings.args).unwrap(),
-                        saved.settings.directory.to_string_lossy().to_string(),
-                        saved.settings.model.clone(),
-                    ]) {
-                        world
-                            .get_mut::<EditableText>(*field)
-                            .unwrap()
-                            .editor
-                            .set_text(&value);
+                        for (field, value) in endpoint_fields[..2]
+                            .iter()
+                            .zip([&endpoint.url, &endpoint.model])
+                        {
+                            world
+                                .get_mut::<EditableText>(*field)
+                                .unwrap()
+                                .editor
+                                .set_text(value);
+                        }
+                        panel::status(
+                            world,
+                            key_label,
+                            if enabled {
+                                "Endpoint API key required: yes"
+                            } else {
+                                "Endpoint API key required: no"
+                            },
+                        );
                     }
                     panel::status(
                         world,
                         cloud_label,
-                        if saved.endpoint.as_ref().map_or(saved.settings.allow_cloud, |endpoint| endpoint.allow_cloud) {
+                        if saved
+                            .endpoint
+                            .as_ref()
+                            .is_some_and(|endpoint| endpoint.allow_cloud)
+                        {
                             "Cloud transcription: allowed"
                         } else {
                             "Cloud transcription: off"
                         },
                     );
                     panel::status(world, status_entity, &saved.detail);
-                    catalog(world, owner);
                 }
             }
         }
@@ -864,14 +744,17 @@ pub(crate) fn update(
         if let Some(result) = result {
             let recording = world.entity_mut(owner).take::<Recording>().unwrap();
             let frozen_endpoint = recording.endpoint.clone();
-            let frozen_settings = recording.settings.clone();
             match result {
                 Ok(audio) => {
                     let job = nucleus::new_uid("speech");
                     match send(
                         world,
                         owner,
-                        if let Some(settings) = frozen_endpoint { Request::StartEndpoint { job: job.clone(), settings, audio: cell::FioteSecret(audio) } } else { Request::Start { job: job.clone(), settings: frozen_settings, audio: cell::FioteSecret(audio) } },
+                        Request::StartEndpoint {
+                            job: job.clone(),
+                            settings: frozen_endpoint,
+                            audio: cell::FioteSecret(audio),
+                        },
                     ) {
                         Ok(()) => {
                             world.get_mut::<Composer>(owner).unwrap().job = Some(job);
@@ -926,8 +809,16 @@ mod tests {
         assert!(recording.error.lock().unwrap().is_none());
         let clip = recording.finish();
         assert!(!clip.samples.is_empty());
-        let peak = clip.samples.iter().fold(0.0_f32, |peak, sample| peak.max(sample.abs()));
-        println!("Microphone: {} devices, {} samples at {} Hz, peak {peak}", devices.len(), clip.samples.len(), clip.rate);
+        let peak = clip
+            .samples
+            .iter()
+            .fold(0.0_f32, |peak, sample| peak.max(sample.abs()));
+        println!(
+            "Microphone: {} devices, {} samples at {} Hz, peak {peak}",
+            devices.len(),
+            clip.samples.len(),
+            clip.rate
+        );
         match encode(clip) {
             Ok(audio) => {
                 let bytes = BASE64.decode(audio).unwrap();
@@ -936,7 +827,10 @@ mod tests {
                 assert_eq!(wav.spec().channels, 1);
                 assert!(wav.duration() > 16000);
             }
-            Err(error) => { assert!(peak < 0.000_01); assert!(error.contains("draft is unchanged")); }
+            Err(error) => {
+                assert!(peak < 0.000_01);
+                assert!(error.contains("draft is unchanged"));
+            }
         }
         drop(crate::sound::device::Capture::start().unwrap());
     }
@@ -953,14 +847,11 @@ mod tests {
                 input,
                 status,
                 settings_panel: unused,
-                catalog: unused,
-                fields: [input; 5],
                 endpoint_fields: [input; 4],
                 requires_key: false,
                 key_label: status,
                 cloud_label: status,
                 cloud: false,
-                provider: "fixture".into(),
                 saved: None,
                 pending: Some(request.into()),
                 job: Some(job.into()),
@@ -976,9 +867,7 @@ mod tests {
         crate::cell_bridge::CellMessage(cell::ServerMessage::Speech {
             id: request.into(),
             status: Status {
-                settings: Default::default(),
                 endpoint: None,
-                providers: Vec::new(),
                 ready: true,
                 detail: String::new(),
                 job: Some(cell::speech::Job {
@@ -1101,37 +990,129 @@ mod endpoint_tests {
     use std::sync::Arc;
 
     #[tokio::test]
-    async fn endpoint_controls_save_without_harness_and_changed_recording_destination_preserves_draft() {
+    async fn endpoint_controls_save_without_harness_and_changed_recording_destination_preserves_draft()
+     {
         let directory = tempfile::tempdir().unwrap();
         let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
-        let speech = Arc::new(cell::speech::Host::open(directory.path().join("speech.json")).unwrap());
-        let runtime = cell::CellRuntime { commands: Default::default(), store: engine.store.clone(), engine, lanes: Arc::new(cell::LaneHub::new()), wire: Default::default(), fiote: None, speech: Some(speech.clone()), information: None };
+        let speech =
+            Arc::new(cell::speech::Host::open(directory.path().join("speech.json")).unwrap());
+        let runtime = cell::CellRuntime {
+            commands: Default::default(),
+            store: engine.store.clone(),
+            engine,
+            lanes: Arc::new(cell::LaneHub::new()),
+            wire: Default::default(),
+            fiote: None,
+            speech: Some(speech.clone()),
+            information: None,
+        };
         let service = runtime.speech.clone().unwrap();
         let mut app = crate::sand_panel::tests::app();
-        app.insert_resource(crate::wake::WakeSignal::new(|| {})).insert_resource(crate::app::CellHandle(runtime)).add_plugins(crate::cell_bridge::CellBridgePlugin).add_systems(Update, update.after(crate::cell_bridge::ReceiveCell));
+        app.insert_resource(crate::wake::WakeSignal::new(|| {}))
+            .insert_resource(crate::app::CellHandle(runtime))
+            .add_plugins(crate::cell_bridge::CellBridgePlugin)
+            .add_systems(Update, update.after(crate::cell_bridge::ReceiveCell));
         app.update();
         let parent = app.world_mut().spawn(Node::default()).id();
         let owner = app.world_mut().spawn(Node::default()).id();
-        let input = app.world_mut().spawn(EditableText::new("My unsent draft")).id();
+        let input = app
+            .world_mut()
+            .spawn(EditableText::new("My unsent draft"))
+            .id();
         composer(app.world_mut(), owner, parent, input);
         let fields = app.world().get::<Composer>(owner).unwrap().endpoint_fields;
-        app.world_mut().get_mut::<EditableText>(fields[0]).unwrap().editor.set_text("http://127.0.0.1:8123/v1/audio/transcriptions");
-        app.world_mut().get_mut::<EditableText>(fields[1]).unwrap().editor.set_text("local-transcriber");
+        app.world_mut()
+            .get_mut::<EditableText>(fields[0])
+            .unwrap()
+            .editor
+            .set_text("http://127.0.0.1:8123/v1/audio/transcriptions");
+        app.world_mut()
+            .get_mut::<EditableText>(fields[1])
+            .unwrap()
+            .editor
+            .set_text("local-transcriber");
         Command::SaveEndpoint.apply(app.world_mut(), owner);
-        crate::sand_panel::tests::settle(&mut app, |world| world.get::<Composer>(owner).unwrap().saved.as_ref().is_some_and(|saved| saved.endpoint.is_some() && saved.ready)).await;
-        let frozen = app.world().get::<Composer>(owner).unwrap().saved.as_ref().unwrap().endpoint.clone().unwrap();
-        assert!(app.world().get::<EditableText>(fields[2]).unwrap().value().to_string().is_empty());
-        let mut changed = frozen.clone(); changed.url = "http://127.0.0.1:8124/v1/audio/transcriptions".into();
-        service.handle(Request::ConfigureEndpoint { settings: changed, credential: None, password: None }).await.unwrap();
+        crate::sand_panel::tests::settle(&mut app, |world| {
+            world
+                .get::<Composer>(owner)
+                .unwrap()
+                .saved
+                .as_ref()
+                .is_some_and(|saved| saved.endpoint.is_some() && saved.ready)
+        })
+        .await;
+        let frozen = app
+            .world()
+            .get::<Composer>(owner)
+            .unwrap()
+            .saved
+            .as_ref()
+            .unwrap()
+            .endpoint
+            .clone()
+            .unwrap();
+        assert!(
+            app.world()
+                .get::<EditableText>(fields[2])
+                .unwrap()
+                .value()
+                .to_string()
+                .is_empty()
+        );
+        let mut changed = frozen.clone();
+        changed.url = "http://127.0.0.1:8124/v1/audio/transcriptions".into();
+        service
+            .handle(Request::ConfigureEndpoint {
+                settings: changed,
+                credential: None,
+                password: None,
+            })
+            .await
+            .unwrap();
         let (control, _commands) = mpsc::sync_channel(1);
         let (finished, result) = mpsc::channel();
-        finished.send(Ok(BASE64.encode(include_bytes!("../tests/fixtures/fiote/audio.wav")))).unwrap();
-        app.world_mut().entity_mut(owner).insert(Recording { endpoint: Some(frozen), settings: Settings::default(), control, result: Mutex::new(result), started: Instant::now() });
+        finished
+            .send(Ok(
+                BASE64.encode(include_bytes!("../tests/fixtures/fiote/audio.wav"))
+            ))
+            .unwrap();
+        app.world_mut().entity_mut(owner).insert(Recording {
+            endpoint: frozen,
+            control,
+            result: Mutex::new(result),
+            started: Instant::now(),
+        });
         app.update();
-        crate::sand_panel::tests::settle(&mut app, |world| { let composer = world.get::<Composer>(owner).unwrap(); composer.pending.is_none() && composer.job.is_none() && world.get::<Recording>(owner).is_none() }).await;
-        assert_eq!(app.world().get::<EditableText>(input).unwrap().value().to_string(), "My unsent draft");
+        crate::sand_panel::tests::settle(&mut app, |world| {
+            let composer = world.get::<Composer>(owner).unwrap();
+            composer.pending.is_none()
+                && composer.job.is_none()
+                && world.get::<Recording>(owner).is_none()
+        })
+        .await;
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(input)
+                .unwrap()
+                .value()
+                .to_string(),
+            "My unsent draft"
+        );
         let status = app.world().get::<Composer>(owner).unwrap().status;
-        assert!(app.world().get::<Text>(status).unwrap().0.contains("changed"));
-        assert!(service.handle(Request::Inspect { settings: None }).await.unwrap().job.is_none());
+        assert!(
+            app.world()
+                .get::<Text>(status)
+                .unwrap()
+                .0
+                .contains("changed")
+        );
+        assert!(
+            service
+                .handle(Request::Inspect)
+                .await
+                .unwrap()
+                .job
+                .is_none()
+        );
     }
 }

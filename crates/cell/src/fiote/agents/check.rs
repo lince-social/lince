@@ -49,12 +49,6 @@ impl Host {
         let connection = acp::Connection::open(&config).await?;
         check.agent = "Connected".into();
         let mut info = serde_json::to_value(&connection.info).map_err(|error| error.to_string())?;
-        if let Some(providers) = fiote::communication::extensions::provider_catalog(&connection).await? {
-            info["providers"] = providers;
-            if let Some(provider) = config.options.get("provider").or_else(|| config.session_meta.get("provider")) {
-                info["selectedProvider"] = info["providers"].as_array().and_then(|entries| entries.iter().find(|entry| entry["providerId"] == *provider)).cloned().unwrap_or(Value::Null);
-            }
-        }
         self.agents.clear_options(record).await;
         if let Some((_, previous)) = self
             .agents
@@ -66,12 +60,9 @@ impl Host {
             previous.close();
         }
         if let Some(previous) = self.agents.info.lock().await.get(record) {
-            if previous["selectedProvider"]["providerId"] == info["selectedProvider"]["providerId"]
-            {
-                for field in ["loginAgent", "loginResult"] {
-                    if let Some(value) = previous.get(field) {
-                        info[field] = value.clone();
-                    }
+            if previous["agentInfo"] == info["agentInfo"] {
+                if let Some(value) = previous.get("loginResult") {
+                    info["loginResult"] = value.clone();
                 }
             }
         }
@@ -80,8 +71,7 @@ impl Host {
             .lock()
             .await
             .insert(record.into(), info.clone());
-        let providers = info["providers"].as_array().cloned().unwrap_or_default();
-        let session = connection.check(&config, &providers, check).await?;
+        let session = connection.check(&config, check).await?;
         if self.load(record)?.and_then(|saved| saved.agent).as_ref() != Some(&config) {
             self.configure_agent(record, config.clone()).await?;
         }

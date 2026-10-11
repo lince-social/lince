@@ -62,6 +62,7 @@ jobs:
             mold \
             pigz \
             pkg-config \
+            libfontconfig-dev \
             clang \
             libclang-dev \
             libpipewire-0.3-dev \

@@ -393,6 +393,7 @@
 
             systemd.services.lince = lib.mkIf (!isUserScope) unit;
             systemd.user.services.lince = lib.mkIf isUserScope unit;
+            services.gnome.at-spi2-core.enable = lib.mkIf isDesktop (lib.mkDefault true);
           };
         };
 
@@ -739,6 +740,17 @@
               wayland
             ];
 
+          interfaceLinuxRuntimeLibraries =
+            (with pkgs; [
+              stdenv.cc.cc.lib
+              openssl
+              sqlite
+            ])
+            ++ interfaceLinuxBuildInputs;
+
+          interfaceLinuxRuntimeTools =
+            [ pkgs.bash ] ++ lib.optionals (system == "x86_64-linux") [ self.packages.${system}.goose ];
+
           mkLince =
             { pname, ui }:
             pkgs.rustPlatform.buildRustPackage {
@@ -811,13 +823,13 @@
                       "--prefix"
                       "LD_LIBRARY_PATH"
                       ":"
-                      (lib.makeLibraryPath interfaceLinuxBuildInputs)
+                      (lib.makeLibraryPath interfaceLinuxRuntimeLibraries)
                     ]
                     ++ [
                       "--prefix"
                       "PATH"
                       ":"
-                      (lib.makeBinPath [ pkgs.bash ])
+                      (lib.makeBinPath (if ui then interfaceLinuxRuntimeTools else [ pkgs.bash ]))
                     ]
                   )
                 }
@@ -837,32 +849,7 @@
 
           binaryPackage =
             let
-              libraries = with pkgs; [
-                stdenv.cc.cc.lib
-                fontconfig
-                freetype
-                speechd
-                pipewire
-                dbus
-                openssl
-                sqlite
-                libGL
-                libdrm
-                libgbm
-                libx11
-                libxcb
-                libxcomposite
-                libxdamage
-                libxext
-                libxfixes
-                libxcursor
-                libxi
-                alsa-lib
-                libxkbcommon
-                libxrandr
-                vulkan-loader
-                wayland
-              ];
+              libraries = interfaceLinuxRuntimeLibraries;
             in
             pkgs.stdenvNoCC.mkDerivation {
               pname = "lince";
@@ -890,7 +877,7 @@
               postFixup = ''
                 wrapProgram "$out/bin/lince" \
                   --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}" \
-                  --prefix PATH : "${lib.makeBinPath [ pkgs.bash ]}"
+                  --prefix PATH : "${lib.makeBinPath interfaceLinuxRuntimeTools}"
               '';
               doInstallCheck = true;
               installCheckPhase = ''
@@ -1240,7 +1227,6 @@
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"
-              export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
             '';
           };
         }

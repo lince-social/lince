@@ -839,6 +839,8 @@
             let
               libraries = with pkgs; [
                 stdenv.cc.cc.lib
+                fontconfig
+                freetype
                 speechd
                 pipewire
                 dbus

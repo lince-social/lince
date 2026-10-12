@@ -9,14 +9,14 @@ pub enum Value {
     Choice(String),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Control {
     Toggle,
     Number { min: f32, max: f32, step: f32 },
     Choice(Vec<String>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Definition {
     pub id: String,
     pub label: String,

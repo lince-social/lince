@@ -9,6 +9,7 @@ pub const MAX_STATE_PLACEMENTS: usize = 16_384;
 
 mod state;
 pub use state::State;
+pub mod authoring;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
@@ -121,6 +122,10 @@ impl Descriptor {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Component {
+    Authored {
+        base: Box<Component>,
+        edits: authoring::Edits,
+    },
     Builtin {
         state: ComponentState,
     },
@@ -174,6 +179,19 @@ impl Component {
             return Err("Compose at most 256 parts within eight levels.".into());
         }
         match self {
+            Self::Authored { base, edits } => {
+                if matches!(base.as_ref(), Self::Authored { .. }) {
+                    return Err("An authored item has one editing layer.".into());
+                }
+                edits.validate(registry)?;
+                base.validate_tree(registry, operation, depth, total)?;
+                for part in edits.added.values() {
+                    if let Some(component) = &part.component {
+                        component.validate_tree(registry, Some(false), depth + 1, total)?;
+                    }
+                }
+                Ok(())
+            }
             Self::Builtin { state } => {
                 state.validate()?;
                 Self::validate_builtin_limits(state, depth, total)
@@ -267,6 +285,17 @@ impl Component {
 
     pub fn records(&self) -> Vec<&str> {
         match self {
+            Self::Authored { base, edits } => base
+                .records()
+                .into_iter()
+                .chain(
+                    edits
+                        .added
+                        .values()
+                        .filter_map(|part| part.component.as_ref())
+                        .flat_map(Self::records),
+                )
+                .collect(),
             Self::Builtin { state } => state.records(),
             Self::Native { bindings, .. } => bindings.iter().map(String::as_str).collect(),
             Self::Composition { composition } => composition
@@ -279,6 +308,7 @@ impl Component {
 
     pub fn origin(&self) -> Option<&crate::component::composition::Origin> {
         match self {
+            Self::Authored { base, .. } => base.origin(),
             Self::Builtin {
                 state: ComponentState::Composition { composition },
             } => composition.origin.as_ref(),
@@ -524,6 +554,24 @@ impl Snapshot {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Mutation {
+    Rebind {
+        placement: String,
+        records: BTreeMap<String, String>,
+    },
+    Patch {
+        placement: String,
+        changes: Vec<authoring::Change>,
+    },
+    Duplicate {
+        placement: String,
+        copy: String,
+        workspace: u64,
+        position: [f64; 2],
+    },
+    Group {
+        placements: Vec<String>,
+        group: Option<String>,
+    },
     Add {
         placement: String,
         workspace: u64,
@@ -567,6 +615,15 @@ pub enum Mutation {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Request {
+    InspectElement {
+        placement: String,
+        offset: usize,
+        limit: usize,
+    },
+    Export {
+        placement: String,
+        name: String,
+    },
     Inspect {
         workspace: Option<u64>,
         selected_only: bool,
@@ -591,6 +648,20 @@ impl Request {
 
     pub fn validate(&self) -> Result<(), String> {
         match self {
+            Self::InspectElement {
+                placement,
+                offset,
+                limit,
+            } => {
+                placement_id(placement)?;
+                if *limit == 0 || *limit > 128 || *offset > 16_384 {
+                    return Err("Inspect 1–128 parts at a bounded offset.".into());
+                }
+            }
+            Self::Export { placement, name } => {
+                placement_id(placement)?;
+                workspace_name(name)?;
+            }
             Self::Inspect { limit, offset, .. }
                 if *limit == 0 || *limit > MAX_PLACEMENTS || *offset > 1_000_000 =>
             {
@@ -603,6 +674,61 @@ impl Request {
             } => {
                 request_identifier(request_id)?;
                 match mutation {
+                    Mutation::Rebind { placement, records } => {
+                        placement_id(placement)?;
+                        if records.is_empty()
+                            || records.len() > 32
+                            || records.iter().any(|(from, to)| {
+                                !crate::valid_uid(from, "r") || !crate::valid_uid(to, "r")
+                            })
+                        {
+                            return Err(
+                                "Rebind 1–32 existing Record UIDs to resolved Record UIDs.".into(),
+                            );
+                        }
+                    }
+                    Mutation::Patch { placement, changes } => {
+                        placement_id(placement)?;
+                        if changes.is_empty() || changes.len() > 256 {
+                            return Err("Apply 1–256 authored changes in a patch.".into());
+                        }
+                        for change in changes {
+                            change.validate()?;
+                        }
+                    }
+                    Mutation::Duplicate {
+                        placement,
+                        copy,
+                        workspace,
+                        position,
+                    } => {
+                        placement_id(placement)?;
+                        placement_id(copy)?;
+                        workspace_id(*workspace)?;
+                        Geometry {
+                            position: *position,
+                            size: [1.0; 2],
+                        }
+                        .validate()?;
+                    }
+                    Mutation::Group { placements, group } => {
+                        if placements.is_empty()
+                            || placements.len() > MAX_PLACEMENTS
+                            || group.as_ref().is_some_and(|group| {
+                                group.len() != 32
+                                    || !group.bytes().all(|byte| byte.is_ascii_hexdigit())
+                            })
+                        {
+                            return Err("Group 1–256 placements with a 32-digit hexadecimal group identity, or null to ungroup.".into());
+                        }
+                        let mut ids = BTreeSet::new();
+                        for placement in placements {
+                            placement_id(placement)?;
+                            if !ids.insert(placement) {
+                                return Err("Group members must be unique.".into());
+                            }
+                        }
+                    }
                     Mutation::Add {
                         placement,
                         geometry,
@@ -675,9 +801,23 @@ pub struct Receipt {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "result", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Response {
-    Snapshot { snapshot: Snapshot },
-    Registry { components: Vec<Descriptor> },
-    Receipt { receipt: Receipt },
+    Element {
+        element: authoring::Element,
+    },
+    Export {
+        document: Document,
+        hash: String,
+        revision: u64,
+    },
+    Snapshot {
+        snapshot: Snapshot,
+    },
+    Registry {
+        components: Vec<Descriptor>,
+    },
+    Receipt {
+        receipt: Receipt,
+    },
 }
 
 pub fn validate_registry(components: &[Descriptor]) -> Result<(), String> {

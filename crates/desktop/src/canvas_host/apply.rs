@@ -38,6 +38,34 @@ pub(super) fn apply(
         .iter()
         .map(|placement| (placement.id.as_str(), placement))
         .collect();
+    for placement in &after.placements {
+        if let Some(old) = before_map.get(placement.id.as_str())
+            && old.component != placement.component
+            && authoring::compatible(&old.component, &placement.component)
+            && let Some(entity) = entities.get(&placement.id)
+        {
+            authoring::validate(world, *entity, &placement.component)?;
+        }
+        if let Some(old) = before_map.get(placement.id.as_str())
+            && old.component != placement.component
+            && area::is_area(&old.component)
+            && area::is_area(&placement.component)
+            && let Some(entity) = entities.get(&placement.id)
+        {
+            let configured =
+                area::validate(world, *entity, &placement.component, &placement.geometry)?;
+            if world
+                .get::<crate::area::InfluenceArea>(*entity)
+                .is_some_and(|existing| existing.protein != configured.protein)
+                && authoring::protected_draft(world, *entity)
+            {
+                return Err(
+                    "Save the Record draft before changing its producer configuration.".into(),
+                );
+            }
+            authoring::validate(world, *entity, &placement.component)?;
+        }
+    }
     for placement in &before.placements {
         if entities.get(&placement.id).is_some_and(|entity| {
             world
@@ -57,13 +85,23 @@ pub(super) fn apply(
         }
     }
     for placement in &before.placements {
-        if after_map
-            .get(placement.id.as_str())
-            .is_some_and(|next| next.component == placement.component)
-        {
+        if after_map.get(placement.id.as_str()).is_some_and(|next| {
+            next.component == placement.component
+                || authoring::compatible(&placement.component, &next.component)
+                || area::is_area(&placement.component) && area::is_area(&next.component)
+        }) {
             continue;
         }
         if let Some(entity) = entities.get(&placement.id) {
+            if crate::ide::protect(world, Some(*entity)) {
+                return Err("Save or resolve the editor's file draft before replacing or removing its canvas placement.".into());
+            }
+            if authoring::protected_draft(world, *entity) {
+                return Err(
+                    "Save the Record draft before replacing or removing its canvas placement."
+                        .into(),
+                );
+            }
             let mut pending = vec![*entity];
             while let Some(entity) = pending.pop() {
                 if let (Some(record), Some(text)) = (
@@ -88,15 +126,22 @@ pub(super) fn apply(
         let old = before_map.get(placement.id.as_str()).copied();
         let retained = old.is_none()
             && world.get::<Workspaces>(root).is_some_and(|spaces| {
-                spaces.trash.iter().any(|entry| entry.workspace.id == placement.workspace)
+                spaces
+                    .trash
+                    .iter()
+                    .any(|entry| entry.workspace.id == placement.workspace)
             })
-            && entities.get(&placement.id).is_some_and(|entity| {
-                capture_content(world, *entity) == placement.component
-            });
+            && entities
+                .get(&placement.id)
+                .is_some_and(|entity| capture_content(world, *entity) == placement.component);
         if retained {
             continue;
         }
-        if old.is_none_or(|old| old.component != placement.component) {
+        if old.is_none_or(|old| {
+            old.component != placement.component
+                && !authoring::compatible(&old.component, &placement.component)
+                && !(area::is_area(&old.component) && area::is_area(&placement.component))
+        }) {
             match spawn(
                 world,
                 root,
@@ -107,7 +152,7 @@ pub(super) fn apply(
                 Ok(entity) => added.push((placement, entity)),
                 Err(error) => {
                     for (_, entity) in added {
-                        world.despawn(entity);
+                        authoring::discard(world, entity);
                     }
                     return Err(error);
                 }
@@ -137,7 +182,7 @@ pub(super) fn apply(
         }
         if let Err(error) = api::State::new(canonical, registry()) {
             for (_, entity) in added {
-                world.despawn(entity);
+                authoring::discard(world, entity);
             }
             return Err(error);
         }
@@ -145,11 +190,28 @@ pub(super) fn apply(
     for (placement, entity) in added {
         if let Some(old) = entities.insert(placement.id.clone(), entity) {
             crate::record_view::hide_placement(world, root, old);
-            world.despawn(old);
+            authoring::discard(world, old);
         }
         world
             .entity_mut(entity)
             .insert(Identity(placement.id.clone()));
+    }
+    for placement in &after.placements {
+        if let Some(old) = before_map.get(placement.id.as_str())
+            && old.component != placement.component
+            && authoring::compatible(&old.component, &placement.component)
+        {
+            authoring::reconcile(world, entities[&placement.id], &placement.component)?;
+        } else if let Some(old) = before_map.get(placement.id.as_str())
+            && old.component != placement.component
+            && area::is_area(&old.component)
+            && area::is_area(&placement.component)
+        {
+            let entity = entities[&placement.id];
+            let area = area::validate(world, entity, &placement.component, &placement.geometry)?;
+            area::apply(world, entity, area, &placement.component);
+            authoring::reconcile(world, entity, &placement.component)?;
+        }
     }
     let removed_workspaces: std::collections::HashSet<_> = before
         .workspaces
@@ -187,7 +249,7 @@ pub(super) fn apply(
         if !after_ids.contains(old.id.as_str()) && !removed_workspaces.contains(&old.workspace) {
             if let Some(entity) = entities.remove(&old.id) {
                 crate::record_view::hide_placement(world, root, entity);
-                world.despawn(entity);
+                authoring::discard(world, entity);
             }
         }
     }
@@ -258,6 +320,17 @@ pub(super) fn apply(
     let mut selection = Vec::new();
     for placement in &after.placements {
         let entity = entities[&placement.id];
+        if before_map.get(placement.id.as_str()).is_some_and(|before| {
+            before.group != placement.group
+                || before.geometry != placement.geometry
+                || before.workspace != placement.workspace
+        }) {
+            crate::area_mutation::disarm(
+                world,
+                entity,
+                "Canvas authoring changed placement or grouping; review area effects again.",
+            );
+        }
         world.entity_mut(entity).insert((
             WorkspaceMember(placement.workspace),
             CanvasItem {

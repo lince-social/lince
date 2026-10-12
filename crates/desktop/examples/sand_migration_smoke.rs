@@ -40,6 +40,7 @@ fn exercise(world: &mut World) {
         world.get_mut::<CanvasView>(root).unwrap().zoom = 0.75;
         let mut owners = Vec::new();
         for (index, kind) in [
+            #[cfg(feature = "stuff")]
             SandKind::Freedoom,
             SandKind::Terminal,
             SandKind::Configuration,
@@ -69,7 +70,7 @@ fn exercise(world: &mut World) {
             })
             .map(|(button, _)| (button.target, button.actions.clone()))
             .collect();
-        assert_eq!(actions.len(), 2);
+        assert_eq!(actions.len(), 1 + usize::from(cfg!(feature = "stuff")));
         for (owner, action) in actions {
             action.run(world, owner);
         }

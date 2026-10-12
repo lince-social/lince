@@ -42,7 +42,7 @@ pub enum MediaSand {
 }
 
 impl MediaSand {
-    fn valid(&self) -> bool {
+    pub(crate) fn valid(&self) -> bool {
         match self {
             Self::Image { path } => !path.is_empty() && path.len() <= 4096 && !path.contains('\0'),
             Self::Link { url } => web_url(url).is_ok(),

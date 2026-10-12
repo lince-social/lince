@@ -43,6 +43,7 @@ portable-pty = { workspace = true, optional = true }
 libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
+tempfile = "=3.27.0"
 reqwest = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 # A live guest signs its Actions exactly as a browser would, so the workflow

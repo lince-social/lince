@@ -165,6 +165,17 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         presentation,
         observed: Value::Null,
     };
+    world.entity_mut(row).insert(crate::canvas_host::authoring::PartName("record".into()));
+    for (name, entity) in [
+        ("title", title), ("identity", identity), ("assertions", assertions),
+        ("filled", filled), ("toolbar", toolbar), ("disclosure", toggle),
+        ("compact", compact), ("empty", empty), ("description", body),
+        ("dates", dates), ("threads", threads), ("actions", actions),
+        ("identity-section", groups[0]), ("planning-section", groups[1]),
+        ("work-section", groups[2]), ("discussion-section", groups[3]),
+    ] {
+        world.entity_mut(entity).insert(crate::canvas_host::authoring::PartName(name.into()));
+    }
     world.entity_mut(row).insert(sections.clone());
     sections
 }

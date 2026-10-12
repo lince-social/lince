@@ -249,6 +249,10 @@ pub(crate) fn laboratory_attach(world: &mut World, owner: Entity, data: Value) {
     );
 }
 
+pub(crate) fn authoring_draft(world: &World, entity: Entity) -> bool {
+    rows::authoring_draft(world, entity)
+}
+
 pub(crate) fn laboratory_detach(world: &mut World, owner: Entity) {
     world.entity_mut(owner).remove::<LaboratoryFeed>();
     if let Some(previous) = world.get_resource_mut::<Runtime>()

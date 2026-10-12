@@ -52,6 +52,7 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
     let root = world.spawn_empty().id();
     let parent = world.spawn(Node::default()).id();
     for kind in [
+        #[cfg(feature = "stuff")]
         SandKind::Freedoom,
         SandKind::Terminal,
         SandKind::Configuration,
@@ -64,13 +65,14 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
         .query_filtered::<Entity, With<SandPreview>>()
         .iter(world)
         .collect();
-    assert_eq!(previews.len(), 5);
+    assert_eq!(previews.len(), 4 + usize::from(cfg!(feature = "stuff")));
     let mut labels = Vec::new();
     for preview in previews {
         let mut pending = vec![preview];
         while let Some(entity) = pending.pop() {
             assert!(world.get::<crate::actions::ActionButton>(entity).is_none());
             assert!(world.get::<bevy::text::EditableText>(entity).is_none());
+            #[cfg(feature = "stuff")]
             assert!(world.get::<crate::freedoom::FreedoomSand>(entity).is_none());
             assert!(world.get::<crate::terminal::TerminalSand>(entity).is_none());
             assert!(
@@ -88,12 +90,32 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
             }
         }
     }
-    for caption in ["Start / restart", "Open shell", "Save identity", "Add task"] {
+    for caption in [
+        #[cfg(feature = "stuff")]
+        "Start / restart",
+        "Open shell",
+        "Save identity",
+        "Add task",
+    ] {
         assert!(
             labels.contains(&caption),
             "Missing preview control: {caption}"
         );
     }
+}
+
+#[test]
+fn sand_store_catalog_matches_the_stuff_feature() {
+    use crate::sand_store::SandKind;
+    let names: Vec<_> = SandKind::ALL.into_iter().map(SandKind::name).collect();
+    assert_eq!(names.contains(&"Freedoom"), cfg!(feature = "stuff"));
+    for name in ["Terminal", "Configuration", "Todo", "Ontology"] {
+        assert!(names.contains(&name));
+    }
+    assert_eq!(
+        serde_json::from_str::<SandKind>("\"Freedoom\"").is_ok(),
+        cfg!(feature = "stuff")
+    );
 }
 
 crate::laboratory_cases! {

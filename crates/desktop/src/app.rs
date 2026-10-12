@@ -182,7 +182,6 @@ fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
         .add_plugins(crate::shader_castle::ShaderCastlePlugin)
         .add_plugins(crate::fiote::session::Plugin)
         .add_plugins((
-            crate::freedoom::FreedoomPlugin,
             crate::terminal::TerminalPlugin,
             crate::command_castle::CommandCastlePlugin,
             crate::configuration::ConfigurationPlugin,
@@ -193,6 +192,8 @@ fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
         ))
         .insert_resource(idle_settings())
         .add_systems(Startup, camera);
+    #[cfg(feature = "stuff")]
+    app.add_plugins(crate::freedoom::FreedoomPlugin);
     let wake = if offscreen {
         crate::wake::WakeSignal::new(|| {})
     } else {

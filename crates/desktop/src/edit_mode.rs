@@ -1068,6 +1068,7 @@ pub(crate) fn control(
             SandKind::AccessControl => Icon::Person,
             SandKind::Visibility => Icon::Person,
             SandKind::Sync => Icon::Reset,
+            #[cfg(feature = "stuff")]
             SandKind::Freedoom => Icon::Play,
             SandKind::Terminal => Icon::Forward,
             SandKind::Configuration | SandKind::Organ | SandKind::Ontology => Icon::General,
@@ -1279,6 +1280,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
         );
         crate::workspace_config::controls(world, root, panel);
         crate::inspection::controls(world, root, panel);
+        if let Some(selected) = world.get::<crate::inspection::Inspection>(root).and_then(|inspection| inspection.selected).or_else(|| crate::canvas_selection::selected(world, root).first().copied()) {
+            crate::sand_panel::button(world, panel, root, "Edit native component", crate::canvas_host::authoring::inspector::Open(selected));
+        }
         crate::influence_report::ui::panel(world, root, panel, None);
         crate::deletion::controls(world, root, panel);
         return;

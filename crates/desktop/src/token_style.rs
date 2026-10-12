@@ -33,12 +33,13 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
     }
     if let Some(sand) = world.get::<StoredSand>(entity) {
         return Some(match sand.kind {
+            #[cfg(feature = "stuff")]
+            SandKind::Freedoom => SandStyleKind::Square,
             SandKind::Square
             | SandKind::Operation
             | SandKind::AccessControl
             | SandKind::Visibility
             | SandKind::Sync
-            | SandKind::Freedoom
             | SandKind::Terminal
             | SandKind::Organ
             | SandKind::Configuration
@@ -276,9 +277,9 @@ fn apply(world: &mut World) {
         .collect();
     for (entity, bg, text, border, outline, cursor) in bindings {
         let icon = world.get::<crate::icons::IconButton>(entity).is_some();
-        if let Some(binding) = bg.filter(|_| !icon) {
+        if let Some(binding) = bg.filter(|_| !icon || crate::canvas_host::authoring::token_use_override(world, entity, "background")) {
             let token =
-                if world.get::<CanvasItem>(entity).is_some() && kind(world, entity).is_some() {
+                if world.get::<CanvasItem>(entity).is_some() && kind(world, entity).is_some() && !crate::canvas_host::authoring::token_use_override(world, entity, "background") {
                     Token::SandBackground
                 } else {
                     binding.0
@@ -289,7 +290,7 @@ fn apply(world: &mut World) {
             }
         }
         if let Some(binding) = text {
-            let token = if inherited_kind(world, entity).is_some() {
+            let token = if inherited_kind(world, entity).is_some() && !crate::canvas_host::authoring::token_use_override(world, entity, "text") {
                 Token::SandInk
             } else {
                 binding.0
@@ -304,7 +305,7 @@ fn apply(world: &mut World) {
                 image.color = value;
             }
         }
-        if let Some(binding) = border.filter(|_| !icon) {
+        if let Some(binding) = border.filter(|_| !icon || crate::canvas_host::authoring::token_use_override(world, entity, "border")) {
             let value = resolve(world, entity, binding.0).0.color();
             if let Some(mut color) = world.get_mut::<BorderColor>(entity) {
                 color.set_if_neq(BorderColor::all(value));

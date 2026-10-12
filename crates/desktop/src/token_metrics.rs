@@ -52,9 +52,9 @@ pub(crate) fn icons(world: &mut World) {
             .get::<IconMetrics>(entity)
             .cloned()
             .unwrap_or_default();
-        let ratios = [Token::IconSize, Token::IconPadding].map(|token| {
+        let ratios = [(crate::canvas_host::authoring::metric_token(world, entity, "icon-size", Token::IconSize), Token::IconSize), (crate::canvas_host::authoring::metric_token(world, entity, "icon-padding", Token::IconPadding), Token::IconPadding)].map(|(token, fallback)| {
             resolve(world, entity, token).0.number()
-                / token.default_value(Default::default()).number()
+                / fallback.default_value(Default::default()).number()
         });
         let style = *world.get::<crate::icons::IconStyle>(entity).unwrap();
         let size = metrics.0[0].scale(style.size, ratios[0]);
@@ -75,9 +75,9 @@ pub(crate) fn layout(world: &mut World) {
         .collect();
     for entity in entities {
         let mut metrics = world.get::<Metrics>(entity).cloned().unwrap_or_default();
-        let gap = resolve(world, entity, Token::Spacing).0.number() / 8.0;
-        let padding = resolve(world, entity, Token::Padding).0.number() / 8.0;
-        let font = resolve(world, entity, Token::FontSize).0.number() / 16.0;
+        let gap = resolve(world, entity, crate::canvas_host::authoring::metric_token(world, entity, "spacing", Token::Spacing)).0.number() / 8.0;
+        let padding = resolve(world, entity, crate::canvas_host::authoring::metric_token(world, entity, "padding", Token::Padding)).0.number() / 8.0;
+        let font = resolve(world, entity, crate::canvas_host::authoring::metric_token(world, entity, "font-size", Token::FontSize)).0.number() / 16.0;
         let width = world
             .get::<WidthToken>(entity)
             .map(|binding| (resolve(world, entity, binding.0).0.number(), binding.1));

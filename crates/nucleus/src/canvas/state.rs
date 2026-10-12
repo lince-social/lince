@@ -133,6 +133,20 @@ impl State {
     pub fn handle(&mut self, request: &Request) -> Result<Response, String> {
         request.validate()?;
         match request {
+            Request::InspectElement { placement, .. } => {
+                let placement = self.snapshot.placements.iter().find(|item| &item.id == placement).ok_or("The placement no longer exists.")?.clone();
+                Ok(Response::Element { element: authoring::Element { revision: self.snapshot.revision, placement, parts: Vec::new(), total_parts: 0, next_offset: None, capabilities: vec!["placement-crud".into(), "authored-parts".into(), "tokens".into(), "event-links".into(), "event-action-behaviors".into(), "groups".into(), "export".into()] } })
+            }
+            Request::Export { placement, name } => {
+                let placement = self.snapshot.placements.iter().find(|item| &item.id == placement).ok_or("The placement no longer exists.")?;
+                let mut edits = authoring::edits(&placement.component);
+                edits.size = Some(placement.geometry.size);
+                if let Some(root) = edits.parts.get_mut("root") { root.geometry = None; }
+                let component = Component::Authored { base: Box::new(authoring::base(&placement.component).clone()), edits };
+                let document = Document { format: Document::FORMAT.into(), name: name.clone(), component };
+                let hash = authoring::hash(&document)?;
+                Ok(Response::Export { document, hash, revision: self.snapshot.revision })
+            }
             Request::Registry => Ok(Response::Registry { components: self.registry.clone() }),
             Request::Inspect { workspace, selected_only, offset, limit } => {
                 if workspace.is_some_and(|id| !self.snapshot.workspaces.iter().any(|w| w.id == id)) { return Err("The workspace no longer exists.".into()); }
@@ -204,6 +218,80 @@ impl State {
             }
         };
         match mutation {
+            Mutation::Rebind { placement, records } => {
+                let selected = find(next, placement)?;
+                let component = authoring::rebind(&selected.component, records)?;
+                component.validate(&self.registry, true)?;
+                selected.component = component;
+                Ok((vec![placement.clone()], Some(selected.workspace)))
+            }
+            Mutation::Patch { placement, changes } => {
+                let selected = find(next, placement)?;
+                let mut edits = authoring::edits(&selected.component);
+                for change in changes {
+                    edits.apply(change)?;
+                }
+                if let Some(geometry) = edits
+                    .parts
+                    .get("root")
+                    .and_then(|part| part.geometry.clone())
+                {
+                    selected.geometry = geometry;
+                }
+                for (axis, token) in ["Width", "Height"].into_iter().enumerate() {
+                    if let Some(authoring::TokenValue::Number(value)) = edits
+                        .parts
+                        .get("root")
+                        .and_then(|part| part.tokens.get(token))
+                    {
+                        selected.geometry.size[axis] = f64::from(*value);
+                    }
+                }
+                if edits.size.is_some() {
+                    edits.size = Some(selected.geometry.size);
+                }
+                let component = Component::Authored {
+                    base: Box::new(authoring::base(&selected.component).clone()),
+                    edits,
+                };
+                component.validate_snapshot(&self.registry)?;
+                selected.component = component;
+                Ok((vec![placement.clone()], Some(selected.workspace)))
+            }
+            Mutation::Duplicate {
+                placement,
+                copy,
+                workspace,
+                position,
+            } => {
+                require_workspace(*workspace)?;
+                if next.placements.iter().any(|item| &item.id == copy) {
+                    return Err("The copy identity is already used.".into());
+                }
+                let mut duplicate = find(next, placement)?.clone();
+                duplicate.id = copy.clone();
+                duplicate.workspace = *workspace;
+                duplicate.geometry.position = *position;
+                duplicate.group = None;
+                duplicate.selected = false;
+                duplicate.metadata.attachment = None;
+                duplicate.metadata.group_pose = None;
+                next.placements.push(duplicate);
+                Ok((vec![copy.clone()], Some(*workspace)))
+            }
+            Mutation::Group { placements, group } => {
+                let mut workspace = None;
+                for id in placements {
+                    let selected = find(next, id)?;
+                    if workspace.is_some_and(|workspace| workspace != selected.workspace) {
+                        return Err("A transform group stays within one workspace.".into());
+                    }
+                    workspace = Some(selected.workspace);
+                    selected.group = group.clone();
+                    selected.metadata.group_pose = None;
+                }
+                Ok((placements.clone(), workspace))
+            }
             Mutation::Add {
                 placement,
                 workspace,
@@ -251,11 +339,27 @@ impl State {
                 let selected = find(next, placement)?;
                 selected.workspace = *workspace;
                 selected.geometry.position = *position;
+                if let Component::Authored { edits, .. } = &mut selected.component
+                    && let Some(root) = edits.parts.get_mut("root")
+                    && let Some(geometry) = &mut root.geometry
+                {
+                    geometry.position = *position;
+                }
                 Ok((vec![placement.clone()], Some(*workspace)))
             }
             Mutation::Resize { placement, size } => {
                 let selected = find(next, placement)?;
                 selected.geometry.size = *size;
+                if let Component::Authored { edits, .. } = &mut selected.component {
+                    edits.size = Some(*size);
+                    if let Some(root) = edits.parts.get_mut("root") {
+                        root.tokens.remove("Width");
+                        root.tokens.remove("Height");
+                        if let Some(geometry) = &mut root.geometry {
+                            geometry.size = *size;
+                        }
+                    }
+                }
                 Ok((vec![placement.clone()], Some(selected.workspace)))
             }
             Mutation::Remove { placement } => {

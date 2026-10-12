@@ -2,7 +2,7 @@ use super::*;
 use engine::{Engine, actions::Action};
 use std::sync::Arc;
 
-fn fixture() -> (App, Entity) {
+pub(super) fn fixture() -> (App, Entity) {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
     app.add_plugins(MinimalPlugins)
@@ -171,15 +171,14 @@ fn builtin_inspection_tracks_manual_area_changes_after_native_creation() {
         .unwrap();
     area.immunity = crate::area_effects::Immunity::Isolation;
     area.strength = 23.0;
-    assert_eq!(
-        capture_content(app.world(), entity),
-        ContentKind::Builtin {
-            state: nucleus::component::ComponentState::Area {
-                immunity: nucleus::component::Immunity::Isolation,
-                strength: 23
-            }
-        }
-    );
+    let ContentKind::Native { kind, settings, .. } = capture_content(app.world(), entity) else {
+        panic!("native area");
+    };
+    assert_eq!(kind, "area");
+    let configuration: serde_json::Value =
+        serde_json::from_str(settings["configuration"].as_str().unwrap()).unwrap();
+    assert_eq!(configuration["immunity"], "Isolation");
+    assert_eq!(configuration["strength"], 23.0);
 }
 
 #[test]
@@ -210,14 +209,36 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
 #[test]
 fn visibility_castle_restores_its_record_and_scope_without_policy_contents() {
     let (mut app, root) = fixture();
-    let sand = crate::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::Visibility, "", DVec2::ZERO);
-    let panel = app.world().get::<StoredSand>(sand).unwrap().content.unwrap();
+    let sand = crate::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::Visibility,
+        "",
+        DVec2::ZERO,
+    );
+    let panel = app
+        .world()
+        .get::<StoredSand>(sand)
+        .unwrap()
+        .content
+        .unwrap();
     let record = nucleus::new_uid("r");
-    lince_interface::visibility::set_target(app.world_mut(), panel, &record, nucleus::visibility::Data::LiveLocation);
+    lince_interface::visibility::set_target(
+        app.world_mut(),
+        panel,
+        &record,
+        nucleus::visibility::Data::LiveLocation,
+    );
     let saved = capture_content(app.world(), sand);
     saved.validate(&registry(), false).unwrap();
     let copy = spawn(app.world_mut(), root, 1, DVec2::ZERO, &saved).unwrap();
-    let panel = app.world().get::<StoredSand>(copy).unwrap().content.unwrap();
+    let panel = app
+        .world()
+        .get::<StoredSand>(copy)
+        .unwrap()
+        .content
+        .unwrap();
     let selected = lince_interface::visibility::selection(app.world(), panel).unwrap();
     assert_eq!(selected.record_uid, record);
     assert_eq!(selected.data, nucleus::visibility::Data::LiveLocation);

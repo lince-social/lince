@@ -69,6 +69,10 @@ pub(crate) fn part_owner(world: &World, entity: Entity) -> Option<Entity> {
     world.get::<Part>(entity).map(|part| part.owner)
 }
 
+pub(crate) fn authoring_activation(world: &mut World, owner: Entity, activate: bool) {
+    if let Some(mut view) = world.get_mut::<View>(owner) { view.initialized = !activate; }
+}
+
 #[derive(Component, Default)]
 struct View {
     status: String,

@@ -10,6 +10,7 @@ description = "Desktop application and native runtime for Lince."
 
 [features]
 default = ["native-runtime"]
+stuff = ["native-runtime", "dep:cc"]
 instinct = ["native-runtime", "engine/instinct"]
 native-media = ["native-runtime", "dep:lince-media", "lince-media/native"]
 native-runtime = [
@@ -140,7 +141,7 @@ tray-icon = { version = "=0.25.0", default-features = false, optional = true }
 muda = { version = "=0.20.0", default-features = false, optional = true }
 
 [build-dependencies]
-cc = "1.2"
+cc = { version = "1.2", optional = true }
 sensei = { workspace = true }
 resvg = { version = "0.48.1", default-features = false }
 

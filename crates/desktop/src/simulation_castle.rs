@@ -49,6 +49,12 @@ impl Default for SimulationCastle {
     }
 }
 
+impl SimulationCastle {
+    pub(crate) fn valid(&self) -> bool {
+        self.check_form.valid() && self.transfer_form.valid() && self.pending_transfers.len() <= 64 && self.pending_transfers.iter().all(transfers_ui::Form::valid) && self.sharing.valid() && self.scenario.len() <= 1024 * 1024 && [&self.source_directory, &self.output_directory, &self.run_directory, &self.selected_cell, &self.search_count, &self.through].iter().all(|value| value.len() <= 4096) && self.last_run.as_ref().is_none_or(|path| path.len() <= 4096)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Field {
     Sources,

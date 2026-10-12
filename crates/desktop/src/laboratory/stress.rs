@@ -204,12 +204,13 @@ impl StressRun {
                     DVec2::new(x * f64::from(span.x), y * f64::from(span.y) + 130.0),
                 );
                 let size = match self.kind() {
+                    #[cfg(feature = "stuff")]
+                    SandKind::Freedoom => Vec2::new(520.0, 540.0),
                     SandKind::Square => Vec2::splat(12.0),
                     SandKind::Operation
                     | SandKind::AccessControl
                     | SandKind::Visibility
                     | SandKind::Sync
-                    | SandKind::Freedoom
                     | SandKind::Terminal
                     | SandKind::Organ
                     | SandKind::Configuration

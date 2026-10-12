@@ -562,6 +562,7 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::Sync {
                         content = Some(crate::sync_castle::populate(world, root, entity));
                     }
+                    #[cfg(feature = "stuff")]
                     if sand.kind == SandKind::Freedoom {
                         content = Some(crate::freedoom::populate(world, root, entity));
                     }
@@ -1423,6 +1424,7 @@ pub(crate) mod tests {
         let path = directory.path().join("interface.json");
         let (mut app, root) = fixture(Some(path.clone()));
         for (index, kind) in [
+            #[cfg(feature = "stuff")]
             SandKind::Freedoom,
             SandKind::Terminal,
             SandKind::Configuration,
@@ -1455,8 +1457,9 @@ pub(crate) mod tests {
             .iter(app.world())
             .map(|(entity, sand)| (entity, sand.kind))
             .collect();
-        assert_eq!(sands.len(), 6);
+        assert_eq!(sands.len(), 5 + usize::from(cfg!(feature = "stuff")));
         for kind in [
+            #[cfg(feature = "stuff")]
             SandKind::Freedoom,
             SandKind::Terminal,
             SandKind::Configuration,
@@ -1466,6 +1469,7 @@ pub(crate) mod tests {
         ] {
             let owner = sands.iter().find(|(_, found)| *found == kind).unwrap().0;
             let populated = match kind {
+                #[cfg(feature = "stuff")]
                 SandKind::Freedoom => app
                     .world()
                     .get::<crate::freedoom::FreedoomSand>(owner)

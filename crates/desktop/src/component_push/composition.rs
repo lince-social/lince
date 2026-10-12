@@ -264,7 +264,7 @@ fn populate_validated(
 }
 
 #[derive(Clone)]
-pub(super) struct Invoke(pub engine::actions::Action);
+pub(crate) struct Invoke(pub engine::actions::Action);
 impl crate::actions::Action for Invoke {
     fn apply(&self, world: &mut World, owner: Entity) {
         let mut ancestor = owner;

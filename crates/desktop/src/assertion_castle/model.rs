@@ -10,7 +10,7 @@ pub struct Selection {
 }
 
 impl Selection {
-    pub(super) fn valid(&self) -> bool {
+    pub(crate) fn valid(&self) -> bool {
         nucleus::valid_uid(&self.predicate, "c") && self.name.len() <= 1024
     }
 }

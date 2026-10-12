@@ -47,6 +47,10 @@ pub(super) struct PropertyEditor {
     attempted: Option<String>,
 }
 
+pub(super) fn authoring_draft(world: &World, entity: Entity) -> bool {
+    world.get::<PropertyEditor>(entity).zip(world.get::<EditableText>(entity)).is_some_and(|(editor, text)| editor.pending.is_some() || text.value().to_string() != editor.observed)
+}
+
 pub(super) fn attach_scalar(
     world: &mut World,
     entity: Entity,
@@ -260,6 +264,7 @@ pub(super) fn fields(
                 },
                 ScrollPosition::default(),
                 PropertyContainer(property.property.clone()),
+                crate::canvas_host::authoring::PartName(format!("property-{}", property.property)),
                 ChildOf(parent),
                 Tooltip(
                     protein::record_schema::fields()

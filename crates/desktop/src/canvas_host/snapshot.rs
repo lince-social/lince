@@ -12,12 +12,24 @@ fn follows_native_state(state: &nucleus::component::ComponentState) -> bool {
 }
 
 pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
+    if let Some(Content(ContentKind::Authored { base, edits })) = world.get::<Content>(entity) {
+        return ContentKind::Authored {
+            base: base.clone(),
+            edits: edits.clone(),
+        };
+    }
+    capture_base_content(world, entity)
+}
+
+fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
     if let Some(composition) = composition::capture(world, entity) {
         return ContentKind::Composition { composition };
     }
     if let Some(content) = world.get::<Content>(entity) {
-        if !matches!(content.0, ContentKind::Native { .. })
-            && !matches!(&content.0, ContentKind::Builtin { state } if follows_native_state(state))
+        if !matches!(
+            content.0,
+            ContentKind::Native { .. } | ContentKind::Authored { .. }
+        ) && !matches!(&content.0, ContentKind::Builtin { state } if follows_native_state(state))
         {
             return content.0.clone();
         }
@@ -40,7 +52,22 @@ pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
             },
         };
     }
+    if let Some(area) = world.get::<crate::area::InfluenceArea>(entity) {
+        if area
+            .protein
+            .as_ref()
+            .is_none_or(|config| !config.record_cards)
+        {
+            return super::area::component(area);
+        }
+    }
     if let Some(sand) = world.get::<StoredSand>(entity) {
+        if matches!(world.get::<Content>(entity), Some(Content(ContentKind::Native { kind, .. })) if kind == "layout")
+        {
+            if let Some(component) = super::factories::capture(world, entity) {
+                return component;
+            }
+        }
         let mut settings = BTreeMap::from([(
             "texts".into(),
             serde_json::json!(
@@ -60,7 +87,10 @@ pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
             );
         }
         if let Some(clock) = world.get::<crate::time_castle::TimeSettings>(entity) {
-            settings.insert("time_castle".into(), serde_json::json!(serde_json::to_string(&clock.0).unwrap()));
+            settings.insert(
+                "time_castle".into(),
+                serde_json::json!(serde_json::to_string(&clock.0).unwrap()),
+            );
         }
         if let Some(todo) = crate::todo::snapshot(world, entity) {
             settings.insert(
@@ -68,8 +98,14 @@ pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
                 serde_json::json!(serde_json::to_string(&todo).unwrap()),
             );
         }
-        if let Some(selection) = sand.content.and_then(|panel| lince_interface::visibility::selection(world, panel)) {
-            settings.insert("visibility".into(), serde_json::json!(serde_json::to_string(&selection).unwrap()));
+        if let Some(selection) = sand
+            .content
+            .and_then(|panel| lince_interface::visibility::selection(world, panel))
+        {
+            settings.insert(
+                "visibility".into(),
+                serde_json::json!(serde_json::to_string(&selection).unwrap()),
+            );
         }
         if matches!(
             sand.kind,
@@ -96,6 +132,12 @@ pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
             settings,
             bindings: Vec::new(),
         };
+    }
+    if let Some(component) = super::factories::capture(world, entity) {
+        return component;
+    }
+    if let Some(component) = super::kanban::capture(world, entity) {
+        return component;
     }
     if let Some(castle) = world.get::<crate::protein_castle::ProteinCastle>(entity) {
         let query = serde_json::to_string(&castle.draft.query).unwrap();
@@ -263,6 +305,7 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                 .iter()
                 .filter(|entity| {
                     world.get::<CanvasItem>(*entity).is_some()
+                        && super::authoring::owner(world, *entity) == *entity
                         && world.get::<WorkspaceMember>(*entity).is_none_or(|member| {
                             world.get::<Workspaces>(root).is_some_and(|spaces| {
                                 spaces.entries.iter().any(|space| space.id == member.0)
@@ -346,7 +389,9 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                     position: item.position.to_array(),
                     size: item.size.as_dvec2().to_array(),
                 },
-                selected: selected.contains(&entity),
+                selected: selected
+                    .iter()
+                    .any(|selected| super::authoring::owner(world, *selected) == entity),
                 group: placement
                     .group
                     .map(|group| group.0.iter().map(|byte| format!("{byte:02x}")).collect()),

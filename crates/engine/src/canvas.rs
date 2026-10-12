@@ -368,6 +368,18 @@ impl Engine {
     {
         Box::pin(async move {
             match component {
+                Component::Authored { base, edits } => {
+                    self.resolve_canvas_component(base, actor).await?;
+                    for part in edits.added.values_mut() {
+                        if let Some(component) = &mut part.component {
+                            self.resolve_canvas_component(component, actor).await?;
+                        }
+                    }
+                    for behavior in edits.behaviors.values() {
+                        serde_json::from_value::<crate::actions::Action>(behavior.action.clone())
+                            .map_err(EngineError::Json)?;
+                    }
+                }
                 Component::Builtin { state } => {
                     *state = self.resolve_component(state.clone()).await?;
                     self.authorize_component(state, actor).await?;
@@ -426,6 +438,47 @@ impl Engine {
         if let Request::Mutate { mutation, .. } = &mut request {
             let configuring = matches!(mutation, Mutation::Configure { .. });
             match mutation {
+                Mutation::Rebind { records, .. } => {
+                    self.refuse_unreadable_karma_inputs(
+                        actor,
+                        &records.values().cloned().collect::<Vec<_>>(),
+                    )
+                    .await?;
+                }
+                Mutation::Patch { changes, .. } => {
+                    for change in changes {
+                        match change {
+                            nucleus::canvas::authoring::Change::InsertPart {
+                                definition, ..
+                            } => {
+                                if let Some(component) = &mut definition.component {
+                                    self.resolve_canvas_component(component, actor).await?;
+                                    component
+                                        .validate(&registry, false)
+                                        .map_err(EngineError::Consequence)?;
+                                }
+                            }
+                            nucleus::canvas::authoring::Change::ConfigurePart {
+                                component: Some(component),
+                                ..
+                            } => {
+                                self.resolve_canvas_component(component, actor).await?;
+                                component
+                                    .validate(&registry, true)
+                                    .map_err(EngineError::Consequence)?;
+                            }
+                            nucleus::canvas::authoring::Change::SetBehavior {
+                                behavior, ..
+                            } => {
+                                serde_json::from_value::<crate::actions::Action>(
+                                    behavior.action.clone(),
+                                )
+                                .map_err(EngineError::Json)?;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
                 Mutation::Add { component, .. } | Mutation::Configure { component, .. } => {
                     component
                         .validate(&registry, configuring)
@@ -485,6 +538,56 @@ impl Engine {
             .map_err(EngineError::Consequence)?;
         nucleus::canvas::bounded(&response).map_err(EngineError::Consequence)?;
         let response = match (request, response) {
+            (Request::InspectElement { placement, .. }, Response::Element { element })
+                if element.placement.id == placement =>
+            {
+                element
+                    .placement
+                    .component
+                    .validate_snapshot(&registry)
+                    .map_err(EngineError::Consequence)?;
+                let records: Vec<_> = element
+                    .placement
+                    .component
+                    .records()
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect();
+                self.refuse_unreadable_karma_inputs(actor, &records).await?;
+                Response::Element { element }
+            }
+            (
+                Request::Export { name, .. },
+                Response::Export {
+                    document,
+                    hash,
+                    revision,
+                },
+            ) if document.name == name && document.format == nucleus::canvas::Document::FORMAT => {
+                document
+                    .component
+                    .validate_snapshot(&registry)
+                    .map_err(EngineError::Consequence)?;
+                let records: Vec<_> = document
+                    .component
+                    .records()
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect();
+                self.refuse_unreadable_karma_inputs(actor, &records).await?;
+                if nucleus::canvas::authoring::hash(&document).map_err(EngineError::Consequence)?
+                    != hash
+                {
+                    return Err(EngineError::Consequence(
+                        "The export hash does not match its canonical definition.".into(),
+                    ));
+                }
+                Response::Export {
+                    document,
+                    hash,
+                    revision,
+                }
+            }
             (Request::Inspect { .. }, Response::Snapshot { mut snapshot }) => {
                 snapshot.validate().map_err(EngineError::Consequence)?;
                 let mut readable = Vec::new();

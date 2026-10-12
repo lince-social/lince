@@ -73,7 +73,7 @@ impl Placement {
         Self {
             practice_source: world.get::<crate::practice_cells::PracticeSource>(entity).map(|source| source.0.clone()),
             identity: world.get::<crate::canvas_host::Identity>(entity).map(|id| id.0.clone()),
-            canvas_component: crate::canvas_host::composition::capture(world, entity).map(|composition| nucleus::canvas::Component::Composition { composition }).or_else(|| world.get::<crate::canvas_host::Content>(entity).map(|content| content.0.clone())),
+            canvas_component: world.get::<crate::canvas_host::Content>(entity).filter(|content| matches!(content.0, nucleus::canvas::Component::Authored { .. })).map(|content| content.0.clone()).or_else(|| crate::canvas_host::composition::capture(world, entity).map(|composition| nucleus::canvas::Component::Composition { composition })).or_else(|| world.get::<crate::canvas_host::Content>(entity).map(|content| content.0.clone())),
             backend_component,
             layout: world.get::<crate::layout::LayoutBox>(entity).copied(),
             events: world

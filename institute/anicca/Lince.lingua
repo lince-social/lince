@@ -55,11 +55,8 @@ Is our best case scenario to have a hardware that is wearable in the head, somet
 
 We want to minimize the time spent managing the meeting of Needs and Contributions. The rest is just doing things, living life. We need a major version of Lince that will kill it. It might be a v2.0.0, but it Needs a lot of thinking: a realistic best case scenario, and the Contributions for it to kill Lince.
 
-A team is being assembled, to fight the battle of killing Lince. Will you join the party?
-
 | "Death is only the beginning" - The Mummy.
 } r_YJQ36ETAKE8J7F8Y65DG7V43MB
-
 
 Installation (@installation: 0, #instinct, #part-of @tool) {
 
@@ -350,6 +347,34 @@ We call a Vocabulary the bundle of Assertions that come from an Organ, as if we 
 - [ ] **Add local archive and dump support.** Let people browse supported offline knowledge collections through the same reading and saving workflow.
 
 - [ ] **Verify the complete experience.** Test permissions, retries, offline use, sync, export, and resource limits. Check keyboard use, multilingual input, right-to-left text, screen readers, and mobile layouts, including real devices where available.
+
+## Expressions, configuration, and scripts
+
+The planned language work makes Lingua the shared syntax for expressions, while Nucleus evaluates them and the engine supplies permitted Record readings. The first script feature should select a Lince directory, use local variables, read Record quantities, and print results. Checking, formatting, importing, and syncing files must remain separate from explicitly running a script. Functions and broader computation can come later as real uses require them. The details below are work still to do; the proposed syntax and typing rules need to be settled before implementation.
+
+- [ ] **Settle the first script’s rules.** Decide how variables, text, numbers, and directory selection behave. For example, with quantity 10, the proposed `print("Quantity is: " + str(@my-record + 2))` prints `Quantity is: 12`. Explicit `str(...)` conversion is still a proposal.
+
+- [ ] **Make Lingua parse expressions itself.** Conditions currently contain quoted text that Nucleus parses separately. Add shared expression syntax for arithmetic, comparisons, references, names, and calls. Preserve source locations so errors can point to the offending expression.
+
+- [ ] **Move existing expression users to the shared grammar.** Update Karma conditions, Transfer formulas, reference extraction, and binding resolution. Preserve existing exact arithmetic, short-circuit evaluation, gates, and carry behavior. Remove the handwritten expression parser after its consumers have moved.
+
+- [ ] **Keep document handling separate from script execution.** Checking, formatting, importing, syncing, and inserting Record IDs must never run statements or change the selected instance. Extend these operations to preserve new syntax and clearly reject statements where they are unsupported. Record descriptions must remain ordinary prose.
+
+- [ ] **Read directory configuration before opening an instance.** Add explicit selection of a configuration or script file containing a literal `dir` assignment. Resolve relative paths from that file’s folder, define command-line precedence, and reject invalid configuration before opening a database or creating instance files. Reuse the existing directory override and ownership guard.
+
+- [ ] **Implement variables and the read-only script evaluator.** Add checked local bindings, explicit value types, `str`, and `print`. Resolve Record references through the engine and read quantities from a consistent snapshot. Missing references, mixed-type arithmetic, overflow, and output failures should produce useful errors.
+
+- [ ] **Bound script execution.** Limit expression depth, execution work, memory, output, and host reads; support cancellation. The first runner should expose only permitted Record reads and printing. Repeated references should reuse the run’s readings.
+
+- [ ] **Expose language commands through `cargo xtask`.** Lingua already has standalone checking and formatting, but no script runner or xtask language commands. Add check, format, and explicit run commands. Checking and formatting must work without starting an instance.
+
+- [ ] **Verify the complete first increment.** Add focused coverage for grammar precedence, decimal behavior, reference names, diagnostics, statement preservation, execution limits, and directory selection. Verify that the example reads the chosen instance and that file sync never executes scripts.
+
+- [ ] **Remove the unused Rhai declaration.** It remains in the workspace manifest, and no crate currently consumes it. Remove it as part of establishing the single language implementation.
+
+- [ ] **Optional interface, after approval: add script controls.** Provide source diagnostics, the effective directory, Run, output, and Stop using native Rust components. Reuse the same evaluator as the command line.
+
+- [ ] **Later: grow the language from actual needs.** Add functions and lexical scopes first, then branching, collections, and bounded loops. Prototype indentation handling before choosing block syntax. Modules and Record writes need separate rules; writes should use existing authorized engine actions.
 }
 
 Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
@@ -360,12 +385,68 @@ Areas of Influence are shapes you put in the canvas. They can have some logic be
 - Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
 
 And many more. They are one way to add logic and customization to your experience on the interface.
+
+- [ ] **Fix selecting areas directly on the canvas.** Preserve which area was clicked when forwarding input to its contents. Selection, inspection, editing, dragging, and the Delete menu should agree on the selected item, while nested buttons remain usable.
+
+- [ ] **Explain exactly what Delete will remove.** Deleting a Kanban column currently removes the whole grouped board. Show the affected items before confirmation, and distinguish selecting one member for editing from selecting its whole group.
+
+- [ ] **Clarify deletion of generated cards.** Removing their owner should stop its subscriptions and remove its generated contents. Decide whether removing an individual card permanently hides it or allows the feed to recreate it. Explain the difference between removing a canvas view and deleting its underlying Record.
+
+- [ ] **Explain why an item cannot be deleted.** Replace silent failures with a useful reason, such as needing edit mode, belonging to another workspace, or the selection changing before confirmation. Keep the existing workspace and Practice restrictions.
+
+- [ ] **Verify nested Fiote controls and duplicate views.** Test buttons, typing, press/release handling, drafts, and focus with rendering enabled. Two castles showing the same Person must keep their interaction state separate. A test already covers unchanged status updates preserving controls and focus; verify that behavior in the complete canvas.
+
+- [ ] **Reproduce the reported Relation Castle crash.** The audit could not reproduce it. Test selecting its surface, selecting it through Areas, and switching between the two identically named areas with their contents loaded. Capture the actual failure before choosing a fix.
+
+- [ ] **Show empty sources and missing castle behavior clearly.** A query matching no Records should explain that result and retain editing/deletion controls. An area named “Relation Castle” without relation behavior should show its actual configuration and offer an explicit way to restore that behavior.
+
+- [ ] **Add workspace checks and targeted repairs.** Check saved geometry, identities, layout links, groups, and generated-item ownership. Separate valid empty queries from broken references. Preserve the original snapshot and offer specific repairs for confirmed problems.
+
+- [ ] **Test the complete interaction path.** Cover flat and spatial views, ordinary areas, generated cards, duplicate Fiote views, and Kanban groups. Verify selection, visible Delete controls, confirmation scope, cancellation, cleanup, and persistence after reopening. Existing tests bypass parts of the pointer routing where the failure occurs.
 }
 
 Blood (@blood: 0, #instinct, #part-of @ontology) {
 If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
 
 This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
+
+The plugin foundation already supports startup discovery, native configuration controls, Sync providers, Actions, and Record schemas. Nostr public notes and .ics/Markdown exports are implemented. Calendar exports use Schedule Proteins and the same simulation and allocation as Time Castle, without needing an open clock. They replace the selected file after a complete successful export; edits made in a calendar app do not flow back into Lince.
+
+- [ ] **Complete package compatibility information.** Let a package declare its publisher, supported operating systems, required Lince interfaces, and dependencies on other packages. Explain why a package cannot run, and prevent dependent features from starting without what they need.
+
+- [ ] **Add package installation and update controls.** Installation currently uses local commands and requires restarting Lince. Provide a supported way to install, update, and remove packages, inspect their origin, and review changed access requests. Preserve saved Records and settings when a package is removed.
+
+- [ ] **Add enforceable access limits for plugins.** Current native plugins run with the computer account’s file and network access. Choose a sandbox or restricted runtime, let people grant specific access, and make revoking that access stop the affected operations. Process timeouts already exist; they do not restrict filesystem or network access.
+
+- [ ] **Allow plugin Actions to work through Karma.** Actions currently run through local interface controls. Add an authorized automation path so a rule can invoke an approved Action, with saved intentions, results, and protection against repeating an external effect after a retry.
+
+- [ ] **Add simulated plugin responses.** Executable plugins are currently blocked during Simulation. Let simulations use recorded inputs and mock results, so people can test rules and integrations without publishing messages or contacting real services.
+
+- [ ] **Provide a conflict review screen.** When an imported object changes upstream, Sync currently stops with a conflict rather than overwriting the local Record. Show the original, local, and incoming versions, and let the person choose what to keep while preserving local annotations.
+
+- [ ] **Finish delivery history and unresolved-delivery controls.** Failed and uncertain deliveries have retry controls, but receipts have a fixed storage limit and no maintenance interface. Let people inspect and clear completed history, and resolve pending deliveries before changing connection settings.
+
+- [ ] **Support continuous plugin connections.** The host currently starts a process for each operation. Add supervised, long-running sessions with reconnecting, cancellation, and clean shutdown. This is needed for protocols such as IRC that should stay connected.
+
+- [ ] **Build a second communication provider.** Choose IRC or ActivityPub and implement its supported receiving and sending operations through the existing registries. Use it to verify that another protocol can work without adding protocol-specific branches to Lince’s engine or interface.
+
+- [ ] **Make connections reusable across Sync bindings.** Separate the account or endpoint from each binding’s filters, direction, and destination. Several bindings should be able to use one connection while keeping their selections and delivery state independent.
+
+- [ ] **Coordinate execution across Cells.** Choose which Cell runs a shared connection and provide an explicit handover and recovery process. Prevent two disconnected Cells from independently sending the same queued publication.
+
+- [ ] **Bring built-in Sync implementations into the shared catalogues.** Register existing file and Organ synchronization through the common discovery and status system, while preserving how each kind of synchronization works.
+
+- [ ] **Expand Record mappings and writeback.** Current imports produce plain Records with metadata. Add mappings for Threads, Messages, authors, relations, and supported editable fields. Clearly distinguish changing a local copy, updating the external object, and requesting remote deletion.
+
+- [ ] **Choose any additional Nostr features explicitly.** The example handles public text notes. Private messages, relay authentication, reactions, deletion requests, and fuller history remain outside its current scope. Each chosen feature needs its own mapping, controls, and verification.
+
+- [ ] **Add plugin views and Record editors when needed.** Let packages supply specialized Sands, Castles, and field editors through defined interfaces. Keep generic Record inspection usable when the package is unavailable, and include accessibility, licenses, and credits.
+
+- [ ] **Add further plugin families one at a time.** The plan proposed knowledge sources, Vocabulary packages, Fiote providers, IDE tools, document readers, media processing, maps, devices, notifications, and Transfer integrations. Implement each only alongside a concrete feature, its controls, and tests. These are later extensions, not requirements for finishing the current version.
+
+- [ ] **Verify each extension across its supported platforms.** Test restarts, interrupted operations, duplicate events, revoked access, conflicting updates, and resource limits. The existing management controls are desktop-based; mobile support needs its own interface and a compatible execution approach.
+
+- [ ] **Close the recorded calendar verification gap.** Confirm whether a later native Time Castle test run covered the shared cursor behavior used by .ics exports. If it did not, rerun those tests. The export notes recorded passing format and Sync tests, but their native clock test run was interrupted by a concurrent map compile error. Check the current result rather than assuming that old error still exists.
 }
 
 Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
@@ -381,6 +462,12 @@ A rule is one sentence long, and the parts below take that sentence apart: what 
 
 > Deferred Karma work:
 - **Deferred HTTP inputs:** authenticated requests that update Signals or invoke saved commands, with scoped access and retry protection.
+
+- [ ] **Correct sharing setup in the four-Cell simulation.** The scenario expects a Record to reach other Cells, but pairing only marks contacts as known. Synchronization defaults to disabled. Explicitly grant the sharing that this scenario intends, then check convergence through duplicate messages, disconnection, and restart. Preserve normal permission checks.
+
+- [ ] **Correct permissions in the two-Organ simulation.** Check synchronization permissions between Organs and membership within each Organ. The recorded `Forbidden` failure is consistent with receiving replication while contact synchronization is disabled. Ensure the intended Records reach authorized Cells and remain unavailable to others.
+
+- [ ] **Close the network campaign-resume verification gap.** Resume is already implemented, but the notes excluded its check. After correcting the network scenarios, verify that resuming continues from the saved position, preserves failure evidence, and avoids repeating completed cases.
 
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 
@@ -616,6 +703,44 @@ On Trust: When interacting with other parties, it is important to know how much 
 
 "The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
 
+- [ ] **Handle different device clocks safely.** Location fixes are still accepted or rejected using source and authority timestamps. Use a bounded age protocol so a wrong or changed clock cannot reject fresh positions or keep old ones alive. Preserve source approval and replay protection.
+
+- [ ] **Make sharing-authority changes usable.** The authority endpoint is displayed, but there is no explicit handover of its private settings to another Cell. Show connection status clearly and provide an authorized handover that ends the old session and requires fresh source approval.
+
+- [ ] **Finish location invitations.** Person and device selection already exist, but outside viewers still copy and paste a private reference. Add sending and opening invitations through the normal private conversation flow, with a clear audience, precision, and stopping condition. Receiving an invitation must still require permission.
+
+- [ ] **Build the guided Transport Transfer flow.** Bring existing Needs, Contributions, private requests, agreements, reservations, and completion controls into a simple “Need transport” / “Offer transport” workflow. Ask for origin, destination, time window, and capacity. Keep it usable as a list when maps or discovery services are unavailable.
+
+- [ ] **Add reviewed sharing shortcuts for participants.** Let a driver review sharing with selected passengers, and let each passenger independently choose the driver or outside observers. Adding someone to a Transfer must require a separate decision before sharing their location.
+
+- [ ] **Add reusable journey progress actions.** Provide explicit actions such as arrived, met/boarded, departed, and reached destination. These controls are missing. They should describe progress without automatically confirming fulfillment or creating another accounting result.
+
+- [ ] **Add geographic and time-sensitive announcements.** Public announcements currently store area and availability as text, with publication lifetimes of one to seven days. Add bounded approximate origin/destination areas, structured time windows, and shorter expiry for immediate availability. Review the public information before publishing and reuse existing signatures, withdrawals, and private replies.
+
+- [ ] **Connect geographic discovery to Protein and maps.** Protein has no public-announcement source or viewport query. Add permitted discovery results with area/time filters, then show public areas, private saved places, and granted live positions as distinct layers. Keep Records without coordinates accessible in the accompanying list.
+
+- [ ] **Support larger map result sets.** Maps currently take only the first 32 source Records. Add bounded viewport results and grouping of nearby visible markers. Counts, filtering, and distance calculations must use information the viewer may access. Add a spatial index if measurements show it is needed.
+
+- [ ] **Preserve live-position age and accuracy on maps.** Map markers currently discard the reply’s capture age and device accuracy, and their local freshness timer starts when the reply arrives. Carry the original age through delivery, expire markers accordingly, and show permitted measurement accuracy separately from a deliberately approximate sharing area.
+
+- [ ] **Add an explicit “locate me” control.** Maps can center on Records, but cannot request the current device’s position through a dedicated control. Make acquisition require a user action and keep it separate from saving a place or sharing with others.
+
+- [ ] **Finish regional map package management.** Local directories, PMTiles, and area downloads already work. Add package metadata for coverage, source version/date, hashes, resources, and credits, plus safe installation and replacement. An interrupted update must preserve the working pack. Version the cache by dataset, rather than only server URL.
+
+- [ ] **Complete map keyboard access.** Zoom buttons and accessibility labels exist, but panning, choosing a point, and drawing a download area rely on pointer gestures. Provide keyboard alternatives and verify focus, marker navigation, and screen-reader descriptions.
+
+- [ ] **Finish desktop map quality and performance measurements.** Basic GPU rendering is already demonstrated. Measure dense scenes, multiple maps, repeated theme changes, resizing and display scaling, memory/resource cleanup, and release size on named hardware. Check difficult place names and glyph coverage, and clearly describe unsupported cartography.
+
+- [ ] **Validate real desktop location delivery.** Existing simulations cover permissions and Transfer completion, but do not establish Linux portal behavior or real-network performance. Exercise driver, passenger, and outside-observer sessions across actual instances, including permission denial, disconnection, stopping, and handover. Measure delivery delay, traffic, and memory.
+
+- [ ] **Integrate maps and the transport workflow into mobile.** Mobile location controls already exist, but the map presentation does not. Reuse the completed capabilities with touch/pinch controls, readable cards, accessibility, and correct cleanup when the app pauses or its graphics surface is recreated.
+
+- [ ] **Complete Android location and map validation.** Android setup/run tooling exists; validate the actual target and application through that workflow. Check approximate, denied, and revoked permissions, locked-screen sharing, notification Stop, process termination, network changes, and Transfer completion. Measure sustained battery, thermal, bandwidth, memory, and rendering behavior.
+
+- [ ] **Later extension: add multi-stop journeys and capacity per segment.** Ordered itineraries and segment-aware reservations are missing. Check capacity for overlapping portions of a journey, allow reuse after someone leaves, and preserve independent passenger privacy using the existing Transfer structure.
+
+- [ ] **Optional later extension: add address search and route estimates.** Geocoding and routing providers are absent. Use replaceable providers, make disclosure of private endpoints explicit, and show the provider and age of estimates. Maps and Transfer completion should remain usable without them.
+
 } r_00ECACY50NWQQ3S0YH37V8KMK6
 
 
@@ -729,7 +854,6 @@ Further search improvements are optional proposals. Large directory Organs could
 
 Other possible later social additions include group features, public comments, engagement ranking, and stronger protection against identifying people through connection metadata. Anonymous posting currently separates the public post from the person’s main Organ identity; stronger network anonymity would require additional design. These possibilities are not outstanding requirements of the completed six packages.
 } r_S8PQ17MQ3WBWM53ZN700K89V9F
-
 
 Ailuros (@ailuros: 0, #instinct) {
 What is more embarrassing, to dream or not to dream something like this? That is the question.

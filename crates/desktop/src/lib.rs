@@ -315,7 +315,7 @@ pub mod laboratory;
 #[cfg(feature = "native-runtime")]
 mod sand_panel;
 
-#[cfg(feature = "native-runtime")]
+#[cfg(all(feature = "native-runtime", feature = "stuff"))]
 pub mod freedoom;
 
 pub mod command_castle;

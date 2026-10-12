@@ -71,6 +71,105 @@ async fn read(tools: &Registry, uid: &str) -> Value {
 }
 
 #[tokio::test]
+async fn fiote_discovers_patches_exports_native_items_and_edits_files_in_one_registry() {
+    use nucleus::canvas::{self as canvas, authoring::Change};
+    let (engine, mut tools, record, _) = fixture().await;
+    let directory = tempfile::tempdir().unwrap();
+    tools.register_workspace(directory.path()).unwrap();
+    let placement = nucleus::new_uid("placement");
+    let mut receiver = engine
+        .register_canvas(
+            nucleus::new_uid("canvas"),
+            "Native canvas".into(),
+            Vec::new(),
+        )
+        .unwrap();
+    let state = Arc::new(tokio::sync::Mutex::new(
+        canvas::State::new(
+            canvas::Snapshot {
+                revision: 0,
+                active_workspace: 1,
+                workspaces: vec![canvas::Workspace {
+                    id: 1,
+                    name: "Main".into(),
+                    center: [0.0; 2],
+                    zoom: 1.0,
+                    view: None,
+                }],
+                placements: vec![canvas::Placement {
+                    id: placement.clone(),
+                    workspace: 1,
+                    component: canvas::Component::Builtin {
+                        state: nucleus::component::ComponentState::Record {
+                            record,
+                            mode: Default::default(),
+                            start_call: None,
+                        },
+                    },
+                    geometry: canvas::Geometry {
+                        position: [0.0; 2],
+                        size: [520.0, 640.0],
+                    },
+                    selected: true,
+                    group: None,
+                    metadata: Default::default(),
+                }],
+                next_offset: None,
+            },
+            Vec::new(),
+        )
+        .unwrap(),
+    ));
+    let worker = tokio::spawn({
+        let state = state.clone();
+        async move {
+            while let Some(call) = receiver.recv().await {
+                let result = state.lock().await.handle(&call.request);
+                call.complete(result).unwrap();
+            }
+        }
+    });
+    let schema = call(&tools, "lince_describe", json!({"action":"canvas"})).await;
+    assert!(schema.to_string().contains("inspect-element"));
+    assert!(schema.to_string().contains("set-part"));
+    let inspected = call(&tools, "lince_action", json!({"request_id":"inspect-component", "read_ids":[], "action":Action::Canvas { canvas: None, request: canvas::Request::InspectElement { placement: placement.clone(), offset: 0, limit: 128 } }})).await;
+    let revision = inspected["data"]["element"]["revision"].as_u64().unwrap();
+    let changed = call(&tools, "lince_action", json!({"request_id":"refine-component", "read_ids":[], "action":Action::Canvas { canvas: None, request: canvas::Request::Mutate { request_id: nucleus::new_uid("request"), expected_revision: revision, mutation: canvas::Mutation::Patch { placement: placement.clone(), changes: vec![Change::SetPart { part: "root".into(), edit: canvas::authoring::PartEdit { tokens: std::collections::BTreeMap::from([("FontSize".into(), canvas::authoring::TokenValue::Number(20.0))]), ..Default::default() } }] } } }})).await;
+    assert_eq!(changed["data"]["receipt"]["revision"], revision + 1);
+    let exported = call(&tools, "lince_action", json!({"request_id":"export-component", "read_ids":[], "action":Action::Canvas { canvas: None, request: canvas::Request::Export { placement, name: "Refined Record".into() } }})).await;
+    let document: canvas::Document =
+        serde_json::from_value(exported["data"]["document"].clone()).unwrap();
+    assert_eq!(
+        canvas::authoring::hash(&document).unwrap(),
+        exported["data"]["hash"].as_str().unwrap()
+    );
+    assert_eq!(
+        call(
+            &tools,
+            "create_file",
+            json!({"path":"default.txt","content":"original"})
+        )
+        .await["bytes"],
+        8
+    );
+    call(
+        &tools,
+        "edit_file",
+        json!({"path":"default.txt","old_text":"original","new_text":"refined"}),
+    )
+    .await;
+    assert_eq!(
+        std::fs::read_to_string(directory.path().join("default.txt")).unwrap(),
+        "refined"
+    );
+    assert_eq!(
+        call(&tools, "read_file", json!({"path":"default.txt"})).await["content"],
+        "refined"
+    );
+    worker.abort();
+}
+
+#[tokio::test]
 async fn fiote_uses_normal_transfer_create_read_revise_and_discard_actions() {
     let (engine, tools, _, _) = fixture().await;
     let creator = engine
@@ -546,7 +645,7 @@ async fn native_queries_keep_the_sessions_visibility_and_cannot_elevate_its_acti
         engine.clone(),
         Arc::new(LaneHub::new()),
         "limited-fiote",
-        Some(person),
+        Some(person.clone()),
     )
     .into_native_tools(Context {
         agent: agent.clone(),
@@ -554,6 +653,10 @@ async fn native_queries_keep_the_sessions_visibility_and_cannot_elevate_its_acti
         thread: agent.clone(),
     })
     .register(&mut tools);
+    engine
+        .set_read_filter(&person, Some(&protein::Predicate::UidEq(agent.clone())))
+        .await
+        .unwrap();
     let rows = call(
         &tools,
         "lince_query",

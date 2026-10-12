@@ -8,9 +8,45 @@ pub(crate) fn spawn(
     component: &ContentKind,
 ) -> Result<Entity, String> {
     component.validate(&registry(), false)?;
+    if let ContentKind::Authored { base, edits } = component {
+        let entity = spawn(world, root, workspace, position, base)?;
+        world.entity_mut(entity).insert(Content(component.clone()));
+        if let Some(size) = edits.size {
+            world.get_mut::<CanvasItem>(entity).unwrap().size = DVec2::from_array(size).as_vec2();
+        }
+        return Ok(entity);
+    }
     let entity = match component {
+        ContentKind::Authored { .. } => unreachable!(),
         ContentKind::Builtin { state } => {
             crate::component_push::spawn(world, root, workspace, position, state)?
+        }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if kind == "kanban" => {
+            super::kanban::spawn(world, root, workspace, position, settings, bindings)?
+        }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if kind == "area" => {
+            let geometry = api::Geometry {
+                position: position.to_array(),
+                size: [640.0, 480.0],
+            };
+            let area = super::area::parse(settings, None, &geometry)?;
+            if super::area::component(&area)
+                .records()
+                .iter()
+                .any(|uid| !bindings.iter().any(|binding| binding == uid))
+            {
+                return Err("List the area's referenced Record UIDs in bindings.".into());
+            }
+            crate::area::spawn_area(world, root, workspace, area)
+                .ok_or("No room for another native area.")?
         }
         ContentKind::Native {
             kind,
@@ -59,6 +95,28 @@ pub(crate) fn spawn(
             }
             crate::instinct::spawn(world, root, workspace, position, instinct)
         }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if matches!(
+            kind.as_str(),
+            "document"
+                | "ide"
+                | "explorer"
+                | "recorder"
+                | "media"
+                | "drawing"
+                | "assertion"
+                | "simulation"
+                | "shader"
+                | "import"
+                | "layout"
+        ) =>
+        {
+            super::factories::spawn(world, root, workspace, position, kind, settings, bindings)?
+                .ok_or("This native factory is unavailable.")?
+        }
         ContentKind::Native { kind, settings, .. } => {
             let kind = SandKind::ALL
                 .into_iter()
@@ -98,7 +156,10 @@ pub(crate) fn spawn(
                 }
             }
             if saved_texts.as_ref().is_some_and(|texts| texts.is_empty())
-                && settings.get("text").and_then(serde_json::Value::as_str).is_some_and(|text| !text.is_empty())
+                && settings
+                    .get("text")
+                    .and_then(serde_json::Value::as_str)
+                    .is_some_and(|text| !text.is_empty())
             {
                 saved_texts = None;
             }
@@ -120,7 +181,10 @@ pub(crate) fn spawn(
                 .map(serde_json::from_str::<lince_interface::time_castle::Settings>)
                 .transpose()
                 .map_err(|_| "Invalid Time Castle settings.")?;
-            if time_castle.as_ref().is_some_and(|settings| !settings.valid() || kind != SandKind::WorkTimer) {
+            if time_castle
+                .as_ref()
+                .is_some_and(|settings| !settings.valid() || kind != SandKind::WorkTimer)
+            {
                 return Err("Invalid Time Castle settings.".into());
             }
             if timer.as_ref().is_some_and(|timer| !timer.valid()) {
@@ -135,9 +199,16 @@ pub(crate) fn spawn(
             if todo.as_ref().is_some_and(|todo| !todo.valid()) {
                 return Err("Invalid Todo state.".into());
             }
-            let visibility = settings.get("visibility").and_then(serde_json::Value::as_str)
-                .map(serde_json::from_str::<lince_interface::visibility::Selection>).transpose().map_err(|_| "Invalid Visibility selection.")?;
-            if visibility.as_ref().is_some_and(|selection| !selection.valid() || kind != SandKind::Visibility) {
+            let visibility = settings
+                .get("visibility")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<lince_interface::visibility::Selection>)
+                .transpose()
+                .map_err(|_| "Invalid Visibility selection.")?;
+            if visibility
+                .as_ref()
+                .is_some_and(|selection| !selection.valid() || kind != SandKind::Visibility)
+            {
                 return Err("Invalid Visibility selection.".into());
             }
             let entity = crate::sand_store::spawn_sand(
@@ -152,8 +223,16 @@ pub(crate) fn spawn(
                 position,
             );
             if let Some(selection) = visibility {
-                let panel = world.get::<StoredSand>(entity).and_then(|sand| sand.content).ok_or("Visibility editor is unavailable.")?;
-                lince_interface::visibility::set_target(world, panel, &selection.record_uid, selection.data);
+                let panel = world
+                    .get::<StoredSand>(entity)
+                    .and_then(|sand| sand.content)
+                    .ok_or("Visibility editor is unavailable.")?;
+                lince_interface::visibility::set_target(
+                    world,
+                    panel,
+                    &selection.record_uid,
+                    selection.data,
+                );
             }
             if let Some(saved_texts) = saved_texts {
                 let existing: Vec<_> = world
@@ -184,7 +263,11 @@ pub(crate) fn spawn(
             if let Some(timer) = timer {
                 world.entity_mut(entity).insert(timer);
             }
-            if let Some(settings) = time_castle { world.entity_mut(entity).insert(crate::time_castle::TimeSettings(settings)); }
+            if let Some(settings) = time_castle {
+                world
+                    .entity_mut(entity)
+                    .insert(crate::time_castle::TimeSettings(settings));
+            }
             if let Some(todo) = todo {
                 crate::todo::restore(world, entity, todo);
             }
@@ -232,6 +315,11 @@ pub(crate) fn restore_content(
     entity: Entity,
     component: &ContentKind,
 ) -> Result<(), String> {
+    if let ContentKind::Authored { base, .. } = component {
+        restore_content(world, entity, base)?;
+        world.entity_mut(entity).insert(Content(component.clone()));
+        return Ok(());
+    }
     if let ContentKind::Composition { composition } = component {
         let geometry = world.get::<CanvasItem>(entity).copied();
         composition::populate(world, entity, composition.clone())?;

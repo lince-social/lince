@@ -15,6 +15,7 @@ pub(crate) fn button(
         .spawn((
             ChildOf(parent),
             crate::sand::button(0),
+            crate::canvas_host::authoring::PartName(format!("button-{}", caption.to_lowercase().replace(' ', "-"))),
             crate::actions::ActionButton::new(owner, crate::actions![action]),
             Node {
                 padding: UiRect::axes(px(8), px(5)),
@@ -52,6 +53,7 @@ pub(crate) fn field(world: &mut World, parent: Entity, caption: &str, value: &st
         4096,
     );
     world.entity_mut(entity).insert(input);
+    world.entity_mut(entity).insert(crate::canvas_host::authoring::PartName(format!("field-{}", caption.to_lowercase().replace(' ', "-"))));
     crate::accessibility::input(world, entity, caption, false);
     world
         .entity_mut(entity)

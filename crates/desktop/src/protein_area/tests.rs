@@ -255,6 +255,13 @@ pub(crate) fn fixture() -> (App, Entity, Entity) {
     (app, root, owner)
 }
 
+#[cfg(test)]
+pub(crate) fn authoring_record(world: &mut World, owner: Entity, data: Value) {
+    let config = world.get::<InfluenceArea>(owner).unwrap().protein.clone().unwrap();
+    world.resource_mut::<Runtime>().areas.insert(owner, State { applied: Some(config), data: vec![data], ready: true, dirty: true, ..default() });
+    rows::reconcile(world, owner);
+}
+
 #[test]
 fn relation_color_context_refresh_preserves_records_links_and_positions() {
     use crate::relation_castle::styles::{Color, Colors, Mode, Rule, Target};

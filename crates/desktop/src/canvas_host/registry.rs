@@ -27,9 +27,18 @@ pub fn registry() -> Vec<api::Descriptor> {
                 },
             );
             if kind == SandKind::WorkTimer {
-                settings.insert("time_castle".into(), api::Setting::Text {
-                    default: serde_json::to_string(&lince_interface::time_castle::Settings { timezone: crate::schedule_editor::local_timezone().unwrap_or_else(|| "UTC".into()), ..default() }).unwrap(), max_bytes: 4096,
-                });
+                settings.insert(
+                    "time_castle".into(),
+                    api::Setting::Text {
+                        default: serde_json::to_string(&lince_interface::time_castle::Settings {
+                            timezone: crate::schedule_editor::local_timezone()
+                                .unwrap_or_else(|| "UTC".into()),
+                            ..default()
+                        })
+                        .unwrap(),
+                        max_bytes: 4096,
+                    },
+                );
                 settings.insert(
                     "timer".into(),
                     api::Setting::Text {
@@ -48,9 +57,17 @@ pub fn registry() -> Vec<api::Descriptor> {
                 );
             }
             if kind == SandKind::Visibility {
-                settings.insert("visibility".into(), api::Setting::Text {
-                    default: serde_json::to_string(&lince_interface::visibility::Selection { record_uid: String::new(), data: nucleus::visibility::Data::Record }).unwrap(), max_bytes: 1024,
-                });
+                settings.insert(
+                    "visibility".into(),
+                    api::Setting::Text {
+                        default: serde_json::to_string(&lince_interface::visibility::Selection {
+                            record_uid: String::new(),
+                            data: nucleus::visibility::Data::Record,
+                        })
+                        .unwrap(),
+                        max_bytes: 1024,
+                    },
+                );
             }
             if matches!(
                 kind,
@@ -126,7 +143,15 @@ pub fn registry() -> Vec<api::Descriptor> {
     ] {
         result.push(api::Descriptor { kind: kind.into(), name: name.into(), description: format!("Existing native {name}; geometry and workspace can be edited."), settings: BTreeMap::new(), max_bindings: 0, placeable: false, configurable: false, composable: false, unavailable_reason: Some("Its native state does not yet have a shared composition schema; use the existing picker for creation.".into()) });
     }
-    result.retain(|descriptor| !matches!(descriptor.kind.as_str(), "protein" | "instinct"));
+    let factories = super::factories::descriptors();
+    result.retain(|descriptor| {
+        !matches!(descriptor.kind.as_str(), "protein" | "instinct" | "kanban")
+            && !factories
+                .iter()
+                .any(|factory| factory.kind == descriptor.kind)
+    });
+    result.extend(factories);
+    result.push(super::kanban::descriptor());
     result.push(api::Descriptor { kind: "protein".into(), name: "Protein Castle".into(), description: "A live query and its result components. query is the ordinary Protein JSON, with referenced Record UIDs also listed in bindings.".into(), settings: BTreeMap::from([("name".into(), api::Setting::Text { default: "Protein".into(), max_bytes: 1024 }), ("slug".into(), api::Setting::Text { default: String::new(), max_bytes: 1024 }), ("query".into(), api::Setting::Text { default: serde_json::to_string(&crate::protein_castle::ProteinDraft::default().query).unwrap(), max_bytes: 65536 })]), max_bindings: 32, placeable: true, configurable: true, composable: true, unavailable_reason: None });
     result.push(api::Descriptor {
         kind: "instinct".into(),
@@ -145,6 +170,12 @@ pub fn registry() -> Vec<api::Descriptor> {
         configurable: true,
         composable: true,
         unavailable_reason: None,
+    });
+    result.push(api::Descriptor {
+        kind: "area".into(), name: "Influence area".into(),
+        description: "Complete authored InfluenceArea configuration as JSON, excluding placement-owned id/center/size, Record presentation state and backend host ownership. Read an existing instance to discover filters, queries, spawn, sorting, force, immunity and changes. Configuration remains paused unless activate=true; Record changes still require the native preview/arming controls.".into(),
+        settings: BTreeMap::from([("configuration".into(), api::Setting::Text { default: "{}".into(), max_bytes: 65536 }), ("activate".into(), api::Setting::Boolean { default: false })]),
+        max_bindings: 32, placeable: true, configurable: true, composable: true, unavailable_reason: None,
     });
     result
 }

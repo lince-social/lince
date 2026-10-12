@@ -1,3 +1,4 @@
+#[cfg(feature = "stuff")]
 mod build_freedoom;
 mod icon_art;
 
@@ -18,6 +19,7 @@ fn main() {
     if std::env::var_os("CARGO_FEATURE_NATIVE_RUNTIME").is_none() {
         return;
     }
+    #[cfg(feature = "stuff")]
     build_freedoom::compile();
     println!("cargo:rerun-if-changed=icon_art.rs");
     let height = icon_art::COUNT.div_ceil(5) as u32 * 128;

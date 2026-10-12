@@ -84,6 +84,7 @@ pub struct Run {
     pub result: report::Result,
     pub findings: Vec<report::Finding>,
     pub cost: report::RunCost,
+    pub records: Vec<crate::proposal::Outcome>,
 }
 
 pub fn atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
@@ -233,7 +234,7 @@ impl Session {
                 "replay": schemars::schema_for!(Replay)
             }),
         )?;
-        json_lines(&directory.join("inputs.jsonl"), &scenario.inputs)?;
+        json_lines(&directory.join("inputs.jsonl"), &scenario.effective_inputs()?)?;
         let manifest = Manifest {
             version: Version::V1,
             build: CanonicalHash::parse(BUILD_HASH)?,
@@ -263,6 +264,16 @@ impl Session {
     }
 
     pub async fn step(&mut self) -> Result<bool> {
+        let previous_steps = self.world.steps;
+        while self.step_boundary().await? {
+            if self.world.steps > previous_steps {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    pub async fn step_boundary(&mut self) -> Result<bool> {
         let started = std::time::Instant::now();
         let evidence_before = self.world.evidence_micros;
         let step = self.world.step().await;
@@ -302,6 +313,41 @@ impl Session {
             mut manifest,
             mut cost,
         } = self;
+        let mut selected = std::collections::BTreeSet::new();
+        if let Some(proposal) = &world.scenario.proposal {
+            selected.extend(proposal.records.iter().map(|record| (proposal.cell.clone(), record.uid.clone())));
+        }
+        for event in &world.trace {
+            if matches!(event.caused_by, report::Cause::Seed {}) {
+                continue;
+            }
+            match &event.observation {
+                report::Observation::CommittedQuantity { record, .. }
+                | report::Observation::LoanQuantity { record, .. } => { selected.insert((event.cell.clone(), record.as_str().to_owned())); }
+                report::Observation::ActionAccepted { created: Some(record), .. } if nucleus::valid_uid(record, "r") => { selected.insert((event.cell.clone(), record.clone())); }
+                _ => {}
+            }
+        }
+        let mut records = Vec::new();
+        let mut record_bytes = 3u64;
+        for (cell, record) in selected {
+            let outcome = crate::proposal::Outcome::read(&world.nodes[&cell].engine().store, &cell, &record, world.scenario.start_ms, world.scenario.end_ms).await?;
+            let next_bytes = record_bytes.saturating_add(serde_json::to_vec(&outcome)?.len() as u64 + 1);
+            if next_bytes > 16 * 1024 * 1024
+                || world.evidence_bytes.saturating_add(next_bytes) > world.scenario.limits.evidence_bytes
+            {
+                world.stop = Some(report::Stop::EvidenceBudget {});
+                break;
+            }
+            record_bytes = next_bytes;
+            records.push(outcome);
+        }
+        let record_bytes = serde_json::to_vec(&records)?.len() as u64;
+        world.evidence_bytes = world.evidence_bytes.saturating_add(record_bytes);
+        if world.evidence_bytes > world.scenario.limits.evidence_bytes {
+            world.stop = Some(report::Stop::EvidenceBudget {});
+        }
+        atomic(&directory.join("records.json"), &records)?;
         let started = std::time::Instant::now();
         let result = checks.finish(&mut world).await?;
         cost.checking_micros += crate::world::elapsed(started);
@@ -327,6 +373,7 @@ impl Session {
             "checks.json",
             "cost.json",
             "findings.jsonl",
+            "records.json",
         ] {
             std::fs::File::open(directory.join(name))?.sync_all()?;
             manifest
@@ -376,6 +423,7 @@ impl Session {
             result,
             findings: checks.findings,
             cost,
+            records,
         })
     }
 }
@@ -493,6 +541,7 @@ pub struct Bundle {
     pub findings: Vec<report::Finding>,
     pub result: report::Result,
     pub cost: report::RunCost,
+    pub records: Vec<crate::proposal::Outcome>,
 }
 
 pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
@@ -505,6 +554,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         "trace.jsonl",
         "checks.json",
         "cost.json",
+        "records.json",
         "findings.jsonl",
     ] {
         if !manifest.files.contains_key(required) {
@@ -566,7 +616,10 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         });
     }
     let inputs: Vec<crate::scenario::Input> = lines(directory, "inputs.jsonl")?;
-    if serde_json::to_value(&inputs).ok() != serde_json::to_value(&scenario.inputs).ok() {
+    let expected_inputs = scenario.effective_inputs().map_err(|error| ArtifactError::Invalid {
+        path: "scenario.json".into(), reason: error.to_string(),
+    })?;
+    if serde_json::to_value(&inputs).ok() != serde_json::to_value(&expected_inputs).ok() {
         return Err(ArtifactError::Invalid {
             path: "inputs.jsonl".into(),
             reason: "inputs do not match the saved scenario".into(),
@@ -598,7 +651,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
             });
         }
         if let report::Cause::Input { id } = &event.caused_by
-            && !scenario.inputs.iter().any(|input| &input.id == id)
+            && !expected_inputs.iter().any(|input| &input.id == id)
         {
             return Err(ArtifactError::Invalid {
                 path: format!("trace.jsonl:{index}.caused_by"),
@@ -694,8 +747,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
             | report::Observation::ActionRefused { input, .. }
             | report::Observation::ActionInterrupted { input } => {
                 if !actions.insert(input)
-                    || !(scenario
-                        .inputs
+                    || !(expected_inputs
                         .iter()
                         .any(|invocation| &invocation.id == input && invocation.cell == event.cell)
                         || scenario.cells.iter().any(|cell| {
@@ -767,7 +819,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
             })
         })
         || !(scenario.start_ms..=scenario.end_ms).contains(&result.stopped_at_ms)
-        || result.inputs > scenario.inputs.len() as u64
+        || result.inputs > expected_inputs.len() as u64
         || result.rule_evaluations > scenario.limits.rule_evaluations
         || result.execution_checkpoints < result.rule_evaluations
         || (result.stop == report::Stop::RuleEvaluationBudget {}
@@ -886,6 +938,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
         findings,
         result,
         cost: read(directory, "cost.json")?,
+        records: read(directory, "records.json")?,
     })
 }
 
@@ -949,8 +1002,8 @@ pub async fn replay(directory: &Path, destination: &Path) -> Result<ReplayStatus
         expected_environments.insert(cell.name.clone(), expected);
         observed_environments.insert(cell.name.clone(), observed);
     }
-    let expected = serde_json::json!({"events": bundle.events, "result": bundle.result, "findings": bundle.findings, "seeds": expected_seeds, "environments": expected_environments});
-    let observed = serde_json::json!({"events": repeated.events, "result": repeated.result, "findings": repeated.findings, "seeds": observed_seeds, "environments": observed_environments});
+    let expected = serde_json::json!({"events": bundle.events, "result": bundle.result, "findings": bundle.findings, "records":bundle.records, "seeds": expected_seeds, "environments": expected_environments});
+    let observed = serde_json::json!({"events": repeated.events, "result": repeated.result, "findings": repeated.findings, "records":repeated.records, "seeds": observed_seeds, "environments": observed_environments});
     let status = match difference("", &expected, &observed) {
         Some((field, expected, observed)) => {
             let sequence = field
@@ -980,6 +1033,30 @@ pub async fn replay(directory: &Path, destination: &Path) -> Result<ReplayStatus
                 .collect(),
         },
     };
+    if matches!(status, ReplayStatus::Diverged { .. }) {
+        let mut databases = BTreeMap::new();
+        for cell in &repeated.scenario.cells {
+            for stage in ["seed", "working"] {
+                let file = format!("{stage}/{}.sqlite", cell.name);
+                let diagnostic = match database_difference(
+                    &directory.join(&file),
+                    &destination.join(&file),
+                ).await {
+                    Ok(value) => value,
+                    Err(error) => Some(serde_json::json!({"error":error.to_string()})),
+                };
+                if let Some(diagnostic) = diagnostic {
+                    databases.insert(file, diagnostic);
+                }
+            }
+        }
+        atomic(&destination.join("replay-diagnostic.json"), &serde_json::json!({
+            "status":status,
+            "databases":databases,
+            "expected_environments":expected["environments"],
+            "observed_environments":observed["environments"],
+        }))?;
+    }
     atomic(
         &directory.join("replay.json"),
         &Replay {
@@ -990,6 +1067,31 @@ pub async fn replay(directory: &Path, destination: &Path) -> Result<ReplayStatus
         },
     )?;
     Ok(status)
+}
+
+async fn database_difference(expected: &Path, observed: &Path) -> Result<Option<serde_json::Value>> {
+    async fn tables(path: &Path) -> Result<serde_json::Value> {
+        let options = store::sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(path)
+            .read_only(true);
+        let pool = store::sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await?;
+        let store = store::Store { pool };
+        let result = store.logical_snapshot().await;
+        store.pool.close().await;
+        let tables: BTreeMap<_, _> = result?.into_iter()
+            .map(|table| (table.name.clone(), table))
+            .collect();
+        Ok(serde_json::to_value(tables)?)
+    }
+    Ok(difference("", &tables(expected).await?, &tables(observed).await?)
+        .map(|(field, expected, observed)| serde_json::json!({
+            "field":field,
+            "expected":expected.chars().take(4096).collect::<String>(),
+            "observed":observed.chars().take(4096).collect::<String>(),
+        })))
 }
 
 async fn snapshot_state(path: &Path) -> Result<CanonicalHash> {
@@ -1051,7 +1153,7 @@ fn difference(
 
 #[cfg(test)]
 mod tests {
-    use super::difference;
+    use super::{database_difference, difference};
     use serde_json::json;
 
     #[test]
@@ -1066,6 +1168,27 @@ mod tests {
         let missing = difference(".events", &expected, &truncated).unwrap();
         assert_eq!(missing.0, ".events[1]");
         assert_eq!(missing.2, "<missing>");
+    }
+
+    #[tokio::test]
+    async fn database_diagnostics_name_changed_authority_rows() {
+        let directory = tempfile::tempdir().unwrap();
+        let original = directory.path().join("original.sqlite");
+        let copied = directory.path().join("copied.sqlite");
+        let store = store::Store::open(&format!("sqlite://{}", original.display())).await.unwrap();
+        store.snapshot_into(&copied).await.unwrap();
+        store.pool.close().await;
+        let changed = store::Store::open_existing_durable(&format!("sqlite://{}", copied.display())).await.unwrap();
+        store::sqlx::query("UPDATE signal_endpoint_authority SET audience = ? WHERE id = 1")
+            .bind("different-authority")
+            .execute(&changed.pool)
+            .await
+            .unwrap();
+        changed.pool.close().await;
+        let diagnostic = database_difference(&original, &copied).await.unwrap().unwrap();
+        assert!(diagnostic["field"].as_str().unwrap().starts_with(".signal_endpoint_authority.rows[0]"));
+        assert!(diagnostic["observed"].as_str().unwrap().contains("different-authority"));
+        assert!(database_difference(&original, &original).await.unwrap().is_none());
     }
 }
 

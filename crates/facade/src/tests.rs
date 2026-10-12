@@ -12,7 +12,7 @@ use tokio_tungstenite::{
 
 use crate::{Facade, State, auth, records};
 
-async fn fixture() -> State {
+pub(crate) async fn fixture() -> State {
     let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
     let permissions: Vec<_> = utils::auth::ALL_PERMISSIONS
         .iter()
@@ -45,6 +45,7 @@ async fn fixture() -> State {
             information: None,
         },
         auth: Arc::new(auth::Auth::default()),
+        signal_endpoint_ingress: Arc::new(crate::signal_endpoints::Ingress::default()),
         connections: Arc::new(tokio::sync::Semaphore::new(8)),
         stop,
         security: crate::security::Security::new("http://localhost", false).unwrap(),

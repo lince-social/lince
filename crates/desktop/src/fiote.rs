@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+pub mod character;
 pub mod session;
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
@@ -66,9 +67,14 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::DEJAVU,
     crate::credits::FONTIQUE,
     crate::credits::Attribution {
-        name: "Lince logo",
-        author: "Lince",
-        license: include_str!("../../../LICENSE"),
+        name: "Fiote lynx character",
+        author: include_str!("../../../institute/assets/characters/fiote/CREDITS.txt"),
+        license: include_str!("../../../institute/assets/characters/fiote/LICENSE"),
+    },
+    crate::credits::Attribution {
+        name: "resvg",
+        author: "Yevhenii Reizner and contributors",
+        license: include_str!("../licenses/resvg-MIT.txt"),
     },
     crate::credits::Attribution {
         name: "image",
@@ -92,31 +98,8 @@ pub struct Fiote {
     pub bubble: Entity,
 }
 
-#[derive(Resource)]
-struct Logo(Handle<Image>);
-
 pub fn spawn(world: &mut World, parent: Entity) -> Entity {
-    if !world.contains_resource::<Logo>() {
-        world.init_resource::<Assets<Image>>();
-        let image = image::load_from_memory(include_bytes!(
-            "../../../institute/assets/logo/black_in_white.png"
-        ))
-        .expect("Lince logo")
-        .to_rgba8();
-        let handle = world.resource_mut::<Assets<Image>>().add(Image::new(
-            bevy::render::render_resource::Extent3d {
-                width: image.width(),
-                height: image.height(),
-                depth_or_array_layers: 1,
-            },
-            bevy::render::render_resource::TextureDimension::D2,
-            image.into_raw(),
-            bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-            bevy::asset::RenderAssetUsages::RENDER_WORLD,
-        ));
-        world.insert_resource(Logo(handle));
-    }
-    let logo = world.resource::<Logo>().0.clone();
+    let portrait = character::portrait(world, parent);
     let owner = world
         .spawn((
             crate::castle::Castle,
@@ -136,14 +119,30 @@ pub fn spawn(world: &mut World, parent: Entity) -> Entity {
         ))
         .id();
     world.spawn((
-        ImageNode::new(logo),
+        ImageNode::new(portrait),
+        character::Avatar,
+        crate::sand::Borderless,
+        crate::sand::Square,
+        Outline {
+            width: px(0),
+            offset: px(2),
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        bevy::input_focus::tab_navigation::TabIndex(0),
+        crate::actions::ActionButton::new(owner, crate::actions![character::Customize(false)]),
         Node {
             width: px(56),
             height: px(56),
             flex_shrink: 0.0,
             ..default()
         },
-        crate::icons::Tooltip("Fiote".into()),
+        crate::icons::Tooltip("Fiote · Customize colors".into()),
+        bevy::a11y::AccessibilityNode({
+            let mut node = accesskit::Node::new(accesskit::Role::Button);
+            node.set_label("Customize Fiote colors");
+            node
+        }),
         ChildOf(owner),
     ));
     let bubble = world

@@ -119,6 +119,7 @@ impl Action for Publish {
                     || area.protein.is_some()
                     || area.sound.is_some()
                     || area.sorting.is_some()
+                    || area.hole
                     || area.strength != 0.0
                     || !matches!(area.shape, crate::area::AreaShape::Square)
                 {

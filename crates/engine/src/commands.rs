@@ -473,12 +473,12 @@ impl Engine {
             .map(|index| responses.remove(index)))
     }
 
-    pub(crate) async fn saved_command_reading(
+    pub(crate) async fn saved_signal_reading(
         &self,
         name: &str,
     ) -> Result<nucleus::DecimalValue, EngineError> {
         let uid = self.resolve(name).await?;
-        let value: Option<String> = store::sqlx::query_scalar("WITH samples AS (SELECT f.record_uid, f.rowid AS position, f.at AS at, COALESCE(json_extract(o.payload, '$.cause.kind'), f.cause_kind) AS cause_kind, COALESCE(json_extract(o.payload, '$.cause.uid'), f.cause_uid) AS cause_uid, CASE WHEN o.fact_uid IS NULL THEN f.payload ELSE json_extract(o.payload, '$.payload') END AS payload FROM fact f LEFT JOIN fact_origin o ON o.fact_uid = f.uid WHERE f.record_uid = ?) SELECT json_extract(payload, '$.sample') FROM samples WHERE cause_kind = 'signal' AND cause_uid = record_uid AND json_valid(payload) AND json_type(payload, '$.command_invocation') = 'text' AND json_type(payload, '$.sample') = 'text' ORDER BY at DESC, position DESC LIMIT 1").bind(&uid).fetch_optional(&self.store.pool).await?;
+        let value: Option<String> = store::sqlx::query_scalar("WITH samples AS (SELECT f.record_uid, f.rowid AS position, f.at AS at, COALESCE(json_extract(o.payload, '$.cause.kind'), f.cause_kind) AS cause_kind, COALESCE(json_extract(o.payload, '$.cause.uid'), f.cause_uid) AS cause_uid, CASE WHEN o.fact_uid IS NULL THEN f.payload ELSE json_extract(o.payload, '$.payload') END AS payload FROM fact f LEFT JOIN fact_origin o ON o.fact_uid = f.uid WHERE f.record_uid = ?) SELECT json_extract(payload, '$.sample') FROM samples WHERE cause_kind = 'signal' AND cause_uid = record_uid AND json_valid(payload) AND json_type(payload, '$.sample') = 'text' ORDER BY at DESC, position DESC LIMIT 1").bind(&uid).fetch_optional(&self.store.pool).await?;
         nucleus::DecimalValue::parse_inferred(
             &value.ok_or_else(|| invalid("Signal has no successful numeric sample"))?,
         )
@@ -799,7 +799,7 @@ impl Engine {
             let history = store::sqlx::query("SELECT uid, status, stdout, stderr, value, error, context, created_at, finished_at FROM karma_command_invocation WHERE command_uid = ? ORDER BY created_at DESC, uid DESC LIMIT 20").bind(&signal).fetch_all(&self.store.pool).await?;
             let history: Vec<_> = history.iter().map(|row| serde_json::json!({"request":row.get::<String,_>("uid"),"status":row.get::<String,_>("status"),"stdout":row.get::<Option<String>,_>("stdout"),"stderr":row.get::<Option<String>,_>("stderr"),"value":row.get::<Option<String>,_>("value"),"error":row.get::<Option<String>,_>("error"),"context":row.get::<Option<String>,_>("context"),"at":row.get::<String,_>("created_at"),"finished_at":row.get::<Option<String>,_>("finished_at")})).collect();
             let sample = self
-                .saved_command_reading(&signal)
+                .saved_signal_reading(&signal)
                 .await
                 .ok()
                 .map(|value| value.to_string());

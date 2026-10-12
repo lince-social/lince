@@ -77,6 +77,7 @@ native-runtime = [
     "bevy/png",
     "bevy/jpeg",
     "bevy/bevy_gltf",
+    "bevy/gltf_animation",
     "bevy/bevy_pbr",
     "bevy/mesh_picking",
     "bevy/ghost_nodes",
@@ -161,6 +162,10 @@ required-features = ["native-media"]
 
 [[example]]
 name = "frontend_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "fiote_character_visual"
 required-features = ["native-runtime"]
 
 [[example]]

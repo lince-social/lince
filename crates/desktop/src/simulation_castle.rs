@@ -2,6 +2,7 @@ mod checks_ui;
 mod cycles_ui;
 mod limits_ui;
 mod runner;
+mod records_ui;
 mod sharing_ui;
 pub(crate) mod transfer_entry;
 mod transfers_ui;
@@ -27,6 +28,7 @@ pub struct SimulationCastle {
     transfer_form: transfers_ui::Form,
     pending_transfers: Vec<transfers_ui::Form>,
     sharing: sharing_ui::Form,
+    record_form: records_ui::Form,
 }
 
 impl Default for SimulationCastle {
@@ -45,12 +47,16 @@ impl Default for SimulationCastle {
             transfer_form: Default::default(),
             pending_transfers: Vec::new(),
             sharing: Default::default(),
+            record_form: Default::default(),
         }
     }
 }
 
 impl SimulationCastle {
     pub(crate) fn valid(&self) -> bool {
+        if !self.record_form.valid() {
+            return false;
+        }
         self.check_form.valid() && self.transfer_form.valid() && self.pending_transfers.len() <= 64 && self.pending_transfers.iter().all(transfers_ui::Form::valid) && self.sharing.valid() && self.scenario.len() <= 1024 * 1024 && [&self.source_directory, &self.output_directory, &self.run_directory, &self.selected_cell, &self.search_count, &self.through].iter().all(|value| value.len() <= 4096) && self.last_run.as_ref().is_none_or(|path| path.len() <= 4096)
     }
 }
@@ -83,6 +89,7 @@ enum Evidence {
 
 #[derive(Component)]
 struct View {
+    records: Entity,
     checks: Entity,
     limits: Entity,
     transfers: Entity,
@@ -145,7 +152,7 @@ pub(crate) fn stopped(world: &World, owner: Entity) -> bool {
 }
 impl Plugin for SimulationCastlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, receive).add_systems(
+        app.add_systems(Update, (receive, records_ui::receive).chain()).add_systems(
             PostUpdate,
             capture
                 .after(bevy::text::EditableTextSystems)
@@ -256,7 +263,7 @@ pub fn spawn(
         ("Save case", Command::Save),
         ("Run case folder", Command::Cases),
         ("Resume search", Command::Search),
-        ("Compare without Transfer assumptions", Command::Compare),
+        ("Compare with baseline", Command::Compare),
     ] {
         crate::castle_feed::button(world, setup, owner, label, command);
     }
@@ -300,6 +307,7 @@ pub fn spawn(
             ChildOf(owner),
         ))
         .id();
+    let records = world.spawn((Node { flex_direction: FlexDirection::Column, row_gap: px(6), flex_shrink: 0.0, ..default() }, ChildOf(owner))).id();
     let limits = row(world, owner);
     let controls = row(world, owner);
     let transfers = world
@@ -361,6 +369,7 @@ pub fn spawn(
     world.entity_mut(owner).insert((
         model,
         View {
+            records,
             checks,
             limits,
             transfers,
@@ -378,13 +387,14 @@ pub fn spawn(
         },
     ));
     checks_ui::render(world, owner);
+    records_ui::render(world, owner);
     limits_ui::render(world, owner);
     transfers_ui::render(world, owner);
     sharing_ui::render(world, owner);
     owner
 }
 
-pub(crate) fn open_current(world: &mut World, root: Entity, record: Option<&str>) {
+pub(crate) fn open_current(world: &mut World, root: Entity, record: Option<&str>) -> Entity {
     let now = nucleus::execution::now().timestamp_millis();
     let scenario = simulation::fixtures::current_database(now);
     let model = SimulationCastle {
@@ -392,6 +402,7 @@ pub(crate) fn open_current(world: &mut World, root: Entity, record: Option<&str>
         current_database: true,
         selected_cell: "current".into(),
         check_form: checks_ui::Form::target("current", record.unwrap_or_default()),
+        record_form: records_ui::Form::target(record.unwrap_or_default()),
         through: chrono::DateTime::from_timestamp_millis(scenario.end_ms)
             .unwrap()
             .to_rfc3339(),
@@ -403,10 +414,17 @@ pub(crate) fn open_current(world: &mut World, root: Entity, record: Option<&str>
     let position = world
         .get::<crate::canvas::CanvasView>(root)
         .map_or(DVec2::ZERO, |view| view.center);
-    spawn(world, root, workspace, position, model);
+    spawn(world, root, workspace, position, model)
+}
+
+pub(crate) fn open_appointment(world: &mut World, root: Entity, record: &str) {
+    let owner = open_current(world, root, Some(record));
+    world.get_mut::<SimulationCastle>(owner).unwrap().record_form.field = records_ui::Field::Schedule;
+    records_ui::render(world, owner);
 }
 
 fn capture(world: &mut World) {
+    records_ui::capture(world);
     transfers_ui::capture(world);
     checks_ui::capture(world);
     let values: Vec<_> = world
@@ -496,6 +514,21 @@ fn receive(world: &mut World) {
                     view.showing = Evidence::Result;
                     world.get_mut::<Text>(status).unwrap().0 = outcome.status;
                     world.get_mut::<Text>(evidence).unwrap().0 = outcome.evidence;
+                    if let Some(prepared) = outcome.prepared {
+                        let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
+                        records_ui::loaded(&mut model, &prepared.scenario);
+                        model.scenario = serde_json::to_string_pretty(&prepared.scenario).unwrap();
+                        model.source_directory = prepared.sources;
+                        model.current_database = false;
+                        model.selected_cell = "current".into();
+                        let editor = world.get::<View>(owner).unwrap().editor;
+                        world.get_mut::<EditableText>(editor).unwrap().editor.set_text(&model.scenario);
+                        let sources = model.source_directory.clone();
+                        world.entity_mut(owner).insert(model);
+                        update_input(world, owner, Field::Sources, &sources);
+                        update_input(world, owner, Field::Cell, "current");
+                        records_ui::render(world, owner);
+                    }
                     if let Some(path) = outcome.path {
                         let mut model = world.get_mut::<SimulationCastle>(owner).unwrap();
                         model.last_run = Some(path.clone());
@@ -585,6 +618,7 @@ fn show_evidence(world: &mut World, owner: Entity) {
 
 #[derive(Clone)]
 enum Command {
+    Records(records_ui::Command),
     Checks(checks_ui::Command),
     Transfers(transfers_ui::Command),
     Sharing(sharing_ui::Command),
@@ -669,6 +703,10 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
     let view = world.get::<View>(owner).unwrap();
     let status = view.status;
     let editor = view.editor;
+    if let Command::Records(command) = command
+        && !matches!(command, records_ui::Command::Capture(_)) {
+        return records_ui::apply(command, world, owner);
+    }
     if let Command::Evidence(evidence) = command {
         let mut view = world.get_mut::<View>(owner).unwrap();
         view.showing = *evidence;
@@ -756,12 +794,14 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         model.transfer_form = Default::default();
         model.pending_transfers.clear();
         model.sharing = Default::default();
+        model.record_form = Default::default();
         update_input(world, owner, Field::Cell, &selected);
         update_input(world, owner, Field::Through, &through);
         limits_ui::render(world, owner);
         checks_ui::render(world, owner);
         transfers_ui::render(world, owner);
         sharing_ui::render(world, owner);
+        records_ui::render(world, owner);
         world.get_mut::<Text>(status).unwrap().0 =
             "Setup prepared. Nothing runs until Run or Next event is pressed.".into();
         return Ok(());
@@ -817,6 +857,7 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         return Ok(());
     }
     let job = match command {
+        Command::Records(records_ui::Command::Capture(fresh)) => Job::CaptureRecord(*fresh),
         Command::Checks(checks_ui::Command::Save) => Job::SaveChecks,
         Command::Checks(checks_ui::Command::Load) => Job::LoadChecks,
         Command::Checks(checks_ui::Command::List) => Job::ListChecks,
@@ -890,7 +931,7 @@ pub(crate) struct SavedSimulation {
 
 impl SavedSimulation {
     pub(crate) fn valid(&self) -> bool {
-        self.castle.check_form.valid()
+        self.castle.record_form.valid() && self.castle.check_form.valid()
             && self.castle.transfer_form.valid()
             && self.castle.pending_transfers.len() <= 64
             && self
@@ -983,7 +1024,7 @@ mod tests {
         (app, owner)
     }
 
-    async fn until(app: &mut App, owner: Entity, predicate: impl Fn(&View, &str) -> bool) {
+    pub(super) async fn until(app: &mut App, owner: Entity, predicate: impl Fn(&View, &str) -> bool) {
         tokio::time::timeout(std::time::Duration::from_secs(30), async {
             loop {
                 app.update();

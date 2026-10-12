@@ -1,6 +1,6 @@
 use engine::actions::Action;
 use nucleus::simulation::{Predicate, ReplayStatus, Verdict};
-use simulation::scenario::{Cell, Check, Scenario};
+use simulation::scenario::{Check, Scenario};
 
 fn scenario() -> Scenario {
     simulation::fixtures::daily()
@@ -177,82 +177,7 @@ fn event_budget_does_not_claim_a_finished_projection() {
 fn four_cells_converge_after_duplicates_partition_loss_and_restart() {
     run(async {
         let directory = tempfile::tempdir().unwrap();
-        let mut case = scenario();
-        case.name = "four-cells".into();
-        case.cells[0].seed.truncate(1);
-        for name in ["b", "c", "d"] {
-            case.cells.push(Cell {
-                name: name.into(),
-                database: None,
-                lingua: Vec::new(),
-                seed: Vec::new(),
-            });
-        }
-        case.end_ms = case.start_ms + 10_000;
-        case.checks = vec![Check {
-            options: Default::default(),
-            id: "converged".into(),
-            predicate: Predicate::Converged {
-                cells: vec!["a".into(), "b".into(), "c".into(), "d".into()],
-                record: "$stock".into(),
-                at_ms: case.end_ms,
-            },
-        }];
-        let mut add = |at, cell: &str, event| {
-            let id = format!("event-{}", case.inputs.len());
-            case.inputs.push(simulation::scenario::Input {
-                id,
-                at_ms: case.start_ms + at,
-                cell: cell.into(),
-                event,
-            });
-        };
-        for peer in ["b", "c", "d"] {
-            add(
-                0,
-                "a",
-                simulation::scenario::Event::Pair { peer: peer.into() },
-            );
-            add(
-                10,
-                "a",
-                simulation::scenario::Event::Sync {
-                    peer: peer.into(),
-                    delay_ms: 20,
-                    copies: 2,
-                    duplicate_spacing_ms: 100,
-                    drop: false,
-                },
-            );
-        }
-        add(
-            15,
-            "a",
-            simulation::scenario::Event::Link {
-                peer: "d".into(),
-                connected: false,
-            },
-        );
-        add(60, "b", simulation::scenario::Event::Restart {});
-        add(
-            100,
-            "a",
-            simulation::scenario::Event::Link {
-                peer: "d".into(),
-                connected: true,
-            },
-        );
-        add(
-            200,
-            "a",
-            simulation::scenario::Event::Sync {
-                peer: "d".into(),
-                delay_ms: 10,
-                copies: 2,
-                duplicate_spacing_ms: 20,
-                drop: false,
-            },
-        );
+        let case = simulation::fixtures::network(false);
         let original = directory.path().join("original");
         let result = simulation::artifacts::execute(case, &original)
             .await
@@ -263,13 +188,6 @@ fn four_cells_converge_after_duplicates_partition_loss_and_restart() {
             "{:?}",
             result.findings
         );
-        let status = simulation::artifacts::replay(&original, &directory.path().join("repeated"))
-            .await
-            .unwrap();
-        assert!(
-            matches!(status, ReplayStatus::Verified { .. }),
-            "{status:?}"
-        );
         let bundle = simulation::artifacts::load(&original).unwrap();
         assert!(bundle.events.iter().any(|event| matches!(
             event.observation,
@@ -279,6 +197,25 @@ fn four_cells_converge_after_duplicates_partition_loss_and_restart() {
             event.observation,
             nucleus::simulation::Observation::MessageDelivered { imported: 0, .. }
         )));
+        for peer in ["b", "c", "d"] {
+            assert!(bundle.events.iter().any(|event| event.cell == peer && matches!(
+                event.observation,
+                nucleus::simulation::Observation::MessageDelivered { imported, .. } if imported > 0
+            )));
+        }
+        assert!(bundle.events.iter().any(|event| event.cell == "b"
+            && event.virtual_ms > bundle.scenario.start_ms + 25
+            && matches!(
+                event.observation,
+                nucleus::simulation::Observation::MessageDelivered { imported: 0, .. }
+            )));
+        let status = simulation::artifacts::replay(&original, &directory.path().join("repeated"))
+            .await
+            .unwrap();
+        assert!(
+            matches!(status, ReplayStatus::Verified { .. }),
+            "{status:?}"
+        );
     });
 }
 
@@ -337,9 +274,59 @@ fn two_organs_enrol_discover_and_sync_through_four_cells() {
     run(async {
         let directory = tempfile::tempdir().unwrap();
         let original = directory.path().join("original");
-        let result = simulation::artifacts::execute(simulation::fixtures::network(true), &original)
-            .await
-            .unwrap();
+        let mut session = simulation::artifacts::Session::open(
+            simulation::fixtures::network(true),
+            &original,
+            std::path::Path::new("."),
+        )
+        .await
+        .unwrap();
+        while session.step().await.unwrap() {
+            for cell in ["a", "b"] {
+                assert!(
+                    session
+                        .world
+                        .quantity(cell, "$second-stock")
+                        .await
+                        .unwrap()
+                        .is_none()
+                );
+            }
+        }
+        for (host, member) in [("a", "b"), ("c", "d")] {
+            let organ = session
+                .world
+                .resolve_reference(&format!("$cell:{host}:organ"));
+            let node = &session.world.nodes[member];
+            assert_eq!(
+                store::organs::local(&node.engine().store.pool)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .uid,
+                organ
+            );
+            let cell = store::cells::local(&node.engine().store.pool)
+                .await
+                .unwrap()
+                .unwrap();
+            for name in [host, member] {
+                let roster = session.world.nodes[name]
+                    .engine()
+                    .roster_of(&organ)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                assert!(
+                    roster
+                        .roster
+                        .cells
+                        .iter()
+                        .any(|entry| entry.cell_uid == cell.uid)
+                );
+            }
+        }
+        let result = session.finish().await.unwrap();
         assert_eq!(
             result.result.verdict,
             Verdict::Passed,
@@ -353,6 +340,141 @@ fn two_organs_enrol_discover_and_sync_through_four_cells() {
             matches!(status, ReplayStatus::Verified { .. }),
             "{status:?}"
         );
+    });
+}
+
+#[test]
+fn organ_sharing_requires_outbound_and_inbound_permission() {
+    use nucleus::simulation::Refusal;
+    use simulation::scenario::{Event, Input};
+
+    run(async {
+        for (sync_out, sync_in) in [(false, false), (true, false), (false, true), (true, true)] {
+            let directory = tempfile::tempdir().unwrap();
+            let mut case = simulation::fixtures::network(true);
+            case.checks.retain(|check| {
+                matches!(
+                    check.predicate,
+                    Predicate::FactChain {} | Predicate::NoUnexpectedRefusals {}
+                )
+            });
+            case.inputs.retain(|input| {
+                matches!(
+                    input.event,
+                    Event::Enrol { .. }
+                        | Event::Discover { .. }
+                        | Event::Pair { .. }
+                        | Event::Action { .. }
+                )
+            });
+            for input in &mut case.inputs {
+                if let Event::Action { invocation } = &mut input.event {
+                    if let Action::SetSyncPolicy {
+                        sync_out: outgoing,
+                        sync_in: incoming,
+                        ..
+                    } = &mut invocation.action
+                    {
+                        if input.cell == "a" {
+                            *outgoing = sync_out;
+                        } else {
+                            *outgoing = true;
+                            *incoming = sync_in;
+                        }
+                    }
+                }
+            }
+            for (from, to) in [("a", "b"), ("a", "c"), ("a", "d"), ("c", "d"), ("c", "a")] {
+                let id = format!("sync-{from}-{to}");
+                case.inputs.push(Input {
+                    id: id.clone(),
+                    cell: from.into(),
+                    at_ms: case.start_ms + 10,
+                    event: Event::Sync {
+                        peer: to.into(),
+                        delay_ms: 1,
+                        copies: 2,
+                        duplicate_spacing_ms: 2,
+                        drop: false,
+                    },
+                });
+                if (from == "a" && matches!(to, "c" | "d") && !sync_in)
+                    || (from == "c" && to == "a")
+                {
+                    for copy in 0..2 {
+                        case.checks.push(Check {
+                            id: format!("refused-{id}-{copy}"),
+                            options: Default::default(),
+                            predicate: Predicate::ExpectedMessageRefusal {
+                                input: id.clone(),
+                                copy,
+                                refusal: Refusal::Forbidden {},
+                            },
+                        });
+                    }
+                }
+            }
+            let mut session = simulation::artifacts::Session::open(
+                case,
+                &directory.path().join("run"),
+                std::path::Path::new("."),
+            )
+            .await
+            .unwrap();
+            while session.step().await.unwrap() {}
+            for cell in ["a", "b"] {
+                assert!(
+                    session
+                        .world
+                        .quantity(cell, "$second-stock")
+                        .await
+                        .unwrap()
+                        .is_none()
+                );
+                assert_eq!(
+                    session
+                        .world
+                        .quantity(cell, "$stock")
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .1
+                        .value
+                        .to_string(),
+                    "10"
+                );
+            }
+            for cell in ["c", "d"] {
+                let stock = session.world.quantity(cell, "$stock").await.unwrap();
+                assert_eq!(
+                    stock.is_some(),
+                    sync_out && sync_in,
+                    "{cell}: outbound={sync_out}, inbound={sync_in}"
+                );
+                if let Some((_, quantity)) = stock {
+                    assert_eq!(quantity.value.to_string(), "10");
+                }
+                assert_eq!(
+                    session
+                        .world
+                        .quantity(cell, "$second-stock")
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .1
+                        .value
+                        .to_string(),
+                    "5"
+                );
+            }
+            let result = session.finish().await.unwrap();
+            assert_eq!(
+                result.result.verdict,
+                Verdict::Passed,
+                "{:?}",
+                result.findings
+            );
+        }
     });
 }
 

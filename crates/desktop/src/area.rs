@@ -179,6 +179,8 @@ pub struct InfluenceArea {
     pub immunity: crate::area_effects::Immunity,
     pub scale: f32,
     pub force_mode: crate::area_effects::ForceMode,
+    #[serde(default)]
+    pub hole: bool,
 }
 
 impl InfluenceArea {
@@ -216,6 +218,7 @@ impl InfluenceArea {
             immunity: Default::default(),
             scale: 1.0,
             force_mode: Default::default(),
+            hole: false,
         }
     }
 

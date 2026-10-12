@@ -181,6 +181,7 @@ fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
         .add_plugins(crate::assertion_castle::AssertionCastlePlugin)
         .add_plugins(crate::shader_castle::ShaderCastlePlugin)
         .add_plugins(crate::fiote::session::Plugin)
+        .add_plugins(crate::fiote::character::CharacterPlugin)
         .add_plugins((
             crate::terminal::TerminalPlugin,
             crate::command_castle::CommandCastlePlugin,

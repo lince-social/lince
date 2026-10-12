@@ -1388,7 +1388,7 @@
         imports = [ vpsModule lincePackageDefaults ];
       };
 
-      nixosConfigurations.manas-organ = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.institute-organ = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = { inherit self; };
         modules = [

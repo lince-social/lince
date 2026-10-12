@@ -30,6 +30,7 @@ pub mod mail_left;
 pub mod mailbox;
 pub mod message_content;
 pub mod misc;
+pub mod signal_endpoints;
 pub mod offers;
 pub mod operation_receipts;
 pub mod organs;
@@ -181,6 +182,7 @@ async fn migrate(pool: &SqlitePool) -> Result<(), StoreError> {
             sqlx::migrate::MigrateError::Execute(e) => e,
             other => sqlx::Error::Protocol(other.to_string()),
         })?;
+    signal_endpoints::ensure_authority(pool).await?;
     transfer_replication::install(pool).await?;
     projection::install(pool).await
 }

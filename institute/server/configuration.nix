@@ -35,7 +35,7 @@
     fsType = "vfat";
   };
 
-  networking.hostName = "manas-organ";
+  networking.hostName = "institute-organ";
   networking.useDHCP = true;
   networking.firewall.allowedTCPPorts = [
     22

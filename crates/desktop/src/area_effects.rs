@@ -3,7 +3,7 @@ use crate::{
     canvas::CanvasItem,
     protein_area::{RecordBinding, Source, filter::Matches, grouping::GeneratedGroup},
     sand_placement::Pinned,
-    workspace::{WorkspaceMember, Workspaces},
+    workspace::WorkspaceMember,
 };
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
@@ -229,6 +229,7 @@ pub(crate) fn blocked(
 }
 
 pub(crate) fn refresh(world: &mut World) {
+    crate::topology::holes::refresh(world);
     world.init_resource::<Influences>();
     let mut runtime = world.remove_resource::<Influences>().unwrap();
     let previous: HashMap<_, _> = runtime.fields.iter().map(|f| (f.entity, f)).collect();
@@ -763,10 +764,7 @@ pub(crate) fn update(world: &mut World) {
     world.resource_scope(|world, mut runtime: Mut<Influences>| {
         runtime.cache.retain(|entity, _| retained.contains(entity));
         for (entity, item, root, workspace, record, binding, pinned) in sands {
-            let active = world
-                .get::<Workspaces>(root)
-                .is_some_and(|spaces| spaces.active == workspace)
-                && !pinned;
+            let active = crate::topology::holes::live(world, root, workspace) && !pinned;
             let scale = if active {
                 runtime.scale(
                     root,

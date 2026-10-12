@@ -59,12 +59,12 @@ async fn lingua_packages_ingest_real_rules_preserve_sources_and_replay_without_t
     }
     assert!(path.join("seed/a.sqlite").is_file());
     sources.close().unwrap();
-    assert!(matches!(
-        artifacts::replay(&path, &output.path().join("replay"))
-            .await
-            .unwrap(),
-        ReplayStatus::Verified { .. }
-    ));
+    let replay = artifacts::replay(&path, &output.path().join("replay"))
+        .await
+        .unwrap();
+    if !matches!(replay, ReplayStatus::Verified { .. }) {
+        panic!("{replay:?}; evidence retained in {}", output.keep().display());
+    }
     let file = &bundle.scenario.cells[0].lingua[0].file;
     std::fs::write(path.join(file), "Changed").unwrap();
     assert!(matches!(

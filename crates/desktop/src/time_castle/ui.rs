@@ -5,6 +5,26 @@ use bevy::text::EditableText;
 #[derive(Component)]
 pub(super) struct CursorChoice(pub CursorMode);
 
+#[derive(Clone)]
+struct TryDate(String);
+
+impl Action for TryDate {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        if !world.get::<View>(owner).is_some_and(|view| matches!(view.source, Source::Local)
+            && view.entries.iter().any(|entry| entry.record_uid == self.0 && !entry.preview)) {
+            return;
+        }
+        let mut cursor = Some(owner);
+        while let Some(entity) = cursor {
+            if world.get::<crate::workspace::Workspaces>(entity).is_some() {
+                crate::simulation_castle::open_appointment(world, entity, &self.0);
+                return;
+            }
+            cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        }
+    }
+}
+
 pub(super) fn origin_label(entry: &Entry, settings: &Settings) -> String {
     if entry.origin["kind"] == "need" {
         "Outstanding quantity on this Record".into()
@@ -762,6 +782,9 @@ pub(super) fn details(world: &mut World, owner: Entity, now: i64) {
             Select(vec![entry.id.clone()]),
         );
         world.get_mut::<Node>(event).unwrap().width = percent(100);
+        if !entry.preview && world.get::<View>(owner).is_some_and(|view| matches!(view.source, Source::Local)) {
+            chrome::button(world, parent, owner, "Try another date", TryDate(entry.record_uid.clone()));
+        }
         if !selected.is_empty() {
             let origin = origin_label(entry, &settings);
             crate::edit_mode::label(world, parent, &origin, 11.0);
@@ -852,6 +875,36 @@ mod tests {
             .set_text("Unknown/Zone");
         Apply.apply(&mut world, owner);
         assert_eq!(world.get::<TimeSettings>(owner).unwrap().0, restored);
+    }
+
+    #[test]
+    fn calendar_date_drafts_open_only_for_local_committed_records() {
+        let (mut world, owner) = fixture();
+        world.init_resource::<Assets<Font>>();
+        let root = world.spawn(crate::workspace::Workspaces::default()).id();
+        world.entity_mut(owner).insert(ChildOf(root));
+        let uid = nucleus::new_uid("r");
+        let entry: Entry = serde_json::from_value(serde_json::json!({
+            "uid":"appointment", "record_uid":uid, "head":"Appointment", "quantity":"-1", "category":"timed",
+            "time":{"from_ms":10_000}, "origin":{"kind":"manual"}, "preview":true
+        })).unwrap();
+        world.get_mut::<View>(owner).unwrap().entries = vec![entry];
+        TryDate(uid.clone()).apply(&mut world, owner);
+        assert_eq!(world.query::<&crate::simulation_castle::SimulationCastle>().iter(&world).count(), 0);
+        world.get_mut::<View>(owner).unwrap().entries[0].preview = false;
+        world.get_mut::<View>(owner).unwrap().source = Source::Organ("remote".into());
+        TryDate(uid.clone()).apply(&mut world, owner);
+        assert_eq!(world.query::<&crate::simulation_castle::SimulationCastle>().iter(&world).count(), 0);
+        world.get_mut::<View>(owner).unwrap().source = Source::Local;
+        TryDate(uid.clone()).apply(&mut world, owner);
+        let castle = world.query::<&crate::simulation_castle::SimulationCastle>().single(&world).unwrap();
+        let saved = serde_json::to_value(castle).unwrap();
+        assert_eq!(saved["record_form"]["record"], uid);
+        assert_eq!(saved["record_form"]["field"], "Schedule");
+        assert_eq!(saved["current_database"], true);
+        let scenario: simulation::scenario::Scenario = serde_json::from_str(saved["scenario"].as_str().unwrap()).unwrap();
+        assert!(scenario.proposal.is_none());
+        assert!(scenario.inputs.is_empty());
     }
 
     #[test]

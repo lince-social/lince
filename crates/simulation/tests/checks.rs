@@ -143,10 +143,9 @@ fn check_schedules_leave_domain_events_and_final_state_unchanged() {
                 result.findings
             );
             assert_eq!(result.result.coverage[0].kind, kind);
-            assert_eq!(
-                result.result.final_state, baseline.result.final_state,
-                "{name}"
-            );
+            if result.result.final_state != baseline.result.final_state {
+                panic!("{name}: final state {:?}, baseline {:?}; evidence retained in {}", result.result.final_state, baseline.result.final_state, directory.keep().display());
+            }
             assert_eq!(result.result.steps, baseline.result.steps, "{name}");
             let bundle = simulation::artifacts::load(&result.directory).unwrap();
             let evaluations = bundle

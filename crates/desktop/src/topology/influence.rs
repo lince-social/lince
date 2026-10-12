@@ -104,9 +104,7 @@ pub fn update(world: &mut World) {
     }
     for (entity, item, root, workspace) in sands {
         if world.get::<crate::sand_placement::Pinned>(entity).is_some()
-            || !world
-                .get::<crate::workspace::Workspaces>(root)
-                .is_some_and(|spaces| spaces.active == workspace)
+            || !super::holes::live(world, root, workspace)
         {
             if crate::influence_report::tracked(world, entity) {
                 let entries = areas

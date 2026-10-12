@@ -1349,6 +1349,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_animation"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc513aac5cda673fb138236e969b4514e0a9b9f93fd33288111f147baa8af623"
+dependencies = [
+ "bevy_animation_macros",
+ "bevy_app",
+ "bevy_asset",
+ "bevy_color",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_math",
+ "bevy_mesh",
+ "bevy_platform",
+ "bevy_reflect",
+ "bevy_time",
+ "bevy_transform",
+ "bevy_utils",
+ "blake3",
+ "derive_more",
+ "downcast-rs 2.0.2",
+ "either",
+ "petgraph 0.8.3",
+ "ron",
+ "serde",
+ "smallvec",
+ "thiserror 2.0.20",
+ "thread_local",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "bevy_animation_macros"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eed2910d9ca5c3b48968a54c4571789e4e81935cf3c823383fcac34ca28e2b0e"
+dependencies = [
+ "bevy_macro_utils",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "bevy_app"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1719,6 +1763,7 @@ checksum = "0d17df73b26adfb8be89f0716b8667c60660bdd2d589863b8901caca58c99841"
 dependencies = [
  "async-lock",
  "base64 0.22.1",
+ "bevy_animation",
  "bevy_app",
  "bevy_asset",
  "bevy_camera",
@@ -1871,6 +1916,7 @@ checksum = "4ba99ca2e501f14f4af3322d66ae41b5c5b6ebd3aac4d00cda47dea4c00290ae"
 dependencies = [
  "bevy_a11y",
  "bevy_android",
+ "bevy_animation",
  "bevy_app",
  "bevy_asset",
  "bevy_camera",
@@ -2173,6 +2219,7 @@ dependencies = [
  "glam 0.32.1",
  "indexmap 2.14.2",
  "inventory",
+ "petgraph 0.8.3",
  "serde",
  "smallvec",
  "smol_str 0.2.2",
@@ -5045,6 +5092,7 @@ dependencies = [
  "loro",
  "n0-future",
  "nucleus",
+ "p256",
  "pkarr",
  "protein",
  "qrcode",
@@ -5982,6 +6030,13 @@ dependencies = [
  "num-traits",
  "serde",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "geist"
+version = "0.8.0"
+dependencies = [
+ "sensei",
 ]
 
 [[package]]
@@ -8424,12 +8479,14 @@ version = "0.8.0"
 dependencies = [
  "axum",
  "base64 0.23.1",
+ "chrono",
  "ed25519-dalek 3.0.0",
  "engine",
  "futures",
  "lince-cell",
  "lince-utils",
  "nucleus",
+ "p256",
  "protein",
  "reqwest",
  "sensei",
@@ -11348,6 +11405,8 @@ dependencies = [
  "fixedbitset 0.5.7",
  "hashbrown 0.15.5",
  "indexmap 2.14.2",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]

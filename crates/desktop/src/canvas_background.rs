@@ -25,6 +25,11 @@ pub fn color(rgb: [u8; 3]) -> Color {
 }
 
 pub(crate) fn current(world: &World, root: Entity) -> CanvasColors {
+    let workspace = world.get::<Workspaces>(root).map_or(1, |spaces| spaces.active);
+    for_workspace(world, root, workspace)
+}
+
+pub(crate) fn for_workspace(world: &World, root: Entity, workspace: u64) -> CanvasColors {
     use crate::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
     let defaults = ThemeSettings::default();
     let settings = world.get_resource::<ThemeSettings>().unwrap_or(&defaults);
@@ -40,7 +45,7 @@ pub(crate) fn current(world: &World, root: Entity) -> CanvasColors {
         spaces
             .entries
             .iter()
-            .find(|space| space.id == spaces.active)
+            .find(|space| space.id == workspace)
     }) {
         if space.color_overrides[0] {
             colors.background = space.colors.background;

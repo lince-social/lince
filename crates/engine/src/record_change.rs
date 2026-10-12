@@ -132,6 +132,14 @@ async fn save_work(
     work: &Value,
 ) -> Result<(), EngineError> {
     crate::private_work::WorkMetadata::parse(work).map_err(invalid_display)?;
+    write_work(tx, uid, work).await
+}
+
+async fn write_work(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    work: &Value,
+) -> Result<(), EngineError> {
     store::sqlx::query("INSERT INTO record_extension (record_uid, namespace, version, fds) VALUES (?, 'work', 1, ?) ON CONFLICT(record_uid, namespace) DO UPDATE SET fds = excluded.fds")
         .bind(uid).bind(work.to_string()).execute(&mut **tx).await?;
     Ok(())
@@ -200,6 +208,16 @@ pub(crate) async fn apply_register(
     uid: &str,
     property: &str,
     register: &Register,
+) -> Result<bool, EngineError> {
+    apply_register_on(tx, uid, property, register, false).await
+}
+
+async fn apply_register_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    property: &str,
+    register: &Register,
+    stage_work: bool,
 ) -> Result<bool, EngineError> {
     if register.peer.len() > 128
         || register.change_uid.len() > 128
@@ -314,7 +332,11 @@ pub(crate) async fn apply_register(
             } else {
                 work[field] = register.value.clone();
             }
-            save_work(tx, uid, &work).await?;
+            if stage_work {
+                write_work(tx, uid, &work).await?;
+            } else {
+                save_work(tx, uid, &work).await?;
+            }
         }
         property if property.starts_with("work.log:") && property.len() <= 160 => {
             if !register.value.is_null() {
@@ -718,7 +740,8 @@ impl Engine {
                 change_uid: request.id.clone(),
                 value,
             };
-            changed |= apply_register(&mut tx, uid, &property, &register).await?;
+            changed |= apply_register_on(&mut tx, uid, &property, &register,
+                matches!(request.mutation, Mutation::WorkMetadata { .. })).await?;
             store::sync_ops::log_local_tx(
                 &mut tx,
                 "record",
@@ -729,6 +752,10 @@ impl Engine {
             )
             .await?;
             changes.push(json!({"property":property,"value":register.value}));
+        }
+        if matches!(request.mutation, Mutation::WorkMetadata { .. }) {
+            crate::private_work::WorkMetadata::parse(&work_on(&mut tx, uid).await?)
+                .map_err(invalid_display)?;
         }
         let now = nucleus::execution::now();
         let fact = crate::append::append_one_in_transaction(

@@ -11,6 +11,7 @@ pub mod areas;
 pub mod assets;
 mod font_cache;
 pub mod groups;
+pub(crate) mod holes;
 pub mod influence;
 pub mod input;
 pub mod physics;
@@ -46,6 +47,7 @@ impl Plugin for TopologyPlugin {
                 Update,
                 (
                     view::synchronize,
+                    holes::refresh,
                     assets::update,
                     area_summary::update,
                     area_summary::hover,

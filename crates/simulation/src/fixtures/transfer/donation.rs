@@ -157,6 +157,8 @@ pub fn independent_donation(replicated: bool) -> Scenario {
             &format!("sync-policy-{from}"),
             json!({"action":"set-sync-policy", "target":format!("$cell:{to}:organ"), "sync_in":true, "sync_out":true}),
         );
+    }
+    for (from, to) in [("a", "b"), ("b", "a")] {
         add(
             &mut case,
             from,

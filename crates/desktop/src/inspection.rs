@@ -341,7 +341,7 @@ fn active_member(world: &World, root: Entity, entity: Entity) -> bool {
             return true;
         }
         if let Some(member) = world.get::<crate::workspace::WorkspaceMember>(entity)
-            && active.is_some_and(|active| member.0 != active)
+            && active.is_some_and(|active| member.0 != active && !crate::topology::holes::live(world, root, member.0))
         {
             return false;
         }

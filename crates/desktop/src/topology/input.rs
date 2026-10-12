@@ -50,6 +50,21 @@ pub fn plane_point(world: &World, root: Entity, point: Vec2, elevation: f64) -> 
     )
 }
 
+fn item_point(
+    world: &World,
+    root: Entity,
+    entity: Entity,
+    point: Vec2,
+    elevation: f64,
+) -> Option<DVec3> {
+    let offset = world
+        .get::<crate::workspace::WorkspaceMember>(entity)
+        .map_or(0.0, |member| {
+            super::holes::depth(world, root, member.0) as f64 * 0.2
+        });
+    plane_point(world, root, point, elevation - offset).map(|point| point + DVec3::Y * offset)
+}
+
 pub(crate) fn pointer(
     mut events: MessageReader<WindowEvent>,
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
@@ -61,6 +76,7 @@ pub(crate) fn pointer(
             &crate::edit_mode::EditMode,
             &crate::canvas::CanvasView,
             &crate::workspace::Workspaces,
+            Option<&super::holes::Layers>,
         ),
         With<SpatialRoot>,
     >,
@@ -137,7 +153,7 @@ pub(crate) fn pointer(
         events.clear();
         return;
     };
-    let Some((root, mode, canvas, spaces)) = roots.iter().next() else {
+    let Some((root, mode, canvas, spaces, layers)) = roots.iter().next() else {
         cancel_cursor(&mut state, &mut inputs, &mut pointers);
         return;
     };
@@ -249,13 +265,21 @@ pub(crate) fn pointer(
     if !overlay {
         let render_origin = DVec3::new(canvas.center.x, 0.0, canvas.center.y);
         for (entity, area, placement, parent, member, layer) in &areas {
-            if parent.parent() != root || member.0 != spaces.active {
+            if parent.parent() != root
+                || !layers.map_or(member.0 == spaces.active, |layers| {
+                    layers.0.iter().any(|layer| layer.workspace == member.0)
+                })
+            {
                 continue;
             }
             let placement = placement.copied().unwrap_or_default();
+            let depth = layers
+                .and_then(|layers| layers.0.iter().find(|layer| layer.workspace == member.0))
+                .map_or(0, |layer| layer.depth);
             let normal = placement.rotation() * DVec3::Y;
-            let center =
-                placement.position(bevy::math::DVec2::from_array(area.center)) - render_origin;
+            let center = placement.position(bevy::math::DVec2::from_array(area.center))
+                - render_origin
+                - DVec3::Y * depth as f64 * 0.2;
             let denominator = normal.dot(ray.direction.as_dvec3());
             if denominator.abs() < 1e-6 {
                 continue;
@@ -280,10 +304,30 @@ pub(crate) fn pointer(
             }
             let point = ray.origin.as_dvec3() + ray.direction.as_dvec3() * distance;
             let local = placement.rotation().inverse() * (point - center);
-            if area.contains(
-                bevy::math::DVec2::from_array(area.center)
-                    + bevy::math::DVec2::new(local.x, local.z),
-            ) {
+            let area_point = bevy::math::DVec2::from_array(area.center)
+                + bevy::math::DVec2::new(local.x, local.z);
+            let point_visible = super::holes::contains(
+                layers,
+                member.0,
+                bevy::math::DVec2::new(point.x + render_origin.x, point.z + render_origin.z),
+            );
+            let open_hole = area.hole
+                && area.enabled
+                && !area.paused
+                && layers.is_some_and(|layers| {
+                    layers
+                        .0
+                        .iter()
+                        .find(|layer| layer.workspace == member.0)
+                        .is_some_and(|layer| !layer.cuts.is_empty())
+                });
+            let hole_border = open_hole
+                && mode.enabled
+                && area.signed_distance(area_point).abs() <= 8.0 / canvas.zoom;
+            if area.contains(area_point)
+                && (point_visible || hole_border)
+                && (!open_hole || hole_border)
+            {
                 hit_owner = Some((entity, point.as_vec3()));
                 hit_mesh = None;
             }
@@ -293,6 +337,7 @@ pub(crate) fn pointer(
         if hit_mesh.is_none()
             && (!mode.enabled || areas.contains(owner))
             && let Ok(surface) = surfaces.get(owner)
+            && surface.visible
             && let Ok((_, transform)) = owners.get(surface.face)
         {
             let point = transform.affine().inverse().transform_point3(hit);
@@ -527,7 +572,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 let Some(position) = super::position(world, entity) else {
                     continue;
                 };
-                if let Some(point) = plane_point(world, root, event.location.position, position.y) {
+                if let Some(point) = item_point(world, root, entity, event.location.position, position.y) {
                     if task || attached {
                         world.resource_mut::<PointerState>().pending_drag =
                             Some((entity, event.location.position, point));
@@ -540,7 +585,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 let target = hit.and_then(|(entity, _)| {
                     let root = world.get::<ChildOf>(entity)?.parent();
                     let position = super::position(world, entity)?;
-                    let point = plane_point(world, root, event.location.position, position.y)?;
+                    let point = item_point(world, root, entity, event.location.position, position.y)?;
                     Some((entity, point))
                 });
                 let mut state = world.resource_mut::<PointerState>();
@@ -619,7 +664,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
                     continue;
                 };
-                if let Some(point) = plane_point(world, root, event.location.position, last.y) {
+                if let Some(point) = item_point(world, root, entity, event.location.position, last.y) {
                     super::groups::transform(
                         world,
                         entity,

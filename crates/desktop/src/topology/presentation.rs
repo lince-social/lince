@@ -100,15 +100,15 @@ fn request(
 ) -> Request {
     let (offset, clip) = crate::layout::viewport::clip(world, entity);
     let active = world
-        .get::<Workspaces>(root)
-        .zip(world.get::<WorkspaceMember>(entity))
-        .is_some_and(|(spaces, member)| spaces.active == member.0)
+        .get::<WorkspaceMember>(entity)
+        .is_some_and(|member| super::holes::live(world, root, member.0))
         && world.get::<Disabled>(root).is_none()
         && world.get::<Disabled>(entity).is_none()
         && clip.size().min_element() > 0.0
         && world
             .get::<crate::protein_area::placement::Pending>(entity)
-            .is_none();
+            .is_none()
+        && !super::holes::surface_pieces(world, root, entity, item).0.is_empty();
     let previous = world
         .get::<Surface>(entity)
         .filter(|surface| surface.visible)
@@ -220,6 +220,7 @@ pub fn synchronize(world: &mut World) {
     if !ready(world) {
         return;
     }
+    super::holes::refresh(world);
     let viewport = world.query::<&Window>().iter(world).next().map(|window| {
         (
             window.resolution.physical_size(),
@@ -515,6 +516,7 @@ pub fn synchronize(world: &mut World) {
         let clipped_center = clip.center() - item.size * 0.5;
         let uv = Rect::from_corners(clip.min / item.size, clip.max / item.size);
         if world.get::<Surface>(entity).unwrap().uv != uv
+            && !super::holes::clipped(world, face)
             && world
                 .get::<crate::time_castle::TimeSettings>(entity)
                 .is_none()
@@ -534,7 +536,14 @@ pub fn synchronize(world: &mut World) {
         }
         let transform = Transform {
             translation: (placement.position(item.position) - origin(world, root)).as_vec3()
-                - placement.rotation().as_quat() * Vec3::new(offset.x, 0.0, offset.y),
+                - placement.rotation().as_quat() * Vec3::new(offset.x, 0.0, offset.y)
+                - Vec3::Y
+                    * super::holes::depth(
+                        world,
+                        root,
+                        world.get::<WorkspaceMember>(entity).unwrap().0,
+                    ) as f32
+                    * 0.2,
             rotation: placement.rotation().as_quat(),
             scale: Vec3::splat(scale),
         };
@@ -593,7 +602,9 @@ pub fn synchronize(world: &mut World) {
             surface.uv = uv;
             surface.visible = visible;
         }
+        super::holes::clip_surface(world, root, entity, &item);
     }
+    super::holes::backgrounds(world);
 }
 
 pub fn bounds(world: &World, entity: Entity) -> Option<Rect> {

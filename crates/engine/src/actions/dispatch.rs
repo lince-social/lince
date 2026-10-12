@@ -290,6 +290,7 @@ impl Engine {
             | Action::SaveKarmaCommand { .. }
             | Action::RunKarmaCommand { .. }
             | Action::InspectKarmaCommands
+            | Action::SignalEndpoints { .. }
             | Action::CreateSignal { .. }
             | Action::CreateMatchRule { .. }
             | Action::AdoptConcepts { .. } => {

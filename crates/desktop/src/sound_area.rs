@@ -5,7 +5,7 @@ mod ui;
 use crate::{
     area::InfluenceArea,
     canvas::CanvasItem,
-    workspace::{WorkspaceMember, Workspaces},
+    workspace::WorkspaceMember,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -115,9 +115,7 @@ fn update(world: &mut World) {
                 == crate::influence_report::Outcome::Active
                 && area.sound.is_some()
                 && area.validate()
-                && world
-                    .get::<Workspaces>(parent.parent())
-                    .is_some_and(|spaces| spaces.active == member.0)
+                && crate::topology::holes::live(world, parent.parent(), member.0)
         })
         .map(|(entity, area, parent, member)| (entity, area.clone(), parent.parent(), member.0))
         .collect();

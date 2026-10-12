@@ -3,6 +3,7 @@
 
 mod auth;
 mod live;
+mod signal_endpoints;
 mod records;
 mod security;
 mod settings;
@@ -38,6 +39,7 @@ struct State {
     connections: Arc<Semaphore>,
     stop: watch::Receiver<bool>,
     security: security::Security,
+    signal_endpoint_ingress: Arc<signal_endpoints::Ingress>,
 }
 
 impl Facade {
@@ -85,6 +87,7 @@ impl Facade {
             connections: Arc::new(Semaphore::new(128)),
             stop: stopping.clone(),
             security,
+            signal_endpoint_ingress: Arc::new(signal_endpoints::Ingress::default()),
         };
         settings::ensure(&state)
             .await
@@ -104,6 +107,9 @@ impl Facade {
             .route("/login", post(auth::login))
             .route("/logout", post(auth::logout))
             .route("/live", get(live::upgrade))
+            .route("/signals/{signal}/readings", post(signal_endpoints::reading)
+                .layer(DefaultBodyLimit::max(2048))
+                .layer(axum::middleware::from_fn_with_state(state.clone(), signal_endpoints::admit)))
             .layer(DefaultBodyLimit::max(8192))
             .layer(axum::middleware::from_fn_with_state(
                 state.clone(),

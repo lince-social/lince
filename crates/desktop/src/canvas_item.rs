@@ -27,6 +27,12 @@ pub(crate) fn eligible(world: &World, root: Entity, entity: Entity) -> bool {
                 .get::<WorkspaceMember>(entity)
                 .map_or(spaces.entries[0].id, |member| member.0)
                 == spaces.active
+                || world.get::<WorkspaceMember>(entity).is_some_and(|member| {
+                    crate::topology::holes::live(world, root, member.0)
+                        && world
+                            .get::<crate::topology::presentation::Surface>(entity)
+                            .is_some_and(|surface| surface.visible)
+                })
         })
 }
 

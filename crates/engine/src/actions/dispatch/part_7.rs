@@ -11,6 +11,9 @@ impl Engine {
         Box::pin(async move {
             let mut outcome = ActionOutcome::default();
             match action {
+                Action::SignalEndpoints { request } => {
+                    outcome.data = Some(self.signal_endpoint_request(request, actor.as_deref(), now).await?);
+                }
                 Action::AddParty {
                     transfer,
                     actor: person,

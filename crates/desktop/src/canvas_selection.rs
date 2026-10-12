@@ -70,6 +70,8 @@ pub(crate) fn group_members(world: &World, root: Entity, entity: Entity) -> Vec<
                 .iter()
                 .filter(|candidate| {
                     eligible(world, root, *candidate)
+                        && world.get::<WorkspaceMember>(*candidate)
+                            == world.get::<WorkspaceMember>(entity)
                         && (*candidate == entity
                             || group.is_some() && world.get::<SandGroup>(*candidate) == group)
                 })
@@ -84,7 +86,14 @@ fn expand_groups(world: &World, root: Entity, selection: Vec<Entity>) -> Vec<Ent
         .collect();
     let groups: HashSet<_> = selected
         .iter()
-        .filter_map(|entity| world.get::<SandGroup>(*entity).copied())
+        .filter_map(|entity| {
+            world.get::<SandGroup>(*entity).copied().map(|group| {
+                (
+                    world.get::<WorkspaceMember>(*entity).map(|member| member.0),
+                    group,
+                )
+            })
+        })
         .collect();
     let mut result = Vec::new();
     if let Some(children) = world.get::<Children>(root) {
@@ -93,7 +102,12 @@ fn expand_groups(world: &World, root: Entity, selection: Vec<Entity>) -> Vec<Ent
                 && (selected.contains(&entity)
                     || world
                         .get::<SandGroup>(entity)
-                        .is_some_and(|group| groups.contains(group)))
+                        .is_some_and(|group| {
+                            groups.contains(&(
+                                world.get::<WorkspaceMember>(entity).map(|member| member.0),
+                                *group,
+                            ))
+                        }))
             {
                 result.push(entity);
             }
@@ -513,7 +527,12 @@ impl Action for GroupAction {
         if !selection.contains(&target) {
             selection = group_members(world, root, target);
         }
-        let expanded = expand_groups(world, root, selection);
+        let expanded: Vec<_> = expand_groups(world, root, selection)
+            .into_iter()
+            .filter(|entity| {
+                world.get::<WorkspaceMember>(*entity) == world.get::<WorkspaceMember>(target)
+            })
+            .collect();
         match self {
             Self::Group => {
                 if expanded.len() < 2 {

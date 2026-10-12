@@ -1228,6 +1228,7 @@ pub enum Action {
     },
     RunKarmaCommand { command: String, request_id: String, #[serde(default)] numeric: bool },
     InspectKarmaCommands,
+    SignalEndpoints { request: crate::signal_endpoints::Request },
     CreateSignal {
         slug: String,
         head: String,
@@ -4098,6 +4099,7 @@ impl Engine {
 
     pub(crate) fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
+            Action::SignalEndpoints { .. } => "permission:assign",
             Action::Vocabulary { .. } | Action::SavedLocation { .. } => "record:read",
             Action::Plugins { request } => request.permission(),
             Action::Social { request } => request.permission(),
@@ -4480,7 +4482,7 @@ impl Engine {
         }
         match func {
             "query_command" => self.query_command_reading(slug).await,
-            "signal" => self.saved_command_reading(slug).await,
+            "signal" => self.saved_signal_reading(slug).await,
             "quantity" => {
                 let uid = self.resolve(slug).await?;
                 Ok(store::facts::level(&self.store.pool, &uid).await?)

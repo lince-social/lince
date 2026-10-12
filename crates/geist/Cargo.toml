@@ -1,0 +1,14 @@
+[package]
+name = "geist"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lince's action-conditioned joint-embedding predictive world model."
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

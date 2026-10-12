@@ -50,7 +50,12 @@ fn optional_transfer_runs_use_each_owners_unapplied_remainder() {
                 }
                 let directory = tempfile::tempdir().unwrap();
                 let mut session = simulation::artifacts::Session::open(case, &directory.path().join("run"), std::path::Path::new(".")).await.unwrap();
-                while session.world.next_ms().is_some_and(|time| time < session.world.scenario.start_ms + 1_000) { assert!(session.step().await.unwrap()); }
+                while session.world.next_ms().is_some_and(|time| time < session.world.scenario.start_ms + 1_000) {
+                    if !session.step().await.unwrap() {
+                        let run = session.finish().await.unwrap();
+                        panic!("stopped before shared proposal: {:?}; findings {:?}; evidence retained in {}", run.result, run.findings, directory.keep().display());
+                    }
+                }
                 let public = |pool: store::sqlx::SqlitePool| async move {
                     let revision: i64 = store::sqlx::query_scalar("SELECT revision FROM transfer LIMIT 1").fetch_one(&pool).await.unwrap();
                     let levels:Vec<(String,i64)> = store::sqlx::query_as("SELECT party_uid, level FROM transfer_agreement ORDER BY party_uid").fetch_all(&pool).await.unwrap();
@@ -284,8 +289,8 @@ fn optional_comparisons_keep_the_same_snapshot_and_existing_karma() {
                             comparison.baseline
                         );
                         for (run, expected) in [
-                            (&comparison.with_transfers, expected),
-                            (&comparison.without_transfers, 7.0),
+                            (&comparison.proposed_run, expected),
+                            (&comparison.baseline_run, 7.0),
                         ] {
                             let store = store::Store::open_existing_durable(&format!(
                                 "sqlite://{run}/working/current.sqlite"
@@ -320,7 +325,7 @@ fn optional_comparisons_keep_the_same_snapshot_and_existing_karma() {
                             );
                         }
                         let replay = simulation::artifacts::replay(
-                            std::path::Path::new(&comparison.with_transfers),
+                            std::path::Path::new(&comparison.proposed_run),
                             &directory.path().join(format!("replay-{amount}")),
                         )
                         .await
@@ -364,7 +369,7 @@ fn optional_comparisons_keep_the_same_snapshot_and_existing_karma() {
                         .unwrap();
                     assert_eq!(
                         simulation::artifacts::source_status(
-                            &directory.path().join("compare-5/with-transfers"),
+                            &directory.path().join("compare-5/proposed"),
                             "current",
                             &node.engine().store
                         )

@@ -205,6 +205,7 @@ pub(crate) fn held(world: &World, sand: Entity) -> bool {
 }
 
 fn synchronize(world: &mut World) -> bool {
+    crate::topology::holes::refresh(world);
     let mut changed = false;
     let mut edited = HashSet::new();
     let existing: HashMap<_, _> = world
@@ -241,9 +242,7 @@ fn synchronize(world: &mut World) -> bool {
                 && item.size.is_finite()
                 && item.size.min_element() > 0.0
                 && item.size.max_element() <= 100_000.0
-                && world
-                    .get::<Workspaces>(parent.parent())
-                    .is_some_and(|spaces| spaces.active == member.0)
+                && crate::topology::holes::live(world, parent.parent(), member.0)
                 && crate::workspace_config::enabled(world, parent.parent(), member.0)
         })
         .map(|(entity, item, parent, member, _)| {
@@ -645,6 +644,53 @@ pub(crate) mod tests {
     fn advance(app: &mut App, ticks: usize) {
         for _ in 0..ticks {
             app.update();
+        }
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn workspace_holes_keep_hidden_physics_active_and_collisions_separate() {
+        for spatial in [false, true] {
+            let (mut app, root, _, moving) = fixture(DVec2::ZERO);
+            if spatial {
+                app.world_mut()
+                    .init_resource::<crate::topology::physics::Runtime>();
+            }
+            let mut space = app.world().get::<Workspaces>(root).unwrap().entries[0].clone();
+            space.id = 2;
+            {
+                let mut spaces = app.world_mut().get_mut::<Workspaces>(root).unwrap();
+                spaces.entries.push(space);
+                spaces.active = 2;
+            }
+            crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+            crate::workspace_config::set_physics(app.world_mut(), root, 2, true);
+            let mut area = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(50.0));
+            area.hole = true;
+            let opening = crate::area::spawn_area(app.world_mut(), root, 2, area).unwrap();
+            let above = app
+                .world_mut()
+                .spawn((
+                    CanvasItem {
+                        position: DVec2::new(200.0, 0.0),
+                        size: Vec2::splat(40.0),
+                    },
+                    WorkspaceMember(2),
+                    ChildOf(root),
+                ))
+                .id();
+            let start = app.world().get::<CanvasItem>(moving).unwrap().position;
+            advance(&mut app, 120);
+            assert!(app.world().get::<CanvasItem>(moving).unwrap().position.x < start.x - 10.0);
+            assert_eq!(
+                app.world().get::<CanvasItem>(above).unwrap().position,
+                DVec2::new(200.0, 0.0),
+            );
+            app.world_mut().get_mut::<InfluenceArea>(opening).unwrap().enabled = false;
+            advance(&mut app, 1);
+            let stopped = app.world().get::<CanvasItem>(moving).unwrap().position;
+            advance(&mut app, 30);
+            assert_eq!(app.world().get::<CanvasItem>(moving).unwrap().position, stopped);
         }
     }
 

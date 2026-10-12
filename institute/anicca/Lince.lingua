@@ -298,157 +298,6 @@ This is why the frontend keeps **areas** (in the workspace menu) separate from e
 Other Organs can be saved as contacts, with unknown, known and blocked states, and a numeric Proximity property that you can use to indicate the value of your bond with them. In Transfers, you may use it to offer to people you have only a certain level of Proximity with, perhaps increasing the range of which you may donate something over time by increasing needed proximity to see such donation if closer contacts dont immediatelly want it.
 } r_VAX3HA21RXF9AENHMCJTSEF1AT
 
-Lingua (@lingua: 0, #instinct, #part-of @ontology) {
-
-For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectional sync with the database.
-
-## Vocabulary
-
-We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
-
-- [ ] **Give meanings a version history.** Keep a saved version of each Concept’s definition. Assertions should remember which version they use, so changing a definition cannot change what an older Assertion meant.
-
-- [ ] **Let people publish and adopt Vocabularies.** A person should be able to publish a collection of meanings, inspect someone else’s collection, and choose to use it. Removing a publication should leave already saved meanings usable.
-
-- [ ] **Finish terminology preferences.** Let people choose sets of terms for different contexts, hide unwanted source terms, use their own wording, and restore the original wording. Updates should preserve these choices.
-
-- [ ] **Use Concept identities throughout built-in features.** Features such as assignment and containment still depend on particular words in some places. Change them to recognize the selected meaning, so translations and personal names work consistently.
-
-- [ ] **Add controls for choosing feature meanings.** Let authorized people decide which Concepts a feature accepts and which Concept its controls write. Show the effect of a change and apply the same permission checks everywhere.
-
-- [ ] **Keep selected meanings stable throughout editing.** Rules, filters, drafts, undo, and imported/exported files should retain the chosen Concept even after its label or display language changes. Ambiguous words should ask for a selection.
-
-- [ ] **Improve the meaning inspector.** Show a Concept’s definition, origin, versions, terms, and where it is used. Make changing a label, changing a definition, and creating a different meaning clearly separate actions.
-
-- [ ] **Finish sharing terminology and accepting translation packages.** Share public definitions and terms while keeping personal wording private. Translation packages should add wording without gaining permission to change feature behavior.
-
-- [ ] **Build connections to external knowledge sources.** Create a common way for Lince to search and read other databases. Start with a test source, with permission checks, cancellation, and limits on requests and downloaded data.
-
-- [ ] **Preserve the full meaning of imported claims.** Keep their values, conditions, references, source, and revision. Connect external meanings to local Concepts explicitly, without assuming that matching words mean the same thing.
-
-- [ ] **Show local and external information together.** Let people choose sources and browse their results beside local Records. Clearly show where each result comes from, whether loading is complete, and what is available offline.
-
-- [ ] **Keep lasting links to external results.** A local annotation or relation should remain usable after temporary downloaded content is cleared. Keep a small reference Record that can later receive the full saved content.
-
-- [ ] **Add temporary storage and offline sources.** Separate disposable downloaded data from permanent Organ data. Limit storage and memory use, keep private data separated, and show what is cached or unavailable.
-
-- [ ] **Preview what will be saved into an Organ.** Show the selected content, required related data, assets, licenses, missing pieces, and estimated size before saving. Check that the person can read the source and write to the destination.
-
-- [ ] **Make saving reliable.** Save the selected material and its required dependencies together. Repeating or retrying a save should reuse the same Records, and interrupted saves should recover cleanly.
-
-- [ ] **Make saved knowledge independent of its source.** Saved content should remain readable after disconnecting and clearing temporary storage. Include its meanings, references, attribution, and required assets when syncing or exporting it.
-
-- [ ] **Let people review source updates.** Compare a new source version with the saved version and local edits. Let the person choose which changes to accept or create a separate local copy, while preserving their annotations.
-
-- [ ] **Add Wikidata support.** Search and read entities, properties, and statements, preserving their values, conditions, references, and source versions.
-
-- [ ] **Add Wikipedia support.** Search and read article revisions in the native interface, preserving source links, attribution, and licenses.
-
-- [ ] **Add local archive and dump support.** Let people browse supported offline knowledge collections through the same reading and saving workflow.
-
-- [ ] **Verify the complete experience.** Test permissions, retries, offline use, sync, export, and resource limits. Check keyboard use, multilingual input, right-to-left text, screen readers, and mobile layouts, including real devices where available.
-
-## Expressions, configuration, and scripts
-
-The planned language work makes Lingua the shared syntax for expressions, while Nucleus evaluates them and the engine supplies permitted Record readings. The first script feature should select a Lince directory, use local variables, read Record quantities, and print results. Checking, formatting, importing, and syncing files must remain separate from explicitly running a script. Functions and broader computation can come later as real uses require them. The details below are work still to do; the proposed syntax and typing rules need to be settled before implementation.
-
-- [ ] **Settle the first script’s rules.** Decide how variables, text, numbers, and directory selection behave. For example, with quantity 10, the proposed `print("Quantity is: " + str(@my-record + 2))` prints `Quantity is: 12`. Explicit `str(...)` conversion is still a proposal.
-
-- [ ] **Make Lingua parse expressions itself.** Conditions currently contain quoted text that Nucleus parses separately. Add shared expression syntax for arithmetic, comparisons, references, names, and calls. Preserve source locations so errors can point to the offending expression.
-
-- [ ] **Move existing expression users to the shared grammar.** Update Karma conditions, Transfer formulas, reference extraction, and binding resolution. Preserve existing exact arithmetic, short-circuit evaluation, gates, and carry behavior. Remove the handwritten expression parser after its consumers have moved.
-
-- [ ] **Keep document handling separate from script execution.** Checking, formatting, importing, syncing, and inserting Record IDs must never run statements or change the selected instance. Extend these operations to preserve new syntax and clearly reject statements where they are unsupported. Record descriptions must remain ordinary prose.
-
-- [ ] **Read directory configuration before opening an instance.** Add explicit selection of a configuration or script file containing a literal `dir` assignment. Resolve relative paths from that file’s folder, define command-line precedence, and reject invalid configuration before opening a database or creating instance files. Reuse the existing directory override and ownership guard.
-
-- [ ] **Implement variables and the read-only script evaluator.** Add checked local bindings, explicit value types, `str`, and `print`. Resolve Record references through the engine and read quantities from a consistent snapshot. Missing references, mixed-type arithmetic, overflow, and output failures should produce useful errors.
-
-- [ ] **Bound script execution.** Limit expression depth, execution work, memory, output, and host reads; support cancellation. The first runner should expose only permitted Record reads and printing. Repeated references should reuse the run’s readings.
-
-- [ ] **Expose language commands through `cargo xtask`.** Lingua already has standalone checking and formatting, but no script runner or xtask language commands. Add check, format, and explicit run commands. Checking and formatting must work without starting an instance.
-
-- [ ] **Verify the complete first increment.** Add focused coverage for grammar precedence, decimal behavior, reference names, diagnostics, statement preservation, execution limits, and directory selection. Verify that the example reads the chosen instance and that file sync never executes scripts.
-
-- [ ] **Remove the unused Rhai declaration.** It remains in the workspace manifest, and no crate currently consumes it. Remove it as part of establishing the single language implementation.
-
-- [ ] **Optional interface, after approval: add script controls.** Provide source diagnostics, the effective directory, Run, output, and Stop using native Rust components. Reuse the same evaluator as the command line.
-
-- [ ] **Later: grow the language from actual needs.** Add functions and lexical scopes first, then branching, collections, and bounded loops. Prototype indentation handling before choosing block syntax. Modules and Record writes need separate rules; writes should use existing authorized engine actions.
-}
-
-Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
-Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
-
-- Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
-- Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
-- Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
-
-And many more. They are one way to add logic and customization to your experience on the interface.
-
-- [ ] **Fix selecting areas directly on the canvas.** Preserve which area was clicked when forwarding input to its contents. Selection, inspection, editing, dragging, and the Delete menu should agree on the selected item, while nested buttons remain usable.
-
-- [ ] **Explain exactly what Delete will remove.** Deleting a Kanban column currently removes the whole grouped board. Show the affected items before confirmation, and distinguish selecting one member for editing from selecting its whole group.
-
-- [ ] **Clarify deletion of generated cards.** Removing their owner should stop its subscriptions and remove its generated contents. Decide whether removing an individual card permanently hides it or allows the feed to recreate it. Explain the difference between removing a canvas view and deleting its underlying Record.
-
-- [ ] **Explain why an item cannot be deleted.** Replace silent failures with a useful reason, such as needing edit mode, belonging to another workspace, or the selection changing before confirmation. Keep the existing workspace and Practice restrictions.
-
-- [ ] **Verify nested Fiote controls and duplicate views.** Test buttons, typing, press/release handling, drafts, and focus with rendering enabled. Two castles showing the same Person must keep their interaction state separate. A test already covers unchanged status updates preserving controls and focus; verify that behavior in the complete canvas.
-
-- [ ] **Reproduce the reported Relation Castle crash.** The audit could not reproduce it. Test selecting its surface, selecting it through Areas, and switching between the two identically named areas with their contents loaded. Capture the actual failure before choosing a fix.
-
-- [ ] **Show empty sources and missing castle behavior clearly.** A query matching no Records should explain that result and retain editing/deletion controls. An area named “Relation Castle” without relation behavior should show its actual configuration and offer an explicit way to restore that behavior.
-
-- [ ] **Add workspace checks and targeted repairs.** Check saved geometry, identities, layout links, groups, and generated-item ownership. Separate valid empty queries from broken references. Preserve the original snapshot and offer specific repairs for confirmed problems.
-
-- [ ] **Test the complete interaction path.** Cover flat and spatial views, ordinary areas, generated cards, duplicate Fiote views, and Kanban groups. Verify selection, visible Delete controls, confirmation scope, cancellation, cleanup, and persistence after reopening. Existing tests bypass parts of the pointer routing where the failure occurs.
-}
-
-Blood (@blood: 0, #instinct, #part-of @ontology) {
-If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
-
-This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
-
-The plugin foundation already supports startup discovery, native configuration controls, Sync providers, Actions, and Record schemas. Nostr public notes and .ics/Markdown exports are implemented. Calendar exports use Schedule Proteins and the same simulation and allocation as Time Castle, without needing an open clock. They replace the selected file after a complete successful export; edits made in a calendar app do not flow back into Lince.
-
-- [ ] **Complete package compatibility information.** Let a package declare its publisher, supported operating systems, required Lince interfaces, and dependencies on other packages. Explain why a package cannot run, and prevent dependent features from starting without what they need.
-
-- [ ] **Add package installation and update controls.** Installation currently uses local commands and requires restarting Lince. Provide a supported way to install, update, and remove packages, inspect their origin, and review changed access requests. Preserve saved Records and settings when a package is removed.
-
-- [ ] **Add enforceable access limits for plugins.** Current native plugins run with the computer account’s file and network access. Choose a sandbox or restricted runtime, let people grant specific access, and make revoking that access stop the affected operations. Process timeouts already exist; they do not restrict filesystem or network access.
-
-- [ ] **Allow plugin Actions to work through Karma.** Actions currently run through local interface controls. Add an authorized automation path so a rule can invoke an approved Action, with saved intentions, results, and protection against repeating an external effect after a retry.
-
-- [ ] **Add simulated plugin responses.** Executable plugins are currently blocked during Simulation. Let simulations use recorded inputs and mock results, so people can test rules and integrations without publishing messages or contacting real services.
-
-- [ ] **Provide a conflict review screen.** When an imported object changes upstream, Sync currently stops with a conflict rather than overwriting the local Record. Show the original, local, and incoming versions, and let the person choose what to keep while preserving local annotations.
-
-- [ ] **Finish delivery history and unresolved-delivery controls.** Failed and uncertain deliveries have retry controls, but receipts have a fixed storage limit and no maintenance interface. Let people inspect and clear completed history, and resolve pending deliveries before changing connection settings.
-
-- [ ] **Support continuous plugin connections.** The host currently starts a process for each operation. Add supervised, long-running sessions with reconnecting, cancellation, and clean shutdown. This is needed for protocols such as IRC that should stay connected.
-
-- [ ] **Build a second communication provider.** Choose IRC or ActivityPub and implement its supported receiving and sending operations through the existing registries. Use it to verify that another protocol can work without adding protocol-specific branches to Lince’s engine or interface.
-
-- [ ] **Make connections reusable across Sync bindings.** Separate the account or endpoint from each binding’s filters, direction, and destination. Several bindings should be able to use one connection while keeping their selections and delivery state independent.
-
-- [ ] **Coordinate execution across Cells.** Choose which Cell runs a shared connection and provide an explicit handover and recovery process. Prevent two disconnected Cells from independently sending the same queued publication.
-
-- [ ] **Bring built-in Sync implementations into the shared catalogues.** Register existing file and Organ synchronization through the common discovery and status system, while preserving how each kind of synchronization works.
-
-- [ ] **Expand Record mappings and writeback.** Current imports produce plain Records with metadata. Add mappings for Threads, Messages, authors, relations, and supported editable fields. Clearly distinguish changing a local copy, updating the external object, and requesting remote deletion.
-
-- [ ] **Choose any additional Nostr features explicitly.** The example handles public text notes. Private messages, relay authentication, reactions, deletion requests, and fuller history remain outside its current scope. Each chosen feature needs its own mapping, controls, and verification.
-
-- [ ] **Add plugin views and Record editors when needed.** Let packages supply specialized Sands, Castles, and field editors through defined interfaces. Keep generic Record inspection usable when the package is unavailable, and include accessibility, licenses, and credits.
-
-- [ ] **Add further plugin families one at a time.** The plan proposed knowledge sources, Vocabulary packages, Fiote providers, IDE tools, document readers, media processing, maps, devices, notifications, and Transfer integrations. Implement each only alongside a concrete feature, its controls, and tests. These are later extensions, not requirements for finishing the current version.
-
-- [ ] **Verify each extension across its supported platforms.** Test restarts, interrupted operations, duplicate events, revoked access, conflicting updates, and resource limits. The existing management controls are desktop-based; mobile support needs its own interface and a compatible execution approach.
-
-- [ ] **Close the recorded calendar verification gap.** Confirm whether a later native Time Castle test run covered the shared cursor behavior used by .ics exports. If it did not, rerun those tests. The export notes recorded passing format and Sync tests, but their native clock test run was interrupted by a concurrent map compile error. Check the current result rather than assuming that old error still exists.
-}
-
 Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 Karma means 'action' in Sanskrit. In Lince it is the sum of all automations and intelligence. Without Karma in Lince, all the data is like still water if not touched by the user. Karma is the scheduler, the automatic action taker, it changes quantites, fires computer commands, receives requests from other systems and saves the result to be used in the Rules. All of it is optional, it can be set to take every Fact as an evidence that a certain Karma Rule should happen in such and such way. A pattern can be understood and have a growth function, so that after 3 months of buying apples every week you create an automation around posting a need for apples and a transfer proposal for such, all with hands-on control or complete automation. 
 
@@ -459,18 +308,7 @@ Everything up to here you do by hand. **Karma** is the part of Lince that does t
 It is useful without an LLM. People author exact rules visually, use transparent statistics and deterministic algorithms, and plan over their own goals. A model may be attached as an explicit Signal or author an inert candidate; **model access is optional and grants no special authority.** "Always on" means a supervised runtime keeps draining durable work — never always interrupting, always connected, or always authorized to act.
 
 A rule is one sentence long, and the parts below take that sentence apart: what it watches, when it counts as true, and what it does about it.
-
-> Deferred Karma work:
-- **Deferred HTTP inputs:** authenticated requests that update Signals or invoke saved commands, with scoped access and retry protection.
-
-- [ ] **Correct sharing setup in the four-Cell simulation.** The scenario expects a Record to reach other Cells, but pairing only marks contacts as known. Synchronization defaults to disabled. Explicitly grant the sharing that this scenario intends, then check convergence through duplicate messages, disconnection, and restart. Preserve normal permission checks.
-
-- [ ] **Correct permissions in the two-Organ simulation.** Check synchronization permissions between Organs and membership within each Organ. The recorded `Forbidden` failure is consistent with receiving replication while contact synchronization is disabled. Ensure the intended Records reach authorized Cells and remain unavailable to others.
-
-- [ ] **Close the network campaign-resume verification gap.** Resume is already implemented, but the notes excluded its check. After correcting the network scenarios, verify that resuming continues from the saved position, preserves failure evidence, and avoids repeating completed cases.
-
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
-
 
 Rule (@rule: 0, #instinct, #part-of @karma) {
 ## One Rule in One Sentence
@@ -603,11 +441,9 @@ For most of the month the Frequency is `0`, so the whole equation is `0`, so the
 
 With #fruit, a rule keeps catching Records asserted after it was written — you don't revisit the rule. Renaming a concept is free: rules keep working and show the new name at once. #fruta and #Frucht write the same rule — each person reads it in their own name for it, and naming two aliases of one concept twice in one rule is refused as the duplicate it is. Writing a rule with a name that means two concepts is refused there and then, so you say which. (And: reusing a deleted @slug points old rules at the new Record.)
 }
+
 Fiote (@fiote: 1) {
-- [ ] Extend component support so Fiote can create, configure, combine and undo changes for the remaining specialized Sands and Castles.
-- [ ] Test real speech recognition with a chosen local transcriber or compatible service. Recording and upload work; recognition accuracy remains untested. A Codex subscription alone does not provide transcription.
-- [ ] Test another local AI or API using the user's own setup. Generic connections work, but real use beyond Codex remains untested. Reuse compatible connections or existing bridges without requiring a particular AI product.
-- [ ] Test audio and video understanding with a model supporting them. The tested Codex connection lacks audio input and did not understand video. Optionally test real photographs; image analysis has only been checked with a synthetic picture.
+Fiote is the Lince agent harness, you can connect to existing models and subscriptions.
 }
 
 Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
@@ -685,7 +521,6 @@ Sync connects a selected Protein to a local Lingua or Markdown directory. Inspec
 }
 
 Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
-
 A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
 
 I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
@@ -699,6 +534,7 @@ We might only make a Transfer when we reach a certain state: if Record less than
 That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
 
 On Trust: When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
+
 2. [ ] **Public Transfer history / trust portfolio:** let people inspect a party's permitted completed Transfer history with verifiable identity, preserving private fields. This comes from the broader Transfer Record and was outside the implementation plan.
 
 "The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
@@ -740,44 +576,28 @@ On Trust: When interacting with other parties, it is important to know how much 
 - [ ] **Later extension: add multi-stop journeys and capacity per segment.** Ordered itineraries and segment-aware reservations are missing. Check capacity for overlapping portions of a journey, allow reuse after someone leaves, and preserve independent passenger privacy using the existing Transfer structure.
 
 - [ ] **Optional later extension: add address search and route estimates.** Geocoding and routing providers are absent. Use replaceable providers, make disclosure of private endpoints explicit, and show the provider and age of estimates. Maps and Transfer completion should remain usable without them.
-
 } r_00ECACY50NWQQ3S0YH37V8KMK6
-
 
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 Interfaces should ask for as little attention as possible throughout the user's life. Choices can be done quickly. The best interface is Interfaceless.
 Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Full control is always available.
+
 Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism.
+
 Shadows and hints can be used for subtle differentiation of areas, components and data.
+
 Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design.
+
 Tooltips and placeholders should contain minimal text.
+
 The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record.
- Common choices should be quick, and the person should be able to inspect and change the details.
- Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions. Files, network messages and imported packages are validated where they enter Lince.
+
+Common choices should be quick, and the person should be able to inspect and change the details.
+
+Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions.
+
  Lince's default visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC. Other themes are available in interface.
 
-Here are the ideas that are not planned to be executed for now, but are fun to maintain:
-
-- [/] Being able to put a shader per task, the tasks left to do are dimmed versions of themselves, instead of a glowing spinning ball of energy it is a gray stopped ball, two wgsls, doing the tasks is what makes them glow or vice versa, evil versions of themselves saying you need to do something, and calm when they arent negative. Needs to pass through rust their quantities. So maybe we see the component lying down in 3d with the shaders floating above. Maybe we can do a gaussian splatting of a room, and add a shader to it, passing record quantities. If it needs cleaning it will put on top of the gaussian a lot of black goo or mut on the floors. Your room can be given coordinates, in the canvas (which is the world) and your stuff can have coordinates inside that room, so moving the room around doesnt change anything. The tasks you need to do may appear with some sand and some wgsl outside of the record's description. So you can have ambient effects on your room when you look at it, and inside it some floating stuff to do that is more computer focused so they float around your pc. And you can also have a kanban board on your wall digitally, and then when you take a 3d hologram projector it can take the room of your Lince and project to the real world, so you see the kanban, and if a camera is pointing at you and seeing your gestures you can move the sands on lince and projection, connecting the worlds.
-	- [/] What if we could put shaders in the sand? We have wgpu, shouldnt be too hard to slap a custom WGSL into the surface of the sand, maybe even making the sand be the actual body and the wgsl going out of it, if it glowed it could show as a light outside of the sand. If we are using compute/vertex shaders in the interface, putting something custom to make it pretty should be fairly straightforward to the users.
-		- [/] Add shader presets and a supported WGSL editor for Sand surfaces, including bounded outward glow. Keep text readable, preserve the last working effect and provide Reset and Disable outside the customized content.
-	- [ ] Add shader to my Interface, to be able to put light source and shadows over the sands, and texture to them.
-> Comment: This group contains several projects. For v1, finish a small supported shader input contract containing quantity and task state, Sand surface presets, editing, last-working-effect recovery, and accessible Reset/Disable controls. Keep text readable and bound outward glow, active surfaces and render resolution. Handle lighting, shadows and material textures as a distinct stage. Room-wide effects, holographic projection and gesture control should have their own later milestones; they should not prevent finishing the usable Sand effects.
-
-portals between stacked workspaces;
-production, stock, logistics and ordering views and public commerce.
-- [ ] Be able to embed a website, can we do it without CEF? It would be good to be able to have storage for it, permissions of that isolated frame, not reading/writting to anything in the Box.
-	- [ ] Why instead of embeding a CEF we embed a Servo? To show websites.
-- [ ] There are modelings of cities, and regions in cities, AECO (Architecture, Engineering, Construction and Operations i think) that make simulations an digital representations of present moment from factories to harbors and railines. Built in UE5, Unity and Blender, bbwe could use them. These maps can show the modeled reality and ecords that compose them, the needs and contributions, ownership, transactions and automations related to them. For the factory cases, we can have ergonomics around stock management, orders all possibly as open data. A disruption at a mineral supplier could reveal consequences further along the chain.
-- [ ] What if when we develop computer vision models, we can see the workflow happening in real time? Start playing with the concept of cameras inside of Lince, the feed can be continuously received to remodel the 3d represetation. The old modeling may change and things might get moved, Fiote could look at the two scenes and fill in the gap: Reposition an area to be on top of an item that changed places, maybe even updating a property of such item like location.If something is gone without me modeling it 
-- [ ] Mathematical formulas for editing topology of floor, pining a point to a sand, so when we move the sand we move the slopes and valleys the formula creates.
-	- [ ] Make areas bind to camera, so as i walk around i affect it that way, with all area capabilities.
-- [ ] We should integrate with other systems, explaining where data came from when we read it. When we receive data from Protein, there can be behind it many parts contributing data, File Sync, Organ Sync, and Blood Sync (integrations). The data that comes from somewhere, when changed, should affect that somewhere, bidirectional CRUD.
-- [ ] Access to camera can introduce hand waving controls, like pinch zoom, area selection in edit mode, select sand, delete sand. move camera angle and position...
-- [ ] Gaussian Splatter Castle: taking video of a space and turning it into very low polygon space + simplified gaussians as just the flat face of objects.
-	- [ ] (Wont enter the plan of coding topology, user will ask for this like to be coded alone in the future) Also being able to put a camera feed like the Command Signal coming in from the real switch that has the cameras in the same network as the server running this lince, or in some vps. So i can alter between cameras and see it's feed from one angle, and then continue moving around the building like a creative mode of minecraft flying.  Maybe this can be a Karma Command's Signal, that gets continuously updated, maybe we can set it to be in memory for live feed and not waste disk.
-
-- [ ] **Check what happens when a recurring task’s date is moved backward.** For example, move its next date to yesterday after yesterday’s occurrence has already run. Decide whether that edit should make the task occur again, then verify the current behavior. If a fix is needed, ensure normal retries still cannot apply the same occurrence twice. The scheduling code has changed since the notes were written, so the old explanation may no longer apply.
 
 There are several components made, here is the documentation on how to use them:
 
@@ -812,50 +632,222 @@ If a tool is missing, run `command -v bash-language-server shfmt shellcheck`, th
 
 Tools handle files up to 2 MiB, with four shared servers. Completion is plain text. Server settings currently use defaults; custom NixOS/Home Manager option completion may need settings the UI does not expose. [nixd settings](https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md)
 
+# Tasks:
+
+- [/] Being able to put a shader per task, the tasks left to do are dimmed versions of themselves, instead of a glowing spinning ball of energy it is a gray stopped ball, two wgsls, doing the tasks is what makes them glow or vice versa, evil versions of themselves saying you need to do something, and calm when they arent negative. Needs to pass through rust their quantities. So maybe we see the component lying down in 3d with the shaders floating above. Maybe we can do a gaussian splatting of a room, and add a shader to it, passing record quantities. If it needs cleaning it will put on top of the gaussian a lot of black goo or mut on the floors. Your room can be given coordinates, in the canvas (which is the world) and your stuff can have coordinates inside that room, so moving the room around doesnt change anything. The tasks you need to do may appear with some sand and some wgsl outside of the record's description. So you can have ambient effects on your room when you look at it, and inside it some floating stuff to do that is more computer focused so they float around your pc. And you can also have a kanban board on your wall digitally, and then when you take a 3d hologram projector it can take the room of your Lince and project to the real world, so you see the kanban, and if a camera is pointing at you and seeing your gestures you can move the sands on lince and projection, connecting the worlds.
+	- [/] What if we could put shaders in the sand? We have wgpu, shouldnt be too hard to slap a custom WGSL into the surface of the sand, maybe even making the sand be the actual body and the wgsl going out of it, if it glowed it could show as a light outside of the sand. If we are using compute/vertex shaders in the interface, putting something custom to make it pretty should be fairly straightforward to the users.
+		- [/] Add shader presets and a supported WGSL editor for Sand surfaces, including bounded outward glow. Keep text readable, preserve the last working effect and provide Reset and Disable outside the customized content.
+	- [ ] Add shader to my Interface, to be able to put light source and shadows over the sands, and texture to them.
+> Comment: This group contains several projects. For v1, finish a small supported shader input contract containing quantity and task state, Sand surface presets, editing, last-working-effect recovery, and accessible Reset/Disable controls. Keep text readable and bound outward glow, active surfaces and render resolution. Handle lighting, shadows and material textures as a distinct stage. Room-wide effects, holographic projection and gesture control should have their own later milestones; they should not prevent finishing the usable Sand effects.
+
+- [ ] Mathematical formulas for editing topology of floor, pining a point to a sand, so when we move the sand we move the slopes and valleys the formula creates.
+	- [ ] Make areas bind to camera, so as i walk around i affect it that way, with all area capabilities.
+
+- [ ] What if when we develop computer vision models, we can see the workflow happening in real time? Start playing with the concept of cameras inside of Lince, the feed can be continuously received to remodel the 3d represetation. The old modeling may change and things might get moved, Fiote could look at the two scenes and fill in the gap: Reposition an area to be on top of an item that changed places, maybe even updating a property of such item like location.If something is gone without me modeling it 
+- [ ] Gaussian Splatter Castle: taking video of a space and turning it into very low polygon space + simplified gaussians as just the flat face of objects.
+	- [ ] (Wont enter the plan of coding topology, user will ask for this like to be coded alone in the future) Also being able to put a camera feed like the Command Signal coming in from the real switch that has the cameras in the same network as the server running this lince, or in some vps. So i can alter between cameras and see it's feed from one angle, and then continue moving around the building like a creative mode of minecraft flying.  Maybe this can be a Karma Command's Signal, that gets continuously updated, maybe we can set it to be in memory for live feed and not waste disk.
+
+- [ ] Global Infrastructure (leave for last):
+  - [ ] There are modelings of cities, and regions in cities, AECO (Architecture, Engineering, Construction and Operations i think) that make simulations an digital representations of present moment from factories to harbors and railines. Built in UE5, Unity and Blender, bbwe could use them. These maps can show the modeled reality and ecords that compose them, the needs and contributions, ownership, transactions and automations related to them. For the factory cases, we can have ergonomics around stock management, orders all possibly as open data. A disruption at a mineral supplier could reveal consequences further along the chain.
+  - [ ] Production, stock, logistics and ordering views and public commerce.
 } r_99NWECF19VKV94HQQ3G3ASMC4M
-
-Ideas (@ideas: 0) {
-Things that wont enter v1.0.0, maybe later minor versions. Good to keep saved, not needed to maintain next to other tasks more certain to be implemented.
-
-# Simulation:
-
-Other Simulation follow-ups: broader Lingua declarations; controlled external responses, disk failures and crashes; more varied seeds and concurrent actions; blob contents saved with runs; real direct-connection tests across NATs, relays and mailboxes; focused Cell/event editing and Calendar links to explanations. Projection follow-ups include additional filters and permitted viewers, time boundaries, larger workloads and replacing older approximations where the shared runtime has coverage. General Record proposals, versions, history and transclusion should reuse the document machinery. Restore during a run and finer cache invalidation remain deferred until needed.
-
-Simulation is the basis of controlling several Lince instances, each with their state. Karma runs on top of it, and the future changes of Records according to Karma's Rules are cached so we can display how a Record will recurringly have some state, like a quantity being some value, seen in a calendar.
-
-- [ ]  Simulation not only of a random db, but the user's. If i have an appointment to day X i should be able to simulate it happening in day X+1. If i then send a scenario to someone, they can run that diff (like git's diff) and simulate a scenario of their db+diff. If its affecting only me i can simulate some state, doesnt need to be my current one, can be with a diff applied. If it affects others i send the diff, they simulate and aprove or not, they can also send that diff and a chain of approvals (or hide it) and get the results back before aproving themselves (if not before).
-	- [ ] The Record Editor could also get the same 'simulation' which can actually be just a scenario of it writing something else, a version of a Record. How could we do it well? Not a frankestein of features for this?
-	- [ ] It would be nice to be able to save different versions of the Record's description/title, or maybe quantity/link. Putting a limit to it in mb per total local history of edits, maybe keyed by amount of seconds spent not editing, makes a new save + explicit save. Again, how to not frankestein? Loro?
-	- [ ] Be able to set Constraints, that are enforced, so the state doesnt reach an undesired point. Maybe this means putting a lot of constraints that need to be checked to make sure they are true in one run and not activating them in another, only a part of it. The one with less Constraints will be able to simulate more events per second happening since it doesnt need to be constantly checked to make sure it didnt pass thorugh an undesired state. Similar to the difference of unit tests and end-to-end ones. But instead of it being a division by part it is a division by period of Constraint checking, we can still have a difference of the equivalent of unit tests and e2e and several other types of tests, and still make them be checked in different times.
-}
 
 Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
 Ontology in Lince can be a castle, it is for managing the content of your database. The meaning of records through Lingua Vocabulary, in the tasks it is referred as the central point for guaranteeing you have the data you want, dealing with sync and organ discovery, it is the vibe of several features in Lince. These are the remaining tasks of several features related to this Ontology vibe:
 
- [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
+ [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start. LoRa remains a deferred implementation task. It needs its own transport adapter designed around radio’s limited bandwidth, small messages, and intermittent connections. This would provide another way for Cells to communicate where ordinary internet access is unavailable.
 
- **Validation outside the local test environment:**
-   - Android APK packaging and actual phone/emulator execution; library compilation already passes.
-   - Actual screen-reader and visual review.
-   - Internet deployment with always-online mailboxes and relays.
-   - Power-loss durability; process interruption and SQLite rollback are already tested.
-
-The agreed social Ontology features are implemented, including anonymous or identified Needs and Contributions, public profiles, conversation synchronization, introductions, contacts, discovery, consented gossip, saved searches, and offline mailboxes. The simple Karma correction and basic search optimization are also complete. The remaining work consists of practical validation, deferred features, and optional improvements.
-
-Practical validation still needs to cover Android APK packaging and execution on a phone or emulator; Android library compilation already passes. The native interface needs visual review and actual screen-reader testing. Always-online mailboxes and Iroh relays need deployment and testing across real internet connections, including offline recipients, reconnection, and delivery after interruptions. Durability also needs testing against physical power loss; process interruption and SQLite rollback have already been tested locally. An optional live ACP-agent integration test remains unrun because it requires an installed, authenticated agent and a real model interaction.
-
-LoRa remains a deferred implementation task. It needs its own transport adapter designed around radio’s limited bandwidth, small messages, and intermittent connections. This would provide another way for Cells to communicate where ordinary internet access is unavailable.
-
-Broader work excluded from the completed social packages remains separate: Vocabulary publishing and importing, expanded Ontology and Relations exploration, completion of general file synchronization, Trail packages, Calendar export, and Blood integrations with other applications. Existing functionality in these areas should be reviewed before defining their remaining implementation tasks.
-
-System push notifications while Lince is closed remain deferred; the implemented notification scope uses the existing in-app feed. A separate protocol for Lince servers to forward messages between one another also remains outside the chosen scope. Current communication uses Iroh for live connections and Lince mailboxes for asynchronous delivery. Dedicated backup development was removed from the plan: copying or archiving the complete Lince data directory while Lince is stopped remains the chosen approach.
-
-Further search improvements are optional proposals. Large directory Organs could divide their collections by topic, language, or region while preserving publication consent, withdrawals, and security limits. In dispersed networks, consenting Organs could publish signed, expiring summaries of their collections to help people choose which sources to search. These summaries would guide searches without requiring a central registry or promising complete network coverage. Additional indexes should follow measurements showing expensive filter combinations. Progressive result display could make searches feel faster while slower selected sources are still answering. Current search already works locally and through explicitly selected helper Organs.
-
-Other possible later social additions include group features, public comments, engagement ranking, and stronger protection against identifying people through connection metadata. Anonymous posting currently separates the public post from the person’s main Organ identity; stronger network anonymity would require additional design. These possibilities are not outstanding requirements of the completed six packages.
+- [ ] Further search improvements are optional proposals. Large directory Organs could divide their collections by topic, language, or region while preserving publication consent, withdrawals, and security limits. In dispersed networks, consenting Organs could publish signed, expiring summaries of their collections to help people choose which sources to search. These summaries would guide searches without requiring a central registry or promising complete network coverage. Additional indexes should follow measurements showing expensive filter combinations. Progressive result display could make searches feel faster while slower selected sources are still answering. Current search already works locally and through explicitly selected helper Organs.
 } r_S8PQ17MQ3WBWM53ZN700K89V9F
 
-Ailuros (@ailuros: 0, #instinct) {
+Blood (@blood: 0, #instinct, #part-of @ontology) {
+If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
+
+This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
+
+The plugin foundation already supports startup discovery, native configuration controls, Sync providers, Actions, and Record schemas. Nostr public notes and .ics/Markdown exports are implemented. Calendar exports use Schedule Proteins and the same simulation and allocation as Time Castle, without needing an open clock. They replace the selected file after a complete successful export; edits made in a calendar app do not flow back into Lince.
+
+- [ ] **Complete package compatibility information.** Let a package declare its publisher, supported operating systems, required Lince interfaces, and dependencies on other packages. Explain why a package cannot run, and prevent dependent features from starting without what they need.
+
+- [ ] **Add package installation and update controls.** Installation currently uses local commands and requires restarting Lince. Provide a supported way to install, update, and remove packages, inspect their origin, and review changed access requests. Preserve saved Records and settings when a package is removed.
+
+- [ ] **Add enforceable access limits for plugins.** Current native plugins run with the computer account’s file and network access. Choose a sandbox or restricted runtime, let people grant specific access, and make revoking that access stop the affected operations. Process timeouts already exist; they do not restrict filesystem or network access.
+
+- [ ] **Allow plugin Actions to work through Karma.** Actions currently run through local interface controls. Add an authorized automation path so a rule can invoke an approved Action, with saved intentions, results, and protection against repeating an external effect after a retry.
+
+- [ ] **Add simulated plugin responses.** Executable plugins are currently blocked during Simulation. Let simulations use recorded inputs and mock results, so people can test rules and integrations without publishing messages or contacting real services.
+
+- [ ] **Provide a conflict review screen.** When an imported object changes upstream, Sync currently stops with a conflict rather than overwriting the local Record. Show the original, local, and incoming versions, and let the person choose what to keep while preserving local annotations.
+
+- [ ] **Finish delivery history and unresolved-delivery controls.** Failed and uncertain deliveries have retry controls, but receipts have a fixed storage limit and no maintenance interface. Let people inspect and clear completed history, and resolve pending deliveries before changing connection settings.
+
+- [ ] **Support continuous plugin connections.** The host currently starts a process for each operation. Add supervised, long-running sessions with reconnecting, cancellation, and clean shutdown. This is needed for protocols such as IRC that should stay connected.
+
+- [ ] **Build a second communication provider.** Choose IRC or ActivityPub and implement its supported receiving and sending operations through the existing registries. Use it to verify that another protocol can work without adding protocol-specific branches to Lince’s engine or interface.
+
+- [ ] **Make connections reusable across Sync bindings.** Separate the account or endpoint from each binding’s filters, direction, and destination. Several bindings should be able to use one connection while keeping their selections and delivery state independent.
+
+- [ ] **Coordinate execution across Cells.** Choose which Cell runs a shared connection and provide an explicit handover and recovery process. Prevent two disconnected Cells from independently sending the same queued publication.
+
+- [ ] **Bring built-in Sync implementations into the shared catalogues.** Register existing file and Organ synchronization through the common discovery and status system, while preserving how each kind of synchronization works.
+
+- [ ] **Expand Record mappings and writeback.** Current imports produce plain Records with metadata. Add mappings for Threads, Messages, authors, relations, and supported editable fields. Clearly distinguish changing a local copy, updating the external object, and requesting remote deletion.
+
+- [ ] **Choose any additional Nostr features explicitly.** The example handles public text notes. Private messages, relay authentication, reactions, deletion requests, and fuller history remain outside its current scope. Each chosen feature needs its own mapping, controls, and verification.
+
+- [ ] **Add plugin views and Record editors when needed.** Let packages supply specialized Sands, Castles, and field editors through defined interfaces. Keep generic Record inspection usable when the package is unavailable, and include accessibility, licenses, and credits.
+
+- [ ] **Add further plugin families one at a time.** The plan proposed knowledge sources, Vocabulary packages, Fiote providers, IDE tools, document readers, media processing, maps, devices, notifications, and Transfer integrations. Implement each only alongside a concrete feature, its controls, and tests. These are later extensions, not requirements for finishing the current version.
+
+- [ ] **Verify each extension across its supported platforms.** Test restarts, interrupted operations, duplicate events, revoked access, conflicting updates, and resource limits. The existing management controls are desktop-based; mobile support needs its own interface and a compatible execution approach.
+
+- [ ] **Close the recorded calendar verification gap.** Confirm whether a later native Time Castle test run covered the shared cursor behavior used by .ics exports. If it did not, rerun those tests. The export notes recorded passing format and Sync tests, but their native clock test run was interrupted by a concurrent map compile error. Check the current result rather than assuming that old error still exists.
+}
+
+Lingua (@lingua: 0, #instinct, #part-of @ontology) {
+
+For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectional sync with the database.
+
+## Vocabulary
+
+We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
+
+- [ ] **Give meanings a version history.** Keep a saved version of each Concept’s definition. Assertions should remember which version they use, so changing a definition cannot change what an older Assertion meant.
+
+- [ ] **Let people publish and adopt Vocabularies.** A person should be able to publish a collection of meanings, inspect someone else’s collection, and choose to use it. Removing a publication should leave already saved meanings usable.
+
+- [ ] **Finish terminology preferences.** Let people choose sets of terms for different contexts, hide unwanted source terms, use their own wording, and restore the original wording. Updates should preserve these choices.
+
+- [ ] **Use Concept identities throughout built-in features.** Features such as assignment and containment still depend on particular words in some places. Change them to recognize the selected meaning, so translations and personal names work consistently.
+
+- [ ] **Add controls for choosing feature meanings.** Let authorized people decide which Concepts a feature accepts and which Concept its controls write. Show the effect of a change and apply the same permission checks everywhere.
+
+- [ ] **Keep selected meanings stable throughout editing.** Rules, filters, drafts, undo, and imported/exported files should retain the chosen Concept even after its label or display language changes. Ambiguous words should ask for a selection.
+
+- [ ] **Improve the meaning inspector.** Show a Concept’s definition, origin, versions, terms, and where it is used. Make changing a label, changing a definition, and creating a different meaning clearly separate actions.
+
+- [ ] **Finish sharing terminology and accepting translation packages.** Share public definitions and terms while keeping personal wording private. Translation packages should add wording without gaining permission to change feature behavior.
+
+- [ ] **Build connections to external knowledge sources.** Create a common way for Lince to search and read other databases. Start with a test source, with permission checks, cancellation, and limits on requests and downloaded data.
+
+- [ ] **Preserve the full meaning of imported claims.** Keep their values, conditions, references, source, and revision. Connect external meanings to local Concepts explicitly, without assuming that matching words mean the same thing.
+
+- [ ] **Show local and external information together.** Let people choose sources and browse their results beside local Records. Clearly show where each result comes from, whether loading is complete, and what is available offline.
+
+- [ ] **Keep lasting links to external results.** A local annotation or relation should remain usable after temporary downloaded content is cleared. Keep a small reference Record that can later receive the full saved content.
+
+- [ ] **Add temporary storage and offline sources.** Separate disposable downloaded data from permanent Organ data. Limit storage and memory use, keep private data separated, and show what is cached or unavailable.
+
+- [ ] **Preview what will be saved into an Organ.** Show the selected content, required related data, assets, licenses, missing pieces, and estimated size before saving. Check that the person can read the source and write to the destination.
+
+- [ ] **Make saving reliable.** Save the selected material and its required dependencies together. Repeating or retrying a save should reuse the same Records, and interrupted saves should recover cleanly.
+
+- [ ] **Make saved knowledge independent of its source.** Saved content should remain readable after disconnecting and clearing temporary storage. Include its meanings, references, attribution, and required assets when syncing or exporting it.
+
+- [ ] **Let people review source updates.** Compare a new source version with the saved version and local edits. Let the person choose which changes to accept or create a separate local copy, while preserving their annotations.
+
+- [ ] **Add Wikidata support.** Search and read entities, properties, and statements, preserving their values, conditions, references, and source versions.
+
+- [ ] **Add Wikipedia support.** Search and read article revisions in the native interface, preserving source links, attribution, and licenses.
+
+- [ ] **Add local archive and dump support.** Let people browse supported offline knowledge collections through the same reading and saving workflow.
+
+- [ ] **Verify the complete experience.** Test permissions, retries, offline use, sync, export, and resource limits. Check keyboard use, multilingual input, right-to-left text, screen readers, and mobile layouts, including real devices where available.
+
+## Expressions, configuration, and scripts
+
+The planned language work makes Lingua the shared syntax for expressions, while Nucleus evaluates them and the engine supplies permitted Record readings. The first script feature should select a Lince directory, use local variables, read Record quantities, and print results. Checking, formatting, importing, and syncing files must remain separate from explicitly running a script. Functions and broader computation can come later as real uses require them. The details below are work still to do; the proposed syntax and typing rules need to be settled before implementation.
+
+- [ ] **Settle the first script’s rules.** Decide how variables, text, numbers, and directory selection behave. For example, with quantity 10, the proposed `print("Quantity is: " + str(@my-record + 2))` prints `Quantity is: 12`. Explicit `str(...)` conversion is still a proposal.
+
+- [ ] **Make Lingua parse expressions itself.** Conditions currently contain quoted text that Nucleus parses separately. Add shared expression syntax for arithmetic, comparisons, references, names, and calls. Preserve source locations so errors can point to the offending expression.
+
+- [ ] **Move existing expression users to the shared grammar.** Update Karma conditions, Transfer formulas, reference extraction, and binding resolution. Preserve existing exact arithmetic, short-circuit evaluation, gates, and carry behavior. Remove the handwritten expression parser after its consumers have moved.
+
+- [ ] **Keep document handling separate from script execution.** Checking, formatting, importing, syncing, and inserting Record IDs must never run statements or change the selected instance. Extend these operations to preserve new syntax and clearly reject statements where they are unsupported. Record descriptions must remain ordinary prose.
+
+- [ ] **Read directory configuration before opening an instance.** Add explicit selection of a configuration or script file containing a literal `dir` assignment. Resolve relative paths from that file’s folder, define command-line precedence, and reject invalid configuration before opening a database or creating instance files. Reuse the existing directory override and ownership guard.
+
+- [ ] **Implement variables and the read-only script evaluator.** Add checked local bindings, explicit value types, `str`, and `print`. Resolve Record references through the engine and read quantities from a consistent snapshot. Missing references, mixed-type arithmetic, overflow, and output failures should produce useful errors.
+
+- [ ] **Bound script execution.** Limit expression depth, execution work, memory, output, and host reads; support cancellation. The first runner should expose only permitted Record reads and printing. Repeated references should reuse the run’s readings.
+
+- [ ] **Expose language commands through `cargo xtask`.** Lingua already has standalone checking and formatting, but no script runner or xtask language commands. Add check, format, and explicit run commands. Checking and formatting must work without starting an instance.
+
+- [ ] **Verify the complete first increment.** Add focused coverage for grammar precedence, decimal behavior, reference names, diagnostics, statement preservation, execution limits, and directory selection. Verify that the example reads the chosen instance and that file sync never executes scripts.
+
+- [ ] **Remove the unused Rhai declaration.** It remains in the workspace manifest, and no crate currently consumes it. Remove it as part of establishing the single language implementation.
+
+- [ ] **Optional interface, after approval: add script controls.** Provide source diagnostics, the effective directory, Run, output, and Stop using native Rust components. Reuse the same evaluator as the command line.
+
+- [ ] **Later: grow the language from actual needs.** Add functions and lexical scopes first, then branching, collections, and bounded loops. Prototype indentation handling before choosing block syntax. Modules and Record writes need separate rules; writes should use existing authorized engine actions.
+}
+
+Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
+Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
+
+- Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
+- Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
+- Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
+
+And many more. They are one way to add logic and customization to your experience on the interface.
+
+- [ ] **Fix selecting areas directly on the canvas.** Preserve which area was clicked when forwarding input to its contents. Selection, inspection, editing, dragging, and the Delete menu should agree on the selected item, while nested buttons remain usable.
+
+- [ ] **Explain exactly what Delete will remove.** Deleting a Kanban column currently removes the whole grouped board. Show the affected items before confirmation, and distinguish selecting one member for editing from selecting its whole group.
+
+- [ ] **Clarify deletion of generated cards.** Removing their owner should stop its subscriptions and remove its generated contents. Decide whether removing an individual card permanently hides it or allows the feed to recreate it. Explain the difference between removing a canvas view and deleting its underlying Record.
+
+- [ ] **Explain why an item cannot be deleted.** Replace silent failures with a useful reason, such as needing edit mode, belonging to another workspace, or the selection changing before confirmation. Keep the existing workspace and Practice restrictions.
+
+- [ ] **Verify nested Fiote controls and duplicate views.** Test buttons, typing, press/release handling, drafts, and focus with rendering enabled. Two castles showing the same Person must keep their interaction state separate. A test already covers unchanged status updates preserving controls and focus; verify that behavior in the complete canvas.
+
+- [ ] **Reproduce the reported Relation Castle crash.** The audit could not reproduce it. Test selecting its surface, selecting it through Areas, and switching between the two identically named areas with their contents loaded. Capture the actual failure before choosing a fix.
+
+- [ ] **Show empty sources and missing castle behavior clearly.** A query matching no Records should explain that result and retain editing/deletion controls. An area named “Relation Castle” without relation behavior should show its actual configuration and offer an explicit way to restore that behavior.
+
+- [ ] **Add workspace checks and targeted repairs.** Check saved geometry, identities, layout links, groups, and generated-item ownership. Separate valid empty queries from broken references. Preserve the original snapshot and offer specific repairs for confirmed problems.
+
+- [ ] **Test the complete interaction path.** Cover flat and spatial views, ordinary areas, generated cards, duplicate Fiote views, and Kanban groups. Verify selection, visible Delete controls, confirmation scope, cancellation, cleanup, and persistence after reopening. Existing tests bypass parts of the pointer routing where the failure occurs.
+}
+
+Embedded (@embedded: 0) {
+Embedded connects small devices, such as ESPs, to Signals in Lince. Each device has its own identity and can update only the Signal granted to it. It cannot run commands, read private Records, change access, or enroll another device.
+
+Lince keeps the access settings: enabled or disabled, the allowed Signal, minimum time between readings, accepted value range, and an expiry. Changes take effect on the next request. A device sends signed readings over HTTPS. The private key stays on the device; Lince stores only its public key. There is no permanent bearer token to copy or renew.
+
+Every accepted reading has a sequence number and a receipt. Retrying the latest identical request returns its receipt without changing the Signal again. Old requests and changed retries are refused. The sequence survives Lince restarts. Requests also expire, so an old instruction cannot become a new reading much later. Device identity replacement invalidates the previous identity and starts a new sequence.
+
+Internet and power do not make a device open to everybody. The device connects outward to Lince. This first implementation only accepts readings; remote control, Bluetooth setup, Wi-Fi setup mode, and firmware updates are separate future work. Nearby people have no authority just because they are nearby. A future setup mode must require a physical action, a unique setup secret, a short setup window, and owner approval.
+
+Copy protection depends on the board and its firmware. Use a protected signing key, secure boot, encrypted storage, and restricted debugging where supported. A software key in readable flash can be copied. Even a protected key does not stop somebody using the stolen device itself; disable that device in Lince. Choose recovery procedures before setting irreversible chip protection settings.
+
+Steps after the Lince coding is implemented:
+
+1. Choose the exact ESP board and prepare firmware supporting P-256 signing and HTTPS certificate verification. Check its protected key storage and recovery options. This Lince implementation does not flash or harden an ESP.
+2. Use a trusted cable connection for the first installation. Create a unique private key on the device or its secure element, provision Wi-Fi and the public Lince HTTPS address, and obtain only the public key for enrollment. Do not upload the private key to Lince.
+3. Open Embedded in the native Karma Castle. Enroll the public key with a name and a Signal slug. Lince creates a dedicated Signal. Set a cooldown, a value range, and an access expiry. Use Copy setup to obtain the server identity, device identity, Signal identity, and key generation. Add the public HTTPS server address in firmware. Enable the device in Lince when ready.
+4. Publish Facade through an HTTPS reverse proxy. The ESP must verify the server certificate. The local unencrypted Facade listener is for the reverse proxy, not an internet device endpoint.
+5. Implement the documented signed request format in firmware. Persist a pending reading and sequence before sending. Retry that same request after a lost response; advance only after a confirmed receipt. Synchronize the device clock and create a new request if a pending reading has expired.
+6. Send a harmless test measurement. Inspect the Signal and receipt. Test a duplicate, another Signal, a value outside the range, and a request during cooldown. Only the first permitted reading should change the Signal.
+7. Use the Signal quantity or signal(@slug) in a Rule. Rule consequences retain their normal permissions and execution controls.
+8. Change access or disable the device in Lince without a cable. Renew access expiry in Lince when wanted. No credential refresh is necessary for each reading because the device proves its identity with its key.
+9. If the device or key is compromised, disable it first. Use a trusted cable to install a new key and replace its registered public key in Lince. Copy the new setup, update the key generation, reset the request sequence, and enable the device when ready. Ordinary renewal with the old key is not recovery.
+
+Firmware request format:
+
+Send a JSON POST to /embedded/readings on the configured HTTPS server. The fields are audience (the server identity), device (the device UID), key_epoch (the key generation), signal (the granted Signal UID), sequence (a positive integer), issued_at (Unix seconds), value (a canonical decimal string), and signature (lowercase hexadecimal). Unknown fields are refused. The body is limited to 2048 bytes.
+
+Sign the following UTF-8 lines in this exact order, including a newline after the last line: lince-embedded-v1, audience, device, key_epoch, signal, sequence, issued_at, value. Use ECDSA with P-256 and SHA-256. The signature contains the 32-byte r followed by the 32-byte s, encoded as 128 lowercase hex characters; it is not DER. The public key is compressed SEC1, encoded as 66 lowercase hex characters.
+
+For example, a value is "23.7", not a JSON floating-point number. A decimal string uses an optional minus sign, an integer without unnecessary leading zeros, and an optional fraction. Exponents, a plus sign, negative zero, and embedded whitespace are refused. Keep integer protocol fields in decimal without padding when constructing the signed lines. Use an integer representation that preserves the full sequence; do not convert it through a floating-point number.
+
+A new reading may be at most 120 seconds old or 30 seconds ahead of the server clock. Persist the full pending request before sending. Only the latest accepted identical request can be retried for its old receipt, even after its timestamp expires; it must still pass current access checks. A higher sequence can replace an expired unaccepted request. Never reuse an accepted sequence with a changed value or timestamp.
+
+Success returns device, key_epoch, sequence, fact, and received_at (Unix milliseconds). Confirm that these identify the pending request before advancing. HTTP 429 means cooldown or an ingress limit: back off and retry, refreshing an expired unaccepted reading with a higher sequence. HTTP 403 means access was refused; stop sending and inspect access in Lince. HTTP 409 means a used sequence; recover the pending sequence through the trusted setup process rather than guessing. HTTP 400 means a malformed, expired, or out-of-range reading. Lost responses and temporary server errors use bounded exponential backoff with jitter. Lince also limits concurrent reading requests and total request attempts before signature verification.
+}
+
+Interfaceless - Ailuros (@ailuros: 0, #instinct) {
 What is more embarrassing, to dream or not to dream something like this? That is the question.
 
 Writing and not doing is fiction. If the process of ordering the steps, building and documenting the work is done in the open, there is no such thing as too much ambition. 
@@ -880,11 +872,22 @@ Learning how hardware works, and how to build and research it is fun and cool. H
 	- [ ] CAD-like for modeling electrical parts.
 	- [ ] Biology lab.
 
+
+- [ ] For funsies, use Ithkuil as one of the languages
+
+We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
+
+For that a system that allows for maximum control of the scenes, is needed, the freedom of Minecraft with real world data and tiny, tiny voxels. That would be the end of the Lince's interface, nothing grater is justified to be built according to the philosophy. It would easily be able to display current web pages, launch other systems and games inside it. You open Lince, it has everything you should Need, and give you freedom to do anything you want in it's digital representation, connected completely with the real world if you want it.
+
+- [ ] Voxel system to go from outer zoom of the observable universe down to atoms (Bevy's Big Space: https://github.com/aevyrie/big_space/tree/bevy-0.19).
+- [ ] With the interface that has virtually limitless scale, we focus on centering the experience on the user's interest, Earth's globe as a 3D space with it's real topography, updateable in real time.
+- [ ] In any scale, one can take what is there as a point in which the components/widgets/sands/visual tools have at their disposal will be in a size it is good to work with, either locking things to the HUD with pinned sands, or putting them geographically in one region of the space: only in their house when they zoom in the map into their room, or the part of the room in space that is their desk, and inside they will see their widgets. In summary going from 3D to 2D, where you feel more productive with the dimensions you want.
+- [ ] Being able to connect the data of parts that are anywhere in the Space.
+- [ ] Being able to generate instantly a representation of something you want in any part of the Space, using Fiote (JEPA model?).
+- [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
+- [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
+
 AI text below:
-
-
-
-
 
 # CAD for Ailuros — research
 
@@ -1205,21 +1208,6 @@ question becomes answerable with evidence rather than by survey.
 - Parasolid / the rented-kernel tier: https://en.wikipedia.org/wiki/Parasolid
 }
 
-Interfaceless (@interfaceless: 0, #part-of @interface, #v2.0.0) {
-- [ ] For funsies, use Ithkuil as one of the languages
-
-We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
-
-For that a system that allows for maximum control of the scenes, is needed, the freedom of Minecraft with real world data and tiny, tiny voxels. That would be the end of the Lince's interface, nothing grater is justified to be built according to the philosophy. It would easily be able to display current web pages, launch other systems and games inside it. You open Lince, it has everything you should Need, and give you freedom to do anything you want in it's digital representation, connected completely with the real world if you want it.
-
-- [ ] Voxel system to go from outer zoom of the observable universe down to atoms (Bevy's Big Space: https://github.com/aevyrie/big_space/tree/bevy-0.19).
-- [ ] With the interface that has virtually limitless scale, we focus on centering the experience on the user's interest, Earth's globe as a 3D space with it's real topography, updateable in real time.
-- [ ] In any scale, one can take what is there as a point in which the components/widgets/sands/visual tools have at their disposal will be in a size it is good to work with, either locking things to the HUD with pinned sands, or putting them geographically in one region of the space: only in their house when they zoom in the map into their room, or the part of the room in space that is their desk, and inside they will see their widgets. In summary going from 3D to 2D, where you feel more productive with the dimensions you want.
-- [ ] Being able to connect the data of parts that are anywhere in the Space.
-- [ ] Being able to generate instantly a representation of something you want in any part of the Space, using Fiote (JEPA model?).
-- [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
-- [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
-}
 
 Instinct handbook (@instinct-handbook: 0, is #chapter, #instinct) { r_0SMVW3VGREZ6TYYQ5PQVKD268A
 Begin with Welcome, Interface and Areas, then Records and Protein. Later chapters are optional. Every page is accessible directly. Suggested earlier ideas are links, never locks. Practice is disposable, and reading needs no database import.

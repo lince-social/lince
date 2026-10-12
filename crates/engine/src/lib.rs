@@ -31,6 +31,7 @@ pub mod communication;
 pub mod directory;
 pub mod effects;
 pub mod commands;
+pub mod signal_endpoints;
 pub mod enrolment;
 pub mod error;
 pub mod expiry;

@@ -102,9 +102,7 @@ pub(crate) fn prepare(world: &mut World) {
                 .is_some()
             || world.get::<ChildOf>(binding.area).map(ChildOf::parent) != Some(parent.parent())
             || world.get::<crate::workspace::WorkspaceMember>(binding.area) != Some(workspace)
-            || world
-                .get::<crate::workspace::Workspaces>(parent.parent())
-                .is_none_or(|spaces| spaces.active != workspace.0)
+            || !crate::topology::holes::live(world, parent.parent(), workspace.0)
             || !crate::workspace_config::enabled(world, parent.parent(), workspace.0)
         {
             continue;

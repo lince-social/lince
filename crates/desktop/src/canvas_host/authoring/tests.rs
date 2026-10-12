@@ -375,7 +375,7 @@ fn area_configuration_keeps_identity_and_requires_explicit_activation() {
         settings: BTreeMap::from([(
             "configuration".into(),
             serde_json::json!(
-                "{\"name\":\"Workflow area\",\"strength\":42.0,\"immunity\":\"Containment\"}"
+                "{\"name\":\"Workflow area\",\"strength\":42.0,\"immunity\":\"Containment\",\"hole\":true}"
             ),
         )]),
         bindings: Vec::new(),
@@ -403,6 +403,7 @@ fn area_configuration_keeps_identity_and_requires_explicit_activation() {
     let area = app.world().get::<crate::area::InfluenceArea>(host).unwrap();
     assert_eq!(area.id, identity);
     assert_eq!(area.strength, 42.0);
+    assert!(area.hole);
     assert!(!area.paused);
     assert!(!crate::area_mutation::armed(app.world(), host));
 }

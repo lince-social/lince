@@ -218,10 +218,11 @@ pub enum SandStyleKind {
     EditableText,
     Record,
     TimeCastle,
+    Fiote,
 }
 
 impl SandStyleKind {
-    pub const ALL: [Self; 5] = [Self::Square, Self::Text, Self::EditableText, Self::Record, Self::TimeCastle];
+    pub const ALL: [Self; 6] = [Self::Square, Self::Text, Self::EditableText, Self::Record, Self::TimeCastle, Self::Fiote];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -230,6 +231,7 @@ impl SandStyleKind {
             Self::EditableText => "Editable text",
             Self::Record => "Records",
             Self::TimeCastle => "Time Castles",
+            Self::Fiote => "Fiotes",
         }
     }
 }

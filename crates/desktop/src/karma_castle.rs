@@ -1,5 +1,6 @@
 use lince_interface::karma as model;
 pub(crate) mod commands_ui;
+mod embedded_ui;
 mod history_ui;
 mod persistence;
 mod preview_ui;
@@ -271,6 +272,7 @@ pub fn spawn(
     preview_ui::spawn(world, owner, scroll);
     history_ui::spawn(world, owner, scroll);
     commands_ui::spawn(world, owner, scroll);
+    embedded_ui::spawn(world, owner, scroll);
     ui::render_tools(world, owner);
     owner
 }
@@ -563,6 +565,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             continue;
         }
         if commands_ui::receive(world, &message) {
+            continue;
+        }
+        if embedded_ui::receive(world, &message) {
             continue;
         }
         if history_ui::receive(world, &message) {

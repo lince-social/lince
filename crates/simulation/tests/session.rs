@@ -10,6 +10,7 @@ async fn stepping_and_resuming_preserve_the_headless_result_and_cancellation_rep
             .await
             .unwrap();
     assert!(session.step().await.unwrap());
+    assert_eq!(session.world.steps, 1);
     let time = session.world.now_ms;
     let steps = session.world.steps;
     tokio::task::yield_now().await;
@@ -19,12 +20,12 @@ async fn stepping_and_resuming_preserve_the_headless_result_and_cancellation_rep
     while session.step().await.unwrap() {}
     let result = session.finish().await.unwrap();
     assert_eq!(result.result.verdict, Verdict::Passed);
-    assert!(matches!(
-        artifacts::replay(&stepped, &directory.path().join("replayed"))
-            .await
-            .unwrap(),
-        ReplayStatus::Verified { .. }
-    ));
+    let replay = artifacts::replay(&stepped, &directory.path().join("replayed"))
+        .await
+        .unwrap();
+    if !matches!(replay, ReplayStatus::Verified { .. }) {
+        panic!("{replay:?}; evidence retained in {}", directory.keep().display());
+    }
     let stopped = directory.path().join("stopped");
     let mut session =
         artifacts::Session::open(fixtures::daily(), &stopped, std::path::Path::new("."))
@@ -36,10 +37,10 @@ async fn stepping_and_resuming_preserve_the_headless_result_and_cancellation_rep
     assert_eq!(result.result.stop, Stop::Cancelled {});
     assert_eq!(result.result.verdict, Verdict::Inconclusive);
     assert_eq!(result.result.steps, 1);
-    assert!(matches!(
-        artifacts::replay(&stopped, &directory.path().join("stopped-replayed"))
-            .await
-            .unwrap(),
-        ReplayStatus::Verified { .. }
-    ));
+    let replay = artifacts::replay(&stopped, &directory.path().join("stopped-replayed"))
+        .await
+        .unwrap();
+    if !matches!(replay, ReplayStatus::Verified { .. }) {
+        panic!("{replay:?}; evidence retained in {}", directory.keep().display());
+    }
 }

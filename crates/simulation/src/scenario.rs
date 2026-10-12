@@ -17,6 +17,8 @@ pub struct Scenario {
     pub inputs: Vec<Input>,
     pub checks: Vec<Check>,
     #[serde(default)]
+    pub proposal: Option<crate::proposal::Proposal>,
+    #[serde(default)]
     pub checking: nucleus::simulation::Checking,
 }
 
@@ -193,6 +195,14 @@ fn name(value: &str) -> bool {
 }
 
 impl Scenario {
+    pub fn effective_inputs(&self) -> crate::Result<Vec<Input>> {
+        let mut inputs = self.inputs.clone();
+        if let Some(proposal) = &self.proposal {
+            inputs.extend(proposal.inputs()?);
+        }
+        Ok(inputs)
+    }
+
     pub fn validate(&self) -> crate::Result<()> {
         let invalid = |path: &str| -> crate::Error { format!("invalid scenario: {path}").into() };
         if !name(&self.name) {
@@ -271,7 +281,10 @@ impl Scenario {
                 validate_action(&invocation.action)?;
             }
         }
-        for input in &self.inputs {
+        if let Some(proposal) = &self.proposal {
+            proposal.validate(self)?;
+        }
+        for input in &self.effective_inputs()? {
             if !name(&input.id) || !ids.insert(input.id.clone()) {
                 return Err(invalid("input id"));
             }
@@ -474,6 +487,15 @@ impl Scenario {
 
 pub fn validate_action(action: &Action) -> crate::Result<()> {
     match action {
+        Action::ChangeRecord { request } => crate::proposal::validate_mutation(&request.mutation),
+        Action::EditRecordText { head, body, .. } => {
+            if head.as_ref().is_some_and(|value| value.len() > 65_536)
+                || body.as_ref().is_some_and(|value| value.len() > 262_144) {
+                Err("Proposed text change exceeds its size limit".into())
+            } else {
+                Ok(())
+            }
+        }
         Action::CreateRecord { quantity, .. }
         | Action::SetQuantity {
             value: quantity, ..

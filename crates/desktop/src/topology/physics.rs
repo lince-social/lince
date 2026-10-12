@@ -180,6 +180,7 @@ pub(crate) fn imported_shape(
 }
 
 pub fn synchronize(world: &mut World) -> bool {
+    super::holes::refresh(world);
     if let Some(mut cache) = world.get_resource_mut::<GeometryCache>() {
         cache.0.retain(|_, shape| shape.strong_count() > 0);
     }
@@ -198,9 +199,7 @@ pub fn synchronize(world: &mut World) -> bool {
         .iter(world)
         .filter(|(e, _, root, member)| {
             world.get::<crate::external_drop::Preview>(*e).is_none()
-                && world
-                    .get::<crate::workspace::Workspaces>(root.parent())
-                    .is_some_and(|s| s.active == member.0)
+                && super::holes::live(world, root.parent(), member.0)
                 && world.get::<crate::sand_placement::Pinned>(*e).is_none()
                 && world.get::<crate::arrow_sand::ArrowSand>(*e).is_none()
                 && world.get::<crate::time_castle::AttachedCard>(*e).is_none()

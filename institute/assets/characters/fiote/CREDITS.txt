@@ -1,0 +1,12 @@
+Fiote lynx character
+Original stylized Canada lynx artwork, mesh, rig, and animation created for Lince.
+Author: Lince contributors.
+License: MIT; see LICENSE in this directory.
+The connected coat, blended skin weights, paw IK, and neutral 128px fur texture are original Lince assets.
+Motion seams on ears, brows, paws, and tail are colored by Lince's theme tokens at runtime.
+No third-party meshes, textures, fonts, or artwork are embedded.
+Blender is the authoring tool; its application code is not embedded in these assets.
+create-fiote.py reproducibly creates fiote.blend, fiote.glb, and fiote-seated.png.
+export-fiote.py exports fiote.glb and fiote-seated.png from the existing Blender source without replacing it.
+validate-fiote.py checks skin weights, all animation clips, paw targets, and looping seams.
+fiote-seated.svg is independently maintained vector artwork of the same character.

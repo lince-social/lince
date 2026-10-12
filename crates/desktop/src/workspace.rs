@@ -380,7 +380,10 @@ impl Plugin for WorkspacePlugin {
             .add_message::<AppExit>()
             .add_systems(
                 Update,
-                initialize.in_set(PrepareWorkspaces).before(ReceiveRecords),
+                (initialize, crate::topology::holes::refresh)
+                    .chain()
+                    .in_set(PrepareWorkspaces)
+                    .before(ReceiveRecords),
             )
             .add_systems(Last, persist);
     }
@@ -1178,6 +1181,31 @@ pub(crate) mod tests {
         app.world_mut().write_message(AppExit::Success);
         app.update();
         app.world_mut().resource_mut::<Messages<AppExit>>().clear();
+    }
+
+    #[cfg_attr(test, test)]
+    fn workspace_holes_restore_the_behavior_and_lower_workspace_after_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        create(app.world_mut(), root);
+        let mut area = crate::area::InfluenceArea::new(
+            crate::area::AreaShape::Circle,
+            DVec2::ZERO,
+            DVec2::splat(200.0),
+        );
+        area.hole = true;
+        let id = area.id.clone();
+        crate::area::spawn_area(app.world_mut(), root, 2, area).unwrap();
+        flush(&mut app);
+        drop(app);
+        let (mut app, root) = fixture(Some(path));
+        let document = snapshot(app.world_mut(), root);
+        assert!(document.validate());
+        assert_eq!(document.areas[0].area.id, id);
+        assert!(document.areas[0].area.hole);
+        assert_eq!(document.areas[0].workspace, 2);
+        assert!(crate::topology::holes::live(app.world(), root, 1));
     }
 
     #[cfg_attr(test, test)]
@@ -2337,6 +2365,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        workspace_holes_restore_the_behavior_and_lower_workspace_after_restart,
         drawings_restore_native_strokes_from_disk_after_restart,
         document_viewers_restore_progress_from_disk_after_restart,
         #[cfg(feature = "instinct")]

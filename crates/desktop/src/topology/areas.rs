@@ -5,6 +5,7 @@ struct Volume {
     entity: Entity,
     fill: Entity,
     shape: crate::area::InfluenceArea,
+    layer: Option<super::holes::Layer>,
     mesh: Handle<Mesh>,
     fill_mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
@@ -195,6 +196,7 @@ pub fn update(world: &mut World) {
         .map(|(e, a, p, m)| (e, a.clone(), p.parent(), m.0))
         .collect();
     for (entity, area, root, workspace) in areas {
+        let layer = super::holes::layer(world, root, workspace);
         let old = world.get::<Volume>(entity);
         let volume = if let Some(old) = old {
             let (visual, handle, fill_handle, material, changed) = (
@@ -202,16 +204,17 @@ pub fn update(world: &mut World) {
                 old.mesh.clone(),
                 old.fill_mesh.clone(),
                 old.material.clone(),
-                old.shape != area,
+                old.shape != area || old.layer != layer,
             );
             if changed {
                 world
                     .resource_mut::<Assets<Mesh>>()
                     .insert(handle.id(), mesh(&area))
                     .unwrap();
+                let clipped = super::holes::area_mesh(world, root, workspace, entity, &area);
                 world
                     .resource_mut::<Assets<Mesh>>()
-                    .insert(fill_handle.id(), fill_mesh(&area))
+                    .insert(fill_handle.id(), clipped)
                     .unwrap();
                 world
                     .resource_mut::<Assets<StandardMaterial>>()
@@ -219,6 +222,7 @@ pub fn update(world: &mut World) {
                     .unwrap()
                     .base_color = fill_color(&area);
                 world.get_mut::<Volume>(entity).unwrap().shape = area.clone();
+                world.get_mut::<Volume>(entity).unwrap().layer = layer.clone();
             }
             visual
         } else {
@@ -240,7 +244,8 @@ pub fn update(world: &mut World) {
                     Pickable::IGNORE,
                 ))
                 .id();
-            let fill_mesh = world.resource_mut::<Assets<Mesh>>().add(fill_mesh(&area));
+            let clipped = super::holes::area_mesh(world, root, workspace, entity, &area);
+            let fill_mesh = world.resource_mut::<Assets<Mesh>>().add(clipped);
             let material = world
                 .resource_mut::<Assets<StandardMaterial>>()
                 .add(StandardMaterial {
@@ -266,6 +271,7 @@ pub fn update(world: &mut World) {
                 entity: visual,
                 fill,
                 shape: area.clone(),
+                layer: layer.clone(),
                 mesh,
                 fill_mesh,
                 material,
@@ -274,9 +280,7 @@ pub fn update(world: &mut World) {
         };
         let placement = super::spatial(world, entity);
         let origin = super::presentation::origin(world, root);
-        let visible = world
-            .get::<crate::workspace::Workspaces>(root)
-            .is_some_and(|s| s.active == workspace);
+        let visible = super::holes::live(world, root, workspace);
         let editing = world
             .get::<crate::edit_mode::EditMode>(root)
             .is_some_and(|m| m.enabled);
@@ -307,7 +311,7 @@ pub fn update(world: &mut World) {
         }
         let transform = Transform {
             translation: (placement.position(bevy::math::DVec2::from_array(area.center)) - origin)
-                .as_vec3(),
+                .as_vec3() - Vec3::Y * super::holes::depth(world, root, workspace) as f32 * 0.2,
             rotation: placement.rotation().as_quat(),
             ..default()
         };
@@ -326,9 +330,10 @@ pub fn update(world: &mut World) {
                 Visibility::Hidden
             },
         ));
+        let outline_visible = visible && editing && super::holes::depth(world, root, workspace) == 0;
         world.entity_mut(volume).insert((
             transform,
-            if visible && editing {
+            if outline_visible {
                 Visibility::Visible
             } else {
                 Visibility::Hidden

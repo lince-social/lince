@@ -667,10 +667,12 @@ fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
     let schedules = panel("Karma schedules");
     let simulation = panel("Karma simulation");
     let commands = panel("Karma commands");
+    let embedded = panel("Karma embedded");
     for (panel, command) in [
         (schedules, ui::Command::Schedules),
         (simulation, ui::Command::Simulate),
         (commands, ui::Command::Commands),
+        (embedded, ui::Command::Embedded),
     ] {
         assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
         command.apply(world, owner);
@@ -679,7 +681,7 @@ fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
         assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
     }
     let tools = world.get::<View>(owner).unwrap().tools;
-    assert_eq!(world.get::<Children>(tools).unwrap().len(), 3);
+    assert_eq!(world.get::<Children>(tools).unwrap().len(), 4);
 }
 
 #[cfg_attr(test, test)]

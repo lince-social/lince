@@ -112,8 +112,10 @@ impl Gesture {
             || world
                 .get::<crate::workspace::Workspaces>(self.root)
                 .is_some_and(|spaces| {
-                    self.workspace
-                        .is_some_and(|member| member.0 != spaces.active)
+                    self.workspace.is_some_and(|member| {
+                        member.0 != spaces.active
+                            && !super::holes::live(world, self.root, member.0)
+                    })
                 })
         {
             return false;

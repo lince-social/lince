@@ -10,6 +10,7 @@ members = [
     "crates/transport",
     "crates/anicca",
     "crates/sensei",
+    "crates/geist",
     "crates/desktop",
     "crates/interface",
     "crates/mobile",
@@ -117,6 +118,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"
 sensei = { version = "=0.8.0", path = "crates/sensei" }
+geist = { version = "=0.8.0", path = "crates/geist" }
 rust-sitter = "0.4.5"
 rust-sitter-tool = "0.4.5"
 hkdf = "0.13.0"

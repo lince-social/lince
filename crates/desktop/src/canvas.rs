@@ -118,7 +118,17 @@ pub(crate) fn project_canvas(
             }
             continue;
         }
-        if surface.is_some() {
+        if let Some(surface) = surface {
+            if !surface.visible {
+                let mut focused = focus.get();
+                while let Some(candidate) = focused {
+                    if candidate == entity {
+                        focus.clear();
+                        break;
+                    }
+                    focused = parents.get(candidate).ok().map(ChildOf::parent);
+                }
+            }
             if node.display != Display::Flex
                 || node.position_type != PositionType::Absolute
                 || node.left != px(0)

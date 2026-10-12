@@ -186,6 +186,10 @@ impl World {
             if integrity != "ok" {
                 return Err(format!("seed integrity: {integrity}").into());
             }
+            if let Some(proposal) = &world.scenario.proposal
+                && proposal.cell == seed.name {
+                proposal.verify_source(&store).await?;
+            }
             let fact_position =
                 store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM fact")
                     .fetch_one(&store.pool)
@@ -232,6 +236,10 @@ impl World {
                 .captured
                 .insert(format!("cell:{}:uid", seed.name), local.uid);
             world.nodes.insert(seed.name.clone(), node);
+            if let Some(proposal) = &world.scenario.proposal
+                && proposal.cell == seed.name {
+                proposal.bind(world.nodes[&seed.name].engine()).await?;
+            }
             if !seed.lingua.is_empty() {
                 world.refresh_control_checks().await?;
                 let node = &world.nodes[&seed.name];
@@ -279,7 +287,7 @@ impl World {
                 serde_json::to_vec(&node.execution.snapshot())?,
             )?;
         }
-        for input in world.scenario.inputs.clone() {
+        for input in world.scenario.effective_inputs()? {
             world.serial += 1;
             world
                 .tasks
@@ -1613,6 +1621,32 @@ pub(crate) fn resolve(
     action: &engine::actions::Action,
     captured: &BTreeMap<String, String>,
 ) -> Result<engine::actions::Action> {
+    let reference = |value: &str| -> Result<String> {
+        match value.strip_prefix('$') {
+            Some(key) => captured.get(key).cloned().ok_or_else(|| format!("unresolved seed reference {value}").into()),
+            None => Ok(value.into()),
+        }
+    };
+    if let engine::actions::Action::EditRecordText { target, head, body } = action {
+        return Ok(engine::actions::Action::EditRecordText {
+            target: reference(target)?, head: head.clone(), body: body.clone(),
+        });
+    }
+    if let engine::actions::Action::ChangeRecord { request } = action {
+        let mut request = request.clone();
+        request.record_uid = reference(&request.record_uid)?;
+        match &mut request.mutation {
+            engine::record_change::Mutation::Assertion { predicate, object, unit, .. } => {
+                *predicate = reference(predicate)?;
+                *object = object.as_deref().map(&reference).transpose()?;
+                *unit = unit.as_deref().map(&reference).transpose()?;
+            }
+            engine::record_change::Mutation::NumberAssertion { predicate, .. } => *predicate = reference(predicate)?,
+            engine::record_change::Mutation::RetractAssertion { assertion } => *assertion = reference(assertion)?,
+            _ => {}
+        }
+        return Ok(engine::actions::Action::ChangeRecord { request });
+    }
     fn visit(value: &mut serde_json::Value, captured: &BTreeMap<String, String>) -> Result<()> {
         match value {
             serde_json::Value::String(text) if text.starts_with('$') => {

@@ -22,6 +22,8 @@ uuid = { workspace = true }
 sensei = { workspace = true }
 
 [dev-dependencies]
+chrono = { workspace = true }
+p256 = { version = "=0.13.2", features = ["ecdsa"] }
 base64 = { workspace = true }
 ed25519-dalek = { workspace = true }
 reqwest = { workspace = true }

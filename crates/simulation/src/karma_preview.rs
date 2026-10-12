@@ -277,6 +277,7 @@ pub async fn run(
         });
     }
     let scenario = scenario::Scenario {
+        proposal: None,
         version: report::Version::V1,
         name: "karma-proposal".into(),
         seed: 1,

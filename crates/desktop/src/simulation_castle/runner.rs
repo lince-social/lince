@@ -19,6 +19,7 @@ pub(super) enum Control {
 
 #[derive(Clone, Copy)]
 pub(super) enum Job {
+    CaptureRecord(bool),
     SaveChecks,
     LoadChecks,
     ListChecks,
@@ -42,12 +43,19 @@ pub(super) struct Progress {
     pub paused: bool,
 }
 
+#[derive(Default)]
 pub(super) struct Outcome {
+    pub prepared: Option<Prepared>,
     pub check_set: Option<nucleus::simulation::CheckSet>,
     pub path: Option<String>,
     pub status: String,
     pub bundle: Option<Bundle>,
     pub evidence: String,
+}
+
+pub(super) struct Prepared {
+    pub scenario: simulation::scenario::Scenario,
+    pub sources: String,
 }
 
 pub(super) async fn run(
@@ -59,6 +67,14 @@ pub(super) async fn run(
 ) -> Result<Outcome> {
     let output = Path::new(&model.output_directory);
     match job {
+        Job::CaptureRecord(fresh) => {
+            let prepared = capture_record(&model, runtime.ok_or("Current Cell unavailable")?, fresh).await?;
+            Ok(Outcome {
+                prepared: Some(prepared),
+                status: "Base captured. Add proposed changes, then compare with the base.".into(),
+                ..Default::default()
+            })
+        }
         Job::SaveChecks | Job::LoadChecks | Job::ListChecks => {
             let runtime = runtime.ok_or("Current Cell unavailable")?;
             let sets = simulation::saved_checks::list(&runtime.store.pool).await?;
@@ -104,6 +120,7 @@ pub(super) async fn run(
                 |set| format!("{} · revision {}", set.name, set.revision),
             );
             Ok(Outcome {
+                prepared: None,
                 check_set: selected,
                 path: None,
                 status,
@@ -138,12 +155,13 @@ pub(super) async fn run(
             };
             let comparison = simulation::comparison::save(&destination, proposed, baseline)?;
             Ok(Outcome {
+                prepared: None,
                 check_set: None,
-                path: Some(comparison.with_transfers.clone()),
+                path: Some(comparison.proposed_run.clone()),
                 bundle: None,
                 status: format!(
-                    "With Transfer assumptions: {:?} · Without: {:?}",
-                    comparison.proposed.verdict, comparison.baseline.verdict
+                    "Proposed: {:?} · Baseline: {:?} · {} Record differences",
+                    comparison.proposed.verdict, comparison.baseline.verdict, comparison.changes.len()
                 ),
                 evidence: serde_json::to_string_pretty(&comparison)?,
             })
@@ -161,10 +179,10 @@ pub(super) async fn run(
             let parent = current.parent().ok_or("Comparison directory unavailable")?;
             let comparison: simulation::comparison::Comparison =
                 serde_json::from_slice(&std::fs::read(parent.join("comparison.json"))?)?;
-            let other = if current == Path::new(&comparison.with_transfers) {
-                &comparison.without_transfers
-            } else if current == Path::new(&comparison.without_transfers) {
-                &comparison.with_transfers
+            let other = if current == Path::new(&comparison.proposed_run) {
+                &comparison.baseline_run
+            } else if current == Path::new(&comparison.baseline_run) {
+                &comparison.proposed_run
             } else {
                 return Err("Selected run does not belong to this comparison".into());
             };
@@ -174,6 +192,7 @@ pub(super) async fn run(
             let destination = artifacts::next_directory(output)?;
             let result = artifacts::replay(Path::new(&model.run_directory), &destination).await?;
             Ok(Outcome {
+                prepared: None,
                 check_set: None,
                 path: None,
                 status: format!("Replay: {result:?}"),
@@ -224,6 +243,7 @@ pub(super) async fn run(
                 )?)?)
             };
             Ok(Outcome {
+                prepared: None,
                 check_set: None,
                 path: None,
                 status: format!(
@@ -244,6 +264,7 @@ pub(super) async fn run(
                 .filter(|run| run.result.verdict == nucleus::simulation::Verdict::Passed)
                 .count();
             Ok(Outcome {
+                prepared: None,
                 check_set: None,
                 path: None,
                 status: format!(
@@ -261,6 +282,7 @@ pub(super) async fn run(
 pub(super) fn inspect(path: &Path) -> Result<Outcome> {
     let bundle = artifacts::load(path).map_err(|error| format!("Run unavailable: {error:?}"))?;
     Ok(Outcome {
+        prepared: None,
         check_set: None,
         path: Some(path.canonicalize()?.to_string_lossy().into()),
         status: format!(
@@ -292,6 +314,64 @@ async fn inspect_source(
         }
     }
     Ok(outcome)
+}
+
+async fn capture_record(model: &SimulationCastle, runtime: cell::CellRuntime, fresh: bool) -> Result<Prepared> {
+    let mut scenario: simulation::scenario::Scenario = serde_json::from_str(&model.scenario)?;
+    let previous = scenario.proposal.clone();
+    let mut references: Vec<_> = previous.as_ref().map(|proposal| proposal.records.iter().map(|record| record.uid.clone()).collect()).unwrap_or_default();
+    let reference = model.record_form.record.trim();
+    if reference.is_empty() {
+        return Err("Choose a Record UID or slug to capture".into());
+    }
+    references.push(reference.to_owned());
+    let sources = if previous.is_some() && !fresh {
+        PathBuf::from(&model.source_directory)
+    } else {
+        if !model.current_database && previous.is_none() {
+            return Err("Choose Current database before capturing a local Record scenario".into());
+        }
+        let directory = Path::new(&model.output_directory).join("proposals").join(nucleus::new_uid("p"));
+        std::fs::create_dir_all(directory.parent().ok_or("Proposal directory unavailable")?)?;
+        std::fs::create_dir(&directory)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700))?;
+        }
+        let path = directory.join("source.sqlite");
+        runtime.store.snapshot_into(&path).await?;
+        scenario.cells = vec![simulation::scenario::Cell {
+            name: "current".into(),
+            database: Some(simulation::scenario::Database { file: "source.sqlite".into(), hash: artifacts::file_hash(&path)? }),
+            lingua: Vec::new(), seed: Vec::new(),
+        }];
+        if scenario.inputs.iter().any(|input| input.cell != "current") {
+            return Err("Local Record proposals require background events in the current Cell".into());
+        }
+        directory
+    };
+    let cell = scenario.cells.iter().find(|cell| cell.name == "current").ok_or("Current Cell is missing")?;
+    let database = cell.database.as_ref().ok_or("Captured database is missing")?;
+    let root = sources.canonicalize()?;
+    let path = root.join(&database.file).canonicalize()?;
+    if !path.starts_with(&root) || artifacts::file_hash(&path)? != database.hash {
+        return Err("Captured base is outside its folder or has changed".into());
+    }
+    let options = store::sqlx::sqlite::SqliteConnectOptions::new().filename(&path).read_only(true);
+    let pool = store::sqlx::sqlite::SqlitePoolOptions::new().max_connections(1).connect_with(options).await?;
+    let store = store::Store { pool };
+    let captured = simulation::proposal::Proposal::capture(&runtime.engine, &store, None, "current", scenario.start_ms, &references).await;
+    store.pool.close().await;
+    let mut captured = captured?;
+    if let Some(previous) = previous {
+        captured.id = previous.id;
+        captured.changes = previous.changes;
+    }
+    scenario.name = format!("record-proposal-{}", captured.id);
+    scenario.proposal = Some(captured);
+    scenario.validate()?;
+    Ok(Prepared { scenario, sources: root.to_string_lossy().into() })
 }
 
 async fn prepare(
@@ -431,7 +511,12 @@ async fn drive_with_controls(
             continue;
         }
         let previous_steps = session.world.steps;
-        if !session.step().await? {
+        let advanced = if matches!(mode, Control::Through(_)) {
+            session.step_boundary().await?
+        } else {
+            session.step().await?
+        };
+        if !advanced {
             break;
         }
         if mode == Control::Step && session.world.steps > previous_steps {

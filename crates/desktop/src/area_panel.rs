@@ -53,6 +53,7 @@ pub enum AreaAction {
     Remove,
     AttractionEnabled,
     Enabled,
+    Hole,
     ChangesEnabled,
     PreviewChanges,
     ArmChanges,
@@ -70,7 +71,9 @@ pub(crate) fn owns(world: &World, root: Entity, entity: Entity) -> bool {
         && world.get::<Workspaces>(root).is_some_and(|spaces| {
             world
                 .get::<WorkspaceMember>(entity)
-                .is_some_and(|member| member.0 == spaces.active)
+                .is_some_and(|member| {
+                    member.0 == spaces.active || crate::canvas_item::eligible(world, root, entity)
+                })
         })
 }
 
@@ -251,6 +254,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
                     );
                 }
                 AreaAction::MatchAll => area.match_all = !area.match_all,
+                AreaAction::Hole => area.hole = !area.hole,
                 AreaAction::AddRule if area.rules.len() < MAX_RULES => {
                     area.rules.push(PropertyRule {
                         property: Property::Kind,
@@ -908,6 +912,35 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     ] {
         choice(world, root, panel, action, title, enabled);
     }
+    choice(
+        world,
+        root,
+        panel,
+        AreaAction::Hole,
+        "Hole to workspace below",
+        area.hole,
+    );
+    if area.hole {
+        let below = world.get::<WorkspaceMember>(entity).and_then(|member| {
+            let spaces = world.get::<Workspaces>(root)?;
+            let index = spaces
+                .entries
+                .iter()
+                .position(|space| space.id == member.0)?;
+            index
+                .checked_sub(1)
+                .map(|index| spaces.entries[index].name.clone())
+        });
+        label(
+            world,
+            panel,
+            &below.map_or_else(
+                || "There is no workspace below this one.".into(),
+                |name| format!("Opens {name}. Its physics and area behaviors stay active."),
+            ),
+            14.0,
+        );
+    }
     field(
         world,
         root,
@@ -1073,6 +1106,29 @@ pub(crate) mod tests {
         EditAction::Open.apply(app.world_mut(), root);
         EditAction::Areas.apply(app.world_mut(), root);
         (app, root)
+    }
+
+    #[cfg_attr(test, test)]
+    fn workspace_hole_control_requires_edit_mode_and_preserves_other_behaviors() {
+        let (mut app, root) = fixture();
+        EditAction::Area(AreaAction::Add(ShapeKind::Circle)).apply(app.world_mut(), root);
+        let entity = app
+            .world()
+            .get::<AreaEditor>(root)
+            .unwrap()
+            .selected
+            .unwrap();
+        app.world_mut()
+            .get_mut::<InfluenceArea>(entity)
+            .unwrap()
+            .strength = 42.0;
+        EditAction::Area(AreaAction::Hole).apply(app.world_mut(), root);
+        let area = app.world().get::<InfluenceArea>(entity).unwrap();
+        assert!(area.hole);
+        assert_eq!(area.strength, 42.0);
+        EditAction::Close.apply(app.world_mut(), root);
+        apply(app.world_mut(), root, AreaAction::Hole);
+        assert!(app.world().get::<InfluenceArea>(entity).unwrap().hole);
     }
 
     #[cfg_attr(test, test)]
@@ -1460,6 +1516,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        workspace_hole_control_requires_edit_mode_and_preserves_other_behaviors,
         relation_castle_area_tab_opens_and_edits_spawn_configuration,
         color_controls_validate_and_save_area_appearance,
         target_and_depth_controls_validate_and_preserve_offsets_on_redraw,

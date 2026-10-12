@@ -16,6 +16,7 @@ pub fn daily() -> Scenario {
         action,
     };
     Scenario {
+        proposal: None,
         checking: Default::default(),
         version: Version::V1,
         name: "daily-negative".into(),
@@ -105,6 +106,7 @@ pub fn daily() -> Scenario {
 
 pub fn current_database(start_ms: i64) -> Scenario {
     Scenario {
+        proposal: None,
         checking: Default::default(),
         version: Version::V1,
         name: "current-database".into(),
@@ -197,9 +199,13 @@ pub fn network(two_organs: bool) -> Scenario {
             },
         });
     }
-    let mut add = |cell: &str, at: i64, event| {
+    let mut add = |cell: &str, at: i64, event: Event| {
+        let id = match &event {
+            Event::Action { invocation } => invocation.id.clone(),
+            _ => format!("network-{}", case.inputs.len()),
+        };
         case.inputs.push(Input {
-            id: format!("network-{}", case.inputs.len()),
+            id,
             cell: cell.into(),
             at_ms: case.start_ms + at,
             event,
@@ -218,6 +224,45 @@ pub fn network(two_organs: bool) -> Scenario {
         for peer in ["b", "d"] {
             add("a", 2, Event::Pair { peer: peer.into() });
         }
+    }
+    let peers: &[&str] = if two_organs {
+        &["c", "d"]
+    } else {
+        &["b", "c", "d"]
+    };
+    for peer in peers {
+        if !two_organs || *peer != "d" {
+            add(
+                "a",
+                3,
+                Event::Action {
+                    invocation: Invocation {
+                        id: format!("share-with-{peer}"),
+                        actor: None,
+                        action: Action::SetSyncPolicy {
+                            target: format!("$cell:{peer}:organ"),
+                            sync_out: true,
+                            sync_in: false,
+                        },
+                    },
+                },
+            );
+        }
+        add(
+            peer,
+            3,
+            Event::Action {
+                invocation: Invocation {
+                    id: format!("accept-from-a-{peer}"),
+                    actor: None,
+                    action: Action::SetSyncPolicy {
+                        target: "$cell:a:organ".into(),
+                        sync_out: false,
+                        sync_in: true,
+                    },
+                },
+            },
+        );
     }
     let sync = |peer: &str| Event::Sync {
         peer: peer.into(),

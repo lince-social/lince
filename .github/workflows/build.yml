@@ -520,9 +520,9 @@ jobs:
                 echo "Published binary does not match this commit" >&2
                 exit 1
               fi
-              flake_ref="$deploy_dir/lince#manas-organ"
+              flake_ref="$deploy_dir/lince#institute-organ"
             else
-              flake_ref="github:lince-social/lince/$LINCE_REVISION#manas-organ"
+              flake_ref="github:lince-social/lince/$LINCE_REVISION#institute-organ"
             fi
             sudo nixos-rebuild switch --flake "$flake_ref" --refresh
             sudo systemctl restart lince.service

@@ -96,6 +96,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     }
     panel::button(world, tabs, sand, "Refresh", Command::Refresh);
     crate::map_castle::settings_button(world, tabs, body);
+    crate::fiote::character::settings_button(world, tabs, body);
     let status = crate::edit_mode::label(world, body, "Loading configuration…", 12.0);
     let pages = std::array::from_fn(|index| {
         let page = panel::column(world, body);

@@ -206,6 +206,9 @@ fn overwrites(world: &World, root: Entity, scope: Scope, token: Token) -> String
     }
     if scope != Scope::All {
         let (current, source) = value(world, scope, token);
+        if source == "This Sand" && matches!(scope, Scope::Sand(entity) if world.get::<crate::fiote::Fiote>(entity).is_some()) {
+            layers.push(format!("This Fiote: {}", current.display()));
+        }
         if matches!(source, "Default" | "Parent Sand")
             || (source == "Theme" && current != token.default_value(settings.scheme))
         {
@@ -531,6 +534,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
                     .is_some_and(|member| member.0 != active))
         {
             continue;
+        }
+        if world.get::<crate::fiote::Fiote>(entity).is_some() && !sands.contains(&entity) {
+            choices.push((format!("Fiote ({})", entity.index()), crate::actions![CustomizationAction::Scope(Scope::Sand(entity))]));
         }
         if let Some(declaration) = world.get::<crate::sand_settings::Declaration>(entity)
             && !sands.contains(&entity)

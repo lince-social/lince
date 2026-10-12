@@ -443,9 +443,7 @@ fn valid_grant(world: &World, entity: Entity, grant: &Grant) -> bool {
         && world
             .get::<WorkspaceMember>(entity)
             .is_some_and(|member| member.0 == grant.workspace)
-        && world
-            .get::<Workspaces>(grant.root)
-            .is_some_and(|spaces| spaces.active == grant.workspace)
+        && crate::topology::holes::live(world, grant.root, grant.workspace)
 }
 
 fn request_id() -> String {
@@ -968,9 +966,7 @@ fn activate_configured(world: &mut World) {
                 && world
                     .get::<Suspended>(*entity)
                     .is_none_or(|s| &s.0 != *area)
-                && world
-                    .get::<Workspaces>(parent.parent())
-                    .is_some_and(|w| w.active == member.0)
+                && crate::topology::holes::live(world, parent.parent(), member.0)
         })
         .map(|(entity, _, parent, _)| (entity, parent.parent()))
         .collect();

@@ -95,12 +95,12 @@ fn queued_entry_captures_project_privately_and_replay_exactly() {
                 .count(),
             4
         );
-        assert!(matches!(
-            simulation::artifacts::replay(&original, &directory.path().join("replay"))
-                .await
-                .unwrap(),
-            ReplayStatus::Verified { .. }
-        ));
+        let replay = simulation::artifacts::replay(&original, &directory.path().join("replay"))
+            .await
+            .unwrap();
+        if !matches!(replay, ReplayStatus::Verified { .. }) {
+            panic!("{replay:?}; evidence retained in {}", directory.keep().display());
+        }
     });
 }
 

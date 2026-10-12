@@ -5,6 +5,7 @@ pub mod loans;
 pub mod campaign;
 pub mod checks;
 pub mod comparison;
+pub mod proposal;
 pub mod cli;
 pub mod fixtures;
 pub mod lingua;

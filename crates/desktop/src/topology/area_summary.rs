@@ -4,6 +4,7 @@ use serde_json::Value;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Behavior {
+    Hole,
     Spawn,
     Attraction,
     Enter,
@@ -57,6 +58,7 @@ impl crate::actions::Action for Remove {
         }
         let mut area = world.get::<InfluenceArea>(owner).unwrap().clone();
         match self.0 {
+            Behavior::Hole => area.hole = false,
             Behavior::Spawn => area.protein = None,
             Behavior::Attraction => area.strength = 0.0,
             Behavior::Enter => area.changes.enter = Default::default(),
@@ -169,6 +171,9 @@ fn changes(value: &engine::area_transition::RecordChanges) -> String {
 
 fn lines(area: &InfluenceArea) -> Vec<(Behavior, String)> {
     let mut rows = Vec::new();
+    if area.hole {
+        rows.push((Behavior::Hole, "Hole · workspace below".into()));
+    }
     if let Some(protein) = &area.protein {
         rows.push((Behavior::Spawn, format!("Spawns · {}", query(protein))));
     }

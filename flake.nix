@@ -19,6 +19,95 @@
         else
           null;
 
+      linuxBuildInputs =
+        pkgs:
+        with pkgs;
+        lib.optionals stdenv.hostPlatform.isLinux [
+          fontconfig
+          freetype
+          alsa-lib
+          speechd
+          pipewire
+          glib
+          dbus
+          libpulseaudio
+          libGL
+          libdrm
+          libgbm
+          libx11
+          libxcb
+          libxcomposite
+          libxdamage
+          libxext
+          libxfixes
+          libxcursor
+          libxi
+          libxkbcommon
+          libxrandr
+          mesa
+          vulkan-loader
+          wayland
+        ];
+
+      linuxRuntimeLibraries =
+        pkgs:
+        (with pkgs; [
+          stdenv.cc.cc.lib
+          openssl
+          sqlite
+        ])
+        ++ linuxBuildInputs pkgs;
+
+      runtimeTools = pkgs: [ pkgs.bash ];
+
+      mkBinaryPackage =
+        {
+          pkgs,
+          src,
+          version ? builtins.substring 0 12 (pkgs.lib.trim (builtins.readFile "${src}/revision")),
+        }:
+        let
+          libraries = linuxRuntimeLibraries pkgs;
+        in
+        pkgs.stdenvNoCC.mkDerivation {
+          pname = "lince";
+          inherit src version;
+          nativeBuildInputs = with pkgs; [
+            autoPatchelfHook
+            makeWrapper
+          ];
+          buildInputs = libraries;
+          dontBuild = true;
+          dontStrip = true;
+          installPhase = ''
+            runHook preInstall
+            install -Dm755 bin/lince "$out/bin/lince"
+            install -Dm644 LICENSE "$out/share/licenses/lince/LICENSE"
+            install -Dm644 revision "$out/share/lince/revision"
+            install -Dm644 ${./institute/packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
+            install -Dm644 ${./institute/packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
+            install -Dm644 ${./institute/packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
+            runHook postInstall
+          '';
+          postFixup = ''
+            wrapProgram "$out/bin/lince" \
+              --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath libraries}" \
+              --prefix PATH : "${pkgs.lib.makeBinPath (runtimeTools pkgs)}"
+          '';
+          doInstallCheck = true;
+          installCheckPhase = ''
+            runHook preInstallCheck
+            "$out/bin/lince" --help > /dev/null
+            runHook postInstallCheck
+          '';
+          meta = {
+            description = "Lince with its native interface and Cell runtime";
+            mainProgram = "lince";
+            license = pkgs.lib.licenses.gpl3Plus;
+            platforms = [ "x86_64-linux" ];
+          };
+        };
+
       linceModule =
         {
           config,
@@ -68,9 +157,21 @@
 
           unit = {
             description = "Lince (${cfg.mode})";
-            wantedBy = [ (if isUserScope then "default.target" else "multi-user.target") ];
-            after = [ "network.target" ];
+            wantedBy = [
+              (
+                if isDesktop then
+                  "graphical-session.target"
+                else if isUserScope then
+                  "default.target"
+                else
+                  "multi-user.target"
+              )
+            ];
+            after = if isDesktop then [ "graphical-session.target" ] else [ "network.target" ];
+            partOf = lib.optional isDesktop "graphical-session.target";
             path = cfg.extraPath;
+            restartIfChanged = true;
+            restartTriggers = [ package ];
 
             serviceConfig = {
               Type = "simple";
@@ -130,7 +231,7 @@
                 "server" passes --server: the Cell runs headless, with no window, and
                 login is forced on. "desktop" runs the same crate built with its `ui`
                 feature — one process holding the Cell and its native window — and
-                requires scope = "user". "front-door" is a carrier for YOUR OWN Organ:
+                defaults to scope = "user". "front-door" is a carrier for YOUR OWN Organ:
                 same headless binary as server, no admin password, tighter limits. It holds no signing
                 material because your Organ's roster gives it no capabilities — enrol
                 it, then remove every capability from a device that holds your root key.
@@ -142,7 +243,7 @@
                 "system"
                 "user"
               ];
-              default = "system";
+              default = if isDesktop then "user" else "system";
               description = ''
                 "system" is a daemon under its own account — what a server wants.
                 "user" is a `systemd.user.services` unit inside your session, which is
@@ -164,6 +265,12 @@
               type = lib.types.nullOr lib.types.package;
               default = null;
               description = "Override the package for the chosen mode. Rarely needed.";
+            };
+
+            binarySource = lib.mkOption {
+              type = lib.types.nullOr lib.types.path;
+              default = null;
+              description = "Unpacked x86_64-linux release containing bin/lince, LICENSE, and revision. The module patches and wraps it with Lince's runtime dependencies.";
             };
 
             frontDoor = {
@@ -219,7 +326,7 @@
             extraPath = lib.mkOption {
               type = lib.types.listOf lib.types.package;
               default = [ ];
-              description = "Extra packages on the unit's PATH (a compiler for Karma, say).";
+              description = "Extra executable packages made available to the service.";
             };
 
             environment = lib.mkOption {
@@ -282,6 +389,11 @@
               type = lib.types.bool;
               default = false;
               description = "Allow the peer UDP port and local discovery on UDP 5353.";
+            };
+            extraPeerPorts = lib.mkOption {
+              type = lib.types.listOf lib.types.port;
+              default = [ ];
+              description = "Additional Lince instance UDP ports to allow when openPeerFirewall is enabled.";
             };
             social = {
               enable = lib.mkEnableOption "deployment-managed social hosting; native choices apply when disabled";
@@ -376,6 +488,10 @@
                   it reaching your own store anyway.
                 '';
               }
+              {
+                assertion = cfg.binarySource == null || pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+                message = "services.lince.binarySource requires an x86_64-linux host.";
+              }
             ];
 
             users.users.${cfg.user} = lib.mkIf (!isUserScope && cfg.user == "lince") {
@@ -389,12 +505,48 @@
             networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [
               (lib.toInt (lib.last (lib.splitString ":" cfg.listenAddr)))
             ];
-            networking.firewall.allowedUDPPorts = lib.mkIf cfg.openPeerFirewall [ cfg.peerPort 5353 ];
+            networking.firewall.allowedUDPPorts = lib.mkIf cfg.openPeerFirewall (
+              lib.unique ([ cfg.peerPort 5353 ] ++ cfg.extraPeerPorts)
+            );
 
+            environment.systemPackages = [ package ];
             systemd.services.lince = lib.mkIf (!isUserScope) unit;
             systemd.user.services.lince = lib.mkIf isUserScope unit;
             services.gnome.at-spi2-core.enable = lib.mkIf isDesktop (lib.mkDefault true);
+            services.speechd.enable = lib.mkIf isDesktop (lib.mkDefault true);
           };
+        };
+
+      lincePackageDefaults =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        let
+          binaryPackage =
+            if config.services.lince.binarySource == null then
+              null
+            else
+              mkBinaryPackage {
+                inherit pkgs;
+                src = config.services.lince.binarySource;
+              };
+        in
+        {
+          services.lince.serverPackage = lib.mkDefault (
+            if binaryPackage != null then
+              binaryPackage
+            else
+              self.packages.${pkgs.stdenv.hostPlatform.system}.lince
+          );
+          services.lince.uiPackage = lib.mkDefault (
+            if binaryPackage != null then
+              binaryPackage
+            else
+              self.packages.${pkgs.stdenv.hostPlatform.system}.lince-ui
+          );
         };
 
       irohRelayModule =
@@ -706,49 +858,14 @@
           };
           interfaceLinuxNativeBuildInputs =
             with pkgs;
-            lib.optionals stdenv.isLinux [
+            lib.optionals stdenv.hostPlatform.isLinux [
               makeWrapper
               pkg-config
               rustPlatform.bindgenHook
             ];
-          interfaceLinuxBuildInputs =
-            with pkgs;
-            lib.optionals stdenv.isLinux [
-              fontconfig
-              freetype
-              alsa-lib
-              speechd
-              pipewire
-              glib
-              dbus
-              libpulseaudio
-              libGL
-              libdrm
-              libgbm
-              libx11
-              libxcb
-              libxcomposite
-              libxdamage
-              libxext
-              libxfixes
-              libxcursor
-              libxi
-              libxkbcommon
-              libxrandr
-              mesa
-              vulkan-loader
-              wayland
-            ];
-
-          interfaceLinuxRuntimeLibraries =
-            (with pkgs; [
-              stdenv.cc.cc.lib
-              openssl
-              sqlite
-            ])
-            ++ interfaceLinuxBuildInputs;
-
-          interfaceLinuxRuntimeTools = [ pkgs.bash ];
+          interfaceLinuxBuildInputs = linuxBuildInputs pkgs;
+          interfaceLinuxRuntimeLibraries = linuxRuntimeLibraries pkgs;
+          interfaceLinuxRuntimeTools = runtimeTools pkgs;
 
           mkLince =
             { pname, ui }:
@@ -809,13 +926,13 @@
                 ])
                 ++ lib.optionals ui interfaceLinuxBuildInputs;
 
-              postInstall = lib.optionalString pkgs.stdenv.isLinux ''
+              postInstall = lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
                 install -Dm644 institute/packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
                 install -Dm644 institute/packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
               '';
 
-              postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
+              postFixup = lib.optionalString (pkgs.stdenv.hostPlatform.isLinux && (ui || system == "x86_64-linux")) ''
                 wrapProgram "$out/bin/lince" ${
                   lib.escapeShellArgs (
                     lib.optionals ui [
@@ -846,51 +963,13 @@
               };
             };
 
-          binaryPackage =
-            let
-              libraries = interfaceLinuxRuntimeLibraries;
-            in
-            pkgs.stdenvNoCC.mkDerivation {
-              pname = "lince";
-              version = "${binaryRelease.version}-${builtins.substring 0 12 binaryRelease.revision}";
-              src = pkgs.fetchurl {
-                inherit (binaryRelease) url hash;
-              };
-              nativeBuildInputs = with pkgs; [
-                autoPatchelfHook
-                makeWrapper
-              ];
-              buildInputs = libraries;
-              dontBuild = true;
-              dontStrip = true;
-              installPhase = ''
-                runHook preInstall
-                install -Dm755 bin/lince "$out/bin/lince"
-                install -Dm644 LICENSE "$out/share/licenses/lince/LICENSE"
-                install -Dm644 revision "$out/share/lince/revision"
-                install -Dm644 ${./institute/packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
-                install -Dm644 ${./institute/packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
-                install -Dm644 ${./institute/packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
-                runHook postInstall
-              '';
-              postFixup = ''
-                wrapProgram "$out/bin/lince" \
-                  --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}" \
-                  --prefix PATH : "${lib.makeBinPath interfaceLinuxRuntimeTools}"
-              '';
-              doInstallCheck = true;
-              installCheckPhase = ''
-                runHook preInstallCheck
-                "$out/bin/lince" --help > /dev/null
-                runHook postInstallCheck
-              '';
-              meta = {
-                description = "Lince with its native interface and Cell runtime";
-                mainProgram = "lince";
-                license = lib.licenses.gpl3Plus;
-                platforms = [ "x86_64-linux" ];
-              };
+          binaryPackage = mkBinaryPackage {
+            inherit pkgs;
+            version = "${binaryRelease.version}-${builtins.substring 0 12 binaryRelease.revision}";
+            src = pkgs.fetchurl {
+              inherit (binaryRelease) url hash;
             };
+          };
 
           lince =
             if binaryRelease != null && system == "x86_64-linux" then
@@ -1026,8 +1105,83 @@
                     mailbox = true;
                   };
                 };
+                moduleHost =
+                  overrides:
+                  (nixpkgs.lib.nixosSystem {
+                    inherit system;
+                    modules = [
+                      self.nixosModules.default
+                      {
+                        services.lince.serverPackage = pkgs.hello;
+                        services.lince.uiPackage = pkgs.hello;
+                        system.stateVersion = "24.05";
+                      }
+                      overrides
+                    ];
+                  }).config;
+                desktop = moduleHost {
+                  services.lince = {
+                    enable = true;
+                    mode = "desktop";
+                    extraPeerPorts = [ 6176 ];
+                  };
+                };
+                desktopNetwork = moduleHost {
+                  services.lince = {
+                    enable = true;
+                    mode = "desktop";
+                    scope = "user";
+                    openFirewall = true;
+                    openPeerFirewall = true;
+                    extraPeerPorts = [ 6176 6175 ];
+                  };
+                };
+                userService = moduleHost {
+                  services.lince = {
+                    enable = true;
+                    mode = "front-door";
+                    scope = "user";
+                  };
+                };
+                disabled = moduleHost { };
+                desktopUnit = desktop.systemd.user.services.lince;
+                hasPackage =
+                  config:
+                  lib.any (package: toString package == toString pkgs.hello) config.environment.systemPackages;
               in
               {
+                desktop-runtime = pkgs.runCommand "lince-desktop-runtime" { } (
+                  assert failures desktop == [ ];
+                  assert desktopUnit.wantedBy == [ "graphical-session.target" ];
+                  assert desktopUnit.after == [ "graphical-session.target" ];
+                  assert desktopUnit.partOf == [ "graphical-session.target" ];
+                  assert desktopUnit.restartIfChanged;
+                  assert desktop.services.lince.scope == "user";
+                  assert desktopUnit.restartTriggers == [ pkgs.hello ];
+                  assert desktopUnit.serviceConfig.ExecStart == "${pkgs.hello}/bin/lince --peer-port 6175";
+                  assert !(desktop.systemd.services ? lince);
+                  assert desktop.services.gnome.at-spi2-core.enable;
+                  assert desktop.services.speechd.enable;
+                  assert lib.elem "sockets.target" desktop.systemd.user.sockets.speech-dispatcher.wantedBy;
+                  assert hasPackage desktop;
+                  assert !hasPackage disabled;
+                  assert !(disabled.systemd.user.services ? lince);
+                  assert desktop.networking.firewall.allowedUDPPorts == [ ];
+                  assert desktop.networking.firewall.allowedTCPPorts == [ ];
+                  assert lib.sort builtins.lessThan desktopNetwork.networking.firewall.allowedUDPPorts == [ 5353 6175 6176 ];
+                  assert desktopNetwork.networking.firewall.allowedTCPPorts == [ 6174 ];
+                  assert userService.systemd.user.services.lince.wantedBy == [ "default.target" ];
+                  assert userService.systemd.user.services.lince.partOf == [ ];
+                  assert !userService.services.gnome.at-spi2-core.enable;
+                  assert !userService.services.speechd.enable;
+                  assert healthy.services.lince.scope == "system";
+                  assert refuses "desktop system service" {
+                    services.lince.mode = lib.mkForce "desktop";
+                    services.lince.scope = "system";
+                    services.lince.uiPackage = pkgs.hello;
+                  } "scope";
+                  "touch $out"
+                );
                 social-hosting-config = pkgs.runCommand "social-hosting-config" { } (
                   assert !(healthy.services.lince.social.directory || healthy.services.lince.social.mailbox || healthy.services.lince.social.townsquare || healthy.services.lince.social.relay);
                   assert !(healthy.systemd.services.lince.environment ? LINCE_SOCIAL_CONFIG);
@@ -1097,7 +1251,7 @@
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
-            + lib.optionalString pkgs.stdenv.isLinux ''
+            + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
                   interfaceLinuxBuildInputs
@@ -1130,7 +1284,7 @@
                 mkdir -p "$ANDROID_USER_HOME" "$ANDROID_AVD_HOME" "$GRADLE_USER_HOME"
               fi
             ''
-            + lib.optionalString pkgs.stdenv.isLinux ''
+            + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
                   with pkgs;
@@ -1159,7 +1313,7 @@
                 clang
                 libclang
               ]
-              ++ lib.optionals stdenv.isLinux [
+              ++ lib.optionals stdenv.hostPlatform.isLinux [
                 pipewire
                 glib
                 dbus
@@ -1181,7 +1335,7 @@
                   clang
                   libclang
                 ]
-                ++ lib.optionals stdenv.isLinux [
+                ++ lib.optionals stdenv.hostPlatform.isLinux [
                   at-spi2-core
                   jq
                   orca
@@ -1193,7 +1347,7 @@
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
-            + lib.optionalString pkgs.stdenv.isLinux ''
+            + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
                   interfaceLinuxBuildInputs
@@ -1213,19 +1367,9 @@
       # One module for every posture. `services.lince.mode` picks between
       # `--server` (headless, login forced) and the windowed application, which
       # is the same binary built with its `ui` feature.
-      nixosModules.default =
-        { pkgs, ... }:
-        {
-          imports = [ linceModule ];
-          # Both, lazily: the windowed build is only evaluated if desktop mode
-          # actually asks for it.
-          services.lince.serverPackage =
-            nixpkgs.lib.mkDefault
-              self.packages.${pkgs.stdenv.hostPlatform.system}.lince;
-          services.lince.uiPackage =
-            nixpkgs.lib.mkDefault
-              self.packages.${pkgs.stdenv.hostPlatform.system}.lince-ui;
-        };
+      nixosModules.default = {
+        imports = [ linceModule lincePackageDefaults ];
+      };
       nixosModules.lince = self.nixosModules.default;
 
       # `iroh-relay` is a DEPENDENCY Lince can use, not part of it, which is
@@ -1240,17 +1384,9 @@
       # Both relay jobs on ONE VPS, kept apart. Imports the two modules above
       # and adds the assertions that make a blurred configuration fail to
       # evaluate rather than merely be unwise. See `vps-module.nix`.
-      nixosModules.vps =
-        { pkgs, ... }:
-        {
-          imports = [ vpsModule ];
-          services.lince.serverPackage =
-            nixpkgs.lib.mkDefault
-              self.packages.${pkgs.stdenv.hostPlatform.system}.lince;
-          services.lince.uiPackage =
-            nixpkgs.lib.mkDefault
-              self.packages.${pkgs.stdenv.hostPlatform.system}.lince-ui;
-        };
+      nixosModules.vps = {
+        imports = [ vpsModule lincePackageDefaults ];
+      };
 
       nixosConfigurations.manas-organ = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";

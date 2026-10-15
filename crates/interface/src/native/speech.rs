@@ -1,0 +1,1132 @@
+use crate::native::{actions::Action, sand_panel as panel};
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use bevy::{prelude::*, text::EditableText};
+use cell::speech::{Request, Status};
+use std::{
+    sync::{Mutex, mpsc},
+    time::{Duration, Instant},
+};
+
+const CREDITS: &[crate::native::credits::Attribution] = &[
+    crate::native::credits::Attribution {
+        name: "cpal",
+        author: "The CPAL contributors",
+        license: include_str!("../../licenses/native/cpal-Apache-2.0.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "hound",
+        author: "Ruud van Asseldonk",
+        license: include_str!("../../licenses/native/hound-Apache-2.0.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "base64",
+        author: "The base64 contributors",
+        license: include_str!("../../licenses/native/base64-MIT.txt"),
+    },
+];
+
+#[derive(Component)]
+struct Composer {
+    microphone: Option<String>,
+    microphone_label: Entity,
+    microphones: Entity,
+    input: Entity,
+    status: Entity,
+    settings_panel: Entity,
+    endpoint_fields: [Entity; 4],
+    requires_key: bool,
+    key_label: Entity,
+    cloud_label: Entity,
+    cloud: bool,
+    saved: Option<Status>,
+    pending: Option<String>,
+    job: Option<String>,
+    next: Instant,
+    transcript: Option<String>,
+    sender: Option<tokio::sync::mpsc::Sender<cell::ClientMessage>>,
+}
+
+impl Drop for Composer {
+    fn drop(&mut self) {
+        if let (Some(job), Some(sender)) = (&self.job, &self.sender) {
+            let _ = sender.try_send(cell::ClientMessage::Speech {
+                id: nucleus::new_uid("speech-cancel"),
+                request: Request::Cancel { job: job.clone() },
+            });
+        }
+    }
+}
+
+#[derive(Component)]
+struct Recording {
+    endpoint: cell::speech::endpoint::Settings,
+    control: mpsc::SyncSender<bool>,
+    result: Mutex<mpsc::Receiver<Result<String, String>>>,
+    started: Instant,
+}
+impl Drop for Recording {
+    fn drop(&mut self) {
+        let _ = self.control.try_send(false);
+    }
+}
+
+pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: Entity) {
+    let status = crate::native::edit_mode::label(
+        world,
+        parent,
+        "Dictation inserts editable text and never sends it",
+        12.0,
+    );
+    let row = panel::row(world, parent);
+    for (title, action) in [
+        ("Dictate", Command::Record),
+        ("Stop and transcribe", Command::Stop),
+        ("Cancel dictation", Command::Cancel),
+        ("Speech settings", Command::Settings),
+        ("Insert recognized text", Command::Insert),
+    ] {
+        panel::button(world, row, owner, title, action);
+    }
+    let settings_panel = panel::column(world, parent);
+    world.get_mut::<Node>(settings_panel).unwrap().display = Display::None;
+    world
+        .entity_mut(settings_panel)
+        .insert(crate::native::sand_store::SandCredits(CREDITS));
+    crate::native::edit_mode::label(
+        world,
+        settings_panel,
+        "Speech settings apply to all message drafts, including threads without Fiote. Stopping sends temporary audio to the saved endpoint; cloud transcription may cost money. Audio is not attached to the message.",
+        13.0,
+    );
+    crate::native::edit_mode::label(
+        world,
+        settings_panel,
+        "Compatible transcription endpoint",
+        18.0,
+    );
+    let endpoint_fields = [
+        panel::field(world, settings_panel, "Full transcription URL", ""),
+        panel::field(world, settings_panel, "Transcription model", ""),
+        crate::native::fiote::session::field(
+            world,
+            settings_panel,
+            "Transcription API key (vault)",
+            true,
+        ),
+        crate::native::fiote::session::field(world, settings_panel, "Vault password", true),
+    ];
+    let key_label = crate::native::edit_mode::label(
+        world,
+        settings_panel,
+        "Endpoint API key required: no",
+        13.0,
+    );
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Toggle endpoint key requirement",
+        Command::KeyRequired,
+    );
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Save transcription endpoint",
+        Command::SaveEndpoint,
+    );
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Unlock transcription vault",
+        Command::UnlockEndpoint,
+    );
+    let cloud_label =
+        crate::native::edit_mode::label(world, settings_panel, "Cloud transcription: off", 13.0);
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Toggle permission to send audio to cloud",
+        Command::Cloud,
+    );
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Check saved endpoint",
+        Command::Check,
+    );
+    let microphone_label =
+        crate::native::edit_mode::label(world, settings_panel, "Microphone: system default", 13.0);
+    panel::button(
+        world,
+        settings_panel,
+        owner,
+        "Choose microphone",
+        Command::Microphones,
+    );
+    let microphones = panel::column(world, settings_panel);
+    let sender = world
+        .get_non_send::<crate::native::cell_bridge::CellBridge>()
+        .map(|bridge| bridge.outgoing.clone());
+    world.entity_mut(owner).insert(Composer {
+        microphone: None,
+        microphone_label,
+        microphones,
+        input,
+        status,
+        settings_panel,
+        endpoint_fields,
+        requires_key: false,
+        key_label,
+        cloud_label,
+        cloud: false,
+        saved: None,
+        pending: None,
+        job: None,
+        next: Instant::now(),
+        transcript: None,
+        sender,
+    });
+}
+
+pub(crate) fn active(world: &World, owner: Entity) -> bool {
+    world.get::<Recording>(owner).is_some()
+        || world
+            .get::<Composer>(owner)
+            .is_some_and(|composer| composer.job.is_some())
+}
+
+fn send(world: &mut World, owner: Entity, request: Request) -> Result<(), String> {
+    let id = nucleus::new_uid("speech-control");
+    panel::send(
+        world,
+        cell::ClientMessage::Speech {
+            id: id.clone(),
+            request,
+        },
+    )?;
+    world
+        .get_mut::<Composer>(owner)
+        .ok_or("The message draft is closed.")?
+        .pending = Some(id);
+    Ok(())
+}
+
+#[derive(Clone)]
+enum Command {
+    Record,
+    Stop,
+    Cancel,
+    Settings,
+    Cloud,
+    Check,
+    Insert,
+    Microphones,
+    SaveEndpoint,
+    UnlockEndpoint,
+    KeyRequired,
+}
+impl Action for Command {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(status) = world.get::<Composer>(owner).map(|composer| composer.status) else {
+            return;
+        };
+        let result = (|| {
+            let composer = world.get::<Composer>(owner).unwrap();
+            if matches!(self, Self::Cancel) {
+                world.entity_mut(owner).remove::<Recording>();
+                let job = world.get_mut::<Composer>(owner).unwrap().job.take();
+                if let Some(job) = job {
+                    world.get_mut::<Composer>(owner).unwrap().pending = None;
+                    panel::send(
+                        world,
+                        cell::ClientMessage::Speech {
+                            id: nucleus::new_uid("speech-release"),
+                            request: Request::Cancel { job },
+                        },
+                    )?;
+                }
+                panel::status(
+                    world,
+                    status,
+                    "Dictation cancelled. The draft is unchanged. A request already sent to a cloud provider may still be charged.",
+                );
+                return Ok(());
+            }
+            if matches!(self, Self::Stop) {
+                if let Some(recording) = world.get::<Recording>(owner) {
+                    recording
+                        .control
+                        .try_send(true)
+                        .map_err(|_| "Dictation is already stopping.")?;
+                    panel::status(world, status, "Finishing recording…");
+                }
+                return Ok(());
+            }
+            if matches!(self, Self::Settings) {
+                let panel_entity = composer.settings_panel;
+                let visible = world.get::<Node>(panel_entity).unwrap().display != Display::None;
+                world.get_mut::<Node>(panel_entity).unwrap().display = if visible {
+                    Display::None
+                } else {
+                    Display::Flex
+                };
+                if world.get::<Composer>(owner).unwrap().saved.is_none() {
+                    send(world, owner, Request::Inspect)?;
+                    panel::status(
+                        world,
+                        status,
+                        "Checking speech setup without recording or sending audio…",
+                    );
+                }
+                return Ok(());
+            }
+            if matches!(self, Self::Insert) {
+                return insert(world, owner);
+            }
+            if composer.pending.is_some() || active(world, owner) {
+                return Err("Finish the current speech operation first.".into());
+            }
+            match self {
+                Self::KeyRequired => {
+                    let mut composer = world.get_mut::<Composer>(owner).unwrap();
+                    composer.requires_key = !composer.requires_key;
+                    let (label, enabled) = (composer.key_label, composer.requires_key);
+                    panel::status(
+                        world,
+                        label,
+                        if enabled {
+                            "Endpoint API key required: yes"
+                        } else {
+                            "Endpoint API key required: no"
+                        },
+                    );
+                }
+                Self::SaveEndpoint => {
+                    let fields = composer.endpoint_fields;
+                    let mut settings = cell::speech::endpoint::Settings {
+                        url: panel::value(world, fields[0])?,
+                        model: panel::value(world, fields[1])?,
+                        allow_cloud: composer.cloud,
+                        requires_key: composer.requires_key,
+                    };
+                    settings.validate()?;
+                    let credential = panel::value(world, fields[2])?;
+                    let password = panel::value(world, fields[3])?;
+                    send(
+                        world,
+                        owner,
+                        Request::ConfigureEndpoint {
+                            settings,
+                            credential: (!credential.is_empty())
+                                .then_some(cell::FioteSecret(credential)),
+                            password: (!password.is_empty()).then_some(cell::FioteSecret(password)),
+                        },
+                    )?;
+                    for field in &fields[2..] {
+                        world
+                            .get_mut::<EditableText>(*field)
+                            .unwrap()
+                            .editor
+                            .set_text("");
+                    }
+                }
+                Self::UnlockEndpoint => {
+                    let field = composer.endpoint_fields[3];
+                    let password = panel::value(world, field)?;
+                    send(
+                        world,
+                        owner,
+                        Request::UnlockEndpoint {
+                            password: cell::FioteSecret(password),
+                        },
+                    )?;
+                    world
+                        .get_mut::<EditableText>(field)
+                        .unwrap()
+                        .editor
+                        .set_text("");
+                }
+                Self::Microphones => {
+                    let parent = composer.microphones;
+                    let devices = crate::native::sound::device::Capture::devices()?;
+                    world.entity_mut(parent).despawn_children();
+                    panel::button(
+                        world,
+                        parent,
+                        owner,
+                        "System default microphone",
+                        Microphone(None),
+                    );
+                    for device in devices {
+                        panel::button(
+                            world,
+                            parent,
+                            owner,
+                            &device,
+                            Microphone(Some(device.clone())),
+                        );
+                    }
+                }
+                Self::Cloud => {
+                    let mut composer = world.get_mut::<Composer>(owner).unwrap();
+                    composer.cloud = !composer.cloud;
+                    let (label, enabled) = (composer.cloud_label, composer.cloud);
+                    panel::status(
+                        world,
+                        label,
+                        if enabled {
+                            "Cloud transcription: allowed after saving"
+                        } else {
+                            "Cloud transcription: off"
+                        },
+                    );
+                }
+                Self::Check => {
+                    send(world, owner, Request::Inspect)?;
+                    panel::status(
+                        world,
+                        status,
+                        "Checking speech setup without sending audio…",
+                    );
+                }
+                Self::Record => {
+                    #[cfg(feature = "native-media")]
+                    if crate::native::communication::calls::microphone_active(world) {
+                        return Err(
+                            "Close the call preview or stop its microphone before dictating."
+                                .into(),
+                        );
+                    }
+                    if world
+                        .get::<crate::native::message_content::Draft>(owner)
+                        .is_some_and(|draft| draft.locked)
+                    {
+                        return Err("Wait for this message to finish sending.".into());
+                    }
+                    if world
+                        .query_filtered::<Entity, With<Recording>>()
+                        .iter(world)
+                        .next()
+                        .is_some()
+                    {
+                        return Err("Another message is using the microphone.".into());
+                    }
+                    let composer = world.get::<Composer>(owner).unwrap();
+                    if composer.saved.as_ref().is_none_or(|saved| !saved.ready) {
+                        return Err("Open Speech settings, configure a transcription endpoint, then save and check it.".into());
+                    }
+                    let saved = composer.saved.as_ref().unwrap();
+                    let endpoint = saved
+                        .endpoint
+                        .as_ref()
+                        .ok_or("Save a transcription endpoint before recording.")?;
+                    let fields = composer.endpoint_fields;
+                    let mut draft = cell::speech::endpoint::Settings {
+                        url: panel::value(world, fields[0])?,
+                        model: panel::value(world, fields[1])?,
+                        allow_cloud: composer.cloud,
+                        requires_key: composer.requires_key,
+                    };
+                    draft.validate()?;
+                    if &draft != endpoint {
+                        return Err(
+                            "Save the changed transcription endpoint before recording.".into()
+                        );
+                    }
+                    let endpoint = endpoint.clone();
+                    let (control, commands) = mpsc::sync_channel(1);
+                    let microphone = composer.microphone.clone();
+                    let (finished, result) = mpsc::channel();
+                    let wake = world
+                        .get_resource::<crate::native::wake::WakeSignal>()
+                        .cloned();
+                    std::thread::spawn(move || {
+                        let result = capture(commands, microphone);
+                        let _ = finished.send(result);
+                        if let Some(wake) = wake {
+                            wake.ring();
+                        }
+                    });
+                    world.entity_mut(owner).insert(Recording {
+                        endpoint,
+                        control,
+                        result: Mutex::new(result),
+                        started: Instant::now(),
+                    });
+                    panel::status(
+                        world,
+                        status,
+                        "Recording · Stop adds one final editable text block · maximum 2 minutes",
+                    );
+                }
+                _ => {}
+            }
+            Ok::<_, String>(())
+        })();
+        if let Err(error) = result {
+            panel::status(world, status, error);
+        }
+    }
+}
+
+fn capture(commands: mpsc::Receiver<bool>, microphone: Option<String>) -> Result<String, String> {
+    let capture = crate::native::sound::device::Capture::start_on(microphone.as_deref())?;
+    loop {
+        if let Some(error) = capture.error.lock().unwrap().clone() {
+            return Err(error);
+        }
+        match commands.recv_timeout(Duration::from_millis(100)) {
+            Ok(true) => break,
+            Ok(false) | Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err("Dictation cancelled".into());
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                if capture.full() {
+                    break;
+                }
+            }
+        }
+    }
+    encode(capture.finish())
+}
+
+fn encode(clip: crate::native::sound::library::Clip) -> Result<String, String> {
+    if clip.samples.is_empty() || clip.samples.iter().all(|sample| sample.abs() < 0.000_01) {
+        return Err("No microphone sound was captured. The draft is unchanged.".into());
+    }
+    let length = (clip.samples.len() as u64 * 16_000 / u64::from(clip.rate)) as usize;
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    {
+        let mut writer = hound::WavWriter::new(
+            &mut bytes,
+            hound::WavSpec {
+                channels: 1,
+                sample_rate: 16_000,
+                bits_per_sample: 16,
+                sample_format: hound::SampleFormat::Int,
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        for index in 0..length {
+            let start = index as f64 * f64::from(clip.rate) / 16_000.0;
+            let end = ((index + 1) as f64 * f64::from(clip.rate) / 16_000.0).ceil() as usize;
+            let samples = &clip.samples[start as usize..end.min(clip.samples.len())];
+            let sample = samples.iter().copied().sum::<f32>() / samples.len().max(1) as f32;
+            writer
+                .write_sample((sample.clamp(-1.0, 1.0) * f32::from(i16::MAX)) as i16)
+                .map_err(|error| error.to_string())?;
+        }
+        writer.finalize().map_err(|error| error.to_string())?;
+    }
+    Ok(BASE64.encode(bytes.into_inner()))
+}
+
+#[derive(Clone)]
+struct Microphone(Option<String>);
+impl Action for Microphone {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        if active(world, owner) {
+            return;
+        }
+        let Some(mut composer) = world.get_mut::<Composer>(owner) else {
+            return;
+        };
+        composer.microphone = self.0.clone();
+        let label = composer.microphone_label;
+        panel::status(
+            world,
+            label,
+            format!(
+                "Microphone: {}",
+                self.0.as_deref().unwrap_or("system default")
+            ),
+        );
+    }
+}
+fn insert(world: &mut World, owner: Entity) -> Result<(), String> {
+    let composer = world.get::<Composer>(owner).ok_or("The draft is closed.")?;
+    let Some(transcript) = composer.transcript.as_ref() else {
+        return Ok(());
+    };
+    let (input, status) = (composer.input, composer.status);
+    let existing = world
+        .get::<EditableText>(input)
+        .ok_or("The draft is closed.")?
+        .value()
+        .to_string();
+    let combined = append(&existing, transcript)?;
+    if world
+        .get::<crate::native::message_content::Draft>(owner)
+        .is_some_and(|draft| draft.locked)
+    {
+        return Err("The message is sending. Insert the recognized text afterward.".into());
+    }
+    world
+        .get_mut::<EditableText>(input)
+        .unwrap()
+        .editor
+        .set_text(&combined);
+    world.get_mut::<Composer>(owner).unwrap().transcript = None;
+    panel::status(
+        world,
+        status,
+        "Transcript added to the draft. Edit it, then send when ready.",
+    );
+    Ok(())
+}
+
+fn append(existing: &str, transcript: &str) -> Result<String, String> {
+    let combined = format!(
+        "{existing}{}{transcript}",
+        if existing.is_empty() || existing.ends_with('\n') {
+            ""
+        } else {
+            "\n\n"
+        }
+    );
+    if combined.len() > 65_536 {
+        return Err(
+            "The draft is too long. Shorten it, then choose Insert recognized text.".into(),
+        );
+    }
+    Ok(combined)
+}
+
+pub(crate) fn update(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+) {
+    let events: Vec<_> = world
+        .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
+        .map(|messages| {
+            cursor
+                .read(messages)
+                .map(|message| message.0.clone())
+                .collect()
+        })
+        .unwrap_or_default();
+    for event in events {
+        if let cell::ServerMessage::Error { id, message, .. } = &event {
+            if id == crate::native::cell_bridge::CONNECTION {
+                let owners: Vec<_> = world
+                    .query_filtered::<Entity, With<Composer>>()
+                    .iter(world)
+                    .collect();
+                for owner in owners {
+                    world.entity_mut(owner).remove::<Recording>();
+                    let mut composer = world.get_mut::<Composer>(owner).unwrap();
+                    composer.pending = None;
+                    composer.job = None;
+                    if let Some(saved) = composer.saved.as_mut() {
+                        saved.ready = false;
+                    }
+                    let status = composer.status;
+                    panel::status(world, status, format!("Dictation stopped: {message}"));
+                }
+                continue;
+            }
+        }
+        let (id, result) = match event {
+            cell::ServerMessage::Speech { id, status } => (id, Ok(status)),
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
+            _ => continue,
+        };
+        let owner = world
+            .query::<(Entity, &Composer)>()
+            .iter(world)
+            .find(|(_, composer)| composer.pending.as_deref() == Some(&id))
+            .map(|(entity, _)| entity);
+        let Some(owner) = owner else { continue };
+        let mut composer = world.get_mut::<Composer>(owner).unwrap();
+        composer.pending = None;
+        let status_entity = composer.status;
+        match result {
+            Err(error) => {
+                composer.job = None;
+                panel::status(world, status_entity, error);
+            }
+            Ok(saved) => {
+                if let Some(job) = saved
+                    .job
+                    .as_ref()
+                    .filter(|job| composer.job.as_deref() == Some(&job.id))
+                {
+                    if !job.pending {
+                        composer.job = None;
+                        composer.transcript = job.text.clone();
+                        if let Some(error) = &job.error {
+                            panel::status(world, status_entity, error);
+                        } else if let Err(error) = insert(world, owner) {
+                            panel::status(world, status_entity, error);
+                        }
+                        let _ = panel::send(
+                            world,
+                            cell::ClientMessage::Speech {
+                                id: nucleus::new_uid("speech-release"),
+                                request: Request::Cancel {
+                                    job: job.id.clone(),
+                                },
+                            },
+                        );
+                    } else {
+                        composer.next = Instant::now() + Duration::from_millis(250);
+                        panel::status(
+                            world,
+                            status_entity,
+                            "Transcribing · your message remains unsent",
+                        );
+                    }
+                    world.get_mut::<Composer>(owner).unwrap().saved = Some(saved);
+                } else {
+                    let cloud_label = composer.cloud_label;
+                    composer.cloud = saved
+                        .endpoint
+                        .as_ref()
+                        .is_some_and(|endpoint| endpoint.allow_cloud);
+                    composer.saved = Some(saved.clone());
+                    let endpoint_fields = composer.endpoint_fields;
+                    let key_label = composer.key_label;
+                    if let Some(endpoint) = &saved.endpoint {
+                        composer.requires_key = endpoint.requires_key;
+                        let enabled = endpoint.requires_key;
+                        for (field, value) in endpoint_fields[..2]
+                            .iter()
+                            .zip([&endpoint.url, &endpoint.model])
+                        {
+                            world
+                                .get_mut::<EditableText>(*field)
+                                .unwrap()
+                                .editor
+                                .set_text(value);
+                        }
+                        panel::status(
+                            world,
+                            key_label,
+                            if enabled {
+                                "Endpoint API key required: yes"
+                            } else {
+                                "Endpoint API key required: no"
+                            },
+                        );
+                    }
+                    panel::status(
+                        world,
+                        cloud_label,
+                        if saved
+                            .endpoint
+                            .as_ref()
+                            .is_some_and(|endpoint| endpoint.allow_cloud)
+                        {
+                            "Cloud transcription: allowed"
+                        } else {
+                            "Cloud transcription: off"
+                        },
+                    );
+                    panel::status(world, status_entity, &saved.detail);
+                }
+            }
+        }
+    }
+    let owners: Vec<_> = world
+        .query_filtered::<Entity, With<Composer>>()
+        .iter(world)
+        .collect();
+    for owner in owners {
+        #[cfg(feature = "native-media")]
+        if world.get::<Recording>(owner).is_some()
+            && crate::native::communication::calls::microphone_active(world)
+        {
+            Command::Cancel.apply(world, owner);
+            let status = world.get::<Composer>(owner).unwrap().status;
+            panel::status(
+                world,
+                status,
+                "Dictation cancelled because a call started using the microphone.",
+            );
+        }
+        let result = world
+            .get::<Recording>(owner)
+            .and_then(|recording| recording.result.lock().unwrap().try_recv().ok());
+        let status = world.get::<Composer>(owner).unwrap().status;
+        if let Some(result) = result {
+            let recording = world.entity_mut(owner).take::<Recording>().unwrap();
+            let frozen_endpoint = recording.endpoint.clone();
+            match result {
+                Ok(audio) => {
+                    let job = nucleus::new_uid("speech");
+                    match send(
+                        world,
+                        owner,
+                        Request::StartEndpoint {
+                            job: job.clone(),
+                            settings: frozen_endpoint,
+                            audio: cell::FioteSecret(audio),
+                        },
+                    ) {
+                        Ok(()) => {
+                            world.get_mut::<Composer>(owner).unwrap().job = Some(job);
+                            panel::status(
+                                world,
+                                status,
+                                "Transcribing · your message remains unsent",
+                            );
+                        }
+                        Err(error) => panel::status(world, status, error),
+                    }
+                }
+                Err(error) => panel::status(world, status, error),
+            }
+        }
+        if let Some(recording) = world.get::<Recording>(owner) {
+            panel::status(
+                world,
+                status,
+                format!(
+                    "Recording · {} seconds · Stop and transcribe adds one editable block",
+                    recording.started.elapsed().as_secs()
+                ),
+            );
+        }
+        let composer = world.get::<Composer>(owner).unwrap();
+        if composer.pending.is_none()
+            && composer.next <= Instant::now()
+            && let Some(job) = composer.job.clone()
+        {
+            let _ = send(world, owner, Request::Poll { job });
+        }
+        if active(world, owner)
+            && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>()
+        {
+            wake.after(Duration::from_millis(250));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    #[ignore = "Records two seconds from the actual default microphone"]
+    fn actual_microphone_capture_encodes_audio_or_reports_silence_and_releases_the_device() {
+        let devices = crate::native::sound::device::Capture::devices().unwrap();
+        assert!(!devices.is_empty(), "No input devices were enumerated");
+        let recording = crate::native::sound::device::Capture::start().unwrap();
+        assert!(crate::native::sound::device::Capture::start().is_err());
+        std::thread::sleep(Duration::from_secs(2));
+        assert!(recording.error.lock().unwrap().is_none());
+        let clip = recording.finish();
+        assert!(!clip.samples.is_empty());
+        let peak = clip
+            .samples
+            .iter()
+            .fold(0.0_f32, |peak, sample| peak.max(sample.abs()));
+        println!(
+            "Microphone: {} devices, {} samples at {} Hz, peak {peak}",
+            devices.len(),
+            clip.samples.len(),
+            clip.rate
+        );
+        match encode(clip) {
+            Ok(audio) => {
+                let bytes = BASE64.decode(audio).unwrap();
+                let wav = hound::WavReader::new(std::io::Cursor::new(bytes)).unwrap();
+                assert_eq!(wav.spec().sample_rate, 16000);
+                assert_eq!(wav.spec().channels, 1);
+                assert!(wav.duration() > 16000);
+            }
+            Err(error) => {
+                assert!(peak < 0.000_01);
+                assert!(error.contains("draft is unchanged"));
+            }
+        }
+        drop(crate::native::sound::device::Capture::start().unwrap());
+    }
+
+    fn waiting(world: &mut World, request: &str, job: &str, body: &str) -> (Entity, Entity) {
+        let input = world.spawn(EditableText::new(body)).id();
+        let status = world.spawn(Text::default()).id();
+        let unused = world.spawn(Node::default()).id();
+        let owner = world
+            .spawn(Composer {
+                microphone: None,
+                microphone_label: status,
+                microphones: unused,
+                input,
+                status,
+                settings_panel: unused,
+                endpoint_fields: [input; 4],
+                requires_key: false,
+                key_label: status,
+                cloud_label: status,
+                cloud: false,
+                saved: None,
+                pending: Some(request.into()),
+                job: Some(job.into()),
+                next: Instant::now() + Duration::from_secs(3600),
+                transcript: None,
+                sender: None,
+            })
+            .id();
+        (owner, input)
+    }
+
+    fn result(request: &str, job: &str) -> crate::native::cell_bridge::CellMessage {
+        crate::native::cell_bridge::CellMessage(cell::ServerMessage::Speech {
+            id: request.into(),
+            status: Status {
+                endpoint: None,
+                ready: true,
+                detail: String::new(),
+                job: Some(cell::speech::Job {
+                    id: job.into(),
+                    pending: false,
+                    text: Some("Recognized words".into()),
+                    error: None,
+                }),
+            },
+        })
+    }
+
+    #[test]
+    fn late_transcripts_only_update_their_original_draft_once() {
+        let mut app = App::new();
+        app.add_message::<crate::native::cell_bridge::CellMessage>()
+            .add_systems(Update, update);
+        let (_, first) = waiting(
+            app.world_mut(),
+            "request-a",
+            "job-a",
+            "Edited while transcribing",
+        );
+        let (second_owner, second) =
+            waiting(app.world_mut(), "request-b", "job-b", "Another thread");
+        app.world_mut().write_message(result("request-a", "job-a"));
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(first)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Edited while transcribing\n\nRecognized words"
+        );
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(second)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Another thread"
+        );
+        app.world_mut().write_message(result("request-a", "job-a"));
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(first)
+                .unwrap()
+                .value()
+                .to_string()
+                .matches("Recognized words")
+                .count(),
+            1
+        );
+        app.world_mut().despawn(second_owner);
+        let (third_owner, third) = waiting(app.world_mut(), "request-c", "job-c", "New draft");
+        app.world_mut().write_message(result("request-b", "job-b"));
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(third)
+                .unwrap()
+                .value()
+                .to_string(),
+            "New draft"
+        );
+        app.world_mut()
+            .write_message(crate::native::cell_bridge::CellMessage(
+                cell::ServerMessage::Error {
+                    id: crate::native::cell_bridge::CONNECTION.into(),
+                    message: "Disconnected".into(),
+                    code: None,
+                },
+            ));
+        app.update();
+        assert!(
+            app.world()
+                .get::<Composer>(third_owner)
+                .unwrap()
+                .job
+                .is_none()
+        );
+        assert!(!active(app.world(), third_owner));
+    }
+    #[test]
+    fn final_transcript_preserves_edits_and_respects_limit() {
+        assert_eq!(
+            append("Manually edited", "spoken words").unwrap(),
+            "Manually edited\n\nspoken words"
+        );
+        assert_eq!(append("", "spoken words").unwrap(), "spoken words");
+        assert!(append(&"a".repeat(65_536), "words").is_err());
+    }
+    #[test]
+    fn capture_encoding_is_bounded_mono_pcm_and_silence_is_rejected() {
+        let audio = encode(crate::native::sound::library::Clip {
+            samples: vec![0.25; 48_000],
+            rate: 48_000,
+        })
+        .unwrap();
+        let bytes = BASE64.decode(audio).unwrap();
+        let reader = hound::WavReader::new(std::io::Cursor::new(bytes)).unwrap();
+        assert_eq!(reader.duration(), 16_000);
+        assert_eq!(reader.spec().channels, 1);
+        assert!(
+            encode(crate::native::sound::library::Clip {
+                samples: vec![0.0; 10],
+                rate: 16_000
+            })
+            .is_err()
+        );
+    }
+}
+
+#[cfg(test)]
+mod endpoint_tests {
+    use super::*;
+    use cell::speech::Service;
+    use std::sync::Arc;
+
+    #[tokio::test]
+    async fn endpoint_controls_save_without_harness_and_changed_recording_destination_preserves_draft()
+     {
+        let directory = tempfile::tempdir().unwrap();
+        let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
+        let speech =
+            Arc::new(cell::speech::Host::open(directory.path().join("speech.json")).unwrap());
+        let runtime = cell::CellRuntime {
+            commands: Default::default(),
+            store: engine.store.clone(),
+            engine,
+            lanes: Arc::new(cell::LaneHub::new()),
+            wire: Default::default(),
+            fiote: None,
+            speech: Some(speech.clone()),
+            information: None,
+        };
+        let service = runtime.speech.clone().unwrap();
+        let mut app = crate::native::sand_panel::tests::app();
+        app.insert_resource(crate::native::wake::WakeSignal::new(|| {}))
+            .insert_resource(crate::native::app::CellHandle(runtime))
+            .add_plugins(crate::native::cell_bridge::CellBridgePlugin)
+            .add_systems(
+                Update,
+                update.after(crate::native::cell_bridge::ReceiveCell),
+            );
+        app.update();
+        let parent = app.world_mut().spawn(Node::default()).id();
+        let owner = app.world_mut().spawn(Node::default()).id();
+        let input = app
+            .world_mut()
+            .spawn(EditableText::new("My unsent draft"))
+            .id();
+        composer(app.world_mut(), owner, parent, input);
+        let fields = app.world().get::<Composer>(owner).unwrap().endpoint_fields;
+        app.world_mut()
+            .get_mut::<EditableText>(fields[0])
+            .unwrap()
+            .editor
+            .set_text("http://127.0.0.1:8123/v1/audio/transcriptions");
+        app.world_mut()
+            .get_mut::<EditableText>(fields[1])
+            .unwrap()
+            .editor
+            .set_text("local-transcriber");
+        Command::SaveEndpoint.apply(app.world_mut(), owner);
+        crate::native::sand_panel::tests::settle(&mut app, |world| {
+            world
+                .get::<Composer>(owner)
+                .unwrap()
+                .saved
+                .as_ref()
+                .is_some_and(|saved| saved.endpoint.is_some() && saved.ready)
+        })
+        .await;
+        let frozen = app
+            .world()
+            .get::<Composer>(owner)
+            .unwrap()
+            .saved
+            .as_ref()
+            .unwrap()
+            .endpoint
+            .clone()
+            .unwrap();
+        assert!(
+            app.world()
+                .get::<EditableText>(fields[2])
+                .unwrap()
+                .value()
+                .to_string()
+                .is_empty()
+        );
+        let mut changed = frozen.clone();
+        changed.url = "http://127.0.0.1:8124/v1/audio/transcriptions".into();
+        service
+            .handle(Request::ConfigureEndpoint {
+                settings: changed,
+                credential: None,
+                password: None,
+            })
+            .await
+            .unwrap();
+        let (control, _commands) = mpsc::sync_channel(1);
+        let (finished, result) = mpsc::channel();
+        finished
+            .send(Ok(BASE64.encode(include_bytes!(
+                "../../tests/fixtures/fiote/audio.wav"
+            ))))
+            .unwrap();
+        app.world_mut().entity_mut(owner).insert(Recording {
+            endpoint: frozen,
+            control,
+            result: Mutex::new(result),
+            started: Instant::now(),
+        });
+        app.update();
+        crate::native::sand_panel::tests::settle(&mut app, |world| {
+            let composer = world.get::<Composer>(owner).unwrap();
+            composer.pending.is_none()
+                && composer.job.is_none()
+                && world.get::<Recording>(owner).is_none()
+        })
+        .await;
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(input)
+                .unwrap()
+                .value()
+                .to_string(),
+            "My unsent draft"
+        );
+        let status = app.world().get::<Composer>(owner).unwrap().status;
+        assert!(
+            app.world()
+                .get::<Text>(status)
+                .unwrap()
+                .0
+                .contains("changed")
+        );
+        assert!(
+            service
+                .handle(Request::Inspect)
+                .await
+                .unwrap()
+                .job
+                .is_none()
+        );
+    }
+}

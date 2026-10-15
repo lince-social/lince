@@ -8,7 +8,9 @@ mod android;
 mod android_clean;
 mod android_smoke;
 mod design;
+mod park;
 mod prune;
+mod hand_models;
 
 type Result<T> = std::result::Result<T, String>;
 
@@ -20,6 +22,7 @@ fn main() {
 }
 
 fn dispatch() -> Result<()> {
+    let caller_directory = env::current_dir().map_err(|error| error.to_string())?;
     let mut args = env::args_os().skip(1);
     let task = args.next().unwrap_or_default();
     let extra: Vec<_> = args.collect();
@@ -31,7 +34,34 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
+        Some("lingua") => {
+            let expression_mode = extra.first().is_some_and(|argument| argument == "eval");
+            let mut arguments = extra;
+            let mut directory_value = false;
+            for (index, argument) in arguments.iter_mut().enumerate() {
+                if directory_value {
+                    *argument = caller_directory.join(&*argument).into_os_string();
+                    directory_value = false;
+                } else if argument == "--directory" {
+                    directory_value = true;
+                } else if !expression_mode && !argument.to_string_lossy().starts_with('-')
+                    && !(index == 0 && (argument == "check" || argument == "fmt")) {
+                    *argument = caller_directory.join(&*argument).into_os_string();
+                }
+            }
+            let mut command = cargo_command();
+            command.args(["run", "--locked", "-p", "lince", "--no-default-features", "--", "lingua"]).args(arguments);
+            if let Some(directory) = env::var_os("LINCE_DATA_DIR") {
+                command.env("LINCE_DATA_DIR", caller_directory.join(directory));
+            }
+            checked(&mut command)
+        }
+        Some("hand-models") => {
+            no_extra(&extra)?;
+            hand_models::download(&root)
+        }
         Some("design") => design::dispatch(&root, &extra),
+        Some("park") => park::dispatch(&extra),
         Some("android") => android::dispatch(&root, &extra),
         Some("android-clean") => android_clean::run(&root, &extra),
         Some("android-smoke") => android_smoke::run(&root, &extra),
@@ -46,6 +76,11 @@ fn dispatch() -> Result<()> {
                 return Err("usage: cargo xtask plugin-files <Lince-data-directory>".into());
             }
             checked(cargo_command().args(["run", "--locked", "-p", "lince-plugin-files", "--", "--install"]).args(&extra))
+        }
+        Some("plugin-activitypub" | "plugin-irc") => {
+            if extra.len() != 1 { return Err("usage: cargo xtask <plugin-activitypub|plugin-irc> <Lince-data-directory>".into()); }
+            let package = if task == "plugin-irc" { "lince-plugin-irc" } else { "lince-plugin-activitypub" };
+            checked(cargo_command().args(["run", "--locked", "-p", package, "--", "--install"]).args(&extra))
         }
         Some("mobile-preview") => {
             if extra.len() > 1 {
@@ -130,7 +165,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <design|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files>"
+                "cargo xtask <lingua|design|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -140,6 +175,7 @@ fn dispatch() -> Result<()> {
                 "android-clean previews retired Android cache files; --apply removes them; --builds also clears compiled artifacts."
             );
             println!("dev passes additional arguments to Lince.");
+            println!("hand-models downloads the ONNX models for Hand Camera Castle.");
             println!("LINCE_DATA_DIR and LINCE_PORT select dev data and port; LINCE_INSTINCT=1 enables the handbook.");
             println!(
                 "check-instinct checks both handbook feature paths and shared practice contracts."
@@ -219,7 +255,7 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "lince-desktop",
+            "lince-interface",
             "--features",
             "instinct",
             "--lib",
@@ -231,7 +267,7 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "lince-desktop",
+            "lince-interface",
             "--features",
             "instinct",
             "--lib",
@@ -243,7 +279,9 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "lince-desktop",
+            "lince-interface",
+            "--features",
+            "native-presentation",
             "--lib",
             "description::tests::",
             "--",
@@ -253,7 +291,7 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "lince-desktop",
+            "lince-interface",
             "--features",
             "instinct",
             "--lib",
@@ -265,7 +303,7 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "lince-desktop",
+            "lince-interface",
             "--features",
             "instinct",
             "--lib",
@@ -277,7 +315,7 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "lince-desktop",
+            "lince-interface",
             "--features",
             "instinct",
             "--lib",

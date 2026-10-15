@@ -1,0 +1,732 @@
+use super::*;
+use serde::de::DeserializeOwned;
+use serde_json::{Map, Value};
+use std::{collections::BTreeMap, path::Path};
+
+#[derive(Default)]
+pub(super) struct Report {
+    skipped: BTreeMap<&'static str, (usize, String)>,
+    notes: Vec<String>,
+    original: Option<Vec<u8>>,
+}
+
+impl Report {
+    pub(super) fn changed(&self) -> bool {
+        !self.skipped.is_empty() || !self.notes.is_empty()
+    }
+
+    fn skip(&mut self, section: &'static str, reason: impl ToString) {
+        let entry = self
+            .skipped
+            .entry(section)
+            .or_insert_with(|| (0, reason.to_string().chars().take(240).collect()));
+        entry.0 += 1;
+    }
+
+    pub(super) fn skipped_snapshots(&mut self, count: usize) {
+        self.notes.push(format!(
+            "Skipped {count} unreadable newer snapshots; those files have been kept"
+        ));
+    }
+
+    pub(super) fn summary(&self) -> String {
+        let mut details: Vec<_> = self
+            .skipped
+            .iter()
+            .map(|(section, (count, reason))| format!("{section}: {count} skipped ({reason})"))
+            .collect();
+        details.extend(self.notes.iter().cloned());
+        format!(
+            "Workspace restored with compatible items. {}",
+            details.join(". ")
+        )
+    }
+
+    pub(super) fn message(&self, backup: Option<&Path>) -> String {
+        let mut message = format!("{}. Saving is enabled.", self.summary());
+        if let Some(backup) = backup {
+            message.push_str(&format!(
+                " Original snapshot backed up at {}.",
+                backup.display()
+            ));
+        }
+        message
+    }
+
+    pub(super) fn preserve(&self, path: &Path) -> io::Result<Option<PathBuf>> {
+        let Some(bytes) = &self.original else {
+            return Ok(None);
+        };
+        let directory = path.with_extension("recovery");
+        let mut builder = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            builder.mode(0o700);
+        }
+        match builder.create(&directory) {
+            Ok(()) => sync_parent(&directory)?,
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
+                if !std::fs::symlink_metadata(&directory)?.is_dir() {
+                    return Err(io::Error::other("recovery path is not a directory"));
+                }
+            }
+            Err(error) => return Err(error),
+        }
+        let mut backup = tempfile::Builder::new()
+            .prefix("original-")
+            .suffix(".json")
+            .tempfile_in(&directory)?;
+        backup.write_all(bytes)?;
+        backup.as_file().sync_all()?;
+        let (_, backup) = backup.keep().map_err(|error| error.error)?;
+        sync_directory(&directory)?;
+        Ok(Some(backup))
+    }
+}
+
+fn entries<T: DeserializeOwned>(
+    values: &mut Map<String, Value>,
+    key: &str,
+    section: &'static str,
+    report: &mut Report,
+    mut valid: impl FnMut(&T) -> bool,
+) -> Vec<T> {
+    let Some(value) = values.remove(key) else {
+        return Vec::new();
+    };
+    let Value::Array(items) = value else {
+        report.skip(section, "saved list could not be read");
+        return Vec::new();
+    };
+    items
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, item)| match serde_json::from_value::<T>(item) {
+            Ok(item) if valid(&item) => Some(item),
+            Ok(_) => {
+                report.skip(
+                    section,
+                    format!("item {} has invalid settings or a missing owner", index + 1),
+                );
+                None
+            }
+            Err(error) => {
+                report.skip(section, format!("item {}: {error}", index + 1));
+                None
+            }
+        })
+        .collect()
+}
+
+pub(super) fn read(path: &Path) -> io::Result<Option<Document>> {
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    let mut document = decode(&bytes)?;
+    if document.recovery.changed() {
+        document.recovery.original = Some(bytes);
+    }
+    Ok(Some(document))
+}
+
+fn decode(bytes: &[u8]) -> io::Result<Document> {
+    let Value::Object(mut values) = serde_json::from_slice(bytes)? else {
+        return Err(io::Error::other("workspace snapshot is not an object"));
+    };
+    let mut report = Report::default();
+    let mut ids = HashSet::new();
+    let workspaces = entries(
+        &mut values,
+        "workspaces",
+        "Workspaces",
+        &mut report,
+        |space: &Workspace| space.valid() && ids.insert(space.id),
+    );
+    if workspaces.is_empty() {
+        return Err(io::Error::other("no readable workspaces in snapshot"));
+    }
+    let deleted_workspaces: BTreeMap<u64, u64> = values
+        .remove("deleted_workspaces")
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(io::Error::other)?
+        .unwrap_or_default();
+    let active = match values.remove("active").and_then(|value| value.as_u64()) {
+        Some(active) if ids.contains(&active) && !deleted_workspaces.contains_key(&active) => {
+            active
+        }
+        _ => {
+            report.notes.push("Opened the first remaining workspace because the active workspace could not be restored".into());
+            workspaces
+                .iter()
+                .find(|space| !deleted_workspaces.contains_key(&space.id))
+                .ok_or_else(|| io::Error::other("no active workspace in snapshot"))?
+                .id
+        }
+    };
+    let theme = match values.remove("theme") {
+        None => Default::default(),
+        Some(theme) => {
+            match serde_json::from_value::<crate::native::tokens::ThemeSettings>(theme) {
+                Ok(theme) if theme.validate() => theme,
+                _ => {
+                    report
+                        .notes
+                        .push("Theme settings could not be restored; using defaults".into());
+                    Default::default()
+                }
+            }
+        }
+    };
+    let mut area_ids = HashMap::new();
+    let areas = entries(
+        &mut values,
+        "areas",
+        "Areas",
+        &mut report,
+        |saved: &crate::native::area::SavedArea| {
+            ids.contains(&saved.workspace)
+                && saved.area.validate()
+                && saved.placement.valid()
+                && area_ids.len() < crate::native::area::MAX_AREAS
+                && !area_ids.contains_key(&saved.area.id)
+                && {
+                    area_ids.insert(saved.area.id.clone(), saved.workspace);
+                    true
+                }
+        },
+    );
+    let terrain_effects = entries(
+        &mut values,
+        "terrain_effects",
+        "Topology effects",
+        &mut report,
+        |saved: &crate::native::topology::terrain::Saved| {
+            ids.contains(&saved.workspace) && saved.valid()
+        },
+    );
+    let sands = entries(
+        &mut values,
+        "sands",
+        "Sands",
+        &mut report,
+        |sand: &SavedSand| ids.contains(&sand.workspace) && sand.valid(),
+    );
+    let records = entries(
+        &mut values,
+        "records",
+        "Record placements",
+        &mut report,
+        |record: &SavedRecord| ids.contains(&record.workspace) && record.valid(),
+    );
+    let imports = entries(
+        &mut values,
+        "imports",
+        "Imported assets",
+        &mut report,
+        |saved: &crate::native::topology::assets::SavedAsset| {
+            ids.contains(&saved.workspace)
+                && saved.asset.valid()
+                && saved.placement.valid()
+                && valid_geometry(saved.position, saved.size)
+        },
+    );
+    let layouts = entries(
+        &mut values,
+        "layouts",
+        "Record layouts",
+        &mut report,
+        |saved: &crate::native::layout::records::Saved| {
+            ids.contains(&saved.workspace)
+                && saved.valid()
+                && area_ids.get(saved.owner()) == Some(&saved.workspace)
+        },
+    );
+    let kanbans = entries(
+        &mut values,
+        "kanbans",
+        "Kanbans",
+        &mut report,
+        |saved: &crate::native::kanban::SavedKanban| {
+            ids.contains(&saved.workspace)
+                && saved.valid()
+                && saved
+                    .areas()
+                    .all(|id| area_ids.get(id) == Some(&saved.workspace))
+        },
+    );
+    macro_rules! castles {
+        ($key:literal, $name:literal, $ty:ty) => {
+            entries(&mut values, $key, $name, &mut report, |saved: &$ty| {
+                ids.contains(&saved.workspace) && saved.valid()
+            })
+        };
+    }
+    let proteins = castles!(
+        "proteins",
+        "Protein Castles",
+        crate::native::protein_castle::SavedProteinCastle
+    );
+    let karma_castles = castles!(
+        "karma_castles",
+        "Karma Castles",
+        crate::native::karma_castle::SavedKarmaCastle
+    );
+    let simulations = castles!(
+        "simulations",
+        "Simulations",
+        crate::native::simulation_castle::SavedSimulation
+    );
+    let recorders = castles!(
+        "recorders",
+        "Recorder Castles",
+        crate::native::recorder_castle::SavedRecorder
+    );
+    let editors = castles!("editors", "IDE Castles", crate::native::ide::SavedIde);
+    let shader_editors = castles!(
+        "shader_editors",
+        "WGSL extension editors",
+        crate::native::shader_effects::SavedEditor
+    );
+    let explorers = castles!(
+        "explorers",
+        "File Explorer Castles",
+        crate::native::file_explorer::SavedExplorer
+    );
+    let documents = castles!(
+        "documents",
+        "Document Viewer Castles",
+        crate::native::document_viewer::SavedDocumentViewer
+    );
+    let media = castles!(
+        "media",
+        "Media Sands",
+        crate::native::media_sand::SavedMedia
+    );
+    let drawings = castles!(
+        "drawings",
+        "Drawing Sands",
+        crate::native::drawing::SavedDrawing
+    );
+    let extension_sands = castles!(
+        "extension_sands",
+        "Extension Sands",
+        crate::native::record_extensions::SavedExtensions
+    );
+    let transfer_castles = castles!(
+        "transfer_castles",
+        "Transfer Castles",
+        crate::native::transfer_castle::SavedTransferCastle
+    );
+    let frequency_castles = castles!(
+        "frequency_castles",
+        "Frequency Castles",
+        crate::native::frequency_castle::SavedFrequencyCastle
+    );
+    let calendars = castles!(
+        "calendars",
+        "Calendars",
+        crate::native::calendar::SavedCalendar
+    );
+    let maps = castles!("maps", "Maps", crate::native::map_castle::SavedMap);
+    let instincts = castles!(
+        "instincts",
+        "Instincts",
+        crate::native::instinct::SavedInstinct
+    );
+    let assertions = entries(
+        &mut values,
+        "assertions",
+        "Assertion Castles",
+        &mut report,
+        |saved: &crate::native::assertion_castle::SavedAssertion| {
+            ids.contains(&saved.frame.workspace) && saved.valid()
+        },
+    );
+    let shaders = entries(
+        &mut values,
+        "shaders",
+        "Shader Castles",
+        &mut report,
+        |saved: &crate::native::shader_castle::SavedShader| {
+            ids.contains(&saved.workspace()) && saved.valid()
+        },
+    );
+    let controls = match values.remove("controls") {
+        None => Default::default(),
+        Some(value) => {
+            match serde_json::from_value::<crate::native::canvas_controls::ControlsSettings>(value)
+            {
+                Ok(settings) => settings,
+                Err(_) => {
+                    report
+                        .notes
+                        .push("Control settings could not be restored; using defaults".into());
+                    Default::default()
+                }
+            }
+        }
+    };
+    let shortcuts = match values.remove("shortcuts") {
+        None => Default::default(),
+        Some(value) => match serde_json::from_value::<crate::native::shortcuts::Settings>(value) {
+            Ok(settings) if settings.validate().is_ok() => settings,
+            _ => {
+                report
+                    .notes
+                    .push("Shortcut settings could not be restored; using defaults".into());
+                Default::default()
+            }
+        },
+    };
+    let canvas_state = match values
+        .remove("canvas_state")
+        .filter(|value| !value.is_null())
+    {
+        Some(value) => match serde_json::from_value::<nucleus::canvas::State>(value) {
+            Ok(state) if state.validate().is_ok() => Some(state),
+            _ => {
+                report.notes.push("Canvas recovery receipts were invalid; keeping the readable layout and preserving the original snapshot".into());
+                None
+            }
+        },
+        None => None,
+    };
+    let canvas_id = match values.remove("canvas_id").filter(|value| !value.is_null()) {
+        Some(value) => match value.as_str() {
+            Some(id) if nucleus::valid_uid(id, "canvas") => Some(id.into()),
+            _ => {
+                report
+                    .notes
+                    .push("Canvas identity was invalid; assigning a new local identity".into());
+                None
+            }
+        },
+        None => None,
+    };
+    let document = Document {
+        shader_editors,
+        shader_settings: values
+            .remove("shader_settings")
+            .and_then(|value| serde_json::from_value(value).ok())
+            .unwrap_or_default(),
+        terrain_effects,
+        hidden_records: values
+            .get("hidden_records")
+            .and_then(|value| serde_json::from_value(value.clone()).ok())
+            .unwrap_or_default(),
+        canvas_id,
+        canvas_state,
+        recovery: report,
+        theme,
+        controls,
+        shortcuts,
+        active,
+        workspaces,
+        deleted_workspaces,
+        trash_retention_days: values
+            .remove("trash_retention_days")
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(io::Error::other)?
+            .unwrap_or_else(default_trash_retention_days),
+        sands,
+        records,
+        areas,
+        imports,
+        layouts,
+        kanbans,
+        proteins,
+        karma_castles,
+        simulations,
+        frequency_castles,
+        transfer_castles,
+        recorders,
+        documents,
+        media,
+        drawings,
+        extension_sands,
+        editors,
+        explorers,
+        calendars,
+        maps,
+        instincts,
+        assertions,
+        shaders,
+    };
+    if !document.validate() {
+        return Err(io::Error::other("recovered workspace data is invalid"));
+    }
+    Ok(document)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn scene() -> Value {
+        json!({"active": 1, "workspaces": Workspaces::default().entries, "sands": [], "records": []})
+    }
+
+    fn sand(text: &str) -> Value {
+        json!({
+            "kind": "Square", "workspace": 1, "position": [25.0, 50.0], "size": [248.0, 184.0],
+            "texts": [{"area": crate::native::sand_text::SandText::new(false), "text": text}]
+        })
+    }
+
+    fn load(value: &Value) -> Document {
+        decode(&serde_json::to_vec(value).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn invalid_shortcuts_restore_defaults_without_losing_canvas_contents() {
+        for overrides in [
+            json!({"delete-sand": "W"}),
+            json!({"delete-sand": "Escape"}),
+            json!({"delete-sand": "Unknown"}),
+        ] {
+            let mut value = scene();
+            value["sands"] = json!([sand("Keep this note")]);
+            value["shortcuts"] = json!({"overrides": overrides});
+            let restored = load(&value);
+            assert_eq!(
+                restored.shortcuts,
+                crate::native::shortcuts::Settings::default()
+            );
+            assert_eq!(restored.sands[0].texts[0].text, "Keep this note");
+            assert!(
+                restored
+                    .recovery
+                    .notes
+                    .iter()
+                    .any(|note| note.contains("Shortcut"))
+            );
+        }
+    }
+
+    #[test]
+    fn incompatible_items_are_skipped_without_losing_neighbors_or_positions() {
+        let mut scene = scene();
+        let kept = sand("Keep this note");
+        let mut unknown = sand("Unknown kind");
+        unknown["kind"] = json!("RemovedSandKind");
+        let mut invalid = sand("Invalid geometry");
+        invalid["size"] = json!([0, 100]);
+        let mut orphan = sand("Missing workspace");
+        orphan["workspace"] = json!(99);
+        scene["sands"] = json!([kept, unknown, invalid, orphan, sand("Also kept")]);
+        let area = crate::native::area::InfluenceArea::new(
+            crate::native::area::AreaShape::Square,
+            DVec2::ZERO,
+            DVec2::splat(100.0),
+        );
+        let valid_area = json!({"workspace": 1, "area": area});
+        let mut incompatible_area = valid_area.clone();
+        incompatible_area["area"]
+            .as_object_mut()
+            .unwrap()
+            .remove("enabled");
+        scene["areas"] = json!([incompatible_area, valid_area.clone(), valid_area]);
+        let recovered = load(&scene);
+        assert!(recovered.validate());
+        assert_eq!(recovered.sands.len(), 2);
+        assert_eq!(recovered.sands[0].texts[0].text, "Keep this note");
+        assert_eq!(recovered.sands[0].position, [25.0, 50.0]);
+        assert_eq!(recovered.sands[1].texts[0].text, "Also kept");
+        assert_eq!(recovered.areas.len(), 1);
+        assert_eq!(recovered.recovery.skipped["Sands"].0, 3);
+        assert_eq!(recovered.recovery.skipped["Areas"].0, 2);
+        assert!(
+            recovered
+                .recovery
+                .summary()
+                .contains("missing field `enabled`")
+        );
+        assert!(
+            !serde_json::to_value(&recovered)
+                .unwrap()
+                .as_object()
+                .unwrap()
+                .contains_key("recovery")
+        );
+        let restarted = load(&serde_json::to_value(recovered).unwrap());
+        assert!(!restarted.recovery.changed());
+        assert_eq!(restarted.sands.len(), 2);
+    }
+
+    #[test]
+    fn invalid_workspaces_settings_and_lists_do_not_discard_other_sections() {
+        let mut scene = scene();
+        let mut second = scene["workspaces"][0].clone();
+        second["id"] = json!(2);
+        second["name"] = json!("");
+        scene["workspaces"].as_array_mut().unwrap().push(second);
+        scene["active"] = json!(2);
+        scene["theme"] = json!({"scheme": "RemovedScheme"});
+        scene["controls"] = json!({"always_show": true});
+        scene["proteins"] = json!("not a list");
+        scene["sands"] = json!([sand("Keep")]);
+        let recovered = load(&scene);
+        assert_eq!(recovered.active, 1);
+        assert_eq!(recovered.workspaces.len(), 1);
+        assert_eq!(recovered.sands.len(), 1);
+        assert_eq!(recovered.theme, Default::default());
+        assert!(recovered.controls.always_show);
+        assert!(recovered.recovery.summary().contains("Theme settings"));
+        assert!(
+            recovered
+                .recovery
+                .summary()
+                .contains("Protein Castles: 1 skipped")
+        );
+        scene["workspaces"] = json!([]);
+        assert!(decode(&serde_json::to_vec(&scene).unwrap()).is_err());
+        assert!(decode(b"broken").is_err());
+    }
+
+    #[test]
+    fn layouts_and_kanbans_with_missing_areas_are_skipped() {
+        let mut scene = scene();
+        scene["sands"] = json!([sand("Kept")]);
+        scene["layouts"] = json!([{
+            "workspace": 1, "owner": format!("{:032x}", 1), "source": "Local", "uid": "record",
+            "layout": crate::native::layout::LayoutBox::new(Vec2::splat(100.0))
+        }]);
+        scene["kanbans"] = json!([{
+            "workspace": 1,
+            "board": {
+                "source": format!("{:032x}", 0),
+                "columns": (1..8).map(|index| json!({"area": format!("{index:032x}")})).collect::<Vec<_>>()
+            },
+            "position": [0, 0], "size": [400, 100],
+            "placement": crate::native::sand_placement::Placement::default(), "tokens": {}
+        }]);
+        assert!(
+            serde_json::from_value::<crate::native::layout::records::Saved>(
+                scene["layouts"][0].clone()
+            )
+            .unwrap()
+            .valid()
+        );
+        assert!(
+            serde_json::from_value::<crate::native::kanban::SavedKanban>(
+                scene["kanbans"][0].clone()
+            )
+            .unwrap()
+            .valid()
+        );
+        let recovered = load(&scene);
+        assert_eq!(recovered.sands.len(), 1);
+        assert!(recovered.layouts.is_empty());
+        assert!(recovered.kanbans.is_empty());
+        assert_eq!(recovered.recovery.skipped["Record layouts"].0, 1);
+        assert_eq!(recovered.recovery.skipped["Kanbans"].0, 1);
+    }
+
+    #[test]
+    fn many_incompatible_items_produce_a_bounded_notice() {
+        let mut scene = scene();
+        scene["sands"] = Value::Array(
+            (0..2_000)
+                .map(|_| json!({"kind": "x".repeat(1000)}))
+                .chain([sand("Kept")])
+                .collect(),
+        );
+        let recovered = load(&scene);
+        assert_eq!(recovered.sands.len(), 1);
+        assert_eq!(recovered.recovery.skipped["Sands"].0, 2_000);
+        assert!(recovered.recovery.summary().chars().count() < 400);
+    }
+
+    #[test]
+    fn newest_partial_snapshot_wins_over_an_older_complete_snapshot_and_backups_are_kept() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let snapshots = path.with_extension("snapshots");
+        std::fs::create_dir(&snapshots).unwrap();
+        let mut older = scene();
+        older["sands"] = json!([sand("Old note")]);
+        std::fs::write(
+            snapshots.join("00000000000000000001.json"),
+            serde_json::to_vec(&older).unwrap(),
+        )
+        .unwrap();
+        let mut newer = scene();
+        newer["sands"] = json!([sand("Latest note"), {"kind": "Removed"}]);
+        let bytes = serde_json::to_vec(&newer).unwrap();
+        let newest = snapshots.join("00000000000000000002.json");
+        std::fs::write(&newest, &bytes).unwrap();
+        let recovered = storage::load(&path).unwrap().unwrap();
+        assert_eq!(recovered.sands[0].texts[0].text, "Latest note");
+        let backup = recovered.recovery.preserve(&path).unwrap().unwrap();
+        assert_eq!(std::fs::read(&backup).unwrap(), bytes);
+        assert_eq!(std::fs::read(&newest).unwrap(), bytes);
+        let another = recovered.recovery.preserve(&path).unwrap().unwrap();
+        assert_ne!(backup, another);
+        let writer = storage::Writer::start(path.clone(), None, Default::default(), None).unwrap();
+        writer.save(recovered, true).unwrap();
+        drop(writer);
+        let restarted = storage::load(&path).unwrap().unwrap();
+        assert_eq!(restarted.sands[0].texts[0].text, "Latest note");
+        assert!(!restarted.recovery.changed());
+        assert_eq!(std::fs::read(backup).unwrap(), bytes);
+    }
+
+    #[test]
+    fn unreadable_newer_snapshots_are_reported_when_an_older_one_is_restored() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let snapshots = path.with_extension("snapshots");
+        std::fs::create_dir(&snapshots).unwrap();
+        std::fs::write(
+            snapshots.join("00000000000000000001.json"),
+            serde_json::to_vec(&scene()).unwrap(),
+        )
+        .unwrap();
+        let broken = snapshots.join("00000000000000000002.json");
+        std::fs::write(&broken, b"broken").unwrap();
+        let recovered = storage::load(&path).unwrap().unwrap();
+        assert!(
+            recovered
+                .recovery
+                .summary()
+                .contains("1 unreadable newer snapshots")
+        );
+        assert_eq!(std::fs::read(broken).unwrap(), b"broken");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recovery_backups_are_private_and_do_not_follow_directory_symlinks() {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let mut value = scene();
+        value["sands"] = json!([sand("Kept"), {}]);
+        std::fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+        let recovered = read(&path).unwrap().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        symlink(outside.path(), path.with_extension("recovery")).unwrap();
+        assert!(recovered.recovery.preserve(&path).is_err());
+        assert_eq!(std::fs::read_dir(outside.path()).unwrap().count(), 0);
+        std::fs::remove_file(path.with_extension("recovery")).unwrap();
+        let backup = recovered.recovery.preserve(&path).unwrap().unwrap();
+        assert_eq!(
+            std::fs::metadata(backup).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        assert_eq!(
+            std::fs::metadata(path.with_extension("recovery"))
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o700
+        );
+    }
+}

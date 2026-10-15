@@ -8,12 +8,15 @@ homepage.workspace = true
 description = "Lince pure core: primitives, expression engine, graphs, frequency math. No IO, no SQL, DST-testable alone."
 
 [dependencies]
+anicca = { workspace = true }
+naga = { version = "=29.0.4", features = ["wgsl-in"] }
 base64 = { workspace = true }
 regex = { workspace = true }
 url = "2.5.8"
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+glam = "=0.32.1"
 chrono = { workspace = true, features = ["serde"] }
 chrono-tz = "=0.10.4"
 sha2 = { workspace = true }

@@ -1079,6 +1079,70 @@ async fn access_boundary_empty_namespace_and_version_only_changes_are_not_empty_
 }
 
 #[tokio::test]
+async fn access_boundary_cannot_relabel_a_hidden_place_as_an_authorized_record_location() {
+    use nucleus::visibility::{Condition, Data, Policy};
+    let f = Fixture::new().await;
+    let address = record(&f.store, RecordKind::Plain).await;
+    let place = store::places::create(&f.store.pool, 1.0, 2.0, None)
+        .await
+        .unwrap();
+    store::places::set_record_place(&f.store.pool, &address, &place)
+        .await
+        .unwrap();
+    let policy = Policy {
+        include: vec![Condition {
+            persons: vec![f.person.clone()],
+            ..Default::default()
+        }],
+        exclude: vec![],
+    };
+    let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+    store::data_visibility::save_on(&mut tx, &f.record, Data::Place, None, &policy, 0)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert!(!f.read().await.unwrap().places.contains(&place));
+    for permitted in [false, true] {
+        if permitted {
+            let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+            store::data_visibility::save_on(&mut tx, &address, Data::Place, None, &policy, 0)
+                .await
+                .unwrap();
+            tx.commit().await.unwrap();
+        }
+        let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+        let mut staged = access::prepare_changes_on(
+            &mut tx,
+            &f.admission,
+            &f.hosted,
+            &[f.record.clone()],
+            AccessLimits::default(),
+        )
+        .await
+        .unwrap();
+        sqlx::query("UPDATE record SET place_uid=? WHERE uid=?")
+            .bind(&place)
+            .bind(&f.record)
+            .execute(&mut **staged.transaction_for_staging())
+            .await
+            .unwrap();
+        let result = staged
+            .finish_changes(&[target(&f.record, &[Property::Place])])
+            .await;
+        if permitted {
+            assert!(result.is_ok());
+            tx.commit().await.unwrap();
+        } else {
+            assert!(matches!(
+                result,
+                Err(AccessError::Policy(AuthorityError::Denied))
+            ));
+            tx.rollback().await.unwrap();
+        }
+    }
+}
+
+#[tokio::test]
 async fn access_boundary_unit_and_place_changes_require_reference_visibility() {
     let f = Fixture::new().await;
     let unit = store::concepts::create(&f.store.pool, "Restricted unit", &[])
@@ -1087,6 +1151,34 @@ async fn access_boundary_unit_and_place_changes_require_reference_visibility() {
     let place = store::places::create(&f.store.pool, 1.0, 2.0, None)
         .await
         .unwrap();
+    assert!(!f.read().await.unwrap().places.contains(&place));
+    let address = record(&f.store, RecordKind::Plain).await;
+    store::places::set_record_place(&f.store.pool, &address, &place)
+        .await
+        .unwrap();
+    let expected =
+        store::data_visibility::policy(&f.store.pool, &address, nucleus::visibility::Data::Place)
+            .await
+            .unwrap()
+            .map_or(0, |saved| saved.revision);
+    let mut tx = store::write_tx(&f.store.pool).await.unwrap();
+    store::data_visibility::save_on(
+        &mut tx,
+        &address,
+        nucleus::visibility::Data::Place,
+        None,
+        &nucleus::visibility::Policy {
+            include: vec![nucleus::visibility::Condition {
+                persons: vec![f.person.clone()],
+                ..Default::default()
+            }],
+            exclude: vec![],
+        },
+        expected,
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
     assert!(f.read().await.unwrap().places.contains(&place));
     visibility(&f, &unit, "actor", Some(&f.other), "visible", None).await;
     visibility(&f, &place, "actor", Some(&f.other), "visible", None).await;

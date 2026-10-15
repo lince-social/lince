@@ -7,7 +7,7 @@ use store::sqlx::{Sqlite, Transaction};
 
 mod edits;
 
-pub(crate) const LOCAL_AUTOMATION_RECORD_QUERY: &str = "SELECT EXISTS(SELECT 1 FROM record_extension WHERE record_uid=? AND namespace='lince.fiote') OR EXISTS(SELECT 1 FROM record_assertion a JOIN concept c ON c.uid=a.predicate_uid JOIN record_extension e ON e.record_uid=a.object_uid AND e.namespace='lince.fiote' WHERE a.subject_uid=? AND a.retracted_at IS NULL AND c.canonical_name='assigned-to')";
+pub(crate) const LOCAL_AUTOMATION_RECORD_QUERY: &str = "SELECT EXISTS(SELECT 1 FROM record_extension WHERE record_uid=? AND namespace='lince.fiote') OR EXISTS(SELECT 1 FROM record_assertion a JOIN vocabulary_role_concept c ON c.concept_uid=a.predicate_uid JOIN vocabulary_feature f ON f.role_uid=c.role_uid AND f.feature='assignment' JOIN record_extension e ON e.record_uid=a.object_uid AND e.namespace='lince.fiote' WHERE a.subject_uid=? AND a.retracted_at IS NULL)";
 
 pub(crate) struct Checkpoint {
     before: GraphSnapshot,
@@ -53,9 +53,10 @@ impl Checkpoint {
             if automated { return Err(denied("Fiote configuration and data require the local interface session")); }
         }
         let previous_assertions: std::collections::BTreeMap<_, _> = self.before.assertions.iter().map(|assertion| (assertion.uid.as_str(), assertion)).collect();
+        let assignments = store::vocabulary::feature_binding_on(tx,"assignment").await?.concept_uids;
         for assertion in &after.assertions {
             if self.targets.contains(&assertion.subject_uid) && previous_assertions.get(assertion.uid.as_str()).copied() != Some(assertion)
-                && after.concepts.iter().any(|concept| concept.uid == assertion.predicate_uid && concept.name == "assigned-to")
+                && assignments.contains(&assertion.predicate_uid)
                 && let Some(object) = &assertion.object_uid
             {
                 let automated: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_extension WHERE record_uid=? AND namespace='lince.fiote')")

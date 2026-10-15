@@ -27,7 +27,7 @@ impl Engine {
                     let generated;
                     let title = if head.trim().is_empty() {
                         let predicate =
-                            store::concepts::ensure(&self.store.pool, "thread-of").await?;
+                            store::vocabulary::feature_write(&self.store.pool, "thread").await?;
                         let threads = store::assertions::subjects_pointing_to(
                             &self.store.pool,
                             &predicate,
@@ -64,7 +64,7 @@ impl Engine {
                         replica_root.as_deref(),
                     )
                     .await?;
-                    let thread_of = store::concepts::ensure(&self.store.pool, "thread-of").await?;
+                    let thread_of = store::vocabulary::feature_write(&self.store.pool, "thread").await?;
                     store::assertions::assert(
                         &self.store.pool,
                         store::assertions::NewAssertion {
@@ -244,7 +244,7 @@ impl Engine {
                             .await?;
                     }
                     let message_in =
-                        store::concepts::ensure(&self.store.pool, "message-in").await?;
+                        store::vocabulary::feature_write(&self.store.pool, "message").await?;
                     store::assertions::assert(
                         &self.store.pool,
                         store::assertions::NewAssertion {
@@ -260,7 +260,7 @@ impl Engine {
                     .await?;
                     if !references.is_empty() {
                         let references_kind =
-                            store::concepts::ensure(&self.store.pool, "references").await?;
+                            store::vocabulary::feature_write(&self.store.pool, "reference").await?;
                         for reference in &references {
                             store::assertions::assert(
                                 &self.store.pool,
@@ -300,7 +300,7 @@ impl Engine {
                             ));
                         }
                         let reply_to =
-                            store::concepts::ensure(&self.store.pool, "reply-to").await?;
+                            store::vocabulary::feature_write(&self.store.pool, "reply").await?;
                         store::assertions::assert(
                             &self.store.pool,
                             store::assertions::NewAssertion {
@@ -426,7 +426,7 @@ impl Engine {
                     }
                     if state == MessageState::Finished && body.trim().is_empty() {
                         let references =
-                            store::concepts::resolve(&self.store.pool, "references").await?;
+                            store::vocabulary::feature_read(&self.store.pool, "reference").await?;
                         let has_references = match references {
                             Some(predicate) => !store::assertions::objects_from_subject(
                                 &self.store.pool,

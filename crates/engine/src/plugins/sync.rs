@@ -389,9 +389,11 @@ impl Engine {
                 "Plugin delivery queue is full; resolve retained deliveries",
             ));
         }
-        let total: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM plugin_outbox")
-            .fetch_one(&mut *tx)
-            .await?;
+        let total: i64 = store::sqlx::query_scalar(
+            "SELECT COUNT(*) FROM plugin_outbox WHERE state<>'delivered' OR result<>''",
+        )
+        .fetch_one(&mut *tx)
+        .await?;
         if total >= 10000 {
             return Err(invalid("Plugin delivery receipt budget is full"));
         }
@@ -509,10 +511,32 @@ impl Engine {
                     json!({"settings":binding.settings,"prepared":prepared}),
                 )
                 .await;
+            let mut acknowledged = None;
             let (state, result) = match delivered {
                 Ok(result) if result["accepted"] == true => {
-                    count += 1;
-                    ("delivered", result.to_string())
+                    let receipt = if result["record"].is_null() {
+                        Ok(None)
+                    } else {
+                        serde_json::from_value::<ImportedRecord>(result["record"].clone())
+                            .map_err(EngineError::from)
+                            .and_then(|remote| {
+                                validate_import(&remote, fields)?;
+                                Ok(Some(remote))
+                            })
+                    };
+                    match receipt {
+                        Ok(remote) => {
+                            acknowledged = remote;
+                            count += 1;
+                            ("delivered", result.to_string())
+                        }
+                        Err(error) => (
+                            "uncertain",
+                            format!(
+                                "Publication acknowledged with an invalid receipt; inspect the remote outcome: {error}"
+                            ),
+                        ),
+                    }
                 }
                 Ok(result) => ("failed", result.to_string()),
                 Err(error) => ("uncertain", error.to_string()),
@@ -521,6 +545,12 @@ impl Engine {
             let now = nucleus::execution::now();
             let signer = self.signer.lock().await.clone();
             let mut tx = store::write_tx(&self.store.pool).await?;
+            if let Some(remote) = acknowledged {
+                let canonical = digest(
+                    &json!({"head":remote.head,"body":remote.body,"metadata":remote.metadata}),
+                )?;
+                store::sqlx::query("INSERT INTO plugin_object(binding_uid,external_id,record_uid,content_digest) VALUES(?,?,?,?) ON CONFLICT DO NOTHING").bind(&binding.uid).bind(&remote.external_id).bind(&record).bind(canonical).execute(&mut *tx).await?;
+            }
             store::sqlx::query("UPDATE plugin_outbox SET state=?,result=? WHERE uid=?")
                 .bind(state)
                 .bind(&result)

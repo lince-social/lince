@@ -10,7 +10,10 @@ pub mod schedule;
 mod assertion_order;
 pub mod read_rules;
 pub mod record_query;
+pub mod shader_inputs;
 mod transfer_application;
+mod meanings;
+pub use meanings::bind_meanings;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
@@ -119,7 +122,7 @@ pub struct Context<'a> {
 }
 
 fn part_of_kind() -> String {
-    "part-of".to_string()
+    "feature:containment".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
@@ -219,6 +222,10 @@ pub struct Include {
     #[serde(default)]
     pub availability: bool,
     pub extension: Option<ExtensionInclude>,
+    #[serde(default)]
+    pub shader_effect: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub numeric_fields: Vec<shader_inputs::Request>,
     #[serde(default)]
     pub numeric_extensions: bool,
     pub projection: Option<ProjectionInclude>,
@@ -466,14 +473,14 @@ async fn read_filter_targets(
         order: vec![],
         limit: None,
     };
-    let roots = matching_records(store, &narrowed, None)
+    let roots = matching_records_for(store, &narrowed, Some(ceiling), Some(person_uid))
         .await?
         .into_iter()
         .map(|row| row.uid)
         .filter(|uid| ceiling.contains(uid))
         .collect::<Vec<_>>();
-    let threads = store::concepts::resolve(&store.pool, "thread-of").await?;
-    let messages = store::concepts::resolve(&store.pool, "message-in").await?;
+    let threads = store::vocabulary::feature_read(&store.pool, "thread").await?;
+    let messages = store::vocabulary::feature_read(&store.pool, "message").await?;
     let roots = serde_json::to_string(&roots)
         .map_err(|error| store::sqlx::Error::Protocol(error.to_string()))?;
     let ceiling = serde_json::to_string(ceiling)
@@ -510,6 +517,15 @@ fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
 const MAX_FILTER_INDENT: usize = 10;
 
 pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
+    if !protein.include.numeric_fields.is_empty() {
+        if protein.source != Source::Record || protein.aggregate.is_some() {
+            return Err(store::StoreError::Protocol("Numeric inputs need a Record query without aggregation.".into()));
+        }
+        shader_inputs::validate(&protein.include.numeric_fields)?;
+    }
+    if protein.include.shader_effect && (protein.source != Source::Record || protein.aggregate.is_some()) {
+        return Err(store::StoreError::Protocol("Shader effects need a Record query without aggregation.".into()));
+    }
     if let Some(include) = &protein.include.relation_context {
         if protein.source != Source::Record || protein.aggregate.is_some() || !include.valid() {
             return Err(store::StoreError::Protocol("Invalid Relation color context".into()));
@@ -1390,7 +1406,11 @@ async fn matching_records_for(
             "protein_record_unsupported_predicate:predicate is not defined for Records".into(),
         ));
     }
-    let all = store::records::list_all(&store.pool).await?;
+    let all = match protein.filter.as_slice() {
+        [Predicate::UidEq(uid)] => store::records::get(&store.pool, uid).await?.into_iter().collect(),
+        [Predicate::SlugEq(slug)] => store::records::resolve(&store.pool, slug).await?.into_iter().collect(),
+        _ => store::records::list_all(&store.pool).await?,
+    };
     let ctx = PredicateCtx::prepare(store, &protein.filter, visible, subject).await?;
     let mut rows: Vec<store::records::RecordRow> = Vec::new();
     for r in all {
@@ -1464,8 +1484,23 @@ async fn execute_records(
 
     let mut out = Vec::with_capacity(rows.len());
     let concept_names = store::vocabulary::display_names(&store.pool, subject).await?;
-    let work = store::records::all_extensions(&store.pool, "work").await?;
+    let selected: Vec<_> = rows.iter().map(|record| record.uid.clone()).collect();
+    let work = store::records::extensions_for_records(&store.pool, "work", &selected).await?;
     let mut projected = record_schema::attach(store, protein, &rows, visible, &work, &concept_names).await?;
+    let mut shader_effects = HashMap::new();
+    let mut numeric_values = shader_inputs::attach(store, &rows, &protein.include.numeric_fields).await?;
+    if protein.include.shader_effect && !rows.is_empty() {
+        let mut query = store::sqlx::QueryBuilder::new("SELECT record_uid, fds FROM record_extension WHERE namespace = ");
+        query.push_bind(nucleus::shader_effect::NAMESPACE).push(" AND record_uid IN (");
+        let mut ids = query.separated(",");
+        for record in rows.iter().take(256) { ids.push_bind(&record.uid); }
+        ids.push_unseparated(")");
+        for (uid, raw) in query.build_query_as::<(String, String)>().fetch_all(&store.pool).await? {
+            if raw.len() <= 196_608 && let Ok(value) = serde_json::from_str::<Value>(&raw) {
+                shader_effects.insert(uid, value);
+            }
+        }
+    }
     let mut relation_context = if let Some(include) = &protein.include.relation_context {
         relation_context::attach(store, &rows, visible, include, &concept_names, subject).await?
     } else {
@@ -1513,6 +1548,12 @@ async fn execute_records(
         }
         if let Some(context) = relation_context.remove(&r.uid) {
             row["relation_context"] = context;
+        }
+        if protein.include.shader_effect {
+            row["shader_effect"] = shader_effects.remove(&r.uid).unwrap_or(Value::Null);
+        }
+        if !protein.include.numeric_fields.is_empty() {
+            row["numeric_values"] = numeric_values.remove(&r.uid).unwrap_or_else(|| json!({}));
         }
         narrow_to_fields(&mut row, protein.fields.as_deref());
         out.push(row);
@@ -1605,8 +1646,9 @@ async fn order_records(
     if order.iter().any(
         |key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "assignee_name"),
     ) {
-        if let Some(kind_uid) = store::concepts::resolve(&store.pool, "assigned-to").await? {
-            for link in store::assertions::binary_of_predicate(&store.pool, &kind_uid).await? {
+        {
+            let binding=store::vocabulary::feature_binding(&store.pool,"assignment").await?;
+            for link in store::assertions::binary_of_predicates(&store.pool, &binding.concept_uids).await? {
                 if let Some(person) = store::records::get(&store.pool, &link.object_uid).await? {
                     assignees.entry(link.subject_uid).or_insert(person.head);
                 }
@@ -1650,9 +1692,10 @@ async fn order_records(
                 });
             }
             Order::Link(rule) => {
-                if let Some(kind_uid) = store::concepts::resolve(&store.pool, &rule.kind).await? {
+                {
+                    let family=store::vocabulary::meaning_family(&store.pool,&rule.kind,None).await?;
                     let edges =
-                        store::assertions::edges_of_predicate(&store.pool, &kind_uid).await?;
+                        store::assertions::edges_of_predicates(&store.pool, &family).await?;
                     let edges = if rule.higher == LinkEndpoint::From {
                         edges
                     } else {
@@ -2058,12 +2101,12 @@ async fn threads_for_record(
     record_uid: &str,
     settings: &ThreadsInclude,
 ) -> Result<Vec<Value>, ProteinError> {
-    let Some(thread_of) = store::concepts::resolve(&store.pool, "thread-of").await? else {
+    let Some(thread_of) = store::vocabulary::feature_read(&store.pool, "thread").await? else {
         return Ok(vec![]);
     };
-    let message_in = store::concepts::resolve(&store.pool, "message-in").await?;
-    let reply_to = store::concepts::resolve(&store.pool, "reply-to").await?;
-    let references = store::concepts::resolve(&store.pool, "references").await?;
+    let message_in = store::vocabulary::feature_read(&store.pool, "message").await?;
+    let reply_to = store::vocabulary::feature_read(&store.pool, "reply").await?;
+    let references = store::vocabulary::feature_read(&store.pool, "reference").await?;
     let threads =
         store::assertions::subjects_pointing_to(&store.pool, &thread_of, record_uid).await?;
     let mut out = Vec::new();
@@ -2203,7 +2246,7 @@ async fn threads_for_record(
         }
         let thread_created_at = store::records::created_at(&store.pool, &thread.uid).await?;
         let mut calls = Vec::new();
-        if let Some(predicate) = store::concepts::resolve(&store.pool, "call-in").await? {
+        if let Some(predicate) = store::vocabulary::feature_read(&store.pool, "call").await? {
             for record in store::assertions::subjects_pointing_to(&store.pool, &predicate, &thread.uid).await?.into_iter().filter(|record| record.kind == "call_session").take(50) {
                 if let Ok(summary) = serde_json::from_str::<Value>(&record.body) { calls.push(summary); }
             }
@@ -2298,7 +2341,7 @@ impl PredicateCtx {
             concept_families: HashMap::new(),
             record_concepts: HashMap::new(),
             anchors: HashMap::new(),
-            locations: if preds.iter().any(near) { store::places::saved_locations(&store.pool, visible).await? } else { HashMap::new() },
+            locations: if preds.iter().any(near) { store::places::saved_locations_for_person(&store.pool, visible, subject).await? } else { HashMap::new() },
             relations: HashMap::new(),
             branches: HashMap::new(),
             work: None,
@@ -2345,11 +2388,9 @@ impl PredicateCtx {
                     return Ok(());
                 }
                 let root = store::records::resolve(&store.pool, record).await?;
-                let kind_uid = store::vocabulary::resolve(&store.pool, kind, self.person.as_deref()).await?;
-                let members = match (root, kind_uid) {
-                    (Some(root), Some(kind_uid)) => {
-                        let family =
-                            store::concepts::descendants_including(&store.pool, &kind_uid).await?;
+                let family = store::vocabulary::meaning_family(&store.pool,kind,self.person.as_deref()).await?;
+                let members = match root {
+                    Some(root) => {
                         store::assertions::record_descendants(
                             &store.pool,
                             &root.uid,
@@ -2373,7 +2414,8 @@ impl PredicateCtx {
                 if self.relations.contains_key(&key) {
                     return Ok(());
                 }
-                let Some(kind_uid) = store::vocabulary::resolve(&store.pool, kind, self.person.as_deref()).await? else {
+                let predicates = store::vocabulary::meaning_family(&store.pool,kind,self.person.as_deref()).await?;
+                if predicates.is_empty() {
                     self.relations.insert(key, HashSet::new());
                     return Ok(());
                 };
@@ -2387,8 +2429,6 @@ impl PredicateCtx {
                     },
                     None => None,
                 };
-                let predicates =
-                    store::concepts::descendants_including(&store.pool, &kind_uid).await?;
                 let mut matches = HashSet::new();
                 for link in
                     store::assertions::binary_of_predicates(&store.pool, &predicates).await?
@@ -3578,6 +3618,9 @@ async fn execute_concepts(store: &Store, protein: &Protein, subject: Option<&str
     let names = store::vocabulary::display_names(&store.pool, subject).await?;
     let terms = store::vocabulary::terms(&store.pool, subject).await?;
     let sources = store::vocabulary::sources(&store.pool).await?;
+    let definitions = store::vocabulary::definition_versions(&store.pool).await?;
+    let terminology = store::vocabulary::terminology_state(&store.pool, subject).await?;
+    let features = store::vocabulary::feature_bindings(&store.pool).await?;
     let (write_location, binding_revision, location_concepts) = store::vocabulary::location_bindings(&store.pool).await?;
     let mut family: Option<HashSet<String>> = None;
     for p in &protein.filter {
@@ -3610,6 +3653,11 @@ async fn execute_concepts(store: &Store, protein: &Protein, subject: Option<&str
             "uid": c.uid,
             "name": names.get(&c.uid).unwrap_or(&c.canonical_name),
             "source": sources.get(&c.uid),
+            "definitions": definitions.get(&c.uid),
+            "terminology_context": terminology["context"],
+            "feature_bindings": features,
+            "terminology_choice": terminology["choices"].as_array().and_then(|choices| choices.iter().find(|choice| choice["concept_uid"] == c.uid)),
+            "hidden_terms": terms.iter().filter(|term| term.concept_uid == c.uid && terminology["hidden_terms"].as_array().is_some_and(|hidden| hidden.iter().any(|uid| uid.as_str() == Some(term.uid.as_str())))).map(|term| &term.uid).collect::<Vec<_>>(),
             "terms": terms.iter().filter(|term| term.concept_uid == c.uid).collect::<Vec<_>>(),
             "saved_location": location_concepts.contains(&c.uid),
             "location_write": write_location == c.uid,
@@ -3626,6 +3674,7 @@ async fn execute_concepts(store: &Store, protein: &Protein, subject: Option<&str
 }
 
 async fn execute_linguas(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
+    let details = store::vocabulary::collection_details(&store.pool).await?;
     let mut out = Vec::new();
     for lingua in store::linguas::list(&store.pool).await? {
         if !protein.filter.iter().all(|predicate| match predicate {
@@ -3642,6 +3691,9 @@ async fn execute_linguas(store: &Store, protein: &Protein) -> Result<Vec<Value>,
             "visibility": lingua.visibility,
             "concepts": store::linguas::concept_uids(&store.pool, &lingua.uid).await?,
             "created_at": lingua.created_at,
+            "revision": lingua.revision,
+            "publications": details.get(&lingua.uid).map(|detail| &detail["publications"]),
+            "organs": details.get(&lingua.uid).map(|detail| &detail["organs"]),
         }));
         if protein.limit.is_some_and(|limit| out.len() >= limit) {
             break;
@@ -3683,11 +3735,13 @@ async fn execute_assertions(store: &Store, protein: &Protein, subject: Option<&s
             "uid": assertion.uid,
             "subject": assertion.subject_uid,
             "predicate": assertion.predicate_uid,
+            "predicate_revision": assertion.predicate_revision,
             "predicate_name": concept_names.get(&assertion.predicate_uid),
             "object": assertion.object_uid,
             "role": assertion.role,
             "quantity": assertion.quantity.map(|value| value.to_string()),
             "unit": assertion.unit_uid,
+            "unit_revision": assertion.unit_revision,
             "asserted_by": assertion.asserted_by,
             "created_at": assertion.created_at,
         }));
@@ -6226,6 +6280,11 @@ async fn execute_transfers(
         create_blockers.push("missing_person_signer");
     }
     let create = create_blockers.is_empty();
+    let need_outcomes = if let Some(person) = create_person {
+        store::transfer_evidence::need_options(&store.pool, person, visible).await?
+    } else {
+        json!({"options":[],"more":false})
+    };
     let person_record = match viewer.person.as_deref() {
         Some(uid) => records_by_uid.get(uid),
         None => None,
@@ -7090,6 +7149,27 @@ async fn execute_transfers(
                 || viewer.person.as_deref() == Some(occurrence.giver_person_uid.as_str());
             let viewer_is_receiver = viewer.local
                 || viewer.person.as_deref() == Some(occurrence.receiver_person_uid.as_str());
+            let outcome_history = store::transfer_evidence::history(&store.pool, &occurrence.uid, visible).await?;
+            let mut outcome_measures = if let Some(record) = &occurrence.record_uid {
+                store::transfer_evidence::source_measures(&store.pool, record, visible).await?
+            } else { Vec::new() };
+            for entry in outcome_history["entries"].as_array().into_iter().flatten() {
+                let content = &entry["evidence"]["content"];
+                if content["kind"] == "need_binding" && entry["superseded"] != true {
+                    outcome_measures.retain(|option| !option["need_binding"].is_null() || option["measure"] != content["terms"]["measure"]);
+                    outcome_measures.push(json!({"label":format!("Need requested {} · {}",content["terms"]["requested"]["value"],entry["evidence"]["record"]),
+                        "measure":content["terms"]["measure"],"need_binding":entry["evidence"]["record"]}));
+                }
+            }
+            for entry in outcome_history["entries"].as_array().into_iter().flatten() {
+                let content = &entry["evidence"]["content"];
+                if content["kind"] == "statement" && entry["superseded"] != true
+                    && entry["evidence"]["author"].as_str() == create_person
+                    && !outcome_measures.iter().any(|option| option["measure"] == content["measure"])
+                {
+                    outcome_measures.push(json!({"label":"Previously reported meaning", "measure":content["measure"],"need_binding":content["need_binding"]}));
+                }
+            }
             let mut delivery_blockers = viewer.update_identity_blockers();
             if !viewer_is_giver {
                 delivery_blockers.push("not_occurrence_giver");
@@ -7469,6 +7549,10 @@ async fn execute_transfers(
 
             let mut projected_occurrence = json!({
                 "uid": occurrence.uid,
+                "outcomes": outcome_history,
+                "outcome_measure_options": outcome_measures,
+                "need_outcome_options": if create_person == Some(occurrence.receiver_person_uid.as_str()) {need_outcomes["options"].clone()} else {json!([])},
+                "need_outcome_options_more": create_person == Some(occurrence.receiver_person_uid.as_str()) && need_outcomes["more"] == true,
                 "exchange_path": occurrence.exchange_path_uid,
                 "exchange": occurrence.exchange_uid,
                 "promise": occurrence.promise_uid,
@@ -7569,6 +7653,10 @@ async fn execute_transfers(
                     "slices": settlement_history,
                 },
                 "capabilities": {
+                    "report_outcome": viewer.update_identity_blockers().is_empty()
+                        && occurrence.giver_person_uid != occurrence.receiver_person_uid
+                        && create_person.is_some_and(|person| person == occurrence.giver_person_uid || person == occurrence.receiver_person_uid)
+                        && installed_signer_actor == create_person,
                     "confirm_delivery": !occurrence.delivery_claimed && delivery_blockers.is_empty(),
                     "correct_delivery": occurrence.delivery_claimed && delivery_blockers.is_empty(),
                     "confirm_receipt": !occurrence.receipt_claimed && receipt_blockers.is_empty(),

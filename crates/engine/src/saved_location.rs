@@ -47,7 +47,7 @@ impl Engine {
             return self.observe_saved_location(&record, &node, actor).await;
         }
         let visible = self.saved_location_readable(actor).await?;
-        store::places::saved_locations(&self.store.pool, visible.as_ref())
+        store::places::saved_locations_for_person(&self.store.pool, visible.as_ref(), actor)
             .await?
             .remove(&record)
             .ok_or_else(|| EngineError::Forbidden("Record location unavailable".into()))
@@ -80,26 +80,29 @@ impl Engine {
                     ));
                 }
                 let visible = self.saved_location_readable(actor).await?;
-                let mut choices: Vec<_> =
-                    store::places::saved_locations(&self.store.pool, visible.as_ref())
-                        .await?
-                        .into_values()
-                        .flat_map(|location| {
-                            location
-                                .candidates
-                                .into_iter()
-                                .filter(|candidate| candidate.assertion_uid.is_none())
-                        })
-                        .filter(|candidate| {
-                            let text = text.trim().trim_start_matches('@').to_lowercase();
-                            candidate.head.to_lowercase().contains(&text)
-                                || candidate
-                                    .slug
-                                    .as_ref()
-                                    .is_some_and(|slug| slug.to_lowercase().contains(&text))
-                                || candidate.record_uid.eq_ignore_ascii_case(&text)
-                        })
-                        .collect();
+                let mut choices: Vec<_> = store::places::saved_locations_for_person(
+                    &self.store.pool,
+                    visible.as_ref(),
+                    actor,
+                )
+                .await?
+                .into_values()
+                .flat_map(|location| {
+                    location
+                        .candidates
+                        .into_iter()
+                        .filter(|candidate| candidate.assertion_uid.is_none())
+                })
+                .filter(|candidate| {
+                    let text = text.trim().trim_start_matches('@').to_lowercase();
+                    candidate.head.to_lowercase().contains(&text)
+                        || candidate
+                            .slug
+                            .as_ref()
+                            .is_some_and(|slug| slug.to_lowercase().contains(&text))
+                        || candidate.record_uid.eq_ignore_ascii_case(&text)
+                })
+                .collect();
                 choices.sort_by(|a, b| a.head.cmp(&b.head).then(a.record_uid.cmp(&b.record_uid)));
                 choices.truncate(30);
                 Ok(ActionOutcome {
@@ -281,9 +284,16 @@ impl Engine {
             .location_network()?
             .location_request(
                 node,
-                nucleus::location::PeerRequest::Read {
-                    record_uid: record.into(),
-                    data: nucleus::visibility::Data::Place,
+                match actor {
+                    Some(person) => nucleus::location::PeerRequest::ReadPerson {
+                        record_uid: record.into(),
+                        data: nucleus::visibility::Data::Place,
+                        person: self.location_observer_person(node, person),
+                    },
+                    None => nucleus::location::PeerRequest::Read {
+                        record_uid: record.into(),
+                        data: nucleus::visibility::Data::Place,
+                    },
                 },
             )
             .await?;

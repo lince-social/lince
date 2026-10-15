@@ -1,11 +1,11 @@
 [package]
 name = "lince-interface"
-version.workspace = true
-edition.workspace = true
+version = { workspace = true }
+edition = { workspace = true }
 rust-version = "1.95"
-license.workspace = true
-repository.workspace = true
-homepage.workspace = true
+license = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
 description = "Shared presentation models and Bevy UI primitives for Lince hosts."
 
 [features]
@@ -14,25 +14,168 @@ ui = ["dep:bevy", "dep:fontique", "dep:tokio", "dep:nucleus", "dep:chrono", "dep
 models = ["dep:nucleus", "dep:protein", "dep:chrono", "dep:qrcode", "dep:pulldown-cmark"]
 behavior-checks = ["ui"]
 images = ["dep:image", "dep:reqwest", "dep:base64"]
+activation = ["dep:tokio", "tokio/net", "tokio/io-util", "tokio/rt", "tokio/macros", "dep:rustix", "dep:getrandom", "dep:tempfile"]
+native-presentation = [
+    "activation",
+    "ui",
+    "models",
+    "behavior-checks",
+    "dep:lince-hand-input",
+    "dep:lince-map",
+    "dep:zbus",
+    "dep:futures-util",
+    "dep:lince-document",
+    "dep:lince-editor",
+    "dep:rfd",
+    "dep:cpal",
+    "dep:tts",
+    "dep:ttf-parser",
+    "dep:qrcode",
+    "dep:nokhwa",
+    "dep:hound",
+    "dep:naga",
+    "dep:wasmi",
+    "dep:reqwest",
+    "dep:pulldown-cmark",
+    "dep:mermaid-rs-renderer",
+    "dep:resvg",
+    "dep:accesskit",
+    "dep:bevy",
+    "dep:bevy_gaussian_splatting",
+    "dep:flexbuffers",
+    "dep:cell",
+    "dep:simulation",
+    "dep:tokio",
+    "dep:protein",
+    "dep:engine",
+    "dep:store",
+    "dep:image",
+    "dep:ksni",
+    "dep:tray-icon",
+    "dep:muda",
+    "dep:rustix",
+    "dep:getrandom",
+    "dep:avian3d",
+    "dep:toml",
+    "dep:nucleus",
+    "dep:tempfile",
+    "dep:chrono",
+    "dep:iana-time-zone",
+    "dep:loro",
+    "dep:base64",
+    "dep:x11rb",
+    "dep:raw-window-handle",
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_input_focus",
+    "bevy/bevy_text",
+    "bevy/bevy_ui",
+    "bevy/bevy_ui_render",
+    "bevy/bevy_ui_widgets",
+    "bevy/bevy_winit",
+    "bevy/ui_picking",
+    "bevy/wayland",
+    "bevy/x11",
+    "bevy/accesskit_unix",
+    "bevy/system_clipboard",
+    "bevy/clipboard_image",
+    "bevy/png",
+    "bevy/jpeg",
+    "bevy/bevy_gltf",
+    "bevy/gltf_animation",
+    "bevy/bevy_pbr",
+    "bevy/mesh_picking",
+    "bevy/ghost_nodes",
+    "bevy/reflect_auto_register",
+    "dep:async-trait",
+    "bevy/async_executor",
+    "bevy/bevy_log",
+    "bevy/bevy_render",
+    "bevy/multi_threaded",
+    "tokio/io-util",
+    "tokio/macros",
+    "tokio/process",
+    "tokio/rt-multi-thread",
+    "tokio/signal",
+    "tokio/sync",
+    "tokio/fs",
+    "tokio/net",
+    "image/gif",
+    "image/webp",
+    "dep:iroh",
+]
+stuff = ["native-presentation", "dep:cc"]
+instinct = ["native-presentation", "engine/instinct"]
+native-media = ["native-presentation", "dep:lince-media", "lince-media/native"]
 
 [dependencies]
+lince-practice = { workspace = true }
 accesskit = { version = "=0.24.1", optional = true }
 bevy = { version = "=0.19.1", default-features = false, features = ["std", "bevy_asset", "bevy_text", "bevy_ui", "bevy_ui_widgets", "bevy_input_focus"], optional = true }
 fontique = { version = "=0.9.0", default-features = false, optional = true }
-tokio = { version = "1.53.1", default-features = false, features = ["rt", "time"], optional = true }
+tokio = { optional = true, version = "1.53.1", default-features = false, features = ["rt", "time"] }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 nucleus = { workspace = true, optional = true }
-protein = { workspace = true, optional = true }
+protein = { optional = true, workspace = true }
 chrono = { workspace = true, optional = true }
-qrcode = { version = "=0.14.1", default-features = false, optional = true }
+qrcode = { optional = true, version = "=0.14.1", default-features = false }
 pulldown-cmark = { version = "=0.13.4", default-features = false, optional = true }
-image = { workspace = true, optional = true }
+image = { optional = true, workspace = true }
 reqwest = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
+lince-hand-input = { path = "../hand-input", optional = true }
+lince-map = { workspace = true, optional = true }
+async-trait = { workspace = true, optional = true }
+store = { workspace = true, optional = true }
+simulation = { workspace = true, optional = true }
+lince-document = { path = "../document", optional = true }
+lince-editor = { path = "../editor", optional = true }
+rfd = { workspace = true, optional = true }
+nokhwa = { version = "=0.10.11", default-features = false, features = ["input-native"], optional = true }
+lince-media = { workspace = true, optional = true }
+cpal = { version = "=0.15.3", optional = true }
+tts = { version = "=0.26.3", optional = true, default-features = false }
+ttf-parser = { version = "=0.25.1", optional = true }
+hound = { version = "=3.5.1", optional = true }
+naga = { version = "=29.0.4", features = ["wgsl-in"], optional = true }
+wasmi = { version = "=2.0.0", default-features = false, features = ["std", "validate", "auto-dispatch"], optional = true }
+mermaid-rs-renderer = { version = "=0.3.1", default-features = false, optional = true }
+resvg = { version = "=0.48.1", default-features = false, features = ["text"], optional = true }
+loro = { workspace = true, optional = true }
+iana-time-zone = { version = "=0.1.65", optional = true }
+tempfile = { version = "=3.27.0", optional = true }
+bevy_gaussian_splatting = { version = "=8.0.2", default-features = false, features = ["io_flexbuffers", "planar", "buffer_storage", "sh3", "sort_radix"], optional = true }
+flexbuffers = { version = "=25.12.19", optional = true }
+cell = { workspace = true, optional = true }
+engine = { path = "../engine", optional = true }
+getrandom = { workspace = true, optional = true }
+avian3d = { version = "=0.7.0", default-features = false, features = ["3d", "f64", "parry-f64", "enhanced-determinism", "xpbd_joints"], optional = true }
+toml = { workspace = true, optional = true }
+iroh = { workspace = true, optional = true }
 
 [build-dependencies]
 sensei = { workspace = true }
+cc = { version = "1.2", optional = true }
+resvg = { version = "0.48.1", default-features = false, optional = true }
 
 [lints]
 workspace = true
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.4", features = ["process", "fs", "param"], optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "=5.19.0", default-features = false, features = ["tokio"], optional = true }
+futures-util = { version = "=0.3.34", default-features = false, features = ["std"], optional = true }
+x11rb = { version = "=0.13.2", optional = true }
+raw-window-handle = { version = "=0.6.2", optional = true }
+ksni = { version = "=0.3.6", default-features = false, features = ["async-io"], optional = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+tray-icon = { version = "=0.25.0", default-features = false, optional = true }
+muda = { version = "=0.20.0", default-features = false, optional = true }
+
+[[example]]
+name = "laboratory-headless"
+path = "examples/laboratory_headless.rs"
+required-features = ["native-presentation"]

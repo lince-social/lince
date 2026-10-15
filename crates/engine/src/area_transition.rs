@@ -162,6 +162,8 @@ pub struct RecordState {
     pub assertions: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     pub assignees: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    pub assignment_binding: Option<nucleus::vocabulary::FeatureBinding>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -214,21 +216,17 @@ async fn state(
         assertions.insert(predicate.clone(), ids);
     }
     let mut assignees = BTreeMap::new();
+    let mut assignment_binding=None;
     if !changes.assign.is_empty() || !changes.unassign.is_empty() {
-        let predicate: String = store::sqlx::query_scalar(
-            "SELECT uid FROM concept WHERE canonical_name = 'assigned-to'",
-        )
-        .fetch_optional(&mut **tx)
-        .await?
-        .ok_or_else(|| invalid("Create the assigned-to concept before configuring assignments"))?;
+        assignment_binding=Some(store::vocabulary::feature_binding_on(tx,"assignment").await?);
         for person in changes.assign.iter().chain(&changes.unassign) {
             let valid: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE uid = ? AND kind = 'person' AND deleted_at IS NULL)")
                 .bind(person).fetch_one(&mut **tx).await?;
             if !valid {
                 return Err(invalid("Area assignments require an existing Person"));
             }
-            let ids: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid = ? AND role = 'ordinary' AND retracted_at IS NULL ORDER BY uid LIMIT 129")
-                .bind(target).bind(&predicate).bind(person).fetch_all(&mut **tx).await?;
+            let ids: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid IN (SELECT c.concept_uid FROM vocabulary_role_concept c JOIN vocabulary_feature f ON f.role_uid=c.role_uid WHERE f.feature=?) AND object_uid = ? AND role = 'ordinary' AND retracted_at IS NULL ORDER BY uid LIMIT 129")
+                .bind(target).bind("assignment").bind(person).fetch_all(&mut **tx).await?;
             if ids.len() > 128 {
                 return Err(invalid("Too many assignments to change through an Area"));
             }
@@ -239,6 +237,7 @@ async fn state(
         quantity,
         assertions,
         assignees,
+        assignment_binding,
     })
 }
 
@@ -381,11 +380,7 @@ impl Engine {
         )
         .await?;
         if !current.assignees.is_empty() {
-            let predicate: String = store::sqlx::query_scalar(
-                "SELECT uid FROM concept WHERE canonical_name = 'assigned-to'",
-            )
-            .fetch_one(&mut *tx)
-            .await?;
+            let predicate = store::vocabulary::feature_write_on(&mut tx,"assignment").await?;
             for person in &changes.unassign {
                 for assertion in &current.assignees[person] {
                     store::assertions::retract_tx(&mut tx, assertion, actor.as_deref()).await?;

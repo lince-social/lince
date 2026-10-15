@@ -127,6 +127,33 @@ fn truth(value: bool) -> DecimalValue {
     if value { one() } else { zero() }
 }
 
+pub(crate) fn arithmetic(
+    operator: crate::expr::BinOp,
+    left: DecimalValue,
+    right: DecimalValue,
+) -> Result<DecimalValue, ConditionError> {
+    use crate::expr::BinOp;
+    match operator {
+        BinOp::Add => add(left, right),
+        BinOp::Sub => sub(left, right),
+        BinOp::Mul => mul(left, right),
+        BinOp::Div => div(left, right),
+        BinOp::Rem => {
+            if right.mantissa() == 0 {
+                return Err(ConditionError::DivisionByZero);
+            }
+            let (left, right) = align(left, right).ok_or(ConditionError::Overflow)?;
+            let mantissa = left
+                .mantissa()
+                .checked_rem(right.mantissa())
+                .ok_or(ConditionError::Overflow)?;
+            DecimalValue::from_mantissa(left.scale(), mantissa)
+                .map_err(|_| ConditionError::Overflow)
+        }
+        _ => Err(ConditionError::Parse("Expected arithmetic operator".into())),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Gate {
@@ -145,7 +172,9 @@ impl Gate {
         if text == "always" {
             return Ok(Gate::Always);
         }
-        if text.strip_prefix("!=").is_some_and(|rest| DecimalValue::parse_inferred(rest.trim()).is_ok_and(|value| value.mantissa() == 0)) {
+        if text.strip_prefix("!=").is_some_and(|rest| {
+            DecimalValue::parse_inferred(rest.trim()).is_ok_and(|value| value.mantissa() == 0)
+        }) {
             return Ok(Gate::NonZero);
         }
         let (build, rest): (fn(DecimalValue) -> Gate, &str) =
@@ -247,10 +276,26 @@ impl Condition {
                     crate::expr::extension_token(args)
                         .map_err(|error| ConditionError::Parse(error.to_string()))?;
                 }
-                Expr::Fn(name, args) if crate::transfer::karma::is_reading(name) || name == "distance" || name == "query_command" => {
-                    let count = if crate::transfer::karma::is_agreement_reading(name) || name == "distance" { 2 } else { 1 };
-                    if args.len() != count || args.iter().any(|argument| !matches!(argument, Expr::Ref(_))) {
-                        return Err(ConditionError::Parse(format!("{name}() needs exactly {count} @references")));
+                Expr::Fn(name, args)
+                    if crate::transfer::karma::is_reading(name)
+                        || name == "distance"
+                        || name == "query_command" =>
+                {
+                    let count = if crate::transfer::karma::is_agreement_reading(name)
+                        || name == "distance"
+                    {
+                        2
+                    } else {
+                        1
+                    };
+                    if args.len() != count
+                        || args
+                            .iter()
+                            .any(|argument| !matches!(argument, Expr::Ref(_)))
+                    {
+                        return Err(ConditionError::Parse(format!(
+                            "{name}() needs exactly {count} @references"
+                        )));
                     }
                 }
                 Expr::Fn(_, args) => {
@@ -416,12 +461,19 @@ fn call(
         return resolver.lookup(&token.func, &token.slug, None);
     }
     if crate::transfer::karma::is_agreement_reading(name) || name == "distance" {
-        let references = args.iter().map(|argument| match argument {
-            Expr::Ref(name) => Ok(name.as_str()),
-            _ => Err(ConditionError::Parse(format!("{name}() needs two @references"))),
-        }).collect::<Result<Vec<_>, _>>()?;
+        let references = args
+            .iter()
+            .map(|argument| match argument {
+                Expr::Ref(name) => Ok(name.as_str()),
+                _ => Err(ConditionError::Parse(format!(
+                    "{name}() needs two @references"
+                ))),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         if references.len() != 2 {
-            return Err(ConditionError::Parse(format!("{name}() needs two @references")));
+            return Err(ConditionError::Parse(format!(
+                "{name}() needs two @references"
+            )));
         }
         return resolver.lookup(name, &references.join("|"), None);
     }

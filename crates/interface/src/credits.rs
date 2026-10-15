@@ -38,6 +38,22 @@ pub const FONTIQUE: Attribution = Attribution {
     license: include_str!("../licenses/fontique-MIT.txt"),
 };
 
+pub const PARLEY: Attribution = Attribution {
+    name: "Parley",
+    author: "The Parley Authors; Lince dictionary segmentation backport",
+    license: concat!(
+        include_str!("../../../vendor/parley/CREDITS.txt"),
+        "\n",
+        include_str!("../../../vendor/parley/LICENSE-MIT"),
+    ),
+};
+
+pub const ICU: Attribution = Attribution {
+    name: "ICU4X segmentation data",
+    author: "Unicode, Inc. and contributors",
+    license: include_str!("../licenses/icu4x-Unicode-3.0.txt"),
+};
+
 pub const ATTRIBUTIONS: &[Attribution] = &[
     Attribution {
         name: "image",
@@ -73,6 +89,8 @@ pub const ATTRIBUTIONS: &[Attribution] = &[
     DEJAVU,
     CJK,
     FONTIQUE,
+    PARLEY,
+    ICU,
     Attribution {
         name: "Bevy",
         author: "Bevy contributors",

@@ -491,7 +491,7 @@ impl Engine {
             self.require_permission(actor, if current.is_some() { "frequency:update" } else { "frequency:create" }).await?;
             if let Some(condition) = &mut condition {
                 condition.source = self
-                    .canonical_condition(Some(condition.source.clone()))
+                    .canonical_condition_for(Some(condition.source.clone()),actor)
                     .await?
                     .ok_or_else(|| invalid("Empty condition"))?;
                 condition.bindings = store::karma_bindings::resolve(

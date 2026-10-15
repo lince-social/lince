@@ -30,6 +30,7 @@ pub fn selection(world: &World, entity: Entity) -> Option<Selection> {
 #[derive(Clone, Default)]
 struct Rule {
     organs: Vec<String>,
+    persons: Vec<String>,
     lower: String,
     upper: String,
     lower_inclusive: bool,
@@ -41,6 +42,7 @@ impl From<&Condition> for Rule {
     fn from(condition: &Condition) -> Self {
         Self {
             organs: condition.organs.clone(),
+            persons: condition.persons.clone(),
             lower: condition
                 .lower
                 .map_or_else(String::new, |bound| bound.value.to_string()),
@@ -73,6 +75,7 @@ impl Rule {
         };
         Ok(Condition {
             organs: self.organs.clone(),
+            persons: self.persons.clone(),
             lower: bound(&self.lower, self.lower_inclusive)?,
             upper: bound(&self.upper, self.upper_inclusive)?,
             radius_metres: if self.radius.trim().is_empty() {
@@ -113,6 +116,7 @@ enum Intent {
     Add(bool),
     Remove(bool, usize),
     Organ(bool, usize, String),
+    Person(bool, usize, String),
     ChooseOrgans(bool, usize),
     Inclusive(bool, usize, bool),
     Save,
@@ -366,13 +370,13 @@ fn draw(world: &mut World, entity: Entity) {
         entity,
         match panel.data {
             Data::Record => {
-                "This policy bounds future Record sharing. Existing roles, grants, and sync settings still apply."
+                "These rules bound Record access and future sharing. Existing roles, grants, and sync settings still apply."
             }
             Data::Place => {
                 "Choose an exact point or an approximate area for each inclusion. Approximate access withholds exact Record replication and address text. Linked places also require their own permission."
             }
             Data::LiveLocation => {
-                "Live coordinates expire. Choose an exact point or an approximate area for each inclusion. Named recipients can also view them, unless their Organ is excluded. The controller retains exact access."
+                "Live coordinates expire. Choose an exact point or an approximate area for each inclusion. Person and Organ exclusions override named invitations. The controller retains exact access."
             }
         },
     );
@@ -417,7 +421,11 @@ fn draw(world: &mut World, entity: Entity) {
                 world,
                 block,
                 if rule.organs.is_empty() {
-                    "Any known authenticated Organ"
+                    if rule.persons.is_empty() {
+                        "Any known authenticated Organ"
+                    } else {
+                        "Selected Persons on their authenticated devices"
+                    }
                 } else {
                     "Selected Organs only"
                 },
@@ -426,7 +434,7 @@ fn draw(world: &mut World, entity: Entity) {
                 world,
                 block,
                 entity,
-                "Choose Organs for this condition",
+                "Choose Organs and Persons for this condition",
                 Intent::ChooseOrgans(exclude, index),
             );
             if let Some(context) = &panel.context {
@@ -451,6 +459,34 @@ fn draw(world: &mut World, entity: Entity) {
                             organ.label
                         ),
                         Intent::Organ(exclude, index, organ.uid.clone()),
+                    );
+                }
+                label(
+                    world,
+                    block,
+                    "Persons (empty = no Person restriction; selected Organ and proximity criteria still apply)",
+                );
+                for person in &context.persons {
+                    if panel.choosing_organs != Some((exclude, index)) {
+                        if rule.persons.contains(&person.uid) {
+                            label(world, block, format!("Person: {}", person.label));
+                        }
+                        continue;
+                    }
+                    button(
+                        world,
+                        block,
+                        entity,
+                        &format!(
+                            "{}Person: {}",
+                            if rule.persons.contains(&person.uid) {
+                                "✓ "
+                            } else {
+                                ""
+                            },
+                            person.label
+                        ),
+                        Intent::Person(exclude, index, person.uid.clone()),
                     );
                 }
             }
@@ -531,14 +567,14 @@ fn draw(world: &mut World, entity: Entity) {
     label(
         world,
         entity,
-        "Preview of these rules · the controller keeps their own access",
+        "Preview of these rules · existing roles and authentication also apply",
     );
     match policy(&panel) {
         Ok(policy) => {
             if let Some(context) = &panel.context {
                 for organ in &context.organs {
                     let decision = policy.decide(&organ.uid, organ.proximity);
-                    let allowed = organ.proximity.is_some() && decision.allowed;
+                    let allowed = !organ.blocked && organ.proximity.is_some() && decision.allowed;
                     let numbered = |values: &[usize]| {
                         values
                             .iter()
@@ -568,6 +604,50 @@ fn draw(world: &mut World, entity: Entity) {
                             numbered(&decision.included_by),
                             numbered(&decision.excluded_by)
                         ),
+                    );
+                }
+                let people = context.persons.iter().filter(|person| {
+                    policy
+                        .include
+                        .iter()
+                        .chain(&policy.exclude)
+                        .any(|rule| rule.persons.contains(&person.uid))
+                });
+                let mut previews = 0;
+                for (person, organ) in people
+                    .flat_map(|person| context.organs.iter().map(move |organ| (person, organ)))
+                    .take(64)
+                {
+                    let decision =
+                        policy.decide_principal(&organ.uid, Some(&person.uid), organ.proximity);
+                    let named = decision
+                        .included_by
+                        .iter()
+                        .any(|index| !policy.include[*index].persons.is_empty());
+                    label(
+                        world,
+                        entity,
+                        format!(
+                            "Person {} via {} · {}",
+                            person.label,
+                            organ.label,
+                            if !organ.blocked
+                                && decision.allowed
+                                && (organ.proximity.is_some() || named)
+                            {
+                                "Allowed by these rules"
+                            } else {
+                                "Denied by these rules"
+                            }
+                        ),
+                    );
+                    previews += 1;
+                }
+                if previews == 64 {
+                    label(
+                        world,
+                        entity,
+                        "Showing at most 64 Person/Organ combinations",
                     );
                 }
             }
@@ -661,6 +741,15 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
                     rule.organs.retain(|uid| uid != &organ);
                 } else if rule.organs.len() < nucleus::visibility::MAX_ORGANS_PER_CONDITION {
                     rule.organs.push(organ);
+                }
+            }
+        }
+        Intent::Person(exclude, index, person) => {
+            if let Some(rule) = rules(&mut panel, exclude).get_mut(index) {
+                if rule.persons.contains(&person) {
+                    rule.persons.retain(|uid| uid != &person);
+                } else if rule.persons.len() < nucleus::visibility::MAX_ORGANS_PER_CONDITION {
+                    rule.persons.push(person);
                 }
             }
         }
@@ -781,11 +870,16 @@ fn maintain(world: &mut World) {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "native-presentation")]
+pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
+    tests::laboratory_cases(cases);
+}
+
+#[cfg(any(test, feature = "native-presentation"))]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn location_editor_saves_user_area_size_and_rejects_invalid_sizes() {
         let mut world = World::new();
         world.insert_resource(Typography(Handle::default()));
@@ -809,6 +903,7 @@ mod tests {
                 data: Data::Place,
                 saved: None,
                 organs: vec![],
+                persons: vec![],
                 records: vec![],
             })
             .unwrap()),
@@ -849,7 +944,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn editor_previews_composed_rules_and_saves_the_loaded_revision() {
         let mut world = World::new();
         world.insert_resource(Typography(Handle::default()));
@@ -857,6 +952,7 @@ mod tests {
         let parent = world.spawn_empty().id();
         let record = nucleus::new_uid("r");
         let organ = nucleus::new_uid("r");
+        let person = nucleus::new_uid("r");
         let panel = mount(&mut world, parent, &record, Data::LiveLocation);
         let id = world
             .get::<Panel>(panel)
@@ -878,10 +974,16 @@ mod tests {
                     policy: Policy::default(),
                 }),
                 records: vec![],
+                persons: vec![nucleus::location::Choice {
+                    uid: person.clone(),
+                    label: "Passenger Person".into(),
+                    node_id: None,
+                }],
                 organs: vec![nucleus::visibility::Organ {
                     uid: organ.clone(),
                     label: "Passenger".into(),
                     proximity: Some(2),
+                    blocked: false,
                 }],
             })
             .unwrap()),
@@ -889,6 +991,7 @@ mod tests {
         world.resource_mut::<Messages<Request>>().clear();
         apply(&mut world, panel, Intent::Add(false));
         apply(&mut world, panel, Intent::Organ(false, 0, organ.clone()));
+        apply(&mut world, panel, Intent::Person(false, 0, person.clone()));
         let upper = world
             .get::<Panel>(panel)
             .unwrap()
@@ -907,6 +1010,7 @@ mod tests {
         apply(&mut world, panel, Intent::Organ(true, 0, organ.clone()));
         apply(&mut world, panel, Intent::Preview);
         let policy = policy(world.get::<Panel>(panel).unwrap()).unwrap();
+        assert_eq!(policy.include[0].persons, vec![person]);
         assert_eq!(
             policy.include[0].upper,
             Some(Bound {
@@ -944,5 +1048,11 @@ mod tests {
                 .notice
                 .contains("refresh")
         );
+    }
+
+    #[cfg(feature = "native-presentation")]
+    crate::native::laboratory_cases! {
+        location_editor_saves_user_area_size_and_rejects_invalid_sizes,
+        editor_previews_composed_rules_and_saves_the_loaded_revision,
     }
 }

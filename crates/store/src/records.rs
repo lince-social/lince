@@ -665,6 +665,15 @@ pub async fn set_extension_on(
 ) -> Result<Option<i64>, StoreError> {
     require_active_on(tx, record_uid).await?;
     validate_extension_name(namespace, "namespace", true)?;
+    if namespace == nucleus::transfer::outcome::NAMESPACE {
+        let original: Option<String> = sqlx::query_scalar("SELECT payload_json FROM transfer_outcome_record WHERE record_uid=?")
+            .bind(record_uid).fetch_optional(&mut **tx).await?;
+        if let Some(original) = original
+            && serde_json::from_str::<Value>(&original).map_err(|error| protocol(error.to_string()))? != *fds
+        {
+            return Err(protocol("Append a signed outcome correction instead of rewriting evidence"));
+        }
+    }
     let (encoded, new_fields) = extension_json(fds)?;
     let old = stored_extension_on(tx, record_uid, namespace).await?;
     let Some(old) = old else {
@@ -737,6 +746,11 @@ pub async fn delete_extension_on(
 ) -> Result<bool, StoreError> {
     require_active_on(tx, record_uid).await?;
     validate_extension_name(namespace, "namespace", true)?;
+    if namespace == nucleus::transfer::outcome::NAMESPACE {
+        let saved: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_outcome_record WHERE record_uid=?)")
+            .bind(record_uid).fetch_one(&mut **tx).await?;
+        if saved { return Err(protocol("Original outcome evidence must be retained")); }
+    }
     let Some(old) = stored_extension_on(tx, record_uid, namespace).await? else {
         return Ok(false);
     };
@@ -822,6 +836,21 @@ pub async fn numeric_extensions(pool: &SqlitePool, record_uid: &str) -> Result<V
     Ok(readings)
 }
 
+pub fn extension_numeric_at(raw: &str, path: &[String]) -> Result<DecimalValue, StoreError> {
+    if path.is_empty() || path.len() > 8 || path.iter().any(|part| part.is_empty() || part.len() > 128)
+        || path.iter().map(String::len).sum::<usize>() > 512
+    {
+        return Err(protocol("Numeric extension paths exceed their bounds"));
+    }
+    let mut fields = extension_raw_fields(raw)?;
+    let mut value = fields.remove(&path[0]).ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
+    for part in &path[1..] {
+        value = extension_raw_fields(value.get())?.remove(part)
+            .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
+    }
+    extension_decimal(value.get())
+}
+
 pub async fn get_extension(
     pool: &SqlitePool,
     record_uid: &str,
@@ -859,6 +888,27 @@ pub async fn all_extensions(
                 .map(|value| (uid, value))
         })
         .collect())
+}
+
+pub async fn extensions_for_records(
+    pool: &SqlitePool,
+    namespace: &str,
+    records: &[String],
+) -> Result<std::collections::HashMap<String, Value>, StoreError> {
+    let mut output = std::collections::HashMap::new();
+    for records in records.chunks(512) {
+        let mut query = sqlx::QueryBuilder::new("SELECT e.record_uid, e.fds FROM record_extension e JOIN record r ON r.uid = e.record_uid WHERE r.deleted_at IS NULL AND e.namespace = ");
+        query.push_bind(namespace).push(" AND e.record_uid IN (");
+        let mut arguments = query.separated(",");
+        for uid in records { arguments.push_bind(uid); }
+        arguments.push_unseparated(")");
+        for row in query.build().fetch_all(pool).await? {
+            if let Ok(value) = serde_json::from_str::<Value>(row.get("fds")) {
+                output.insert(row.get::<String, _>("record_uid"), value);
+            }
+        }
+    }
+    Ok(output)
 }
 
 pub async fn set_text(

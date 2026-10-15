@@ -55,11 +55,15 @@ struct Message {
 pub(crate) enum Payload {
     Sync(engine::sync::OpBatch),
     Pull {
-        uid: String, reference: String, after_cursor: u64,
+        uid: String,
+        reference: String,
+        after_cursor: u64,
         wire: cell::transfer::Authenticated<cell::transfer::PullRequest>,
     },
     PullResult {
-        uid: String, reference: String, after_cursor: u64,
+        uid: String,
+        reference: String,
+        after_cursor: u64,
         wire: cell::transfer::Authenticated<cell::transfer::PullResult>,
     },
     Transfer(cell::transfer::Authenticated<cell::transfer::DeliveryPush>),
@@ -92,6 +96,7 @@ pub struct World {
     pub steps: u64,
     pub inputs: u64,
     pub evidence_bytes: u64,
+    pub(crate) source_history: BTreeSet<String>,
     pub evidence_micros: u64,
     pub stop: Option<report::Stop>,
     pub control: nucleus::execution::control::Control,
@@ -102,12 +107,173 @@ pub struct World {
     journal: std::fs::File,
 }
 
+struct Observations<'a> {
+    values: Vec<Observation>,
+    bytes: u64,
+    limit: u64,
+    row_limit: u64,
+    cell: &'a str,
+    cause: &'a Cause,
+    now_ms: i64,
+    sequence: u64,
+}
+
+impl Observations<'_> {
+    fn push(&mut self, observation: Observation) -> Result<()> {
+        #[derive(Serialize)]
+        struct Event<'a> {
+            sequence: u64,
+            virtual_ms: i64,
+            cell: &'a str,
+            caused_by: &'a Cause,
+            observation: &'a Observation,
+        }
+        if self.values.len() as u64 >= self.row_limit {
+            return Err(Box::new(crate::limits::Exceeded {
+                resource: "observation rows",
+                limit: self.limit,
+            }));
+        }
+        let event = Event {
+            sequence: self.sequence + self.values.len() as u64,
+            virtual_ms: self.now_ms,
+            cell: self.cell,
+            caused_by: self.cause,
+            observation: &observation,
+        };
+        let bytes = crate::limits::size(
+            &event,
+            self.limit
+                .saturating_sub(self.bytes)
+                .saturating_sub(1)
+                .min(crate::limits::JSON_BYTES - 1),
+            "observation evidence",
+        )? + 1;
+        self.bytes += bytes;
+        self.values.push(observation);
+        Ok(())
+    }
+}
+
+async fn source_history(
+    store: &store::Store,
+    maximum: i64,
+    from_ms: i64,
+    until_ms: i64,
+) -> Result<bool> {
+    let mut position = 0i64;
+    loop {
+        let rows = store::sqlx::query("SELECT rowid AS position, substr(intended_at,1,128) AS intended_at, length(CAST(intended_at AS BLOB)) AS bytes FROM karma_rule_application WHERE rowid > ? AND rowid <= ? AND status = 'applied' AND unixepoch(intended_at, 'subsec') * 1000 BETWEEN ? AND ? ORDER BY rowid LIMIT ?")
+            .bind(position).bind(maximum).bind(from_ms.saturating_sub(1)).bind(until_ms.saturating_add(1)).bind(crate::limits::BATCH_ROWS as i64).fetch_all(&store.pool).await?;
+        if rows.is_empty() {
+            return Ok(false);
+        }
+        for row in rows {
+            position = row.try_get("position")?;
+            if row.try_get::<i64, _>("bytes")? > 128 {
+                return Err("source application timestamp exceeds its limit".into());
+            }
+            let intended: String = row.try_get("intended_at")?;
+            let at = chrono::DateTime::parse_from_rfc3339(&intended)?.timestamp_millis();
+            if (from_ms..=until_ms).contains(&at) {
+                return Ok(true);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod limit_tests {
+    use super::*;
+
+    #[test]
+    fn canonical_state_hash_preserves_large_runtime_values() {
+        let value = "x".repeat((crate::limits::JSON_BYTES + 1) as usize);
+        let expected = nucleus::fact::sha256_hex(&serde_json::to_vec(&value).unwrap());
+        assert_eq!(
+            digest(&value).unwrap().as_str(),
+            format!("sha256:{expected}")
+        );
+    }
+
+    #[tokio::test]
+    async fn source_history_ignores_old_rows_and_uses_scheduler_milliseconds() {
+        let directory = tempfile::tempdir().unwrap();
+        let store = store::Store::open(&format!(
+            "sqlite://{}",
+            directory.path().join("source.sqlite").display()
+        ))
+        .await
+        .unwrap();
+        for index in 0..600 {
+            store::sqlx::query("INSERT INTO karma_rule_application(event_id,rule_uid,rule_revision,status,at,intended_at) VALUES(?,'rule',1,'applied',?,?)").bind(format!("old-{index}")).bind("2000-01-01T00:00:00Z").bind("2000-01-01T00:00:00Z").execute(&store.pool).await.unwrap();
+        }
+        let at = chrono::DateTime::parse_from_rfc3339("2026-01-01T00:00:00Z")
+            .unwrap()
+            .timestamp_millis();
+        assert!(!source_history(&store, 600, at, at).await.unwrap());
+        store::sqlx::query("INSERT INTO karma_rule_application(event_id,rule_uid,rule_revision,status,at,intended_at) VALUES('edge','rule',1,'applied',?,?)").bind("2026-01-01T00:00:00Z").bind("2026-01-01T00:00:00.000999Z").execute(&store.pool).await.unwrap();
+        assert!(source_history(&store, 601, at, at).await.unwrap());
+        assert!(!source_history(&store, 601, at + 1, at + 1).await.unwrap());
+        store.pool.close().await;
+    }
+
+    #[tokio::test]
+    async fn application_batches_stop_before_retaining_excess_rows() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut scenario = crate::fixtures::daily();
+        scenario.limits.steps = 1;
+        let mut world = World::open(scenario, &directory.path().join("source"))
+            .await
+            .unwrap();
+        let initial = world.trace.len();
+        let store = world.nodes["a"].engine().store.clone();
+        for index in 0..800 {
+            store::sqlx::query("INSERT INTO karma_rule_application(event_id,rule_uid,rule_revision,status,at,intended_at) VALUES(?,'rule',1,'applied',?,?)").bind(format!("batch-{index}")).bind("2026-01-01T00:00:00Z").bind("2026-01-01T00:00:00Z").execute(&store.pool).await.unwrap();
+        }
+        world.observe("a", Cause::Seed {}).await.unwrap();
+        assert_eq!(
+            world.trace[initial..]
+                .iter()
+                .filter(|event| matches!(event.observation, Observation::RuleApplication { .. }))
+                .count(),
+            800
+        );
+        let initial = world.trace.len();
+        for index in 0..800 {
+            store::sqlx::query("INSERT INTO karma_rule_application(event_id,rule_uid,rule_revision,status,at,intended_at) VALUES(?,'rule',1,'applied',?,?)").bind(format!("excess-{index}")).bind("2026-01-01T00:00:00Z").bind("2026-01-01T00:00:00Z").execute(&store.pool).await.unwrap();
+        }
+        world.scenario.limits.evidence_bytes = world.evidence_bytes + 4096;
+        let error = world.observe("a", Cause::Seed {}).await.unwrap_err();
+        assert!(crate::limits::is_exceeded(&error), "{error}");
+        assert_eq!(world.stop, Some(report::Stop::EvidenceBudget {}));
+        assert_eq!(world.trace.len(), initial);
+        assert!(world.nodes["a"].application_position < 1600);
+        store.pool.close().await;
+    }
+}
+
 pub fn digest<T: Serialize>(value: &T) -> Result<CanonicalHash> {
-    let bytes = serde_json::to_vec(value)?;
-    Ok(CanonicalHash::parse(format!(
-        "sha256:{}",
-        nucleus::fact::sha256_hex(&bytes)
-    ))?)
+    use sha2::Digest;
+    struct Hasher(sha2::Sha256);
+    impl Write for Hasher {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.update(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut hash = Hasher(sha2::Sha256::new());
+    serde_json::to_writer(&mut hash, value)?;
+    let encoded: String = hash
+        .0
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    Ok(CanonicalHash::parse(format!("sha256:{encoded}"))?)
 }
 
 pub(crate) fn derived_secret(seed: u64, cell: &str, purpose: &str) -> [u8; 32] {
@@ -122,7 +288,13 @@ impl World {
         Self::open_controlled(scenario, directory, None, None, None).await
     }
 
-    pub(crate) async fn open_controlled(scenario: Scenario, directory: &Path, replay_checkpoint: Option<u64>, control: Option<nucleus::execution::control::Control>, signer: Option<engine::trust::Signer>) -> Result<Self> {
+    pub(crate) async fn open_controlled(
+        scenario: Scenario,
+        directory: &Path,
+        replay_checkpoint: Option<u64>,
+        control: Option<nucleus::execution::control::Control>,
+        signer: Option<engine::trust::Signer>,
+    ) -> Result<Self> {
         scenario.validate()?;
         std::fs::create_dir_all(directory.join("seed"))?;
         std::fs::create_dir_all(directory.join("working"))?;
@@ -132,7 +304,13 @@ impl World {
             .open(directory.join("trace.jsonl"))?;
         let mut world = Self {
             now_ms: scenario.start_ms,
-            control: control.unwrap_or_else(|| nucleus::execution::control::Control::new(scenario.limits.rule_evaluations, scenario.limits.wall_time_ms, replay_checkpoint)),
+            control: control.unwrap_or_else(|| {
+                nucleus::execution::control::Control::new(
+                    scenario.limits.rule_evaluations,
+                    scenario.limits.wall_time_ms,
+                    replay_checkpoint,
+                )
+            }),
             scenario,
             nodes: BTreeMap::new(),
             trace: Vec::new(),
@@ -140,6 +318,7 @@ impl World {
             steps: 0,
             inputs: 0,
             evidence_bytes: 0,
+            source_history: BTreeSet::new(),
             evidence_micros: 0,
             stop: None,
             assumed_transfers: BTreeMap::new(),
@@ -148,6 +327,11 @@ impl World {
             serial: 0,
             journal,
         };
+        let mut snapshot_remaining = world
+            .scenario
+            .limits
+            .evidence_bytes
+            .saturating_add(world.scenario.cells.len() as u64 * crate::limits::JSON_BYTES);
         for seed in world.scenario.cells.clone() {
             let execution = Execution::new(
                 derived_secret(
@@ -159,7 +343,8 @@ impl World {
                     ),
                 ),
                 world.now_ms,
-            )?.controlled(world.control.clone(), seed.name.clone());
+            )?
+            .controlled(world.control.clone(), seed.name.clone());
             let secret = derived_secret(world.scenario.seed, &seed.name, "signer");
             let path = directory
                 .join("working")
@@ -187,7 +372,8 @@ impl World {
                 return Err(format!("seed integrity: {integrity}").into());
             }
             if let Some(proposal) = &world.scenario.proposal
-                && proposal.cell == seed.name {
+                && proposal.cell == seed.name
+            {
                 proposal.verify_source(&store).await?;
             }
             let fact_position =
@@ -199,8 +385,19 @@ impl World {
             )
             .fetch_one(&store.pool)
             .await?;
+            let prior = source_history(
+                &store,
+                application_position,
+                world.scenario.start_ms,
+                world.scenario.end_ms,
+            )
+            .await?;
+            if prior {
+                world.source_history.insert(seed.name.clone());
+            }
             let cell = Cell::isolated(store, &execution, secret).await?;
-            let state_hasher = store::snapshot::StateHasher::new(cell.runtime().store.clone()).await?;
+            let state_hasher =
+                store::snapshot::StateHasher::new(cell.runtime().store.clone()).await?;
             let mut node = Node {
                 state_hasher,
                 cell,
@@ -218,8 +415,12 @@ impl World {
                 person_key: None,
                 online: true,
             };
-            if seed.name == "current" && let Some(signer) = &signer {
-                node.execution.scope(node.engine().set_signer(signer.clone())).await?;
+            if seed.name == "current"
+                && let Some(signer) = &signer
+            {
+                node.execution
+                    .scope(node.engine().set_signer(signer.clone()))
+                    .await?;
                 node.person_key = Some(signer.clone());
             }
             (node.quantities, node.deleted_records) = quantities(node.engine()).await?;
@@ -237,7 +438,8 @@ impl World {
                 .insert(format!("cell:{}:uid", seed.name), local.uid);
             world.nodes.insert(seed.name.clone(), node);
             if let Some(proposal) = &world.scenario.proposal
-                && proposal.cell == seed.name {
+                && proposal.cell == seed.name
+            {
                 proposal.bind(world.nodes[&seed.name].engine()).await?;
             }
             if !seed.lingua.is_empty() {
@@ -260,7 +462,17 @@ impl World {
                     Err(error) => {
                         if let Some(limit) = world.control.stopped() {
                             world.stop = Some(control_stop(limit));
-                            world.emit(&seed.name, Cause::Seed {}, Observation::LinguaInterrupted { files: seed.lingua.iter().map(|file| (file.name.clone(), file.hash.clone())).collect() })?;
+                            world.emit(
+                                &seed.name,
+                                Cause::Seed {},
+                                Observation::LinguaInterrupted {
+                                    files: seed
+                                        .lingua
+                                        .iter()
+                                        .map(|file| (file.name.clone(), file.hash.clone()))
+                                        .collect(),
+                                },
+                            )?;
                         } else {
                             return Err(error);
                         }
@@ -275,16 +487,30 @@ impl World {
             }
             world.tick(&seed.name, Cause::Seed {}).await?;
             let node = &world.nodes[&seed.name];
+            let pages: i64 = store::sqlx::query_scalar("PRAGMA page_count")
+                .fetch_one(&node.engine().store.pool)
+                .await?;
+            let page_size: i64 = store::sqlx::query_scalar("PRAGMA page_size")
+                .fetch_one(&node.engine().store.pool)
+                .await?;
+            let bytes = u64::try_from(pages)?.saturating_mul(u64::try_from(page_size)?);
+            if bytes > snapshot_remaining || bytes > crate::limits::LINES_BYTES {
+                return Err(Box::new(crate::limits::Exceeded {
+                    resource: "seed snapshots",
+                    limit: snapshot_remaining.min(crate::limits::LINES_BYTES),
+                }));
+            }
+            snapshot_remaining -= bytes;
             node.cell
                 .runtime()
                 .store
                 .snapshot_into(&directory.join("seed").join(format!("{}.sqlite", seed.name)))
                 .await?;
-            std::fs::write(
-                directory
+            crate::artifacts::atomic(
+                &directory
                     .join("seed")
                     .join(format!("{}.environment.json", seed.name)),
-                serde_json::to_vec(&node.execution.snapshot())?,
+                &node.execution.snapshot(),
             )?;
         }
         for input in world.scenario.effective_inputs()? {
@@ -320,17 +546,30 @@ impl World {
                     continue;
                 }
                 let record = match &definition.predicate {
-                    Predicate::Quantity { cell, record, .. } | Predicate::QuantityEquals { cell, record, .. } | Predicate::Nonnegative { cell, record } => {
-                        let Some(node) = self.nodes.get(cell) else { continue; };
-                        store::records::resolve(&node.engine().store.pool, &self.resolve_reference(record)).await?.map(|record| record.uid)
+                    Predicate::Quantity { cell, record, .. }
+                    | Predicate::QuantityEquals { cell, record, .. }
+                    | Predicate::Nonnegative { cell, record } => {
+                        let Some(node) = self.nodes.get(cell) else {
+                            continue;
+                        };
+                        store::records::resolve(
+                            &node.engine().store.pool,
+                            &self.resolve_reference(record),
+                        )
+                        .await?
+                        .map(|record| record.uid)
                     }
                     Predicate::NoRuleCycles { .. } => None,
                     _ => continue,
                 };
-                checks.push(nucleus::execution::control::ResolvedCheck { definition: definition.clone(), record });
+                checks.push(nucleus::execution::control::ResolvedCheck {
+                    definition: definition.clone(),
+                    record,
+                });
             }
         }
-        self.control.configure(self.scenario.limits.evidence_bytes / 2, checks);
+        self.control
+            .configure(self.scenario.limits.evidence_bytes / 2, checks);
         self.control.set_time(self.now_ms);
         Ok(())
     }
@@ -363,15 +602,33 @@ impl World {
             caused_by,
             observation,
         };
-        let bytes = serde_json::to_vec(&event)?;
+        let remaining = self
+            .scenario
+            .limits
+            .evidence_bytes
+            .saturating_sub(self.evidence_bytes)
+            .saturating_sub(1)
+            .min(crate::limits::JSON_BYTES - 1);
+        if self.trace.len() as u64 >= crate::limits::event_rows(&self.scenario) {
+            self.stop.get_or_insert(report::Stop::EvidenceBudget {});
+            return Err(Box::new(crate::limits::Exceeded {
+                resource: "event rows",
+                limit: self.scenario.limits.evidence_bytes,
+            }));
+        }
+        let bytes = match crate::limits::bytes(&event, remaining, "event evidence") {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                if crate::limits::is_exceeded(&error) {
+                    self.stop.get_or_insert(report::Stop::EvidenceBudget {});
+                }
+                return Err(error);
+            }
+        };
         self.evidence_bytes = self
             .evidence_bytes
             .checked_add(bytes.len() as u64 + 1)
             .ok_or("evidence counter overflow")?;
-        if self.evidence_bytes > self.scenario.limits.evidence_bytes {
-            self.stop = Some(report::Stop::EvidenceBudget {});
-            return Err("simulation evidence budget exhausted".into());
-        }
         self.journal.write_all(&bytes)?;
         self.journal.write_all(b"\n")?;
         self.trace.push(event);
@@ -380,10 +637,32 @@ impl World {
     }
 
     pub(crate) async fn observe(&mut self, name: &str, cause: Cause) -> Result<()> {
+        let result = self.observe_inner(name, cause).await;
+        if result.as_ref().is_err_and(crate::limits::is_exceeded) {
+            self.stop.get_or_insert(report::Stop::EvidenceBudget {});
+        }
+        result
+    }
+
+    async fn observe_inner(&mut self, name: &str, cause: Cause) -> Result<()> {
         let started = std::time::Instant::now();
         let evidence_before = self.evidence_micros;
         let node = self.nodes.get_mut(name).ok_or("unknown Cell")?;
-        let mut observations = Vec::new();
+        let mut observations = Observations {
+            values: Vec::new(),
+            bytes: 0,
+            limit: self
+                .scenario
+                .limits
+                .evidence_bytes
+                .saturating_sub(self.evidence_bytes),
+            row_limit: crate::limits::event_rows(&self.scenario)
+                .saturating_sub(self.trace.len() as u64),
+            cell: name,
+            cause: &cause,
+            now_ms: self.now_ms,
+            sequence: self.trace.len() as u64,
+        };
         let previous_quantities = node.quantities.clone();
         loop {
             let facts = store::facts::after_position_with_commits(
@@ -430,72 +709,132 @@ impl World {
                     previous_fact_hash: fact.prev_hash,
                     fact_hash: fact.hash,
                     commit,
-                });
+                })?;
                 node.fact_position = position;
             }
-            if observations.len() as u64 > self.scenario.limits.steps * 256 {
-                return Err("single step fact budget exhausted".into());
+        }
+        let applications = store::sqlx::query("SELECT count(*) AS rows, COALESCE(sum(length(CAST(rule_uid AS BLOB)) + length(CAST(event_id AS BLOB)) + length(CAST(intended_at AS BLOB)) + length(CAST(status AS BLOB)) + COALESCE(length(CAST(frequency_uid AS BLOB)),0) + COALESCE(length(CAST(reason AS BLOB)),0)),0) AS bytes FROM karma_rule_application WHERE rowid > ?").bind(node.application_position).fetch_one(&node.engine().store.pool).await?;
+        if u64::try_from(applications.try_get::<i64, _>("bytes")?)?
+            > observations.limit.saturating_sub(observations.bytes)
+            || u64::try_from(applications.try_get::<i64, _>("rows")?)?
+                > observations
+                    .row_limit
+                    .saturating_sub(observations.values.len() as u64)
+        {
+            return Err(Box::new(crate::limits::Exceeded {
+                resource: "application evidence",
+                limit: observations.limit,
+            }));
+        }
+        loop {
+            let applications = store::sqlx::query("SELECT rowid AS position,rule_uid,rule_revision,event_id,frequency_uid,intended_at,status,reason FROM karma_rule_application WHERE rowid > ? ORDER BY rowid LIMIT ?")
+            .bind(node.application_position).bind(crate::limits::BATCH_ROWS as i64).fetch_all(&node.engine().store.pool).await?;
+            if applications.is_empty() {
+                break;
+            }
+            for row in applications {
+                let status: String = row.get("status");
+                let status = match status.as_str() {
+                    "applied" => report::ApplicationStatus::Applied,
+                    "blocked" => report::ApplicationStatus::Blocked,
+                    "failed" => report::ApplicationStatus::Failed,
+                    _ => return Err(format!("unknown rule application status {status}").into()),
+                };
+                let intended_at: String = row.get("intended_at");
+                let frequency: Option<String> = row.get("frequency_uid");
+                observations.push(Observation::RuleApplication {
+                    occurrence: report::RuleOccurrence {
+                        rule_uid: row.get("rule_uid"),
+                        revision: row.get::<i64, _>("rule_revision").try_into()?,
+                        event_id: row.get("event_id"),
+                        frequency: frequency
+                            .map(|uid| TypedUid::new(ReferenceKind::Frequency, uid))
+                            .transpose()?,
+                        intended_at_ms: Some(
+                            chrono::DateTime::parse_from_rfc3339(&intended_at)?.timestamp_millis(),
+                        ),
+                    },
+                    status,
+                    reason: row.get("reason"),
+                })?;
+                node.application_position = row.get("position");
             }
         }
-        let applications = store::sqlx::query("SELECT rowid AS position, * FROM karma_rule_application WHERE rowid > ? ORDER BY rowid")
-            .bind(node.application_position).fetch_all(&node.engine().store.pool).await?;
-        for row in applications {
-            let status: String = row.get("status");
-            let status = match status.as_str() {
-                "applied" => report::ApplicationStatus::Applied,
-                "blocked" => report::ApplicationStatus::Blocked,
-                "failed" => report::ApplicationStatus::Failed,
-                _ => return Err(format!("unknown rule application status {status}").into()),
-            };
-            let intended_at: String = row.get("intended_at");
-            let frequency: Option<String> = row.get("frequency_uid");
-            observations.push(Observation::RuleApplication {
-                occurrence: report::RuleOccurrence {
-                    rule_uid: row.get("rule_uid"),
-                    revision: row.get::<i64, _>("rule_revision").try_into()?,
-                    event_id: row.get("event_id"),
-                    frequency: frequency
-                        .map(|uid| TypedUid::new(ReferenceKind::Frequency, uid))
-                        .transpose()?,
-                    intended_at_ms: Some(
-                        chrono::DateTime::parse_from_rfc3339(&intended_at)?.timestamp_millis(),
-                    ),
-                },
-                status,
-                reason: row.get("reason"),
-            });
-            node.application_position = row.get("position");
-        }
         (node.quantities, node.deleted_records) = quantities(node.engine()).await?;
-        let adjustments = node.execution.scope(store::transfer_loans::adjustments(&node.engine().store.pool, node.execution.now().timestamp_millis())).await?;
+        let adjustments = node
+            .execution
+            .scope(store::transfer_loans::adjustments(
+                &node.engine().store.pool,
+                node.execution.now().timestamp_millis(),
+            ))
+            .await?;
         for adjustment in &adjustments {
             if let Some(next) = adjustment.next_ms {
-                node.next_ms = node.next_ms.into_iter().chain(Some(next.saturating_sub(node.offset_ms).max(self.now_ms))).min();
+                node.next_ms = node
+                    .next_ms
+                    .into_iter()
+                    .chain(Some(next.saturating_sub(node.offset_ms).max(self.now_ms)))
+                    .min();
             }
         }
         let mut loan_quantities = BTreeMap::new();
         node.loan_unit_changes.clear();
         for adjustment in adjustments {
-            if adjustment.unit_changed { node.loan_unit_changes.insert(adjustment.record); continue; }
-            let Some(physical) = node.quantities.get(&adjustment.record) else { continue };
-            let after = Quantity { value: store::exact::sum_exact([physical.value, adjustment.delta])?, unit: physical.unit.clone() };
-            let before = node.loan_quantities.get(&adjustment.record).or_else(|| previous_quantities.get(&adjustment.record)).cloned().unwrap_or_else(|| physical.clone());
+            if adjustment.unit_changed {
+                node.loan_unit_changes.insert(adjustment.record);
+                continue;
+            }
+            let Some(physical) = node.quantities.get(&adjustment.record) else {
+                continue;
+            };
+            let after = Quantity {
+                value: store::exact::sum_exact([physical.value, adjustment.delta])?,
+                unit: physical.unit.clone(),
+            };
+            let before = node
+                .loan_quantities
+                .get(&adjustment.record)
+                .or_else(|| previous_quantities.get(&adjustment.record))
+                .cloned()
+                .unwrap_or_else(|| physical.clone());
             if before != after || !node.loan_quantities.contains_key(&adjustment.record) {
-                observations.push(Observation::LoanQuantity { record: TypedUid::new(ReferenceKind::Record, adjustment.record.clone())?, before, after: after.clone(), physical: physical.clone(), at_ms: node.execution.now().timestamp_millis() });
+                observations.push(Observation::LoanQuantity {
+                    record: TypedUid::new(ReferenceKind::Record, adjustment.record.clone())?,
+                    before,
+                    after: after.clone(),
+                    physical: physical.clone(),
+                    at_ms: node.execution.now().timestamp_millis(),
+                })?;
             }
             loan_quantities.insert(adjustment.record, after);
         }
         for (record, before) in &node.loan_quantities {
-            if !node.loan_unit_changes.contains(record) && !loan_quantities.contains_key(record) && let Some(physical) = node.quantities.get(record) {
-                observations.push(Observation::LoanQuantity {record:TypedUid::new(ReferenceKind::Record, record.clone())?,before:before.clone(),after:physical.clone(),physical:physical.clone(),at_ms:node.execution.now().timestamp_millis()});
+            if !node.loan_unit_changes.contains(record)
+                && !loan_quantities.contains_key(record)
+                && let Some(physical) = node.quantities.get(record)
+            {
+                observations.push(Observation::LoanQuantity {
+                    record: TypedUid::new(ReferenceKind::Record, record.clone())?,
+                    before: before.clone(),
+                    after: physical.clone(),
+                    physical: physical.clone(),
+                    at_ms: node.execution.now().timestamp_millis(),
+                })?;
             }
         }
         node.loan_quantities = loan_quantities;
         let hash = node.state_hasher.hash().await?;
-        observations.push(Observation::State { hash });
-        let mut pending = self.tasks.values().any(|task| matches!(task, Task::Deliver(_)));
+        observations.push(Observation::State { hash })?;
+        let mut pending = self
+            .tasks
+            .values()
+            .any(|task| matches!(task, Task::Deliver(_)));
         for node in self.nodes.values() {
-            let effects: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM effect_queue WHERE status IN ('queued', 'running'))").fetch_one(&node.engine().store.pool).await?;
+            let effects: bool = store::sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM effect_queue WHERE status IN ('queued', 'running'))",
+            )
+            .fetch_one(&node.engine().store.pool)
+            .await?;
             pending |= effects;
             let commands: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_transfer_command k JOIN transfer_remote_command c ON c.command_uid = k.command_uid WHERE k.cancelled = 0 AND c.direction = 'outgoing' AND c.status IN ('queued', 'sent'))").fetch_one(&node.engine().store.pool).await?;
             pending |= commands;
@@ -503,8 +842,28 @@ impl World {
         if !pending && self.control.stopped().is_none() {
             self.control.settle(name);
         }
-        observations.extend(self.control.drain_cycles(name).into_iter().map(|cycle| Observation::RuleCycle { cycle }));
-        for observation in observations {
+        for cycle in self.control.drain_cycles(name) {
+            observations.push(Observation::RuleCycle { cycle })?;
+        }
+        let actor = self
+            .scenario
+            .proposal
+            .as_ref()
+            .filter(|proposal| proposal.cell == name)
+            .and_then(|proposal| proposal.actor.as_deref());
+        for mut schedule in self.control.drain_schedules(name) {
+            if self.nodes[name]
+                .engine()
+                .refuse_unreadable(actor, &[schedule.record.as_str().into()])
+                .await
+                .is_err()
+            {
+                schedule.time = None;
+                schedule.unavailable = true;
+            }
+            observations.push(Observation::RuleSchedule { schedule })?;
+        }
+        for observation in observations.values {
             self.emit(name, cause.clone(), observation)?;
         }
         self.journal.sync_data()?;
@@ -528,7 +887,8 @@ impl World {
         let step = match node
             .execution
             .scope(node.engine().step_karma_time(node.execution.now(), 1))
-            .await {
+            .await
+        {
             Ok(step) => step,
             Err(EngineError::ExecutionLimit(limit)) => {
                 self.stop = Some(control_stop(limit));
@@ -543,7 +903,8 @@ impl World {
         let effects = match node
             .execution
             .scope(node.engine().run_database_effects())
-            .await {
+            .await
+        {
             Ok(effects) => effects,
             Err(EngineError::ExecutionLimit(limit)) => {
                 self.stop = Some(control_stop(limit));
@@ -611,7 +972,9 @@ impl World {
             }
             Err(EngineError::ExecutionLimit(limit)) => {
                 self.stop = Some(control_stop(limit));
-                Observation::ActionInterrupted { input: invocation.id.clone() }
+                Observation::ActionInterrupted {
+                    input: invocation.id.clone(),
+                }
             }
             Err(error) => match refusal(&error) {
                 Some(refusal) => Observation::ActionRefused {
@@ -737,8 +1100,14 @@ impl World {
                     );
                 }
                 match input.event {
-                    Event::CommandResponse { response } => { self.nodes[&input.cell].engine().append_command_response(response.clone())?; }
-                    Event::AssumeLoan { timing } => self.assume_loan(&input.cell,timing,cause).await?,
+                    Event::CommandResponse { response } => {
+                        self.nodes[&input.cell]
+                            .engine()
+                            .append_command_response(response.clone())?;
+                    }
+                    Event::AssumeLoan { timing } => {
+                        self.assume_loan(&input.cell, timing, cause).await?
+                    }
                     Event::Online { online } => {
                         self.nodes.get_mut(&input.cell).unwrap().online = online;
                         self.emit(
@@ -841,11 +1210,19 @@ impl World {
                         self.tick(&input.cell, cause).await?;
                     }
                     Event::AssumeTransfer { assumption } => {
-                        self.assume_transfer(&input.cell, &input.id, assumption, cause.clone()).await?;
+                        self.assume_transfer(&input.cell, &input.id, assumption, cause.clone())
+                            .await?;
                         self.tick(&input.cell, cause).await?;
                     }
                     Event::RefreshTransfer { transfer, person } => {
-                        self.refresh_transfer(&input.cell, &input.id, &transfer, &person, cause.clone()).await?;
+                        self.refresh_transfer(
+                            &input.cell,
+                            &input.id,
+                            &transfer,
+                            &person,
+                            cause.clone(),
+                        )
+                        .await?;
                         self.tick(&input.cell, cause).await?;
                     }
                     Event::TransferDelivery {
@@ -896,29 +1273,74 @@ impl World {
                             }
                         }
                         for row in store::transfer_delivery::remote_commands_due(
-                            &node.engine().store.pool, node.execution.now(), 32,
-                        ).await? {
+                            &node.engine().store.pool,
+                            node.execution.now(),
+                            32,
+                        )
+                        .await?
+                        {
                             if row.origin_organ_uid == remote.uid {
-                                let command: nucleus::transfer_delivery::TransferRemoteCommandV1 = serde_json::from_str(&row.payload)?;
-                                let wire = match node.execution.scope(cell::transfer::prepare_command(node.cell.runtime(), &row)).await {
+                                let command: nucleus::transfer_delivery::TransferRemoteCommandV1 =
+                                    serde_json::from_str(&row.payload)?;
+                                let wire = match node
+                                    .execution
+                                    .scope(cell::transfer::prepare_command(
+                                        node.cell.runtime(),
+                                        &row,
+                                    ))
+                                    .await
+                                {
                                     Ok(wire) => wire,
-                                    Err(error) if store::karma_commands::get(&node.engine().store.pool, &row.command_uid).await?.is_some_and(|state| state.cancelled) => {
+                                    Err(error)
+                                        if store::karma_commands::get(
+                                            &node.engine().store.pool,
+                                            &row.command_uid,
+                                        )
+                                        .await?
+                                        .is_some_and(|state| state.cancelled) =>
+                                    {
                                         cancelled_commands.push((row.command_uid, error));
                                         continue;
                                     }
                                     Err(error) => return Err(error.into()),
                                 };
-                                messages.push(Payload::Command { input: command.message_id, wire });
+                                messages.push(Payload::Command {
+                                    input: command.message_id,
+                                    wire,
+                                });
                             }
                         }
-                        for row in store::transfer_delivery::pulls_due(&node.engine().store.pool, node.execution.now(), 32).await? {
-                            let (origin, wire) = node.execution.scope(cell::transfer::prepare_pull(node.cell.runtime(), &row)).await?;
+                        for row in store::transfer_delivery::pulls_due(
+                            &node.engine().store.pool,
+                            node.execution.now(),
+                            32,
+                        )
+                        .await?
+                        {
+                            let (origin, wire) = node
+                                .execution
+                                .scope(cell::transfer::prepare_pull(node.cell.runtime(), &row))
+                                .await?;
                             if origin == remote.uid {
-                                messages.push(Payload::Pull { uid: row.uid, reference: row.reference_uid, after_cursor: row.after_cursor, wire });
+                                messages.push(Payload::Pull {
+                                    uid: row.uid,
+                                    reference: row.reference_uid,
+                                    after_cursor: row.after_cursor,
+                                    wire,
+                                });
                             }
                         }
                         for (uid, result) in cancelled_commands {
-                            self.emit(&input.cell, cause.clone(), Observation::DatabaseEffect { uid, effect: report::DatabaseEffectKind::Action, ok: false, result })?;
+                            self.emit(
+                                &input.cell,
+                                cause.clone(),
+                                Observation::DatabaseEffect {
+                                    uid,
+                                    effect: report::DatabaseEffectKind::Action,
+                                    ok: false,
+                                    result,
+                                },
+                            )?;
                         }
                         for payload in messages {
                             self.queue(
@@ -1112,7 +1534,9 @@ impl World {
                             )))
                             .await?;
                         node.cell = Cell::isolated(store, &node.execution, node.secret).await?;
-                        node.state_hasher = store::snapshot::StateHasher::new(node.cell.runtime().store.clone()).await?;
+                        node.state_hasher =
+                            store::snapshot::StateHasher::new(node.cell.runtime().store.clone())
+                                .await?;
                         if let Some(signer) = &node.person_key {
                             node.execution
                                 .scope(node.engine().set_signer(signer.clone()))
@@ -1167,28 +1591,88 @@ impl World {
         node.set_time(self.now_ms)?;
         let batch = match message.payload {
             Payload::Sync(batch) => batch,
-            Payload::Pull { uid, reference, after_cursor, wire } => {
-                match node.execution.scope(cell::transfer::pull_envelope(node.cell.runtime(), wire)).await {
-                    Ok(value) => self.queue(&message.to, &message.from,
-                        Payload::PullResult { uid, reference, after_cursor, wire: serde_json::from_value(value)? },
-                        (1, 1, 0, false), cause.clone())?,
+            Payload::Pull {
+                uid,
+                reference,
+                after_cursor,
+                wire,
+            } => {
+                match node
+                    .execution
+                    .scope(cell::transfer::pull_envelope(node.cell.runtime(), wire))
+                    .await
+                {
+                    Ok(value) => self.queue(
+                        &message.to,
+                        &message.from,
+                        Payload::PullResult {
+                            uid,
+                            reference,
+                            after_cursor,
+                            wire: serde_json::from_value(value)?,
+                        },
+                        (1, 1, 0, false),
+                        cause.clone(),
+                    )?,
                     Err((refusal, detail)) => {
-                        if matches!(refusal, cell::transfer::Refusal::Internal) { return Err(detail.into()); }
-                        self.emit(&message.to, cause.clone(), Observation::MessageRefused {
-                            message: message.id, from: message.from, refusal: transfer_refusal(refusal)?,
-                        })?;
+                        if matches!(refusal, cell::transfer::Refusal::Internal) {
+                            return Err(detail.into());
+                        }
+                        self.emit(
+                            &message.to,
+                            cause.clone(),
+                            Observation::MessageRefused {
+                                message: message.id,
+                                from: message.from,
+                                refusal: transfer_refusal(refusal)?,
+                            },
+                        )?;
                     }
                 }
                 self.observe(&message.to, cause.clone()).await?;
                 return self.tick(&message.to, cause).await;
             }
-            Payload::PullResult { uid, reference, after_cursor, wire } => {
-                let (cursor, receipt) = node.execution.scope(cell::transfer::receive_pull_result(node.cell.runtime(), &reference, after_cursor, wire)).await?;
-                node.execution.scope(store::transfer_delivery::pull_mark_completed(&node.engine().store.pool, &uid, cursor, node.execution.now())).await?;
+            Payload::PullResult {
+                uid,
+                reference,
+                after_cursor,
+                wire,
+            } => {
+                let (cursor, receipt) = node
+                    .execution
+                    .scope(cell::transfer::receive_pull_result(
+                        node.cell.runtime(),
+                        &reference,
+                        after_cursor,
+                        wire,
+                    ))
+                    .await?;
+                node.execution
+                    .scope(store::transfer_delivery::pull_mark_completed(
+                        &node.engine().store.pool,
+                        &uid,
+                        cursor,
+                        node.execution.now(),
+                    ))
+                    .await?;
                 if let Some(receipt) = receipt {
-                    self.queue(&message.to, &message.from, Payload::Receipt(receipt), (1, 1, 0, false), cause.clone())?;
+                    self.queue(
+                        &message.to,
+                        &message.from,
+                        Payload::Receipt(receipt),
+                        (1, 1, 0, false),
+                        cause.clone(),
+                    )?;
                 }
-                self.emit(&message.to, cause.clone(), Observation::TransferReceived { message: message.id, from: message.from, receipt: false })?;
+                self.emit(
+                    &message.to,
+                    cause.clone(),
+                    Observation::TransferReceived {
+                        message: message.id,
+                        from: message.from,
+                        receipt: false,
+                    },
+                )?;
                 return self.observe(&message.to, cause).await;
             }
             Payload::Attestation(wire) => {
@@ -1289,10 +1773,33 @@ impl World {
                     ))
                     .await
                     .map_err(|(_, error)| error)?;
-                let automatic = store::karma_commands::get(&node.engine().store.pool, &result.command_uid).await?.is_some();
+                let automatic =
+                    store::karma_commands::get(&node.engine().store.pool, &result.command_uid)
+                        .await?
+                        .is_some();
                 let observation = if automatic {
-                    if let Some(created) = &result.created { self.captured.insert(result.command_uid.clone(), created.clone()); }
-                    Observation::DatabaseEffect { uid: result.command_uid, effect: report::DatabaseEffectKind::Action, ok: result.accepted, result: if result.accepted { format!("Transfer command accepted at revision {}", result.authoritative_revision) } else { format!("Transfer command refused: {}", result.message.unwrap_or_else(|| result.code.unwrap_or_else(|| "remote_action_rejected".into()))) } }
+                    if let Some(created) = &result.created {
+                        self.captured
+                            .insert(result.command_uid.clone(), created.clone());
+                    }
+                    Observation::DatabaseEffect {
+                        uid: result.command_uid,
+                        effect: report::DatabaseEffectKind::Action,
+                        ok: result.accepted,
+                        result: if result.accepted {
+                            format!(
+                                "Transfer command accepted at revision {}",
+                                result.authoritative_revision
+                            )
+                        } else {
+                            format!(
+                                "Transfer command refused: {}",
+                                result.message.unwrap_or_else(|| result
+                                    .code
+                                    .unwrap_or_else(|| "remote_action_rejected".into()))
+                            )
+                        },
+                    }
                 } else if result.accepted {
                     if let Some(created) = &result.created {
                         self.captured.insert(input.clone(), created.clone());
@@ -1342,7 +1849,11 @@ impl World {
                             cause.clone(),
                         )?;
                     }
-                    Err((refusal, detail)) if matches!(refusal, cell::transfer::Refusal::Internal) => return Err(detail.into()),
+                    Err((refusal, detail))
+                        if matches!(refusal, cell::transfer::Refusal::Internal) =>
+                    {
+                        return Err(detail.into());
+                    }
                     Err((refusal, _)) => self.emit(
                         &message.to,
                         cause.clone(),
@@ -1560,10 +2071,16 @@ impl World {
         cell: &str,
         reference: &str,
     ) -> Result<Option<(TypedUid, Quantity)>> {
-        self.quantity_with_basis(cell,reference,report::QuantityBasis::Stored).await
+        self.quantity_with_basis(cell, reference, report::QuantityBasis::Stored)
+            .await
     }
 
-    pub async fn quantity_with_basis(&self,cell:&str,reference:&str,basis:report::QuantityBasis)->Result<Option<(TypedUid,Quantity)>> {
+    pub async fn quantity_with_basis(
+        &self,
+        cell: &str,
+        reference: &str,
+        basis: report::QuantityBasis,
+    ) -> Result<Option<(TypedUid, Quantity)>> {
         let node = self.nodes.get(cell).ok_or("unknown Cell")?;
         let Some(record) = store::records::resolve(
             &node.engine().store.pool,
@@ -1573,36 +2090,62 @@ impl World {
         else {
             return Ok(None);
         };
-        if basis == report::QuantityBasis::Available && node.loan_unit_changes.contains(&record.uid) { return Ok(None); }
+        if basis == report::QuantityBasis::Available && node.loan_unit_changes.contains(&record.uid)
+        {
+            return Ok(None);
+        }
         let uid = TypedUid::new(ReferenceKind::Record, record.uid)?;
         let unit = record
             .unit_uid
             .map(|uid| TypedUid::new(ReferenceKind::Unit, uid))
             .transpose()?;
-        let quantity = (basis == report::QuantityBasis::Available).then(||node.loan_quantities.get(uid.as_str())).flatten().cloned().unwrap_or(Quantity {value:record.quantity,unit});
-        Ok(Some((
-            uid,
-            quantity,
-        )))
+        let quantity = (basis == report::QuantityBasis::Available)
+            .then(|| node.loan_quantities.get(uid.as_str()))
+            .flatten()
+            .cloned()
+            .unwrap_or(Quantity {
+                value: record.quantity,
+                unit,
+            });
+        Ok(Some((uid, quantity)))
     }
 
-    pub(crate) fn observed_quantity(&self, cell: &str, uid: &str, basis:report::QuantityBasis) -> Option<&Quantity> {
+    pub(crate) fn observed_quantity(
+        &self,
+        cell: &str,
+        uid: &str,
+        basis: report::QuantityBasis,
+    ) -> Option<&Quantity> {
         let node = self.nodes.get(cell)?;
-        if node.deleted_records.contains(uid) || basis == report::QuantityBasis::Available && node.loan_unit_changes.contains(uid) {
+        if node.deleted_records.contains(uid)
+            || basis == report::QuantityBasis::Available && node.loan_unit_changes.contains(uid)
+        {
             None
         } else {
-            (basis == report::QuantityBasis::Available).then(||node.loan_quantities.get(uid)).flatten().or_else(|| node.quantities.get(uid))
+            (basis == report::QuantityBasis::Available)
+                .then(|| node.loan_quantities.get(uid))
+                .flatten()
+                .or_else(|| node.quantities.get(uid))
         }
     }
 
     pub(crate) async fn available_unit_changed(&self, cell: &str, reference: &str) -> Result<bool> {
         let node = self.nodes.get(cell).ok_or("unknown Cell")?;
-        if node.loan_unit_changes.is_empty() { return Ok(false); }
-        Ok(store::records::resolve(&node.engine().store.pool, &self.resolve_reference(reference)).await?.is_some_and(|record| node.loan_unit_changes.contains(&record.uid)))
+        if node.loan_unit_changes.is_empty() {
+            return Ok(false);
+        }
+        Ok(store::records::resolve(
+            &node.engine().store.pool,
+            &self.resolve_reference(reference),
+        )
+        .await?
+        .is_some_and(|record| node.loan_unit_changes.contains(&record.uid)))
     }
 
     pub(crate) fn has_loan_quantity(&self, cell: &str, uid: &str) -> bool {
-        self.nodes.get(cell).is_some_and(|node| node.loan_quantities.contains_key(uid))
+        self.nodes
+            .get(cell)
+            .is_some_and(|node| node.loan_quantities.contains_key(uid))
     }
 }
 
@@ -1623,26 +2166,40 @@ pub(crate) fn resolve(
 ) -> Result<engine::actions::Action> {
     let reference = |value: &str| -> Result<String> {
         match value.strip_prefix('$') {
-            Some(key) => captured.get(key).cloned().ok_or_else(|| format!("unresolved seed reference {value}").into()),
+            Some(key) => captured
+                .get(key)
+                .cloned()
+                .ok_or_else(|| format!("unresolved seed reference {value}").into()),
             None => Ok(value.into()),
         }
     };
     if let engine::actions::Action::EditRecordText { target, head, body } = action {
         return Ok(engine::actions::Action::EditRecordText {
-            target: reference(target)?, head: head.clone(), body: body.clone(),
+            target: reference(target)?,
+            head: head.clone(),
+            body: body.clone(),
         });
     }
     if let engine::actions::Action::ChangeRecord { request } = action {
         let mut request = request.clone();
         request.record_uid = reference(&request.record_uid)?;
         match &mut request.mutation {
-            engine::record_change::Mutation::Assertion { predicate, object, unit, .. } => {
+            engine::record_change::Mutation::Assertion {
+                predicate,
+                object,
+                unit,
+                ..
+            } => {
                 *predicate = reference(predicate)?;
                 *object = object.as_deref().map(&reference).transpose()?;
                 *unit = unit.as_deref().map(&reference).transpose()?;
             }
-            engine::record_change::Mutation::NumberAssertion { predicate, .. } => *predicate = reference(predicate)?,
-            engine::record_change::Mutation::RetractAssertion { assertion } => *assertion = reference(assertion)?,
+            engine::record_change::Mutation::NumberAssertion { predicate, .. } => {
+                *predicate = reference(predicate)?
+            }
+            engine::record_change::Mutation::RetractAssertion { assertion } => {
+                *assertion = reference(assertion)?
+            }
             _ => {}
         }
         return Ok(engine::actions::Action::ChangeRecord { request });
@@ -1672,16 +2229,24 @@ pub(crate) fn resolve(
     let mut value = serde_json::to_value(action)?;
     visit(&mut value, captured)?;
     match action {
-        engine::actions::Action::CreateRecurrence { .. } | engine::actions::Action::ReviseRecurrence { .. } => {
+        engine::actions::Action::CreateRecurrence { .. }
+        | engine::actions::Action::ReviseRecurrence { .. } => {
             if let Some(source) = value["condition"].as_str() {
                 value["condition"] = resolve_source(source, captured)?.into();
             }
         }
         engine::actions::Action::ReviseKarmaField { .. } => {
-            value["source"] = resolve_source(value["source"].as_str().ok_or("missing Rule source")?, captured)?.into();
+            value["source"] = resolve_source(
+                value["source"].as_str().ok_or("missing Rule source")?,
+                captured,
+            )?
+            .into();
         }
         engine::actions::Action::SaveKarmaRule { .. } => {
-            for field in value["fields"].as_array_mut().ok_or("missing Rule fields")? {
+            for field in value["fields"]
+                .as_array_mut()
+                .ok_or("missing Rule fields")?
+            {
                 if let Some(source) = field["source"].as_str() {
                     field["source"] = resolve_source(source, captured)?.into();
                 }
@@ -1707,9 +2272,13 @@ fn resolve_source(source: &str, captured: &BTreeMap<String, String>) -> Result<S
     while index < source.len() {
         let rest = &source[index..];
         if !quoted && rest.starts_with("@{") {
-            let end = rest.find('}').ok_or("unterminated captured Rule reference")?;
+            let end = rest
+                .find('}')
+                .ok_or("unterminated captured Rule reference")?;
             let name = &rest[2..end];
-            let uid = captured.get(name).ok_or_else(|| format!("unresolved Rule reference {name}"))?;
+            let uid = captured
+                .get(name)
+                .ok_or_else(|| format!("unresolved Rule reference {name}"))?;
             result.push('@');
             result.push_str(uid);
             index += end + 1;
@@ -1718,9 +2287,13 @@ fn resolve_source(source: &str, captured: &BTreeMap<String, String>) -> Result<S
         let character = rest.chars().next().ok_or("invalid Rule source")?;
         result.push(character);
         index += character.len_utf8();
-        if quoted && escaped { escaped = false; }
-        else if quoted && character == '\\' { escaped = true; }
-        else if character == '"' { quoted = !quoted; }
+        if quoted && escaped {
+            escaped = false;
+        } else if quoted && character == '\\' {
+            escaped = true;
+        } else if character == '"' {
+            quoted = !quoted;
+        }
     }
     Ok(result)
 }
@@ -1754,7 +2327,13 @@ async fn quantities(engine: &Engine) -> Result<(BTreeMap<String, Quantity>, BTre
 
 fn refusal(error: &EngineError) -> Option<Refusal> {
     match error {
-        EngineError::Store(store::StoreError::Protocol(message)) if message.starts_with("hard stock limit:") => Some(Refusal::Conflict { code: "hard_stock_limit".into() }),
+        EngineError::Store(store::StoreError::Protocol(message))
+            if message.starts_with("hard stock limit:") =>
+        {
+            Some(Refusal::Conflict {
+                code: "hard_stock_limit".into(),
+            })
+        }
         EngineError::Store(store::StoreError::Protocol(message))
             if message.starts_with("karma_binding_") =>
         {

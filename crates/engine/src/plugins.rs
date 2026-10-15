@@ -41,6 +41,27 @@ fn binding_row(row: &store::sqlx::sqlite::SqliteRow) -> Result<Binding, EngineEr
     })
 }
 
+fn delivery_row(row: store::sqlx::sqlite::SqliteRow) -> Delivery {
+    let result: String = row.get("result");
+    let mut state: String = row.get("state");
+    if state == "delivered" {
+        if result.starts_with("Resolved locally without resending;") {
+            state = "resolved".into();
+        } else if serde_json::from_str::<Value>(&result)
+            .is_ok_and(|receipt| receipt["confirmed"] == false)
+        {
+            state = "submitted".into();
+        }
+    }
+    Delivery {
+        uid: row.get("uid"),
+        binding: row.get("binding_uid"),
+        record: row.get("record_uid"),
+        state,
+        result,
+    }
+}
+
 impl Engine {
     pub async fn load_plugins(&self, directory: std::path::PathBuf) -> Result<(), EngineError> {
         let host = ::plugins::Host::discover(directory)
@@ -60,6 +81,30 @@ impl Engine {
     }
 
     async fn approved_plugin(&self, plugin: &str) -> Result<String, EngineError> {
+        let packages = self.plugin_host()?.packages();
+        let mut dependencies = vec![plugin.to_owned()];
+        let mut checked = HashSet::new();
+        while let Some(id) = dependencies.pop() {
+            if !checked.insert(id.clone()) {
+                continue;
+            }
+            let package = packages
+                .iter()
+                .find(|package| package.manifest.id == id)
+                .ok_or_else(|| invalid(format!("Package {id} is unavailable")))?;
+            let approved: Option<String> = store::sqlx::query_scalar(
+                "SELECT digest FROM plugin_package WHERE id=? AND enabled=1",
+            )
+            .bind(&id)
+            .fetch_optional(&self.store.pool)
+            .await?;
+            if approved.as_deref() != Some(&package.digest) {
+                return Err(EngineError::Forbidden(format!(
+                    "Review and enable package {id} before using it"
+                )));
+            }
+            dependencies.extend(package.manifest.compatibility.dependencies.keys().cloned());
+        }
         let digest: Option<String> =
             store::sqlx::query_scalar("SELECT digest FROM plugin_package WHERE id=? AND enabled=1")
                 .bind(plugin)
@@ -99,7 +144,7 @@ impl Engine {
         let mut diagnostics = self
             .plugins
             .get()
-            .map(|host| host.diagnostics.clone())
+            .map(|host| host.diagnostics())
             .unwrap_or_else(|| vec!["Plugin host is unavailable on this Cell".into()]);
         let approved: Vec<String> =
             store::sqlx::query_scalar("SELECT id FROM plugin_package WHERE enabled=1")
@@ -136,7 +181,7 @@ impl Engine {
             });
         }
         let proteins = store::sqlx::query("SELECT uid,head FROM record WHERE kind='protein' AND deleted_at IS NULL ORDER BY head,uid LIMIT 100").fetch_all(&self.store.pool).await?.into_iter().map(|row| (row.get("uid"), row.get("head"))).collect();
-        let deliveries = store::sqlx::query("SELECT uid,binding_uid,record_uid,state,result FROM plugin_outbox ORDER BY created_at DESC,uid DESC LIMIT 50").fetch_all(&self.store.pool).await?.into_iter().map(|row| Delivery { uid: row.get("uid"), binding: row.get("binding_uid"), record: row.get("record_uid"), state: row.get("state"), result: row.get("result") }).collect();
+        let deliveries = store::sqlx::query("SELECT uid,binding_uid,record_uid,state,result FROM plugin_outbox WHERE state<>'delivered' OR result<>'' ORDER BY CASE WHEN state='delivered' THEN 1 ELSE 0 END,created_at DESC,uid DESC LIMIT 50").fetch_all(&self.store.pool).await?.into_iter().map(delivery_row).collect();
         Ok(Catalog {
             packages,
             diagnostics,
@@ -163,6 +208,31 @@ impl Engine {
         }
         let data = match command {
             Command::Inspect => serde_json::to_value(self.plugin_catalog().await?)?,
+            Command::Reload => {
+                let _guard = self.plugin_work.lock().await;
+                self.plugin_host()?.reload().await.map_err(invalid)?;
+                serde_json::to_value(self.plugin_catalog().await?)?
+            }
+            Command::Install { directory } => {
+                let _guard = self.plugin_work.lock().await;
+                self.plugin_host()?
+                    .install(directory.into())
+                    .await
+                    .map_err(invalid)?;
+                serde_json::to_value(self.plugin_catalog().await?)?
+            }
+            Command::Remove { plugin, digest } => {
+                let _guard = self.plugin_work.lock().await;
+                self.plugin_host()?
+                    .remove(&plugin, &digest)
+                    .await
+                    .map_err(invalid)?;
+                store::sqlx::query("UPDATE plugin_package SET enabled=0 WHERE id=?")
+                    .bind(&plugin)
+                    .execute(&self.store.pool)
+                    .await?;
+                serde_json::to_value(self.plugin_catalog().await?)?
+            }
             Command::Enable {
                 plugin,
                 digest,
@@ -180,12 +250,18 @@ impl Engine {
                     ));
                 }
                 if enabled {
+                    for dependency in package.manifest.compatibility.dependencies.keys() {
+                        self.approved_plugin(dependency).await?;
+                    }
                     self.plugin_host()?
                         .call(&plugin, &digest, "", "initialize", json!({}))
                         .await
                         .map_err(invalid)?;
                 }
                 store::sqlx::query("INSERT INTO plugin_package(id,digest,enabled) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET digest=excluded.digest,enabled=excluded.enabled").bind(&plugin).bind(&digest).bind(enabled).execute(&self.store.pool).await?;
+                if !enabled {
+                    self.plugin_host()?.stop_all();
+                }
                 serde_json::to_value(self.plugin_catalog().await?)?
             }
             Command::Invoke {
@@ -202,7 +278,7 @@ impl Engine {
                 else {
                     return Err(invalid("Choose an Action contribution"));
                 };
-                nucleus::plugins::validate_values(fields, &arguments).map_err(invalid)?;
+                nucleus::plugins::validate_values(&fields, &arguments).map_err(invalid)?;
                 json!({"result":self.plugin_call(&contribution, "invoke", arguments).await?})
             }
             Command::Preview { binding } => self.plugin_preview(&binding).await?,
@@ -277,7 +353,8 @@ impl Engine {
                 serde_json::to_value(self.plugin_catalog().await?)?
             }
             Command::Stop { binding } => {
-                store::sqlx::query("UPDATE plugin_binding SET enabled=0,status='Stopped',revision=revision+1 WHERE uid=?").bind(binding).execute(&self.store.pool).await?;
+                store::sqlx::query("UPDATE plugin_binding SET enabled=0,status='Stopped',revision=revision+1 WHERE uid=?").bind(&binding).execute(&self.store.pool).await?;
+                self.plugin_host()?.stop_all();
                 serde_json::to_value(self.plugin_catalog().await?)?
             }
             Command::Retry { delivery } => {
@@ -298,6 +375,19 @@ impl Engine {
                     ));
                 }
                 store::sqlx::query("UPDATE plugin_outbox SET state='queued',result='Retry requested' WHERE uid=? AND state IN ('failed','uncertain')").bind(&delivery).execute(&self.store.pool).await?;
+                serde_json::to_value(self.plugin_catalog().await?)?
+            }
+            Command::ResolveDelivery { delivery } => {
+                let _guard = self.plugin_work.lock().await;
+                let changed = store::sqlx::query("UPDATE plugin_outbox SET state='delivered',result='Resolved locally without resending; remote delivery is not confirmed' WHERE uid=? AND state IN ('queued','failed','uncertain')").bind(&delivery).execute(&self.store.pool).await?;
+                if changed.rows_affected() != 1 {
+                    return Err(invalid("Choose a queued, failed or uncertain delivery"));
+                }
+                serde_json::to_value(self.plugin_catalog().await?)?
+            }
+            Command::ClearHistory => {
+                let _guard = self.plugin_work.lock().await;
+                store::sqlx::query("UPDATE plugin_outbox SET input='{}',prepared=NULL,result='' WHERE state='delivered'").execute(&self.store.pool).await?;
                 serde_json::to_value(self.plugin_catalog().await?)?
             }
         };
@@ -340,7 +430,7 @@ impl Engine {
             ));
         }
         self.approved_plugin(&manifest.id).await?;
-        nucleus::plugins::validate_values(settings, &binding.settings).map_err(invalid)?;
+        nucleus::plugins::validate_values(&settings, &binding.settings).map_err(invalid)?;
         sync::incoming_filters(&binding.incoming_filter)?;
         if binding.direction.outgoing() {
             if self.document_format(binding)?.is_some() {

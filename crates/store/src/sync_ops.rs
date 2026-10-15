@@ -254,6 +254,17 @@ pub async fn log_local(
     kind: OpKind,
     value: Option<String>,
 ) -> Result<(), StoreError> {
+    let value = if tbl == "record_assertion" && kind == OpKind::Set {
+        let versions: Option<(i64, Option<i64>)> = sqlx::query_as(
+            "SELECT predicate_revision,unit_revision FROM record_assertion WHERE uid=?",
+        )
+        .bind(uid)
+        .fetch_optional(pool)
+        .await?;
+        assertion_versions(value, versions)?
+    } else {
+        value
+    };
     let Some((actor_cell, organ_uid)) = local_identity(pool).await? else {
         return Ok(());
     };
@@ -315,6 +326,17 @@ pub async fn log_local_tx(
     kind: OpKind,
     value: Option<String>,
 ) -> Result<(), StoreError> {
+    let value = if tbl == "record_assertion" && kind == OpKind::Set {
+        let versions: Option<(i64, Option<i64>)> = sqlx::query_as(
+            "SELECT predicate_revision,unit_revision FROM record_assertion WHERE uid=?",
+        )
+        .bind(uid)
+        .fetch_optional(&mut **tx)
+        .await?;
+        assertion_versions(value, versions)?
+    } else {
+        value
+    };
     let Some((actor_cell, organ_uid)) = local_identity_tx(tx).await? else {
         return Ok(());
     };
@@ -440,7 +462,10 @@ pub async fn version_vector_for_organ(
         let roots = sqlx::query("SELECT s.replica_root,s.actor_cell,MAX(s.hlc) AS max_hlc FROM sync_op s JOIN record r ON r.uid=s.replica_root WHERE s.organ_uid=? AND r.kind IN ('conversation','message_draft') GROUP BY s.replica_root,s.actor_cell ORDER BY s.replica_root,s.actor_cell LIMIT 4097")
             .bind(organ_uid).fetch_all(pool).await?;
         if roots.len() + vector.len() > 4096 {
-            return Err(StoreError::Protocol("The retained own-conversation vector exceeds this device's 4096-entry sync limit".into()));
+            return Err(StoreError::Protocol(
+                "The retained own-conversation vector exceeds this device's 4096-entry sync limit"
+                    .into(),
+            ));
         }
         vector.extend(roots.iter().map(|row| VectorEntry {
             actor_cell: format!(
@@ -1140,4 +1165,20 @@ pub async fn enqueue_widened_for_contact(
         .rows_affected();
     }
     Ok(queued)
+}
+
+fn assertion_versions(
+    value: Option<String>,
+    versions: Option<(i64, Option<i64>)>,
+) -> Result<Option<String>, StoreError> {
+    match (value, versions) {
+        (Some(value), Some((predicate, unit))) => {
+            let mut value: serde_json::Value = serde_json::from_str(&value)
+                .map_err(|error| StoreError::Protocol(error.to_string()))?;
+            value["predicate_revision"] = serde_json::json!(predicate);
+            value["unit_revision"] = serde_json::json!(unit);
+            Ok(Some(value.to_string()))
+        }
+        (value, _) => Ok(value),
+    }
 }

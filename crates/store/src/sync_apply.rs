@@ -157,8 +157,17 @@ pub async fn set_record_field(
                 if superseded(&mut tx, &stamp).await? {
                     return Ok(false);
                 }
-                let guarded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_stock_limit WHERE record_uid = ?)").bind(uid).fetch_one(&mut *tx).await?;
-                if guarded { return Err(StoreError::Protocol("a guarded Record cannot accept a new opening quantity".into())); }
+                let guarded: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM transfer_stock_limit WHERE record_uid = ?)",
+                )
+                .bind(uid)
+                .fetch_one(&mut *tx)
+                .await?;
+                if guarded {
+                    return Err(StoreError::Protocol(
+                        "a guarded Record cannot accept a new opening quantity".into(),
+                    ));
+                }
                 let row = sqlx::query(
                     "SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ?",
                 )
@@ -213,7 +222,9 @@ pub async fn undelete_record(
         "UPDATE record SET deleted_at = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
     );
     bind_stamp(
-        sqlx::query(&sql).bind(nucleus::execution::now().to_rfc3339()).bind(uid),
+        sqlx::query(&sql)
+            .bind(nucleus::execution::now().to_rfc3339())
+            .bind(uid),
         &stamp,
     )
     .execute(pool)
@@ -367,6 +378,36 @@ pub async fn upsert_assertion(
     if superseded(&mut tx, &stamp).await? {
         return Ok(());
     }
+    let predicate_revision = value
+        .get("predicate_revision")
+        .and_then(serde_json::Value::as_i64)
+        .unwrap_or(0);
+    let unit_revision = value
+        .get("unit_revision")
+        .and_then(serde_json::Value::as_i64);
+    if !(0..=256).contains(&predicate_revision)
+        || unit_revision.is_some_and(|revision| !(1..=256).contains(&revision))
+    {
+        return Err(StoreError::Protocol(
+            "Invalid Assertion definition version".into(),
+        ));
+    }
+    let existing: Option<(i64, Option<String>, Option<i64>)> = sqlx::query_as(
+        "SELECT predicate_revision,unit_uid,unit_revision FROM record_assertion WHERE uid=?",
+    )
+    .bind(uid)
+    .fetch_optional(&mut *tx)
+    .await?;
+    if existing.as_ref().is_some_and(|(revision, unit, saved)| {
+        predicate_revision > 0 && predicate_revision != *revision
+            || unit.as_deref() == value.get("unit_uid").and_then(serde_json::Value::as_str)
+                && unit_revision.is_some()
+                && unit_revision != *saved
+    }) {
+        return Err(StoreError::Protocol(
+            "An Assertion cannot replace its saved definition version".into(),
+        ));
+    }
     let s = |k: &str| value.get(k).and_then(|v| v.as_str()).map(str::to_string);
     if let Some(predicate_uid) = s("predicate_uid") {
         let placeholder = format!("concept:{predicate_uid}");
@@ -398,8 +439,8 @@ pub async fn upsert_assertion(
         let subject = s("subject_uid").unwrap_or_default();
         let predicate = s("predicate_uid").unwrap_or_default();
         let object = s("object_uid");
-        sqlx::query("INSERT INTO record_assertion (uid, subject_uid, predicate_uid, object_uid, role, quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at, retracted_at) VALUES (?, ?, ?, ?, 'ordinary', ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET quantity_mantissa = excluded.quantity_mantissa, quantity_scale = excluded.quantity_scale, unit_uid = excluded.unit_uid")
-            .bind(uid).bind(&subject).bind(&predicate).bind(&object).bind(s("quantity_mantissa")).bind(value["quantity_scale"].as_i64()).bind(s("unit_uid")).bind(s("asserted_by")).bind(s("created_at").unwrap_or_else(|| nucleus::execution::now().to_rfc3339())).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO record_assertion (uid, subject_uid, predicate_uid, object_uid, role, quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at, retracted_at, predicate_revision, unit_revision) VALUES (?, ?, ?, ?, 'ordinary', ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET quantity_mantissa = excluded.quantity_mantissa, quantity_scale = excluded.quantity_scale, unit_revision = CASE WHEN record_assertion.unit_uid IS excluded.unit_uid THEN record_assertion.unit_revision ELSE excluded.unit_revision END, unit_uid = excluded.unit_uid")
+            .bind(uid).bind(&subject).bind(&predicate).bind(&object).bind(s("quantity_mantissa")).bind(value["quantity_scale"].as_i64()).bind(s("unit_uid")).bind(s("asserted_by")).bind(s("created_at").unwrap_or_else(|| nucleus::execution::now().to_rfc3339())).bind(nucleus::execution::now().to_rfc3339()).bind(predicate_revision).bind(unit_revision).execute(&mut *tx).await?;
         project_ordinary_assertion(&mut tx, &subject, &predicate, object.as_deref()).await?;
         tx.commit().await?;
         return Ok(());
@@ -407,8 +448,8 @@ pub async fn upsert_assertion(
     let res = sqlx::query(
         "INSERT OR IGNORE INTO record_assertion
            (uid, subject_uid, predicate_uid, object_uid, role,
-            quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at, predicate_revision, unit_revision)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(uid)
     .bind(s("subject_uid").unwrap_or_default())
@@ -420,6 +461,8 @@ pub async fn upsert_assertion(
     .bind(s("unit_uid"))
     .bind(s("asserted_by"))
     .bind(s("created_at").unwrap_or_else(|| nucleus::execution::now().to_rfc3339()))
+    .bind(predicate_revision)
+    .bind(unit_revision)
     .execute(&mut *tx)
     .await?;
     if res.rows_affected() == 0 {
@@ -444,7 +487,9 @@ pub async fn retract_assertion(
           WHERE uid = ? AND retracted_at IS NULL{NOT_SUPERSEDED}"
     );
     bind_stamp(
-        sqlx::query(&sql).bind(nucleus::execution::now().to_rfc3339()).bind(uid),
+        sqlx::query(&sql)
+            .bind(nucleus::execution::now().to_rfc3339())
+            .bind(uid),
         &stamp,
     )
     .execute(pool)
@@ -517,6 +562,9 @@ pub async fn delete_concept(
 ) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
     if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
+    if crate::vocabulary::retained_by_publication_on(&mut tx, uid).await? {
         return Ok(());
     }
     for sql in [

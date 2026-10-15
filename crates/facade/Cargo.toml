@@ -22,6 +22,7 @@ uuid = { workspace = true }
 sensei = { workspace = true }
 
 [dev-dependencies]
+image = { workspace = true }
 chrono = { workspace = true }
 p256 = { version = "=0.13.2", features = ["ecdsa"] }
 base64 = { workspace = true }

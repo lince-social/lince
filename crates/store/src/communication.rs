@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use crate::{
-    StoreError, assertions, concepts,
+    StoreError, assertions,
     records::{self, NewRecord, RecordRow},
 };
 
@@ -174,7 +174,7 @@ pub async fn tag(
     conversation_uid: &str,
     tag_uid: &str,
 ) -> Result<(), StoreError> {
-    let kind = concepts::ensure(pool, KIND_TAGGED).await?;
+    let kind = crate::vocabulary::feature_write(pool, "tagging").await?;
     assertions::assert(
         pool,
         assertions::NewAssertion {
@@ -196,7 +196,7 @@ pub async fn add_participant(
     conversation_uid: &str,
     person_uid: &str,
 ) -> Result<(), StoreError> {
-    let kind = concepts::ensure(pool, KIND_PARTICIPANT).await?;
+    let kind = crate::vocabulary::feature_write(pool, "participant").await?;
     assertions::assert(
         pool,
         assertions::NewAssertion {
@@ -217,7 +217,7 @@ pub async fn participants(
     pool: &SqlitePool,
     conversation_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
-    match concepts::resolve(pool, KIND_PARTICIPANT).await? {
+    match crate::vocabulary::feature_read(pool, "participant").await? {
         Some(kind) => assertions::objects_from_subject(pool, conversation_uid, &kind).await,
         None => Ok(Vec::new()),
     }
@@ -227,12 +227,12 @@ pub async fn conversations_by_tag(
     pool: &SqlitePool,
     tag_uid: &str,
 ) -> Result<Vec<ConversationSummary>, StoreError> {
-    let Some(tagged) = concepts::resolve(pool, KIND_TAGGED).await? else {
+    let Some(tagged) = crate::vocabulary::feature_read(pool, "tagging").await? else {
         return Ok(Vec::new());
     };
-    let participant = concepts::resolve(pool, KIND_PARTICIPANT).await?;
-    let thread_of = concepts::resolve(pool, "thread-of").await?;
-    let message_in = concepts::resolve(pool, "message-in").await?;
+    let participant = crate::vocabulary::feature_read(pool, "participant").await?;
+    let thread_of = crate::vocabulary::feature_read(pool, "thread").await?;
+    let message_in = crate::vocabulary::feature_read(pool, "message").await?;
 
     let mut out = Vec::new();
     for conv in assertions::subjects_pointing_to(pool, &tagged, tag_uid).await? {
@@ -332,7 +332,7 @@ pub async fn open_session(
         .map_err(|e| sqlx::Error::Protocol(format!("serialize session sidecar: {e}")))?;
     records::set_extension(pool, &session.uid, SESSION_NAMESPACE, &fds).await?;
 
-    let kind = concepts::ensure(pool, KIND_CALL_SESSION_OF).await?;
+    let kind = crate::vocabulary::feature_write(pool, "call_session").await?;
     assertions::assert(
         pool,
         assertions::NewAssertion {
@@ -383,7 +383,7 @@ pub async fn sessions_of(
     pool: &SqlitePool,
     conversation_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
-    match concepts::resolve(pool, KIND_CALL_SESSION_OF).await? {
+    match crate::vocabulary::feature_read(pool, "call_session").await? {
         Some(kind) => assertions::subjects_pointing_to(pool, &kind, conversation_uid).await,
         None => Ok(Vec::new()),
     }

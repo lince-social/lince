@@ -70,6 +70,12 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
 
     crate::cells::ensure_local(pool, &uid, "this cell").await?;
     crate::cells::set_config(pool, CELL_SURFACE_CONFIG, &surface(&base_url)).await?;
+    sqlx::query("INSERT INTO organ_vocabulary(organ_uid,vocabulary_uid,adopted_at) SELECT ?,uid,created_at FROM lingua WHERE uid IN ('g_local',?) OR owner_organ=? ON CONFLICT DO NOTHING")
+        .bind(&uid)
+        .bind(nucleus::vocabulary::DEFAULT_VOCABULARY_UID)
+        .bind(&uid)
+        .execute(pool)
+        .await?;
     local(pool).await?.ok_or(sqlx::Error::RowNotFound)
 }
 
@@ -80,7 +86,12 @@ pub async fn holds_own_records(pool: &SqlitePool) -> Result<bool, StoreError> {
             .bind(crate::cells::LOCAL_CELL_SLUG)
             .fetch_one(pool)
             .await?;
-    Ok(count > 0)
+    let meanings: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM concept_source WHERE lingua_uid='g_local') OR EXISTS(SELECT 1 FROM organ_vocabulary v JOIN record o ON o.uid=v.organ_uid WHERE o.slug=? AND (v.publication_uid IS NOT NULL OR v.vocabulary_uid NOT IN ('g_local',?)))")
+        .bind(LOCAL_ORGAN_SLUG)
+        .bind(nucleus::vocabulary::DEFAULT_VOCABULARY_UID)
+        .fetch_one(pool)
+        .await?;
+    Ok(count > 0 || meanings)
 }
 
 pub async fn adopt_identity(
@@ -119,6 +130,10 @@ pub async fn adopt_identity(
         .bind(crate::cells::LOCAL_CELL_SLUG)
         .execute(&mut *tx)
         .await?;
+    sqlx::query("DELETE FROM organ_vocabulary WHERE organ_uid=?")
+        .bind(&current.uid)
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("DELETE FROM record WHERE uid = ?")
         .bind(&current.uid)
         .execute(&mut *tx)
@@ -149,6 +164,11 @@ pub async fn adopt_identity(
     .bind(surface(&normalize_base_url(base_url)).to_string())
     .execute(&mut *tx)
     .await?;
+    sqlx::query("INSERT INTO organ_vocabulary(organ_uid,vocabulary_uid,adopted_at) SELECT ?,uid,created_at FROM lingua WHERE uid IN ('g_local',?) ON CONFLICT DO NOTHING")
+        .bind(joined_organ_uid)
+        .bind(nucleus::vocabulary::DEFAULT_VOCABULARY_UID)
+        .execute(&mut *tx)
+        .await?;
     tx.commit().await?;
 
     local(pool).await?.ok_or(sqlx::Error::RowNotFound.into())
@@ -527,6 +547,7 @@ pub async fn forget_contact(pool: &SqlitePool, organ_uid: &str) -> Result<(), St
         "DELETE FROM fact WHERE record_uid = ?",
         "DELETE FROM record_extension WHERE record_uid = ?",
         "DELETE FROM record_doc WHERE record_uid = ?",
+        "DELETE FROM organ_vocabulary WHERE organ_uid = ?",
     ] {
         sqlx::query(child).bind(organ_uid).execute(pool).await?;
     }

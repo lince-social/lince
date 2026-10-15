@@ -12,6 +12,8 @@ default = []
 instinct = []
 
 [dependencies]
+futures = { workspace = true }
+tokio-tungstenite = { version = "=0.30.0", features = ["rustls-tls-webpki-roots"] }
 schemars = { workspace = true }
 anicca = { workspace = true }
 argon2 = { workspace = true }
@@ -20,6 +22,8 @@ nucleus = { workspace = true }
 plugins.workspace = true
 store = { workspace = true }
 async-trait = { workspace = true }
+reqwest = { workspace = true, features = ["query"] }
+quick-xml = "=0.41.0"
 base64 = { workspace = true }
 chacha20poly1305 = { workspace = true }
 chrono = { workspace = true }
@@ -59,7 +63,7 @@ rustix = { version = "=1.1.4", features = ["fs", "process"] }
 [build-dependencies]
 sensei = { workspace = true }
 anicca = { workspace = true }
-lince-interface = { workspace = true, default-features = false }
+lince-practice.workspace = true
 
 [lints]
 workspace = true

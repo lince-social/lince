@@ -357,7 +357,9 @@ fn validate_projection(
     query: &Protein,
     budget: &mut Budget<'_>,
 ) -> Result<RecordProjection, QueryError> {
-    if query.include.relation_context.is_some()
+    if query.include.shader_effect
+        || !query.include.numeric_fields.is_empty()
+        || query.include.relation_context.is_some()
         || query.include.record_after.is_some()
         || query.include.facts.is_some()
         || query.include.promises.is_some()
@@ -794,6 +796,10 @@ impl<'a> Prepared<'a> {
         uid: &str,
         budget: &mut Budget<'_>,
     ) -> Result<BTreeSet<String>, QueryError> {
+        if let Some(concepts)=nucleus::vocabulary::parse_meaning_set(uid).map_err(|_|QueryError::InvalidInput)? {
+            for concept in &concepts {budget.step()?;self.require_concept(concept)?;}
+            return Ok(concepts.into_iter().collect());
+        }
         self.require_concept(uid)?;
         reachable(uid, &self.concept_children, budget)
     }

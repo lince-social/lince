@@ -628,6 +628,21 @@ impl Engine {
         };
         let execution = nucleus::execution::current();
         let control = execution.as_ref().and_then(|execution| execution.control());
+        let scheduled = if let Some(cell) = execution.as_ref().filter(|_| control.is_some()).and_then(|execution| execution.cell()) {
+            let work:Option<String> = store::sqlx::query_scalar("SELECT fds FROM record_extension WHERE record_uid = ? AND namespace = 'work'")
+                .bind(&rule.record_uid).fetch_optional(&mut *tx).await?;
+            let work = work.map(|raw| serde_json::from_str::<serde_json::Value>(&raw)).transpose();
+            let range = work.map_err(|error| error.to_string()).and_then(|work| {
+                let work = work.unwrap_or_else(|| serde_json::json!({}));
+                crate::private_work::WorkMetadata::parse(&work).map_err(|error| error.to_string())?;
+                nucleus::schedule::range(work["start"].as_str(), work["due"].as_str(), work["estimate_min"].as_f64(), Some(event.at.timestamp_millis()))
+            });
+            match range {
+                Ok(Some(time)) => Some(nucleus::simulation::RecordedSchedule { cell:cell.into(), occurrence:occurrence.clone(), record:nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Record, rule.record_uid.clone()).map_err(|error| invalid(error.to_string()))?, observed_at_ms:now.timestamp_millis(), time:Some(time), unavailable:false }),
+                Ok(None) => None,
+                Err(_) => Some(nucleus::simulation::RecordedSchedule { cell:cell.into(), occurrence:occurrence.clone(), record:nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Record, rule.record_uid.clone()).map_err(|error| invalid(error.to_string()))?, observed_at_ms:now.timestamp_millis(), time:None, unavailable:true }),
+            }
+        } else { None };
         for (position, consequence) in rule.consequences.iter().enumerate() {
             use nucleus::karma::Consequence;
             let current = store::sqlx::query("SELECT quantity_mantissa, quantity_scale, unit_uid FROM record WHERE uid = ? AND deleted_at IS NULL")
@@ -718,6 +733,9 @@ impl Engine {
         crate::karma_history::persist(&mut tx, rule, event).await?;
         if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, BTreeSet::from([protein::authority::Property::Quantity])).await?; }
         tx.commit().await?;
+        if let Some(control) = &control && let Some(schedule) = scheduled {
+            control.record_schedule(schedule).map_err(EngineError::ExecutionLimit)?;
+        }
         if let Some(control) = control && let Some(cell) = execution.as_ref().and_then(|execution| execution.cell()) {
             let consequences = rule.consequences.iter().map(|consequence| serde_json::to_value(consequence).map(|value| value["kind"].as_str().unwrap_or("consequence").to_owned())).collect::<Result<Vec<_>, _>>().map_err(EngineError::Json)?;
             control.record(nucleus::simulation::RuleStep { cell: cell.to_owned(), occurrence, changes, transfer_changes: Vec::new(), consequences, at_ms: now.timestamp_millis(), virtual_ms: control.now_ms() }).map_err(EngineError::ExecutionLimit)?;

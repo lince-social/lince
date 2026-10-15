@@ -224,6 +224,7 @@ impl Engine {
         }
         let created = previous.is_none();
         let (quantity, unit) = record.quantity.as_ref().unwrap();
+        let mut meanings=HashMap::new();
         for name in record
             .assertions
             .iter()
@@ -231,20 +232,13 @@ impl Engine {
             .chain(record.assertions.iter().filter_map(|a| a.unit.as_ref()))
             .chain(unit.iter())
         {
-            if store::concepts::resolve(&self.store.pool, name)
-                .await?
-                .is_none()
-            {
-                self.act(
-                    Action::CreateConcept {
-                        lingua: store::linguas::LOCAL_UID.into(),
-                        name: name.clone(),
-                        parents: vec![],
-                    },
-                    None,
-                )
-                .await?;
-            }
+            let concept=match store::vocabulary::resolve_file_meaning(&self.store.pool,name,&record.uid).await? {
+                Some(concept)=>concept,
+                None=>self.act(Action::CreateConcept {lingua:store::linguas::LOCAL_UID.into(),name:name.clone(),parents:vec![]},None).await?.created.ok_or_else(||invalid("Unable to save the selected meaning"))?,
+            };
+            store::sqlx::query("INSERT OR IGNORE INTO concept(uid,canonical_name,created_at) VALUES(?,?,?)")
+                .bind(&concept).bind(format!("concept:{concept}")).bind(nucleus::execution::now().to_rfc3339()).execute(&self.store.pool).await?;
+            meanings.insert(name.clone(),concept);
         }
         if created {
             self.act(
@@ -294,7 +288,7 @@ impl Engine {
             self.act(
                 Action::SetUnit {
                     target: record.uid.clone(),
-                    unit: unit.clone(),
+                    unit: unit.as_ref().and_then(|name|meanings.get(name).cloned()),
                 },
                 None,
             )
@@ -335,7 +329,7 @@ impl Engine {
                 self.act(
                     Action::RetractRecord {
                         subject: record.uid.clone(),
-                        predicate: old.predicate.clone(),
+                        predicate: store::vocabulary::resolve_file_meaning(&self.store.pool,&old.predicate,&record.uid).await?.ok_or_else(||invalid("The previously selected meaning is unavailable"))?,
                         object: old.object_uid.clone(),
                     },
                     None,
@@ -350,10 +344,10 @@ impl Engine {
                 self.act(
                     Action::AssertRecord {
                         subject: record.uid.clone(),
-                        predicate: assertion.predicate.clone(),
+                        predicate: meanings[&assertion.predicate].clone(),
                         object: assertion.object_uid.clone(),
                         quantity: assertion.quantity.clone(),
-                        unit: assertion.unit.clone(),
+                        unit: assertion.unit.as_ref().and_then(|name|meanings.get(name).cloned()),
                     },
                     None,
                 )
@@ -363,7 +357,7 @@ impl Engine {
                 self.act(
                     Action::SetIdentity {
                         subject: record.uid.clone(),
-                        predicate: Some(identity.predicate.clone()),
+                        predicate: Some(meanings[&identity.predicate].clone()),
                     },
                     None,
                 )

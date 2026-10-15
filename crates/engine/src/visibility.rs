@@ -278,6 +278,16 @@ impl Engine {
                 .await?;
             self.require_permission_on(&mut tx, actor, "record:read")
                 .await?;
+            for person in policy
+                .include
+                .iter()
+                .chain(&policy.exclude)
+                .flat_map(|condition| &condition.persons)
+            {
+                if !store::people::is_active_on(&mut tx, person).await? {
+                    return Err(denied("Choose an active Person identity for visibility"));
+                }
+            }
             let owned: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record r JOIN record o ON o.slug='local-organ' AND o.kind='organ' AND o.deleted_at IS NULL WHERE r.uid=? AND r.deleted_at IS NULL AND r.replica_root IS NULL AND (r.organ_uid IS NULL OR r.organ_uid=o.uid))")
                 .bind(&record).fetch_one(&mut *tx).await?;
             if !owned {
@@ -357,12 +367,30 @@ impl Engine {
             }
         }
         let saved = store::data_visibility::policy(&self.store.pool, &record, data).await?;
+        let mut persons = Vec::new();
+        let choices: Vec<(String, String)> = store::sqlx::query_as(
+            "SELECT uid,head FROM record WHERE kind='person' AND deleted_at IS NULL ORDER BY head,uid LIMIT 256",
+        )
+        .fetch_all(&self.store.pool)
+        .await?;
+        for (uid, label) in choices {
+            if store::people::is_active(&self.store.pool, &uid).await?
+                && self.may_read_record(actor, &uid).await?
+            {
+                persons.push(nucleus::location::Choice {
+                    uid,
+                    label,
+                    node_id: None,
+                });
+            }
+        }
         Ok(ActionOutcome {
             data: Some(serde_json::to_value(Context {
                 record_uid: record,
                 data,
                 saved,
                 organs,
+                persons,
                 records,
             })?),
             ..Default::default()
@@ -375,12 +403,30 @@ impl Engine {
         data: Data,
         organ: &str,
     ) -> Result<nucleus::visibility::Decision, EngineError> {
+        self.principal_visibility(record, data, organ, None).await
+    }
+
+    pub(crate) async fn principal_visibility(
+        &self,
+        record: &str,
+        data: Data,
+        organ: &str,
+        person: Option<&str>,
+    ) -> Result<nucleus::visibility::Decision, EngineError> {
         let proximity = store::data_visibility::proximity(&self.store.pool, organ).await?;
         let policy = store::data_visibility::policy(&self.store.pool, record, data)
             .await?
             .map_or_else(Policy::default, |saved| saved.policy);
-        let mut decision = policy.decide(organ, proximity);
-        if proximity.is_none() {
+        let mut decision = policy.decide_principal(organ, person, proximity);
+        let named_person = person.is_some()
+            && decision
+                .included_by
+                .iter()
+                .any(|index| !policy.include[*index].persons.is_empty());
+        let blocked = store::organs::contact(&self.store.pool, organ)
+            .await?
+            .is_some_and(|contact| contact.trust == "blocked");
+        if blocked || (proximity.is_none() && !named_person) {
             decision.allowed = false;
         }
         Ok(decision)
@@ -392,11 +438,89 @@ impl Engine {
         record: &str,
         data: Data,
     ) -> Result<Value, EngineError> {
-        let decision = self.organ_visibility(record, data, organ).await?;
+        self.visibility_read_principal(organ, None, record, data)
+            .await
+    }
+
+    pub async fn visibility_read_authenticated(
+        &self,
+        admission: &store::session_access::DeviceAdmission,
+        record: &str,
+        data: Data,
+    ) -> Result<Value, EngineError> {
+        let mut connection = self.store.pool.acquire().await?;
+        store::session_access::require_admission_on(&mut connection, admission).await?;
+        drop(connection);
+        let person = admission.authentication().person_uid();
+        self.require_permission(Some(person), "record:read").await?;
+        self.refuse_unreadable(Some(person), &[record.to_owned()])
+            .await?;
+        let organ = store::organs::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| denied("Local Organ unavailable"))?;
+        self.visibility_read_principal(&organ.uid, Some(person), record, data)
+            .await
+    }
+
+    pub(crate) async fn visibility_read_principal(
+        &self,
+        organ: &str,
+        person: Option<&str>,
+        record: &str,
+        data: Data,
+    ) -> Result<Value, EngineError> {
+        let decision = self
+            .principal_visibility(record, data, organ, person)
+            .await?;
         if !decision.allowed {
             return Err(denied("This Organ cannot view the selected Record data"));
         }
+        if data == Data::Record {
+            if let Some(person) = person {
+                self.require_permission(Some(person), "record:read").await?;
+                self.refuse_unreadable(Some(person), &[record.to_owned()])
+                    .await?;
+            }
+            let rules = store::visibility::rules_for_target(&self.store.pool, record).await?;
+            let whole_organ = |rule: &store::visibility::VisibilityRuleRow| {
+                rule.subject_kind == "public"
+                    || rule.subject_kind == "organ" && rule.subject_uid.as_deref() == Some(organ)
+            };
+            let restricted = rules.iter().any(|rule| {
+                rule.field.is_some()
+                    || rule.grant_level == "hidden" && whole_organ(rule)
+                    || person.is_none() && matches!(rule.subject_kind.as_str(), "actor" | "role")
+                    || !matches!(
+                        rule.subject_kind.as_str(),
+                        "public" | "organ" | "actor" | "role"
+                    )
+                    || !matches!(rule.grant_level.as_str(), "visible" | "hidden")
+            }) || person.is_none()
+                && rules.iter().any(|rule| rule.grant_level == "visible")
+                && !rules
+                    .iter()
+                    .any(|rule| rule.grant_level == "visible" && whole_organ(rule));
+            if restricted {
+                return Err(denied("Record permissions restrict this view"));
+            }
+        }
+        if data != Data::Record
+            && store::data_visibility::policy(&self.store.pool, record, Data::Record)
+                .await?
+                .is_some()
+            && !self
+                .principal_visibility(record, Data::Record, organ, person)
+                .await?
+                .allowed
+        {
+            return Err(denied("The Record's visibility also restricts this data"));
+        }
         if data == Data::LiveLocation {
+            if let Some(person) = person {
+                return Ok(serde_json::to_value(
+                    self.location_person_view(person, record, organ).await?,
+                )?);
+            }
             return self.location_organ_view(organ, record).await;
         }
         let row = store::records::get(&self.store.pool, record)
@@ -411,7 +535,8 @@ impl Engine {
         let place_decision = if data == Data::Place {
             decision
         } else {
-            self.organ_visibility(record, Data::Place, organ).await?
+            self.principal_visibility(record, Data::Place, organ, person)
+                .await?
         };
         let place = if place_decision.allowed {
             let targets: Vec<String> = store::sqlx::query_scalar("SELECT DISTINCT a.object_uid FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=? WHERE a.subject_uid=? AND a.retracted_at IS NULL AND a.role='ordinary' AND a.object_uid IS NOT NULL LIMIT 64")
@@ -419,9 +544,11 @@ impl Engine {
             let mut visible = std::collections::HashSet::from([record.to_owned()]);
             let mut radii = std::collections::HashMap::new();
             for target in targets {
-                let target_place = self.organ_visibility(&target, Data::Place, organ).await?;
+                let target_place = self
+                    .principal_visibility(&target, Data::Place, organ, person)
+                    .await?;
                 if self
-                    .organ_visibility(&target, Data::Record, organ)
+                    .principal_visibility(&target, Data::Record, organ, person)
                     .await?
                     .allowed
                     && target_place.allowed

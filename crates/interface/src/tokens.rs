@@ -222,7 +222,14 @@ pub enum SandStyleKind {
 }
 
 impl SandStyleKind {
-    pub const ALL: [Self; 6] = [Self::Square, Self::Text, Self::EditableText, Self::Record, Self::TimeCastle, Self::Fiote];
+    pub const ALL: [Self; 6] = [
+        Self::Square,
+        Self::Text,
+        Self::EditableText,
+        Self::Record,
+        Self::TimeCastle,
+        Self::Fiote,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {

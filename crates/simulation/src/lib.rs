@@ -1,4 +1,6 @@
 pub mod artifacts;
+#[cfg(test)]
+mod publication;
 pub mod location_workflows;
 pub mod assumptions;
 pub mod loans;
@@ -6,6 +8,8 @@ pub mod campaign;
 pub mod checks;
 pub mod comparison;
 pub mod proposal;
+pub mod record_evidence;
+pub mod limits;
 pub mod cli;
 pub mod fixtures;
 pub mod lingua;

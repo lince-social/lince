@@ -176,6 +176,555 @@ impl Fixture {
 }
 
 #[tokio::test]
+async fn remote_person_and_organ_record_reads_cannot_bypass_private_fields() {
+    use nucleus::visibility::{Command as VisibilityCommand, Condition, Data, Policy};
+    let fixture = Fixture::new().await;
+    let organ = store::organs::local(&fixture.engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    fixture
+        .engine
+        .visibility_request(
+            VisibilityCommand::Save {
+                record_uid: fixture.record.clone(),
+                data: Data::Record,
+                policy: Policy {
+                    include: vec![Condition {
+                        organs: vec![organ.clone()],
+                        ..Default::default()
+                    }],
+                    exclude: vec![],
+                },
+                expected_revision: 0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let node = "b".repeat(64);
+    let mut connection = fixture.engine.store.pool.acquire().await.unwrap();
+    let credential = store::session_access::password_on(&mut connection, "recipient")
+        .await
+        .unwrap()
+        .unwrap();
+    store::session_access::register_device_on(&mut connection, credential.authentication(), &node)
+        .await
+        .unwrap();
+    drop(connection);
+    let request = PeerRequest::ReadPerson {
+        record_uid: fixture.record.clone(),
+        data: Data::Record,
+        person: fixture.recipient.clone(),
+    };
+    assert!(
+        fixture
+            .engine
+            .location_peer(&organ, &node, request.clone())
+            .await
+            .is_ok()
+    );
+    fixture
+        .engine
+        .visibility_read(&organ, &fixture.record, Data::Record)
+        .await
+        .unwrap();
+    store::sqlx::query("INSERT INTO visibility_rule(uid,subject_kind,subject_uid,target_uid,field,grant_level) VALUES(?,'actor',?,?,'body','hidden')")
+        .bind(nucleus::new_uid("v")).bind(&fixture.recipient).bind(&fixture.record)
+        .execute(&fixture.engine.store.pool).await.unwrap();
+    assert!(
+        fixture
+            .engine
+            .location_peer(&organ, &node, request.clone())
+            .await
+            .is_err()
+    );
+    assert!(
+        fixture
+            .engine
+            .visibility_read(&organ, &fixture.record, Data::Record)
+            .await
+            .is_err()
+    );
+    store::sqlx::query("DELETE FROM visibility_rule WHERE target_uid=? AND field='body'")
+        .bind(&fixture.record)
+        .execute(&fixture.engine.store.pool)
+        .await
+        .unwrap();
+    store::visibility::grant(
+        &fixture.engine.store.pool,
+        "actor",
+        Some(&fixture.recipient),
+        &fixture.record,
+    )
+    .await
+    .unwrap();
+    assert!(
+        fixture
+            .engine
+            .location_peer(&organ, &node, request)
+            .await
+            .is_ok()
+    );
+    assert!(
+        fixture
+            .engine
+            .visibility_read(&organ, &fixture.record, Data::Record)
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn saving_or_linking_a_place_keeps_creator_access_without_sharing_with_other_members() {
+    let fixture = Fixture::new().await;
+    fixture
+        .engine
+        .act(
+            Action::SetPlace {
+                target: fixture.record.clone(),
+                lat: -23.5505,
+                lon: -46.6333,
+                address: Some("Private pickup".into()),
+            },
+            Some(fixture.controller.clone()),
+        )
+        .await
+        .unwrap();
+    let own = fixture
+        .engine
+        .saved_location_of(&fixture.record, Some(&fixture.controller))
+        .await
+        .unwrap();
+    assert_eq!(own.selected.unwrap().latitude, -23.5505);
+    assert!(
+        fixture
+            .engine
+            .saved_location_of(&fixture.record, Some(&fixture.recipient))
+            .await
+            .unwrap()
+            .selected
+            .is_none()
+    );
+    let linked = fixture
+        .engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Plain,
+                head: "Linked place".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    fixture
+        .engine
+        .change_record(
+            crate::record_change::Request {
+                id: nucleus::new_uid("op"),
+                record_uid: linked.clone(),
+                mutation: crate::record_change::Mutation::Assertion {
+                    predicate: "address".into(),
+                    object: Some(fixture.record.clone()),
+                    quantity: None,
+                    unit: None,
+                },
+            },
+            Some(&fixture.controller),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        fixture
+            .engine
+            .saved_location_of(&linked, Some(&fixture.controller))
+            .await
+            .unwrap()
+            .selected
+            .unwrap()
+            .latitude,
+        -23.5505
+    );
+    assert!(
+        fixture
+            .engine
+            .saved_location_of(&linked, Some(&fixture.recipient))
+            .await
+            .unwrap()
+            .selected
+            .is_none()
+    );
+}
+
+#[tokio::test]
+async fn geographic_queries_and_person_filters_use_permitted_area_centres() {
+    use nucleus::visibility::{Command as VisibilityCommand, Condition, Data, Policy};
+    let fixture = Fixture::new().await;
+    let anchor = fixture
+        .engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Plain,
+                head: "Visible anchor".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    for record in [&anchor, &fixture.record] {
+        fixture
+            .engine
+            .act(
+                Action::SetPlace {
+                    target: record.clone(),
+                    lat: -23.5505,
+                    lon: -46.6333,
+                    address: None,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    fixture
+        .engine
+        .visibility_request(
+            VisibilityCommand::Save {
+                record_uid: anchor.clone(),
+                data: Data::Place,
+                policy: Policy {
+                    include: vec![Condition {
+                        persons: vec![fixture.recipient.clone()],
+                        ..Default::default()
+                    }],
+                    exclude: vec![],
+                },
+                expected_revision: 1,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut query = protein::Protein {
+        source: protein::Source::Record,
+        filter: vec![protein::Predicate::Near {
+            of: anchor.clone(),
+            meters: 10000.0,
+        }],
+        fields: Some(vec!["uid".into()]),
+        include: Default::default(),
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    let results = protein::execute_for(&fixture.engine.store, &query, Some(&fixture.recipient))
+        .await
+        .unwrap();
+    assert!(results.iter().any(|row| row["uid"] == anchor));
+    assert!(!results.iter().any(|row| row["uid"] == fixture.record));
+    fixture
+        .engine
+        .visibility_request(
+            VisibilityCommand::Save {
+                record_uid: fixture.record.clone(),
+                data: Data::Place,
+                policy: Policy {
+                    include: vec![Condition {
+                        persons: vec![fixture.recipient.clone()],
+                        radius_metres: Some(5000),
+                        ..Default::default()
+                    }],
+                    exclude: vec![],
+                },
+                expected_revision: 1,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let results = protein::execute_for(&fixture.engine.store, &query, Some(&fixture.recipient))
+        .await
+        .unwrap();
+    assert!(results.iter().any(|row| row["uid"] == fixture.record));
+    query.filter = vec![protein::Predicate::Near {
+        of: anchor,
+        meters: 1.0,
+    }];
+    let results = protein::execute_for(&fixture.engine.store, &query, Some(&fixture.recipient))
+        .await
+        .unwrap();
+    assert!(!results.iter().any(|row| row["uid"] == fixture.record));
+    fixture
+        .engine
+        .set_read_filter(&fixture.recipient, Some(&query.filter[0]))
+        .await
+        .unwrap();
+    query.filter.clear();
+    let results = protein::execute_for(&fixture.engine.store, &query, Some(&fixture.recipient))
+        .await
+        .unwrap();
+    assert!(!results.iter().any(|row| row["uid"] == fixture.record));
+}
+
+#[tokio::test]
+async fn saved_place_person_access_requires_current_device_admission() {
+    use nucleus::visibility::{Command as VisibilityCommand, Condition, Data, Policy};
+    let fixture = Fixture::new().await;
+    fixture
+        .engine
+        .act(
+            Action::SetPlace {
+                target: fixture.record.clone(),
+                lat: -23.5505,
+                lon: -46.6333,
+                address: Some("Private street".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    fixture
+        .engine
+        .visibility_request(
+            VisibilityCommand::Save {
+                record_uid: fixture.record.clone(),
+                data: Data::Place,
+                policy: Policy {
+                    include: vec![Condition {
+                        persons: vec![fixture.recipient.clone()],
+                        radius_metres: Some(2500),
+                        ..Default::default()
+                    }],
+                    exclude: vec![],
+                },
+                expected_revision: 1,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut connection = fixture.engine.store.pool.acquire().await.unwrap();
+    let credential = store::session_access::password_on(&mut connection, "recipient")
+        .await
+        .unwrap()
+        .unwrap();
+    let node = "b".repeat(64);
+    let admission = store::session_access::register_device_on(
+        &mut connection,
+        credential.authentication(),
+        &node,
+    )
+    .await
+    .unwrap();
+    let stranger = store::session_access::password_on(&mut connection, "stranger")
+        .await
+        .unwrap()
+        .unwrap();
+    let stranger_admission = store::session_access::register_device_on(
+        &mut connection,
+        stranger.authentication(),
+        &node,
+    )
+    .await
+    .unwrap();
+    drop(connection);
+    assert!(
+        fixture
+            .engine
+            .visibility_read_authenticated(&stranger_admission, &fixture.record, Data::Place)
+            .await
+            .is_err()
+    );
+    let view = fixture
+        .engine
+        .visibility_read_authenticated(&admission, &fixture.record, Data::Place)
+        .await
+        .unwrap();
+    assert_eq!(view["place"]["radius_metres"], 2500);
+    assert!(view["place"]["address"].is_null());
+    assert_ne!(view["place"]["latitude"], -23.5505);
+    let outside = fixture
+        .engine
+        .location_peer(
+            &format!("node:{node}"),
+            &node,
+            PeerRequest::ReadPerson {
+                record_uid: fixture.record.clone(),
+                data: Data::Place,
+                person: fixture.recipient.clone(),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(outside["place"]["radius_metres"], 2500);
+    let local = store::organs::local(&fixture.engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap();
+    let place: String = store::sqlx::query_scalar("SELECT place_uid FROM record WHERE uid=?")
+        .bind(&fixture.record)
+        .fetch_one(&fixture.engine.store.pool)
+        .await
+        .unwrap();
+    let mut tx = store::write_tx(&fixture.engine.store.pool).await.unwrap();
+    let access = crate::access::load_on(&mut tx, &admission, &local.uid, &[], Default::default())
+        .await
+        .unwrap();
+    assert!(!access.readable().places.contains(&place));
+    drop(access);
+    tx.commit().await.unwrap();
+    let mut connection = fixture.engine.store.pool.acquire().await.unwrap();
+    store::session_access::compare_and_set_revoked_on(
+        &mut connection,
+        &fixture.recipient,
+        &node,
+        admission.device().revision,
+        true,
+    )
+    .await
+    .unwrap();
+    drop(connection);
+    assert!(
+        fixture
+            .engine
+            .visibility_read_authenticated(&admission, &fixture.record, Data::Place)
+            .await
+            .is_err()
+    );
+    assert!(
+        fixture
+            .engine
+            .location_peer(
+                &store::organs::local(&fixture.engine.store.pool)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .uid,
+                &node,
+                PeerRequest::ReadPerson {
+                    record_uid: fixture.record,
+                    data: Data::Place,
+                    person: fixture.recipient
+                },
+            )
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn person_rules_isolate_members_and_override_direct_live_invitations() {
+    use nucleus::visibility::{Command as VisibilityCommand, Condition, Data, Policy};
+    let fixture = Fixture::new().await;
+    let mut settings = fixture.settings.clone();
+    settings.recipients.push(fixture.recipient.clone());
+    let lease = fixture.start(settings).await;
+    fixture
+        .engine
+        .location_publish_source(&lease, fixture.fix(1))
+        .await
+        .unwrap();
+    fixture
+        .engine
+        .visibility_request(
+            VisibilityCommand::Save {
+                record_uid: fixture.record.clone(),
+                data: Data::LiveLocation,
+                policy: Policy {
+                    include: vec![Condition {
+                        persons: vec![fixture.stranger.clone()],
+                        radius_metres: Some(1000),
+                        ..Default::default()
+                    }],
+                    exclude: vec![Condition {
+                        persons: vec![fixture.recipient.clone()],
+                        ..Default::default()
+                    }],
+                },
+                expected_revision: 0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        fixture
+            .engine
+            .location_view(&fixture.recipient, &fixture.record)
+            .await
+            .unwrap()
+            .fix
+            .is_none()
+    );
+    let view = fixture
+        .engine
+        .location_view(&fixture.stranger, &fixture.record)
+        .await
+        .unwrap();
+    assert!(view.fix.is_some());
+    assert_eq!(view.radius_metres, Some(1000));
+    assert!(
+        fixture
+            .engine
+            .location_view(&fixture.controller, &fixture.record)
+            .await
+            .unwrap()
+            .fix
+            .is_some()
+    );
+    let organ = store::organs::local(&fixture.engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    let replicated = fixture
+        .engine
+        .location_organ_view(&organ, &fixture.record)
+        .await
+        .unwrap();
+    assert!(replicated["fix"].is_null());
+    fixture
+        .engine
+        .visibility_request(
+            VisibilityCommand::Save {
+                record_uid: fixture.record.clone(),
+                data: Data::Record,
+                policy: Policy {
+                    include: vec![Condition {
+                        persons: vec![fixture.recipient.clone()],
+                        ..Default::default()
+                    }],
+                    exclude: vec![],
+                },
+                expected_revision: 0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        fixture
+            .engine
+            .location_view(&fixture.stranger, &fixture.record)
+            .await
+            .unwrap()
+            .fix
+            .is_none()
+    );
+}
+
+#[tokio::test]
 async fn organ_exclusions_override_named_recipients_and_policies_require_permission() {
     use nucleus::visibility::{Command as VisibilityCommand, Condition, Data, Policy};
     let fixture = Fixture::new().await;

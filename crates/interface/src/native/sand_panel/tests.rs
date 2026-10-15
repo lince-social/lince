@@ -1,0 +1,139 @@
+use bevy::prelude::*;
+
+pub(crate) fn app() -> App {
+    let mut app = App::new();
+    app.init_resource::<Assets<Font>>()
+        .init_resource::<crate::native::theme::Typography>()
+        .init_resource::<crate::native::tokens::ThemeSettings>()
+        .init_resource::<bevy::input_focus::InputFocus>();
+    app
+}
+
+#[cfg(test)]
+pub(crate) fn connect(app: &mut App, engine: std::sync::Arc<engine::Engine>) -> cell::CellRuntime {
+    let runtime = cell::CellRuntime {
+        commands: Default::default(),
+        store: engine.store.clone(),
+        engine,
+        lanes: std::sync::Arc::new(cell::LaneHub::new()),
+        wire: Default::default(),
+        fiote: None,
+        speech: None,
+        information: None,
+    };
+    app.insert_resource(crate::native::wake::WakeSignal::new(|| {}))
+        .insert_resource(crate::native::app::CellHandle(runtime.clone()))
+        .add_plugins(crate::native::cell_bridge::CellBridgePlugin);
+    runtime
+}
+
+pub(crate) async fn settle(app: &mut App, done: impl Fn(&World) -> bool) {
+    for _ in 0..2000 {
+        app.update();
+        if done(app.world()) {
+            return;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    let labels: Vec<_> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    panic!("Sand did not settle: {labels:?}");
+}
+
+#[cfg_attr(test, test)]
+fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
+    use crate::native::sand_store::{SandKind, SandPreview};
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world.spawn_empty().id();
+    let parent = world.spawn(Node::default()).id();
+    for kind in [
+        #[cfg(feature = "stuff")]
+        SandKind::Freedoom,
+        SandKind::Terminal,
+        SandKind::Configuration,
+        SandKind::Todo,
+        SandKind::Ontology,
+    ] {
+        crate::native::sand_store::entry(world, root, parent, kind, None);
+    }
+    let previews: Vec<_> = world
+        .query_filtered::<Entity, With<SandPreview>>()
+        .iter(world)
+        .collect();
+    assert_eq!(previews.len(), 4 + usize::from(cfg!(feature = "stuff")));
+    let mut labels = Vec::new();
+    for preview in previews {
+        let mut pending = vec![preview];
+        while let Some(entity) = pending.pop() {
+            assert!(
+                world
+                    .get::<crate::native::actions::ActionButton>(entity)
+                    .is_none()
+            );
+            assert!(world.get::<bevy::text::EditableText>(entity).is_none());
+            #[cfg(feature = "stuff")]
+            assert!(
+                world
+                    .get::<crate::native::freedoom::FreedoomSand>(entity)
+                    .is_none()
+            );
+            assert!(
+                world
+                    .get::<crate::native::terminal::TerminalSand>(entity)
+                    .is_none()
+            );
+            assert!(
+                world
+                    .get::<crate::native::configuration::ConfigurationSand>(entity)
+                    .is_none()
+            );
+            assert!(world.get::<crate::native::todo::TodoSand>(entity).is_none());
+            assert!(
+                world
+                    .get::<crate::native::ontology::OntologySand>(entity)
+                    .is_none()
+            );
+            if let Some(text) = world.get::<Text>(entity) {
+                labels.push(text.0.as_str());
+            }
+            if let Some(children) = world.get::<Children>(entity) {
+                pending.extend(children.iter());
+            }
+        }
+    }
+    for caption in [
+        #[cfg(feature = "stuff")]
+        "Start / restart",
+        "Open shell",
+        "Save identity",
+        "Add task",
+    ] {
+        assert!(
+            labels.contains(&caption),
+            "Missing preview control: {caption}"
+        );
+    }
+}
+
+#[test]
+fn sand_store_catalog_matches_the_stuff_feature() {
+    use crate::native::sand_store::SandKind;
+    let names: Vec<_> = SandKind::ALL.into_iter().map(SandKind::name).collect();
+    assert_eq!(names.contains(&"Freedoom"), cfg!(feature = "stuff"));
+    for name in ["Terminal", "Configuration", "Todo", "Ontology"] {
+        assert!(names.contains(&name));
+    }
+    assert_eq!(
+        serde_json::from_str::<SandKind>("\"Freedoom\"").is_ok(),
+        cfg!(feature = "stuff")
+    );
+}
+
+crate::native::laboratory_cases! {
+    migrated_sand_previews_render_without_live_sands_or_input_controls,
+}

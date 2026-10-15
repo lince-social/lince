@@ -577,8 +577,8 @@ impl Engine {
             .ok_or_else(|| invalid("No local Cell"))?
             .uid;
         let signer = self.signer.lock().await.clone();
-        let thread_of = store::concepts::ensure(&self.store.pool, "thread-of").await?;
-        let message_in = store::concepts::ensure(&self.store.pool, "message-in").await?;
+        let thread_of = store::vocabulary::feature_write(&self.store.pool, "thread").await?;
+        let message_in = store::vocabulary::feature_write(&self.store.pool, "message").await?;
         let thread = conversation::scoped_uid("r", &(root, "social-thread"))?;
         let message =
             conversation::scoped_uid("r", &(root, &content.author_owner, &content.message))?;

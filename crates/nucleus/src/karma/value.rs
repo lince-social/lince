@@ -98,8 +98,7 @@ fn round_ratio(
     })
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 #[schemars(with = "DecimalValueWire")]
 pub struct DecimalValue {
     scale: u8,
@@ -681,8 +680,9 @@ pub enum Sensitivity {
     Secret,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, schemars::JsonSchema,
+)]
 pub struct PortContract {
     pub value_type: ValueType,
     pub sensitivity: Sensitivity,

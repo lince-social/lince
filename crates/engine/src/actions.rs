@@ -42,7 +42,15 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
+    RecordTransferOutcome {
+        occurrence: String,
+        expected_revision: u64,
+        request_id: String,
+        person: Option<String>,
+        request: nucleus::transfer::outcome::Request,
+    },
     Vocabulary { request: nucleus::vocabulary::Command },
+    Knowledge { request:nucleus::knowledge::Command },
     SavedLocation { request: nucleus::vocabulary::SavedLocationCommand },
     Plugins { request: nucleus::plugins::Command },
     Location { request: nucleus::location::Command },
@@ -2531,6 +2539,7 @@ impl Engine {
             Action::CreateTransferRemainderDraft { occurrence, .. }
             | Action::CreateReversingTransferDraft { occurrence, .. }
             | Action::SetTransferOccurrenceClaim { occurrence, .. }
+            | Action::RecordTransferOutcome { occurrence, .. }
             | Action::SetTransferOccurrenceDispute { occurrence, .. }
             | Action::SetTransferOccurrenceApplicationFormula { occurrence, .. }
             | Action::SettleTransferOccurrence { occurrence, .. } => Some(occurrence.as_str()),
@@ -2655,7 +2664,7 @@ impl Engine {
     }
 
     async fn transfer_for_thread(&self, thread_uid: &str) -> Result<Option<String>, EngineError> {
-        let Some(thread_of) = store::concepts::resolve(&self.store.pool, "thread-of").await? else {
+        let Some(thread_of) = store::vocabulary::feature_read(&self.store.pool, "thread").await? else {
             return Ok(None);
         };
         let mut transfers = Vec::new();
@@ -2681,7 +2690,7 @@ impl Engine {
     }
 
     async fn thread_for_message(&self, message_uid: &str) -> Result<String, EngineError> {
-        let message_in = store::concepts::resolve(&self.store.pool, "message-in")
+        let message_in = store::vocabulary::feature_read(&self.store.pool, "message")
             .await?
             .ok_or_else(|| EngineError::Conflict {
                 code: "message_thread_missing",
@@ -2730,7 +2739,7 @@ impl Engine {
         if let Some(actor) = actor
             && author_uid != actor
         {
-            let operated_by = store::concepts::resolve(&self.store.pool, "operated-by").await?;
+            let operated_by = store::vocabulary::feature_read(&self.store.pool, "operator").await?;
             let delegated = match operated_by {
                 Some(predicate) => store::assertions::objects_from_subject(
                     &self.store.pool,
@@ -2774,7 +2783,7 @@ impl Engine {
                 "a message draft must target a Thread".into(),
             ));
         }
-        let thread_of = store::concepts::resolve(&self.store.pool, "thread-of")
+        let thread_of = store::vocabulary::feature_read(&self.store.pool, "thread")
             .await?
             .ok_or_else(|| EngineError::Conflict {
                 code: "message_draft_thread_missing",
@@ -4100,11 +4109,11 @@ impl Engine {
     pub(crate) fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
             Action::SignalEndpoints { .. } => "permission:assign",
-            Action::Vocabulary { .. } | Action::SavedLocation { .. } => "record:read",
+            Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Knowledge { .. } => "record:read",
             Action::Plugins { request } => request.permission(),
             Action::Social { request } => request.permission(),
             Action::SandPackage { request } => request.permission(),
-            Action::DiscardTransferDraft { .. } => "transfer:update",
+            Action::DiscardTransferDraft { .. } | Action::RecordTransferOutcome { .. } => "transfer:update",
             Action::InspectCanvases => "record:read",
             Action::RecordExtensions { request, .. } => match request {
                 nucleus::record_extension::Request::Inspect { .. } => "record:read",
@@ -4344,9 +4353,10 @@ impl Engine {
         })
     }
 
-    pub(crate) async fn canonical_condition(
+    pub(crate) async fn canonical_condition_for(
         &self,
         condition: Option<String>,
+        actor: Option<&str>,
     ) -> Result<Option<String>, EngineError> {
         let Some(source) = condition else {
             return Ok(None);
@@ -4358,7 +4368,7 @@ impl Engine {
         let mut rewritten = String::with_capacity(source.len());
         let mut copied = 0usize;
         for (start, end, name) in tokens {
-            let uid = self.resolve_concept(&name).await?;
+            let uid = store::vocabulary::resolve(&self.store.pool,&name,actor).await?.ok_or_else(||EngineError::UnknownRecord(name.clone()))?;
             rewritten.push_str(&source[copied..start]);
             rewritten.push('#');
             rewritten.push_str(&uid);

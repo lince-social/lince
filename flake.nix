@@ -1150,7 +1150,7 @@
                   lib.any (package: toString package == toString pkgs.hello) config.environment.systemPackages;
               in
               {
-                desktop-runtime = pkgs.runCommand "lince-desktop-runtime" { } (
+                desktop-runtime = pkgs.runCommand "lince-sandbox-runtime" { } (
                   assert failures desktop == [ ];
                   assert desktopUnit.wantedBy == [ "graphical-session.target" ];
                   assert desktopUnit.after == [ "graphical-session.target" ];
@@ -1348,6 +1348,7 @@
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+              export __EGL_VENDOR_LIBRARY_DIRS="''${__EGL_VENDOR_LIBRARY_DIRS:-${pkgs.mesa}/share/glvnd/egl_vendor.d}"
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
                   interfaceLinuxBuildInputs

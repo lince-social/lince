@@ -22,17 +22,18 @@ impl Engine {
                 "Only a plain Record or Agent can become a Fiote.".into(),
             ));
         }
-        let agent = store::concepts::ensure(&self.store.pool, "agent").await?;
-        if row.kind == "person" && row.identity_predicate_uid.as_deref() != Some(&agent) {
+        let agent = store::vocabulary::feature_write(&self.store.pool, "agent").await?;
+        let agent_meanings=store::vocabulary::feature_binding(&self.store.pool,"agent").await?.concept_uids;
+        if row.kind == "person" && !row.identity_predicate_uid.as_ref().is_some_and(|identity|agent_meanings.contains(identity)) {
             return Err(EngineError::Consequence(
                 "Choose an Agent, not a human Person, for Fiote.".into(),
             ));
         }
         self.validate_fiote_parent(target, parent, actor).await?;
-        store::concepts::ensure(&self.store.pool, "assigned-to").await?;
-        let actor_concept = store::concepts::ensure(&self.store.pool, "actor").await?;
+        store::vocabulary::feature_write(&self.store.pool, "assignment").await?;
+        let actor_concept = store::vocabulary::feature_write(&self.store.pool, "actor").await?;
         store::concepts::add_parent(&self.store.pool, &agent, &actor_concept).await?;
-        let predicate = store::concepts::ensure(&self.store.pool, "descendant-of").await?;
+        let predicate = store::vocabulary::feature_write(&self.store.pool, "ancestry").await?;
         let mut tx = store::write_tx(&self.store.pool).await?;
         if row.kind == "plain" {
             store::sqlx::query("UPDATE record SET kind = 'person', updated_at = ? WHERE uid = ?")
@@ -57,8 +58,8 @@ impl Engine {
             &serde_json::json!({"run_assigned":run_assigned}),
         )
         .await?;
-        let assertions: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND retracted_at IS NULL")
-            .bind(target).bind(&predicate).fetch_all(&mut *tx).await?;
+        let assertions: Vec<String> = store::sqlx::query_scalar("SELECT a.uid FROM record_assertion a JOIN vocabulary_role_concept c ON c.concept_uid=a.predicate_uid JOIN vocabulary_feature f ON f.role_uid=c.role_uid AND f.feature='ancestry' WHERE a.subject_uid = ? AND a.retracted_at IS NULL")
+            .bind(target).fetch_all(&mut *tx).await?;
         for assertion in assertions {
             store::assertions::retract_tx(&mut tx, &assertion, actor).await?;
         }
@@ -83,7 +84,7 @@ impl Engine {
         Ok(())
     }
     pub async fn fiote_parent(&self, target: &str) -> Result<Option<String>, EngineError> {
-        let Some(predicate) = store::concepts::resolve(&self.store.pool, "descendant-of").await?
+        let Some(predicate) = store::vocabulary::feature_read(&self.store.pool, "ancestry").await?
         else {
             return Ok(None);
         };

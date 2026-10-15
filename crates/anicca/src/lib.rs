@@ -1,3 +1,4 @@
+pub mod expression;
 pub mod extension;
 pub mod grammar;
 pub mod instinct;
@@ -102,13 +103,67 @@ pub fn parse(source: &str) -> Result<Document, Diagnostic> {
     if source.len() > 16 * 1024 * 1024 {
         return Err(diagnostic("Lingua document exceeds 16 MiB"));
     }
-    let document = ast::parse(source).map_err(|error| Diagnostic {
-        path: None,
-        message: format!("{error:?}"),
-    })?;
+    let document = parse_syntax(source)?;
     validate_record_boundaries(&document)?;
     extension::validate(&document)?;
     Ok(document)
+}
+
+pub(crate) fn parse_syntax(source: &str) -> Result<Document, Diagnostic> {
+    let mut parser = rust_sitter::tree_sitter::Parser::new();
+    parser
+        .set_language(&ast::language())
+        .map_err(|error| diagnostic(error.to_string()))?;
+    let tree = parser
+        .parse(source, None)
+        .ok_or_else(|| diagnostic("Parsing was cancelled"))?;
+    let root = tree.root_node();
+    let mut cursor = root.walk();
+    let mut depth = 0usize;
+    let mut nodes = 0usize;
+    loop {
+        nodes += 1;
+        if depth > 512 || nodes > 1_000_000 {
+            return Err(diagnostic("Syntax nesting or node limit exceeded"));
+        }
+        let node = cursor.node();
+        if matches!(node.kind(), "Text" | "ConceptName" | "ExtensionText") {
+            let text = &source[node.start_byte()..node.end_byte()];
+            if text.starts_with('"') && serde_json::from_str::<String>(text).is_err() {
+                return Err(diagnostic("Invalid quoted text or escape sequence"));
+            }
+        }
+        if node.is_error() || node.is_missing() {
+            let position = node.start_position();
+            return Err(diagnostic(format!(
+                "Invalid or missing {} at line {}, column {}",
+                node.kind(),
+                position.row + 1,
+                position.column + 1
+            )));
+        }
+        if cursor.goto_first_child() {
+            depth += 1;
+            continue;
+        }
+        loop {
+            if cursor.goto_next_sibling() {
+                break;
+            }
+            if !cursor.goto_parent() {
+                if root.has_error() {
+                    return Err(diagnostic("Invalid or missing syntax"));
+                }
+                return Ok(<Document as rust_sitter::Extract<Document>>::extract(
+                    Some(root),
+                    source.as_bytes(),
+                    0,
+                    None,
+                ));
+            }
+            depth -= 1;
+        }
+    }
 }
 
 fn validate_record_boundaries(document: &Document) -> Result<(), Diagnostic> {
@@ -165,6 +220,7 @@ pub fn format(document: &Document) -> String {
             Declaration::Frequency(frequency) => format_frequency(&mut output, frequency),
             Declaration::Karma(karma) => format_karma(&mut output, karma),
             Declaration::Extension(value) => extension::format_ast(&mut output, value),
+            Declaration::Statement(value) => output.push_str(&expression::statement(value)),
         }
     }
     output
@@ -172,6 +228,76 @@ pub fn format(document: &Document) -> String {
 
 pub fn canonicalize(source: &str) -> Result<String, Diagnostic> {
     parse(source).map(|document| format(&document))
+}
+
+pub fn render_record(record: &ProjectedRecord) -> Result<String, Diagnostic> {
+    let quantity = record
+        .quantity
+        .as_ref()
+        .ok_or_else(|| diagnostic("A printed Record needs a quantity"))?;
+    let subject = format!(
+        "{}{}{}",
+        record
+            .slug
+            .as_ref()
+            .map(|slug| format!("@{slug}: "))
+            .unwrap_or_default(),
+        quantity.0,
+        quantity
+            .1
+            .as_ref()
+            .map(|unit| format!(" @{unit}"))
+            .unwrap_or_default()
+    );
+    let source = format!("Record ({subject}) {{ {}\n}} {}\n", record.uid, record.uid);
+    let output = set_record_runtime(
+        &source,
+        &record.uid,
+        &record.head,
+        &record.body,
+        &quantity.0,
+        &record.assertions,
+    )?;
+    parse(&output)?;
+    Ok(output)
+}
+
+pub fn render_rule(rule: &ProjectedRule) -> Result<String, Diagnostic> {
+    let cadence = rule
+        .cadence
+        .as_ref()
+        .map(|value| format!("cadence {}\n", quoted(value)))
+        .unwrap_or_default();
+    let anchor = rule
+        .anchor_at
+        .as_ref()
+        .map(|value| format!("anchor_at {value}\n"))
+        .unwrap_or_default();
+    let source = format!(
+        "Karma exported {{ Rules {{ Rule {} {{ {cadence}{anchor} }} ^{} }} }}",
+        rule.slug, rule.uid
+    );
+    let condition = rule.condition.as_ref().map(|value| {
+        (
+            value.as_str(),
+            rule.gate.as_deref().unwrap_or("> 0"),
+            rule.carry.as_deref().unwrap_or("zero"),
+        )
+    });
+    let output = set_rule_runtime(
+        &source,
+        &rule.uid,
+        rule.quantity,
+        &rule.frequency_slug,
+        rule.frequency_uid.as_deref().unwrap_or(""),
+        &rule.record_slug,
+        rule.record_uid.as_deref().unwrap_or(""),
+        condition,
+        &rule.consequences_json,
+        rule.note.as_deref(),
+    )?;
+    parse(&output)?;
+    Ok(output)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -255,7 +381,7 @@ pub fn bind_reference_uids(
                     }
                 }
             }
-            Declaration::Frequency(_) => {}
+            Declaration::Frequency(_) | Declaration::Statement(_) => {}
             Declaration::Extension(value) => require_reference(&value.target, identities)?,
         }
     }
@@ -366,6 +492,11 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
     };
     for declaration in &document.declarations {
         match declaration {
+            Declaration::Statement(_) => {
+                return Err(diagnostic(
+                    "Script statements require `lince lingua FILE`; import and sync do not execute scripts",
+                ));
+            }
             Declaration::Extension(value) => output.extensions.push(ProjectedExtension {
                 target_slug: value.target.slug.0.clone(),
                 target_uid: None,
@@ -862,6 +993,21 @@ pub fn check_project(root: &Path) -> Result<Vec<PathBuf>, Vec<Diagnostic>> {
     let mut slugs = BTreeMap::<String, &Path>::new();
     let mut references = Vec::<(String, &Path)>::new();
     for (path, document) in &documents {
+        if document
+            .declarations
+            .iter()
+            .any(|declaration| matches!(declaration, Declaration::Statement(_)))
+        {
+            validate_document(
+                document,
+                path,
+                &mut BTreeMap::new(),
+                &mut BTreeMap::new(),
+                &mut Vec::new(),
+                &mut errors,
+            );
+            continue;
+        }
         validate_document(
             document,
             path,
@@ -887,6 +1033,9 @@ pub fn check_project(root: &Path) -> Result<Vec<PathBuf>, Vec<Diagnostic>> {
 }
 
 pub fn lingua_paths(root: &Path) -> Result<Vec<PathBuf>, Diagnostic> {
+    if root.is_file() {
+        return Ok(vec![root.to_path_buf()]);
+    }
     let mut paths = Vec::new();
     collect_paths(root, root, &mut paths)?;
     paths.sort();
@@ -949,6 +1098,7 @@ fn validate_document<'a>(
     use ast::{FrequencyField, RecordField, RuleField};
     for declaration in &document.declarations {
         match declaration {
+            Declaration::Statement(_) => {}
             Declaration::Extension(value) => references.push((value.target.slug.0.clone(), path)),
             Declaration::Record(record) => {
                 let title = record.title.value();
@@ -1218,7 +1368,11 @@ fn record_field(field: &ast::RecordField) -> String {
                 })
             ),
             Some(ast::AssertionTail::Amount(amount)) => {
-                format!("#{}: {}", concept_term(&value.predicate.0), quantity(&amount.quantity))
+                format!(
+                    "#{}: {}",
+                    concept_term(&value.predicate.0),
+                    quantity(&amount.quantity)
+                )
             }
             None => format!("#{}", concept_term(&value.predicate.0)),
         },
@@ -1226,7 +1380,11 @@ fn record_field(field: &ast::RecordField) -> String {
 }
 
 fn concept_term(value: &str) -> String {
-    if value.is_empty() || value.chars().any(|ch| ch.is_whitespace() || "#@:,(){}\"^".contains(ch)) {
+    if value.is_empty()
+        || value
+            .chars()
+            .any(|ch| ch.is_whitespace() || "#@:,(){}\"^".contains(ch))
+    {
         serde_json::to_string(value).expect("Concept term serialization")
     } else {
         value.into()

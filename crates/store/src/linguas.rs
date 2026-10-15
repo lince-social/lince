@@ -35,6 +35,7 @@ pub struct LinguaRow {
     pub owner_organ: Option<String>,
     pub visibility: String,
     pub created_at: String,
+    pub revision: i64,
 }
 
 fn map(row: sqlx::sqlite::SqliteRow) -> LinguaRow {
@@ -44,6 +45,7 @@ fn map(row: sqlx::sqlite::SqliteRow) -> LinguaRow {
         owner_organ: row.get("owner_organ"),
         visibility: row.get("visibility"),
         created_at: row.get("created_at"),
+        revision: row.get("revision"),
     }
 }
 
@@ -58,6 +60,7 @@ pub async fn create(
             "invalid Lingua visibility `{visibility}`"
         )));
     }
+    let name = crate::vocabulary::term_text(name)?;
     let uid = nucleus::new_uid("g");
     sqlx::query(
         "INSERT INTO lingua (uid, name, owner_organ, visibility, created_at)
@@ -70,12 +73,23 @@ pub async fn create(
     .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
+    if let Some(organ) = owner_organ {
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE uid=? AND kind='organ')")
+                .bind(organ)
+                .fetch_one(pool)
+                .await?;
+        if exists {
+            sqlx::query("INSERT INTO organ_vocabulary(organ_uid,vocabulary_uid,adopted_at) VALUES(?,?,?) ON CONFLICT DO NOTHING")
+                .bind(organ).bind(&uid).bind(nucleus::execution::now().to_rfc3339()).execute(pool).await?;
+        }
+    }
     Ok(uid)
 }
 
 pub async fn list(pool: &SqlitePool) -> Result<Vec<LinguaRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT uid, name, owner_organ, visibility, created_at
+        "SELECT uid, name, owner_organ, visibility, created_at, revision
            FROM lingua ORDER BY name, uid",
     )
     .fetch_all(pool)
@@ -87,7 +101,7 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<LinguaRow>, StoreError> {
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<LinguaRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT uid, name, owner_organ, visibility, created_at FROM lingua WHERE uid = ?",
+        "SELECT uid, name, owner_organ, visibility, created_at, revision FROM lingua WHERE uid = ?",
     )
     .bind(uid)
     .fetch_optional(pool)

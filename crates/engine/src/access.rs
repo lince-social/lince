@@ -681,8 +681,21 @@ async fn snapshot_on(
         return Err(AccessError::InvalidMutation);
     }
     let graph = graph(&metadata, &content)?;
-    let (ceiling, linguas) = ceilings(&metadata, admission, hosted_organ, roles);
+    let (mut ceiling, linguas) = ceilings(&metadata, admission, hosted_organ, roles);
+    let denied = store::data_visibility::denied_for_person_on(
+        transaction,
+        admission.authentication().person_uid(),
+    )
+    .await?;
+    ceiling.records.retain(|uid| !denied.contains(uid));
     let records = authority::readable_records(Some(policy), &graph, &ceiling, &limits.authority)?;
+    let places = store::data_visibility::exact_places_for_person_on(
+        transaction,
+        admission.authentication().person_uid(),
+        &records,
+    )
+    .await?;
+    ceiling.places.retain(|uid| places.contains(uid));
     let readable = readable_sets(&metadata, &ceiling, records, linguas);
     let mut revisions = BTreeMap::new();
     if !targets.is_empty() {
@@ -1061,6 +1074,18 @@ fn validate_staged(
         }
     }
     for (uid, content) in &proposed.content {
+        let previous_place = current
+            .content
+            .get(uid)
+            .and_then(|record| record.place_uid.as_ref());
+        if content.place_uid.as_ref() != previous_place
+            && content
+                .place_uid
+                .as_ref()
+                .is_some_and(|place| !current.readable.places.contains(place))
+        {
+            return Err(AccessError::Policy(AuthorityError::Denied));
+        }
         if !current.content.contains_key(uid)
             && content
                 .extensions

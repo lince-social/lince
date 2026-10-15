@@ -12,8 +12,19 @@ use super::{
 pub const FREQUENCY_REVISION_HASH_DOMAIN: &str = "karma.frequency-revision.v1";
 pub const FREQUENCY_PARAMETER_HASH_DOMAIN: &str = "karma.frequency-parameters.v1";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+)]
 pub enum FrequencySchema {
     #[serde(rename = "karma.frequency.v1")]
     V1,
@@ -123,8 +134,7 @@ pub enum PositiveIntegerBinding {
     Parameter { parameter: LocalId },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct FrequencyTimerAst {
     pub required_resolution: DurationBinding,
     pub max_lateness: DurationBinding,
@@ -168,8 +178,7 @@ impl CadenceStepAst {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct CadenceAst {
     pub every: CadenceStepAst,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -198,8 +207,7 @@ pub enum FrequencyCadenceAst {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct FrequencyAst {
     pub schema: FrequencySchema,
     pub slug: Slug,

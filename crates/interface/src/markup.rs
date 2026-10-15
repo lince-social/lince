@@ -119,7 +119,13 @@ pub fn parse(source: &str) -> Vec<Block> {
             ) => flush(&mut blocks, &mut block),
             Event::End(TagEnd::TableCell) => push(&mut block, &style, "   │   "),
             Event::Text(text) | Event::Html(text) | Event::InlineHtml(text) => {
-                let escaped = source.as_bytes()[..range.start].iter().rev().take_while(|byte| **byte == b'\\').count() % 2 == 1;
+                let escaped = source.as_bytes()[..range.start]
+                    .iter()
+                    .rev()
+                    .take_while(|byte| **byte == b'\\')
+                    .count()
+                    % 2
+                    == 1;
                 if escaped || source[range].starts_with('\\') {
                     push(
                         &mut block,

@@ -1,0 +1,29 @@
+[package]
+name = "lince-plugin-activitypub"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+nucleus.workspace = true
+plugins.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+reqwest.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["fs", "io-std", "net"] }
+zeroize.workspace = true
+regex.workspace = true
+html-escape = "=0.2.15"
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+axum.workspace = true
+engine.workspace = true
+store.workspace = true
+protein.workspace = true
+
+[lints]
+workspace = true

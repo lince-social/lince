@@ -664,7 +664,7 @@ impl Engine {
         let local = store::organs::local(&self.store.pool)
             .await?
             .ok_or_else(|| denied("No local Organ"))?;
-        let predicate = store::concepts::ensure(&self.store.pool, "call-in").await?;
+        let predicate = store::vocabulary::feature_write(&self.store.pool, "call").await?;
         let mut transaction = store::write_tx(&self.store.pool).await?;
         let record = store::records::create_with_uid_on(
             &mut transaction,

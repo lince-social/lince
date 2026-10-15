@@ -102,6 +102,16 @@ impl Engine {
         Ok(())
     }
 
+    pub(crate) fn location_observer_person(&self, node: &str, person: &str) -> String {
+        self.location
+            .observers
+            .lock()
+            .expect("location observers")
+            .get(&(node.into(), person.into()))
+            .cloned()
+            .unwrap_or_else(|| person.into())
+    }
+
     async fn location_identity(
         &self,
         person: &str,
@@ -670,7 +680,7 @@ impl Engine {
         self.location_person_view(person, record, &organ).await
     }
 
-    async fn location_person_view(
+    pub(crate) async fn location_person_view(
         &self,
         person: &str,
         record: &str,
@@ -690,13 +700,35 @@ impl Engine {
         };
         let controller = lease.settings.controller_uid == person;
         let decision = self
-            .organ_visibility(record, nucleus::visibility::Data::LiveLocation, organ)
+            .principal_visibility(
+                record,
+                nucleus::visibility::Data::LiveLocation,
+                organ,
+                Some(person),
+            )
             .await?;
+        let record_allowed = store::data_visibility::policy(
+            &self.store.pool,
+            record,
+            nucleus::visibility::Data::Record,
+        )
+        .await?
+        .is_none()
+            || self
+                .principal_visibility(
+                    record,
+                    nucleus::visibility::Data::Record,
+                    organ,
+                    Some(person),
+                )
+                .await?
+                .allowed;
         let blocked = store::organs::contact(&self.store.pool, organ)
             .await?
             .is_some_and(|contact| contact.trust == "blocked");
         let allowed = controller
             || (!blocked
+                && record_allowed
                 && decision.excluded_by.is_empty()
                 && (decision.allowed
                     || lease
@@ -722,6 +754,17 @@ impl Engine {
         let decision = self
             .organ_visibility(record, nucleus::visibility::Data::LiveLocation, organ)
             .await?;
+        let record_allowed = store::data_visibility::policy(
+            &self.store.pool,
+            record,
+            nucleus::visibility::Data::Record,
+        )
+        .await?
+        .is_none()
+            || self
+                .organ_visibility(record, nucleus::visibility::Data::Record, organ)
+                .await?
+                .allowed;
         let session = self
             .location
             .state
@@ -734,7 +777,7 @@ impl Engine {
             self.location_permitted_view(
                 record,
                 &session,
-                decision.allowed,
+                decision.allowed && record_allowed,
                 false,
                 decision.radius_metres,
             )
@@ -906,6 +949,24 @@ impl Engine {
             }
             PeerRequest::Read { record_uid, data } => {
                 self.visibility_read(organ, &record_uid, data).await
+            }
+            PeerRequest::ReadPerson {
+                record_uid,
+                data,
+                person,
+            } => {
+                let mut connection = self.store.pool.acquire().await?;
+                let device =
+                    store::session_access::device_on(&mut connection, &person, peer).await?;
+                if !device.is_some_and(|device| !device.revoked) {
+                    return Err(denied(
+                        "Authenticate this Person on the viewing device first",
+                    ));
+                }
+                drop(connection);
+                self.location_identity(&person, Some(&person)).await?;
+                self.visibility_read_principal(organ, Some(&person), &record_uid, data)
+                    .await
             }
             PeerRequest::Control { command } => {
                 if !matches!(

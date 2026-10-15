@@ -86,6 +86,14 @@ impl Engine {
     ) -> Result<Vec<String>, EngineError> {
         use crate::actions::Action;
         let named: Vec<&String> = match action {
+            Action::RecordTransferOutcome { request, .. } => match request {
+                nucleus::transfer::outcome::Request::BindNeed { selection, supersedes, .. } => {
+                    std::iter::once(&selection.need).chain(supersedes.iter()).collect()
+                }
+                nucleus::transfer::outcome::Request::State { measure, need_binding, supersedes, .. } => {
+                    measure.object.iter().chain(need_binding.iter()).chain(supersedes.iter()).collect()
+                }
+            },
             Action::PresentComponent { target, component } => match component {
                 nucleus::component::ComponentState::Record { record, .. } => vec![target, record],
                 _ => vec![target],

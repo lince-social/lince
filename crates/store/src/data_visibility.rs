@@ -6,6 +6,114 @@ fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())
 }
 
+pub async fn denied_for_person_on(
+    connection: &mut SqliteConnection,
+    person: &str,
+) -> Result<std::collections::HashSet<String>, StoreError> {
+    let organ: Option<String> = sqlx::query_scalar(
+        "SELECT uid FROM record WHERE kind='organ' AND slug=? AND deleted_at IS NULL",
+    )
+    .bind(crate::organs::LOCAL_ORGAN_SLUG)
+    .fetch_optional(&mut *connection)
+    .await?;
+    let organ = organ.ok_or_else(|| invalid("Local Organ unavailable"))?;
+    let rows: Vec<(String, i64, Option<String>)> = sqlx::query_as(
+        "SELECT record_uid,length(CAST(policy_json AS BLOB)),CASE WHEN length(CAST(policy_json AS BLOB))<=? THEN policy_json END FROM data_visibility WHERE data='record' LIMIT 4097",
+    )
+    .bind(nucleus::visibility::MAX_POLICY_BYTES as i64)
+    .fetch_all(&mut *connection)
+    .await?;
+    if rows.len() > 4096 {
+        return Err(invalid("Record audience snapshot exceeds its limit"));
+    }
+    let mut bytes = 0usize;
+    let mut denied = std::collections::HashSet::new();
+    for (record, size, raw) in rows {
+        bytes = bytes
+            .checked_add(size.max(0) as usize)
+            .filter(|bytes| *bytes <= 16 * 1024 * 1024)
+            .ok_or_else(|| invalid("Record audience snapshot exceeds its byte limit"))?;
+        let raw = raw.ok_or_else(|| invalid("Record audience exceeds its byte limit"))?;
+        let policy: Policy = serde_json::from_str(&raw).map_err(invalid)?;
+        policy.validate_for(Data::Record).map_err(invalid)?;
+        if !policy
+            .decide_principal(&organ, Some(person), Some(0))
+            .allowed
+        {
+            denied.insert(record);
+        }
+    }
+    Ok(denied)
+}
+
+pub async fn decisions_for_person(
+    pool: &SqlitePool,
+    person: &str,
+    data: Data,
+) -> Result<std::collections::HashMap<String, nucleus::visibility::Decision>, StoreError> {
+    decisions_for_person_on(&mut *pool.acquire().await?, person, data).await
+}
+
+pub async fn decisions_for_person_on(
+    connection: &mut SqliteConnection,
+    person: &str,
+    data: Data,
+) -> Result<std::collections::HashMap<String, nucleus::visibility::Decision>, StoreError> {
+    let organ: Option<String> = sqlx::query_scalar(
+        "SELECT uid FROM record WHERE kind='organ' AND slug=? AND deleted_at IS NULL",
+    )
+    .bind(crate::organs::LOCAL_ORGAN_SLUG)
+    .fetch_optional(&mut *connection)
+    .await?;
+    let organ = organ.ok_or_else(|| invalid("Local Organ unavailable"))?;
+    let rows: Vec<(String, Option<String>)> = sqlx::query_as(
+        "SELECT record_uid,CASE WHEN length(CAST(policy_json AS BLOB))<=? THEN policy_json END FROM data_visibility WHERE data=? LIMIT 4097",
+    )
+    .bind(nucleus::visibility::MAX_POLICY_BYTES as i64)
+    .bind(data.as_str())
+    .fetch_all(&mut *connection)
+    .await?;
+    if rows.len() > 4096 {
+        return Err(invalid("Audience snapshot exceeds its row limit"));
+    }
+    let mut decisions = std::collections::HashMap::new();
+    let mut bytes = 0usize;
+    for (record, raw) in rows {
+        let raw = raw.ok_or_else(|| invalid("Audience exceeds its byte limit"))?;
+        bytes = bytes
+            .checked_add(raw.len())
+            .filter(|bytes| *bytes <= 16 * 1024 * 1024)
+            .ok_or_else(|| invalid("Audience snapshot exceeds its byte limit"))?;
+        let policy: Policy = serde_json::from_str(&raw).map_err(invalid)?;
+        policy.validate_for(data).map_err(invalid)?;
+        decisions.insert(
+            record,
+            policy.decide_principal(&organ, Some(person), Some(0)),
+        );
+    }
+    Ok(decisions)
+}
+
+pub async fn exact_places_for_person_on(
+    connection: &mut SqliteConnection,
+    person: &str,
+    records: &std::collections::BTreeSet<String>,
+) -> Result<std::collections::HashSet<String>, StoreError> {
+    let decisions = decisions_for_person_on(connection, person, Data::Place).await?;
+    let rows: Vec<(String,String)> = sqlx::query_as(
+        "SELECT uid,place_uid FROM record WHERE deleted_at IS NULL AND place_uid IS NOT NULL AND uid IN (SELECT value FROM json_each(?))",
+    ).bind(serde_json::to_string(records).map_err(invalid)?).fetch_all(connection).await?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|(record, place)| {
+            decisions
+                .get(&record)
+                .is_some_and(|decision| decision.allowed && decision.radius_metres.is_none())
+                .then_some(place)
+        })
+        .collect())
+}
+
 pub async fn policy(
     pool: &SqlitePool,
     record: &str,
@@ -71,6 +179,7 @@ pub async fn organs(pool: &SqlitePool) -> Result<Vec<Organ>, StoreError> {
             uid: local.uid,
             label: "This Organ".into(),
             proximity: Some(0),
+            blocked: false,
         });
     }
     for contact in crate::organs::contacts(pool).await? {
@@ -81,6 +190,7 @@ pub async fn organs(pool: &SqlitePool) -> Result<Vec<Organ>, StoreError> {
             uid: contact.record_uid,
             label: contact.head,
             proximity: (contact.trust == "known").then_some(contact.proximity),
+            blocked: contact.trust == "blocked",
         });
     }
     Ok(choices)
@@ -145,10 +255,35 @@ pub async fn ensure_private_on(
     record: &str,
     data: Data,
 ) -> Result<bool, StoreError> {
+    Ok(ensure_private_for_person_on(connection, record, data, None)
+        .await?
+        .is_some())
+}
+
+pub async fn ensure_private_for_person_on(
+    connection: &mut SqliteConnection,
+    record: &str,
+    data: Data,
+    person: Option<&str>,
+) -> Result<Option<SavedPolicy>, StoreError> {
+    let mut policy = Policy::default();
+    if let Some(person) = person
+        && crate::people::is_active_on(connection, person).await?
+    {
+        policy.include.push(nucleus::visibility::Condition {
+            persons: vec![person.into()],
+            ..Default::default()
+        });
+    }
+    policy.validate_for(data).map_err(invalid)?;
     let changed = sqlx::query("INSERT OR IGNORE INTO data_visibility(record_uid,data,controller_uid,revision,policy_json,updated_at) VALUES(?,?,NULL,1,?,?)")
-        .bind(record).bind(data.as_str()).bind(serde_json::to_string(&Policy::default()).map_err(invalid)?)
+        .bind(record).bind(data.as_str()).bind(serde_json::to_string(&policy).map_err(invalid)?)
         .bind(nucleus::execution::now().to_rfc3339()).execute(connection).await?;
-    Ok(changed.rows_affected() == 1)
+    Ok((changed.rows_affected() == 1).then_some(SavedPolicy {
+        controller_uid: String::new(),
+        revision: 1,
+        policy,
+    }))
 }
 
 pub async fn import(

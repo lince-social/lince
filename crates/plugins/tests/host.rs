@@ -10,6 +10,7 @@ fn package(root: &Path, directory: &str, id: &str, executable: &str) {
         id: id.into(),
         name: "Test package".into(),
         version: 1,
+        compatibility: nucleus::plugins::Compatibility::native(),
         executable: executable.into(),
         arguments: Vec::new(),
         contributions: vec![Contribution::Action {
@@ -39,7 +40,7 @@ async fn many_packages_are_registered_without_running_executables() {
         .await
         .unwrap();
     assert_eq!(host.packages().len(), 2);
-    assert!(host.diagnostics.is_empty());
+    assert!(host.diagnostics().is_empty());
     assert!(host.contribution("two/hello").is_ok());
     assert!(host.packages().iter().all(|package| !package.enabled));
     assert!(!root.path().join(".state").exists());
@@ -57,7 +58,7 @@ async fn duplicates_and_path_escapes_do_not_hide_healthy_packages() {
         .unwrap();
     assert_eq!(host.packages().len(), 1);
     assert_eq!(host.packages()[0].manifest.id, "healthy");
-    assert_eq!(host.diagnostics.len(), 2);
+    assert_eq!(host.diagnostics().len(), 2);
 }
 
 #[tokio::test]
@@ -111,7 +112,7 @@ async fn nested_identifiers_cannot_register_the_same_schema_namespace() {
         .unwrap();
     assert_eq!(host.packages().len(), 1);
     assert_eq!(host.packages()[0].manifest.id, "healthy");
-    assert!(host.diagnostics[0].contains("Conflicting schema namespace"));
+    assert!(host.diagnostics()[0].contains("Conflicting schema namespace"));
 }
 
 #[tokio::test]
@@ -161,4 +162,79 @@ fn schemas_and_field_types_are_checked_before_registration() {
         nucleus::plugins::validate_values(&fields, &serde_json::json!({"count":1,"secret":"no"}))
             .is_err()
     );
+}
+
+#[tokio::test]
+async fn platform_interfaces_versions_and_dependency_cycles_are_reported_without_execution() {
+    let root = tempfile::tempdir().unwrap();
+    for id in [
+        "base",
+        "dependent",
+        "wrong-os",
+        "wrong-api",
+        "missing",
+        "cycle-a",
+        "cycle-b",
+    ] {
+        package(root.path(), id, id, "runner");
+    }
+    for (id, dependencies, operating_systems, interfaces) in [
+        (
+            "dependent",
+            vec![("base", 1)],
+            vec![std::env::consts::OS],
+            vec![nucleus::plugins::PROTOCOL],
+        ),
+        ("wrong-os", vec![], vec!["unsupported-os"], vec![]),
+        ("wrong-api", vec![], vec![], vec!["lince.plugin-rpc.v999"]),
+        ("missing", vec![("base", 2)], vec![], vec![]),
+        ("cycle-a", vec![("cycle-b", 1)], vec![], vec![]),
+        ("cycle-b", vec![("cycle-a", 1)], vec![], vec![]),
+    ] {
+        let path = root.path().join(id).join("plugin.json");
+        let mut manifest: Manifest =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        manifest.compatibility.dependencies = dependencies
+            .into_iter()
+            .map(|(id, version)| (id.into(), version))
+            .collect();
+        manifest.compatibility.operating_systems =
+            operating_systems.into_iter().map(str::to_owned).collect();
+        manifest.compatibility.interfaces = interfaces.into_iter().map(str::to_owned).collect();
+        std::fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+    }
+    let host = plugins::Host::discover(root.path().to_path_buf())
+        .await
+        .unwrap();
+    assert_eq!(host.packages().len(), 2);
+    assert!(host.contribution("dependent/hello").is_ok());
+    assert_eq!(host.diagnostics().len(), 5);
+    assert!(!root.path().join(".state").exists());
+}
+
+#[tokio::test]
+async fn local_install_update_reload_and_remove_preserve_private_plugin_state() {
+    let source = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir().unwrap();
+    package(source.path(), "package", "example", "runner");
+    let host = plugins::Host::discover(root.path().to_path_buf())
+        .await
+        .unwrap();
+    host.install(source.path().join("package")).await.unwrap();
+    let first = host.packages().remove(0);
+    let state = root.path().join(".state/example");
+    std::fs::create_dir_all(&state).unwrap();
+    std::fs::write(state.join("identity"), "private saved identity").unwrap();
+    std::fs::write(source.path().join("package/runner"), "updated executable").unwrap();
+    host.install(source.path().join("package")).await.unwrap();
+    let updated = host.packages().remove(0);
+    assert_ne!(first.digest, updated.digest);
+    assert!(host.remove("example", &first.digest).await.is_err());
+    host.remove("example", &updated.digest).await.unwrap();
+    assert!(host.packages().is_empty());
+    assert_eq!(
+        std::fs::read_to_string(state.join("identity")).unwrap(),
+        "private saved identity"
+    );
+    assert!(host.contribution("example/hello").is_err());
 }

@@ -82,6 +82,10 @@ pub struct Trace {
 }
 
 impl Trace {
+    pub(crate) fn bytes(&self) -> u64 {
+        self.bytes
+    }
+
     fn transfer_change(
         &mut self,
         index: usize,

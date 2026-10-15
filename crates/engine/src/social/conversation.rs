@@ -326,8 +326,8 @@ impl Engine {
         }
         let key = self.social_storage_key().await?;
         let signer = self.signer.lock().await.clone();
-        let thread_of = store::concepts::ensure(&self.store.pool, "thread-of").await?;
-        let message_in = store::concepts::ensure(&self.store.pool, "message-in").await?;
+        let thread_of = store::vocabulary::feature_write(&self.store.pool, "thread").await?;
+        let message_in = store::vocabulary::feature_write(&self.store.pool, "message").await?;
         let mut tx = self.social_write_tx().await?;
         if owner::extension_on(&mut tx, context, SESSION_AUTHORITY_NAMESPACE).await? != authority {
             return Err(invalid(

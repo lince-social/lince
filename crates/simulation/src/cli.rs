@@ -41,12 +41,11 @@ pub async fn run(arguments: &[String]) -> Result<u8> {
                 if option == "--replay" {
                     replay = Some(PathBuf::from(value));
                 } else if option == "--checks" {
-                    if std::fs::metadata(value)?.len() > 1024 * 1024 {
-                        return Err("check selection exceeds 1 MiB".into());
-                    }
-                    selected_checks = Some(serde_json::from_slice::<
+                    selected_checks = Some(crate::limits::read_json::<
                         crate::campaign::CheckSelection,
-                    >(&std::fs::read(value)?)?);
+                    >(
+                        Path::new(value), crate::limits::CAPTURE_BYTES
+                    )?);
                 } else {
                     output = value.into();
                 }
@@ -106,6 +105,7 @@ pub struct CaseResult {
 
 pub async fn case_results(cases: &Path, output: &Path) -> Result<Vec<CaseResult>> {
     let mut files = Vec::new();
+    let mut bytes = 0u64;
     for entry in std::fs::read_dir(cases)? {
         let entry = entry?;
         if entry.file_type()?.is_file()
@@ -114,6 +114,16 @@ pub async fn case_results(cases: &Path, output: &Path) -> Result<Vec<CaseResult>
                 .extension()
                 .is_some_and(|extension| extension == "json")
         {
+            bytes = bytes
+                .saturating_add(entry.metadata()?.len())
+                .saturating_add(entry.path().as_os_str().len() as u64)
+                .saturating_add(std::mem::size_of::<crate::scenario::Scenario>() as u64);
+            if bytes > crate::limits::LINES_BYTES {
+                return Err(Box::new(crate::limits::Exceeded {
+                    resource: "CLI case batch",
+                    limit: crate::limits::LINES_BYTES,
+                }));
+            }
             files.push(entry.path());
         }
     }
@@ -123,8 +133,9 @@ pub async fn case_results(cases: &Path, output: &Path) -> Result<Vec<CaseResult>
     }
     let mut parsed = Vec::new();
     for file in files {
-        let scenario: crate::scenario::Scenario = serde_json::from_slice(&std::fs::read(&file)?)
-            .map_err(|error| format!("{}: {error}", file.display()))?;
+        let scenario: crate::scenario::Scenario =
+            crate::limits::read_json(&file, crate::limits::JSON_BYTES)
+                .map_err(|error| format!("{}: {error}", file.display()))?;
         scenario.validate()?;
         parsed.push(scenario);
     }

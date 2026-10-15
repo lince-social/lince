@@ -1,0 +1,656 @@
+use lince_interface::queries as model;
+pub(crate) mod tests;
+mod ui;
+
+use crate::native::{
+    cell_bridge::{CellMessage, ReceiveCell},
+    workspace::WorkspaceMember,
+};
+use bevy::{math::DVec2, prelude::*};
+use cell::{ClientMessage, ServerMessage};
+pub use model::ProteinDraft;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::{BTreeSet, HashMap, VecDeque};
+pub(crate) use ui::Command as ProteinAction;
+
+#[derive(Component, Clone, Debug, Serialize, Deserialize)]
+pub struct ProteinCastle {
+    pub draft: ProteinDraft,
+}
+
+pub(crate) fn refresh_editor(world: &mut World, entity: Entity) {
+    ui::editor(world, entity);
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) struct SavedProteinCastle {
+    pub workspace: u64,
+    draft: ProteinDraft,
+    position: [f64; 2],
+    size: [f32; 2],
+    placement: crate::native::sand_placement::Placement,
+    tokens: crate::native::tokens::TokenOverrides,
+}
+
+impl SavedProteinCastle {
+    pub(crate) fn valid(&self) -> bool {
+        self.draft.valid_storage()
+            && DVec2::from_array(self.position).is_finite()
+            && Vec2::from_array(self.size).is_finite()
+            && Vec2::from_array(self.size).min_element() > 0.0
+            && self.placement.valid()
+            && self.tokens.validate()
+    }
+
+    pub(crate) fn restore(self, world: &mut World, root: Entity) -> Entity {
+        let entity = spawn(
+            world,
+            root,
+            self.workspace,
+            DVec2::from_array(self.position),
+            self.draft,
+        );
+        world
+            .get_mut::<crate::native::canvas::CanvasItem>(entity)
+            .unwrap()
+            .size = Vec2::from_array(self.size);
+        self.placement.restore(world, entity);
+        world.entity_mut(entity).insert((
+            self.tokens,
+            crate::native::token_style::AppliedSize(Vec2::from_array(self.size)),
+        ));
+        entity
+    }
+}
+
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedProteinCastle> {
+    world
+        .query::<(
+            Entity,
+            &ChildOf,
+            &WorkspaceMember,
+            &crate::native::canvas::CanvasItem,
+            &ProteinCastle,
+        )>()
+        .iter(world)
+        .filter(|(entity, parent, _, _, _)| {
+            parent.parent() == root
+                && !crate::native::time_castle::source::editor(world, *entity)
+                && world
+                    .get::<crate::native::protein_area::QueryEditor>(*entity)
+                    .is_none()
+        })
+        .map(|(entity, _, member, item, castle)| SavedProteinCastle {
+            workspace: member.0,
+            draft: castle.draft.clone(),
+            position: item.position.to_array(),
+            size: item.size.to_array(),
+            placement: crate::native::sand_placement::Placement::capture(world, entity),
+            tokens: crate::native::token_style::overrides(world, entity),
+        })
+        .collect()
+}
+
+#[derive(Component, Default)]
+pub struct ProteinResults {
+    pub query: Option<protein::Protein>,
+    pub rows: Vec<Value>,
+    pub columns: Vec<String>,
+    pub revision: u64,
+    pub current: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Component)]
+struct View {
+    editor: Entity,
+    output: Entity,
+    status: String,
+    page: usize,
+    library: Vec<Value>,
+    library_open: bool,
+    saving: bool,
+    subscription: Option<String>,
+    output_dirty: bool,
+    binding: Option<Value>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RequestKind {
+    Bind,
+    Results,
+    Library,
+    Save,
+}
+
+#[derive(Resource, Default)]
+struct Requests {
+    next: u64,
+    owners: HashMap<String, (Entity, RequestKind)>,
+    outgoing: VecDeque<(tokio::sync::mpsc::Sender<ClientMessage>, ClientMessage)>,
+    senders: HashMap<Entity, tokio::sync::mpsc::Sender<ClientMessage>>,
+}
+
+pub struct ProteinCastlePlugin;
+
+impl Plugin for ProteinCastlePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Requests>()
+            .add_message::<CellMessage>()
+            .add_systems(Update, (receive.after(ReceiveCell), maintain).chain())
+            .add_systems(
+                PostUpdate,
+                ui::inputs
+                    .after(bevy::text::EditableTextSystems)
+                    .before(crate::native::actions::ApplyActions),
+            );
+    }
+}
+
+pub fn spawn(
+    world: &mut World,
+    root: Entity,
+    workspace: u64,
+    position: DVec2,
+    draft: ProteinDraft,
+) -> Entity {
+    world.init_resource::<Requests>();
+    let entity = world
+        .spawn((
+            crate::native::castle::Castle,
+            crate::native::sand::Square,
+            crate::native::sand::InBox(root),
+            ChildOf(root),
+            WorkspaceMember(workspace),
+            crate::native::sand_store::SandCredits(crate::native::credits::ATTRIBUTIONS),
+            crate::native::canvas::CanvasItem {
+                position,
+                size: Vec2::new(720.0, 680.0),
+            },
+            Node {
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(px(12)),
+                row_gap: px(8),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            crate::native::token_style::background(crate::native::tokens::Token::Surface),
+            ProteinCastle { draft },
+            ProteinResults::default(),
+        ))
+        .id();
+    let header = ui::row(world, entity);
+    crate::native::edit_mode::label(world, header, "Protein", 22.0);
+    ui::icon(
+        world,
+        header,
+        entity,
+        ui::Command::Run,
+        crate::native::icons::Icon::Play,
+        "Run this query and keep results live",
+    );
+    ui::icon(
+        world,
+        header,
+        entity,
+        ui::Command::Stop,
+        crate::native::icons::Icon::Stop,
+        "Stop receiving results",
+    );
+    ui::icon(
+        world,
+        header,
+        entity,
+        ui::Command::Library,
+        crate::native::icons::Icon::Store,
+        "Open saved Proteins",
+    );
+    ui::icon(
+        world,
+        header,
+        entity,
+        ui::Command::Save,
+        crate::native::icons::Icon::Save,
+        "Save this query as a named Protein. An existing slug updates that Protein.",
+    );
+    ui::icon(
+        world,
+        header,
+        entity,
+        ui::Command::Delete,
+        crate::native::icons::Icon::Close,
+        "Remove this Castle from the workspace",
+    );
+    let body = world
+        .spawn((
+            Node {
+                flex_grow: 1.0,
+                min_height: px(0),
+                column_gap: px(16),
+                ..default()
+            },
+            ChildOf(entity),
+        ))
+        .id();
+    let editor = ui::scroll(world, body, 55.0);
+    let output = ui::scroll(world, body, 45.0);
+    world.entity_mut(entity).insert(View {
+        editor,
+        output,
+        status: "Draft".into(),
+        page: 0,
+        library: Vec::new(),
+        library_open: false,
+        saving: false,
+        subscription: None,
+        output_dirty: true,
+        binding: None,
+    });
+    ui::editor(world, entity);
+    entity
+}
+
+pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
+    crate::native::sand_store::castle_entry(
+        world,
+        root,
+        parent,
+        "Protein Castle",
+        "Build a query and browse live results.",
+        ui::Command::Create,
+        |world, root| spawn(world, root, 1, DVec2::ZERO, ProteinDraft::default()),
+    );
+}
+
+fn request(
+    world: &mut World,
+    owner: Entity,
+    kind: RequestKind,
+    message: impl FnOnce(String) -> ClientMessage,
+) -> String {
+    let sender = query_sender(world, owner);
+    let mut requests = world.resource_mut::<Requests>();
+    requests.next += 1;
+    let id = format!("interface-protein-{}", requests.next);
+    requests.owners.insert(id.clone(), (owner, kind));
+    if let Some(sender) = sender {
+        requests.senders.insert(owner, sender.clone());
+        requests.outgoing.push_back((sender, message(id.clone())));
+    }
+    id
+}
+
+fn query_sender(world: &World, owner: Entity) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+    match crate::native::time_castle::source::editor_source(world, owner)
+        .or_else(|| crate::native::protein_area::query_editor_source(world, owner))
+    {
+        Some(source) => crate::native::protein_area::auxiliary_sender(world, &source),
+        None => crate::native::practice_cells::sender(world, owner),
+    }
+}
+
+fn cancel(world: &mut World, owner: Entity, kind: Option<RequestKind>) {
+    let mut requests = world.resource_mut::<Requests>();
+    let ids: Vec<_> = requests
+        .owners
+        .iter()
+        .filter(|(_, (entity, k))| *entity == owner && kind.is_none_or(|kind| kind == *k))
+        .map(|(id, (_, kind))| (id.clone(), *kind))
+        .collect();
+    for (id, kind) in ids {
+        requests.owners.remove(&id);
+        requests.outgoing.retain(|(_, message)| match message {
+            ClientMessage::Subscribe { id: pending, .. }
+            | ClientMessage::Act { id: pending, .. } => pending != &id,
+            _ => true,
+        });
+        if matches!(kind, RequestKind::Results | RequestKind::Library)
+            && let Some(sender) = requests.senders.get(&owner).cloned()
+        {
+            requests
+                .outgoing
+                .push_back((sender, ClientMessage::Unsubscribe { id }));
+        }
+    }
+    if !requests.owners.values().any(|(entity, _)| *entity == owner) {
+        requests.senders.remove(&owner);
+    }
+}
+
+pub(crate) fn remove(world: &mut World, owner: Entity) {
+    cancel(world, owner, None);
+    world.despawn(owner);
+}
+
+pub(crate) fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.status = message.into();
+        view.output_dirty = true;
+    }
+}
+
+fn run(world: &mut World, owner: Entity) {
+    let Some(castle) = world.get::<ProteinCastle>(owner) else {
+        return;
+    };
+    let query = match castle.draft.compile() {
+        Ok(query) => query,
+        Err(error) => {
+            status(world, owner, error);
+            return;
+        }
+    };
+    if query_sender(world, owner).is_none() {
+        status(world, owner, "No Cell connection");
+        return;
+    }
+    cancel(world, owner, Some(RequestKind::Results));
+    cancel(world, owner, Some(RequestKind::Bind));
+    world.get_mut::<ProteinResults>(owner).unwrap().current = false;
+    let value = serde_json::to_value(&query).unwrap();
+    world.get_mut::<View>(owner).unwrap().binding = Some(value.clone());
+    request(world, owner, RequestKind::Bind, |id| ClientMessage::Act {
+        id,
+        action: engine::actions::Action::Vocabulary {
+            request: nucleus::vocabulary::Command::BindQuery {
+                query: value.to_string(),
+            },
+        },
+    });
+    status(world, owner, "Resolving selected meanings…");
+}
+
+pub(crate) fn stop_results(world: &mut World, owner: Entity) {
+    cancel(world, owner, Some(RequestKind::Bind));
+    cancel(world, owner, Some(RequestKind::Results));
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.subscription = None;
+    }
+    if let Some(mut result) = world.get_mut::<ProteinResults>(owner) {
+        result.current = false;
+    }
+}
+
+pub(crate) fn resume_results(world: &mut World, owner: Entity) {
+    run(world, owner);
+}
+
+fn library(world: &mut World, owner: Entity) {
+    if world.get::<View>(owner).is_none() {
+        return;
+    }
+    if world.get::<View>(owner).unwrap().library_open {
+        world.get_mut::<View>(owner).unwrap().library_open = false;
+        cancel(world, owner, Some(RequestKind::Library));
+        ui::editor(world, owner);
+        return;
+    }
+    if crate::native::practice_cells::sender(world, owner).is_none() {
+        status(world, owner, "No Cell connection");
+        return;
+    }
+    world.get_mut::<View>(owner).unwrap().library_open = true;
+    let protein = serde_json::from_value(serde_json::json!({"source":"record", "where":[{"kind_eq":"protein"},{"quantity_gt":"0"}], "fields":["uid","slug","head","extension"], "include":{"extension":{"namespace":"lince.protein"}}, "order":[{"asc":"head"}]})).unwrap();
+    request(world, owner, RequestKind::Library, |id| {
+        ClientMessage::Subscribe { id, protein }
+    });
+    ui::editor(world, owner);
+    status(world, owner, "Loading saved Proteins…");
+}
+
+fn save(world: &mut World, owner: Entity) {
+    let Some(castle) = world.get::<ProteinCastle>(owner) else {
+        return;
+    };
+    if world.get::<View>(owner).is_some_and(|view| view.saving) {
+        return;
+    }
+    let draft = castle.draft.clone();
+    let query = match draft.compile() {
+        Ok(query) => query,
+        Err(error) => {
+            status(world, owner, error);
+            return;
+        }
+    };
+    if draft.name.trim().is_empty() || draft.slug.trim().is_empty() {
+        status(world, owner, "Name and slug are required to save a Protein");
+        return;
+    }
+    if crate::native::practice_cells::sender(world, owner).is_none() {
+        status(world, owner, "No Cell connection");
+        return;
+    }
+    request(world, owner, RequestKind::Save, |id| ClientMessage::Act {
+        id,
+        action: engine::actions::Action::SaveProtein {
+            slug: draft.slug.trim().into(),
+            head: draft.name.trim().into(),
+            ast: serde_json::to_value(query).unwrap(),
+        },
+    });
+    world.get_mut::<View>(owner).unwrap().saving = true;
+    status(world, owner, "Saving…");
+}
+
+fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
+    let messages: Vec<_> = cursor
+        .read(world.resource::<Messages<CellMessage>>())
+        .map(|m| m.0.clone())
+        .collect();
+    for message in messages {
+        receive_message(world, message);
+    }
+}
+
+fn receive_message(world: &mut World, message: ServerMessage) {
+    let id = match &message {
+        ServerMessage::Snapshot { id, .. }
+        | ServerMessage::Update { id, .. }
+        | ServerMessage::ActionOk { id, .. }
+        | ServerMessage::Error { id, .. } => id,
+        _ => return,
+    };
+    if id == crate::native::cell_bridge::CONNECTION {
+        disconnected(world);
+        return;
+    }
+    let Some((owner, kind)) = world.resource::<Requests>().owners.get(id).copied() else {
+        return;
+    };
+    if world.get::<View>(owner).is_none() {
+        return;
+    }
+    match message {
+        ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => match kind {
+            RequestKind::Results => {
+                let columns: BTreeSet<_> = rows
+                    .iter()
+                    .filter_map(Value::as_object)
+                    .flat_map(|row| row.keys().cloned())
+                    .collect();
+                let draft = world
+                    .get::<ProteinCastle>(owner)
+                    .unwrap()
+                    .draft
+                    .compile()
+                    .ok()
+                    .map(|query| serde_json::to_value(query).unwrap());
+                let mut result = world.get_mut::<ProteinResults>(owner).unwrap();
+                result.current = result
+                    .query
+                    .as_ref()
+                    .is_some_and(|query| Some(serde_json::to_value(query).unwrap()) == draft);
+                result.rows = rows;
+                result.columns = columns.into_iter().collect();
+                result.revision += 1;
+                result.error = None;
+                let current = result.current;
+                let saved = world
+                    .get::<View>(owner)
+                    .filter(|view| {
+                        view.saving || view.status == "Saved" || view.status.starts_with("Saved · ")
+                    })
+                    .map(|view| view.status.clone());
+                status(
+                    world,
+                    owner,
+                    if current {
+                        saved.as_deref().unwrap_or("Live")
+                    } else {
+                        "Draft changed · showing previous query"
+                    },
+                );
+            }
+            RequestKind::Library => {
+                world.get_mut::<View>(owner).unwrap().library = rows;
+                ui::editor(world, owner);
+                status(world, owner, "Saved Proteins");
+            }
+            RequestKind::Save | RequestKind::Bind => {}
+        },
+        ServerMessage::ActionOk { id, data, .. } if kind == RequestKind::Bind => {
+            world.resource_mut::<Requests>().owners.remove(&id);
+            let current = world
+                .get::<ProteinCastle>(owner)
+                .unwrap()
+                .draft
+                .compile()
+                .ok()
+                .and_then(|query| serde_json::to_value(query).ok());
+            let expected = world.get_mut::<View>(owner).unwrap().binding.take();
+            if current != expected {
+                status(world, owner, "Draft changed; run the query again");
+                return;
+            }
+            let Some(query) = data.and_then(|data| {
+                serde_json::from_value::<protein::Protein>(data["query"].clone()).ok()
+            }) else {
+                status(world, owner, "Selected meanings could not be resolved");
+                return;
+            };
+            let draft = &mut world.get_mut::<ProteinCastle>(owner).unwrap().draft;
+            *draft =
+                ProteinDraft::from_protein(draft.name.clone(), draft.slug.clone(), query.clone());
+            if crate::native::time_castle::source::run_editor(world, owner)
+                || crate::native::protein_area::run_editor(world, owner)
+            {
+                return;
+            }
+            world.get_mut::<ProteinResults>(owner).unwrap().query = Some(query.clone());
+            let id = request(world, owner, RequestKind::Results, |id| {
+                ClientMessage::Subscribe { id, protein: query }
+            });
+            world.get_mut::<View>(owner).unwrap().subscription = Some(id);
+            ui::editor(world, owner);
+            status(world, owner, "Loading…");
+        }
+        ServerMessage::ActionOk {
+            id, warnings, data, ..
+        } if kind == RequestKind::Save => {
+            world.resource_mut::<Requests>().owners.remove(&id);
+            world.get_mut::<View>(owner).unwrap().saving = false;
+            if let Some(query) = data.and_then(|data| {
+                serde_json::from_value::<protein::Protein>(data["query"].clone()).ok()
+            }) {
+                let mut castle = world.get_mut::<ProteinCastle>(owner).unwrap();
+                let draft = &mut castle.draft;
+                *draft = ProteinDraft::from_protein(draft.name.clone(), draft.slug.clone(), query);
+                ui::editor(world, owner);
+            }
+            status(
+                world,
+                owner,
+                if warnings.is_empty() {
+                    "Saved".into()
+                } else {
+                    format!("Saved · {}", warnings.join("; "))
+                },
+            );
+        }
+        ServerMessage::Error { id, message, .. } => {
+            if kind == RequestKind::Bind {
+                world.resource_mut::<Requests>().owners.remove(&id);
+                world.get_mut::<View>(owner).unwrap().binding = None;
+            }
+            if kind == RequestKind::Save {
+                world.resource_mut::<Requests>().owners.remove(&id);
+                world.get_mut::<View>(owner).unwrap().saving = false;
+            }
+            if kind == RequestKind::Results {
+                let mut results = world.get_mut::<ProteinResults>(owner).unwrap();
+                results.current = false;
+                results.error = Some(message.clone());
+            }
+            status(world, owner, message);
+        }
+        _ => {}
+    }
+}
+
+fn disconnected(world: &mut World) {
+    let owners: Vec<_> = world
+        .resource::<Requests>()
+        .owners
+        .values()
+        .map(|(owner, _)| *owner)
+        .collect();
+    world.resource_mut::<Requests>().owners.clear();
+    world.resource_mut::<Requests>().outgoing.clear();
+    world.resource_mut::<Requests>().senders.clear();
+    for owner in owners {
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            view.saving = false;
+            view.subscription = None;
+        }
+        if let Some(mut result) = world.get_mut::<ProteinResults>(owner) {
+            result.current = false;
+            result.error = Some("Connection closed".into());
+        }
+        status(world, owner, "Connection closed · results may be stale");
+    }
+}
+
+fn maintain(world: &mut World) {
+    let stale: Vec<_> = world
+        .resource::<Requests>()
+        .owners
+        .values()
+        .filter(|(owner, _)| world.get::<ProteinCastle>(*owner).is_none())
+        .map(|(owner, _)| *owner)
+        .collect();
+    for owner in stale {
+        cancel(world, owner, None);
+    }
+    if !crate::native::laboratory::active(world) {
+        while let Some((sender, message)) = world.resource_mut::<Requests>().outgoing.pop_front() {
+            match sender.try_send(message) {
+                Ok(()) => {}
+                Err(tokio::sync::mpsc::error::TrySendError::Full(message)) => {
+                    world
+                        .resource_mut::<Requests>()
+                        .outgoing
+                        .push_front((sender, message));
+                    if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+                        wake.ring();
+                    }
+                    break;
+                }
+                Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
+                    disconnected(world);
+                    break;
+                }
+            }
+        }
+    }
+    let dirty: Vec<_> = world
+        .query::<(Entity, &View)>()
+        .iter(world)
+        .filter(|(_, view)| view.output_dirty)
+        .map(|(entity, _)| entity)
+        .collect();
+    for entity in dirty {
+        ui::output(world, entity);
+    }
+}

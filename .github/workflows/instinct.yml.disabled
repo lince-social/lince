@@ -50,9 +50,9 @@ jobs:
           cargo test --locked -p anicca --test instinct
           cargo test --locked -p lince-interface --no-default-features --test practice
           cargo test --locked -p engine --features instinct --test instinct_import
-          cargo test --locked -p lince-desktop --features instinct --lib ontology::tests:: -- --test-threads=1
-          cargo test --locked -p lince-desktop --features instinct --lib sound::tests:: -- --test-threads=1
-          cargo test --locked -p lince-desktop --lib description::tests:: -- --test-threads=1
-          cargo test --locked -p lince-desktop --features instinct --lib description::tests:: -- --test-threads=1
-          cargo test --locked -p lince-desktop --features instinct --lib instinct -- --test-threads=1
-          cargo test --locked -p lince-desktop --features instinct --lib kept_cell_reopens -- --test-threads=1
+          cargo test --locked -p lince-interface --features instinct --lib ontology::tests:: -- --test-threads=1
+          cargo test --locked -p lince-interface --features instinct --lib sound::tests:: -- --test-threads=1
+          cargo test --locked -p lince-interface --features native-presentation --lib description::tests:: -- --test-threads=1
+          cargo test --locked -p lince-interface --features instinct --lib description::tests:: -- --test-threads=1
+          cargo test --locked -p lince-interface --features instinct --lib instinct -- --test-threads=1
+          cargo test --locked -p lince-interface --features instinct --lib kept_cell_reopens -- --test-threads=1

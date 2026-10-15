@@ -1,0 +1,742 @@
+use super::*;
+use serde_json::json;
+
+fn fixture() -> (App, Entity) {
+    let mut app = App::new();
+    crate::native::laboratory::isolate(app.world_mut());
+    app.add_plugins(MinimalPlugins)
+        .init_resource::<Assets<Font>>()
+        .init_resource::<crate::native::theme::Typography>()
+        .init_resource::<crate::native::tokens::ThemeSettings>()
+        .add_plugins((
+            crate::native::protein_area::ProteinAreaPlugin,
+            CalendarPlugin,
+        ));
+    let root = app
+        .world_mut()
+        .spawn((
+            crate::native::container::BoxRoot,
+            crate::native::workspace::Workspaces::default(),
+        ))
+        .id();
+    (app, root)
+}
+
+#[cfg_attr(test, test)]
+fn gregorian_months_and_navigation_respect_leap_years_and_bounds() {
+    let mut calendar = Calendar {
+        year: 2024,
+        month: 2,
+        ..Calendar::default()
+    };
+    let days = calendar.days();
+    assert_eq!(days.len(), 42);
+    assert_eq!(days.iter().flatten().count(), 29);
+    assert_eq!(days[3].unwrap().to_string(), "2024-02-01");
+    calendar.year = 2100;
+    assert_eq!(calendar.days().iter().flatten().count(), 28);
+    calendar.year = 2000;
+    assert_eq!(calendar.days().iter().flatten().count(), 29);
+    calendar.month = 12;
+    calendar.move_months(1);
+    assert_eq!((calendar.year, calendar.month), (2001, 1));
+    calendar.move_months(-1);
+    assert_eq!((calendar.year, calendar.month), (2000, 12));
+    calendar.year = 1;
+    calendar.month = 1;
+    calendar.move_months(-12);
+    assert_eq!((calendar.year, calendar.month), (1, 1));
+    calendar.year = 9999;
+    calendar.month = 12;
+    calendar.move_months(12);
+    assert_eq!((calendar.year, calendar.month), (9999, 12));
+    for invalid in ["2026-02-29", "2026-2-01", "0000-01-01", "2026-13-01"] {
+        assert!(model::parse(invalid).is_none());
+    }
+}
+
+#[cfg_attr(test, test)]
+fn periods_validate_endpoints_and_records_cover_inclusive_days() {
+    let mut calendar = Calendar::default();
+    calendar.select("2026-09-12").unwrap();
+    calendar.selecting_end = true;
+    assert!(calendar.select("2026-09-11").is_err());
+    calendar.select("2026-10-02").unwrap();
+    calendar.selecting_end = false;
+    assert!(calendar.select("2026-10-03").is_err());
+    assert!(calendar.valid());
+    let span = model::span(&json!({"start_date":"2026-09-30","due_date":"2026-10-02"})).unwrap();
+    assert_eq!(span.0.to_string(), "2026-09-30");
+    assert_eq!(span.1.to_string(), "2026-10-02");
+    assert!(model::span(&json!({"start_date":"2026-10-02","due_date":"2026-09-30"})).is_none());
+    let point = model::span(&json!({"due_date":"2026-09-30"})).unwrap();
+    assert_eq!(point.0, point.1);
+}
+
+#[cfg_attr(test, test)]
+fn named_events_stay_in_their_group_and_other_events_pass() {
+    use crate::native::canvas_selection::SandGroup;
+    use crate::native::scoped_events::*;
+    #[derive(Resource, Default)]
+    struct Received(Vec<Entity>);
+    let mut world = World::new();
+    crate::native::laboratory::isolate(&mut world);
+    world.init_resource::<Received>();
+    world.add_observer(|event: On<SandEvent>, mut received: ResMut<Received>| {
+        received.0.push(event.entity)
+    });
+    let root = world.spawn_empty().id();
+    let first = world
+        .spawn((
+            ChildOf(root),
+            WorkspaceMember(1),
+            SandGroup([1; 16]),
+            EventBoundary(vec![DATE_SELECTED.into()]),
+        ))
+        .id();
+    let inside = world
+        .spawn((
+            ChildOf(root),
+            WorkspaceMember(1),
+            SandGroup([1; 16]),
+            EventListener(vec![DATE_SELECTED.into(), "Other".into()]),
+        ))
+        .id();
+    let outside = world
+        .spawn((
+            ChildOf(root),
+            WorkspaceMember(1),
+            EventListener(vec![DATE_SELECTED.into(), "Other".into()]),
+        ))
+        .id();
+    let source = world.spawn(ChildOf(first)).id();
+    emit(&mut world, source, DATE_SELECTED, json!("2026-09-13"));
+    assert_eq!(world.resource::<Received>().0, [inside]);
+    world.resource_mut::<Received>().0.clear();
+    emit(&mut world, source, "Other", json!(true));
+    let events = &world.resource::<Received>().0;
+    assert!(events.contains(&inside) && events.contains(&outside));
+    world.entity_mut(first).remove::<EventBoundary>();
+    world.resource_mut::<Received>().0.clear();
+    emit(&mut world, source, DATE_SELECTED, json!("2026-09-13"));
+    assert_eq!(world.resource::<Received>().0.len(), 2);
+}
+
+#[cfg_attr(test, test)]
+fn calendar_persists_and_quiet_updates_keep_the_same_nodes() {
+    let (mut app, root) = fixture();
+    let calendar = Calendar {
+        year: 2026,
+        month: 9,
+        ..Calendar::default()
+    };
+    let entity = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::new(30.0, 40.0),
+        calendar.clone(),
+    );
+    let body = app.world().get::<View>(entity).unwrap().body;
+    for _ in 0..10 {
+        app.update();
+    }
+    assert_eq!(app.world().get::<View>(entity).unwrap().body, body);
+    app.world_mut()
+        .get_mut::<crate::native::canvas::CanvasItem>(entity)
+        .unwrap()
+        .size = Vec2::new(1000.0, 800.0);
+    let saved = snapshot(app.world_mut(), root);
+    assert_eq!(saved.len(), 1);
+    let encoded = serde_json::to_string(&saved[0]).unwrap();
+    let restored: SavedCalendar = serde_json::from_str(&encoded).unwrap();
+    assert!(restored.valid());
+    app.world_mut().despawn(entity);
+    restored.restore(app.world_mut(), root);
+    let (sand, item) = app
+        .world_mut()
+        .query::<(&CalendarSand, &crate::native::canvas::CanvasItem)>()
+        .single(app.world())
+        .unwrap();
+    assert_eq!(sand.0, calendar);
+    assert_eq!(item.size, Vec2::new(1000.0, 800.0));
+}
+
+#[cfg_attr(test, test)]
+fn large_months_limit_rendered_records_and_keep_every_page_reachable() {
+    let calendar = Calendar {
+        year: 2026,
+        month: 9,
+        ..Calendar::default()
+    };
+    let data: Vec<_> = (0..10_000).map(|index| json!({"uid":index.to_string(), "head":"Work", "start_date":"2026-08-01", "due_date":"2026-10-01"})).collect();
+    let first = ui::records(&calendar, &data, 0);
+    assert_eq!(first.maximum, 10_000);
+    assert_eq!(
+        first.days.iter().map(Vec::len).sum::<usize>(),
+        30 * ui::PER_DAY
+    );
+    let last = ui::records(&calendar, &data, usize::MAX);
+    assert_eq!(last.page, 9_999 / ui::PER_DAY);
+    assert_eq!(last.days.iter().map(Vec::len).sum::<usize>(), 30);
+    assert!(last.days.iter().flatten().all(|entry| entry.0 == "9999"));
+}
+
+async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
+    let result = tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        loop {
+            app.update();
+            if predicate(app.world()) {
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    })
+    .await;
+    if result.is_err() {
+        let feeds: Vec<_> = app
+            .world_mut()
+            .query::<&projection::Feed>()
+            .iter(app.world())
+            .map(|feed| {
+                (
+                    &feed.status,
+                    feed.rows.len(),
+                    feed.rows
+                        .iter()
+                        .filter(|row| row["origin"]["kind"] == "projection")
+                        .count(),
+                )
+            })
+            .collect();
+        panic!("Calendar did not update: {feeds:?}");
+    }
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_cell() {
+    use crate::native::protein_area::{Binding, Config, RecordBinding};
+    use engine::actions::Action as BackendAction;
+    let (mut app, root) = fixture();
+    let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    let uid = engine
+        .act(
+            BackendAction::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Plain,
+                head: "Calendar task".into(),
+                body: String::new(),
+                quantity: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    engine
+        .act(
+            BackendAction::SetExtension {
+                target: uid.clone(),
+                namespace: "work".into(),
+                fds: json!({"start":"2026-09-01", "due":"2026-09-03", "estimate_min":17}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let runtime = cell::CellRuntime {
+        commands: Default::default(),
+        engine: engine.clone(),
+        store: engine.store.clone(),
+        lanes: std::sync::Arc::new(cell::LaneHub::new()),
+        wire: Default::default(),
+        fiote: None,
+        speech: None,
+        information: None,
+    };
+    app.insert_resource(crate::native::app::CellHandle(runtime))
+        .insert_resource(crate::native::wake::WakeSignal::new(|| {}))
+        .add_plugins(crate::native::cell_bridge::CellBridgePlugin);
+    let mut influence = InfluenceArea::new(
+        crate::native::area::AreaShape::Square,
+        DVec2::ZERO,
+        DVec2::splat(800.0),
+    );
+    let mut config = Config {
+        enabled: true,
+        bindings: vec![
+            Binding::new("head"),
+            Binding::new("start_date"),
+            Binding::new("due_date"),
+        ],
+        ..Config::default()
+    };
+    config.bindings[1].editable = true;
+    config.bindings[2].editable = true;
+    config.draft.query["where"] = json!([{"all":[{"uid_eq":uid}]}]);
+    influence.protein = Some(config);
+    let id = influence.id.clone();
+    let source = crate::native::area::spawn_area(app.world_mut(), root, 1, influence).unwrap();
+    let calendar = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::ZERO,
+        Calendar {
+            year: 2026,
+            month: 9,
+            ..Calendar::default()
+        },
+    );
+    Command::Source(Some(id)).apply(app.world_mut(), calendar);
+    until(&mut app, |world| {
+        crate::native::protein_area::calendar_feed(world, source)
+            .is_some_and(|(rows, _)| rows.iter().any(|r| r["start_date"] == "2026-09-01"))
+    })
+    .await;
+    let editors: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &bevy::text::EditableText, &RecordBinding)>()
+        .iter(app.world())
+        .filter(|(_, _, binding)| binding.uid == uid)
+        .map(|(entity, text, _)| (entity, text.value().to_string()))
+        .collect();
+    let start = editors
+        .iter()
+        .find(|(_, text)| text == "2026-09-01")
+        .unwrap()
+        .0;
+    let end = editors
+        .iter()
+        .find(|(_, text)| text == "2026-09-03")
+        .unwrap()
+        .0;
+    picker::OpenDate(start).apply(app.world_mut(), start);
+    let popup = app
+        .world_mut()
+        .query_filtered::<Entity, With<Picker>>()
+        .single(app.world())
+        .unwrap();
+    Command::Select("2026-09-02".into()).apply(app.world_mut(), popup);
+    app.world_mut().flush();
+    picker::OpenDate(end).apply(app.world_mut(), end);
+    Command::Select("2026-09-05".into()).apply(app.world_mut(), popup);
+    app.world_mut().flush();
+    assert!(app.world().get::<View>(popup).unwrap().error.is_some());
+    assert_eq!(
+        app.world()
+            .get::<bevy::text::EditableText>(end)
+            .unwrap()
+            .value()
+            .to_string(),
+        "2026-09-03"
+    );
+    until(&mut app, |world| {
+        crate::native::protein_area::calendar_feed(world, source)
+            .is_some_and(|(rows, _)| rows.iter().any(|r| r["start_date"] == "2026-09-02"))
+    })
+    .await;
+    picker::OpenDate(end).apply(app.world_mut(), end);
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<Entity, With<Picker>>()
+            .single(app.world())
+            .unwrap(),
+        popup
+    );
+    Command::Select("2026-09-05".into()).apply(app.world_mut(), popup);
+    app.world_mut().flush();
+    until(&mut app, |world| {
+        crate::native::protein_area::calendar_feed(world, source)
+            .is_some_and(|(rows, _)| rows.iter().any(|r| r["due_date"] == "2026-09-05"))
+    })
+    .await;
+    let (data, _) = crate::native::protein_area::calendar_feed(app.world(), source).unwrap();
+    assert_eq!(data[0]["extension"]["estimate_min"], 17);
+    let shown = ui::records(
+        &app.world().get::<CalendarSand>(calendar).unwrap().0,
+        data,
+        0,
+    );
+    assert_eq!(shown.days.iter().map(Vec::len).sum::<usize>(), 4);
+    let titles = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .filter(|(entity, text)| {
+            let mut parent = *entity;
+            while let Some(link) = app.world().get::<ChildOf>(parent) {
+                parent = link.parent();
+                if parent == calendar {
+                    return text.0 == "Calendar task";
+                }
+            }
+            false
+        })
+        .count();
+    assert_eq!(titles, 4);
+    Command::Select("2026-09-01".into()).apply(app.world_mut(), popup);
+    assert!(app.world().get::<View>(popup).unwrap().error.is_some());
+    assert_eq!(
+        app.world()
+            .get::<bevy::text::EditableText>(end)
+            .unwrap()
+            .value()
+            .to_string(),
+        "2026-09-05"
+    );
+    assert_eq!(snapshot(app.world_mut(), root).len(), 1);
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(start)
+        .unwrap()
+        .editor
+        .set_text("2026-09-04");
+    until(&mut app, |world| {
+        crate::native::protein_area::calendar_feed(world, source)
+            .is_some_and(|(rows, _)| rows.iter().any(|row| row["start_date"] == "2026-09-04"))
+    })
+    .await;
+    assert_eq!(
+        app.world_mut().query::<&Picker>().iter(app.world()).count(),
+        1
+    );
+    engine
+        .act(BackendAction::DeleteRecord { target: uid }, None)
+        .await
+        .unwrap();
+    until(&mut app, |world| {
+        crate::native::protein_area::calendar_feed(world, source)
+            .is_some_and(|(rows, _)| rows.is_empty())
+    })
+    .await;
+    assert!(app.world().get_entity(popup).is_err());
+}
+
+crate::native::laboratory_cases! {
+    record_date_popup_reuses_endpoints_without_joining_canvas_layout,
+    gregorian_months_and_navigation_respect_leap_years_and_bounds,
+    periods_validate_endpoints_and_records_cover_inclusive_days,
+    named_events_stay_in_their_group_and_other_events_pass,
+    calendar_persists_and_quiet_updates_keep_the_same_nodes,
+    large_months_limit_rendered_records_and_keep_every_page_reachable,
+    async real_protein_dates_feed_calendar_and_both_picker_fields_save_through_cell,
+    async karma_projections_and_manual_work_render_and_pausing_a_rule_refreshes_the_calendar,
+    wheel_navigation_accumulates_trackpad_pixels,
+}
+
+#[cfg_attr(test, test)]
+fn record_date_popup_reuses_endpoints_without_joining_canvas_layout() {
+    use bevy::text::EditableText;
+    let (mut app, root) = fixture();
+    let world = app.world_mut();
+    let item = crate::native::canvas::CanvasItem {
+        position: DVec2::new(120.0, 80.0),
+        size: Vec2::new(320.0, 240.0),
+    };
+    let row = world
+        .spawn((Node::default(), item, WorkspaceMember(1), ChildOf(root)))
+        .id();
+    let mut editors = Vec::new();
+    for (property, value) in [("start_date", "2026-10-08"), ("due_date", "2026-10-23")] {
+        let editor = world
+            .spawn((
+                crate::native::sand::text_editor(
+                    value,
+                    world.resource::<crate::native::theme::Typography>(),
+                    0,
+                ),
+                ChildOf(row),
+            ))
+            .id();
+        date_button(world, row, editor, property);
+        editors.push(editor);
+    }
+    let mut counts = Vec::new();
+    for editor in editors.iter().cycle().take(20) {
+        picker::OpenDate(*editor).apply(world, *editor);
+        assert_eq!(world.query::<&Picker>().iter(world).count(), 1);
+        assert_eq!(
+            world
+                .get::<crate::native::canvas::CanvasItem>(row)
+                .unwrap()
+                .position,
+            item.position
+        );
+        assert_eq!(
+            world
+                .get::<crate::native::canvas::CanvasItem>(row)
+                .unwrap()
+                .size,
+            item.size
+        );
+        assert!(
+            world
+                .get::<crate::native::canvas_selection::SandGroup>(row)
+                .is_none()
+        );
+        counts.push(world.query::<Entity>().iter(world).count());
+    }
+    assert!(
+        counts.windows(2).all(|pair| pair[0] == pair[1]),
+        "Repeated opening leaked UI entities: {counts:?}"
+    );
+    let popup = world
+        .query_filtered::<Entity, With<Picker>>()
+        .single(world)
+        .unwrap();
+    assert!(
+        world
+            .get::<crate::native::canvas::CanvasItem>(popup)
+            .is_none()
+    );
+    assert!(world.get::<crate::native::castle::Castle>(popup).is_none());
+    assert!(snapshot(world, root).is_empty());
+    assert_eq!(
+        world.get::<Node>(popup).unwrap().position_type,
+        PositionType::Absolute
+    );
+    Command::Move(1).apply(world, popup);
+    let viewed = world.get::<CalendarSand>(popup).unwrap().0.clone();
+    let endpoint = world
+        .query::<(
+            Entity,
+            &crate::native::icons::Tooltip,
+            &crate::native::actions::ActionButton,
+        )>()
+        .iter(world)
+        .find(|(_, tip, action)| tip.0 == "Choose Start date" && action.target == popup)
+        .map(|(_, _, action)| action.clone())
+        .unwrap();
+    endpoint.actions.run(world, endpoint.target);
+    assert_eq!(world.get::<Picker>(popup).unwrap().editor, editors[0]);
+    assert_eq!(
+        world.get::<CalendarSand>(popup).unwrap().0.month,
+        viewed.month
+    );
+    world
+        .get_mut::<EditableText>(editors[0])
+        .unwrap()
+        .editor
+        .set_text("2026-11-02");
+    picker::sync(world, popup);
+    assert_eq!(
+        world.get::<CalendarSand>(popup).unwrap().0.start.as_deref(),
+        Some("2026-11-02")
+    );
+    assert_eq!(world.query::<&Picker>().iter(world).count(), 1);
+    assert_eq!(
+        world
+            .get::<crate::native::canvas::CanvasItem>(row)
+            .unwrap()
+            .position,
+        item.position
+    );
+    assert_eq!(
+        world
+            .get::<crate::native::canvas::CanvasItem>(row)
+            .unwrap()
+            .size,
+        item.size
+    );
+    let days: Vec<_> = world
+        .query::<(&crate::native::icons::Tooltip, &Node)>()
+        .iter(world)
+        .filter(|(tip, _)| tip.0.starts_with("Select 2026-11-"))
+        .map(|(_, node)| node)
+        .collect();
+    assert_eq!(days.len(), 30);
+    assert!(
+        days.iter()
+            .all(|node| node.height == percent(100) && node.min_height == px(28))
+    );
+    Command::Close.apply(world, popup);
+    assert_eq!(world.query::<&Picker>().iter(world).count(), 0);
+    assert!(world.get::<EditableText>(editors[0]).is_some());
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn karma_projections_and_manual_work_render_and_pausing_a_rule_refreshes_the_calendar() {
+    use crate::native::protein_area::{Binding, Config};
+    use chrono::Datelike;
+    use engine::actions::Action;
+    let (mut app, root) = fixture();
+    let directory = tempfile::tempdir().unwrap();
+    let seed = engine::Engine::open(&format!(
+        "sqlite://{}",
+        directory.path().join("lince.sqlite").display()
+    ))
+    .await
+    .unwrap();
+    let execution =
+        nucleus::execution::Execution::new([41; 32], chrono::Utc::now().timestamp_millis())
+            .unwrap();
+    let cell = cell::Cell::isolated(seed.store, &execution, [42; 32])
+        .await
+        .unwrap();
+    let runtime = cell.runtime().clone();
+    let engine = runtime.engine.clone();
+    for (slug, quantity) in [("forecast-work", 3.0), ("manual-work", -1.0)] {
+        engine
+            .act(
+                Action::CreateRecord {
+                    slug: Some(slug.into()),
+                    kind: nucleus::RecordKind::Plain,
+                    head: slug.into(),
+                    body: String::new(),
+                    quantity,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    let day = chrono::Utc::now().date_naive() + chrono::TimeDelta::days(3);
+    engine
+        .act(
+            Action::SetExtension {
+                target: "manual-work".into(),
+                namespace: "work".into(),
+                fds: json!({"due":day.to_string()}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .act(
+            Action::CreateFrequency {
+                slug: "calendar-daily".into(),
+                head: None,
+                every: nucleus::karma::CadenceStep {
+                    days: 1,
+                    ..Default::default()
+                },
+                anchor_at: Some(day.and_hms_opt(0, 0, 0).unwrap().and_utc().to_rfc3339()),
+                request_id: Some("calendar-frequency".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let rule = engine
+        .act(
+            Action::SaveKarmaRule {
+                identity: None,
+                rule: None,
+                expected_revision: None,
+                fields: ["freq(@calendar-daily) * -1", "<0", "@forecast-work"].map(|source| {
+                    nucleus::karma::rule_field::RuleFieldInput::Text {
+                        source: source.into(),
+                    }
+                }),
+                request_id: "calendar-rule".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    app.insert_resource(crate::native::app::CellHandle(runtime))
+        .insert_resource(crate::native::wake::WakeSignal::new(|| {}))
+        .add_plugins(crate::native::cell_bridge::CellBridgePlugin);
+    let mut influence = InfluenceArea::new(
+        crate::native::area::AreaShape::Square,
+        DVec2::ZERO,
+        DVec2::splat(800.0),
+    );
+    let mut config = Config {
+        enabled: true,
+        bindings: vec![
+            Binding::new("head"),
+            Binding::new("start_date"),
+            Binding::new("due_date"),
+        ],
+        ..Default::default()
+    };
+    config.draft.query["where"] = json!([{"quantity_lt":"0"}]);
+    config.query().expect("valid Calendar source");
+    influence.protein = Some(config);
+    let id = influence.id.clone();
+    crate::native::area::spawn_area(app.world_mut(), root, 1, influence).unwrap();
+    let calendar = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::ZERO,
+        Calendar {
+            year: day.year(),
+            month: day.month(),
+            timezone: "UTC".into(),
+            area: Some(id),
+            ..Default::default()
+        },
+    );
+    until(&mut app, |world| {
+        world
+            .get::<projection::Feed>(calendar)
+            .is_some_and(|feed| feed.status == "Projection ready")
+    })
+    .await;
+    let data = projection::data(app.world(), calendar).unwrap();
+    assert!(
+        data.iter()
+            .any(|row| row["head"] == "forecast-work" && row["origin"]["kind"] == "projection")
+    );
+    assert!(
+        data.iter()
+            .any(|row| row["head"] == "manual-work" && row["origin"]["kind"] == "manual")
+    );
+    let shown = ui::records(
+        &app.world().get::<CalendarSand>(calendar).unwrap().0,
+        data,
+        0,
+    );
+    assert!(
+        shown
+            .days
+            .iter()
+            .flatten()
+            .any(|entry| entry.1.contains("projected"))
+    );
+    let query =
+        serde_json::from_value(json!({"source":"karma_rule","where":[{"uid_eq":rule}]})).unwrap();
+    let rules = protein::execute(&engine.store, &query).await.unwrap();
+    engine
+        .act(
+            Action::SetRecurrencePaused {
+                recurrence: rule,
+                expected_revision: rules[0]["revision"].as_i64().unwrap(),
+                paused: true,
+                request_id: "calendar-pause".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    until(&mut app, |world| {
+        world
+            .get::<projection::Feed>(calendar)
+            .is_some_and(|feed| feed.status == "Projection ready")
+            && projection::data(world, calendar)
+                .is_some_and(|rows| rows.iter().all(|row| row["origin"]["kind"] != "projection"))
+    })
+    .await;
+    assert!(
+        projection::data(app.world(), calendar)
+            .unwrap()
+            .iter()
+            .any(|row| row["head"] == "manual-work")
+    );
+}
+
+#[cfg_attr(test, test)]
+fn wheel_navigation_accumulates_trackpad_pixels() {
+    use bevy::input::mouse::MouseScrollUnit;
+    let mut total = 0.0;
+    assert_eq!(scroll_steps(&mut total, -20.0, MouseScrollUnit::Pixel), 0);
+    assert_eq!(scroll_steps(&mut total, -20.0, MouseScrollUnit::Pixel), 0);
+    assert_eq!(scroll_steps(&mut total, -20.0, MouseScrollUnit::Pixel), 1);
+    assert_eq!(scroll_steps(&mut total, 1.0, MouseScrollUnit::Line), -1);
+}

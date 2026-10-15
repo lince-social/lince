@@ -162,6 +162,259 @@ pub mod grammar {
         Karma(Karma),
         Extension(Extension),
         Record(Record),
+        Statement(Statement),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum Statement {
+        Binding(Binding),
+        Assignment(Assignment),
+        Call(CallStatement),
+        Conditional(Conditional),
+        ForLoop(ForLoop),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Binding {
+        #[rust_sitter::leaf(text = "let")]
+        _keyword: (),
+        pub name: Identifier,
+        #[rust_sitter::leaf(text = "=")]
+        _equals: (),
+        pub value: Expression,
+        pub end: Option<StatementEnd>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Assignment {
+        pub name: AssignmentOpening,
+        pub value: Expression,
+        pub end: Option<StatementEnd>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct AssignmentOpening(
+        #[rust_sitter::leaf(pattern = r"[A-Za-z_][A-Za-z0-9_]*[ \t]*=", transform = |v| v[..v.len() - 1].trim_end().to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Block {
+        #[rust_sitter::leaf(text = "{")]
+        _open: (),
+        pub statements: Vec<Statement>,
+        #[rust_sitter::leaf(text = "}")]
+        _close: (),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Conditional {
+        #[rust_sitter::leaf(text = "if")]
+        _keyword: (),
+        pub condition: Expression,
+        pub then_block: Block,
+        pub otherwise: Option<ElseClause>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ElseClause {
+        #[rust_sitter::leaf(text = "else")]
+        _keyword: (),
+        pub branch: ElseBranch,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ElseBranch {
+        Block(Block),
+        Conditional(Box<Conditional>),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ForLoop {
+        #[rust_sitter::leaf(text = "for")]
+        _keyword: (),
+        pub name: Identifier,
+        #[rust_sitter::leaf(text = "in")]
+        _in: (),
+        pub iterable: Expression,
+        pub body: Block,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct CallStatement {
+        pub call: Call,
+        pub end: Option<StatementEnd>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct StatementEnd(#[rust_sitter::leaf(text = ";")] ());
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Identifier(
+        #[rust_sitter::leaf(pattern = r"[A-Za-z_][A-Za-z0-9_]*", transform = |v| v.to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone)]
+    pub struct Expression {
+        pub node: rust_sitter::Spanned<ExpressionKind>,
+    }
+
+    impl PartialEq for Expression {
+        fn eq(&self, other: &Self) -> bool {
+            self.node.value == other.node.value
+        }
+    }
+
+    impl Eq for Expression {}
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ExpressionKind {
+        Number(ExpressionNumber),
+        Duration(Duration),
+        Text(Text),
+        Body(Body),
+        Reference(ExpressionReference),
+        Concept(ExpressionConcept),
+        True(#[rust_sitter::leaf(text = "true")] ()),
+        False(#[rust_sitter::leaf(text = "false")] ()),
+        Null(#[rust_sitter::leaf(text = "null")] ()),
+        Name(Identifier),
+        Call(Call),
+        List(ExpressionList),
+        Object(ExpressionObject),
+        Parenthesized(
+            #[rust_sitter::leaf(text = "(")] (),
+            Box<Expression>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        #[rust_sitter::prec_right(6)]
+        Unary(UnaryOperator, Box<Expression>),
+        #[rust_sitter::prec_left(5)]
+        Product(Box<Expression>, ProductOperator, Box<Expression>),
+        #[rust_sitter::prec_left(4)]
+        Sum(Box<Expression>, SumOperator, Box<Expression>),
+        #[rust_sitter::prec_left(3)]
+        Compare(Box<Expression>, CompareOperator, Box<Expression>),
+        #[rust_sitter::prec_left(2)]
+        And(Box<Expression>, AndOperator, Box<Expression>),
+        #[rust_sitter::prec_left(1)]
+        Or(Box<Expression>, OrOperator, Box<Expression>),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExpressionNumber(
+        #[rust_sitter::leaf(pattern = r"[0-9]+(?:\.[0-9]+)?", transform = |v| v.to_string())]
+        pub  String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Duration(
+        #[rust_sitter::leaf(pattern = r"[0-9]+(?:\.[0-9]+)?[smhd]", transform = |v| v.to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExpressionReference(
+        #[rust_sitter::leaf(pattern = r"@[A-Za-z0-9_][A-Za-z0-9._/-]*", transform = |v| v[1..].to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExpressionConcept(
+        #[rust_sitter::leaf(pattern = r"#[A-Za-z0-9_][A-Za-z0-9._/-]*", transform = |v| v[1..].to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Call {
+        pub name: CallOpening,
+        #[rust_sitter::delimited(#[rust_sitter::leaf(text = ",")] ())]
+        pub arguments: Vec<Expression>,
+        #[rust_sitter::leaf(text = ")")]
+        _close: (),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct CallOpening(
+        #[rust_sitter::leaf(pattern = r"[A-Za-z_][A-Za-z0-9_]*\(", transform = |v| v[..v.len() - 1].to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExpressionList {
+        #[rust_sitter::leaf(text = "[")]
+        _open: (),
+        #[rust_sitter::delimited(#[rust_sitter::leaf(text = ",")] ())]
+        pub values: Vec<Expression>,
+        #[rust_sitter::leaf(text = "]")]
+        _close: (),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExpressionObject {
+        #[rust_sitter::leaf(text = "{")]
+        _open: (),
+        #[rust_sitter::delimited(#[rust_sitter::leaf(text = ",")] ())]
+        pub fields: Vec<ExpressionField>,
+        #[rust_sitter::leaf(text = "}")]
+        _close: (),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExpressionField {
+        pub key: ExpressionKey,
+        #[rust_sitter::leaf(text = ":")]
+        _colon: (),
+        pub value: Expression,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ExpressionKey {
+        Name(Identifier),
+        Text(Text),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum UnaryOperator {
+        Negative(#[rust_sitter::leaf(text = "-")] ()),
+        Positive(#[rust_sitter::leaf(text = "+")] ()),
+        Not(#[rust_sitter::leaf(text = "!")] ()),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ProductOperator {
+        Multiply(#[rust_sitter::leaf(text = "*")] ()),
+        Divide(#[rust_sitter::leaf(text = "/")] ()),
+        Remainder(#[rust_sitter::leaf(text = "%")] ()),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum SumOperator {
+        Add(#[rust_sitter::leaf(text = "+")] ()),
+        Subtract(#[rust_sitter::leaf(text = "-")] ()),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum CompareOperator {
+        Less(#[rust_sitter::leaf(text = "<")] ()),
+        LessEqual(#[rust_sitter::leaf(text = "<=")] ()),
+        Greater(#[rust_sitter::leaf(text = ">")] ()),
+        GreaterEqual(#[rust_sitter::leaf(text = ">=")] ()),
+        Equal(#[rust_sitter::leaf(text = "==")] ()),
+        NotEqual(#[rust_sitter::leaf(text = "!=")] ()),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum AndOperator {
+        Symbol(#[rust_sitter::leaf(text = "&&")] ()),
+        Word(#[rust_sitter::leaf(text = "and")] ()),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum OrOperator {
+        Symbol(#[rust_sitter::leaf(text = "||")] ()),
+        Word(#[rust_sitter::leaf(text = "or")] ()),
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]

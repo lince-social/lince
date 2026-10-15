@@ -133,6 +133,7 @@ pub(crate) async fn attach(
         out.insert(record.uid.clone(), value);
     }
     if wants("assertions") || wants("assignees") {
+        let assignment = store::vocabulary::feature_binding(&store.pool, "assignment").await?;
         let mut assignees = HashMap::<String, Option<String>>::new();
         let ids: Vec<_> = records.iter().map(|r| r.uid.clone()).collect();
         for chunk in ids.chunks(400) {
@@ -148,7 +149,8 @@ pub(crate) async fn attach(
                 let Some(row) = out.get_mut(&assertion.subject_uid) else {
                     continue;
                 };
-                if wants("assignees") && assertion.predicate == "assigned-to" {
+                if wants("assignees") && assignment.concept_uids.contains(&assertion.predicate_uid)
+                {
                     if let Some(uid) = assertion.object_uid.as_deref() {
                         if !assignees.contains_key(uid) {
                             assignees.insert(
@@ -162,7 +164,7 @@ pub(crate) async fn attach(
                             row["assignees"]
                                 .as_array_mut()
                                 .unwrap()
-                                .push(json!({"uid":uid,"head":head,"assertion":assertion.uid}));
+                                .push(json!({"uid":uid,"head":head,"assertion":assertion.uid,"predicate_uid":assertion.predicate_uid}));
                         }
                     }
                 }

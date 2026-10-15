@@ -478,6 +478,12 @@ impl Engine {
         name: &str,
     ) -> Result<nucleus::DecimalValue, EngineError> {
         let uid = self.resolve(name).await?;
+        let mut connection = self.store.pool.acquire().await?;
+        if store::signal_streams::get_on(&mut connection, &uid).await?.is_some() {
+            drop(connection);
+            return self.signal_streams.scalar(&uid);
+        }
+        drop(connection);
         let value: Option<String> = store::sqlx::query_scalar("WITH samples AS (SELECT f.record_uid, f.rowid AS position, f.at AS at, COALESCE(json_extract(o.payload, '$.cause.kind'), f.cause_kind) AS cause_kind, COALESCE(json_extract(o.payload, '$.cause.uid'), f.cause_uid) AS cause_uid, CASE WHEN o.fact_uid IS NULL THEN f.payload ELSE json_extract(o.payload, '$.payload') END AS payload FROM fact f LEFT JOIN fact_origin o ON o.fact_uid = f.uid WHERE f.record_uid = ?) SELECT json_extract(payload, '$.sample') FROM samples WHERE cause_kind = 'signal' AND cause_uid = record_uid AND json_valid(payload) AND json_type(payload, '$.sample') = 'text' ORDER BY at DESC, position DESC LIMIT 1").bind(&uid).fetch_optional(&self.store.pool).await?;
         nucleus::DecimalValue::parse_inferred(
             &value.ok_or_else(|| invalid("Signal has no successful numeric sample"))?,
@@ -655,6 +661,9 @@ impl Engine {
             let value = parsed.and_then(Result::ok);
             let now = nucleus::execution::now();
             let mut tx = store::write_tx(&self.store.pool).await?;
+            if let Some(signal) = command && store::signal_streams::get_on(&mut tx, signal).await?.is_some() {
+                return Err(invalid("Memory-only Signals use their live source instead of durable command sampling"));
+            }
             store::sqlx::query("UPDATE karma_command_invocation SET status = ?, stdout = ?, stderr = ?, value = ?, error = ?, finished_at = ? WHERE uid = ? AND status IN ('queued', 'running')")
             .bind(if error.is_some() { "failed" } else { "completed" }).bind(&response.stdout).bind(&response.stderr).bind(value.map(|value| value.to_string())).bind(&error).bind(now.to_rfc3339()).bind(request).execute(&mut *tx).await?;
             if let (Some(command), Some(value)) = (command, value) {

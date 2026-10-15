@@ -19,6 +19,7 @@ pub fn manifest(executable: String) -> Manifest {
         id: "lince.files".into(),
         name: "Calendar and document exports".into(),
         version: 1,
+        compatibility: nucleus::plugins::Compatibility::native(),
         executable,
         arguments: Vec::new(),
         contributions: [

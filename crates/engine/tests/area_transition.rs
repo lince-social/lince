@@ -315,19 +315,19 @@ async fn permissions_and_read_filters_are_checked_for_preview_and_apply() {
     store::auth::grant(&engine.store.pool, role, permission)
         .await
         .unwrap();
+    let read = store::auth::ensure_permission(&engine.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, read)
+        .await
+        .unwrap();
     engine
         .set_read_filter(&actor, Some(&protein::Predicate::KindEq("organ".into())))
         .await
         .unwrap();
     for action in [preview, apply] {
-        assert!(
-            engine
-                .act(action, Some(actor.clone()))
-                .await
-                .unwrap_err()
-                .to_string()
-                .contains("outside what this login may see")
-        );
+        let error = engine.act(action, Some(actor.clone())).await.unwrap_err();
+        assert_eq!(error.code(), Some("forbidden"), "{error}");
     }
     assert_eq!(quantity(&engine, &uid).await, "0");
     assert_eq!(assertions(&engine, &uid).await, 0);
@@ -448,6 +448,12 @@ async fn area_assignments_are_atomic_replay_safe_and_reject_stale_people() {
     store::auth::grant(&engine.store.pool, role, permission)
         .await
         .unwrap();
+    let read = store::auth::ensure_permission(&engine.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, read)
+        .await
+        .unwrap();
     engine
         .set_read_filter(&actor, Some(&protein::Predicate::KindEq("plain".into())))
         .await
@@ -463,14 +469,8 @@ async fn area_assignments_are_atomic_replay_safe_and_reject_stale_people() {
             preview: entry.clone(),
         },
     ] {
-        assert!(
-            engine
-                .act(action, Some(actor.clone()))
-                .await
-                .unwrap_err()
-                .to_string()
-                .contains("outside what this login may see")
-        );
+        let error = engine.act(action, Some(actor.clone())).await.unwrap_err();
+        assert_eq!(error.code(), Some("forbidden"), "{error}");
     }
     let action = Action::ApplyAreaTransition {
         request_id: "assign-person".into(),

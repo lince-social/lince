@@ -99,6 +99,8 @@ pub struct Manifest {
     pub id: String,
     pub name: String,
     pub version: u32,
+    #[serde(default)]
+    pub compatibility: Compatibility,
     pub executable: String,
     #[serde(default)]
     pub arguments: Vec<String>,
@@ -106,6 +108,28 @@ pub struct Manifest {
     pub licenses: Vec<crate::sand_package::License>,
     #[serde(default)]
     pub credits: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Compatibility {
+    pub publisher: String,
+    pub origin: String,
+    pub operating_systems: Vec<String>,
+    pub interfaces: Vec<String>,
+    pub dependencies: std::collections::BTreeMap<String, u32>,
+}
+
+impl Compatibility {
+    pub fn native() -> Self {
+        Self {
+            publisher: "Lince".into(),
+            origin: "https://github.com/lince-social/lince".into(),
+            operating_systems: vec![std::env::consts::OS.into()],
+            interfaces: vec![PROTOCOL.into()],
+            dependencies: Default::default(),
+        }
+    }
 }
 
 pub fn valid_id(value: &str) -> bool {
@@ -123,6 +147,24 @@ fn text(value: &str, max: usize) -> bool {
 
 impl Manifest {
     pub fn validate(&self) -> Result<(), String> {
+        let compatibility = &self.compatibility;
+        if compatibility.publisher.len() > 160
+            || compatibility.origin.len() > 4096
+            || compatibility.operating_systems.len() > 16
+            || compatibility.interfaces.len() > 16
+            || compatibility.dependencies.len() > 32
+            || compatibility
+                .operating_systems
+                .iter()
+                .chain(&compatibility.interfaces)
+                .any(|item| !text(item, 160))
+            || compatibility
+                .dependencies
+                .iter()
+                .any(|(id, version)| !valid_id(id) || *version == 0 || id == &self.id)
+        {
+            return Err("Invalid plugin compatibility information".into());
+        }
         if self.format != FORMAT
             || !valid_id(&self.id)
             || !text(&self.name, 160)
@@ -351,6 +393,14 @@ pub struct Delivery {
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     Inspect,
+    Reload,
+    Install {
+        directory: String,
+    },
+    Remove {
+        plugin: String,
+        digest: String,
+    },
     Enable {
         plugin: String,
         digest: String,
@@ -376,6 +426,10 @@ pub enum Command {
     Retry {
         delivery: String,
     },
+    ResolveDelivery {
+        delivery: String,
+    },
+    ClearHistory,
 }
 
 impl Command {

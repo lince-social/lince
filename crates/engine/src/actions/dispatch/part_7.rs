@@ -210,6 +210,15 @@ impl Engine {
                     protein::validate(&parsed).map_err(|error| {
                         EngineError::Consequence(format!("invalid Protein: {error}"))
                     })?;
+                    let before=serde_json::to_value(&parsed)?;
+                    let bound=serde_json::to_value(protein::bind_meanings(&self.store,&parsed,actor.as_deref()).await?)?;
+                    let mut ast=ast;
+                    for key in ["where","order"] {
+                        if before[key]!=bound[key] {ast[key]=bound[key].clone();}
+                    }
+                    for key in ["links","relation_context"] {
+                        if before["include"][key]!=bound["include"][key] {ast["include"][key]=bound["include"][key].clone();}
+                    }
                     let body = serde_json::to_string_pretty(&ast).unwrap_or_default();
                     let uid = match store::records::resolve(&self.store.pool, &slug).await? {
                         Some(existing) => {
@@ -250,6 +259,7 @@ impl Engine {
                     };
                     store::records::set_extension(&self.store.pool, &uid, "lince.protein", &ast)
                         .await?;
+                    outcome.data=Some(serde_json::json!({"query":ast}));
                     outcome.created = Some(uid);
                 }
                 Action::CreateKarmaProgram {

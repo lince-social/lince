@@ -7,15 +7,25 @@ use super::{
     ResolvedReference, Rounding, Slug, TypedUid, ValueType,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+)]
 pub enum ProgramSchema {
     #[serde(rename = "karma.program.v1")]
     V1,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ProgramAst {
     pub schema: ProgramSchema,
     pub slug: Slug,
@@ -31,23 +41,22 @@ pub struct ProgramAst {
     pub required_capabilities: CapabilitySet,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ParameterDefinition {
     pub value_type: ValueType,
     pub default: LiteralValue,
     pub mutable: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, schemars::JsonSchema,
+)]
 pub struct OutputRef {
     pub node: LocalId,
     pub port: LocalId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct InputBinding {
     pub source: OutputRef,
     pub expected_type: ValueType,
@@ -67,8 +76,7 @@ impl ProgramAst {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct NodeAst {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub inputs: BTreeMap<LocalId, InputBinding>,
@@ -257,8 +265,7 @@ pub enum UnaryOperator {
     Negate,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct DecimalPrecision {
     pub scale: u8,
     pub rounding: Rounding,
@@ -293,8 +300,7 @@ pub enum BinaryOperator {
     Or,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct StateContract {
     pub persistence: StatePersistence,
     pub reset: StateResetPolicy,

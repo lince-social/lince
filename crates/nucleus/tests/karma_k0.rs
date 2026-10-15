@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use nucleus::karma::{
     CandidateStatus, CanonicalHash, Capability, CapabilityFamily, CapabilitySet, Confidence,
     DatumState, DefinitionStatus, DurationMs, EngineMode, FailureCode, FailurePath, FixedDecimal,
-    KarmaActionKind, KarmaFailure, KarmaObjectKind, LocalId, Probability,
-    ReferenceKind, ResolvedReference, RetryDisposition, RunStatus, Slug, TimestampMs, TypedUid,
-    WorkflowStatus, canonical_hash, canonical_json_bytes,
+    KarmaActionKind, KarmaFailure, KarmaObjectKind, LocalId, Probability, ReferenceKind,
+    ResolvedReference, RetryDisposition, RunStatus, Slug, TimestampMs, TypedUid, WorkflowStatus,
+    canonical_hash, canonical_json_bytes,
 };
 use serde::Serialize;
 use serde_json::json;

@@ -157,8 +157,9 @@ impl<'de, const SCALE: u8> Deserialize<'de> for FixedDecimal<SCALE> {
 
 macro_rules! unit_interval_type {
     ($name:ident, $noun:literal) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-        #[derive(schemars::JsonSchema)]
+        #[derive(
+            Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema,
+        )]
         #[schemars(with = "String")]
         pub struct $name(u32);
 

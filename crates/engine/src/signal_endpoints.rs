@@ -11,6 +11,13 @@ use crate::{Engine, EngineError};
 #[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Request {
+    ConfigureStream {
+        signal: String,
+        value_type: Option<String>,
+        #[serde(default)]
+        source_url: String,
+        expected_revision: Option<i64>,
+    },
     Inspect,
     Save {
         endpoint: Option<String>,
@@ -77,7 +84,7 @@ fn refused() -> EngineError {
     EngineError::Forbidden("Signal endpoint access refused".into())
 }
 
-fn token_digest(token: &str) -> Result<String, EngineError> {
+pub(crate) fn token_digest(token: &str) -> Result<String, EngineError> {
     unhex(token, 32).map_err(|_| refused())?;
     Ok(hex(&Sha256::digest(format!(
         "lince.signal-token.v1\0{token}"
@@ -177,6 +184,10 @@ impl Engine {
         actor: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<Value, EngineError> {
+        if let Request::ConfigureStream { signal, value_type, source_url, expected_revision } = &request {
+            let config = self.configure_stream(signal, value_type.as_deref(), source_url, *expected_revision, actor).await?;
+            return Ok(json!({"stream": config}));
+        }
         let organ = store::organs::local(&self.store.pool)
             .await?
             .ok_or_else(|| invalid("Create the local Organ first"))?;
@@ -186,6 +197,7 @@ impl Engine {
         let mut saved = None;
         let mut issued_token = None;
         match request {
+            Request::ConfigureStream { .. } => unreachable!(),
             Request::Inspect => {}
             Request::IssueToken {
                 endpoint,
@@ -466,6 +478,9 @@ impl Engine {
         let fingerprint = hex(&Sha256::digest(&payload));
         let mut tx = store::write_tx(&self.store.pool).await?;
         let now = nucleus::execution::now();
+        if store::signal_streams::get_on(&mut tx, &reading.signal).await?.is_some() {
+            return Err(invalid("Memory-only Signals use the stream endpoint"));
+        }
         let endpoint = signal_endpoints::get_on(&mut tx, &reading.endpoint)
             .await?
             .ok_or_else(refused)?;

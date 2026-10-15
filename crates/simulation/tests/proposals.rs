@@ -242,12 +242,9 @@ fn alternative_proposals_share_the_same_base_and_reject_different_backgrounds() 
         .unwrap();
         while first.step().await.unwrap() {}
         while second.step().await.unwrap() {}
-        let result = comparison::save(
-            &fixture.directory.path().join("options"),
-            first.finish().await.unwrap(),
-            second.finish().await.unwrap(),
-        )
-        .unwrap();
+        let result = comparison::finish(&fixture.directory.path().join("options"), first, second)
+            .await
+            .unwrap();
         let changed = result
             .changes
             .iter()
@@ -290,6 +287,501 @@ fn alternative_proposals_share_the_same_base_and_reject_different_backgrounds() 
             )
             .await
             .is_err()
+        );
+    });
+}
+
+#[test]
+fn different_unchanged_selections_share_evidence_and_replay() {
+    run(async {
+        let fixture = fixture().await;
+        let mut other = fixture.scenario.clone();
+        let engine = fixture.world.nodes["a"].engine();
+        other.proposal = Some(
+            Proposal::capture(
+                engine,
+                &engine.store,
+                None,
+                "a",
+                other.start_ms,
+                &["stock".into()],
+            )
+            .await
+            .unwrap(),
+        );
+        let directory = fixture.directory.path().join("selections");
+        let (mut first, mut second) = comparison::open_pair(
+            fixture.scenario,
+            other,
+            &directory,
+            fixture.directory.path(),
+        )
+        .await
+        .unwrap();
+        while first.step().await.unwrap() {}
+        while second.step().await.unwrap() {}
+        let comparison = comparison::finish(&directory, first, second).await.unwrap();
+        assert!(comparison.changes.is_empty());
+        assert!(comparison.complete);
+        for (index, path) in [&comparison.proposed_run, &comparison.baseline_run]
+            .iter()
+            .enumerate()
+        {
+            let bundle = artifacts::load(std::path::Path::new(path)).unwrap();
+            assert!(
+                bundle
+                    .records
+                    .iter()
+                    .any(|record| record.record == fixture.record && record.state.is_some())
+            );
+            let status = artifacts::replay(
+                std::path::Path::new(path),
+                &fixture
+                    .directory
+                    .path()
+                    .join(format!("selection-replay-{index}")),
+            )
+            .await
+            .unwrap();
+            assert!(
+                matches!(status, ReplayStatus::Verified { .. }),
+                "{status:?}"
+            );
+        }
+    });
+}
+
+#[test]
+fn missing_budget_evidence_is_incomplete_while_observed_lifecycle_changes_are_material() {
+    run(async {
+        let directory = tempfile::tempdir().unwrap();
+        let mut large = fixtures::daily();
+        large.cells[0].seed.clear();
+        large.end_ms = large.start_ms;
+        large.checks.retain(|check| {
+            matches!(
+                check.predicate,
+                nucleus::simulation::Predicate::FactChain {}
+            )
+        });
+        large.limits.evidence_bytes = 4096;
+        large.inputs.push(Input {
+            id: "created".into(),
+            cell: "a".into(),
+            at_ms: large.start_ms,
+            event: Event::Action {
+                invocation: Invocation {
+                    id: "created".into(),
+                    actor: None,
+                    action: Action::CreateRecord {
+                        slug: None,
+                        kind: nucleus::RecordKind::Plain,
+                        head: "Created".into(),
+                        body: "x".repeat(8192),
+                        quantity: 0.0,
+                    },
+                },
+            },
+        });
+        let mut small = large.clone();
+        if let Event::Action { invocation } = &mut small.inputs[0].event
+            && let Action::CreateRecord { body, .. } = &mut invocation.action
+        {
+            body.clear();
+        }
+        let output = directory.path().join("budget");
+        std::fs::create_dir(&output).unwrap();
+        let mut first = artifacts::Session::open(large, &output.join("proposed"), directory.path())
+            .await
+            .unwrap();
+        let mut second =
+            artifacts::Session::open(small, &output.join("baseline"), directory.path())
+                .await
+                .unwrap();
+        while first.step().await.unwrap() {}
+        while second.step().await.unwrap() {}
+        let compared = comparison::finish(&output, first, second).await.unwrap();
+        assert!(compared.changes.is_empty());
+        assert!(!compared.complete);
+        assert_eq!(compared.incomplete.len(), 1);
+        assert_eq!(
+            compared.incomplete[0].proposed,
+            vec![comparison::EvidenceGap::EvidenceBudget]
+        );
+        assert!(compared.incomplete[0].baseline.is_empty());
+        for (index, path) in [&compared.proposed_run, &compared.baseline_run]
+            .iter()
+            .enumerate()
+        {
+            let status = artifacts::replay(
+                std::path::Path::new(path),
+                &directory.path().join(format!("budget-replay-{index}")),
+            )
+            .await
+            .unwrap();
+            assert!(
+                matches!(status, ReplayStatus::Verified { .. }),
+                "{status:?}"
+            );
+        }
+        let mut fixture = fixture().await;
+        fixture.scenario.end_ms = fixture.scenario.start_ms;
+        fixture.scenario.checks.retain(|check| {
+            matches!(
+                check.predicate,
+                nucleus::simulation::Predicate::FactChain {}
+            )
+        });
+        let mut changed = fixture.scenario.clone();
+        for (id, action) in [
+            (
+                "delete",
+                Action::DeleteRecord {
+                    target: fixture.record.clone(),
+                },
+            ),
+            (
+                "create",
+                Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Plain,
+                    head: "New".into(),
+                    body: String::new(),
+                    quantity: 0.0,
+                },
+            ),
+        ] {
+            changed.inputs.push(Input {
+                id: id.into(),
+                cell: "a".into(),
+                at_ms: changed.start_ms,
+                event: Event::Action {
+                    invocation: Invocation {
+                        id: id.into(),
+                        actor: None,
+                        action,
+                    },
+                },
+            });
+        }
+        let output = fixture.directory.path().join("lifecycle");
+        std::fs::create_dir(&output).unwrap();
+        let mut first =
+            artifacts::Session::open(changed, &output.join("proposed"), fixture.directory.path())
+                .await
+                .unwrap();
+        let mut second = artifacts::Session::open(
+            fixture.scenario,
+            &output.join("baseline"),
+            fixture.directory.path(),
+        )
+        .await
+        .unwrap();
+        while first.step().await.unwrap() {}
+        while second.step().await.unwrap() {}
+        let compared = comparison::finish(&output, first, second).await.unwrap();
+        assert!(compared.complete);
+        assert_eq!(compared.changes.len(), 2);
+        assert_eq!(
+            compared
+                .changes
+                .iter()
+                .find(|change| change.record == fixture.record)
+                .unwrap()
+                .kind,
+            comparison::DifferenceKind::Removed
+        );
+        assert!(
+            compared
+                .changes
+                .iter()
+                .any(|change| change.kind == comparison::DifferenceKind::Added)
+        );
+    });
+}
+
+#[test]
+fn occurrence_evidence_keeps_boundary_metadata_target_revision_and_zero_delta_applications() {
+    run(async {
+        let mut fixture = fixture().await;
+        let node = &fixture.world.nodes["a"];
+        let fields = |target: &str| {
+            [
+                "freq(@daily)".to_string(),
+                "!=0".into(),
+                format!("@{target} = -1"),
+            ]
+            .map(|source| nucleus::karma::rule_field::RuleFieldInput::Text { source })
+        };
+        node.execution
+            .scope(node.engine().act(
+                Action::SetExtension {
+                    target: fixture.record.clone(),
+                    namespace: "work".into(),
+                    fds: serde_json::json!({"estimate_min":60}),
+                },
+                None,
+            ))
+            .await
+            .unwrap();
+        node.execution
+            .scope(node.engine().act(
+                Action::SetExtension {
+                    target: "stock".into(),
+                    namespace: "work".into(),
+                    fds: serde_json::json!({"estimate_min":30}),
+                },
+                None,
+            ))
+            .await
+            .unwrap();
+        let rule = node
+            .execution
+            .scope(node.engine().act(
+                Action::SaveKarmaRule {
+                    identity: None,
+                    rule: None,
+                    expected_revision: None,
+                    fields: fields("appointment"),
+                    request_id: "appointment-rule".into(),
+                },
+                None,
+            ))
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let path = fixture.directory.path().join("scheduled.sqlite");
+        node.engine().store.snapshot_into(&path).await.unwrap();
+        fixture.scenario.cells[0].database = Some(Database {
+            file: "scheduled.sqlite".into(),
+            hash: artifacts::file_hash(&path).unwrap(),
+        });
+        fixture.scenario.proposal = Some(
+            Proposal::capture(
+                node.engine(),
+                &node.engine().store,
+                None,
+                "a",
+                fixture.scenario.start_ms,
+                &[fixture.record.clone(), "stock".into()],
+            )
+            .await
+            .unwrap(),
+        );
+        fixture.scenario.checks.retain(|check| {
+            matches!(
+                check.predicate,
+                nucleus::simulation::Predicate::FactChain {}
+            )
+        });
+        let day = 86_400_000;
+        for (id, after, action) in [
+            (
+                "estimate",
+                day + 1,
+                Action::SetExtension {
+                    target: fixture.record.clone(),
+                    namespace: "work".into(),
+                    fds: serde_json::json!({"estimate_min":120}),
+                },
+            ),
+            (
+                "retarget",
+                2 * day + 1,
+                Action::SaveKarmaRule {
+                    identity: None,
+                    rule: Some(rule.clone()),
+                    expected_revision: Some(1),
+                    fields: fields("stock"),
+                    request_id: "retarget".into(),
+                },
+            ),
+        ] {
+            fixture.scenario.inputs.push(Input {
+                id: id.into(),
+                cell: "a".into(),
+                at_ms: fixture.scenario.start_ms + after,
+                event: Event::Action {
+                    invocation: Invocation {
+                        id: id.into(),
+                        actor: None,
+                        action,
+                    },
+                },
+            });
+        }
+        let output = fixture.directory.path().join("scheduled");
+        let result = artifacts::execute_with_sources(
+            fixture.scenario.clone(),
+            &output,
+            fixture.directory.path(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            result.result.stop,
+            nucleus::simulation::Stop::HorizonReached {}
+        );
+        let appointment = result
+            .records
+            .iter()
+            .find(|outcome| outcome.record == fixture.record)
+            .unwrap();
+        let occurrences: Vec<_> = appointment
+            .occurrences
+            .iter()
+            .filter(|occurrence| occurrence.rule == rule)
+            .collect();
+        assert_eq!(occurrences.len(), 2);
+        assert_eq!(occurrences[0].revision, 1);
+        assert_eq!(occurrences[1].revision, 1);
+        for (occurrence, duration) in occurrences.iter().zip([60 * 60_000, 120 * 60_000]) {
+            let time = occurrence.time.as_ref().unwrap();
+            assert_eq!(time.from_ms, occurrence.intended_at_ms);
+            assert_eq!(time.until_ms, Some(time.from_ms + duration));
+        }
+        let stock = result
+            .records
+            .iter()
+            .find(|outcome| {
+                outcome.record != fixture.record
+                    && outcome
+                        .occurrences
+                        .iter()
+                        .any(|occurrence| occurrence.rule == rule)
+            })
+            .unwrap();
+        let later: Vec<_> = stock
+            .occurrences
+            .iter()
+            .filter(|occurrence| occurrence.rule == rule)
+            .collect();
+        assert_eq!(later.len(), 2);
+        assert!(later.iter().all(|occurrence| occurrence.revision == 2
+            && occurrence.time.as_ref().unwrap().until_ms
+                == Some(occurrence.intended_at_ms + 30 * 60_000)));
+        let bundle = artifacts::load(&output).unwrap();
+        assert!(!bundle.events.iter().any(|event| matches!(&event.observation,nucleus::simulation::Observation::CommittedQuantity {cause:nucleus::simulation::Cause::Rule {occurrence,..},..} if occurrence.rule_uid == rule && occurrence.revision == 1)));
+        let status = artifacts::replay(&output, &fixture.directory.path().join("scheduled-replay"))
+            .await
+            .unwrap();
+        assert!(
+            matches!(status, ReplayStatus::Verified { .. }),
+            "{status:?}"
+        );
+        let original = serde_json::to_value(&bundle.records).unwrap();
+        let appointment_index = bundle
+            .records
+            .iter()
+            .position(|outcome| outcome.record == fixture.record)
+            .unwrap();
+        for case in 0..8 {
+            let mut invalid = original.clone();
+            let record = &mut invalid[appointment_index];
+            match case {
+                0 => {
+                    record["state"]["uid"] = nucleus::new_uid("r").into();
+                }
+                1 => {
+                    record["state"]["revision"] = 0.into();
+                }
+                2 => {
+                    record["occurrences"][0]["revision"] = 0.into();
+                }
+                3 => {
+                    let duplicate = record["occurrences"][0].clone();
+                    record["occurrences"]
+                        .as_array_mut()
+                        .unwrap()
+                        .push(duplicate);
+                }
+                4 => {
+                    record["occurrences"][0]["time"]["until_ms"] =
+                        record["occurrences"][0]["time"]["from_ms"].clone();
+                }
+                5 => {
+                    record["status"] = "unavailable".into();
+                }
+                6 => {
+                    record["occurrence_gaps"] = serde_json::json!(["interrupted"]);
+                }
+                _ => {
+                    let duplicate = record.clone();
+                    invalid.as_array_mut().unwrap().push(duplicate);
+                }
+            }
+            artifacts::atomic(&output.join("records.json"), &invalid).unwrap();
+            let mut manifest = bundle.manifest.clone();
+            manifest.files.insert(
+                "records.json".into(),
+                artifacts::file_hash(&output.join("records.json")).unwrap(),
+            );
+            artifacts::atomic(&output.join("manifest.json"), &manifest).unwrap();
+            assert!(
+                matches!(
+                    artifacts::load(&output),
+                    Err(nucleus::simulation::ArtifactError::Invalid { .. })
+                ),
+                "semantic case {case} was accepted"
+            );
+        }
+        artifacts::atomic(&output.join("records.json"), &bundle.records).unwrap();
+        artifacts::atomic(&output.join("manifest.json"), &bundle.manifest).unwrap();
+        let source = output.join("working/a.sqlite");
+        let mut historical = fixture.scenario;
+        historical.proposal = None;
+        historical.inputs.clear();
+        let engine = fixture.world.nodes["a"].engine();
+        let options = store::sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(&source)
+            .read_only(true);
+        let historical_store = store::Store {
+            pool: store::sqlx::sqlite::SqlitePoolOptions::new()
+                .max_connections(1)
+                .connect_with(options)
+                .await
+                .unwrap(),
+        };
+        historical.proposal = Some(
+            Proposal::capture(
+                engine,
+                &historical_store,
+                None,
+                "a",
+                historical.start_ms,
+                &[fixture.record],
+            )
+            .await
+            .unwrap(),
+        );
+        let historical_input = fixture.directory.path().join("historical-input.sqlite");
+        historical_store
+            .snapshot_into(&historical_input)
+            .await
+            .unwrap();
+        historical_store.pool.close().await;
+        historical.cells[0].database = Some(Database {
+            file: "historical-input.sqlite".into(),
+            hash: artifacts::file_hash(&historical_input).unwrap(),
+        });
+        let output = fixture.directory.path().join("historical");
+        let result = artifacts::execute_with_sources(historical, &output, fixture.directory.path())
+            .await
+            .unwrap();
+        assert!(result.records.iter().all(|outcome| {
+            outcome
+                .occurrence_gaps
+                .contains(&simulation::proposal::OccurrenceGap::SourceHistory)
+        }));
+        assert!(result.records[0].occurrences.is_empty());
+        let status =
+            artifacts::replay(&output, &fixture.directory.path().join("historical-replay"))
+                .await
+                .unwrap();
+        assert!(
+            matches!(status, ReplayStatus::Verified { .. }),
+            "{status:?}"
         );
     });
 }
@@ -384,6 +876,37 @@ fn readable_records_do_not_grant_permission_to_apply_proposed_edits() {
         )
         .await
         .unwrap();
+        let owner = node
+            .execution
+            .scope(node.engine().act(
+                Action::CreateRecord {
+                    slug: Some("stock-owner".into()),
+                    kind: nucleus::RecordKind::Person,
+                    head: "Stock owner".into(),
+                    body: String::new(),
+                    quantity: 1.0,
+                },
+                None,
+            ))
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let stock = store::records::resolve(&node.engine().store.pool, "stock")
+            .await
+            .unwrap()
+            .unwrap()
+            .uid;
+        store::visibility::grant(&node.engine().store.pool, "actor", Some(&owner), &stock)
+            .await
+            .unwrap();
+        assert!(
+            !node
+                .engine()
+                .may_read_record(Some(&actor), &stock)
+                .await
+                .unwrap()
+        );
         let path = fixture.directory.path().join("reader.sqlite");
         node.engine().store.snapshot_into(&path).await.unwrap();
         fixture.scenario.cells[0].database = Some(Database {
@@ -400,6 +923,71 @@ fn readable_records_do_not_grant_permission_to_apply_proposed_edits() {
         )
         .await
         .unwrap();
+        let mut restricted = fixture.scenario.clone();
+        restricted.proposal = Some(proposal.clone());
+        restricted.proposal.as_mut().unwrap().changes.clear();
+        let mut unrestricted = restricted.clone();
+        unrestricted.proposal = Some(
+            Proposal::capture(
+                node.engine(),
+                &node.engine().store,
+                None,
+                "a",
+                unrestricted.start_ms,
+                &["stock".into()],
+            )
+            .await
+            .unwrap(),
+        );
+        let output = fixture.directory.path().join("visibility");
+        let (mut first, mut second) =
+            comparison::open_pair(restricted, unrestricted, &output, fixture.directory.path())
+                .await
+                .unwrap();
+        while first.step().await.unwrap() {}
+        while second.step().await.unwrap() {}
+        let compared = comparison::finish(&output, first, second).await.unwrap();
+        assert!(compared.changes.is_empty());
+        assert!(!compared.complete);
+        assert!(
+            compared
+                .incomplete
+                .iter()
+                .any(|item| item.proposed == vec![comparison::EvidenceGap::Unavailable])
+        );
+        let bundle = artifacts::load(std::path::Path::new(&compared.proposed_run)).unwrap();
+        let withheld = bundle
+            .records
+            .iter()
+            .find(|outcome| outcome.record != fixture.record)
+            .unwrap();
+        assert_eq!(
+            withheld.status,
+            simulation::proposal::CaptureStatus::Unavailable
+        );
+        assert!(
+            withheld.state.is_none()
+                && withheld.occurrences.is_empty()
+                && withheld.occurrence_gaps.is_empty()
+        );
+        let ranges: Vec<_> = bundle
+            .events
+            .iter()
+            .filter_map(|event| match &event.observation {
+                nucleus::simulation::Observation::RuleSchedule { schedule }
+                    if schedule.record.as_str() == withheld.record =>
+                {
+                    Some(schedule)
+                }
+                _ => None,
+            })
+            .collect();
+        assert!(!ranges.is_empty());
+        assert!(
+            ranges
+                .iter()
+                .all(|schedule| schedule.unavailable && schedule.time.is_none())
+        );
         proposal.changes.push(Change {
             id: "unauthorized".into(),
             record: fixture.record.clone(),
@@ -563,7 +1151,9 @@ fn oversized_record_evidence_stays_incomplete_bounded_and_replayable() {
             },
         });
         let destination = directory.path().join("bounded");
-        let result = artifacts::execute(scenario, &destination).await.unwrap();
+        let result = artifacts::execute(scenario.clone(), &destination)
+            .await
+            .unwrap();
         assert_eq!(result.result.verdict, Verdict::Inconclusive);
         assert!(matches!(
             result.result.stop,
@@ -578,6 +1168,82 @@ fn oversized_record_evidence_stays_incomplete_bounded_and_replayable() {
         );
         artifacts::load(&destination).unwrap();
         let replay = artifacts::replay(&destination, &directory.path().join("bounded-replay"))
+            .await
+            .unwrap();
+        assert!(
+            matches!(replay, ReplayStatus::Verified { .. }),
+            "{replay:?}"
+        );
+        let bundle = artifacts::load(&destination).unwrap();
+        assert!(bundle.record_budget_exhausted);
+        let mut capture: simulation::record_evidence::Capture = serde_json::from_slice(
+            &std::fs::read(destination.join("record-selection.json")).unwrap(),
+        )
+        .unwrap();
+        capture.budget_exhausted = false;
+        artifacts::atomic(&destination.join("record-selection.json"), &capture).unwrap();
+        let mut manifest = bundle.manifest.clone();
+        manifest.files.insert(
+            "record-selection.json".into(),
+            artifacts::file_hash(&destination.join("record-selection.json")).unwrap(),
+        );
+        artifacts::atomic(&destination.join("manifest.json"), &manifest).unwrap();
+        assert!(matches!(
+            artifacts::load(&destination),
+            Err(nucleus::simulation::ArtifactError::Invalid { .. })
+        ));
+        capture.budget_exhausted = true;
+        artifacts::atomic(&destination.join("record-selection.json"), &capture).unwrap();
+        artifacts::atomic(&destination.join("manifest.json"), &bundle.manifest).unwrap();
+        scenario.end_ms = scenario.start_ms + 1000;
+        let destination = directory.path().join("cancelled-budget");
+        let mut session =
+            artifacts::Session::open(scenario.clone(), &destination, directory.path())
+                .await
+                .unwrap();
+        while !session.world.trace.iter().any(|event| matches!(&event.observation,nucleus::simulation::Observation::ActionAccepted {input,..} if input == "large-record")) { assert!(session.step().await.unwrap()); }
+        session.cancel();
+        let result = session.finish().await.unwrap();
+        assert_eq!(result.result.stop, nucleus::simulation::Stop::Cancelled {});
+        assert!(result.records.is_empty());
+        assert!(
+            artifacts::load(&destination)
+                .unwrap()
+                .record_budget_exhausted
+        );
+        let replay = artifacts::replay(
+            &destination,
+            &directory.path().join("cancelled-budget-replay"),
+        )
+        .await
+        .unwrap();
+        assert!(
+            matches!(replay, ReplayStatus::Verified { .. }),
+            "{replay:?}"
+        );
+        let destination = directory.path().join("wall-budget");
+        scenario.limits.wall_time_ms = Some(60_000);
+        let mut session = artifacts::Session::open(scenario, &destination, directory.path())
+            .await
+            .unwrap();
+        while !session.world.trace.iter().any(|event| matches!(&event.observation,nucleus::simulation::Observation::ActionAccepted {input,..} if input == "large-record")) { assert!(session.step().await.unwrap()); }
+        let checkpoint = session.world.control.position().1 + 1;
+        session
+            .world
+            .control
+            .set_replay_stop(checkpoint, nucleus::execution::control::Limit::WallTime);
+        while session.step().await.unwrap() {}
+        let result = session.finish().await.unwrap();
+        assert_eq!(
+            result.result.stop,
+            nucleus::simulation::Stop::WallTimeBudget {}
+        );
+        assert!(
+            artifacts::load(&destination)
+                .unwrap()
+                .record_budget_exhausted
+        );
+        let replay = artifacts::replay(&destination, &directory.path().join("wall-budget-replay"))
             .await
             .unwrap();
         assert!(

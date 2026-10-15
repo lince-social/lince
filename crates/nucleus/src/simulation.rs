@@ -71,6 +71,17 @@ pub struct RuleOccurrence {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RecordedSchedule {
+    pub cell: String,
+    pub occurrence: RuleOccurrence,
+    pub record: TypedUid,
+    pub observed_at_ms: i64,
+    pub time: Option<crate::schedule::TimeRange>,
+    pub unavailable: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Cause {
     Input {
@@ -139,6 +150,9 @@ pub enum Observation {
         occurrence: RuleOccurrence,
         status: ApplicationStatus,
         reason: Option<String>,
+    },
+    RuleSchedule {
+        schedule: RecordedSchedule,
     },
     ActionAccepted {
         input: String,

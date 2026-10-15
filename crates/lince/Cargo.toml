@@ -11,18 +11,22 @@ keywords = ["registry", "automation", "self-hosted"]
 
 [features]
 default = ["ui"]
-stuff = ["lince-desktop?/stuff"]
-instinct = ["cell/instinct", "lince-desktop?/instinct"]
+stuff = ["lince-sandbox?/stuff"]
+instinct = ["cell/instinct", "lince-sandbox?/instinct"]
 # The native window. Off for a headless server build:
 # `cargo build -p lince --no-default-features`.
-ui = ["dep:lince-desktop", "lince-desktop/native-media"]
+ui = ["dep:lince-sandbox", "lince-sandbox/native-media"]
 facade = ["dep:lince-facade"]
 
 [dependencies]
+anicca = { workspace = true }
+nucleus = { workspace = true }
+protein = { workspace = true }
 cell = { workspace = true }
 simulation = { workspace = true }
 lince-facade = { workspace = true, optional = true }
-lince-desktop = { workspace = true, optional = true }
+lince-sandbox = { workspace = true, optional = true }
+lince-interface = { workspace = true, features = ["activation"] }
 utils = { workspace = true, features = ["update-net"] }
 store = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "signal"] }
@@ -34,6 +38,9 @@ uuid = { workspace = true, features = ["v4"] }
 
 [build-dependencies]
 sensei = { workspace = true }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
 
 [lints]
 workspace = true

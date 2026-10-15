@@ -1,0 +1,74 @@
+Units (@syntax-units: 0, is #unit) { r_01JA0000000000000000000201
+A unit can be another Record.
+} r_01JA0000000000000000000201
+
+Basket (@syntax-basket: 0, is #container) { r_01JA0000000000000000000202
+The target of an assertion can be named by slug or durable UID.
+} r_01JA0000000000000000000202
+
+Apples (
+    @syntax-apples: 10.5 @syntax-units,
+    is #food,
+    #fresh,
+    #part-of @syntax-basket,
+    #needs: 3 @syntax-units,
+    #reserved @syntax-basket: 2 @syntax-units,
+    #tópos @syntax-basket,
+    #"saved geographic place" @r_01JA0000000000000000000202
+) { r_01JA0000000000000000000203
+## Record body
+
+The body is Markdown. Its references include [[Basket|r_01JA0000000000000000000202]].
+Words such as let, if, for, and print are ordinary prose here.
+
+```text
+Braces in a fenced example do not end this Record:
+{
+  "example": true
+}
+```
+
+~~~text
+The other Markdown fence works too.
+}
+~~~
+} r_01JA0000000000000000000203
+
+Need (@syntax-need: -2 @syntax-units, #part-of @syntax-basket) {
+A negative quantity describes a Need. This Record has a slug without an explicit UID.
+}
+
+Anonymous note (0, #draft) {
+A Record can omit its slug and its UID.
+}
+
+Anonymous contribution (1.25 @syntax-units) { r_01JA0000000000000000000204
+A Record can have a UID without a slug.
+} r_01JA0000000000000000000204
+
+Empty (@syntax-empty: 0) {
+}
+
+print(record(@syntax-apples));
+
+print(record(@r_01JA0000000000000000000204));
+
+print(declaration("syntax-basket"));
+
+print("Quantity:", quantity(@syntax-apples));
+
+print("Head:", head(@syntax-apples));
+
+print("Body:", body(@syntax-apples));
+
+print("Slug:", slug(@syntax-apples));
+
+print("UID:", property(@syntax-apples, "uid"));
+
+print("Unit:", property(@syntax-apples, "unit"));
+
+print("Property aliases:", property(@syntax-apples, "head"), property(@syntax-apples, "quantity"));
+
+print("Absent slug:", property(@r_01JA0000000000000000000204, "slug"));
+
+print(("Quantity is: " + str((quantity(@syntax-apples) + 2))));

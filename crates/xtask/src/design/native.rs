@@ -53,7 +53,7 @@ fn command(component: &str, theme: Option<&Path>, mobile: bool) -> Command {
     command.args([
         "run",
         "-p",
-        "lince-desktop",
+        "lince-sandbox",
         "--example",
         "design_preview",
         "--",

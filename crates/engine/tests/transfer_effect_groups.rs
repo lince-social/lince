@@ -406,9 +406,9 @@ fn stale_secondary_record_or_failed_effect_rolls_back_the_whole_group() {
         let denied = engine
             .act(settle(&review, "hidden"), Some(beto.uid.clone()))
             .await
-            .unwrap_err()
-            .to_string();
-        assert!(denied.contains("outside what this login"), "{denied}");
+            .unwrap_err();
+        assert!(matches!(&denied, engine::EngineError::Forbidden(_)), "{denied}");
+        let denied = denied.to_string();
         assert!(!denied.contains(&transport));
         let projection = protein::execute_for_with_signer(
             &engine.store,

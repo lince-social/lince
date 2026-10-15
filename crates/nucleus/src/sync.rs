@@ -40,8 +40,15 @@ impl Instance {
     pub fn plugin(provider: &str, binding: &str) -> Self {
         Self {
             content: Content::Records { root: None },
-            destination: Destination::Plugin { provider: provider.into(), binding: binding.into() },
-            capabilities: Capabilities { incremental: true, durable_queue: true, review: true },
+            destination: Destination::Plugin {
+                provider: provider.into(),
+                binding: binding.into(),
+            },
+            capabilities: Capabilities {
+                incremental: true,
+                durable_queue: true,
+                review: true,
+            },
         }
     }
     pub fn peer(organ: &str, root: Option<&str>) -> Self {

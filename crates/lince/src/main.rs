@@ -2,6 +2,7 @@
 #![recursion_limit = "256"]
 
 mod admin;
+mod lingua;
 #[cfg(feature = "ui")]
 mod fiote_laboratory;
 
@@ -13,6 +14,13 @@ use utils::logging::{init, set_quiet};
 fn main() -> Result<(), Error> {
     utils::build_info::set_revision(option_env!("LINCE_REVISION").unwrap_or("unknown"));
     let args = env::args().collect::<Vec<String>>();
+    if args.get(1).is_some_and(|argument| argument == "lingua") {
+        if let Err(error) = lingua::dispatch(&args[2..]) {
+            eprintln!("{error}");
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
     if has_arg(&args, "--mcp-stdio") {
         return tokio::runtime::Builder::new_current_thread().enable_all().build()?
             .block_on(cell::bridge_stdio()).map_err(Error::other);
@@ -60,11 +68,11 @@ fn main() -> Result<(), Error> {
     }
     #[cfg(feature = "ui")]
     if has_arg(&args, "--laboratory-headless") {
-        let mut config = lince_desktop::laboratory::StressConfig::default();
+        let mut config = lince_sandbox::laboratory::StressConfig::default();
         if let Some(value) = arg_value(&args, "--laboratory-max-sands") {
             config.max_sands = value.parse().map_err(Error::other)?;
         }
-        let report = lince_desktop::laboratory::run_headless(config)?;
+        let report = lince_sandbox::laboratory::run_headless(config)?;
         let bytes = serde_json::to_vec_pretty(&report).map_err(Error::other)?;
         if let Some(path) = arg_value(&args, "--laboratory-output") {
             use std::io::Write;
@@ -107,11 +115,18 @@ fn main() -> Result<(), Error> {
     }
 
     let server_mode = has_arg(&args, "--server") || cfg!(not(feature = "ui"));
+    let _storage_host = if server_mode {
+        let data_dir = utils::config::lince_data_dir()
+            .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
+        Some(lince_interface::activation::claim_headless(&data_dir)?)
+    } else {
+        None
+    };
     #[cfg(feature = "ui")]
     let instance = if !server_mode {
         let data_dir = utils::config::lince_data_dir()
             .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
-        match runtime.block_on(lince_desktop::instance::claim(&data_dir))? {
+        match runtime.block_on(lince_interface::activation::claim(&data_dir))? {
             Some(instance) => Some(instance),
             None if has_arg(&args, "--laboratory-fiote") => {
                 return Err(Error::other(
@@ -257,10 +272,10 @@ fn main() -> Result<(), Error> {
         let cell_runtime = cell.runtime().clone();
         let data_dir = utils::config::lince_data_dir()
             .expect("UI data directory was resolved before opening the Cell");
-        let backup_handoff = lince_desktop::owner_backup::BackupHandoff::default();
+        let backup_handoff = lince_sandbox::owner_backup::BackupHandoff::default();
         let result = {
             let _guard = runtime.enter();
-            lince_desktop::run_native_interface(
+            lince_sandbox::run_native_interface(
                 cell_runtime,
                 instance
                     .as_ref()
@@ -335,6 +350,7 @@ fn print_help() {
     println!();
     println!("Options:");
     println!("  -h, --help            Show this help message");
+    println!("  lingua FILE          Run a Lingua script; check, fmt, and eval are also available");
     println!("      --directory <path> Override the Lince data directory");
     println!("      --port <port>     Override the local HTTP listen port");
     println!(

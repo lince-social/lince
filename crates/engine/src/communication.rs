@@ -51,7 +51,7 @@ impl Engine {
             comm::add_participant(&self.store.pool, &conversation.uid, &person_uid).await?;
         }
         if !groups.is_empty() {
-            let group_of = store::concepts::ensure(&self.store.pool, comm::KIND_GROUP_OF).await?;
+            let group_of = store::vocabulary::feature_write(&self.store.pool, "group").await?;
             for group in groups {
                 let group_uid = self.comm_resolve(group).await?;
                 store::assertions::assert(
@@ -316,9 +316,9 @@ impl Engine {
             return Ok(());
         }
         if let Some(group_of) =
-            store::concepts::resolve(&self.store.pool, comm::KIND_GROUP_OF).await?
+            store::vocabulary::feature_read(&self.store.pool, "group").await?
         {
-            if let Some(member_of) = store::concepts::resolve(&self.store.pool, "member-of").await?
+            if let Some(member_of) = store::vocabulary::feature_read(&self.store.pool, "membership").await?
             {
                 for group in store::assertions::objects_from_subject(
                     &self.store.pool,

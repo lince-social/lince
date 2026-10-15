@@ -16,8 +16,7 @@ const MAX_CALENDAR_SEARCH_STEPS: usize = 4_096;
 const MAX_TIME_ZONE_ID_BYTES: usize = 255;
 const MAX_TZDB_VERSION_BYTES: usize = 64;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 #[schemars(with = "String")]
 pub struct CivilDateTime(NaiveDateTime);
 
@@ -229,8 +228,7 @@ impl<'de> Deserialize<'de> for CivilTime {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 pub struct TimeZoneId(String);
 
 impl TimeZoneId {
@@ -289,8 +287,7 @@ impl<'de> Deserialize<'de> for TimeZoneId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 pub struct TzdbVersion(String);
 
 impl TzdbVersion {
@@ -335,8 +332,9 @@ impl<'de> Deserialize<'de> for TzdbVersion {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, schemars::JsonSchema,
+)]
 pub struct TzdbRevision {
     pub version: TzdbVersion,
     pub digest: CanonicalHash,
@@ -369,8 +367,7 @@ impl From<Weekday> for CivilWeekday {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 pub struct WeekdaySet(BTreeSet<CivilWeekday>);
 
 impl WeekdaySet {

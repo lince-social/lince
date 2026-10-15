@@ -46,7 +46,7 @@ pub fn headless(args: &[String]) -> io::Result<()> {
         .ok_or_else(|| io::Error::other("Cannot locate Lince data"))?;
     let started = std::time::Instant::now();
     let report = (|| -> io::Result<Report> {
-        let _lock = lince_desktop::instance::claim_headless(&data)?;
+        let _lock = lince_sandbox::instance::claim_headless(&data)?;
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .thread_stack_size(32 * 1024 * 1024)
@@ -75,7 +75,7 @@ pub fn headless(args: &[String]) -> io::Result<()> {
             let mut connected = cell.runtime().clone();
             connected.fiote = Some(host.clone());
             let _entered = runtime.enter();
-            let report = lince_desktop::laboratory::fiote::run_headless(connected, options);
+            let report = lince_sandbox::laboratory::fiote::run_headless(connected, options);
             runtime.block_on(host.stop_all());
             Ok(report)
         })();

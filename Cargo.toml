@@ -1,5 +1,6 @@
 [workspace]
 resolver = "3"
+exclude = ["vendor/parley"]
 members = [
     "crates/lince",
     "crates/utils",
@@ -11,7 +12,9 @@ members = [
     "crates/anicca",
     "crates/sensei",
     "crates/geist",
-    "crates/desktop",
+    "crates/sandbox",
+    "crates/park",
+    "crates/practice",
     "crates/interface",
     "crates/mobile",
     "crates/document",
@@ -24,8 +27,11 @@ members = [
     "crates/xtask",
     "crates/plugins",
     "crates/plugin-nostr",
+    "crates/plugin-activitypub",
+    "crates/plugin-irc",
     "crates/plugin-files",
     "crates/map",
+    "crates/hand-input",
 ]
 
 # `cargo build` / `cargo run` operate on `default-members` (the lince binary),
@@ -47,8 +53,9 @@ lince = { version = "=0.8.0", path = "crates/lince" }
 utils = { version = "=0.8.0", path = "crates/utils", package = "lince-utils" }
 cell = { version = "=0.8.0", path = "crates/cell", package = "lince-cell" }
 simulation = { version = "=0.8.0", path = "crates/simulation", package = "lince-simulation" }
-lince-desktop = { version = "=0.8.0", path = "crates/desktop" }
+lince-sandbox = { version = "=0.8.0", path = "crates/sandbox" }
 lince-interface = { version = "=0.8.0", path = "crates/interface", default-features = false }
+lince-practice = { version = "=0.8.0", path = "crates/practice" }
 lince-map = { version = "=0.8.0", path = "crates/map" }
 lince-media = { version = "=0.8.0", path = "crates/media" }
 lince-facade = { version = "=0.8.0", path = "crates/facade" }
@@ -111,7 +118,6 @@ reqwest = { version = "0.13.5", default-features = false, features = ["json", "r
 # presentation::http::media_assets::pick_image's doc comment for why this
 # specific feature choice matters (a GTK-based picker is what crashes).
 rfd = { version = "0.17.2", default-features = false, features = ["xdg-portal", "wayland"] }
-rhai = "1.26.1"
 ropey = "1.6.1"
 semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
@@ -141,6 +147,9 @@ vodozemac = { version = "=0.11.1", default-features = false }
 zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
+[patch.crates-io]
+parley = { path = "vendor/parley" }
+
 [workspace.lints.rust]
 warnings = "deny"
 
@@ -166,6 +175,18 @@ opt-level = 0        # Fastest compile
 debug = "line-tables-only"
 incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism
+
+[profile.dev.package.lince-hand-input]
+opt-level = 2
+
+[profile.dev.package.tract-core]
+opt-level = 2
+
+[profile.dev.package.tract-data]
+opt-level = 2
+
+[profile.dev.package.tract-linalg]
+opt-level = 2
 
 [profile.dev.package.opus-rs]
 opt-level = 2

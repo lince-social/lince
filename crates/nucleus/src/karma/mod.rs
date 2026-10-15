@@ -24,9 +24,9 @@ pub mod scheduled_change;
 pub mod simple_frequency;
 pub mod state;
 pub mod time;
-pub mod transfer_consequence;
 pub mod timezone_artifact;
 mod timezone_builtin;
+pub mod transfer_consequence;
 pub mod value;
 
 pub use ast::{
@@ -115,8 +115,8 @@ pub use schedule::{
     ScheduleEmission, ScheduleReactivation, TimerPolicy,
 };
 pub use state::{
-    CandidateStatus, DatumState, DefinitionStatus, EngineMode, KarmaActionKind,
-    KarmaObjectKind, RunStatus, WorkflowStatus,
+    CandidateStatus, DatumState, DefinitionStatus, EngineMode, KarmaActionKind, KarmaObjectKind,
+    RunStatus, WorkflowStatus,
 };
 pub use time::{DurationMs, TimestampMs};
 pub use timezone_artifact::{

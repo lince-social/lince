@@ -1,0 +1,17 @@
+for row in query({source: "frequency", fields: ["uid", "definition"], limit: 5}) {
+  if (get(row, "definition") != null) {
+    print(frequency(get(row, "uid")));
+  }
+}
+
+for row in query({source: "recurrence", limit: 5}) {
+  if (get(row, "kind") == "recurrence") {
+    print(rule(get(row, "uid")));
+  }
+}
+
+for row in query({source: "record", include: {extension: {namespace: "work"}}, fields: ["uid", "extension"], limit: 5}) {
+  if (get(row, "extension") != null) {
+    print(extension(get(row, "uid"), "work"));
+  }
+}

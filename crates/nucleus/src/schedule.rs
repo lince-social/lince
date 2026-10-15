@@ -69,7 +69,9 @@ impl TimeRange {
         let start = now.checked_add(offset)?;
         Some(Self {
             from_ms: start,
-            until_ms: (duration > 0).then(|| start.checked_add(duration)).flatten(),
+            until_ms: (duration > 0)
+                .then(|| start.checked_add(duration))
+                .flatten(),
         })
     }
 

@@ -35,9 +35,17 @@ pub async fn create_in(
             .await?;
     }
     sqlx::query("INSERT INTO lingua_concept(lingua_uid,concept_uid,adopted_at) VALUES(?,?,?)")
-        .bind(lingua_uid).bind(&uid).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *transaction).await?;
+        .bind(lingua_uid)
+        .bind(&uid)
+        .bind(nucleus::execution::now().to_rfc3339())
+        .execute(&mut *transaction)
+        .await?;
     sqlx::query("INSERT INTO concept_source(concept_uid,lingua_uid,original_name) VALUES(?,?,?)")
-        .bind(&uid).bind(lingua_uid).bind(&canonical_name).execute(&mut *transaction).await?;
+        .bind(&uid)
+        .bind(lingua_uid)
+        .bind(&canonical_name)
+        .execute(&mut *transaction)
+        .await?;
     crate::vocabulary::add_term_on(&mut transaction, &uid, &canonical_name, "", None, true).await?;
     crate::sync_ops::log_local_tx(
         &mut transaction,
@@ -87,7 +95,8 @@ pub async fn rename(
     if let Some((uid, revision)) = current {
         crate::vocabulary::edit_term_on(&mut tx, &uid, revision, canonical_name, "", true).await?;
     } else {
-        crate::vocabulary::add_term_on(&mut tx, concept_uid, canonical_name, "", None, true).await?;
+        crate::vocabulary::add_term_on(&mut tx, concept_uid, canonical_name, "", None, true)
+            .await?;
     }
     crate::vocabulary::log_shared_on(&mut tx, concept_uid).await?;
     tx.commit().await?;
@@ -137,6 +146,12 @@ pub async fn remove_parent(
 
 pub async fn delete(pool: &SqlitePool, concept_uid: &str) -> Result<bool, StoreError> {
     let mut transaction = crate::write_tx(pool).await?;
+    if crate::vocabulary::retained_by_publication_on(&mut transaction, concept_uid).await? {
+        return Err(StoreError::Protocol(
+            "This meaning is retained by a published snapshot; remove it from a collection instead"
+                .into(),
+        ));
+    }
     sqlx::query("DELETE FROM concept_name WHERE concept_uid = ?")
         .bind(concept_uid)
         .execute(&mut *transaction)
@@ -350,11 +365,15 @@ pub async fn set_conversion_exact(
     numerator: i128,
     denominator: i128,
 ) -> Result<(), StoreError> {
+    if a_uid == b_uid {
+        return Err(sqlx::Error::Protocol("Choose distinct units for a conversion".into()));
+    }
     if numerator <= 0 || denominator <= 0 {
         return Err(sqlx::Error::Protocol(format!(
             "conversion ratio must be positive, got {numerator}/{denominator}"
         )));
     }
+    let mut transaction = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO concept_conversion (a_uid, b_uid, numerator, denominator)
          VALUES (?, ?, ?, ?)
@@ -365,13 +384,14 @@ pub async fn set_conversion_exact(
     .bind(b_uid)
     .bind(numerator.to_string())
     .bind(denominator.to_string())
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
     sqlx::query("DELETE FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
         .bind(b_uid)
         .bind(a_uid)
-        .execute(pool)
+        .execute(&mut *transaction)
         .await?;
+    transaction.commit().await?;
     Ok(())
 }
 
@@ -478,7 +498,7 @@ async fn read_ratio(
     b_uid: &str,
 ) -> Result<Option<(i128, i128)>, StoreError> {
     let Some(row) = sqlx::query(
-        "SELECT numerator, denominator FROM concept_conversion WHERE a_uid = ? AND b_uid = ?",
+        "SELECT c.numerator,c.denominator FROM concept_conversion c JOIN concept_conversion_version v ON v.a_uid=c.a_uid AND v.b_uid=c.b_uid AND v.revision=(SELECT MAX(revision) FROM concept_conversion_version WHERE a_uid=c.a_uid AND b_uid=c.b_uid) WHERE c.a_uid=? AND c.b_uid=? AND v.withdrawn=0 AND v.a_revision=COALESCE((SELECT MAX(revision) FROM concept_definition_version WHERE concept_uid=c.a_uid),1) AND v.b_revision=COALESCE((SELECT MAX(revision) FROM concept_definition_version WHERE concept_uid=c.b_uid),1)",
     )
     .bind(a_uid)
     .bind(b_uid)

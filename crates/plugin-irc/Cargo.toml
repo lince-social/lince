@@ -1,0 +1,28 @@
+[package]
+name = "lince-plugin-irc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+nucleus.workspace = true
+plugins.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["fs", "io-std", "net"] }
+reqwest.workspace = true
+zeroize.workspace = true
+tokio-rustls = { version = "=0.26.5", default-features = false, features = ["ring", "tls12"] }
+webpki-roots = "=1.0.9"
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+engine.workspace = true
+store.workspace = true
+protein.workspace = true
+
+[lints]
+workspace = true

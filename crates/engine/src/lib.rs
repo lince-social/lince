@@ -21,6 +21,7 @@ pub mod custom_component;
 pub mod presence;
 pub mod location;
 pub mod vocabulary;
+pub mod knowledge;
 pub mod saved_location;
 pub mod visibility;
 pub mod record_change;
@@ -32,6 +33,7 @@ pub mod directory;
 pub mod effects;
 pub mod commands;
 pub mod signal_endpoints;
+pub mod signal_streams;
 pub mod enrolment;
 pub mod error;
 pub mod expiry;
@@ -93,6 +95,7 @@ pub mod groups;
 pub mod calls;
 pub mod transfer;
 pub mod transfer_delivery;
+mod transfer_evidence;
 mod transfer_counterparty;
 pub mod trust;
 pub mod wire;
@@ -125,6 +128,8 @@ use tokio::sync::{Mutex, broadcast, watch};
 pub use error::EngineError;
 
 pub struct Engine {
+    pub(crate) knowledge:knowledge::Runtime,
+    pub signal_streams: signal_streams::Runtime,
     pub projection: projection::Controller,
     pub store: Store,
     pub blobs: tokio::sync::OnceCell<blob_sync::BlobSync>,
@@ -205,6 +210,8 @@ impl Engine {
         let (config_changed, _) = watch::channel(0);
         let (effects_changed, _) = watch::channel(0);
         let engine = Engine {
+            knowledge:knowledge::Runtime::default(),
+            signal_streams: Default::default(),
             projection: projection::Controller::default(),
             store,
             blobs: tokio::sync::OnceCell::new(),

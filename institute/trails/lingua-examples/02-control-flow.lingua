@@ -1,0 +1,53 @@
+let rows = [{head: "Apples", quantity: 3}, {head: "Bananas", quantity: 0}, {head: "Oranges", quantity: (-2)}];
+
+let result = [];
+
+let total = 0;
+
+for row in rows {
+  let value = get(row, "quantity");
+  if (value > 0) {
+    value = (value + 2);
+    total = (total + value);
+    result = push(result, {head: get(row, "head"), quantity: value});
+  } else if (value == 0) {
+    print("Zero:", get(row, "head"));
+  } else {
+    print("Negative:", get(row, "head"));
+  }
+}
+
+print("Collected:", result);
+
+print("Total:", total);
+
+let pairs = [];
+
+for left in [1, 2] {
+  for right in [10, 20] {
+    if ((left == 2) && (right == 20)) {
+      pairs = push(pairs, {left: left, right: right});
+    }
+  }
+}
+
+print("Nested loops:", pairs);
+
+let name = "outside";
+
+if true {
+  let name = "inside";
+  print("Block:", name);
+}
+
+for name in ["first", "second"] {
+  print("Iteration:", name);
+}
+
+print("Outer name:", name);
+
+if 0 {
+  print(quantity(@missing));
+} else if 2 {
+  print("A nonzero number is true; the missing database was not needed.");
+}

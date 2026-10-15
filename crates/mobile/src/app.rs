@@ -19,6 +19,7 @@ mod tests;
 
 #[derive(Resource)]
 pub struct Mobile {
+    pub knowledge: crate::knowledge::State,
     pub navigation: Navigation,
     pub rows: BTreeMap<String, Vec<Value>>,
     pub drafts: BTreeMap<String, String>,
@@ -82,6 +83,9 @@ struct Pending {
 struct DraftRecovery(BTreeMap<String, crate::storage::Saved>);
 
 impl Mobile {
+    pub(crate) fn organ_uid(&self) -> Option<String> {
+        self.organ.clone()
+    }
     pub fn new(directory: PathBuf) -> Self {
         let (profiles, profile_error) = match crate::profiles::Profiles::read(&directory) {
             Ok(profiles) => (profiles, None),
@@ -90,6 +94,7 @@ impl Mobile {
         let profile_root = directory;
         let directory = profiles.directory(&profile_root);
         Self {
+            knowledge: Default::default(),
             navigation: Default::default(),
             rows: Default::default(),
             drafts: Default::default(),
@@ -179,6 +184,7 @@ pub struct ButtonIntent(pub Intent);
 
 #[derive(Clone)]
 pub enum Intent {
+    Knowledge(crate::knowledge::Intent),
     OpenLink(String),
     Nothing,
     KanbanColumn(usize),
@@ -268,6 +274,7 @@ impl Plugin for MobilePlugin {
                     password_masks,
                     poll_status,
                     crate::images::poll,
+                    crate::knowledge::poll,
                 )
                     .chain(),
             )
@@ -456,6 +463,9 @@ pub fn act(
         _ => None,
     };
     let topic = match &action {
+        engine::actions::Action::Knowledge { .. } | engine::actions::Action::Vocabulary { .. } => {
+            "knowledge"
+        }
         engine::actions::Action::ReadMessageAttachment { .. } => "attachment-download",
         engine::actions::Action::SyncNow => "sync",
         engine::actions::Action::RosterStatus => "roster",
@@ -490,7 +500,7 @@ pub fn act(
         engine::actions::Action::ChangeRecord { request } => {
             let names: &[&str] = match &request.mutation {
                 engine::record_change::Mutation::Assertion { predicate, .. }
-                    if predicate == "assigned-to" =>
+                    if predicate == "feature:assignment" =>
                 {
                     &["assignee"]
                 }
@@ -555,6 +565,11 @@ pub fn act(
     Ok(())
 }
 
+pub(crate) fn action_idle(world: &World) -> bool {
+    let state = world.resource::<Mobile>();
+    state.ready && state.pending.is_empty() && state.identity != crate::session::Identity::Locked
+}
+
 pub(crate) fn subscribe(
     world: &mut World,
     topic: &'static str,
@@ -583,6 +598,7 @@ pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
         Page::Karma => &["karma"],
         Page::Frequency => &["frequency"],
         Page::Credits => &[],
+        Page::Knowledge => &["records", "knowledge_concepts"],
     };
     let obsolete: Vec<_> = state
         .active_topics
@@ -686,6 +702,14 @@ pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
             }
         }
         Page::Credits => {}
+        Page::Knowledge => {
+            subscribe(world, "records", crate::record::query(None, 50, ""))?;
+            subscribe(
+                world,
+                "knowledge_concepts",
+                source_query(protein::Source::Concept),
+            )?;
+        }
     }
     world.resource_mut::<Mobile>().active_record = selected;
     Ok(())
@@ -1025,6 +1049,10 @@ fn receive_message(world: &mut World, message: ServerMessage) {
         } => {
             let pending = world.resource_mut::<Mobile>().pending.remove(&id);
             let Some(pending) = pending else { return };
+            if pending.topic == "knowledge" {
+                crate::knowledge::receive(world, data);
+                return;
+            }
             if pending.task_concept {
                 if let Some(uid) = created {
                     if let Err(error) = create_record(world, Some(uid)) {
@@ -1245,11 +1273,14 @@ fn receive_message(world: &mut World, message: ServerMessage) {
         }
         ServerMessage::Error { id, message, .. } => {
             let mut state = world.resource_mut::<Mobile>();
-            if let Some(pending) = state.pending.remove(&id)
-                && let Some((key, _)) = pending.field
-            {
-                state.outbox.remove(&key);
-                state.save_requested = true;
+            if let Some(pending) = state.pending.remove(&id) {
+                if pending.topic == "knowledge" {
+                    state.knowledge.stop();
+                }
+                if let Some((key, _)) = pending.field {
+                    state.outbox.remove(&key);
+                    state.save_requested = true;
+                }
             }
             state.status = message;
         }
@@ -1313,6 +1344,7 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
     world.resource_mut::<Mobile>().dirty = true;
     world.resource_mut::<Mobile>().save_requested = true;
     match intent {
+        Intent::Knowledge(intent) => crate::knowledge::apply(world, intent)?,
         Intent::LoadImage(source) => crate::images::request(world, source)?,
         Intent::OpenLink(reference) => {
             if reference.starts_with("https://") || reference.starts_with("http://") {

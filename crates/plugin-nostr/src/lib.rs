@@ -26,6 +26,7 @@ pub fn manifest(executable: String) -> Manifest {
         id: "example.nostr".into(),
         name: "Nostr public notes".into(),
         version: 1,
+        compatibility: nucleus::plugins::Compatibility::native(),
         executable,
         arguments: Vec::new(),
         contributions: vec![
@@ -87,7 +88,7 @@ pub fn manifest(executable: String) -> Manifest {
         ],
         licenses: vec![
             nucleus::sand_package::License {
-                name: "Lince — AGPL-3.0-only".into(),
+                name: "Lince — MIT".into(),
                 text: include_str!("../../../LICENSE").into(),
             },
             nucleus::sand_package::License {

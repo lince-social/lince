@@ -21,8 +21,17 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
+        if matches!(action, Action::RecordTransferOutcome { .. }) {
+            return Box::pin(async move {
+                self.record_transfer_outcome(action, actor.as_deref(), now, verified_authorship.as_ref())
+                    .await.map(ControlFlow::Continue)
+            });
+        }
         if let Action::Vocabulary { request } = action {
             return Box::pin(async move { self.vocabulary_command(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        }
+        if let Action::Knowledge {request}=action {
+            return Box::pin(async move {self.knowledge_command(request,actor.as_deref()).await.map(ControlFlow::Continue)});
         }
         if let Action::SavedLocation { request } = action {
             return Box::pin(async move { self.saved_location_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue) });
@@ -61,7 +70,8 @@ impl Engine {
             });
         }
         match &action {
-            Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Plugins { .. } | Action::Visibility { .. } | Action::Location { .. } | Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
+            Action::Vocabulary { .. } | Action::Knowledge { .. } | Action::SavedLocation { .. } | Action::Plugins { .. } | Action::Visibility { .. } | Action::Location { .. } | Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
+            Action::RecordTransferOutcome { .. } => unreachable!(),
             Action::Social { .. }
             | Action::SandPackage { .. }
             | Action::ChangeRecord { .. }

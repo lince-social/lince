@@ -90,6 +90,18 @@ pub(crate) async fn reading(
             Ok(submission) => submission,
             Err(_) => return StatusCode::UNPROCESSABLE_ENTITY.into_response(),
         };
+        let volatile = match state.cell.store.pool.acquire().await {
+            Ok(mut connection) => store::signal_streams::get_on(&mut connection, &signal).await,
+            Err(error) => return crate::auth::internal(error).into_response(),
+        };
+        match volatile {
+            Ok(Some(_)) => return match state.cell.engine.publish_stream_http(&signal, token.unwrap(), submission).await {
+                Ok(retained) => Json(json!({"retained": retained, "storage": "memory"})).into_response(),
+                Err(_) => StatusCode::FORBIDDEN.into_response(),
+            },
+            Ok(None) => {},
+            Err(error) => return crate::auth::internal(error).into_response(),
+        }
         state
             .cell
             .engine

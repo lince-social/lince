@@ -1,0 +1,12 @@
+Parley 0.9.0, by the Parley Authors.
+https://github.com/linebender/parley
+Upstream commit: 65fd4ad705deabc89b732cf7e8de9245466a2450
+Distributed under Apache-2.0 OR MIT; both licenses are included.
+
+Lince uses ICU dictionary segmentation for word and line boundaries, following
+the complex-script support in Parley 0.11.1. This enables Chinese, Japanese,
+Thai, Lao, Khmer and Burmese boundaries without changing the Bevy text API.
+The bidirectional class mask uses named ICU properties instead of the deprecated
+ICU4C numeric conversion, preserving the same class bits. The manifest omits the
+upstream readme field. The dictionary integration test checks Japanese words
+with per-character line breaks disabled; no other source changes apply.

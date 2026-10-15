@@ -1,0 +1,352 @@
+use super::*;
+
+pub(crate) fn spawn(
+    world: &mut World,
+    root: Entity,
+    workspace: u64,
+    position: DVec2,
+    component: &ContentKind,
+) -> Result<Entity, String> {
+    component.validate(&registry(), false)?;
+    if let ContentKind::Authored { base, edits } = component {
+        let entity = spawn(world, root, workspace, position, base)?;
+        world.entity_mut(entity).insert(Content(component.clone()));
+        if let Some(size) = edits.size {
+            world.get_mut::<CanvasItem>(entity).unwrap().size = DVec2::from_array(size).as_vec2();
+        }
+        return Ok(entity);
+    }
+    let entity = match component {
+        ContentKind::Native { kind, settings, .. } if kind == "topology-effect" => {
+            crate::native::topology::terrain::spawn(
+                world,
+                root,
+                workspace,
+                position,
+                crate::native::topology::terrain::parse(settings)?,
+            )?
+        }
+        ContentKind::Authored { .. } => unreachable!(),
+        ContentKind::Builtin { state } => {
+            crate::native::component_push::spawn(world, root, workspace, position, state)?
+        }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if kind == "kanban" => {
+            super::kanban::spawn(world, root, workspace, position, settings, bindings)?
+        }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if kind == "area" => {
+            let geometry = api::Geometry {
+                position: position.to_array(),
+                size: [640.0, 480.0],
+            };
+            let area = super::area::parse(settings, None, &geometry)?;
+            if super::area::component(&area)
+                .records()
+                .iter()
+                .any(|uid| !bindings.iter().any(|binding| binding == uid))
+            {
+                return Err("List the area's referenced Record UIDs in bindings.".into());
+            }
+            crate::native::area::spawn_area(world, root, workspace, area)
+                .ok_or("No room for another native area.")?
+        }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if kind == "protein" => {
+            let query = settings
+                .get("query")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str)
+                .transpose()
+                .map_err(|_| "Invalid Protein query JSON.")?
+                .unwrap_or_else(|| crate::native::protein_castle::ProteinDraft::default().query);
+            if record_references(&query)
+                .iter()
+                .any(|uid| !bindings.contains(uid))
+            {
+                return Err("List the query's referenced Record UIDs in bindings.".into());
+            }
+            let draft = crate::native::protein_castle::ProteinDraft {
+                name: settings
+                    .get("name")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("Protein")
+                    .into(),
+                slug: settings
+                    .get("slug")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default()
+                    .into(),
+                query,
+            };
+            draft.compile()?;
+            crate::native::protein_castle::spawn(world, root, workspace, position, draft)
+        }
+        ContentKind::Native { kind, settings, .. } if kind == "instinct" => {
+            let page = settings
+                .get("page")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            let instinct = crate::native::instinct::Instinct {
+                page: (!page.is_empty()).then(|| page.into()),
+            };
+            if !instinct.valid() {
+                return Err("Invalid Instinct page.".into());
+            }
+            crate::native::instinct::spawn(world, root, workspace, position, instinct)
+        }
+        ContentKind::Native {
+            kind,
+            settings,
+            bindings,
+        } if matches!(
+            kind.as_str(),
+            "document"
+                | "ide"
+                | "explorer"
+                | "recorder"
+                | "media"
+                | "drawing"
+                | "assertion"
+                | "simulation"
+                | "shader"
+                | "import"
+                | "layout"
+        ) =>
+        {
+            super::factories::spawn(world, root, workspace, position, kind, settings, bindings)?
+                .ok_or("This native factory is unavailable.")?
+        }
+        ContentKind::Native { kind, settings, .. } => {
+            let kind = SandKind::ALL
+                .into_iter()
+                .find(|candidate| kind_id(*candidate) == *kind)
+                .ok_or("This native component cannot be recreated through canvas Actions.")?;
+            if settings
+                .get("text")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|text| text.chars().count() > 4096)
+            {
+                return Err("A native text area supports at most 4096 characters.".into());
+            }
+            let appearance = settings
+                .get("appearance")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<crate::native::tokens::TokenOverrides>)
+                .transpose()
+                .map_err(|_| "Invalid component appearance.")?;
+            if appearance
+                .as_ref()
+                .is_some_and(|appearance| !appearance.validate())
+            {
+                return Err("Invalid component appearance.".into());
+            }
+            let mut saved_texts = settings
+                .get("texts")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<Vec<crate::native::sand_text::SavedText>>)
+                .transpose()
+                .map_err(|_| "Invalid native text areas.")?;
+            if let Some(texts) = &mut saved_texts {
+                if let (Some(text), Some(first)) = (
+                    settings.get("text").and_then(serde_json::Value::as_str),
+                    texts.first_mut(),
+                ) {
+                    first.text = text.into();
+                }
+            }
+            if saved_texts.as_ref().is_some_and(|texts| texts.is_empty())
+                && settings
+                    .get("text")
+                    .and_then(serde_json::Value::as_str)
+                    .is_some_and(|text| !text.is_empty())
+            {
+                saved_texts = None;
+            }
+            if saved_texts
+                .as_ref()
+                .is_some_and(|texts| texts.len() > 64 || texts.iter().any(|text| !text.validate()))
+            {
+                return Err("Invalid native text areas.".into());
+            }
+            let timer = settings
+                .get("timer")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<crate::native::work_timer::LocalTimer>)
+                .transpose()
+                .map_err(|_| "Invalid timer state.")?;
+            let time_castle = settings
+                .get("time_castle")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<lince_interface::time_castle::Settings>)
+                .transpose()
+                .map_err(|_| "Invalid Time Castle settings.")?;
+            if time_castle
+                .as_ref()
+                .is_some_and(|settings| !settings.valid() || kind != SandKind::WorkTimer)
+            {
+                return Err("Invalid Time Castle settings.".into());
+            }
+            if timer.as_ref().is_some_and(|timer| !timer.valid()) {
+                return Err("Invalid timer state.".into());
+            }
+            let todo = settings
+                .get("todo")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<crate::native::todo::SavedTodo>)
+                .transpose()
+                .map_err(|_| "Invalid Todo state.")?;
+            if todo.as_ref().is_some_and(|todo| !todo.valid()) {
+                return Err("Invalid Todo state.".into());
+            }
+            let visibility = settings
+                .get("visibility")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<lince_interface::visibility::Selection>)
+                .transpose()
+                .map_err(|_| "Invalid Visibility selection.")?;
+            if visibility
+                .as_ref()
+                .is_some_and(|selection| !selection.valid() || kind != SandKind::Visibility)
+            {
+                return Err("Invalid Visibility selection.".into());
+            }
+            let entity = crate::native::sand_store::spawn_sand(
+                world,
+                root,
+                workspace,
+                kind,
+                settings
+                    .get("text")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default(),
+                position,
+            );
+            if let Some(selection) = visibility {
+                let panel = world
+                    .get::<StoredSand>(entity)
+                    .and_then(|sand| sand.content)
+                    .ok_or("Visibility editor is unavailable.")?;
+                lince_interface::visibility::set_target(
+                    world,
+                    panel,
+                    &selection.record_uid,
+                    selection.data,
+                );
+            }
+            if let Some(saved_texts) = saved_texts {
+                let existing: Vec<_> = world
+                    .get::<Children>(entity)
+                    .into_iter()
+                    .flatten()
+                    .copied()
+                    .filter(|child| {
+                        world
+                            .get::<crate::native::sand_text::SandText>(*child)
+                            .is_some()
+                    })
+                    .collect();
+                for text in existing {
+                    world.despawn(text);
+                }
+                let mut first = None;
+                for text in saved_texts {
+                    let text = crate::native::sand_text::spawn(world, entity, text);
+                    first.get_or_insert(text);
+                }
+                if matches!(
+                    kind,
+                    SandKind::Text | SandKind::EditableText | SandKind::WorkTimer
+                ) {
+                    world.get_mut::<StoredSand>(entity).unwrap().content = first;
+                }
+            }
+            if let Some(appearance) = appearance {
+                crate::native::token_style::set_overrides(world, entity, appearance);
+            }
+            if let Some(timer) = timer {
+                world.entity_mut(entity).insert(timer);
+            }
+            if let Some(settings) = time_castle {
+                world
+                    .entity_mut(entity)
+                    .insert(crate::native::time_castle::TimeSettings(settings));
+            }
+            if let Some(todo) = todo {
+                crate::native::todo::restore(world, entity, todo);
+            }
+            let texts: Vec<_> = world
+                .get::<Children>(entity)
+                .into_iter()
+                .flatten()
+                .copied()
+                .filter(|child| {
+                    world
+                        .get::<crate::native::sand_text::SandText>(*child)
+                        .is_some()
+                })
+                .collect();
+            for text in texts {
+                for (id, value) in settings.iter().filter(|(id, _)| {
+                    !matches!(
+                        id.as_str(),
+                        "text" | "texts" | "timer" | "time_castle" | "todo" | "appearance"
+                    )
+                }) {
+                    let value =
+                        serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+                    if !crate::native::sand_settings::set(world, text, id, Some(value)) {
+                        world.despawn(entity);
+                        return Err("The native component rejected these settings.".into());
+                    }
+                }
+            }
+            entity
+        }
+        ContentKind::Composition { composition } => crate::native::canvas_host::composition::spawn(
+            world,
+            root,
+            workspace,
+            position,
+            composition.clone(),
+        )?,
+    };
+    world.entity_mut(entity).insert((
+        Identity(nucleus::new_uid("placement")),
+        Content(component.clone()),
+    ));
+    Ok(entity)
+}
+
+pub(crate) fn restore_content(
+    world: &mut World,
+    entity: Entity,
+    component: &ContentKind,
+) -> Result<(), String> {
+    if let ContentKind::Authored { base, .. } = component {
+        restore_content(world, entity, base)?;
+        world.entity_mut(entity).insert(Content(component.clone()));
+        return Ok(());
+    }
+    if let ContentKind::Composition { composition } = component {
+        let geometry = world.get::<CanvasItem>(entity).copied();
+        composition::populate(world, entity, composition.clone())?;
+        if let Some(item) = geometry {
+            world.entity_mut(entity).insert(item);
+            if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(entity) {
+                area.center = item.position.to_array();
+                area.size = item.size.as_dvec2().to_array();
+            }
+        }
+    }
+    Ok(())
+}

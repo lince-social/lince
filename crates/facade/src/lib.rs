@@ -4,6 +4,7 @@
 mod auth;
 mod live;
 mod signal_endpoints;
+mod signal_streams;
 mod records;
 mod security;
 mod settings;
@@ -107,6 +108,8 @@ impl Facade {
             .route("/login", post(auth::login))
             .route("/logout", post(auth::logout))
             .route("/live", get(live::upgrade))
+            .route("/signals/{signal}/stream", get(signal_streams::publish))
+            .route("/signals/{signal}/stream/view", get(signal_streams::view))
             .route("/signals/{signal}/readings", post(signal_endpoints::reading)
                 .layer(DefaultBodyLimit::max(2048))
                 .layer(axum::middleware::from_fn_with_state(state.clone(), signal_endpoints::admit)))

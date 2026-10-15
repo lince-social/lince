@@ -8,6 +8,7 @@ struct SavedReceipt {
     hash: [u8; 32],
     receipt: Receipt,
     before: Snapshot,
+    after: Snapshot,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,13 +21,14 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(snapshot: Snapshot, registry: Vec<Descriptor>) -> Result<Self, String> {
+    pub fn new(mut snapshot: Snapshot, registry: Vec<Descriptor>) -> Result<Self, String> {
         if snapshot.next_offset.is_some() {
             return Err(
                 "Initialize canvas state from a complete snapshot, not an inspection page.".into(),
             );
         }
         snapshot.validate_full()?;
+        room::project(&mut snapshot.placements)?;
         validate_registry(&registry)?;
         for placement in &snapshot.placements {
             placement.component.validate_snapshot(&registry)?;
@@ -51,10 +53,16 @@ impl State {
         snapshot.revision = self.snapshot.revision;
         snapshot.next_offset = None;
         snapshot.validate_full()?;
+        room::project(&mut snapshot.placements)?;
         for placement in &snapshot.placements {
             placement.component.validate_snapshot(&self.registry)?;
         }
         self.snapshot = snapshot;
+        if let Some(receipt) = self.receipts.last_mut()
+            && receipt.receipt.revision == self.snapshot.revision
+        {
+            receipt.after = self.snapshot.clone();
+        }
         Ok(())
     }
 
@@ -62,6 +70,7 @@ impl State {
         snapshot.revision = self.snapshot.revision;
         snapshot.next_offset = None;
         snapshot.validate_full()?;
+        room::project(&mut snapshot.placements)?;
         for placement in &snapshot.placements {
             placement.component.validate_snapshot(&self.registry)?;
         }
@@ -126,6 +135,7 @@ impl State {
                 return Err("Invalid canvas recovery receipt.".into());
             }
             receipt.before.validate_full()?;
+            receipt.after.validate_full()?;
         }
         Ok(())
     }
@@ -168,15 +178,16 @@ impl State {
                 let before = self.snapshot.clone();
                 let mut next = before.clone();
                 let (mut affected_placements, workspace) = self.apply(&mut next, mutation)?;
-                let affected_count = if let Mutation::Undo { receipt } = mutation { self.receipts.iter().find(|r| &r.id == receipt).ok_or("The undo receipt is no longer retained.")?.receipt.affected_count } else { affected_placements.len() };
+                let affected_count = if let Mutation::Undo { receipt } | Mutation::UndoChanges { receipt } = mutation { self.receipts.iter().find(|r| &r.id == receipt).ok_or("The undo receipt is no longer retained.")?.receipt.affected_count } else { affected_placements.len() };
                 affected_placements.truncate(MAX_PLACEMENTS);
                 next.revision = next.revision.checked_add(1).ok_or("Canvas revision overflow.")?;
                 next.validate_full()?;
+                room::project(&mut next.placements)?;
                 let receipt = Receipt { request_id: request_id.clone(), revision: next.revision, persistence: Persistence::Applied, affected_placements, affected_count, workspace };
                 if matches!(mutation, Mutation::CreateWorkspace { .. }) { self.next_workspace_id = self.next_workspace_id.checked_add(1).ok_or("Workspace identity overflow.")?; }
                 self.snapshot = next;
-                self.receipts.push(SavedReceipt { id: request_id.clone(), hash, receipt: receipt.clone(), before });
-                let mut sizes = self.receipts.iter().map(|r| serde_json::to_vec(&r.before).map(|bytes| bytes.len())).collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
+                self.receipts.push(SavedReceipt { id: request_id.clone(), hash, receipt: receipt.clone(), before, after: self.snapshot.clone() });
+                let mut sizes = self.receipts.iter().map(|r| serde_json::to_vec(&(&r.before, &r.after)).map(|bytes| bytes.len())).collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
                 let mut bytes = sizes.iter().sum::<usize>();
                 while self.receipts.len() > 1 && (self.receipts.len() > 16 || bytes > 16 * 1024 * 1024) {
                     bytes -= sizes.remove(0);
@@ -218,6 +229,21 @@ impl State {
             }
         };
         match mutation {
+            Mutation::SetRoomMembers { members } => {
+                if members.is_empty() || members.len() > MAX_PLACEMENTS {
+                    return Err("Assign between one and 256 room members at a time.".into());
+                }
+                let mut workspace = None;
+                for (id, member) in members {
+                    let selected = find(next, id)?;
+                    if workspace.is_some_and(|workspace| workspace != selected.workspace) {
+                        return Err("A room assignment stays within one workspace.".into());
+                    }
+                    workspace = Some(selected.workspace);
+                    selected.metadata.room_member = member.clone();
+                }
+                Ok((members.keys().cloned().collect(), workspace))
+            }
             Mutation::Rebind { placement, records } => {
                 let selected = find(next, placement)?;
                 let component = authoring::rebind(&selected.component, records)?;
@@ -269,13 +295,29 @@ impl State {
                     return Err("The copy identity is already used.".into());
                 }
                 let mut duplicate = find(next, placement)?.clone();
+                let old_position = duplicate.geometry.position;
                 duplicate.id = copy.clone();
                 duplicate.workspace = *workspace;
                 duplicate.geometry.position = *position;
+                if let Some(binding) = &mut duplicate.metadata.binding {
+                    binding.translate([
+                        position[0] - old_position[0],
+                        0.0,
+                        position[1] - old_position[1],
+                    ]);
+                }
                 duplicate.group = None;
                 duplicate.selected = false;
                 duplicate.metadata.attachment = None;
                 duplicate.metadata.group_pose = None;
+                duplicate.metadata.room_member = None;
+                if let Some(room) = &mut duplicate.metadata.room {
+                    room.home.position = [
+                        position[0],
+                        duplicate.metadata.spatial.elevation,
+                        position[1],
+                    ];
+                }
                 next.placements.push(duplicate);
                 Ok((vec![copy.clone()], Some(*workspace)))
             }
@@ -314,6 +356,25 @@ impl State {
                 });
                 Ok((vec![placement.clone()], Some(*workspace)))
             }
+            Mutation::AddWithMetadata {
+                placement,
+                workspace,
+                component,
+                geometry,
+                metadata,
+            } => {
+                let result = self.apply(
+                    next,
+                    &Mutation::Add {
+                        placement: placement.clone(),
+                        workspace: *workspace,
+                        component: component.clone(),
+                        geometry: geometry.clone(),
+                    },
+                )?;
+                find(next, placement)?.metadata = metadata.clone();
+                Ok(result)
+            }
             Mutation::Configure {
                 placement,
                 component,
@@ -330,13 +391,37 @@ impl State {
                 selected.component = component.clone();
                 Ok((vec![placement.clone()], Some(selected.workspace)))
             }
+            Mutation::SetMetadata {
+                placement,
+                metadata,
+            } => {
+                let selected = find(next, placement)?;
+                let projected_pose = (
+                    selected.metadata.spatial.elevation,
+                    selected.metadata.spatial.rotation,
+                );
+                selected.metadata = metadata.clone();
+                if selected.metadata.room_member.is_some() {
+                    selected.metadata.spatial.elevation = projected_pose.0;
+                    selected.metadata.spatial.rotation = projected_pose.1;
+                }
+                Ok((vec![placement.clone()], Some(selected.workspace)))
+            }
             Mutation::Move {
                 placement,
                 workspace,
                 position,
             } => {
                 require_workspace(*workspace)?;
+                room::relocalize_move(&mut next.placements, placement, *position)?;
                 let selected = find(next, placement)?;
+                if let Some(binding) = &mut selected.metadata.binding {
+                    binding.translate([
+                        position[0] - selected.geometry.position[0],
+                        0.0,
+                        position[1] - selected.geometry.position[1],
+                    ]);
+                }
                 selected.workspace = *workspace;
                 selected.geometry.position = *position;
                 if let Component::Authored { edits, .. } = &mut selected.component
@@ -364,8 +449,19 @@ impl State {
             }
             Mutation::Remove { placement } => {
                 let workspace = find(next, placement)?.workspace;
+                let mut affected = vec![placement.clone()];
+                affected.extend(room::detach_descendants(&mut next.placements, placement));
                 next.placements.retain(|p| &p.id != placement);
-                Ok((vec![placement.clone()], Some(workspace)))
+                for item in &mut next.placements {
+                    if let Some(binding) = &mut item.metadata.binding
+                        && matches!(&binding.anchor, crate::terrain::Anchor::Item(id) if id == placement)
+                    {
+                        binding.anchor = crate::terrain::Anchor::Fixed;
+                        binding.offset = [0.0; 3];
+                        affected.push(item.id.clone());
+                    }
+                }
+                Ok((affected, Some(workspace)))
             }
             Mutation::CreateWorkspace { name } => {
                 let id = self.next_workspace_id;
@@ -440,8 +536,215 @@ impl State {
                     Some(next.active_workspace),
                 ))
             }
+            Mutation::UndoChanges { receipt } => {
+                let previous = self
+                    .receipts
+                    .iter()
+                    .find(|r| &r.id == receipt)
+                    .ok_or("The undo receipt is no longer retained.")?;
+                undo_placements(next, &previous.before, &previous.after)?;
+                Ok((
+                    previous.receipt.affected_placements.clone(),
+                    Some(next.active_workspace),
+                ))
+            }
         }
     }
+}
+
+fn undo_field<T: Clone + PartialEq>(before: &T, after: &T, current: &mut T) -> Result<(), String> {
+    if before != after {
+        if current != after {
+            return Err("Undo conflicts with a later edit to the same field.".into());
+        }
+        *current = before.clone();
+    }
+    Ok(())
+}
+
+fn authored_binding(
+    binding: &Option<crate::terrain::SpatialBinding>,
+) -> Option<crate::terrain::SpatialBinding> {
+    binding.clone().map(|mut b| {
+        if b.anchor != crate::terrain::Anchor::Fixed {
+            b.position = [0.0; 3];
+        }
+        if b.follow_orientation {
+            b.rotation = [0.0, 0.0, 0.0, 1.0];
+        }
+        b
+    })
+}
+
+fn room_world_pose(item: &Placement) -> Pose {
+    Pose {
+        position: [
+            item.geometry.position[0],
+            item.metadata.spatial.elevation,
+            item.geometry.position[1],
+        ],
+        rotation: item.metadata.spatial.rotation,
+    }
+}
+
+fn undo_placements(
+    current: &mut Snapshot,
+    before: &Snapshot,
+    after: &Snapshot,
+) -> Result<(), String> {
+    if before.workspaces != after.workspaces || before.active_workspace != after.active_workspace {
+        return Err("Use ordinary canvas undo for workspace changes.".into());
+    }
+    let old: BTreeMap<_, _> = before.placements.iter().map(|p| (&p.id, p)).collect();
+    let new: BTreeMap<_, _> = after.placements.iter().map(|p| (&p.id, p)).collect();
+    for (id, added) in &new {
+        if !old.contains_key(id) {
+            let found = current
+                .placements
+                .iter()
+                .find(|p| &p.id == *id)
+                .ok_or("The added placement was already removed.")?;
+            if found.component != added.component
+                || found.metadata.room != added.metadata.room
+                || found.metadata.room_member != added.metadata.room_member
+                || found.metadata.material != added.metadata.material
+                || found.metadata.light != added.metadata.light
+                || authored_binding(&found.metadata.binding)
+                    != authored_binding(&added.metadata.binding)
+            {
+                return Err("Undo would remove a placement with later authored changes.".into());
+            }
+            current.placements.retain(|p| &p.id != *id);
+        }
+    }
+    for (id, before) in old {
+        let Some(after) = new.get(id) else {
+            if current.placements.iter().any(|p| &p.id == id) {
+                return Err("The removed identity is already used.".into());
+            }
+            current.placements.push(before.clone());
+            continue;
+        };
+        if before == *after {
+            continue;
+        }
+        let found = current
+            .placements
+            .iter_mut()
+            .find(|p| &p.id == id)
+            .ok_or("The edited placement was removed.")?;
+        undo_field(&before.component, &after.component, &mut found.component)?;
+        undo_field(&before.workspace, &after.workspace, &mut found.workspace)?;
+        let projected =
+            before.metadata.room_member.is_some() || after.metadata.room_member.is_some();
+        if before.metadata.room_member.is_some()
+            && after.metadata.room_member.is_none()
+            && (found.geometry != after.geometry
+                || found.metadata.spatial != after.metadata.spatial)
+        {
+            return Err(
+                "Undo conflicts with a world placement edit made after detaching from the room."
+                    .into(),
+            );
+        }
+        if !projected {
+            undo_field(&before.geometry, &after.geometry, &mut found.geometry)?;
+        } else {
+            undo_field(
+                &before.geometry.size,
+                &after.geometry.size,
+                &mut found.geometry.size,
+            )?;
+        }
+        undo_field(
+            &before.metadata.room,
+            &after.metadata.room,
+            &mut found.metadata.room,
+        )?;
+        undo_field(
+            &before.metadata.room_member,
+            &after.metadata.room_member,
+            &mut found.metadata.room_member,
+        )?;
+        undo_field(&before.group, &after.group, &mut found.group)?;
+        undo_field(
+            &before.metadata.order,
+            &after.metadata.order,
+            &mut found.metadata.order,
+        )?;
+        undo_field(
+            &before.metadata.pinned,
+            &after.metadata.pinned,
+            &mut found.metadata.pinned,
+        )?;
+        undo_field(
+            &before.metadata.event_boundary,
+            &after.metadata.event_boundary,
+            &mut found.metadata.event_boundary,
+        )?;
+        if !projected {
+            undo_field(
+                &before.metadata.spatial,
+                &after.metadata.spatial,
+                &mut found.metadata.spatial,
+            )?;
+        } else {
+            undo_field(
+                &before.metadata.spatial.depth,
+                &after.metadata.spatial.depth,
+                &mut found.metadata.spatial.depth,
+            )?;
+            undo_field(
+                &before.metadata.spatial.world_pinned,
+                &after.metadata.spatial.world_pinned,
+                &mut found.metadata.spatial.world_pinned,
+            )?;
+        }
+        undo_field(
+            &before.metadata.attachment,
+            &after.metadata.attachment,
+            &mut found.metadata.attachment,
+        )?;
+        if !projected {
+            undo_field(
+                &before.metadata.group_pose,
+                &after.metadata.group_pose,
+                &mut found.metadata.group_pose,
+            )?;
+        } else if before.group != after.group {
+            found.metadata.group_pose = before.metadata.group_pose.as_ref().map(|group| {
+                let old = room_world_pose(before);
+                let current = room_world_pose(found);
+                room::compose(&current, &room::relative(&old, group))
+            });
+        }
+        if before.metadata.room_member.is_none() && after.metadata.room_member.is_some() {
+            let current = room_world_pose(found);
+            let original = room_world_pose(before);
+            found.metadata.group_pose = found
+                .metadata
+                .group_pose
+                .as_ref()
+                .map(|group| room::compose(&original, &room::relative(&current, group)));
+            found.geometry.position = before.geometry.position;
+            found.metadata.spatial.elevation = before.metadata.spatial.elevation;
+            found.metadata.spatial.rotation = before.metadata.spatial.rotation;
+        }
+        undo_field(
+            &before.metadata.follow_slope,
+            &after.metadata.follow_slope,
+            &mut found.metadata.follow_slope,
+        )?;
+        if authored_binding(&before.metadata.binding) != authored_binding(&after.metadata.binding) {
+            if authored_binding(&found.metadata.binding)
+                != authored_binding(&after.metadata.binding)
+            {
+                return Err("Undo conflicts with a later spatial binding edit.".into());
+            }
+            found.metadata.binding = before.metadata.binding.clone();
+        }
+    }
+    Ok(())
 }
 
 fn find<'a>(snapshot: &'a mut Snapshot, id: &str) -> Result<&'a mut Placement, String> {

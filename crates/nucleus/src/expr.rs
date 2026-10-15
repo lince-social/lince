@@ -122,16 +122,92 @@ pub struct TokenKey {
 
 impl Expr {
     pub fn parse(src: &str) -> Result<Expr, NucleusError> {
-        let tokens = lex(src)?;
-        let mut p = Parser { tokens, pos: 0 };
-        let e = p.parse_or()?;
-        if p.pos != p.tokens.len() {
-            return Err(NucleusError::Parse(format!(
-                "unexpected trailing input at token {}",
-                p.pos
-            )));
+        let expression =
+            anicca::expression::parse(src).map_err(|error| NucleusError::Parse(error.message))?;
+        Self::from_lingua(&expression, 0)
+    }
+
+    fn from_lingua(
+        value: &anicca::grammar::grammar::Expression,
+        depth: usize,
+    ) -> Result<Self, NucleusError> {
+        use anicca::grammar::grammar as ast;
+        use ast::ExpressionKind as E;
+        if depth > 128 {
+            return Err(NucleusError::Parse("Expression nesting exceeds 128".into()));
         }
-        Ok(e)
+        let convert = |value: &ast::Expression| Self::from_lingua(value, depth + 1);
+        let binary = |left: &ast::Expression, operator, right: &ast::Expression| {
+            Ok(Self::Bin(
+                operator,
+                Box::new(convert(left)?),
+                Box::new(convert(right)?),
+            ))
+        };
+        match &value.node.value {
+            E::Number(value) => Ok(Self::Num(value.0.clone())),
+            E::Duration(value) => parse_duration(&value.0)
+                .map(Self::Dur)
+                .ok_or_else(|| NucleusError::Parse("Invalid duration".into())),
+            E::Text(value) => Ok(Self::Text(value.0.clone())),
+            E::Body(value) => Ok(Self::Text(value.0.clone())),
+            E::Reference(value) => Ok(Self::Ref(value.0.clone())),
+            E::Concept(value) => Ok(Self::Fn(ASSERTION.into(), vec![Self::Ref(value.0.clone())])),
+            E::True(_) => Ok(Self::Num("1".into())),
+            E::False(_) => Ok(Self::Num("0".into())),
+            E::Call(value) => Ok(Self::Fn(
+                value.name.0.clone(),
+                value
+                    .arguments
+                    .iter()
+                    .map(convert)
+                    .collect::<Result<_, _>>()?,
+            )),
+            E::Parenthesized(_, value, _) => convert(value),
+            E::Unary(ast::UnaryOperator::Positive(_), value) => convert(value),
+            E::Unary(operator, value) => Ok(Self::Unary(
+                match operator {
+                    ast::UnaryOperator::Negative(_) => UnOp::Neg,
+                    ast::UnaryOperator::Not(_) => UnOp::Not,
+                    ast::UnaryOperator::Positive(_) => unreachable!(),
+                },
+                Box::new(convert(value)?),
+            )),
+            E::Sum(left, operator, right) => binary(
+                left,
+                match operator {
+                    ast::SumOperator::Add(_) => BinOp::Add,
+                    ast::SumOperator::Subtract(_) => BinOp::Sub,
+                },
+                right,
+            ),
+            E::Product(left, operator, right) => binary(
+                left,
+                match operator {
+                    ast::ProductOperator::Multiply(_) => BinOp::Mul,
+                    ast::ProductOperator::Divide(_) => BinOp::Div,
+                    ast::ProductOperator::Remainder(_) => BinOp::Rem,
+                },
+                right,
+            ),
+            E::Compare(left, operator, right) => binary(
+                left,
+                match operator {
+                    ast::CompareOperator::Less(_) => BinOp::Lt,
+                    ast::CompareOperator::LessEqual(_) => BinOp::Le,
+                    ast::CompareOperator::Greater(_) => BinOp::Gt,
+                    ast::CompareOperator::GreaterEqual(_) => BinOp::Ge,
+                    ast::CompareOperator::Equal(_) => BinOp::Eq,
+                    ast::CompareOperator::NotEqual(_) => BinOp::Ne,
+                },
+                right,
+            ),
+            E::And(left, _, right) => binary(left, BinOp::And, right),
+            E::Or(left, _, right) => binary(left, BinOp::Or, right),
+            E::Name(_) | E::Null(_) | E::List(_) | E::Object(_) => Err(NucleusError::Parse(
+                "This value is only supported in scripts".into(),
+            )),
+        }
     }
 
     pub fn tokens(&self) -> Vec<TokenKey> {
@@ -308,365 +384,6 @@ impl Resolver for MapResolver {
             .copied()
             .map(Value::Num)
             .ok_or(NucleusError::UnknownToken(format!("{name}(@{slug})")))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum Tok {
-    Num(String),
-    Dur(i64),
-    Text(String),
-    Ref(String),
-    Assert(String),
-    Ident(String),
-    LParen,
-    RParen,
-    Comma,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Percent,
-    Lt,
-    Le,
-    Gt,
-    Ge,
-    EqEq,
-    Ne,
-    AndAnd,
-    OrOr,
-    Bang,
-}
-
-fn lex(src: &str) -> Result<Vec<Tok>, NucleusError> {
-    let mut out = Vec::new();
-    let chars: Vec<char> = src.chars().collect();
-    let mut i = 0;
-    while i < chars.len() {
-        let c = chars[i];
-        match c {
-            ' ' | '\t' | '\n' | '\r' => i += 1,
-            '(' => {
-                out.push(Tok::LParen);
-                i += 1;
-            }
-            ')' => {
-                out.push(Tok::RParen);
-                i += 1;
-            }
-            ',' => {
-                out.push(Tok::Comma);
-                i += 1;
-            }
-            '+' => {
-                out.push(Tok::Plus);
-                i += 1;
-            }
-            '-' => {
-                out.push(Tok::Minus);
-                i += 1;
-            }
-            '*' => {
-                out.push(Tok::Star);
-                i += 1;
-            }
-            '/' => {
-                out.push(Tok::Slash);
-                i += 1;
-            }
-            '%' => {
-                out.push(Tok::Percent);
-                i += 1;
-            }
-            '!' => {
-                if chars.get(i + 1) == Some(&'=') {
-                    out.push(Tok::Ne);
-                    i += 2;
-                } else {
-                    out.push(Tok::Bang);
-                    i += 1;
-                }
-            }
-            '<' => {
-                if chars.get(i + 1) == Some(&'=') {
-                    out.push(Tok::Le);
-                    i += 2;
-                } else {
-                    out.push(Tok::Lt);
-                    i += 1;
-                }
-            }
-            '>' => {
-                if chars.get(i + 1) == Some(&'=') {
-                    out.push(Tok::Ge);
-                    i += 2;
-                } else {
-                    out.push(Tok::Gt);
-                    i += 1;
-                }
-            }
-            '=' => {
-                if chars.get(i + 1) == Some(&'=') {
-                    out.push(Tok::EqEq);
-                    i += 2;
-                } else {
-                    return Err(NucleusError::Parse("single '=' (use '==')".into()));
-                }
-            }
-            '&' => {
-                if chars.get(i + 1) == Some(&'&') {
-                    out.push(Tok::AndAnd);
-                    i += 2;
-                } else {
-                    return Err(NucleusError::Parse("single '&' (use '&&')".into()));
-                }
-            }
-            '|' => {
-                if chars.get(i + 1) == Some(&'|') {
-                    out.push(Tok::OrOr);
-                    i += 2;
-                } else {
-                    return Err(NucleusError::Parse("single '|' (use '||')".into()));
-                }
-            }
-            '"' => {
-                let start = i;
-                i += 1;
-                let mut escaped = false;
-                while i < chars.len() {
-                    let character = chars[i];
-                    i += 1;
-                    if character == '"' && !escaped {
-                        break;
-                    }
-                    escaped = character == '\\' && !escaped;
-                }
-                let literal: String = chars[start..i].iter().collect();
-                let text = serde_json::from_str(&literal).map_err(|error| {
-                    NucleusError::Parse(format!("Invalid text argument: {error}"))
-                })?;
-                out.push(Tok::Text(text));
-            }
-            '@' => {
-                let start = i + 1;
-                let mut j = start;
-                while j < chars.len()
-                    && (chars[j].is_ascii_alphanumeric()
-                        || chars[j] == '.'
-                        || chars[j] == '-'
-                        || chars[j] == '_'
-                        || chars[j] == '/')
-                {
-                    j += 1;
-                }
-                if j == start {
-                    return Err(NucleusError::Parse("empty @reference".into()));
-                }
-                out.push(Tok::Ref(chars[start..j].iter().collect()));
-                i = j;
-            }
-            '#' => {
-                let start = i + 1;
-                let mut j = start;
-                while j < chars.len()
-                    && (chars[j].is_ascii_alphanumeric()
-                        || chars[j] == '.'
-                        || chars[j] == '-'
-                        || chars[j] == '_'
-                        || chars[j] == '/')
-                {
-                    j += 1;
-                }
-                if j == start {
-                    return Err(NucleusError::Parse("empty #assertion".into()));
-                }
-                out.push(Tok::Assert(chars[start..j].iter().collect()));
-                i = j;
-            }
-            c if c.is_ascii_digit() => {
-                let start = i;
-                let mut j = i;
-                while j < chars.len() && (chars[j].is_ascii_digit() || chars[j] == '.') {
-                    j += 1;
-                }
-                let num_str: String = chars[start..j].iter().collect();
-                let n: f64 = num_str
-                    .parse()
-                    .map_err(|_| NucleusError::Parse(format!("bad number `{num_str}`")))?;
-                let suffix = chars.get(j).copied();
-                let after_ok = chars
-                    .get(j + 1)
-                    .map(|c2| !c2.is_ascii_alphanumeric() && *c2 != '_')
-                    .unwrap_or(true);
-                let mult = match suffix {
-                    Some('s') if after_ok => Some(1),
-                    Some('m') if after_ok => Some(60),
-                    Some('h') if after_ok => Some(3600),
-                    Some('d') if after_ok => Some(86400),
-                    _ => None,
-                };
-                if let Some(mult) = mult {
-                    out.push(Tok::Dur((n * mult as f64) as i64));
-                    i = j + 1;
-                } else {
-                    out.push(Tok::Num(num_str));
-                    i = j;
-                }
-            }
-            c if c.is_ascii_alphabetic() || c == '_' => {
-                let start = i;
-                let mut j = i;
-                while j < chars.len() && (chars[j].is_ascii_alphanumeric() || chars[j] == '_') {
-                    j += 1;
-                }
-                out.push(Tok::Ident(chars[start..j].iter().collect()));
-                i = j;
-            }
-            other => return Err(NucleusError::Parse(format!("unexpected char `{other}`"))),
-        }
-    }
-    Ok(out)
-}
-
-struct Parser {
-    tokens: Vec<Tok>,
-    pos: usize,
-}
-
-impl Parser {
-    fn peek(&self) -> Option<&Tok> {
-        self.tokens.get(self.pos)
-    }
-
-    fn bump(&mut self) -> Option<Tok> {
-        let t = self.tokens.get(self.pos).cloned();
-        if t.is_some() {
-            self.pos += 1;
-        }
-        t
-    }
-
-    fn expect(&mut self, t: Tok) -> Result<(), NucleusError> {
-        if self.peek() == Some(&t) {
-            self.pos += 1;
-            Ok(())
-        } else {
-            Err(NucleusError::Parse(format!(
-                "expected {t:?}, found {:?}",
-                self.peek()
-            )))
-        }
-    }
-
-    fn parse_or(&mut self) -> Result<Expr, NucleusError> {
-        let mut e = self.parse_and()?;
-        while self.peek() == Some(&Tok::OrOr) {
-            self.bump();
-            e = Expr::Bin(BinOp::Or, Box::new(e), Box::new(self.parse_and()?));
-        }
-        Ok(e)
-    }
-
-    fn parse_and(&mut self) -> Result<Expr, NucleusError> {
-        let mut e = self.parse_cmp()?;
-        while self.peek() == Some(&Tok::AndAnd) {
-            self.bump();
-            e = Expr::Bin(BinOp::And, Box::new(e), Box::new(self.parse_cmp()?));
-        }
-        Ok(e)
-    }
-
-    fn parse_cmp(&mut self) -> Result<Expr, NucleusError> {
-        let mut e = self.parse_add()?;
-        loop {
-            let op = match self.peek() {
-                Some(Tok::Lt) => BinOp::Lt,
-                Some(Tok::Le) => BinOp::Le,
-                Some(Tok::Gt) => BinOp::Gt,
-                Some(Tok::Ge) => BinOp::Ge,
-                Some(Tok::EqEq) => BinOp::Eq,
-                Some(Tok::Ne) => BinOp::Ne,
-                _ => break,
-            };
-            self.bump();
-            e = Expr::Bin(op, Box::new(e), Box::new(self.parse_add()?));
-        }
-        Ok(e)
-    }
-
-    fn parse_add(&mut self) -> Result<Expr, NucleusError> {
-        let mut e = self.parse_mul()?;
-        loop {
-            let op = match self.peek() {
-                Some(Tok::Plus) => BinOp::Add,
-                Some(Tok::Minus) => BinOp::Sub,
-                _ => break,
-            };
-            self.bump();
-            e = Expr::Bin(op, Box::new(e), Box::new(self.parse_mul()?));
-        }
-        Ok(e)
-    }
-
-    fn parse_mul(&mut self) -> Result<Expr, NucleusError> {
-        let mut e = self.parse_unary()?;
-        loop {
-            let op = match self.peek() {
-                Some(Tok::Star) => BinOp::Mul,
-                Some(Tok::Slash) => BinOp::Div,
-                Some(Tok::Percent) => BinOp::Rem,
-                _ => break,
-            };
-            self.bump();
-            e = Expr::Bin(op, Box::new(e), Box::new(self.parse_unary()?));
-        }
-        Ok(e)
-    }
-
-    fn parse_unary(&mut self) -> Result<Expr, NucleusError> {
-        match self.peek() {
-            Some(Tok::Minus) => {
-                self.bump();
-                Ok(Expr::Unary(UnOp::Neg, Box::new(self.parse_unary()?)))
-            }
-            Some(Tok::Bang) => {
-                self.bump();
-                Ok(Expr::Unary(UnOp::Not, Box::new(self.parse_unary()?)))
-            }
-            _ => self.parse_primary(),
-        }
-    }
-
-    fn parse_primary(&mut self) -> Result<Expr, NucleusError> {
-        match self.bump() {
-            Some(Tok::Num(text)) => Ok(Expr::Num(text)),
-            Some(Tok::Dur(s)) => Ok(Expr::Dur(s)),
-            Some(Tok::Text(text)) => Ok(Expr::Text(text)),
-            Some(Tok::Ref(r)) => Ok(Expr::Ref(r)),
-            Some(Tok::Assert(name)) => Ok(Expr::Fn(ASSERTION.into(), vec![Expr::Ref(name)])),
-            Some(Tok::LParen) => {
-                let e = self.parse_or()?;
-                self.expect(Tok::RParen)?;
-                Ok(e)
-            }
-            Some(Tok::Ident(name)) => {
-                self.expect(Tok::LParen)?;
-                let mut args = Vec::new();
-                if self.peek() != Some(&Tok::RParen) {
-                    loop {
-                        args.push(self.parse_or()?);
-                        if self.peek() == Some(&Tok::Comma) {
-                            self.bump();
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                self.expect(Tok::RParen)?;
-                Ok(Expr::Fn(name, args))
-            }
-            other => Err(NucleusError::Parse(format!("unexpected token {other:?}"))),
-        }
     }
 }
 

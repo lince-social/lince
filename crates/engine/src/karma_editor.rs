@@ -316,7 +316,7 @@ impl Engine {
     ) -> Result<Recurrence, EngineError> {
         nucleus::karma::rule_field::check_condition_source(&sources[0]).map_err(invalid)?;
         let source = self
-            .canonical_condition(Some(sources[0].clone()))
+            .canonical_condition_for(Some(sources[0].clone()),actor)
             .await?
             .ok_or_else(|| invalid("A condition is required"))?;
         let bindings = store::karma_bindings::resolve(

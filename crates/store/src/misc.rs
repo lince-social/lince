@@ -339,7 +339,7 @@ pub struct SignalRow {
 pub async fn list_signals(pool: &SqlitePool) -> Result<Vec<SignalRow>, StoreError> {
     sqlx::query(
         "SELECT s.record_uid, s.actor_uid, s.source_kind, s.source, s.schedule, s.last_sampled_at, r.quantity_mantissa, r.quantity_scale
-         FROM signal s JOIN record r ON r.uid = s.record_uid WHERE r.deleted_at IS NULL",
+         FROM signal s JOIN record r ON r.uid = s.record_uid WHERE r.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM signal_stream v WHERE v.signal_uid = s.record_uid)",
     )
     .fetch_all(pool)
     .await?

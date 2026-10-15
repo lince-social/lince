@@ -42,40 +42,90 @@ pub struct Record {
 
 impl Record {
     pub async fn read(store: &store::Store, reference: &str) -> Result<Self> {
-        let row = store::records::resolve(&store.pool, reference)
-            .await?
-            .ok_or("Proposal Record is missing or deleted")?;
-        let revision = store::record_revisions::get_on(&mut *store.pool.acquire().await?, &row.uid)
-            .await?
-            .revision;
-        let mut assertions: Vec<_> =
-            store::assertions::for_subjects(&store.pool, &[row.uid.clone()])
+        Self::read_bounded(store, reference, crate::limits::JSON_BYTES).await
+    }
+
+    pub async fn read_bounded(store: &store::Store, reference: &str, limit: u64) -> Result<Self> {
+        use store::sqlx::Row;
+        let exceeded = || -> crate::Error {
+            Box::new(crate::limits::Exceeded {
+                resource: "Record capture",
+                limit,
+            })
+        };
+        let mut tx = store.pool.begin().await?;
+        let header = store::sqlx::query("SELECT substr(uid,1,128) AS uid, length(CAST(uid AS BLOB)) + length(CAST(head AS BLOB)) + length(CAST(body AS BLOB)) + length(CAST(kind AS BLOB)) + COALESCE(length(CAST(slug AS BLOB)),0) + COALESCE(length(CAST(unit_uid AS BLOB)),0) + length(CAST(quantity_mantissa AS BLOB)) AS bytes FROM record WHERE (uid = ? OR slug = ?) AND deleted_at IS NULL ORDER BY (uid = ?) DESC LIMIT 1")
+            .bind(reference).bind(reference).bind(reference).fetch_optional(&mut *tx).await?.ok_or("Proposal Record is missing or deleted")?;
+        let uid: String = header.try_get("uid")?;
+        if !nucleus::valid_uid(&uid, "r") {
+            return Err("Invalid captured Record uid".into());
+        }
+        let mut retained: u64 = header.try_get::<i64, _>("bytes")?.try_into()?;
+        if retained > limit {
+            return Err(exceeded());
+        }
+        let work_bytes:i64 = store::sqlx::query_scalar("SELECT COALESCE((SELECT length(CAST(fds AS BLOB)) FROM record_extension WHERE record_uid = ? AND namespace = 'work'),2)").bind(&uid).fetch_one(&mut *tx).await?;
+        retained = retained.saturating_add(work_bytes.try_into()?);
+        let counts = store::sqlx::query("SELECT count(*) AS count, COALESCE(sum(length(CAST(a.uid AS BLOB)) + length(CAST(a.predicate_uid AS BLOB)) + COALESCE(length(CAST(a.object_uid AS BLOB)),0) + length(CAST(a.role AS BLOB)) + COALESCE(length(CAST(a.quantity_mantissa AS BLOB)),0) + COALESCE(length(CAST(a.unit_uid AS BLOB)),0)),0) AS bytes FROM record_assertion a JOIN concept c ON c.uid = a.predicate_uid WHERE a.subject_uid = ? AND a.retracted_at IS NULL").bind(&uid).fetch_one(&mut *tx).await?;
+        let count: u64 = counts.try_get::<i64, _>("count")?.try_into()?;
+        retained = retained.saturating_add(counts.try_get::<i64, _>("bytes")?.try_into()?);
+        if retained > limit || count > crate::limits::rows::<Assertion>(limit) {
+            return Err(exceeded());
+        }
+        let row = store::sqlx::query("SELECT uid,kind,head,body,quantity_mantissa,quantity_scale,unit_uid,slug FROM record WHERE uid = ? AND deleted_at IS NULL").bind(&uid).fetch_one(&mut *tx).await?;
+        let raw: Option<String> = store::sqlx::query_scalar(
+            "SELECT fds FROM record_extension WHERE record_uid = ? AND namespace = 'work'",
+        )
+        .bind(&uid)
+        .fetch_optional(&mut *tx)
+        .await?;
+        let mut assertions = Vec::new();
+        let mut after = String::new();
+        loop {
+            let batch = store::sqlx::query("SELECT a.uid,a.predicate_uid,a.object_uid,a.role,a.quantity_mantissa,a.quantity_scale,a.unit_uid FROM record_assertion a JOIN concept c ON c.uid = a.predicate_uid WHERE a.subject_uid = ? AND a.retracted_at IS NULL AND a.uid > ? ORDER BY a.uid LIMIT ?")
+                .bind(&uid).bind(&after).bind(crate::limits::BATCH_ROWS as i64).fetch_all(&mut *tx).await?;
+            if batch.is_empty() {
+                break;
+            }
+            for assertion in batch {
+                after = assertion.try_get("uid")?;
+                assertions.push(Assertion {
+                    uid: after.clone(),
+                    predicate: assertion.try_get("predicate_uid")?,
+                    object: assertion.try_get("object_uid")?,
+                    role: assertion.try_get("role")?,
+                    unit: assertion.try_get("unit_uid")?,
+                    quantity: if assertion
+                        .try_get::<Option<String>, _>("quantity_mantissa")?
+                        .is_some()
+                    {
+                        Some(store::exact::read_decimal(&assertion, "quantity")?)
+                    } else {
+                        None
+                    },
+                });
+            }
+        }
+        let record = Self {
+            uid: uid.clone(),
+            revision: store::record_revisions::get_on(&mut *tx, &uid)
                 .await?
-                .into_iter()
-                .map(|assertion| Assertion {
-                    uid: assertion.uid,
-                    predicate: assertion.predicate_uid,
-                    object: assertion.object_uid,
-                    quantity: assertion.quantity,
-                    unit: assertion.unit_uid,
-                    role: assertion.role,
-                })
-                .collect();
-        assertions.sort_by(|left, right| left.uid.cmp(&right.uid));
-        Ok(Self {
-            work: store::records::get_extension(&store.pool, &row.uid, "work")
-                .await?
+                .revision,
+            kind: row.try_get("kind")?,
+            head: row.try_get("head")?,
+            body: row.try_get("body")?,
+            quantity: store::exact::read_decimal(&row, "quantity")?,
+            unit: row.try_get("unit_uid")?,
+            slug: row.try_get("slug")?,
+            work: raw
+                .map(|raw| serde_json::from_str(&raw))
+                .transpose()?
                 .unwrap_or_else(|| serde_json::json!({})),
-            uid: row.uid,
-            revision,
-            kind: row.kind,
-            head: row.head,
-            body: row.body,
-            quantity: row.quantity,
-            unit: row.unit_uid,
-            slug: row.slug,
             assertions,
-        })
+        };
+        crate::limits::size(&record, limit, "Record capture")?;
+        tx.commit().await?;
+        Ok(record)
     }
 
     pub fn dependencies(&self) -> Vec<String> {
@@ -89,12 +139,56 @@ impl Record {
     }
 }
 
+pub fn validate_record(record: &Record) -> Result<()> {
+    if !nucleus::valid_uid(&record.uid, "r") || record.revision <= 0 {
+        return Err("Invalid captured Record identity or revision".into());
+    }
+    engine::private_work::WorkMetadata::parse(&record.work)?;
+    let mut assertions = BTreeSet::new();
+    for assertion in &record.assertions {
+        if !nucleus::valid_uid(&assertion.uid, "a")
+            || !assertions.insert(&assertion.uid)
+            || !nucleus::valid_uid(&assertion.predicate, "c")
+            || assertion
+                .object
+                .as_ref()
+                .is_some_and(|uid| !nucleus::valid_uid(uid, "r"))
+            || assertion
+                .unit
+                .as_ref()
+                .is_some_and(|uid| !nucleus::valid_uid(uid, "c"))
+        {
+            return Err("Invalid captured Assertion identity".into());
+        }
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Occurrence {
     pub rule: String,
+    pub revision: u64,
     pub event: String,
-    pub time: nucleus::schedule::TimeRange,
+    pub intended_at_ms: i64,
+    pub observed_at_ms: i64,
+    pub time: Option<nucleus::schedule::TimeRange>,
+    pub unavailable: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CaptureStatus {
+    Captured,
+    Unavailable,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OccurrenceGap {
+    SourceHistory,
+    Interrupted,
+    UnavailableTemplate,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -104,6 +198,8 @@ pub struct Outcome {
     pub record: String,
     pub state: Option<Record>,
     pub occurrences: Vec<Occurrence>,
+    pub status: CaptureStatus,
+    pub occurrence_gaps: Vec<OccurrenceGap>,
 }
 
 impl Outcome {
@@ -111,46 +207,28 @@ impl Outcome {
         store: &store::Store,
         cell: &str,
         uid: &str,
-        from_ms: i64,
-        until_ms: i64,
+        occurrences: Vec<Occurrence>,
+        occurrence_gaps: Vec<OccurrenceGap>,
+        limit: u64,
     ) -> Result<Self> {
-        use store::sqlx::Row;
-        let state = if store::records::resolve(&store.pool, uid).await?.is_some() {
-            Some(Record::read(store, uid).await?)
+        let exists: bool = store::sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM record WHERE uid = ? AND deleted_at IS NULL)",
+        )
+        .bind(uid)
+        .fetch_one(&store.pool)
+        .await?;
+        let state = if exists {
+            Some(Record::read_bounded(store, uid, limit).await?)
         } else {
             None
         };
-        let work = state
-            .as_ref()
-            .map(|record| record.work.clone())
-            .unwrap_or(Value::Null);
-        let rows = store::sqlx::query("SELECT a.rule_uid, a.event_id, a.intended_at FROM karma_rule_application a JOIN recurrence r ON r.uid = a.rule_uid WHERE r.record_uid = ? AND a.status = 'applied' ORDER BY a.intended_at, a.rule_uid, a.event_id")
-            .bind(uid).fetch_all(&store.pool).await?;
-        let mut occurrences = Vec::new();
-        for row in rows {
-            let time = chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("intended_at"))?
-                .timestamp_millis();
-            if time < from_ms || time > until_ms {
-                continue;
-            }
-            if let Some(time) = nucleus::schedule::range(
-                work["start"].as_str(),
-                work["due"].as_str(),
-                work["estimate_min"].as_f64(),
-                Some(time),
-            )? {
-                occurrences.push(Occurrence {
-                    rule: row.get("rule_uid"),
-                    event: row.get("event_id"),
-                    time,
-                });
-            }
-        }
         Ok(Self {
             cell: cell.into(),
             record: uid.into(),
             state,
             occurrences,
+            status: CaptureStatus::Captured,
+            occurrence_gaps,
         })
     }
 
@@ -293,21 +371,33 @@ impl Proposal {
             return Err("Choose 1–32 Records for the proposal".into());
         }
         let mut records = Vec::new();
+        let mut remaining = crate::limits::CAPTURE_BYTES.saturating_sub(4096);
         for reference in references {
-            let record = Record::read(source, reference).await?;
+            if records.iter().any(|record: &Record| {
+                &record.uid == reference || record.slug.as_ref() == Some(reference)
+            }) {
+                continue;
+            }
+            if records.len() >= 32 {
+                return Err("Choose at most 32 distinct Records for the proposal".into());
+            }
+            let record = Record::read_bounded(source, reference, remaining).await?;
             live.refuse_unreadable(actor, &record.dependencies())
                 .await?;
             if !records
                 .iter()
                 .any(|existing: &Record| existing.uid == record.uid)
             {
+                remaining = remaining.saturating_sub(
+                    crate::limits::size(&record, remaining, "proposal capture")? + 1,
+                );
                 records.push(record);
             }
         }
-        if records.len() > 32 {
+        if records.len() > 32 || cell.len() > 64 || actor.is_some_and(|actor| actor.len() > 128) {
             return Err("Choose at most 32 distinct Records for the proposal".into());
         }
-        Ok(Self {
+        let proposal = Self {
             id: nucleus::new_uid("p"),
             cell: cell.into(),
             source: source.state_hash().await?,
@@ -315,7 +405,9 @@ impl Proposal {
             actor: actor.map(str::to_owned),
             records,
             changes: Vec::new(),
-        })
+        };
+        crate::limits::size(&proposal, crate::limits::CAPTURE_BYTES, "proposal capture")?;
+        Ok(proposal)
     }
 
     pub fn validate(&self, scenario: &Scenario) -> Result<()> {
@@ -335,7 +427,7 @@ impl Proposal {
             || self.records.is_empty()
             || self.records.len() > 32
             || self.changes.len() > 128
-            || serde_json::to_vec(self)?.len() > 1024 * 1024
+            || crate::limits::size(self, crate::limits::CAPTURE_BYTES, "proposal").is_err()
         {
             return Err("Invalid or oversized Record proposal".into());
         }

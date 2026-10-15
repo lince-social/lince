@@ -481,6 +481,10 @@ impl<'a> Graph<'a> {
         uid: &str,
         budget: &mut Budget<'_>,
     ) -> Result<BTreeSet<String>, AuthorityError> {
+        if let Some(concepts)=nucleus::vocabulary::parse_meaning_set(uid).map_err(|_|AuthorityError::InvalidGraph)? {
+            for concept in &concepts {budget.step()?;self.concept(concept)?;}
+            return Ok(concepts.into_iter().collect());
+        }
         self.concept(uid)?;
         reachable(uid, &self.children, budget)
     }

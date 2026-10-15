@@ -438,10 +438,13 @@ mod extension_tests {
     #[test]
     fn automatic_call_template_is_editable_and_uses_the_shared_consequence_parser() {
         let choices = suggestions(RuleFieldKind::Consequence, "start_call", &[], &[], &[]);
-        let template = choices.iter().find_map(|choice| match choice {
-            Suggestion::Element(value) if value.contains("start_call") => Some(value),
-            _ => None,
-        }).unwrap();
+        let template = choices
+            .iter()
+            .find_map(|choice| match choice {
+                Suggestion::Element(value) if value.contains("start_call") => Some(value),
+                _ => None,
+            })
+            .unwrap();
         let source = insert_at("@family", 7..7, template, RuleFieldKind::Consequence);
         assert!(nucleus::karma::rule_field::RuleConsequence::parse(&source).is_ok());
     }

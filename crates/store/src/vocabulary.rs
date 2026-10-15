@@ -1,3 +1,17 @@
+mod features;
+mod preferences;
+mod publications;
+mod translations;
+mod versions;
+mod references;
+
+pub use features::*;
+pub use preferences::*;
+pub use publications::*;
+pub use translations::*;
+pub use versions::*;
+pub use references::*;
+
 use crate::StoreError;
 use nucleus::vocabulary::{SAVED_LOCATION_ROLE_UID, Source, Term};
 use sqlx::{Row, SqliteConnection, SqlitePool};
@@ -55,6 +69,14 @@ pub async fn terms(pool: &SqlitePool, person: Option<&str>) -> Result<Vec<Term>,
         .bind(person).fetch_all(pool).await?.into_iter().map(term).collect())
 }
 
+pub async fn terms_on(
+    connection: &mut SqliteConnection,
+    person: Option<&str>,
+) -> Result<Vec<Term>, StoreError> {
+    Ok(sqlx::query("SELECT * FROM concept_term WHERE retired=0 AND (owner_uid IS NULL OR owner_uid=?) ORDER BY concept_uid,language,name,uid")
+        .bind(person).fetch_all(connection).await?.into_iter().map(term).collect())
+}
+
 pub async fn get_term(pool: &SqlitePool, uid: &str) -> Result<Option<Term>, StoreError> {
     Ok(sqlx::query("SELECT * FROM concept_term WHERE uid=?")
         .bind(uid)
@@ -105,6 +127,9 @@ pub async fn resolve(
     person: Option<&str>,
 ) -> Result<Option<String>, StoreError> {
     let token = token.trim().trim_start_matches('#').trim_start_matches('^');
+    if let Some(feature) = token.strip_prefix("feature:") {
+        return feature_resolve(pool, feature).await;
+    }
     if let Some(uid) = sqlx::query_scalar("SELECT uid FROM concept WHERE uid=?")
         .bind(token)
         .fetch_optional(pool)
@@ -113,8 +138,12 @@ pub async fn resolve(
         return Ok(Some(uid));
     }
     let name: String = token.nfc().collect();
-    let mut candidates: Vec<String> = sqlx::query_scalar("SELECT DISTINCT concept_uid FROM concept_term WHERE name=? AND retired=0 AND (owner_uid IS NULL OR owner_uid=?) UNION SELECT uid FROM concept c WHERE canonical_name=? AND NOT EXISTS(SELECT 1 FROM concept_source s WHERE s.concept_uid=c.uid) ORDER BY 1")
-        .bind(&name).bind(person).bind(&name).fetch_all(pool).await?;
+    let owner = terminology_owner(person);
+    let mut candidates: Vec<String> = sqlx::query_scalar("SELECT DISTINCT t.concept_uid FROM concept_term t WHERE t.name=? AND t.retired=0 AND (t.owner_uid IS NULL OR t.owner_uid=?) AND NOT EXISTS(SELECT 1 FROM terminology_hidden h WHERE h.term_uid=t.uid AND h.owner_key=? AND h.context=COALESCE((SELECT context FROM terminology_context WHERE owner_key=?),'General')) UNION SELECT p.concept_uid FROM terminology_choice p JOIN concept_source s ON s.concept_uid=p.concept_uid WHERE p.owner_key=? AND p.context=COALESCE((SELECT context FROM terminology_context WHERE owner_key=?),'General') AND COALESCE(p.wording,s.original_name)=?")
+        .bind(&name).bind(person).bind(owner).bind(owner).bind(owner).bind(owner).bind(&name).fetch_all(pool).await?;
+    candidates.extend(sqlx::query_scalar::<_,String>("SELECT uid FROM concept c WHERE canonical_name=? AND NOT EXISTS(SELECT 1 FROM concept_source s WHERE s.concept_uid=c.uid)").bind(&name).fetch_all(pool).await?);
+    candidates.sort();
+    candidates.dedup();
     if candidates.len() > 1 {
         return Err(StoreError::Protocol(format!(
             "`{token}` names several concepts ({}); choose a Concept identity",
@@ -154,13 +183,26 @@ pub async fn display_names(
             .push(term);
     }
     let sources = sources(pool).await?;
+    let (choices, hidden) = preferences::preferences(pool, person).await?;
     let mut out = HashMap::new();
     for concept in crate::concepts::list_all(pool).await? {
         let source = sources.get(&concept.uid);
+        if let Some(wording) = choices.get(&concept.uid) {
+            out.insert(
+                concept.uid,
+                wording
+                    .clone()
+                    .or_else(|| source.map(|source| source.original_name.clone()))
+                    .unwrap_or(concept.canonical_name),
+            );
+            continue;
+        }
         let selected = grouped.get(&concept.uid).and_then(|terms| {
             terms
                 .iter()
-                .filter(|term| term.preferred || term.owner_uid.is_none())
+                .filter(|term| {
+                    !hidden.contains(&term.uid) && (term.preferred || term.owner_uid.is_none())
+                })
                 .min_by_key(|term| {
                     let personal = term.owner_uid.is_some();
                     let rank = if personal && term.language.is_empty() {
@@ -186,14 +228,53 @@ pub async fn display_names(
                 })
         });
         out.insert(
-            concept.uid,
-            selected
-                .map(|term| term.name.clone())
-                .or_else(|| source.map(|source| source.original_name.clone()))
-                .unwrap_or(concept.canonical_name),
+            concept.uid.clone(),
+            selected.map(|term| term.name.clone()).unwrap_or_else(|| {
+                if grouped
+                    .get(&concept.uid)
+                    .is_some_and(|terms| terms.iter().any(|term| hidden.contains(&term.uid)))
+                {
+                    concept.uid.clone()
+                } else {
+                    source
+                        .map(|source| source.original_name.clone())
+                        .unwrap_or(concept.canonical_name)
+                }
+            }),
         );
     }
     Ok(out)
+}
+
+pub async fn resolve_file_meaning(
+    pool: &SqlitePool,
+    token: &str,
+    subject: &str,
+) -> Result<Option<String>, StoreError> {
+    let name = token.trim().trim_start_matches('#');
+    if nucleus::valid_uid(name, "c") {
+        return Ok(Some(name.into()));
+    }
+    let name: String = name.nfc().collect();
+    let candidates:Vec<String>=sqlx::query_scalar("SELECT uid FROM concept WHERE canonical_name=? UNION SELECT concept_uid FROM concept_source WHERE original_name=? UNION SELECT t.concept_uid FROM concept_term t JOIN concept_term_history h ON h.term_uid=t.uid WHERE t.owner_uid IS NULL AND h.name=? ORDER BY 1")
+        .bind(&name).bind(&name).bind(&name).fetch_all(pool).await?;
+    if candidates.len() < 2 {
+        return Ok(candidates.into_iter().next());
+    }
+    let bound:HashSet<String>=sqlx::query_scalar("SELECT predicate_uid FROM record_assertion WHERE subject_uid=? AND retracted_at IS NULL UNION SELECT unit_uid FROM record_assertion WHERE subject_uid=? AND retracted_at IS NULL AND unit_uid IS NOT NULL UNION SELECT unit_uid FROM record WHERE uid=? AND unit_uid IS NOT NULL")
+        .bind(subject).bind(subject).bind(subject).fetch_all(pool).await?.into_iter().collect();
+    let selected: Vec<_> = candidates
+        .iter()
+        .filter(|uid| bound.contains(*uid))
+        .cloned()
+        .collect();
+    if selected.len() == 1 {
+        return Ok(selected.into_iter().next());
+    }
+    Err(invalid(&format!(
+        "`{token}` names several meanings ({}); choose a Concept identity in the file",
+        candidates.join(", ")
+    )))
 }
 
 pub async fn add_term_on(
@@ -349,16 +430,16 @@ pub async fn apply_location_binding(
     tx.commit().await
 }
 
-pub async fn log_shared_on(
-    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+pub async fn dictionary_on(
+    connection: &mut SqliteConnection,
     concept: &str,
-) -> Result<(), StoreError> {
+) -> Result<nucleus::vocabulary::Dictionary, StoreError> {
     let row = sqlx::query("SELECT * FROM concept_source WHERE concept_uid=?")
         .bind(concept)
-        .fetch_optional(&mut **tx)
+        .fetch_optional(&mut *connection)
         .await?;
     let Some(row) = row else {
-        return Ok(());
+        return Err(invalid("Concept definition unavailable"));
     };
     let source = Source {
         concept_uid: concept.into(),
@@ -372,12 +453,26 @@ pub async fn log_shared_on(
         "SELECT * FROM concept_term WHERE concept_uid=? AND owner_uid IS NULL ORDER BY uid",
     )
     .bind(concept)
-    .fetch_all(&mut **tx)
+    .fetch_all(&mut *connection)
     .await?
     .into_iter()
     .map(term)
     .collect();
-    let dictionary = nucleus::vocabulary::Dictionary { source, terms };
+    let definitions = definitions_on(connection, concept).await?;
+    Ok(nucleus::vocabulary::Dictionary {
+        source,
+        terms,
+        definitions,
+    })
+}
+
+pub async fn log_shared_on(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    concept: &str,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE lingua SET revision=revision+1 WHERE uid IN (SELECT lingua_uid FROM lingua_concept WHERE concept_uid=?)")
+        .bind(concept).execute(&mut **tx).await?;
+    let dictionary = dictionary_on(tx, concept).await?;
     crate::sync_ops::log_local_tx(
         tx,
         "concept",
@@ -399,6 +494,133 @@ pub async fn apply_dictionary(
     origin: &str,
     local: bool,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    apply_dictionary_on(&mut tx, dictionary, origin, local).await?;
+    tx.commit().await
+}
+
+pub async fn apply_dictionary_on(
+    connection: &mut SqliteConnection,
+    dictionary: &nucleus::vocabulary::Dictionary,
+    origin: &str,
+    local: bool,
+) -> Result<(), StoreError> {
+    validate_dictionary(dictionary)?;
+    let source = &dictionary.source;
+    let terms_seen: HashSet<String> = dictionary
+        .terms
+        .iter()
+        .map(|term| term.uid.clone())
+        .collect();
+    let existing: Option<(Option<String>, bool)> = sqlx::query_as("SELECT origin_organ, EXISTS(SELECT 1 FROM concept_source s WHERE s.concept_uid=c.uid) FROM concept c WHERE uid=?").bind(&source.concept_uid).fetch_optional(&mut *connection).await?;
+    if !local
+        && existing
+            .as_ref()
+            .is_some_and(|(owner, defined)| *defined && owner.as_deref() != Some(origin))
+    {
+        return Ok(());
+    }
+    if let Some(original) = sqlx::query("SELECT * FROM concept_source WHERE concept_uid=?")
+        .bind(&source.concept_uid)
+        .fetch_optional(&mut *connection)
+        .await?
+    {
+        if original.get::<String, _>("original_name") != source.original_name
+            || original.get::<String, _>("original_language") != source.original_language
+            || original.get::<String, _>("definition") != source.definition
+            || original.get::<String, _>("lingua_uid") != source.vocabulary_uid
+            || original.get::<Option<String>, _>("derived_from") != source.derived_from
+        {
+            return Err(invalid(
+                "A Vocabulary update cannot replace an existing source meaning",
+            ));
+        }
+    }
+    sqlx::query(
+        "INSERT OR IGNORE INTO concept(uid,canonical_name,origin_organ,created_at) VALUES(?,?,?,?)",
+    )
+    .bind(&source.concept_uid)
+    .bind(&source.original_name)
+    .bind(origin)
+    .bind(nucleus::execution::now().to_rfc3339())
+    .execute(&mut *connection)
+    .await?;
+    sqlx::query("UPDATE concept SET canonical_name=?,origin_organ=? WHERE uid=? AND NOT EXISTS(SELECT 1 FROM concept_source s WHERE s.concept_uid=concept.uid)")
+        .bind(&source.original_name).bind(origin).bind(&source.concept_uid).execute(&mut *connection).await?;
+    sqlx::query(
+        "INSERT OR IGNORE INTO lingua(uid,name,visibility,created_at) VALUES(?,?,'shared',?)",
+    )
+    .bind(&source.vocabulary_uid)
+    .bind(&source.vocabulary_uid)
+    .bind(nucleus::execution::now().to_rfc3339())
+    .execute(&mut *connection)
+    .await?;
+    if let Some(parent) = &source.derived_from {
+        validate_source_parent_on(connection, &source.concept_uid, Some(parent)).await?;
+        let known: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM concept WHERE uid=?)")
+            .bind(parent)
+            .fetch_one(&mut *connection)
+            .await?;
+        if !nucleus::valid_uid(parent, "c") {
+            return Err(invalid("Invalid source Concept identity"));
+        }
+        if !known {
+            sqlx::query("INSERT INTO concept(uid,canonical_name,created_at) VALUES(?,?,?)")
+                .bind(parent)
+                .bind(format!("concept:{parent}"))
+                .bind(nucleus::execution::now().to_rfc3339())
+                .execute(&mut *connection)
+                .await?;
+        }
+    }
+    sqlx::query("INSERT OR IGNORE INTO concept_source(concept_uid,lingua_uid,original_name,original_language,definition,derived_from) VALUES(?,?,?,?,?,?)")
+        .bind(&source.concept_uid).bind(&source.vocabulary_uid).bind(&source.original_name).bind(&source.original_language).bind(&source.definition).bind(&source.derived_from).execute(&mut *connection).await?;
+    sqlx::query("INSERT INTO lingua_concept(lingua_uid,concept_uid,adopted_at) VALUES(?,?,?) ON CONFLICT DO NOTHING")
+        .bind(&source.vocabulary_uid).bind(&source.concept_uid).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *connection).await?;
+    for incoming in &dictionary.terms {
+        let belongs: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM concept_term WHERE uid=? AND (concept_uid!=? OR owner_uid IS NOT NULL))")
+            .bind(&incoming.uid).bind(&source.concept_uid).fetch_one(&mut *connection).await?;
+        if belongs {
+            return Err(invalid(
+                "A term identity cannot move to another Concept or owner",
+            ));
+        }
+    }
+    let existing_terms: Vec<String> = sqlx::query_scalar(
+        "SELECT uid FROM concept_term WHERE concept_uid=? AND owner_uid IS NULL",
+    )
+    .bind(&source.concept_uid)
+    .fetch_all(&mut *connection)
+    .await?;
+    let existing_terms: HashSet<_> = existing_terms.into_iter().collect();
+    if existing_terms.len()
+        + dictionary
+            .terms
+            .iter()
+            .filter(|term| !existing_terms.contains(&term.uid))
+            .count()
+        > 512
+    {
+        return Err(invalid("A Concept can retain at most 512 shared terms"));
+    }
+    for uid in existing_terms.difference(&terms_seen) {
+        sqlx::query("UPDATE concept_term SET retired=1,preferred=0,revision=revision+1 WHERE uid=? AND retired=0")
+            .bind(uid).execute(&mut *connection).await?;
+    }
+    sqlx::query("UPDATE concept_term SET preferred=0,revision=revision+1 WHERE concept_uid=? AND owner_uid IS NULL AND preferred=1 AND retired=0")
+        .bind(&source.concept_uid).execute(&mut *connection).await?;
+    for incoming in &dictionary.terms {
+        sqlx::query("UPDATE concept_term SET retired=1,preferred=0,revision=revision+1 WHERE concept_uid=? AND language=? AND name=? AND owner_uid IS NULL AND retired=0 AND uid!=?")
+            .bind(&source.concept_uid).bind(language_tag(&incoming.language)?).bind(term_text(&incoming.name)?).bind(&incoming.uid).execute(&mut *connection).await?;
+        sqlx::query("INSERT INTO concept_term(uid,concept_uid,language,name,preferred,retired,revision) VALUES(?,?,?,?,?,?,?) ON CONFLICT(uid) DO UPDATE SET language=excluded.language,name=excluded.name,preferred=excluded.preferred,retired=excluded.retired,revision=MAX(concept_term.revision+1,excluded.revision)")
+            .bind(&incoming.uid).bind(&incoming.concept_uid).bind(language_tag(&incoming.language)?).bind(term_text(&incoming.name)?).bind(incoming.preferred).bind(incoming.retired).bind(incoming.revision).execute(&mut *connection).await?;
+    }
+    save_definitions_on(connection, dictionary).await?;
+    Ok(())
+}
+
+pub fn validate_dictionary(dictionary: &nucleus::vocabulary::Dictionary) -> Result<(), StoreError> {
+    validate_definitions(dictionary)?;
     let source = &dictionary.source;
     if !nucleus::valid_uid(&source.concept_uid, "c")
         || (!nucleus::valid_uid(&source.vocabulary_uid, "g")
@@ -434,109 +656,5 @@ pub async fn apply_dictionary(
             return Err(invalid("Several preferred terms in one language"));
         }
     }
-    let mut tx = crate::write_tx(pool).await?;
-    let existing: Option<(Option<String>, bool)> = sqlx::query_as("SELECT origin_organ, EXISTS(SELECT 1 FROM concept_source s WHERE s.concept_uid=c.uid) FROM concept c WHERE uid=?").bind(&source.concept_uid).fetch_optional(&mut *tx).await?;
-    if !local
-        && existing
-            .as_ref()
-            .is_some_and(|(owner, defined)| *defined && owner.as_deref() != Some(origin))
-    {
-        return Ok(());
-    }
-    if let Some(original) = sqlx::query("SELECT * FROM concept_source WHERE concept_uid=?")
-        .bind(&source.concept_uid)
-        .fetch_optional(&mut *tx)
-        .await?
-    {
-        if original.get::<String, _>("original_name") != source.original_name
-            || original.get::<String, _>("original_language") != source.original_language
-            || original.get::<String, _>("definition") != source.definition
-            || original.get::<String, _>("lingua_uid") != source.vocabulary_uid
-            || original.get::<Option<String>, _>("derived_from") != source.derived_from
-        {
-            return Err(invalid(
-                "A Vocabulary update cannot replace an existing source meaning",
-            ));
-        }
-    }
-    sqlx::query(
-        "INSERT OR IGNORE INTO concept(uid,canonical_name,origin_organ,created_at) VALUES(?,?,?,?)",
-    )
-    .bind(&source.concept_uid)
-    .bind(&source.original_name)
-    .bind(origin)
-    .bind(nucleus::execution::now().to_rfc3339())
-    .execute(&mut *tx)
-    .await?;
-    sqlx::query("UPDATE concept SET canonical_name=?,origin_organ=? WHERE uid=? AND NOT EXISTS(SELECT 1 FROM concept_source s WHERE s.concept_uid=concept.uid)")
-        .bind(&source.original_name).bind(origin).bind(&source.concept_uid).execute(&mut *tx).await?;
-    sqlx::query(
-        "INSERT OR IGNORE INTO lingua(uid,name,visibility,created_at) VALUES(?,?,'shared',?)",
-    )
-    .bind(&source.vocabulary_uid)
-    .bind(&source.vocabulary_uid)
-    .bind(nucleus::execution::now().to_rfc3339())
-    .execute(&mut *tx)
-    .await?;
-    if let Some(parent) = &source.derived_from {
-        validate_source_parent_on(&mut tx, &source.concept_uid, Some(parent)).await?;
-        let known: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM concept WHERE uid=?)")
-            .bind(parent)
-            .fetch_one(&mut *tx)
-            .await?;
-        if !nucleus::valid_uid(parent, "c") {
-            return Err(invalid("Invalid source Concept identity"));
-        }
-        if !known {
-            sqlx::query("INSERT INTO concept(uid,canonical_name,created_at) VALUES(?,?,?)")
-                .bind(parent)
-                .bind(format!("concept:{parent}"))
-                .bind(nucleus::execution::now().to_rfc3339())
-                .execute(&mut *tx)
-                .await?;
-        }
-    }
-    sqlx::query("INSERT OR IGNORE INTO concept_source(concept_uid,lingua_uid,original_name,original_language,definition,derived_from) VALUES(?,?,?,?,?,?)")
-        .bind(&source.concept_uid).bind(&source.vocabulary_uid).bind(&source.original_name).bind(&source.original_language).bind(&source.definition).bind(&source.derived_from).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO lingua_concept(lingua_uid,concept_uid,adopted_at) VALUES(?,?,?) ON CONFLICT DO NOTHING")
-        .bind(&source.vocabulary_uid).bind(&source.concept_uid).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *tx).await?;
-    for incoming in &dictionary.terms {
-        let belongs: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM concept_term WHERE uid=? AND (concept_uid!=? OR owner_uid IS NOT NULL))")
-            .bind(&incoming.uid).bind(&source.concept_uid).fetch_one(&mut *tx).await?;
-        if belongs {
-            return Err(invalid(
-                "A term identity cannot move to another Concept or owner",
-            ));
-        }
-    }
-    let existing_terms: Vec<String> = sqlx::query_scalar(
-        "SELECT uid FROM concept_term WHERE concept_uid=? AND owner_uid IS NULL",
-    )
-    .bind(&source.concept_uid)
-    .fetch_all(&mut *tx)
-    .await?;
-    let existing_terms: HashSet<_> = existing_terms.into_iter().collect();
-    if existing_terms.len()
-        + dictionary
-            .terms
-            .iter()
-            .filter(|term| !existing_terms.contains(&term.uid))
-            .count()
-        > 512
-    {
-        return Err(invalid("A Concept can retain at most 512 shared terms"));
-    }
-    for uid in existing_terms.difference(&terms_seen) {
-        sqlx::query("UPDATE concept_term SET retired=1,preferred=0,revision=revision+1 WHERE uid=? AND retired=0")
-            .bind(uid).execute(&mut *tx).await?;
-    }
-    sqlx::query("UPDATE concept_term SET preferred=0,revision=revision+1 WHERE concept_uid=? AND owner_uid IS NULL AND preferred=1 AND retired=0")
-        .bind(&source.concept_uid).execute(&mut *tx).await?;
-    for incoming in &dictionary.terms {
-        sqlx::query("UPDATE concept_term SET retired=1,preferred=0,revision=revision+1 WHERE concept_uid=? AND language=? AND name=? AND owner_uid IS NULL AND retired=0 AND uid!=?")
-            .bind(&source.concept_uid).bind(language_tag(&incoming.language)?).bind(term_text(&incoming.name)?).bind(&incoming.uid).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO concept_term(uid,concept_uid,language,name,preferred,retired,revision) VALUES(?,?,?,?,?,?,?) ON CONFLICT(uid) DO UPDATE SET language=excluded.language,name=excluded.name,preferred=excluded.preferred,retired=excluded.retired,revision=MAX(concept_term.revision+1,excluded.revision)")
-            .bind(&incoming.uid).bind(&incoming.concept_uid).bind(language_tag(&incoming.language)?).bind(term_text(&incoming.name)?).bind(incoming.preferred).bind(incoming.retired).bind(incoming.revision).execute(&mut *tx).await?;
-    }
-    tx.commit().await
+    Ok(())
 }

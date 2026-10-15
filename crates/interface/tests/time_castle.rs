@@ -1,3 +1,5 @@
+#![cfg(feature = "models")]
+
 use lince_interface::time_castle::{Category, Entry, MAX_STACKS, Settings, stacks, tick_interval};
 use nucleus::schedule::TimeRange;
 
@@ -672,10 +674,14 @@ fn cursor_queue_ranges_follow_time_without_recalculation_or_duplicate_history() 
 
 #[test]
 fn cache_window_renewal_does_not_change_an_unchanged_cursor_schedule() {
-    let mut before = entry("need",1000,Some(61000));
-    before.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":60000}});
+    let mut before = entry("need", 1000, Some(61000));
+    before.origin =
+        serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":60000}});
     let mut renewed = before.clone();
-    renewed.time = Some(TimeRange { from_ms:301000,until_ms:Some(361000) });
+    renewed.time = Some(TimeRange {
+        from_ms: 301000,
+        until_ms: Some(361000),
+    });
     assert!(before.same_schedule(&renewed));
     renewed.origin["allocation"]["duration_ms"] = serde_json::json!(120000);
     assert!(!before.same_schedule(&renewed));
@@ -687,13 +693,23 @@ fn cache_window_renewal_does_not_change_an_unchanged_cursor_schedule() {
 
 #[test]
 fn allocation_order_survives_zero_estimates_in_cards_and_task_summaries() {
-    let mut first = entry("z-first",1000,None);
+    let mut first = entry("z-first", 1000, None);
     first.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":0},"allocation_order":[0,0]});
-    let mut second = entry("a-second",1000,Some(61000));
+    let mut second = entry("a-second", 1000, Some(61000));
     second.origin = serde_json::json!({"kind":"need","allocation":{"cursor_offset_ms":0,"duration_ms":60000},"allocation_order":[0,1]});
-    let entries = vec![first,second];
+    let entries = vec![first, second];
     let settings = Settings::default();
-    assert_eq!(lince_interface::time_castle::clock_summaries(&settings,&entries,1000,61000),[(0,0),(1,60000)]);
-    let occurrences = lince_interface::time_castle::clock_occurrences(&settings,&entries,1000,61000);
-    assert_eq!(occurrences.iter().map(|occurrence| occurrence.index).collect::<Vec<_>>(),[0,1]);
+    assert_eq!(
+        lince_interface::time_castle::clock_summaries(&settings, &entries, 1000, 61000),
+        [(0, 0), (1, 60000)]
+    );
+    let occurrences =
+        lince_interface::time_castle::clock_occurrences(&settings, &entries, 1000, 61000);
+    assert_eq!(
+        occurrences
+            .iter()
+            .map(|occurrence| occurrence.index)
+            .collect::<Vec<_>>(),
+        [0, 1]
+    );
 }

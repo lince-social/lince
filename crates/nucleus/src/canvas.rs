@@ -9,7 +9,9 @@ pub const MAX_STATE_PLACEMENTS: usize = 16_384;
 
 mod state;
 pub use state::State;
+pub mod appearance;
 pub mod authoring;
+pub mod room;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
@@ -360,16 +362,15 @@ pub struct Geometry {
 
 impl Geometry {
     pub fn validate(&self) -> Result<(), String> {
-        if self
-            .position
-            .iter()
-            .any(|n| !n.is_finite() || n.abs() > 1_000_000.0)
+        if self.position.iter().any(|n| !n.is_finite())
             || self
                 .size
                 .iter()
                 .any(|n| !n.is_finite() || *n <= 0.0 || *n > 100_000.0)
         {
-            return Err("Use finite, bounded canvas positions and positive sizes.".into());
+            return Err(
+                "Use finite canvas positions and positive sizes of at most 100,000.".into(),
+            );
         }
         Ok(())
     }
@@ -435,6 +436,18 @@ impl Default for Spatial {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Metadata {
+    #[serde(default)]
+    pub room: Option<room::Room>,
+    #[serde(default)]
+    pub room_member: Option<room::Member>,
+    #[serde(default)]
+    pub material: Option<appearance::Material>,
+    #[serde(default)]
+    pub light: Option<appearance::Light>,
+    #[serde(default)]
+    pub binding: Option<crate::terrain::SpatialBinding>,
+    #[serde(default)]
+    pub follow_slope: bool,
     pub order: i32,
     pub pinned: Option<Pinned>,
     pub event_boundary: Vec<String>,
@@ -450,9 +463,24 @@ impl Metadata {
                 && (q.iter().map(|n| n * n).sum::<f64>() - 1.0).abs() < 1e-6
         };
         let pose = |p: &Pose| p.position.iter().all(|n| n.is_finite()) && rotation(&p.rotation);
-        self.pinned.as_ref().is_none_or(|p| {
-            p.anchor.iter().all(|n| n.is_finite()) && (0.1..=3.0).contains(&p.scale)
-        }) && self.event_boundary.len() <= 64
+        self.room.as_ref().is_none_or(room::Room::valid)
+            && self.room_member.as_ref().is_none_or(room::Member::valid)
+            && !(self.room.is_some() && self.room_member.is_some())
+            && !((self.room.is_some() || self.room_member.is_some()) && self.pinned.is_some())
+            && !(self.room_member.is_some() && (self.binding.is_some() || self.follow_slope))
+            && self
+                .material
+                .as_ref()
+                .is_none_or(appearance::Material::valid)
+            && self.light.as_ref().is_none_or(appearance::Light::valid)
+            && self
+                .binding
+                .as_ref()
+                .is_none_or(crate::terrain::SpatialBinding::valid)
+            && self.pinned.as_ref().is_none_or(|p| {
+                p.anchor.iter().all(|n| n.is_finite()) && (0.1..=3.0).contains(&p.scale)
+            })
+            && self.event_boundary.len() <= 64
             && self
                 .event_boundary
                 .iter()
@@ -502,12 +530,17 @@ pub struct Snapshot {
 
 impl Snapshot {
     pub fn validate(&self) -> Result<(), String> {
-        self.validate_with_limits(MAX_PLACEMENTS, MAX_BYTES)
+        self.validate_with_limits(MAX_PLACEMENTS, MAX_BYTES, false)
     }
     fn validate_full(&self) -> Result<(), String> {
-        self.validate_with_limits(MAX_STATE_PLACEMENTS, 16 * 1024 * 1024)
+        self.validate_with_limits(MAX_STATE_PLACEMENTS, 16 * 1024 * 1024, true)
     }
-    fn validate_with_limits(&self, placements: usize, bytes: usize) -> Result<(), String> {
+    fn validate_with_limits(
+        &self,
+        placements: usize,
+        bytes: usize,
+        complete: bool,
+    ) -> Result<(), String> {
         if self.workspaces.is_empty()
             || self.workspaces.len() > 64
             || self.placements.len() > placements
@@ -544,6 +577,30 @@ impl Snapshot {
                 return Err("Invalid or duplicate canvas placement.".into());
             }
         }
+        room::validate(&self.placements, complete)?;
+        let bindings: BTreeMap<_, _> = self
+            .placements
+            .iter()
+            .filter_map(|p| match p.metadata.binding.as_ref().map(|b| &b.anchor) {
+                Some(crate::terrain::Anchor::Item(id)) => Some((p.id.as_str(), id.as_str())),
+                _ => None,
+            })
+            .collect();
+        let mut checked = BTreeSet::new();
+        for start in bindings.keys() {
+            let mut path = BTreeSet::new();
+            let mut cursor = *start;
+            while !checked.contains(cursor) {
+                if !path.insert(cursor) {
+                    return Err("Spatial bindings cannot form a cycle.".into());
+                }
+                let Some(next) = bindings.get(cursor) else {
+                    break;
+                };
+                cursor = next;
+            }
+            checked.extend(path);
+        }
         if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > bytes {
             return Err("Canvas snapshot exceeds its byte limit.".into());
         }
@@ -554,6 +611,13 @@ impl Snapshot {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Mutation {
+    SetRoomMembers {
+        members: BTreeMap<String, Option<room::Member>>,
+    },
+    SetMetadata {
+        placement: String,
+        metadata: Metadata,
+    },
     Rebind {
         placement: String,
         records: BTreeMap<String, String>,
@@ -577,6 +641,13 @@ pub enum Mutation {
         workspace: u64,
         component: Component,
         geometry: Geometry,
+    },
+    AddWithMetadata {
+        placement: String,
+        workspace: u64,
+        component: Component,
+        geometry: Geometry,
+        metadata: Metadata,
     },
     Configure {
         placement: String,
@@ -608,6 +679,9 @@ pub enum Mutation {
         workspace: u64,
     },
     Undo {
+        receipt: String,
+    },
+    UndoChanges {
         receipt: String,
     },
 }
@@ -734,10 +808,41 @@ impl Request {
                         geometry,
                         workspace,
                         ..
+                    }
+                    | Mutation::AddWithMetadata {
+                        placement,
+                        geometry,
+                        workspace,
+                        ..
                     } => {
                         placement_id(placement)?;
                         geometry.validate()?;
                         workspace_id(*workspace)?;
+                        if let Mutation::AddWithMetadata { metadata, .. } = mutation
+                            && !metadata.validate()
+                        {
+                            return Err("Invalid placement metadata.".into());
+                        }
+                    }
+                    Mutation::SetRoomMembers { members } => {
+                        if members.is_empty() || members.len() > MAX_PLACEMENTS {
+                            return Err("Assign between one and 256 room members at a time.".into());
+                        }
+                        for (id, member) in members {
+                            placement_id(id)?;
+                            if member.as_ref().is_some_and(|member| !member.valid()) {
+                                return Err("Invalid room membership.".into());
+                            }
+                        }
+                    }
+                    Mutation::SetMetadata {
+                        placement,
+                        metadata,
+                    } => {
+                        placement_id(placement)?;
+                        if !metadata.validate() {
+                            return Err("Invalid canvas placement metadata.".into());
+                        }
                     }
                     Mutation::Configure { placement, .. } | Mutation::Remove { placement } => {
                         placement_id(placement)?
@@ -770,7 +875,9 @@ impl Request {
                     }
                     Mutation::SwitchWorkspace { workspace }
                     | Mutation::RemoveWorkspace { workspace } => workspace_id(*workspace)?,
-                    Mutation::Undo { receipt } => request_identifier(receipt)?,
+                    Mutation::Undo { receipt } | Mutation::UndoChanges { receipt } => {
+                        request_identifier(receipt)?
+                    }
                 }
             }
             Self::Receipt { request_id } => request_identifier(request_id)?,

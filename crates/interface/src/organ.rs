@@ -38,7 +38,13 @@ pub fn peer_network_label(network: &Value) -> String {
         format!("Peer UDP addresses: {addresses}")
     };
     let urls = |field: &str| {
-        network[field].as_array().into_iter().flatten().filter_map(Value::as_str).collect::<Vec<_>>().join(", ")
+        network[field]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+            .collect::<Vec<_>>()
+            .join(", ")
     };
     let selection = match network["relay_selection"].as_str() {
         Some("disabled") => "Connection relays disabled for local-only reach".to_owned(),
@@ -69,8 +75,19 @@ impl FieldKind {
     pub fn parse(&self, value: &Value, text: &str) -> Result<Value, String> {
         Ok(match self {
             Self::Text => json!(text.trim()),
-            Self::OptionalText => if text.trim().is_empty() { Value::Null } else { json!(text.trim()) },
-            Self::TextList => json!(text.split([',', '\n']).map(str::trim).filter(|s| !s.is_empty()).collect::<Vec<_>>()),
+            Self::OptionalText => {
+                if text.trim().is_empty() {
+                    Value::Null
+                } else {
+                    json!(text.trim())
+                }
+            }
+            Self::TextList => json!(
+                text.split([',', '\n'])
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>()
+            ),
             Self::Number => json!(
                 text.trim()
                     .parse::<u32>()

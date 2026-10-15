@@ -92,7 +92,7 @@ impl Engine {
                 ));
             }
             let predicate =
-                store::concepts::resolve(&self.store.pool, crate::threads::THREAD_OF_PREDICATE)
+                store::vocabulary::feature_read(&self.store.pool, "thread")
                     .await?
                     .ok_or_else(|| {
                         EngineError::Consequence(

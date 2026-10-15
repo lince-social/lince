@@ -3171,32 +3171,32 @@ async fn six_valid_media_files_are_retained_in_ordinary_and_fiote_conversations(
         (
             "note.txt",
             "text/plain",
-            include_bytes!("../../../desktop/tests/fixtures/fiote/note.txt"),
+            include_bytes!("../../../sandbox/tests/fixtures/fiote/note.txt"),
         ),
         (
             "table.csv",
             "text/csv",
-            include_bytes!("../../../desktop/tests/fixtures/fiote/table.csv"),
+            include_bytes!("../../../sandbox/tests/fixtures/fiote/table.csv"),
         ),
         (
             "document.pdf",
             "application/pdf",
-            include_bytes!("../../../desktop/tests/fixtures/fiote/document.pdf"),
+            include_bytes!("../../../sandbox/tests/fixtures/fiote/document.pdf"),
         ),
         (
             "photo.png",
             "image/png",
-            include_bytes!("../../../desktop/tests/fixtures/fiote/photo.png"),
+            include_bytes!("../../../sandbox/tests/fixtures/fiote/photo.png"),
         ),
         (
             "audio.wav",
             "audio/wav",
-            include_bytes!("../../../desktop/tests/fixtures/fiote/audio.wav"),
+            include_bytes!("../../../sandbox/tests/fixtures/fiote/audio.wav"),
         ),
         (
             "video.mp4",
             "video/mp4",
-            include_bytes!("../../../desktop/tests/fixtures/fiote/video.mp4"),
+            include_bytes!("../../../sandbox/tests/fixtures/fiote/video.mp4"),
         ),
     ];
     for (name, mime_type, bytes) in files {

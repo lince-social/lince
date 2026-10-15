@@ -35,6 +35,9 @@ impl Engine {
                     if namespace == store::people::NAMESPACE {
                         return Err(EngineError::Forbidden("Use Person access controls to change standing or authentication metadata".into()));
                     }
+                    if namespace == nucleus::transfer::outcome::NAMESPACE {
+                        return Err(EngineError::Forbidden("Use signed outcome reports to change Transfer evidence".into()));
+                    }
                     if matches!(namespace.as_str(), nucleus::record_extension::SCHEMA_NAMESPACE | nucleus::record_extension::VALUES_NAMESPACE) {
                         return Err(EngineError::Forbidden("Use the extension editor to change schemas or field values".into()));
                     }
@@ -69,6 +72,20 @@ impl Engine {
                         ));
                     }
                     let mut expected_content = None;
+                    if namespace == nucleus::shader_effect::NAMESPACE {
+                        if serde_json::to_vec(&fds)?.len() > 196_608 {
+                            return Err(EngineError::Consequence("WGSL extension is limited to 192 KB.".into()));
+                        }
+                        let extension: nucleus::shader_effect::Extension = serde_json::from_value(fds.clone())
+                            .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                        extension.validate().map_err(EngineError::Consequence)?;
+                        let current = store::records::get_extension(&self.store.pool, &uid, &namespace).await?;
+                        let revision = current.as_ref().and_then(|value| value["revision"].as_u64()).unwrap_or(0);
+                        if revision.checked_add(1) != Some(extension.revision) {
+                            return Err(EngineError::Consequence("The WGSL extension changed. Reload before saving.".into()));
+                        }
+                        expected_content = Some(current.unwrap_or_default());
+                    }
                     if namespace == "lince.message-content" {
                         let metadata =
                             store::records::get_extension(&self.store.pool, &uid, "lince.message")

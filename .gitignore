@@ -16,7 +16,7 @@ trash/
 *.glb
 *.glTF
 *.gltf
-!crates/desktop/fixtures/open_scene.gltf
+!crates/sandbox/fixtures/open_scene.gltf
 institute/assets/3DGS/*
 testsync/
 /simulation-runs/
@@ -26,3 +26,4 @@ testsync/
 app-signing.password
 play-upload.password
 /.lince-dev/
+/.cache-lince-hand/

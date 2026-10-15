@@ -1463,6 +1463,23 @@ impl Engine {
                 out.applied += 1;
             }
             ("concept", OpKind::Set) => {
+                if op.field == "feature_binding" {
+                    let local=store::organs::local(pool).await?.is_some_and(|organ|organ.uid==op.organ_uid);
+                    if local {
+                        let binding:nucleus::vocabulary::FeatureBinding=serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
+                        if binding.write_concept_uid!=op.uid {return Err(EngineError::Consequence("Feature binding identity mismatch".into()));}
+                        let mut tx=store::write_tx(pool).await?;
+                        let previous=store::vocabulary::feature_binding_on(&mut tx,&binding.feature).await?;
+                        if binding.revision>previous.revision {
+                            store::vocabulary::bind_feature_on(&mut tx,&binding,previous.revision).await?;
+                            store::sqlx::query("UPDATE vocabulary_role SET revision=? WHERE uid=(SELECT role_uid FROM vocabulary_feature WHERE feature=?)").bind(binding.revision).bind(&binding.feature).execute(&mut *tx).await?;
+                        }
+                        tx.commit().await?;
+                        out.applied+=1;
+                        self.notify_query_changed();
+                    }
+                    return Ok(Some(out));
+                }
                 if op.field == "location_binding" {
                     if op.uid != nucleus::vocabulary::TOPOS_UID { return Err(EngineError::Consequence("Unknown saved location binding role".into())); }
                     let local = store::organs::local(pool).await?.is_some_and(|organ| organ.uid == op.organ_uid);

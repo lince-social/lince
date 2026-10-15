@@ -123,6 +123,16 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreErro
         .transpose()
 }
 
+pub async fn get_on(connection: &mut sqlx::SqliteConnection, uid: &str) -> Result<Option<Fact>, StoreError> {
+    if let Some(payload) = sqlx::query_scalar::<_, String>("SELECT payload FROM fact_origin WHERE fact_uid=?")
+        .bind(uid).fetch_optional(&mut *connection).await?
+    {
+        return serde_json::from_str(&payload).map(Some).map_err(|error| StoreError::Protocol(error.to_string()));
+    }
+    sqlx::query("SELECT * FROM fact WHERE uid = ?")
+        .bind(uid).fetch_optional(connection).await?.map(map_fact).transpose()
+}
+
 pub async fn retain_origin(
     tx: &mut Transaction<'_, Sqlite>,
     fact: &Fact,

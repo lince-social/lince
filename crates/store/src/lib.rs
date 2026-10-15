@@ -11,6 +11,7 @@ pub mod peer_delivery;
 pub mod communication;
 pub mod concepts;
 pub mod vocabulary;
+pub mod knowledge;
 pub mod config;
 pub mod contact_rate;
 pub mod contact_share;
@@ -31,6 +32,7 @@ pub mod mailbox;
 pub mod message_content;
 pub mod misc;
 pub mod signal_endpoints;
+pub mod signal_streams;
 pub mod offers;
 pub mod operation_receipts;
 pub mod organs;
@@ -76,6 +78,7 @@ pub mod transfer_stock;
 pub mod transfer_cancellations;
 pub mod transfer_agreement;
 pub mod transfer_outcomes;
+pub mod transfer_evidence;
 pub mod transfer_children;
 pub mod transfers;
 pub mod visibility;
@@ -104,6 +107,36 @@ pub async fn write_tx(
 }
 
 impl Store {
+    pub async fn open_readonly(path: &std::path::Path) -> Result<Store, StoreError> {
+        if !path.is_file() {
+            return Err(StoreError::Protocol(format!("Lince database does not exist or is not a file: {}", path.display())));
+        }
+        let options = SqliteConnectOptions::new()
+            .filename(path)
+            .read_only(true)
+            .create_if_missing(false)
+            .busy_timeout(std::time::Duration::from_secs(2));
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .min_connections(1)
+            .idle_timeout(None)
+            .max_lifetime(None)
+            .connect_with(options)
+            .await?;
+        sqlx::query("BEGIN DEFERRED").execute(&pool).await?;
+        let migrations = sqlx::migrate!("./migrations");
+        let applied: Vec<(i64, Vec<u8>, bool)> = sqlx::query_as("SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version")
+            .fetch_all(&pool).await?;
+        if applied.len() != migrations.iter().count() || migrations.iter().zip(&applied).any(|(expected, actual)| {
+            expected.version != actual.0 || expected.checksum.as_ref() != actual.1.as_slice() || !actual.2
+        }) {
+            return Err(StoreError::Protocol("The database is not a current, valid Lince database; open it with Lince to initialize or migrate it".into()));
+        }
+        let _: i64 = sqlx::query_scalar("SELECT count(*) FROM record WHERE kind = 'organ' AND deleted_at IS NULL")
+            .fetch_one(&pool).await?;
+        Ok(Store { pool })
+    }
+
     pub async fn open(url: &str) -> Result<Store, StoreError> {
         let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, true, false).await?;
         initialize(pool).await

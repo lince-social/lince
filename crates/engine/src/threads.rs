@@ -92,7 +92,8 @@ impl Engine {
         predicate_name: &str,
     ) -> Result<(), EngineError> {
         let pool = &self.store.pool;
-        let predicate = store::concepts::ensure(pool, predicate_name).await?;
+        let feature=match predicate_name { THREAD_OF_PREDICATE=>"thread", MESSAGE_IN_PREDICATE=>"message", _=>return Err(EngineError::Consequence("Unknown discussion relationship".into())) };
+        let predicate = store::vocabulary::feature_write(pool, feature).await?;
         store::assertions::assert(
             pool,
             store::assertions::NewAssertion {

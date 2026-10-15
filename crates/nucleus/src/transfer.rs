@@ -2,13 +2,14 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod agreement;
+pub mod application;
 pub mod disclosure;
 pub mod exchange;
-pub mod application;
 pub mod loans;
-pub mod agreement;
 pub use agreement::AgreementGuard;
 pub mod karma;
+pub mod outcome;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionSnapshot {

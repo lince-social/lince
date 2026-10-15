@@ -1,0 +1,14 @@
+[package]
+name = "lince-practice"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Host-independent handbook and practice models for Lince."
+
+[dependencies]
+serde.workspace = true
+
+[lints]
+workspace = true

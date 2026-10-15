@@ -81,8 +81,7 @@ pub enum CadenceBound {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct Cadence {
     pub every: CadenceStep,
     #[serde(default, skip_serializing_if = "Option::is_none")]

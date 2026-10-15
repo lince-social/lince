@@ -50,10 +50,12 @@ pub struct AssertionRow {
     pub uid: String,
     pub subject_uid: String,
     pub predicate_uid: String,
+    pub predicate_revision: i64,
     pub object_uid: Option<String>,
     pub role: String,
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<String>,
+    pub unit_revision: Option<i64>,
     pub asserted_by: Option<String>,
     pub created_at: String,
     pub retracted_at: Option<String>,
@@ -73,10 +75,12 @@ fn map(row: sqlx::sqlite::SqliteRow) -> Result<AssertionRow, StoreError> {
         uid: row.try_get("uid")?,
         subject_uid: row.try_get("subject_uid")?,
         predicate_uid: row.try_get("predicate_uid")?,
+        predicate_revision: row.try_get("predicate_revision")?,
         object_uid: row.try_get("object_uid")?,
         role: row.try_get("role")?,
         quantity,
         unit_uid: row.try_get("unit_uid")?,
+        unit_revision: row.try_get("unit_revision")?,
         asserted_by: row.try_get("asserted_by")?,
         created_at: row.try_get("created_at")?,
         retracted_at: row.try_get("retracted_at")?,
@@ -176,7 +180,16 @@ async fn validate_new_tx(
     tx: &mut Transaction<'_, Sqlite>,
     new: &NewAssertion<'_>,
 ) -> Result<(), StoreError> {
-    crate::places::validate_location_assertion_on(tx, new.predicate_uid, new.subject_uid, new.object_uid, new.quantity.is_some(), new.unit_uid.is_some()).await?;
+    crate::vocabulary::validate_feature_assertion_on(tx, new).await?;
+    crate::places::validate_location_assertion_on(
+        tx,
+        new.predicate_uid,
+        new.subject_uid,
+        new.object_uid,
+        new.quantity.is_some(),
+        new.unit_uid.is_some(),
+    )
+    .await?;
     if new.role == AssertionRole::Identity
         && (new.object_uid.is_some() || new.quantity.is_some() || new.unit_uid.is_some())
     {
@@ -312,12 +325,39 @@ pub async fn insert_tx(
     validate_new_tx(tx, &new).await?;
     let location_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=? WHERE a.subject_uid=? AND a.retracted_at IS NULL AND EXISTS(SELECT 1 FROM vocabulary_role_concept WHERE role_uid=b.role_uid AND concept_uid=?)")
         .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).bind(new.subject_uid).bind(new.predicate_uid).fetch_one(&mut **tx).await?;
-    if location_count >= 64 { return Err(mutation_error("Choose at most 64 saved address links per Record")); }
-    let location: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM vocabulary_role_concept WHERE role_uid=? AND concept_uid=?)")
-        .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).bind(new.predicate_uid).fetch_one(&mut **tx).await?;
-    if location && crate::data_visibility::ensure_private_on(tx, new.subject_uid, nucleus::visibility::Data::Place).await? {
-        let policy = nucleus::visibility::SavedPolicy { controller_uid: String::new(), revision: 1, policy: Default::default() };
-        crate::sync_ops::log_local_tx(tx, "data_visibility", new.subject_uid, "place", OpKind::Set, Some(serde_json::to_string(&policy).map_err(|error| StoreError::Protocol(error.to_string()))?)).await?;
+    if location_count >= 64 {
+        return Err(mutation_error(
+            "Choose at most 64 saved address links per Record",
+        ));
+    }
+    let location: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM vocabulary_role_concept WHERE role_uid=? AND concept_uid=?)",
+    )
+    .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID)
+    .bind(new.predicate_uid)
+    .fetch_one(&mut **tx)
+    .await?;
+    if location
+        && let Some(policy) = crate::data_visibility::ensure_private_for_person_on(
+            tx,
+            new.subject_uid,
+            nucleus::visibility::Data::Place,
+            new.asserted_by,
+        )
+        .await?
+    {
+        crate::sync_ops::log_local_tx(
+            tx,
+            "data_visibility",
+            new.subject_uid,
+            "place",
+            OpKind::Set,
+            Some(
+                serde_json::to_string(&policy)
+                    .map_err(|error| StoreError::Protocol(error.to_string()))?,
+            ),
+        )
+        .await?;
     }
     let existing: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM record_assertion WHERE uid = ?
@@ -339,10 +379,12 @@ pub async fn insert_tx(
         uid: uid.into(),
         subject_uid: new.subject_uid.into(),
         predicate_uid: new.predicate_uid.into(),
+        predicate_revision: 0,
         object_uid: new.object_uid.map(str::to_owned),
         role: new.role.as_str().into(),
         quantity: new.quantity,
         unit_uid: new.unit_uid.map(str::to_owned),
+        unit_revision: None,
         asserted_by: new.asserted_by.map(str::to_owned),
         created_at: nucleus::execution::now().to_rfc3339(),
         retracted_at: None,
@@ -367,6 +409,7 @@ pub async fn insert_tx(
     .bind(&row.created_at)
     .execute(&mut **tx)
     .await?;
+    let row = mutation_row_tx(tx, uid).await?;
     log_row_tx(tx, &row).await?;
     Ok(row)
 }
@@ -433,17 +476,17 @@ pub async fn set_quantity_tx(
     }
     let columns = quantity.quantity.map(crate::exact::decimal_columns);
     sqlx::query(
-        "UPDATE record_assertion SET quantity_mantissa = ?, quantity_scale = ?, unit_uid = ?
+        "UPDATE record_assertion SET quantity_mantissa = ?, quantity_scale = ?, unit_revision = CASE WHEN unit_uid IS ? THEN unit_revision ELSE NULL END, unit_uid = ?
           WHERE uid = ?",
     )
     .bind(columns.as_ref().map(|pair| pair.0.as_str()))
     .bind(columns.as_ref().map(|pair| pair.1))
     .bind(quantity.unit_uid)
+    .bind(quantity.unit_uid)
     .bind(uid)
     .execute(&mut **tx)
     .await?;
-    row.quantity = quantity.quantity;
-    row.unit_uid = quantity.unit_uid.map(str::to_owned);
+    row = mutation_row_tx(tx, uid).await?;
     log_row_tx(tx, &row).await?;
     Ok(row)
 }
@@ -472,6 +515,7 @@ pub async fn promote_identity_tx(
     row.role = "identity".into();
     row.quantity = None;
     row.unit_uid = None;
+    row.unit_revision = None;
     log_row_tx(tx, &row).await?;
     Ok(row)
 }
@@ -702,15 +746,8 @@ pub async fn set_identity_tx(
     .execute(&mut **tx)
     .await?;
     for uid in &displaced {
-        crate::sync_ops::log_local_tx(
-            tx,
-            "record_assertion",
-            uid,
-            "",
-            OpKind::Tombstone,
-            None,
-        )
-        .await?;
+        crate::sync_ops::log_local_tx(tx, "record_assertion", uid, "", OpKind::Tombstone, None)
+            .await?;
     }
     let Some(predicate_uid) = predicate_uid else {
         return Ok(None);
@@ -849,9 +886,12 @@ pub async fn binary_of_predicate(
     pool: &SqlitePool,
     predicate_uid: &str,
 ) -> Result<Vec<BinaryAssertionRow>, StoreError> {
-    let sql = format!("{BINARY_SELECT} AND a.predicate_uid = ? ORDER BY a.created_at, a.uid");
+    let sql = format!(
+        "{BINARY_SELECT} AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?)) ORDER BY a.created_at, a.uid"
+    );
     sqlx::query(&sql)
         .bind(predicate_uid)
+        .bind(predicate_uid.strip_prefix("feature:"))
         .fetch_all(pool)
         .await?
         .into_iter()
@@ -863,13 +903,27 @@ pub async fn binary_of_predicates(
     pool: &SqlitePool,
     predicate_uids: &[String],
 ) -> Result<Vec<BinaryAssertionRow>, StoreError> {
-    let wanted: std::collections::HashSet<&str> =
-        predicate_uids.iter().map(String::as_str).collect();
-    Ok(all_binary(pool)
-        .await?
-        .into_iter()
-        .filter(|row| wanted.contains(row.predicate_uid.as_str()))
-        .collect())
+    let unique: std::collections::BTreeSet<_> = predicate_uids.iter().collect();
+    let unique: Vec<_> = unique.into_iter().collect();
+    let mut out = Vec::new();
+    for batch in unique.chunks(400) {
+        let mut query =
+            sqlx::QueryBuilder::new(format!("{BINARY_SELECT} AND a.predicate_uid IN ("));
+        let mut values = query.separated(",");
+        for uid in batch {
+            values.push_bind(*uid);
+        }
+        query.push(")");
+        for row in query.build().fetch_all(pool).await? {
+            out.push(map_binary(row)?);
+        }
+    }
+    out.sort_by(|a, b| {
+        a.created_at
+            .cmp(&b.created_at)
+            .then_with(|| a.uid.cmp(&b.uid))
+    });
+    Ok(out)
 }
 
 pub async fn all_binary(pool: &SqlitePool) -> Result<Vec<BinaryAssertionRow>, StoreError> {
@@ -1145,16 +1199,17 @@ pub async fn subjects_pointing_to(
     object_uid: &str,
 ) -> Result<Vec<crate::records::RecordRow>, StoreError> {
     sqlx::query(
-        "SELECT r.*,
+        "SELECT DISTINCT r.*,
                 (SELECT predicate_uid FROM record_assertion identity
                   WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
                     AND identity.retracted_at IS NULL) AS identity_predicate_uid
            FROM record_assertion a JOIN record r ON r.uid = a.subject_uid
-          WHERE a.predicate_uid = ? AND a.object_uid = ?
+          WHERE (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?)) AND a.object_uid = ?
             AND a.retracted_at IS NULL AND r.deleted_at IS NULL
           ORDER BY a.created_at, a.uid",
     )
     .bind(predicate_uid)
+    .bind(predicate_uid.strip_prefix("feature:"))
     .bind(object_uid)
     .fetch_all(pool)
     .await?
@@ -1188,12 +1243,13 @@ pub async fn messages_before(
           WHERE r.kind = 'message' AND r.deleted_at IS NULL
             AND r.quantity_mantissa != '0' AND r.quantity_mantissa NOT LIKE '-%'
             AND EXISTS (SELECT 1 FROM record_assertion a
-                WHERE a.subject_uid = r.uid AND a.predicate_uid = ?
+                WHERE a.subject_uid = r.uid AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
                   AND a.object_uid = ? AND a.retracted_at IS NULL)
             AND (? IS NULL OR (r.created_at, r.uid) < (?, ?))
           ORDER BY r.created_at DESC, r.uid DESC LIMIT ?",
     )
     .bind(predicate_uid)
+    .bind(predicate_uid.strip_prefix("feature:"))
     .bind(thread)
     .bind(before.map(|(at, _)| at))
     .bind(before.map(|(at, _)| at))
@@ -1212,17 +1268,18 @@ pub async fn objects_from_subject(
     predicate_uid: &str,
 ) -> Result<Vec<crate::records::RecordRow>, StoreError> {
     sqlx::query(
-        "SELECT r.*,
+        "SELECT DISTINCT r.*,
                 (SELECT predicate_uid FROM record_assertion identity
                   WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
                     AND identity.retracted_at IS NULL) AS identity_predicate_uid
            FROM record_assertion a JOIN record r ON r.uid = a.object_uid
-          WHERE a.subject_uid = ? AND a.predicate_uid = ?
+          WHERE a.subject_uid = ? AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
             AND a.retracted_at IS NULL AND r.deleted_at IS NULL
           ORDER BY a.created_at, a.uid",
     )
     .bind(subject_uid)
     .bind(predicate_uid)
+    .bind(predicate_uid.strip_prefix("feature:"))
     .fetch_all(pool)
     .await?
     .into_iter()
@@ -1262,13 +1319,14 @@ pub async fn object_uids_from_subject(
     predicate_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
     Ok(sqlx::query_scalar(
-        "SELECT object_uid FROM record_assertion
-          WHERE subject_uid = ? AND predicate_uid = ?
+        "SELECT DISTINCT object_uid FROM record_assertion
+          WHERE subject_uid = ? AND (predicate_uid = ? OR predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
             AND object_uid IS NOT NULL AND retracted_at IS NULL
           ORDER BY created_at, uid",
     )
     .bind(subject_uid)
     .bind(predicate_uid)
+    .bind(predicate_uid.strip_prefix("feature:"))
     .fetch_all(pool)
     .await?)
 }

@@ -596,7 +596,7 @@ impl Engine {
                             uid
                         }
                     };
-                    let condition = self.canonical_condition(condition).await?;
+                    let condition = self.canonical_condition_for(condition,actor.as_deref()).await?;
                     let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
                     if let Some(condition) = &mut declared_condition {
                         condition.bindings = store::karma_bindings::resolve(
@@ -674,7 +674,7 @@ impl Engine {
                             "Use the Rule editor to select another Transfer target".into(),
                         ));
                     }
-                    let condition = self.canonical_condition(condition).await?;
+                    let condition = self.canonical_condition_for(condition,actor.as_deref()).await?;
                     let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
                     if let Some(condition) = &mut declared_condition {
                         condition.bindings = store::karma_bindings::resolve(

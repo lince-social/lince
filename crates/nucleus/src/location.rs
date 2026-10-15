@@ -261,6 +261,11 @@ pub enum PeerRequest {
         record_uid: String,
         data: crate::visibility::Data,
     },
+    ReadPerson {
+        record_uid: String,
+        data: crate::visibility::Data,
+        person: String,
+    },
     Control {
         command: Command,
     },

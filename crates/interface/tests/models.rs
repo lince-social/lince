@@ -7,13 +7,25 @@ use serde_json::{Value, json};
 #[test]
 fn schedule_drafts_keep_the_window_outside_filter_groups() {
     let query: protein::Protein = serde_json::from_value(json!({"source":"schedule","where":[{"rolling_window":{"past_days":0,"future_days":30,"timezone":"America/Sao_Paulo"}},{"uid_eq":"shower"}],"order":[{"desc":"#task"}]})).unwrap();
-    let draft = ProteinDraft::from_protein("Personal schedule".into(),String::new(),query);
+    let draft = ProteinDraft::from_protein("Personal schedule".into(), String::new(), query);
     assert!(draft.query["where"][0].get("rolling_window").is_some());
     assert!(draft.query["where"][1].get("all").is_some());
     let compiled = draft.compile().unwrap();
-    assert!(matches!(compiled.filter[0],protein::Predicate::RollingWindow(_)));
-    let fixed = protein::schedule::query(nucleus::projection::Window {from_ms:1_800_000_000_000,until_ms:1_800_086_400_000,timezone:"UTC".into()},Vec::new());
-    ProteinDraft::from_protein("Fixed".into(),String::new(),fixed).compile().unwrap();
+    assert!(matches!(
+        compiled.filter[0],
+        protein::Predicate::RollingWindow(_)
+    ));
+    let fixed = protein::schedule::query(
+        nucleus::projection::Window {
+            from_ms: 1_800_000_000_000,
+            until_ms: 1_800_086_400_000,
+            timezone: "UTC".into(),
+        },
+        Vec::new(),
+    );
+    ProteinDraft::from_protein("Fixed".into(), String::new(), fixed)
+        .compile()
+        .unwrap();
 }
 
 #[test]
@@ -211,7 +223,5 @@ fn calendar_places_timed_work_on_dates_in_its_own_timezone() {
         calendar::span_in(&all_day, "America/Sao_Paulo"),
         calendar::span(&all_day)
     );
-    assert!(
-        calendar::span_in(&json!({"start_date": "2026-10-03T01:30:00"}), "UTC").is_none()
-    );
+    assert!(calendar::span_in(&json!({"start_date": "2026-10-03T01:30:00"}), "UTC").is_none());
 }

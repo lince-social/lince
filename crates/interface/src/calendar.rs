@@ -40,7 +40,8 @@ impl Default for Calendar {
 impl Calendar {
     pub fn valid(&self) -> bool {
         (1..=9999).contains(&self.year)
-            && nucleus::projection::Window::month(self.year, self.month, self.timezone.clone()).is_ok()
+            && nucleus::projection::Window::month(self.year, self.month, self.timezone.clone())
+                .is_ok()
             && NaiveDate::from_ymd_opt(self.year, self.month, 1).is_some()
             && self.start.as_deref().is_none_or(|v| parse(v).is_some())
             && self.end.as_deref().is_none_or(|v| parse(v).is_some())
@@ -96,7 +97,9 @@ impl Calendar {
     }
 }
 
-fn default_timezone() -> String { "UTC".into() }
+fn default_timezone() -> String {
+    "UTC".into()
+}
 
 pub fn span(row: &serde_json::Value) -> Option<(NaiveDate, NaiveDate)> {
     span_in(row, "UTC")
@@ -104,12 +107,21 @@ pub fn span(row: &serde_json::Value) -> Option<(NaiveDate, NaiveDate)> {
 
 pub fn span_in(row: &serde_json::Value, timezone: &str) -> Option<(NaiveDate, NaiveDate)> {
     for property in ["start_date", "due_date"] {
-        if !row[property].is_null() && row[property].as_str().and_then(|value| nucleus::schedule::timezone_date(value, timezone)).is_none() {
+        if !row[property].is_null()
+            && row[property]
+                .as_str()
+                .and_then(|value| nucleus::schedule::timezone_date(value, timezone))
+                .is_none()
+        {
             return None;
         }
     }
-    let start = row["start_date"].as_str().and_then(|value| nucleus::schedule::timezone_date(value, timezone));
-    let end = row["due_date"].as_str().and_then(|value| nucleus::schedule::timezone_date(value, timezone));
+    let start = row["start_date"]
+        .as_str()
+        .and_then(|value| nucleus::schedule::timezone_date(value, timezone));
+    let end = row["due_date"]
+        .as_str()
+        .and_then(|value| nucleus::schedule::timezone_date(value, timezone));
     match (start, end) {
         (Some(a), Some(b)) if a <= b => Some((a, b)),
         (Some(date), None) | (None, Some(date)) => Some((date, date)),

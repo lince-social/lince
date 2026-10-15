@@ -53,7 +53,9 @@ pub enum Consequence {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         message: Option<String>,
     },
-    InvokeCommand { command: String },
+    InvokeCommand {
+        command: String,
+    },
     RunCommand {
         command: String,
     },
@@ -168,9 +170,13 @@ impl Consequence {
 
     pub fn transfer_references_mut(&mut self) -> Option<(&mut String, &mut String)> {
         match self {
-            Self::SetTransferAgreement { transfer, person, .. }
+            Self::SetTransferAgreement {
+                transfer, person, ..
+            }
             | Self::PublishTransfer { transfer, person }
-            | Self::ActivateTransferFulfillment { transfer, person, .. } => Some((transfer, person)),
+            | Self::ActivateTransferFulfillment {
+                transfer, person, ..
+            } => Some((transfer, person)),
             _ => None,
         }
     }
@@ -195,19 +201,38 @@ impl Consequence {
             component.validate().map_err(NucleusError::Parse)?;
         }
         if let Some(target) = self.transfer_target() {
-            if target.trim().is_empty() || self.transfer_person().is_none_or(|person| person.trim().is_empty()) {
-                return Err(NucleusError::Parse("Choose a Transfer and acting Person".into()));
+            if target.trim().is_empty()
+                || self
+                    .transfer_person()
+                    .is_none_or(|person| person.trim().is_empty())
+            {
+                return Err(NucleusError::Parse(
+                    "Choose a Transfer and acting Person".into(),
+                ));
             }
-            if let Self::SetTransferAgreement { level, after_ms, .. } = self {
+            if let Self::SetTransferAgreement {
+                level, after_ms, ..
+            } = self
+            {
                 if let Some(value) = level {
                     super::transfer_consequence::level(*value).map_err(NucleusError::Parse)?;
                 }
                 if after_ms.is_some_and(|value| value.get() <= 0) {
-                    return Err(NucleusError::Parse("Agreement delay must be positive".into()));
+                    return Err(NucleusError::Parse(
+                        "Agreement delay must be positive".into(),
+                    ));
                 }
             }
-            if let Self::ActivateTransferFulfillment { promise, fulfillment, .. } = self
-                && (promise.trim().is_empty() || fulfillment.trim().is_empty() || fulfillment.len() > 200 || fulfillment.chars().any(char::is_control)) {
+            if let Self::ActivateTransferFulfillment {
+                promise,
+                fulfillment,
+                ..
+            } = self
+                && (promise.trim().is_empty()
+                    || fulfillment.trim().is_empty()
+                    || fulfillment.len() > 200
+                    || fulfillment.chars().any(char::is_control))
+            {
                 return Err(NucleusError::Parse("Choose a promise and fulfillment key of 1–200 bytes without control characters".into()));
             }
         }

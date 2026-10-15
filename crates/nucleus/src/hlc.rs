@@ -49,7 +49,9 @@ pub fn observe(seen: i64) {
 pub fn adopt_own(seen: i64) {
     match crate::execution::current() {
         Some(execution) => execution.observe_hlc(seen),
-        None => { LAST.fetch_max(seen, Ordering::SeqCst); }
+        None => {
+            LAST.fetch_max(seen, Ordering::SeqCst);
+        }
     }
 }
 

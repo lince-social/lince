@@ -10,16 +10,18 @@ pub enum Page {
     Karma,
     Frequency,
     Credits,
+    Knowledge,
 }
 
 impl Page {
-    pub const MENU: [Self; 6] = [
+    pub const MENU: [Self; 7] = [
         Self::Records,
         Self::Kanban,
         Self::Organ,
         Self::Karma,
         Self::Frequency,
         Self::Credits,
+        Self::Knowledge,
     ];
 
     pub fn title(&self) -> &'static str {
@@ -31,6 +33,7 @@ impl Page {
             Self::Karma => "Karma",
             Self::Frequency => "Frequency",
             Self::Credits => "Licenses and credits",
+            Self::Knowledge => "Vocabulary and knowledge",
         }
     }
 }

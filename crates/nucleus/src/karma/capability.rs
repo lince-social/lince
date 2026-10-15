@@ -24,8 +24,19 @@ pub enum CapabilityFamily {
     IrreversibleSafetyCritical,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+)]
 pub enum Capability {
     #[serde(rename = "karma.read")]
     KarmaRead,
@@ -117,10 +128,9 @@ impl Capability {
             Self::AttentionDecide | Self::AttentionNotify | Self::InterfaceControl => {
                 CapabilityFamily::AttentionPresentation
             }
-            Self::KarmaAuthor
-            | Self::KarmaActivate
-            | Self::KarmaRun
-            | Self::KarmaManage => CapabilityFamily::ProgramMetaControl,
+            Self::KarmaAuthor | Self::KarmaActivate | Self::KarmaRun | Self::KarmaManage => {
+                CapabilityFamily::ProgramMetaControl
+            }
             Self::ExternalHttp
             | Self::ExternalCommand
             | Self::ExternalFilesystem

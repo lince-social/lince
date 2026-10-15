@@ -15,7 +15,7 @@ async fn run() -> Result<(), String> {
     if arguments.len() == 2 && arguments[0] == "--install" {
         let package = lince_plugin_files::install(&PathBuf::from(&arguments[1]))?;
         println!(
-            "Installed {}. Restart Lince and enable the package in Sync.",
+            "Installed {}. Reload packages in Sync, then review and enable it.",
             package.display()
         );
         return Ok(());

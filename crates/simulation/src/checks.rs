@@ -501,8 +501,7 @@ impl Checks {
                         .collect();
                     evidence.reverse();
                 }
-                self.coverage[index].status = CheckStatus::Failed;
-                self.findings.push(report::Finding {
+                let finding = report::Finding {
                     check: check.clone(),
                     sequence: world.trace.len().saturating_sub(1) as u64,
                     virtual_ms: world.now_ms,
@@ -511,7 +510,30 @@ impl Checks {
                     evidence,
                     before_state: self.previous_state.clone(),
                     after_state: after_state.clone().unwrap(),
-                });
+                };
+                let remaining = world
+                    .scenario
+                    .limits
+                    .evidence_bytes
+                    .saturating_sub(world.evidence_bytes)
+                    .saturating_sub(1)
+                    .min(crate::limits::JSON_BYTES - 1);
+                let size = crate::limits::size(&finding, remaining, "finding evidence");
+                if self.findings.len() as u64
+                    >= crate::limits::rows::<report::Finding>(world.scenario.limits.evidence_bytes)
+                        .min(world.scenario.checking.evaluations)
+                    || size.as_ref().is_err_and(crate::limits::is_exceeded)
+                {
+                    self.coverage[index].complete = false;
+                    self.coverage[index].reason = Some(CoverageReason::Stopped);
+                    if world.stop.is_none() || world.stop == Some(report::Stop::HorizonReached {}) {
+                        world.stop = Some(report::Stop::EvidenceBudget {});
+                    }
+                    break;
+                }
+                world.evidence_bytes += size? + 1;
+                self.coverage[index].status = CheckStatus::Failed;
+                self.findings.push(finding);
                 if world.scenario.checking.on_failure == FailureMode::Stop {
                     world.stop = Some(report::Stop::CheckFailed {
                         check: check.id.clone(),

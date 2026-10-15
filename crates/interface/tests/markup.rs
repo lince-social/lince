@@ -26,7 +26,13 @@ fn transclusion_is_distinct_from_links_images_and_literal_code() {
             .any(|block| block.image.as_deref() == Some("asset:r_test/hash"))
     );
     let mixed = markup::parse("\\![[literal]] and ![[included]]");
-    assert_eq!(mixed.iter().filter_map(|block| block.transclusion.as_deref()).collect::<Vec<_>>(), vec!["included"]);
+    assert_eq!(
+        mixed
+            .iter()
+            .filter_map(|block| block.transclusion.as_deref())
+            .collect::<Vec<_>>(),
+        vec!["included"]
+    );
 }
 
 #[test]

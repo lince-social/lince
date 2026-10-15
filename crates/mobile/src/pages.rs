@@ -12,6 +12,7 @@ use serde_json::Value;
 
 pub fn render(world: &mut World, parent: Entity, page: Page) {
     match page {
+        Page::Knowledge => crate::knowledge::render(world, parent),
         Page::Records => records(world, parent, false),
         Page::Kanban => records(world, parent, true),
         Page::Record(uid) => record(world, parent, &uid),
@@ -77,7 +78,12 @@ fn rows(world: &World, topic: &str) -> Vec<Value> {
 }
 
 fn records(world: &mut World, parent: Entity, kanban: bool) {
-    button(world, parent, "View shared location", Intent::ObserveLocation);
+    button(
+        world,
+        parent,
+        "View shared location",
+        Intent::ObserveLocation,
+    );
     crate::views::render(world, parent);
     let search = world.resource::<Mobile>().search.clone();
     input(
@@ -235,7 +241,12 @@ fn card(world: &mut World, parent: Entity, record: &Value, column: Option<usize>
 }
 
 fn record(world: &mut World, parent: Entity, uid: &str) {
-    button(world, parent, "Live location", Intent::OpenLocation(uid.into(), None));
+    button(
+        world,
+        parent,
+        "Live location",
+        Intent::OpenLocation(uid.into(), None),
+    );
     let Some(record) = app::row(world, "record", uid) else {
         let missing = world
             .resource::<Mobile>()
@@ -647,7 +658,7 @@ pub fn record_control(world: &mut World, uid: &str, control: RecordControl) -> R
         RecordControl::Assignee => mutation(
             uid,
             engine::record_change::Mutation::Assertion {
-                predicate: "assigned-to".into(),
+                predicate: "feature:assignment".into(),
                 object: Some(value("assignee")),
                 quantity: None,
                 unit: None,

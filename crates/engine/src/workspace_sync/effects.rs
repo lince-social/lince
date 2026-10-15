@@ -63,7 +63,7 @@ impl Engine {
     ) -> Result<(), EngineError> {
         use protein::authority::{AssertionRole, AssertionTarget};
         for person in &changes.assign {
-            refuse_automation_assignment(tx, "assigned-to", person).await?;
+            refuse_automation_assignment(tx, "feature:assignment", person).await?;
         }
         let grants = policy
             .ceiling
@@ -104,12 +104,7 @@ impl Engine {
             }
         }
         if !changes.assign.is_empty() || !changes.unassign.is_empty() {
-            let predicate: String = store::sqlx::query_scalar(
-                "SELECT uid FROM concept WHERE canonical_name='assigned-to'",
-            )
-            .fetch_optional(&mut **tx)
-            .await?
-            .ok_or_else(|| invalid("Assignment predicate unavailable"))?;
+            let predicate = store::vocabulary::feature_write_on(tx,"assignment").await?;
             for (people, add) in [(&changes.assign, true), (&changes.unassign, false)] {
                 for person in people {
                     if !grants
@@ -307,14 +302,9 @@ impl Engine {
         )
         .await?;
         if !canonical.assign.is_empty() || !canonical.unassign.is_empty() {
-            let predicate: String = store::sqlx::query_scalar(
-                "SELECT uid FROM concept WHERE canonical_name='assigned-to'",
-            )
-            .fetch_optional(&mut **tx)
-            .await?
-            .ok_or_else(|| invalid("Create the assigned-to concept before using assignments"))?;
+            let predicate = store::vocabulary::feature_write_on(tx,"assignment").await?;
             for person in &canonical.unassign {
-                let assertions: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid=? AND predicate_uid=? AND object_uid=? AND role='ordinary' AND retracted_at IS NULL LIMIT 129").bind(record).bind(&predicate).bind(person).fetch_all(&mut **tx).await?;
+                let assertions: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid=? AND predicate_uid IN (SELECT c.concept_uid FROM vocabulary_role_concept c JOIN vocabulary_feature f ON f.role_uid=c.role_uid WHERE f.feature='assignment') AND object_uid=? AND role='ordinary' AND retracted_at IS NULL LIMIT 129").bind(record).bind(person).fetch_all(&mut **tx).await?;
                 if assertions.len() > 128 {
                     return Err(invalid("Too many assignments"));
                 }
@@ -323,7 +313,7 @@ impl Engine {
                 }
             }
             for person in &canonical.assign {
-                refuse_automation_assignment(tx, "assigned-to", person).await?;
+                refuse_automation_assignment(tx, "feature:assignment", person).await?;
                 let kind: String = store::sqlx::query_scalar(
                     "SELECT kind FROM record WHERE uid=? AND deleted_at IS NULL",
                 )
@@ -333,7 +323,7 @@ impl Engine {
                 if kind != "person" {
                     return Err(invalid("Assign an existing Person"));
                 }
-                let exists: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_assertion WHERE subject_uid=? AND predicate_uid=? AND object_uid=? AND retracted_at IS NULL)").bind(record).bind(&predicate).bind(person).fetch_one(&mut **tx).await?;
+                let exists: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_assertion WHERE subject_uid=? AND predicate_uid IN (SELECT c.concept_uid FROM vocabulary_role_concept c JOIN vocabulary_feature f ON f.role_uid=c.role_uid WHERE f.feature='assignment') AND object_uid=? AND retracted_at IS NULL)").bind(record).bind(person).fetch_one(&mut **tx).await?;
                 if !exists {
                     store::assertions::insert_tx(
                         tx,
@@ -387,7 +377,7 @@ impl Engine {
 }
 
 pub(super) async fn refuse_automation_assignment(tx: &mut Transaction<'_, Sqlite>, predicate: &str, object: &str) -> Result<(), EngineError> {
-    let automated: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_extension e WHERE e.record_uid=? AND e.namespace='lince.fiote' AND (?='assigned-to' OR EXISTS(SELECT 1 FROM concept WHERE uid=? AND canonical_name='assigned-to')))")
+    let automated: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_extension e WHERE e.record_uid=? AND e.namespace='lince.fiote' AND (?='feature:assignment' OR EXISTS(SELECT 1 FROM vocabulary_role_concept c JOIN vocabulary_feature f ON f.role_uid=c.role_uid WHERE c.concept_uid=? AND f.feature='assignment')))")
         .bind(object).bind(predicate).bind(predicate).fetch_one(&mut **tx).await?;
     if automated { return Err(crate::record_policy::denied("Shared controls cannot delegate the host's Fiote execution authority")); }
     Ok(())

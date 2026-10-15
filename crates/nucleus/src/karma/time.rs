@@ -31,8 +31,7 @@ impl DurationMs {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 #[schemars(with = "String")]
 pub struct TimestampMs(i64);
 

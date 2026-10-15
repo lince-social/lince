@@ -893,7 +893,7 @@ impl Engine {
             _ => unreachable!(),
         };
         if retract.is_none()
-            && store::concepts::resolve(&self.store.pool, "descendant-of").await?.as_deref() == Some(&predicate)
+            && store::vocabulary::feature_binding(&self.store.pool,"ancestry").await?.concept_uids.contains(&predicate)
             && store::records::get_extension(&self.store.pool, uid, "lince.fiote").await?.is_some()
         {
             let parent = object.as_deref().ok_or_else(|| invalid("Choose a Fiote parent."))?;

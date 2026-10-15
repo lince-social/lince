@@ -1,0 +1,51 @@
+let exact = (0.1 + 0.2);
+
+print("Exact decimals:", exact, (exact == 0.3), (9007199254740993 + 2));
+
+print("Arithmetic:", (7 + 2), (7 - 2), (7 * 2), (7 / 2), (7 % 2));
+
+print("Unary and grouping:", (-2), (+2), (-(2 + 3)), (!false), (!0));
+
+print("Comparisons:", (1 < 2), (1 <= 1), (2 > 1), (2 >= 2), (1 == 1.0), (1 != 2));
+
+print("Boolean operators:", (true && (!false)), (false || true), (true && true), (false || true));
+
+print("Numeric conditions:", (0 || 2), (1 && 3));
+
+print("Equality:", ("same" == "same"), (null == null), ([1, 2] == [1, 2]));
+
+let greeting = "Olá, Lingua!";
+
+let escaped = "A quote: \"hello\"; a newline: \nnext line; a backslash: \\";
+
+let multiline = "This is literal text.\nBraces { }, references @example, and print(1) stay text.\n";
+
+print(greeting, "Characters:", len(greeting));
+
+print(escaped);
+
+print(multiline);
+
+print((("Joined " + "text ") + str(exact)));
+
+print("References and Concepts:", @syntax-apples, @r_01JA0000000000000000000203, #task);
+
+print("Durations:", 30s, 2m, 0.5h, 1d);
+
+print("Empty values:", null, [], {});
+
+let values = [1, "two", true, null, @syntax-apples, #task, 30s, [4, 5]];
+
+let object = {head: "Example", "quantity": exact, nested: {ready: true}, values: values};
+
+print(values);
+
+print(object);
+
+print("Access:", get(values, 0), get(object, "head"), get(get(object, "nested"), "ready"));
+
+print("Length:", len(values), len("café"));
+
+print("Append:", push([1, 2], 3));
+
+print("Skipped reads:", (false && quantity(@missing)), (true || quantity(@missing)));

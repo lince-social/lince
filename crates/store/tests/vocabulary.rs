@@ -14,6 +14,7 @@ async fn a_dictionary_completes_a_placeholder_and_keeps_its_source_owner() {
         .await
         .unwrap();
     let mut dictionary = nucleus::vocabulary::Dictionary {
+        definitions: Vec::new(),
         source: nucleus::vocabulary::Source {
             concept_uid: concept.clone(),
             vocabulary_uid: nucleus::new_uid("g"),
@@ -78,6 +79,7 @@ async fn dictionary_snapshots_retire_omitted_shared_terms_and_preserve_personal_
     let store = Store::open_memory().await.unwrap();
     let other = Store::open_memory().await.unwrap();
     let mut dictionary = nucleus::vocabulary::Dictionary {
+        definitions: Vec::new(),
         source: store::vocabulary::sources(&store.pool).await.unwrap()[TOPOS_UID].clone(),
         terms: store::vocabulary::terms(&store.pool, None)
             .await
@@ -474,6 +476,7 @@ async fn dictionaries_preserve_sources_and_never_include_personal_terms() {
             .is_err()
     );
     let mut seeded = nucleus::vocabulary::Dictionary {
+        definitions: Vec::new(),
         source: store::vocabulary::sources(&store.pool).await.unwrap()[TOPOS_UID].clone(),
         terms: store::vocabulary::terms(&store.pool, None)
             .await
@@ -538,6 +541,7 @@ async fn dictionary_ancestry_cannot_create_a_cycle() {
     let second = nucleus::new_uid("c");
     let origin = nucleus::new_uid("r");
     let mut dictionary = nucleus::vocabulary::Dictionary {
+        definitions: Vec::new(),
         source: nucleus::vocabulary::Source {
             concept_uid: first.clone(),
             vocabulary_uid: store::linguas::LOCAL_UID.into(),

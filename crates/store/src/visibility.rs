@@ -37,6 +37,9 @@ pub async fn visible_targets(
     pool: &SqlitePool,
     subject_uid: &str,
 ) -> Result<HashSet<String>, StoreError> {
+    let denied =
+        crate::data_visibility::denied_for_person_on(&mut *pool.acquire().await?, subject_uid)
+            .await?;
     Ok(sqlx::query(
         "SELECT target_uid AS uid FROM visibility_rule
           WHERE grant_level = 'visible' AND (subject_kind = 'public'
@@ -61,6 +64,7 @@ pub async fn visible_targets(
     .await?
     .into_iter()
     .map(|r| r.get("uid"))
+    .filter(|uid| !denied.contains(uid))
     .collect())
 }
 
@@ -101,6 +105,7 @@ pub async fn role_targets_on(
     subject_uid: &str,
     role_id: i64,
 ) -> Result<HashSet<String>, StoreError> {
+    let denied = crate::data_visibility::denied_for_person_on(connection, subject_uid).await?;
     Ok(sqlx::query_scalar::<_, String>(
         "WITH local AS (
              SELECT uid FROM record WHERE slug = ? AND kind = 'organ' AND deleted_at IS NULL
@@ -131,6 +136,7 @@ pub async fn role_targets_on(
     .fetch_all(connection)
     .await?
     .into_iter()
+    .filter(|uid| !denied.contains(uid))
     .collect())
 }
 

@@ -1,0 +1,42 @@
+dir = "./instance";
+
+let rows = query({source: "record", fields: ["uid", "head", "slug", "quantity"], order: [{asc: "head"}], limit: 10});
+
+let result = [];
+
+for row in rows {
+  let uid = get(row, "uid");
+  let value = quantity(uid);
+  if (value > 0) {
+    value = (value + 2);
+    result = push(result, {head: get(row, "head"), quantity: value});
+  } else if (value == 0) {
+    print("Zero:", get(row, "head"));
+  } else {
+    print("Need:", get(row, "head"));
+  }
+}
+
+print("Collected:", result);
+
+if (len(rows) > 0) {
+  let uid = get(get(rows, 0), "uid");
+  print(record(uid));
+  print("Head:", head(uid));
+  print("Body:", body(uid));
+  print("Slug:", slug(uid));
+  print("Quantity:", property(uid, "quantity"));
+  print("UID:", property(uid, "uid"));
+}
+
+print("Matching positive quantities:", query({source: "record", where: [{quantity_gt: 0}, {any: [{concept_in: "task"}, {text_contains: "apple"}]}], fields: ["uid", "head", "quantity"], limit: 10}));
+
+print("JSON query:", query("{\"source\":\"record\",\"where\":[{\"quantity_lt\":\"0\"}],\"fields\":[\"uid\",\"head\"],\"limit\":5}"));
+
+print("Record count:", query({source: "record", aggregate: {op: "count", by: "total"}, limit: 10}));
+
+print("Records:", records());
+
+print("Task Records:", records(#task));
+
+print("Text search:", records("apple"));

@@ -17,7 +17,7 @@ fn main() {
         let mut steps = std::collections::BTreeMap::new();
         let mut page_orders = std::collections::BTreeMap::<&str, u32>::new();
         let mut chapter_orders = std::collections::BTreeMap::new();
-        for page in lince_interface::handbook::PAGES {
+        for page in lince_practice::handbook::PAGES {
             let chapter_order = chapter_orders.len() as u32 + 1;
             chapter_orders.entry(page.chapter).or_insert(chapter_order);
             let order = page_orders.entry(page.chapter).or_default();
@@ -35,9 +35,9 @@ fn main() {
             manifest.insert(page.chapter);
             manifest.insert(page.slug);
         }
-        for lesson in lince_interface::practice::LESSONS
+        for lesson in lince_practice::practice::LESSONS
             .iter()
-            .chain(lince_interface::handbook::READING)
+            .chain(lince_practice::handbook::READING)
         {
             requirements.push(anicca::instinct::Requirement {
                 slug: lesson.subject,
@@ -75,7 +75,7 @@ fn main() {
         manifest.insert("instinct-handbook");
         for slug in manifest.iter().filter(|slug| {
             **slug == "instinct-handbook"
-                || lince_interface::handbook::PAGES
+                || lince_practice::handbook::PAGES
                     .iter()
                     .any(|page| page.chapter == **slug)
         }) {

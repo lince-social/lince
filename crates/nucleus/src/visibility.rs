@@ -34,6 +34,7 @@ pub struct Bound {
 #[serde(default, deny_unknown_fields)]
 pub struct Condition {
     pub organs: Vec<String>,
+    pub persons: Vec<String>,
     pub lower: Option<Bound>,
     pub upper: Option<Bound>,
     pub radius_metres: Option<u32>,
@@ -41,8 +42,19 @@ pub struct Condition {
 
 impl Condition {
     pub fn matches(&self, organ: &str, proximity: Option<u32>) -> bool {
+        self.matches_principal(organ, None, proximity)
+    }
+
+    pub fn matches_principal(
+        &self,
+        organ: &str,
+        person: Option<&str>,
+        proximity: Option<u32>,
+    ) -> bool {
         if organ.is_empty()
             || (!self.organs.is_empty() && !self.organs.iter().any(|uid| uid == organ))
+            || (!self.persons.is_empty()
+                && !person.is_some_and(|person| self.persons.iter().any(|uid| uid == person)))
         {
             return false;
         }
@@ -68,6 +80,9 @@ impl Condition {
         if self.organs.len() > MAX_ORGANS_PER_CONDITION {
             return Err("Choose at most 64 Organs in each visibility condition");
         }
+        if self.persons.len() > MAX_ORGANS_PER_CONDITION {
+            return Err("Choose at most 64 Persons in each visibility condition");
+        }
         let mut seen = std::collections::HashSet::new();
         if self
             .organs
@@ -75,6 +90,14 @@ impl Condition {
             .any(|uid| !crate::valid_uid(uid, "r") || !seen.insert(uid))
         {
             return Err("Choose distinct valid Organ identities");
+        }
+        let mut seen = std::collections::HashSet::new();
+        if self
+            .persons
+            .iter()
+            .any(|uid| !crate::valid_uid(uid, "r") || !seen.insert(uid))
+        {
+            return Err("Choose distinct valid Person identities");
         }
         let minimum = match self.lower {
             Some(Bound {
@@ -147,23 +170,45 @@ impl Policy {
             .len()
             > MAX_POLICY_BYTES
         {
-            return Err("Visibility rules exceed the 12 KiB limit; use fewer conditions or Organs");
+            return Err(
+                "Visibility rules exceed the 12 KiB limit; use fewer conditions or identities",
+            );
         }
         Ok(())
     }
 
     pub fn decide(&self, organ: &str, proximity: Option<u32>) -> Decision {
-        let matches = |conditions: &[Condition]| {
+        self.decide_principal(organ, None, proximity)
+    }
+
+    pub fn decide_principal(
+        &self,
+        organ: &str,
+        person: Option<&str>,
+        proximity: Option<u32>,
+    ) -> Decision {
+        let matches = |conditions: &[Condition], exclusion: bool| {
             conditions
                 .iter()
                 .enumerate()
                 .filter_map(|(index, condition)| {
-                    condition.matches(organ, proximity).then_some(index)
+                    condition
+                        .matches_principal(
+                            organ,
+                            person.or_else(|| {
+                                exclusion
+                                    .then(|| condition.persons.first())
+                                    .flatten()
+                                    .map(String::as_str)
+                            }),
+                            proximity,
+                        )
+                        .then_some(index)
                 })
                 .collect::<Vec<_>>()
         };
-        let included_by = matches(&self.include);
-        let excluded_by = matches(&self.exclude);
+        let included_by = matches(&self.include, false);
+        let excluded_by = matches(&self.exclude, true);
         let radius_metres = included_by
             .iter()
             .map(|index| self.include[*index].radius_metres.unwrap_or(0))
@@ -190,6 +235,7 @@ pub struct Organ {
     pub uid: String,
     pub label: String,
     pub proximity: Option<u32>,
+    pub blocked: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -198,6 +244,7 @@ pub struct Context {
     pub data: Data,
     pub saved: Option<SavedPolicy>,
     pub organs: Vec<Organ>,
+    pub persons: Vec<crate::location::Choice>,
     pub records: Vec<crate::location::Choice>,
 }
 
@@ -219,6 +266,67 @@ pub enum Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn persons_intersect_organ_ranges_and_exclusions_bound_organ_replication() {
+        let organ = crate::new_uid("r");
+        let person = crate::new_uid("r");
+        let other = crate::new_uid("r");
+        let mut policy = Policy {
+            include: vec![Condition {
+                organs: vec![organ.clone()],
+                persons: vec![person.clone()],
+                upper: Some(Bound {
+                    value: 2,
+                    inclusive: true,
+                }),
+                radius_metres: Some(1000),
+                ..Default::default()
+            }],
+            exclude: vec![],
+        };
+        policy.validate_for(Data::Place).unwrap();
+        assert!(!policy.decide(&organ, Some(1)).allowed);
+        assert!(
+            !policy
+                .decide_principal(&organ, Some(&other), Some(1))
+                .allowed
+        );
+        assert!(
+            !policy
+                .decide_principal(&other, Some(&person), Some(1))
+                .allowed
+        );
+        assert!(
+            !policy
+                .decide_principal(&organ, Some(&person), Some(3))
+                .allowed
+        );
+        let decision = policy.decide_principal(&organ, Some(&person), Some(2));
+        assert!(decision.allowed);
+        assert_eq!(decision.radius_metres, Some(1000));
+        policy.include.push(Condition {
+            organs: vec![organ.clone()],
+            ..Default::default()
+        });
+        policy.exclude.push(Condition {
+            persons: vec![person.clone()],
+            ..Default::default()
+        });
+        assert!(
+            !policy
+                .decide_principal(&organ, Some(&person), Some(1))
+                .allowed
+        );
+        assert!(
+            policy
+                .decide_principal(&organ, Some(&other), Some(1))
+                .allowed
+        );
+        assert!(!policy.decide(&organ, Some(1)).allowed);
+        policy.exclude[0].persons.push(person);
+        assert!(policy.validate().is_err());
+    }
 
     #[test]
     fn composed_ranges_intersect_organs_and_exclusions_win() {

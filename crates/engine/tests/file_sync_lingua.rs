@@ -51,6 +51,80 @@ async fn hello(engine: &Engine) -> store::records::RecordRow {
 }
 
 #[tokio::test]
+async fn file_meanings_survive_retired_terms_and_new_homonyms() {
+    let path = user_file();
+    let directory = path.parent().unwrap();
+    let (engine, organ) = configured(directory).await;
+    let mut state = FileSyncState::new();
+    engine
+        .file_sync_tick(directory, &organ, &mut state)
+        .await
+        .unwrap();
+    let uid = hello(&engine).await.uid;
+    let original = store::vocabulary::resolve(&engine.store.pool, "task", None)
+        .await
+        .unwrap()
+        .unwrap();
+    let term = store::vocabulary::terms(&engine.store.pool, None)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|term| term.concept_uid == original)
+        .unwrap();
+    engine
+        .act(
+            Action::Vocabulary {
+                request: nucleus::vocabulary::Command::EditTerm {
+                    term: term.uid,
+                    expected_revision: term.revision,
+                    name: "chore".into(),
+                    language: "en".into(),
+                    preferred: true,
+                },
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let different = engine
+        .act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: "task".into(),
+                parents: vec![],
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let source = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace("Oieeee", "Changed");
+    std::fs::write(&path, source).unwrap();
+    let report = engine
+        .file_sync_tick(directory, &organ, &mut state)
+        .await
+        .unwrap();
+    assert!(report.conflicts.is_empty(), "{:?}", report.conflicts);
+    let assertions = store::assertions::for_subjects(&engine.store.pool, &[uid])
+        .await
+        .unwrap();
+    assert!(
+        assertions
+            .iter()
+            .any(|assertion| assertion.predicate_uid == original)
+    );
+    assert!(
+        !assertions
+            .iter()
+            .any(|assertion| assertion.predicate_uid == different)
+    );
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
 async fn existing_user_file_imports_into_two_independent_instances_without_rewriting() {
     let path = user_file();
     let source = std::fs::read(&path).unwrap();

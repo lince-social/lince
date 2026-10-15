@@ -576,19 +576,25 @@ impl Engine {
                 }
                 Action::CreateLingua { name, visibility } => {
                     outcome.created = Some(
-                        store::linguas::create(&self.store.pool, &name, None, &visibility).await?,
+                        store::linguas::create(&self.store.pool, &name, store::organs::local(&self.store.pool).await?.map(|organ| organ.uid).as_deref(), &visibility).await?,
                     );
                 }
                 Action::RenameLingua { lingua, name } => {
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    drop(ownership);
                     store::linguas::rename(&self.store.pool, &lingua_uid, &name).await?;
                 }
                 Action::DeleteLingua { lingua } => {
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    drop(ownership);
                     if lingua_uid == store::linguas::LOCAL_UID {
                         return Err(EngineError::Consequence(
                             "the local Lingua is the ontology's permanent private home".into(),
@@ -610,6 +616,9 @@ impl Engine {
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    drop(ownership);
                     let mut parent_uids = Vec::new();
                     for p in &parents {
                         parent_uids.push(
@@ -629,6 +638,9 @@ impl Engine {
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_concept_on(&mut ownership, &concept_uid).await?;
+                    drop(ownership);
                     store::concepts::rename(&self.store.pool, &concept_uid, &name).await?;
                 }
                 Action::DeleteConcept { concept } => {
@@ -636,6 +648,9 @@ impl Engine {
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_concept_on(&mut ownership, &concept_uid).await?;
+                    drop(ownership);
                     match store::concepts::delete(&self.store.pool, &concept_uid).await {
                         Err(error)
                             if error
@@ -657,6 +672,9 @@ impl Engine {
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    drop(ownership);
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
@@ -666,6 +684,9 @@ impl Engine {
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                    let mut ownership = self.store.pool.acquire().await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    drop(ownership);
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
@@ -790,9 +811,9 @@ impl Engine {
                         }
                         None => None,
                     };
-                    let actor_concept = store::concepts::ensure(&self.store.pool, "actor").await?;
+                    let actor_concept = store::vocabulary::feature_write(&self.store.pool, "actor").await?;
                     for child in ["person", "agent"] {
-                        let uid = store::concepts::ensure(&self.store.pool, child).await?;
+                        let uid = store::vocabulary::feature_write(&self.store.pool, child).await?;
                         store::concepts::add_parent(&self.store.pool, &uid, &actor_concept).await?;
                     }
                     let created = self
@@ -831,7 +852,7 @@ impl Engine {
                     )
                     .await?;
                     if let Some(operator) = operator {
-                        store::concepts::ensure(&self.store.pool, "operated-by").await?;
+                        store::vocabulary::feature_write(&self.store.pool, "operator").await?;
                         self.act(
                             Action::AssertRecord {
                                 subject: uid.clone(),

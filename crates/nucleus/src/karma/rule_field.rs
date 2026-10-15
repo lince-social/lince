@@ -152,8 +152,15 @@ impl RuleConsequence {
         if result.target.trim().is_empty() {
             return Err("Choose a target Record".into());
         }
-        if result.consequences.iter().any(|effect| effect.transfer_target().is_some())
-            && result.consequences.iter().any(|effect| effect.transfer_target() != Some(result.target.as_str())) {
+        if result
+            .consequences
+            .iter()
+            .any(|effect| effect.transfer_target().is_some())
+            && result
+                .consequences
+                .iter()
+                .any(|effect| effect.transfer_target() != Some(result.target.as_str()))
+        {
             return Err("Choose the same Transfer in the destination and each consequence".into());
         }
         Consequences::new(result.consequences.clone()).map_err(|error| error.to_string())?;

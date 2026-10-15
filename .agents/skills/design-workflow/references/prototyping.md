@@ -5,11 +5,11 @@
 These are starting points to inspect, not a claim that a general live Castle editor already exists:
 
 - `crates/interface/src/presentation.rs` describes Record field selections, order, fills, and presentation settings. It does not describe an arbitrary component tree or control placement.
-- `crates/desktop/src/protein_area/presentation.rs` supports presentation sessions, preview/apply/undo, and captured per-record state saved in Area records.
-- `crates/desktop/src/protein_area/presentation/fields.rs` preserves existing field entities while arranging them and supports field dimensions, wrapping, and scoped tokens.
-- `crates/desktop/src/customization.rs` applies native scoped token changes. Inspect which values are persisted and which systems own their effective geometry.
-- `crates/desktop/src/layout/` and the Castle's own layout systems determine constraints, sizing, and placement. Runtime edits must participate in those systems rather than being overwritten next frame.
-- `crates/desktop/src/laboratory/` provides native behavioral cases. Captures and measurements must come from the real Bevy interface.
+- `crates/sandbox/src/protein_area/presentation.rs` supports presentation sessions, preview/apply/undo, and captured per-record state saved in Area records.
+- `crates/sandbox/src/protein_area/presentation/fields.rs` preserves existing field entities while arranging them and supports field dimensions, wrapping, and scoped tokens.
+- `crates/sandbox/src/customization.rs` applies native scoped token changes. Inspect which values are persisted and which systems own their effective geometry.
+- `crates/sandbox/src/layout/` and the Castle's own layout systems determine constraints, sizing, and placement. Runtime edits must participate in those systems rather than being overwritten next frame.
+- `crates/sandbox/src/laboratory/` provides native behavioral cases. Captures and measurements must come from the real Bevy interface.
 
 `cargo xtask design native <component> [--theme path.json] [--watch] [--mobile]` is an existing isolated native preview for its supported components. Theme changes reload live; Rust edits under `--watch` compile and restart. That is useful for native inspection, but it is not a general composition editor, does not preserve temporary fixture state across restart, and is not connected to Cell. `--mobile` checks a narrow desktop window, not Android.
 

@@ -376,10 +376,7 @@ impl Engine {
         if preset.unit.is_some() && preset.quantity.is_none() {
             return Err(invalid("An assertion with a unit also needs a quantity"));
         }
-        if store::concepts::resolve(&self.store.pool, "descendant-of")
-            .await?
-            .as_deref()
-            == Some(&preset.predicate)
+        if store::vocabulary::feature_binding(&self.store.pool,"ancestry").await?.concept_uids.contains(&preset.predicate)
         {
             return Err(invalid(
                 "Prompt ancestry is configured through Fiote controls",

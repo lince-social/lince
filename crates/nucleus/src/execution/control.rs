@@ -42,21 +42,44 @@ struct State {
     now_ms: i64,
     trace: Trace,
     trace_bytes: u64,
+    schedules: Vec<crate::simulation::RecordedSchedule>,
+    schedule_bytes: u64,
     checks: Vec<ResolvedCheck>,
 }
 
 impl Control {
-    pub fn record_transfer_change(&self, cell: &str, occurrence: &crate::simulation::RuleOccurrence, change: super::causal::TransferChange) -> Result<(), Limit> {
+    pub fn record_transfer_change(
+        &self,
+        cell: &str,
+        occurrence: &crate::simulation::RuleOccurrence,
+        change: super::causal::TransferChange,
+    ) -> Result<(), Limit> {
         let mut state = self.0.lock().expect("execution control");
-        let limit = state.trace_bytes;
-        if state.trace.record_transfer_change(cell, occurrence, change, limit).is_err() { state.stopped.get_or_insert(Limit::Evidence); }
+        let limit = state.trace_bytes.saturating_sub(state.schedule_bytes);
+        if state
+            .trace
+            .record_transfer_change(cell, occurrence, change, limit)
+            .is_err()
+        {
+            state.stopped.get_or_insert(Limit::Evidence);
+        }
         state.stopped.clone().map_or(Ok(()), Err)
     }
 
-    pub fn record_received_transfer_change(&self, command: &str, change: super::causal::TransferChange) -> Result<(), Limit> {
+    pub fn record_received_transfer_change(
+        &self,
+        command: &str,
+        change: super::causal::TransferChange,
+    ) -> Result<(), Limit> {
         let mut state = self.0.lock().expect("execution control");
-        let limit = state.trace_bytes;
-        if state.trace.record_received_transfer_change(command, change, limit).is_err() { state.stopped.get_or_insert(Limit::Evidence); }
+        let limit = state.trace_bytes.saturating_sub(state.schedule_bytes);
+        if state
+            .trace
+            .record_received_transfer_change(command, change, limit)
+            .is_err()
+        {
+            state.stopped.get_or_insert(Limit::Evidence);
+        }
         state.stopped.clone().map_or(Ok(()), Err)
     }
     pub fn new(
@@ -80,6 +103,8 @@ impl Control {
             now_ms: 0,
             trace: Trace::default(),
             trace_bytes: 64 * 1024 * 1024,
+            schedules: Vec::new(),
+            schedule_bytes: 0,
             checks: Vec::new(),
         })))
     }
@@ -210,7 +235,7 @@ impl Control {
         let _ = self.checkpoint(false);
         let mut state = self.0.lock().expect("execution control");
         step.virtual_ms = state.now_ms;
-        let byte_limit = state.trace_bytes;
+        let byte_limit = state.trace_bytes.saturating_sub(state.schedule_bytes);
         let cycle = match state.trace.append(step.clone(), byte_limit) {
             Ok(cycle) => cycle,
             Err(()) => {
@@ -386,6 +411,37 @@ impl Control {
 
     pub fn drain_cycles(&self, cell: &str) -> Vec<RuleCycle> {
         self.0.lock().expect("execution control").trace.drain(cell)
+    }
+
+    pub fn record_schedule(
+        &self,
+        schedule: crate::simulation::RecordedSchedule,
+    ) -> Result<(), Limit> {
+        let mut state = self.0.lock().expect("execution control");
+        let bytes = serde_json::to_vec(&schedule).map_or(u64::MAX, |bytes| bytes.len() as u64);
+        let next = state.schedule_bytes.saturating_add(bytes);
+        if next.saturating_add(state.trace.bytes()) > state.trace_bytes {
+            state.stopped.get_or_insert(Limit::Evidence);
+            return Err(Limit::Evidence);
+        }
+        state.schedule_bytes = next;
+        state.schedules.push(schedule);
+        Ok(())
+    }
+
+    pub fn drain_schedules(&self, cell: &str) -> Vec<crate::simulation::RecordedSchedule> {
+        let mut state = self.0.lock().expect("execution control");
+        let (selected, retained): (Vec<_>, Vec<_>) = std::mem::take(&mut state.schedules)
+            .into_iter()
+            .partition(|schedule| schedule.cell == cell);
+        state.schedule_bytes = retained
+            .iter()
+            .map(|schedule| {
+                serde_json::to_vec(schedule).map_or(u64::MAX, |bytes| bytes.len() as u64)
+            })
+            .fold(0u64, u64::saturating_add);
+        state.schedules = retained;
+        selected
     }
 
     pub fn link_effect(&self, cell: &str, fact: &str, occurrence: &RuleOccurrence) {

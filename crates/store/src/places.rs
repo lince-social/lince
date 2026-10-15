@@ -2,6 +2,8 @@ use nucleus::place::Place;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
+mod projection;
+pub use projection::saved_locations_for_person;
 use nucleus::vocabulary::{LocationCandidate, SAVED_LOCATION_ROLE_UID, SavedLocation};
 use std::collections::{HashMap, HashSet};
 

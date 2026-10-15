@@ -1,0 +1,73 @@
+[package]
+name = "lince-park"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Wayland window management and desktop policies for Lince Park."
+
+[features]
+graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
+graphics-gate = ["graphics-probe", "dep:bevy", "dep:lince-interface", "lince-interface/ui", "dep:wayland-client", "dep:wayland-protocols", "smithay/backend_winit"]
+server = ["dep:lince-interface", "dep:rustix"]
+server-tests = ["server", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:tempfile"]
+native-presentation = ["graphics-probe", "server", "dep:bevy", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus"]
+native-client-gate = ["native-presentation", "graphics-gate"]
+worker-gate = ["native-presentation", "server-tests"]
+nested = ["native-presentation", "smithay/backend_winit"]
+
+[dependencies]
+bevy = { version = "=0.19.1", default-features = false, features = ["std", "async_executor", "multi_threaded", "bevy_asset", "bevy_log", "bevy_render", "bevy_core_pipeline", "bevy_text", "bevy_ui", "bevy_ui_render", "bevy_input_focus", "bevy_ui_widgets"], optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "desktop"] }
+ash = { version = "=0.38.0", optional = true }
+pollster = { version = "=0.4.0", optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+wgpu = { version = "=29.0.4", default-features = false, features = ["std", "vulkan", "wgsl"], optional = true }
+lince-interface = { workspace = true, optional = true }
+rustix = { version = "=1.1.4", features = ["event", "time", "fs", "process"], optional = true }
+wayland-client = { version = "=0.31.15", optional = true }
+wayland-protocols = { version = "=0.32.13", features = ["client"], optional = true }
+wayland-protocols-wlr = { version = "=0.3.12", features = ["client"], optional = true }
+tokio = { workspace = true, optional = true }
+tempfile = { version = "=3.27.0", optional = true }
+cell = { workspace = true, optional = true }
+engine = { workspace = true, optional = true }
+nucleus = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+
+[[example]]
+name = "graphics_probe"
+required-features = ["graphics-probe"]
+
+[[example]]
+name = "graphics_gate"
+required-features = ["graphics-gate"]
+
+[[example]]
+name = "native_canvas_probe"
+required-features = ["native-presentation"]
+
+[[example]]
+name = "native_policy_probe"
+required-features = ["native-presentation"]
+
+[[example]]
+name = "native_client_probe"
+required-features = ["native-client-gate"]
+
+[[example]]
+name = "worker_probe"
+required-features = ["worker-gate"]
+
+[[example]]
+name = "nested"
+required-features = ["nested", "worker-gate"]
+
+[lints]
+workspace = true

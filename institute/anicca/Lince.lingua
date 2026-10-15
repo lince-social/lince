@@ -1,8 +1,527 @@
+Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
+A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+
+I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
+
+We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
+
+I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
+
+We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
+
+That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
+
+On Trust: When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
+
+2. [ ] **Public Transfer history / trust portfolio:** let people inspect a party's permitted completed Transfer history with verifiable identity, preserving private fields. This comes from the broader Transfer Record and was outside the implementation plan.
+
+"The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
+
+- [ ] **Handle different device clocks safely.** Location fixes are still accepted or rejected using source and authority timestamps. Use a bounded age protocol so a wrong or changed clock cannot reject fresh positions or keep old ones alive. Preserve source approval and replay protection.
+
+- [ ] **Make sharing-authority changes usable.** The authority endpoint is displayed, but there is no explicit handover of its private settings to another Cell. Show connection status clearly and provide an authorized handover that ends the old session and requires fresh source approval.
+
+- [ ] **Finish location invitations.** Person and device selection already exist, but outside viewers still copy and paste a private reference. Add sending and opening invitations through the normal private conversation flow, with a clear audience, precision, and stopping condition. Receiving an invitation must still require permission.
+
+- [ ] **Build the guided Transport Transfer flow.** Bring existing Needs, Contributions, private requests, agreements, reservations, and completion controls into a simple “Need transport” / “Offer transport” workflow. Ask for origin, destination, time window, and capacity. Keep it usable as a list when maps or discovery services are unavailable.
+
+- [ ] **Add reviewed sharing shortcuts for participants.** Let a driver review sharing with selected passengers, and let each passenger independently choose the driver or outside observers. Adding someone to a Transfer must require a separate decision before sharing their location.
+
+- [ ] **Add reusable journey progress actions.** Provide explicit actions such as arrived, met/boarded, departed, and reached destination. These controls are missing. They should describe progress without automatically confirming fulfillment or creating another accounting result.
+
+- [ ] **Add geographic and time-sensitive announcements.** Public announcements currently store area and availability as text, with publication lifetimes of one to seven days. Add bounded approximate origin/destination areas, structured time windows, and shorter expiry for immediate availability. Review the public information before publishing and reuse existing signatures, withdrawals, and private replies.
+
+- [ ] **Connect geographic discovery to Protein and maps.** Protein has no public-announcement source or viewport query. Add permitted discovery results with area/time filters, then show public areas, private saved places, and granted live positions as distinct layers. Keep Records without coordinates accessible in the accompanying list.
+
+- [ ] **Support larger map result sets.** Maps currently take only the first 32 source Records. Add bounded viewport results and grouping of nearby visible markers. Counts, filtering, and distance calculations must use information the viewer may access. Add a spatial index if measurements show it is needed.
+
+- [ ] **Preserve live-position age and accuracy on maps.** Map markers currently discard the reply’s capture age and device accuracy, and their local freshness timer starts when the reply arrives. Carry the original age through delivery, expire markers accordingly, and show permitted measurement accuracy separately from a deliberately approximate sharing area.
+
+- [ ] **Add an explicit “locate me” control.** Maps can center on Records, but cannot request the current device’s position through a dedicated control. Make acquisition require a user action and keep it separate from saving a place or sharing with others.
+
+- [ ] **Finish regional map package management.** Local directories, PMTiles, and area downloads already work. Add package metadata for coverage, source version/date, hashes, resources, and credits, plus safe installation and replacement. An interrupted update must preserve the working pack. Version the cache by dataset, rather than only server URL.
+
+- [ ] **Complete map keyboard access.** Zoom buttons and accessibility labels exist, but panning, choosing a point, and drawing a download area rely on pointer gestures. Provide keyboard alternatives and verify focus, marker navigation, and screen-reader descriptions.
+
+- [ ] **Finish desktop map quality and performance measurements.** Basic GPU rendering is already demonstrated. Measure dense scenes, multiple maps, repeated theme changes, resizing and display scaling, memory/resource cleanup, and release size on named hardware. Check difficult place names and glyph coverage, and clearly describe unsupported cartography.
+
+- [ ] **Validate real desktop location delivery.** Existing simulations cover permissions and Transfer completion, but do not establish Linux portal behavior or real-network performance. Exercise driver, passenger, and outside-observer sessions across actual instances, including permission denial, disconnection, stopping, and handover. Measure delivery delay, traffic, and memory.
+
+- [ ] **Integrate maps and the transport workflow into mobile.** Mobile location controls already exist, but the map presentation does not. Reuse the completed capabilities with touch/pinch controls, readable cards, accessibility, and correct cleanup when the app pauses or its graphics surface is recreated.
+
+- [ ] **Complete Android location and map validation.** Android setup/run tooling exists; validate the actual target and application through that workflow. Check approximate, denied, and revoked permissions, locked-screen sharing, notification Stop, process termination, network changes, and Transfer completion. Measure sustained battery, thermal, bandwidth, memory, and rendering behavior.
+
+- [ ] **Later extension: add multi-stop journeys and capacity per segment.** Ordered itineraries and segment-aware reservations are missing. Check capacity for overlapping portions of a journey, allow reuse after someone leaves, and preserve independent passenger privacy using the existing Transfer structure.
+
+- [ ] **Optional later extension: add address search and route estimates.** Geocoding and routing providers are absent. Use replaceable providers, make disclosure of private endpoints explicit, and show the provider and age of estimates. Maps and Transfer completion should remain usable without them.
+} r_00ECACY50NWQQ3S0YH37V8KMK6
+
+Embedded (@embedded: 0) {
+Embedded connects small devices, such as ESPs, to Signals in Lince. Each device has its own identity and can update only the Signal granted to it. It cannot run commands, read private Records, change access, or enroll another device.
+
+Lince keeps the access settings: enabled or disabled, the allowed Signal, minimum time between readings, accepted value range, and an expiry. Changes take effect on the next request. A device sends signed readings over HTTPS. The private key stays on the device; Lince stores only its public key. There is no permanent bearer token to copy or renew.
+
+Every accepted reading has a sequence number and a receipt. Retrying the latest identical request returns its receipt without changing the Signal again. Old requests and changed retries are refused. The sequence survives Lince restarts. Requests also expire, so an old instruction cannot become a new reading much later. Device identity replacement invalidates the previous identity and starts a new sequence.
+
+Internet and power do not make a device open to everybody. The device connects outward to Lince. This first implementation only accepts readings; remote control, Bluetooth setup, Wi-Fi setup mode, and firmware updates are separate future work. Nearby people have no authority just because they are nearby. A future setup mode must require a physical action, a unique setup secret, a short setup window, and owner approval.
+
+Copy protection depends on the board and its firmware. Use a protected signing key, secure boot, encrypted storage, and restricted debugging where supported. A software key in readable flash can be copied. Even a protected key does not stop somebody using the stolen device itself; disable that device in Lince. Choose recovery procedures before setting irreversible chip protection settings.
+
+Steps after the Lince coding is implemented:
+
+1. Choose the exact ESP board and prepare firmware supporting P-256 signing and HTTPS certificate verification. Check its protected key storage and recovery options. This Lince implementation does not flash or harden an ESP.
+2. Use a trusted cable connection for the first installation. Create a unique private key on the device or its secure element, provision Wi-Fi and the public Lince HTTPS address, and obtain only the public key for enrollment. Do not upload the private key to Lince.
+3. Open Embedded in the native Karma Castle. Enroll the public key with a name and a Signal slug. Lince creates a dedicated Signal. Set a cooldown, a value range, and an access expiry. Use Copy setup to obtain the server identity, device identity, Signal identity, and key generation. Add the public HTTPS server address in firmware. Enable the device in Lince when ready.
+4. Publish Facade through an HTTPS reverse proxy. The ESP must verify the server certificate. The local unencrypted Facade listener is for the reverse proxy, not an internet device endpoint.
+5. Implement the documented signed request format in firmware. Persist a pending reading and sequence before sending. Retry that same request after a lost response; advance only after a confirmed receipt. Synchronize the device clock and create a new request if a pending reading has expired.
+6. Send a harmless test measurement. Inspect the Signal and receipt. Test a duplicate, another Signal, a value outside the range, and a request during cooldown. Only the first permitted reading should change the Signal.
+7. Use the Signal quantity or signal(@slug) in a Rule. Rule consequences retain their normal permissions and execution controls.
+8. Change access or disable the device in Lince without a cable. Renew access expiry in Lince when wanted. No credential refresh is necessary for each reading because the device proves its identity with its key.
+9. If the device or key is compromised, disable it first. Use a trusted cable to install a new key and replace its registered public key in Lince. Copy the new setup, update the key generation, reset the request sequence, and enable the device when ready. Ordinary renewal with the old key is not recovery.
+
+Firmware request format:
+
+Send a JSON POST to /embedded/readings on the configured HTTPS server. The fields are audience (the server identity), device (the device UID), key_epoch (the key generation), signal (the granted Signal UID), sequence (a positive integer), issued_at (Unix seconds), value (a canonical decimal string), and signature (lowercase hexadecimal). Unknown fields are refused. The body is limited to 2048 bytes.
+
+Sign the following UTF-8 lines in this exact order, including a newline after the last line: lince-embedded-v1, audience, device, key_epoch, signal, sequence, issued_at, value. Use ECDSA with P-256 and SHA-256. The signature contains the 32-byte r followed by the 32-byte s, encoded as 128 lowercase hex characters; it is not DER. The public key is compressed SEC1, encoded as 66 lowercase hex characters.
+
+For example, a value is "23.7", not a JSON floating-point number. A decimal string uses an optional minus sign, an integer without unnecessary leading zeros, and an optional fraction. Exponents, a plus sign, negative zero, and embedded whitespace are refused. Keep integer protocol fields in decimal without padding when constructing the signed lines. Use an integer representation that preserves the full sequence; do not convert it through a floating-point number.
+
+A new reading may be at most 120 seconds old or 30 seconds ahead of the server clock. Persist the full pending request before sending. Only the latest accepted identical request can be retried for its old receipt, even after its timestamp expires; it must still pass current access checks. A higher sequence can replace an expired unaccepted request. Never reuse an accepted sequence with a changed value or timestamp.
+
+Success returns device, key_epoch, sequence, fact, and received_at (Unix milliseconds). Confirm that these identify the pending request before advancing. HTTP 429 means cooldown or an ingress limit: back off and retry, refreshing an expired unaccepted reading with a higher sequence. HTTP 403 means access was refused; stop sending and inspect access in Lince. HTTP 409 means a used sequence; recover the pending sequence through the trusted setup process rather than guessing. HTTP 400 means a malformed, expired, or out-of-range reading. Lost responses and temporary server errors use bounded exponential backoff with jitter. Lince also limits concurrent reading requests and total request attempts before signature verification.
+}
+
+Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
+Interfaces should ask for as little attention as possible throughout the user's life. Choices can be done quickly. The best interface is Interfaceless.
+Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Full control is always available.
+
+Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism.
+
+Shadows and hints can be used for subtle differentiation of areas, components and data.
+
+Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design.
+
+Tooltips and placeholders should contain minimal text.
+
+The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record.
+
+Common choices should be quick, and the person should be able to inspect and change the details.
+
+Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions.
+
+ Lince's default visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC. Other themes are available in interface.
+
+Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
+
+- Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
+- Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
+- Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
+
+And many more. They are one way to add logic and customization to your experience on the interface.
+
+There are several components made, here is the documentation on how to use them:
+
+### IDE
+
+A local text editor with a reusable File Explorer Castle. Rust handles directory listing and file operations directly. Loro retains edits and merges independent changes made on disk; competing changes require review. This is separate from Record sync and blob transfers. Opening a folder creates no File Records or database copies. Unsaved recovery drafts are stored locally beside the workspace.
+
+Add the project folder, open a file, then open **Language tools**. Lince uses installed programs; connecting is manual and downloads nothing.
+
+Install the tools you use:
+
+- **NixOS or Linux with Nix:** `nix shell nixpkgs#bash-language-server nixpkgs#shfmt nixpkgs#shellcheck --command lince`. For permanent installation, add those packages to `environment.systemPackages` or Home Manager's `home.packages`. For Nix files, install `nixd nixfmt statix` instead. [Nix setup](https://wiki.nixos.org/wiki/Adding_programs_to_PATH)
+- **Arch:** `sudo pacman -Syu bash-language-server shfmt shellcheck`.
+- **Debian/Ubuntu:** `sudo apt install shfmt shellcheck`; with Node.js 20+ and npm, run `npm install --global --prefix "$HOME/.local" bash-language-server`, then `export PATH="$HOME/.local/bin:$PATH"`. [Server installation](https://github.com/bash-lsp/bash-language-server#installation)
+
+Launch Lince from that terminal. From a configured checkout, use `cargo run -p lince`. With Nix, first enter `nix develop .#interface`, then use the tooling shell above with `--command cargo run -p lince`.
+
+Check the prefilled fields for the open file's language:
+
+| Language | Server | Formatter | Linter |
+| --- | --- | --- | --- |
+| Bash (`.sh`) | `["bash-language-server","start"]` | `["shfmt"]` | `["shellcheck","-"]` |
+| Nix (`.nix`) | `["nixd"]` | `["nixfmt"]` | `["statix","check","--stdin"]` |
+
+Fields are JSON lists: executable, then arguments. Use PATH names or full paths; `~`, `$HOME`, aliases and pipes are not expanded. `[]` disables a command. Connecting or running saves the settings. The deepest selected folder containing the file is its project root; otherwise its parent is used.
+
+Click **Connect / Restart** and wait for Connected. **Ctrl+Space** requests completion; click a diagnostic to visit it. **Ctrl+Shift+I / Format** uses the server when supported, otherwise the formatter. **Format with command** always uses the formatter; **Run linter** shows its output. Formatting is one undo step and reaches disk through Save or autosave. **Disconnect** leaves normal editing and highlighting available.
+
+Test with a small Bash file: expect a warning for unquoted `$1`, completion of a function name, and undoable formatting. Keep autosave off to check that only Save changes disk contents.
+
+If a tool is missing, run `command -v bash-language-server shfmt shellcheck`, then restart Lince from that environment or enter the full path. An already running Lince does not inherit later environment changes.
+
+Tools handle files up to 2 MiB, with four shared servers. Completion is plain text. Server settings currently use defaults; custom NixOS/Home Manager option completion may need settings the UI does not expose. [nixd settings](https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md)
+
+
+
+Learning how hardware works, and how to build and research it is fun and cool. Having in the base app the capabilities of modeling things like Figma and/or CAD programs, from mechanical parts to GPUs, molecules and biology is an amazing dream. The edge cases and the architecture keeps on facing issues, and we keep on improving it. This would be the capabilities to use Lince as a laboratory for creation and inovation, the hardware that is self composable to help you on the day to day, and to change it's composition to become the lab/infrastructure you need to work or live is sci-fi, and in the future, the next undone task.
+
+- [ ] Molecule lab.
+	- [ ] CAD-like for modeling mechanical parts.
+	- [ ] CAD-like for modeling electrical parts.
+	- [ ] Biology lab.
+
+
+- [ ] For funsies, use Ithkuil as one of the languages
+
+We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
+
+For that a system that allows for maximum control of the scenes, is needed, the freedom of Minecraft with real world data and tiny, tiny voxels. That would be the end of the Lince's interface, nothing grater is justified to be built according to the philosophy. It would easily be able to display current web pages, launch other systems and games inside it. You open Lince, it has everything you should Need, and give you freedom to do anything you want in it's digital representation, connected completely with the real world if you want it.
+
+- [ ] Voxel system to go from outer zoom of the observable universe down to atoms (Bevy's Big Space: https://github.com/aevyrie/big_space/tree/bevy-0.19).
+- [ ] With the interface that has virtually limitless scale, we focus on centering the experience on the user's interest, Earth's globe as a 3D space with it's real topography, updateable in real time.
+- [ ] In any scale, one can take what is there as a point in which the components/widgets/sands/visual tools have at their disposal will be in a size it is good to work with, either locking things to the HUD with pinned sands, or putting them geographically in one region of the space: only in their house when they zoom in the map into their room, or the part of the room in space that is their desk, and inside they will see their widgets. In summary going from 3D to 2D, where you feel more productive with the dimensions you want.
+- [ ] Being able to connect the data of parts that are anywhere in the Space.
+- [ ] Being able to generate instantly a representation of something you want in any part of the Space, using Fiote (JEPA model?).
+- [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
+- [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
+
+AI text below:
+
+# CAD for Ailuros — research
+
+Researched 2026-09-16. Answers the `- [ ] Research` box in `Ailuros` (`@ailuros`).
+Question asked: how does CAD work in the core, can we embed an open source one in
+Lince — possibly as an external castle that still behaves natively — or do we
+build our own.
+
+Lince is MIT. The interface is Bevy 0.19 + avian3d, native, no embedded browser
+(CEF rejected, Servo unresolved). Those three facts eliminate most of the field
+before any geometry question is asked.
+
+## 1. What a CAD program actually is
+
+Every parametric CAD, from CATIA to Dune3D, is the same five layers stacked.
+Nothing about the stack is secret; each layer is decades of edge cases.
+
+**Layer 1 — the geometry kernel.** Curves and surfaces, almost always NURBS
+(non-uniform rational B-splines): control points, knot vector, weights. A plane,
+a cylinder and a torus are usually kept as analytic special cases because exact
+forms intersect far better than sampled ones. This layer answers "where is this
+surface at parameter (u,v)" and "where do these two surfaces cross".
+
+**Layer 2 — topology (B-rep).** Boundary representation: a solid is a shell, a
+shell is faces, a face is a trimmed surface bounded by loops of edges, an edge is
+a curve between two vertices, and every one of them carries a tolerance. The
+topology is what makes a bag of surfaces a watertight object. Booleans
+(union/subtract/intersect) are the hard part: intersect every surface pair, build
+the intersection curves, split faces along them, classify each piece as inside or
+outside the other solid, stitch the survivors. Tangency, near-tangency and
+coincident faces are where kernels die. This is why there are perhaps six
+production-grade B-rep kernels on Earth — Parasolid, ACIS, CGM, OCCT, Solid
+Modeling Solutions, and whatever Autodesk uses internally.
+
+**Layer 3 — the constraint solver.** A sketch is points and lines plus
+constraints (coincident, parallel, tangent, distance, angle, equal). The solver
+turns those into a system of nonlinear equations and runs Newton-Raphson (usually
+with a rank/DoF analysis first, to report under- and over-constrained sketches
+instead of diverging). Solvespace's solver and Zoo's `ezpz` are both this. It is
+a smaller, much more tractable problem than the kernel.
+
+**Layer 4 — the feature tree (history).** A part is not geometry, it is a recipe:
+sketch → extrude → fillet → pattern, replayed on every edit. This is what makes
+CAD parametric, and it produces the single worst problem in the field:
+
+> **Topological naming.** "Fillet the edge between face 3 and face 7" has to
+> survive the earlier sketch changing so that the old face 7 no longer exists.
+> Kernels name topology by generation order, so an upstream edit silently
+> repoints the fillet at the wrong edge and the model explodes. FreeCAD lived
+> with this for fifteen years and only shipped a real fix in 1.0 (the Ondsel
+> naming algorithm). Any "build our own" plan pays this cost, and it is not a
+> geometry cost — it is a persistent-identity cost, which is Lince's home turf.
+
+**Layer 5 — tessellation and exchange.** The screen never sees B-rep; faces get
+meshed into triangles per frame budget, with a separate high-quality mesh for
+export. Interchange is STEP (ISO 10303, AP203/214/242 — the only format that
+carries real B-rep between systems), IGES (dead but everywhere), STL/3MF for
+printing, glTF for display.
+
+### The alternative stacks
+
+- **Mesh CSG.** Skip exact surfaces; keep triangle meshes and do robust boolean
+  ops on them. Manifold's algorithm guarantees manifold-in → manifold-out. This
+  is what OpenSCAD uses now. Cheap, robust, but you lose exact circles, exact
+  fillets, and STEP export fidelity.
+- **Implicit / f-rep.** A shape is a function f(x,y,z) < 0. Union is min,
+  intersection is max, blends and lattices and offsets are trivial, booleans can
+  never fail because there is no topology to corrupt. Mesh only at the end (dual
+  contouring). This is libfive, Curv, Fidget, and commercially nTop. The trade:
+  no exact edges to dimension, no B-rep to export, and mating/tolerancing —
+  "this piece connects to that piece" — is genuinely awkward.
+- **Voxel.** Only relevant if Ailuros' "tiny, tiny voxels" line from
+  `Interfaceless` is taken literally. Not manufacturable-precision.
+
+## 2. The decision that decides everything else
+
+Ailuros wants "the smallest piece of it, that could connect with others" — parts
+that mate, with tolerances, with build instructions as a Trail. That is a
+B-rep/STEP problem, not an implicit problem. Implicit is the only option that
+drops cleanly into a Bevy canvas at interactive rates with no C++ in the build,
+and it is the wrong representation for the stated use.
+
+So: exactness is needed, and exactness is not obtainable in pure Rust today.
+
+## 3. The field itself
+
+Before asking what we can embed, what exists and how each one is built.
+
+### The commercial tier — kernels you rent
+
+Almost no CAD vendor writes its own kernel. There are four that matter and they
+are licensed, not sold, at five to six figures plus royalties.
+
+- **Parasolid** (Siemens, from the 1988 Romulus lineage) — the industry default.
+  NX, Solid Edge, SolidWorks (until its own fork), **Onshape**, **Shapr3D**,
+  **Plasticity**. If a young commercial CAD feels unreasonably solid at
+  booleans and fillets, it is Parasolid underneath and the company's real work
+  is the UI.
+- **ACIS** (Spatial/Dassault) — the other old one. DraftSight, many CAM tools.
+- **CGM** (Dassault) — CATIA's kernel, now sold separately.
+- **D-Cubed DCM** (Siemens) — not a kernel, the *constraint solver* half,
+  licensed separately and used by most of the above. That it is a separate
+  product is the evidence that layer 3 is genuinely separable.
+
+What renting buys: thirty years of boolean edge cases and someone else's
+liability. What it costs: money, a closed binary, and no chance of it living
+inside an MIT program. Out of reach for us, and worth knowing precisely *what*
+is out of reach — the kernel, not the application.
+
+### The free field
+
+- **FreeCAD** (LGPL) — OCCT + Coin3D + Qt + Python. A workbench shell rather
+  than a program; every discipline is a plugin. Its Python layer means a feature
+  is a script, which is the pattern worth stealing. 1.0 finally shipped the
+  topological-naming fix. Huge, C++, a whole desktop app — a teacher, not a
+  dependency.
+- **Dune3D** (GTK4, v1.4.0 "Einstein", Jan 2026) — Solvespace's solver + OCCT +
+  a modern UI, 33 MB, one person, 2.5 years. The proof that the stack is
+  assemblable at small scale by one determined human.
+- **SolveSpace** (GPLv3) — tiny, its own kernel and its own NURBS, and the
+  solver everyone else extracts. Famous for the solver, limited at booleans.
+- **OpenSCAD** (GPL) — script only, no GUI model, **no constraint solver, no
+  feature tree**, mesh CSG (now on Manifold). The existence proof that layers 3
+  and 4 are optional if your input language is good enough. Its descendants:
+  **ImplicitCAD**, **Curv**, **Antimony**.
+- **CadQuery** and **build123d** (Apache-2.0, Python over OCCT) — the closest
+  prior art to what Lince should do. A part is a program; selectors pick faces
+  and edges by *query* ("the topmost circular face") rather than by index, which
+  is an answer to topological naming that sidesteps persistent ids entirely.
+  Read build123d's selector design before designing ours.
+- **BRL-CAD** (BSD/LGPL, in continuous development since **1979**, ~1M lines) —
+  the great unknown major. Its architecture is a third option nobody else
+  offers: CSG-primary, and geometry is evaluated by **ray-tracing** (`librt`)
+  rather than tessellated. Instead of computing a boundary, you shoot rays and
+  classify intervals per ray, which makes booleans trivially robust and gives
+  you analysis (mass, shielding, line-of-sight) as a by-product. It is slow to
+  edit, alien to modern CAD UI, and unmatched at "is this assembly actually
+  solid". Worth knowing about if Ailuros ever needs to *analyse* a device rather
+  than draw one.
+- **openNURBS** (Rhino, freely licensed C++ with source) — not a kernel, a
+  read/write library for the `.3dm` format plus NURBS evaluation. The way into
+  the Rhino/Grasshopper world if that ever matters.
+- **Blender / Gmsh / Salome** — mesh modelling, meshing and FEA respectively.
+  Adjacent, not CAD.
+- **Zoo Design Studio** — the app is open source, the geometry engine is a
+  hosted GPU service; the "3D view" is a video stream over WebSocket. Their
+  language KCL is Rust and their solver `ezpz` is MIT. Take those two, leave the
+  architecture.
+- **nTop** — commercial implicit modelling, originally built on Matt Keeter's
+  libfive. The proof that f-rep is a real engineering stack and not a demo, for
+  lattices, blends and generative shapes specifically.
+
+## 4. Candidates, filtered
+
+Filter order: license compatible with MIT → no browser, no Qt/GTK app → buildable
+in our tree → geometry depth.
+
+### Usable
+
+| Thing | License | What it is | Verdict |
+|---|---|---|---|
+| **OCCT** (via `opencascade-rs` / `occt-rs`) | LGPL-2.1 **with a narrow exception** — see below | The only free production B-rep kernel. Booleans, fillets, STEP r/w, healing. Powers FreeCAD, Dune3D, CadQuery, KiCad's 3D. | Usable, with a licensing catch that bites our single-binary shape. Cost: a C++ build (CMake, minutes to tens of minutes), and the Rust bindings are partial. `bschwind/opencascade-rs` is the established one but thin; `occt-rs` is 2026, early, partly AI-written, AGPL-with-CLA — avoid that one. |
+| **`ezpz`** (Zoo/KittyCAD) | MIT | 2D geometric constraint solver in Rust, ships in Zoo Design Studio, works native or wasm. Built specifically because slvs is GPL and D-Cubed is expensive. | Best-in-class fit. Layer 3 is solved for us, for free, in-language. |
+| **Manifold** — `meshbool` (pure Rust port, Apache-2.0, tracks upstream v3.5.1, passes 245 of the C++ tests), or `manifold-csg` (bindings) | Apache-2.0 | Guaranteed-manifold mesh booleans. | The pragmatic middle. No C++ needed with `meshbool`. `meshbool` is small and young (7 stars) but the boolean core is the part that is done. |
+| **Fidget** (Matt Keeter) | MPL-2.0 | Implicit-surface evaluation with a hand-written aarch64/x86_64 JIT, 31× over its own interpreter; manifold dual contouring meshing; 2D/3D bitmap rendering. | The best Rust engine in the whole survey, for the representation we probably don't want. Keep for organic/lattice/blend work, not for mating parts. |
+| **truck** / **monstertruck** | Apache-2.0 | Pure-Rust B-rep with NURBS, `truck-shapeops` booleans, `truck-stepio` STEP. `monstertruck` is virtualritz's fork (upstream PRs were stalling) adding a rewritten fillet engine with per-edge and variable radii, chamfers, `Result`-returning booleans, shape healing, T-splines, STEP assembly output. | The only pure-Rust path to exact B-rep. Booleans exist but are not battle-hardened — the docs themselves ship a "robust version of splitting closed edges and faces" as a separate opt-in, which tells you what the default is. |
+| **`csgrs`** | MIT | OpenSCAD-shaped CSG over BSP trees, wired into the dimforge ecosystem (nalgebra/parry/rapier) we already use via avian3d. 32/64-bit, wasm. | Easiest thing to get a shape on screen with. Ceiling is low. |
+
+### Read the OCCT exception before counting on it
+
+I read the actual text (`OCCT_LGPL_EXCEPTION.txt`). It is much narrower than its
+reputation:
+
+> "The object code form of a 'work that uses the Library' can incorporate
+> material from a header file that is part of the Library. As a special
+> exception to the GNU Lesser General Public License version 2.1, you may
+> distribute such object code incorporating material from header files provided
+> with the Open CASCADE Technology libraries (including code of CDL generic
+> classes) under terms of your choice, provided that you give prominent notice
+> in supporting documentation to this code that it makes use of or is based on
+> facilities provided by the Open CASCADE Technology software."
+
+That only lifts the header/inline/template-instantiation clause of LGPL 2.1. It
+does **not** grant general static-linking freedom. So the ordinary LGPL rule
+still applies: dynamic linking is fine and our own code stays MIT, but the user
+must be able to swap in their own build of the library. Lince ships as **one
+binary** (`lince`, Cell plus optional UI) — statically linking OCCT into it would
+put us in the "provide object files or otherwise allow relinking" obligation,
+which is a distribution and CI problem, not a code problem. Dynamic linking a
+system OCCT is clean but makes the single binary depend on a large C++ library
+being present, which contradicts the whole point of shipping one file. Decide
+this before writing any binding code; it is the actual blocker on OCCT, not the
+API.
+
+### Rejected, and why
+
+- **FreeCAD / Dune3D / SolveSpace as embedded apps** — all are Qt/GTK
+  applications with their own event loop and document model. Embedding means
+  either a second window we do not control or a browser we already rejected.
+  Dune3D (v1.4.0 "Einstein", Jan 2026, GTK4) is worth studying as a design: it
+  is precisely Solvespace's solver + OCCT + a modern UI, in 33 MB. That is the
+  architecture, proven at small scale, by one person.
+- **Solvespace's `slvs` / the `slvs` Rust crate** — GPLv3. Incompatible with MIT
+  Lince. `ezpz` exists to replace exactly this.
+- **Zoo Design Studio** — the app is open, the geometry engine is not: it is a
+  hosted GPU service and the 3D view is a **video stream over WebSocket**. Nothing
+  to embed, and it inverts our model of where data lives. Take `ezpz` and leave
+  the rest.
+- **Fornjot** — the obvious answer two years ago, an all-Rust b-rep kernel. Hanno
+  Braun ended it; the repository was archived 2026-06-19 with the goals
+  explicitly not reached. Read its post-mortems before starting a kernel.
+- **`zenith-cad-kernel`** — from-scratch Rust B-rep, exact booleans, STEP, ~132k
+  lines, 8 crates, MPL-2.0. Written in **29 days** (2026-08-19 → 09-16) by one
+  person with an AI, zero stars, cannot read all real STEP files. Genuinely
+  interesting and completely unproven. Watch; do not depend.
+- **CADmium** — browser CAD over `truck`, prototype, quiet since 2024.
+- **libfive / Curv** — C++ ancestors of Fidget. Use Fidget instead.
+
+## 5. What "external castle that behaves natively" costs
+
+Worth pricing honestly, because it sounds free and is not.
+
+A separate process holding the model means the geometry state lives **outside the
+Box**. Protein supplies authorized reads and Actions own writes; a CAD process
+with its own document is a second source of truth with no Protein binding, so no
+Area of Influence can filter parts, no Protein Action can change a dimension, and
+nothing about the model syncs to another Organ. We would have to invent a bridge
+whose only job is re-teaching the external tool what a Record is — the same
+mistake the web crate made with its own state, one process further away.
+
+It also breaks rendering: to "behave natively" the castle must draw inside our
+canvas, and an external GTK/Qt app cannot. The only ways are a video stream
+(Zoo's answer — and it forces their hosted-engine architecture on us) or shared
+GPU buffers (fragile, platform-specific).
+
+And determinism. The interface already runs avian3d with `enhanced-determinism`,
+and the DST plan wants a seed to reproduce a run exactly. If part geometry ends
+up in Records that sync, a nondeterministic kernel — floating-point tolerance
+decisions, thread-order-dependent boolean results — is a **sync divergence**, not
+just a rendering wobble. An in-process Rust library we can pin and seed is
+checkable; an external binary is not.
+
+Conclusion: an external process is fine as a **converter** (feed it a file, get a
+file back, e.g. headless FreeCAD for a STEP import we cannot parse) and wrong as
+a castle.
+
+## 6. What this points at
+
+Not "embed a CAD". Not "write a kernel". The third thing:
+
+**Lince owns layers 3 and 4, and borrows layers 1, 2 and 5.**
+
+Layer 4 — the feature tree with stable names — is the part Lince is already
+unusually well equipped for. A feature tree is an ordered DAG of parameterised
+operations with durable identity, which is a Record tree with `@part-of` and
+uids. The topological naming problem is a persistent-identity problem, and
+Lince's whole thesis is that identity is a uid, never a position. A sketch
+dimension that is a Record quantity is dimension-driven design for free, and
+makes a part a thing you can Need, contribute to, transfer and sync — which no
+CAD file can be. That is the part worth building, and it is the part nobody else
+has.
+
+Layers 1–2 stay borrowed: `monstertruck`/`truck` while it holds, OCCT when
+exactness wins over the single-binary constraint, `meshbool` for display-time and
+for anything that only has to be printable. Layer 3 is `ezpz`. Layer 5 is
+`truck-stepio` plus our own tessellation into Bevy meshes. Fidget lives beside
+it all as a second representation for the organic parts, never as the mating
+geometry.
+
+**The one architectural decision, and it has to be made on day one.** Layers 3
+and 4 — sketch points as Records, constraints as assertions, the feature DAG —
+are portable across every kernel in this document. Layers 1 and 2 are not: a mesh
+fillet is not a B-rep fillet, and a feature tree written directly against mesh
+CSG does not carry forward, it gets rewritten. So the kernel must sit behind one
+narrow internal trait from the very first commit — roughly `solid from profile +
+extrusion`, `boolean`, `fillet edges`, `tessellate`, `export` — with mesh CSG as
+its first implementation and B-rep as a later one. Put that seam in on day one
+and the prototype is a prototype; leave it out and the prototype is a throwaway.
+That is the only decision here that is expensive to reverse.
+
+Concretely the first honest step is small: one castle that holds a 2D sketch
+whose points are Records and whose constraints are assertions, solved by `ezpz`,
+extruded into a Bevy mesh through that trait, implemented by `csgrs` or
+`meshbool`. No kernel, no C++, no external process, MIT throughout. If
+sketch-plus-extrude-plus-boolean survives contact with a real part, the B-rep
+question becomes answerable with evidence rather than by survey.
+
+## 7. Numbers worth keeping
+
+- Production free B-rep kernels: **one** (OCCT). Rust ones: **zero proven**.
+- Fornjot: **archived 2026-06-19**, goals not met, after ~4 years.
+- Dune3D: one person, 2.5 years, 33 MB, solver + OCCT + GTK4 — the whole
+  architecture, at the smallest size anyone has managed.
+- FreeCAD: **15 years** to fix topological naming.
+- Fidget JIT: 1024² brute-force, 5.8 s interpreted → **182 ms** JIT.
+
+## Sources
+
+- Fornjot archived: https://github.com/hannobraun/fornjot · https://www.fornjot.app/
+- truck: https://github.com/ricosjp/truck · https://docs.rs/truck-shapeops
+- monstertruck: https://github.com/virtualritz/monstertruck
+- zenith: https://github.com/hinatahugu29/zenith-cad-kernel
+- opencascade-rs: https://github.com/bschwind/opencascade-rs · occt-rs: https://github.com/occt-rs/occt-rs
+- Fidget: https://github.com/mkeeter/fidget · https://www.mattkeeter.com/projects/fidget/ · meshing idea: https://www.mattkeeter.com/blog/2026-07-03-meshing/
+- Manifold: https://github.com/elalish/manifold · meshbool: https://github.com/BorgerLand/meshbool · manifold-csg: https://github.com/zmerlynn/manifold-csg
+- csgrs: https://github.com/timschmidt/csgrs
+- ezpz: https://github.com/KittyCAD/ezpz · https://zoo.dev/blog/announcing-solver
+- Zoo engine as video stream: https://github.com/KittyCAD/modeling-app
+- slvs GPL: https://solvespace.com/library.pl · https://github.com/thekakkun/rust_slvs
+- Dune3D: https://github.com/dune3d/dune3d · https://docs.dune3d.org/en/latest/why-another-3d-cad.html · FOSDEM 2026: https://fosdem.org/2026/schedule/event/UUVWPM-dune_3d_-_2_12_years_in_the_3rd_dimension/
+- Topological naming: https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Topological_naming_problem.md
+- B-rep vs implicit: https://www.ntop.com/resources/blog/understanding-the-basics-of-b-reps-and-implicits/
+- libfive: https://github.com/libfive/libfive
+- CADmium: https://mattferraro.dev/posts/cadmium
+- OCCT exception text: https://raw.githubusercontent.com/Open-Cascade-SAS/OCCT/master/OCCT_LGPL_EXCEPTION.txt
+- BRL-CAD: https://brl-cad.github.io/docs/index.html · https://brlcad.org/~maths22/books/en/HACKING_BRL-CAD.html
+- openNURBS: https://www.rhino3d.com/features/developer/opennurbs/
+- Parasolid / the rented-kernel tier: https://en.wikipedia.org/wiki/Parasolid
+} r_99NWECF19VKV94HQQ3G3ASMC4M
+
+Interfaceless - Ailuros (@ailuros: 0, #instinct) {
+What is more embarrassing, to dream or not to dream something like this? That is the question.
+
+Writing and not doing is fiction. If the process of ordering the steps, building and documenting the work is done in the open, there is no such thing as too much ambition. 
+
+![](/assets/photos/ailouros.png)
+
+# The Ultimate Hardware
+
+How do we have one device only, for doing anything Lince and not Lince related, that can carry it's own battery that lasts a long time, is light, adjustable for people of different sizes and capabilites, has all the instructions on how to build as a Trail in Lince and most important, is pretty?
+
+What if we could make the smallest piece of it, that could connect with others, that had:
+- [ ] Micro-fission reactor for energy, rechargeable by the sun and movements too.
+- [ ] Carbon for structure and photon for state and energy transmission.
+- [ ] Connectable to other parts of it physically.
+- [ ] Wireless connection with devices around it.
+- [ ] Screen parts, chassi parts or an all-in-one.
+}
+
 Lince, the philosophy (@philosophy: 1, is #chapter, #instinct: 1, #done) {
 It is possible to find many different philosophies to divide life. The Lince tool separates it into Needs and Contributions to Needs. The Lince philosophy is to meet your Needs and Contribute to the Needs of those you care about; using the Lince tool or not. The maximum point of the Lince philosophy is all Needs deemed fair being met, and in the void of unmet Needs... We don't know yet.
 }
 
-Lince, the tool (@tool: 1, is #chapter, #instinct: 2, #done) { r_YJQ36ETAKE8J7F8Y65DG7V43MB
+Lince, the tool (@tool: -1, is #chapter, #instinct: 2, #done) { r_YJQ36ETAKE8J7F8Y65DG7V43MB
 > **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
 
 Lince models everything with a Record, it has title and description as text columns and a quantity, the quantity is thought to be the most changed field, representing state that can be affected by math in automations and Transfers. Lince thinks by default that when a quantity of a record is negative, it means an Actor Needs that much of the Record in question, so '-1 Apple' is the Need of 1 apple, if it is positive it's a possible Contribution, to oneself or others, if it's zero, its neither a resource we can use nor a Need.
@@ -520,145 +1039,25 @@ Sync (@sync: 0, #instinct, #part-of @ontology) {
 Sync connects a selected Protein to a local Lingua or Markdown directory. Inspect status and conflicts, and stop it when you no longer want incoming and outgoing edits. One-time import is separate.
 }
 
-Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
-A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+Lingua (@lingua: 0, #instinct, #part-of @ontology) {
+For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectional sync with the database. Vocabulary is a way to understand the meaning of an #assertion, like a dictionary, or a wiki, with textual description, photos, and links to other Records. One default Vocabulary comes with Lince, and you can have multiple vocabularies.
 
-I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
+## Vocabulary
 
-We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
+We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
 
-I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
+## Expressions, configuration, and scripts
 
-We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
+Lingua supplies the shared syntax for expressions, and Nucleus evaluates them. Pure calculations, conditions, local variables, lists, objects, and printing work without a database. Database reads reuse Protein and the existing Store functions.
 
-That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
+Passing a file runs it: `lince lingua report.lingua`. The same commands are available through `cargo xtask lingua`. Use `check` to check a file, `fmt` to format it, or `eval` to evaluate an expression.
 
-On Trust: When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
+A script can select a Lince directory with `dir = "..."`; `--directory` takes precedence. Relative `dir` paths resolve beside the script. The database opens only when an evaluated read needs it. A missing or invalid database produces an error naming its path. Reads share a consistent snapshot and reuse repeated Record readings.
 
-2. [ ] **Public Transfer history / trust portfolio:** let people inspect a party's permitted completed Transfer history with verifiable identity, preserving private fields. This comes from the broader Transfer Record and was outside the implementation plan.
+`print` can show values, Record quantities and properties, Protein query results, and existing declarations. For example, `print("Quantity is: " + str(quantity(@my-record) + 2))` prints `Quantity is: 12` when that Record's quantity is 10. Printing a definition does not run its conditions or actions. Running a script leaves its source and database data unchanged. Checking and formatting work without a database, and importing or syncing a document never executes script statements.
 
-"The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
-
-- [ ] **Handle different device clocks safely.** Location fixes are still accepted or rejected using source and authority timestamps. Use a bounded age protocol so a wrong or changed clock cannot reject fresh positions or keep old ones alive. Preserve source approval and replay protection.
-
-- [ ] **Make sharing-authority changes usable.** The authority endpoint is displayed, but there is no explicit handover of its private settings to another Cell. Show connection status clearly and provide an authorized handover that ends the old session and requires fresh source approval.
-
-- [ ] **Finish location invitations.** Person and device selection already exist, but outside viewers still copy and paste a private reference. Add sending and opening invitations through the normal private conversation flow, with a clear audience, precision, and stopping condition. Receiving an invitation must still require permission.
-
-- [ ] **Build the guided Transport Transfer flow.** Bring existing Needs, Contributions, private requests, agreements, reservations, and completion controls into a simple “Need transport” / “Offer transport” workflow. Ask for origin, destination, time window, and capacity. Keep it usable as a list when maps or discovery services are unavailable.
-
-- [ ] **Add reviewed sharing shortcuts for participants.** Let a driver review sharing with selected passengers, and let each passenger independently choose the driver or outside observers. Adding someone to a Transfer must require a separate decision before sharing their location.
-
-- [ ] **Add reusable journey progress actions.** Provide explicit actions such as arrived, met/boarded, departed, and reached destination. These controls are missing. They should describe progress without automatically confirming fulfillment or creating another accounting result.
-
-- [ ] **Add geographic and time-sensitive announcements.** Public announcements currently store area and availability as text, with publication lifetimes of one to seven days. Add bounded approximate origin/destination areas, structured time windows, and shorter expiry for immediate availability. Review the public information before publishing and reuse existing signatures, withdrawals, and private replies.
-
-- [ ] **Connect geographic discovery to Protein and maps.** Protein has no public-announcement source or viewport query. Add permitted discovery results with area/time filters, then show public areas, private saved places, and granted live positions as distinct layers. Keep Records without coordinates accessible in the accompanying list.
-
-- [ ] **Support larger map result sets.** Maps currently take only the first 32 source Records. Add bounded viewport results and grouping of nearby visible markers. Counts, filtering, and distance calculations must use information the viewer may access. Add a spatial index if measurements show it is needed.
-
-- [ ] **Preserve live-position age and accuracy on maps.** Map markers currently discard the reply’s capture age and device accuracy, and their local freshness timer starts when the reply arrives. Carry the original age through delivery, expire markers accordingly, and show permitted measurement accuracy separately from a deliberately approximate sharing area.
-
-- [ ] **Add an explicit “locate me” control.** Maps can center on Records, but cannot request the current device’s position through a dedicated control. Make acquisition require a user action and keep it separate from saving a place or sharing with others.
-
-- [ ] **Finish regional map package management.** Local directories, PMTiles, and area downloads already work. Add package metadata for coverage, source version/date, hashes, resources, and credits, plus safe installation and replacement. An interrupted update must preserve the working pack. Version the cache by dataset, rather than only server URL.
-
-- [ ] **Complete map keyboard access.** Zoom buttons and accessibility labels exist, but panning, choosing a point, and drawing a download area rely on pointer gestures. Provide keyboard alternatives and verify focus, marker navigation, and screen-reader descriptions.
-
-- [ ] **Finish desktop map quality and performance measurements.** Basic GPU rendering is already demonstrated. Measure dense scenes, multiple maps, repeated theme changes, resizing and display scaling, memory/resource cleanup, and release size on named hardware. Check difficult place names and glyph coverage, and clearly describe unsupported cartography.
-
-- [ ] **Validate real desktop location delivery.** Existing simulations cover permissions and Transfer completion, but do not establish Linux portal behavior or real-network performance. Exercise driver, passenger, and outside-observer sessions across actual instances, including permission denial, disconnection, stopping, and handover. Measure delivery delay, traffic, and memory.
-
-- [ ] **Integrate maps and the transport workflow into mobile.** Mobile location controls already exist, but the map presentation does not. Reuse the completed capabilities with touch/pinch controls, readable cards, accessibility, and correct cleanup when the app pauses or its graphics surface is recreated.
-
-- [ ] **Complete Android location and map validation.** Android setup/run tooling exists; validate the actual target and application through that workflow. Check approximate, denied, and revoked permissions, locked-screen sharing, notification Stop, process termination, network changes, and Transfer completion. Measure sustained battery, thermal, bandwidth, memory, and rendering behavior.
-
-- [ ] **Later extension: add multi-stop journeys and capacity per segment.** Ordered itineraries and segment-aware reservations are missing. Check capacity for overlapping portions of a journey, allow reuse after someone leaves, and preserve independent passenger privacy using the existing Transfer structure.
-
-- [ ] **Optional later extension: add address search and route estimates.** Geocoding and routing providers are absent. Use replaceable providers, make disclosure of private endpoints explicit, and show the provider and age of estimates. Maps and Transfer completion should remain usable without them.
-} r_00ECACY50NWQQ3S0YH37V8KMK6
-
-Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
-Interfaces should ask for as little attention as possible throughout the user's life. Choices can be done quickly. The best interface is Interfaceless.
-Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Full control is always available.
-
-Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism.
-
-Shadows and hints can be used for subtle differentiation of areas, components and data.
-
-Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design.
-
-Tooltips and placeholders should contain minimal text.
-
-The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record.
-
-Common choices should be quick, and the person should be able to inspect and change the details.
-
-Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions.
-
- Lince's default visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC. Other themes are available in interface.
-
-
-There are several components made, here is the documentation on how to use them:
-
-### IDE
-
-A local text editor with a reusable File Explorer Castle. Rust handles directory listing and file operations directly. Loro retains edits and merges independent changes made on disk; competing changes require review. This is separate from Record sync and blob transfers. Opening a folder creates no File Records or database copies. Unsaved recovery drafts are stored locally beside the workspace.
-
-Add the project folder, open a file, then open **Language tools**. Lince uses installed programs; connecting is manual and downloads nothing.
-
-Install the tools you use:
-
-- **NixOS or Linux with Nix:** `nix shell nixpkgs#bash-language-server nixpkgs#shfmt nixpkgs#shellcheck --command lince`. For permanent installation, add those packages to `environment.systemPackages` or Home Manager's `home.packages`. For Nix files, install `nixd nixfmt statix` instead. [Nix setup](https://wiki.nixos.org/wiki/Adding_programs_to_PATH)
-- **Arch:** `sudo pacman -Syu bash-language-server shfmt shellcheck`.
-- **Debian/Ubuntu:** `sudo apt install shfmt shellcheck`; with Node.js 20+ and npm, run `npm install --global --prefix "$HOME/.local" bash-language-server`, then `export PATH="$HOME/.local/bin:$PATH"`. [Server installation](https://github.com/bash-lsp/bash-language-server#installation)
-
-Launch Lince from that terminal. From a configured checkout, use `cargo run -p lince`. With Nix, first enter `nix develop .#interface`, then use the tooling shell above with `--command cargo run -p lince`.
-
-Check the prefilled fields for the open file's language:
-
-| Language | Server | Formatter | Linter |
-| --- | --- | --- | --- |
-| Bash (`.sh`) | `["bash-language-server","start"]` | `["shfmt"]` | `["shellcheck","-"]` |
-| Nix (`.nix`) | `["nixd"]` | `["nixfmt"]` | `["statix","check","--stdin"]` |
-
-Fields are JSON lists: executable, then arguments. Use PATH names or full paths; `~`, `$HOME`, aliases and pipes are not expanded. `[]` disables a command. Connecting or running saves the settings. The deepest selected folder containing the file is its project root; otherwise its parent is used.
-
-Click **Connect / Restart** and wait for Connected. **Ctrl+Space** requests completion; click a diagnostic to visit it. **Ctrl+Shift+I / Format** uses the server when supported, otherwise the formatter. **Format with command** always uses the formatter; **Run linter** shows its output. Formatting is one undo step and reaches disk through Save or autosave. **Disconnect** leaves normal editing and highlighting available.
-
-Test with a small Bash file: expect a warning for unquoted `$1`, completion of a function name, and undoable formatting. Keep autosave off to check that only Save changes disk contents.
-
-If a tool is missing, run `command -v bash-language-server shfmt shellcheck`, then restart Lince from that environment or enter the full path. An already running Lince does not inherit later environment changes.
-
-Tools handle files up to 2 MiB, with four shared servers. Completion is plain text. Server settings currently use defaults; custom NixOS/Home Manager option completion may need settings the UI does not expose. [nixd settings](https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md)
-
-# Tasks:
-
-- [/] Being able to put a shader per task, the tasks left to do are dimmed versions of themselves, instead of a glowing spinning ball of energy it is a gray stopped ball, two wgsls, doing the tasks is what makes them glow or vice versa, evil versions of themselves saying you need to do something, and calm when they arent negative. Needs to pass through rust their quantities. So maybe we see the component lying down in 3d with the shaders floating above. Maybe we can do a gaussian splatting of a room, and add a shader to it, passing record quantities. If it needs cleaning it will put on top of the gaussian a lot of black goo or mut on the floors. Your room can be given coordinates, in the canvas (which is the world) and your stuff can have coordinates inside that room, so moving the room around doesnt change anything. The tasks you need to do may appear with some sand and some wgsl outside of the record's description. So you can have ambient effects on your room when you look at it, and inside it some floating stuff to do that is more computer focused so they float around your pc. And you can also have a kanban board on your wall digitally, and then when you take a 3d hologram projector it can take the room of your Lince and project to the real world, so you see the kanban, and if a camera is pointing at you and seeing your gestures you can move the sands on lince and projection, connecting the worlds.
-	- [/] What if we could put shaders in the sand? We have wgpu, shouldnt be too hard to slap a custom WGSL into the surface of the sand, maybe even making the sand be the actual body and the wgsl going out of it, if it glowed it could show as a light outside of the sand. If we are using compute/vertex shaders in the interface, putting something custom to make it pretty should be fairly straightforward to the users.
-		- [/] Add shader presets and a supported WGSL editor for Sand surfaces, including bounded outward glow. Keep text readable, preserve the last working effect and provide Reset and Disable outside the customized content.
-	- [ ] Add shader to my Interface, to be able to put light source and shadows over the sands, and texture to them.
-> Comment: This group contains several projects. For v1, finish a small supported shader input contract containing quantity and task state, Sand surface presets, editing, last-working-effect recovery, and accessible Reset/Disable controls. Keep text readable and bound outward glow, active surfaces and render resolution. Handle lighting, shadows and material textures as a distinct stage. Room-wide effects, holographic projection and gesture control should have their own later milestones; they should not prevent finishing the usable Sand effects.
-
-- [ ] Mathematical formulas for editing topology of floor, pining a point to a sand, so when we move the sand we move the slopes and valleys the formula creates.
-	- [ ] Make areas bind to camera, so as i walk around i affect it that way, with all area capabilities.
-
-- [ ] What if when we develop computer vision models, we can see the workflow happening in real time? Start playing with the concept of cameras inside of Lince, the feed can be continuously received to remodel the 3d represetation. The old modeling may change and things might get moved, Fiote could look at the two scenes and fill in the gap: Reposition an area to be on top of an item that changed places, maybe even updating a property of such item like location.If something is gone without me modeling it 
-- [ ] Gaussian Splatter Castle: taking video of a space and turning it into very low polygon space + simplified gaussians as just the flat face of objects.
-	- [ ] (Wont enter the plan of coding topology, user will ask for this like to be coded alone in the future) Also being able to put a camera feed like the Command Signal coming in from the real switch that has the cameras in the same network as the server running this lince, or in some vps. So i can alter between cameras and see it's feed from one angle, and then continue moving around the building like a creative mode of minecraft flying.  Maybe this can be a Karma Command's Signal, that gets continuously updated, maybe we can set it to be in memory for live feed and not waste disk.
-
-- [ ] Global Infrastructure (leave for last):
-  - [ ] There are modelings of cities, and regions in cities, AECO (Architecture, Engineering, Construction and Operations i think) that make simulations an digital representations of present moment from factories to harbors and railines. Built in UE5, Unity and Blender, bbwe could use them. These maps can show the modeled reality and ecords that compose them, the needs and contributions, ownership, transactions and automations related to them. For the factory cases, we can have ergonomics around stock management, orders all possibly as open data. A disruption at a mineral supplier could reveal consequences further along the chain.
-  - [ ] Production, stock, logistics and ordering views and public commerce.
-} r_99NWECF19VKV94HQQ3G3ASMC4M
-
-Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
-Ontology in Lince can be a castle, it is for managing the content of your database. The meaning of records through Lingua Vocabulary, in the tasks it is referred as the central point for guaranteeing you have the data you want, dealing with sync and organ discovery, it is the vibe of several features in Lince. These are the remaining tasks of several features related to this Ontology vibe:
-
- [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start. LoRa remains a deferred implementation task. It needs its own transport adapter designed around radio’s limited bandwidth, small messages, and intermittent connections. This would provide another way for Cells to communicate where ordinary internet access is unavailable.
-
-- [ ] Further search improvements are optional proposals. Large directory Organs could divide their collections by topic, language, or region while preserving publication consent, withdrawals, and security limits. In dispersed networks, consenting Organs could publish signed, expiring summaries of their collections to help people choose which sources to search. These summaries would guide searches without requiring a central registry or promising complete network coverage. Additional indexes should follow measurements showing expensive filter combinations. Progressive result display could make searches feel faster while slower selected sources are still answering. Current search already works locally and through explicitly selected helper Organs.
-} r_S8PQ17MQ3WBWM53ZN700K89V9F
+Scripts support `if` / `else if` / `else` and `for item in array` with brace blocks. Each block has its own local names; assignments can update a variable declared outside it. Use `result = push(result, value)` to collect values, then `print(result)`. Examples of declarations, expressions, conditions, loops, printing, and database reads are in `institute/trails/lingua-examples/`.
+}
 
 Blood (@blood: 0, #instinct, #part-of @ontology) {
 If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
@@ -667,547 +1066,11 @@ This is a good step in interoperability of systems, less isolation and complex A
 
 The plugin foundation already supports startup discovery, native configuration controls, Sync providers, Actions, and Record schemas. Nostr public notes and .ics/Markdown exports are implemented. Calendar exports use Schedule Proteins and the same simulation and allocation as Time Castle, without needing an open clock. They replace the selected file after a complete successful export; edits made in a calendar app do not flow back into Lince.
 
-- [ ] **Complete package compatibility information.** Let a package declare its publisher, supported operating systems, required Lince interfaces, and dependencies on other packages. Explain why a package cannot run, and prevent dependent features from starting without what they need.
+Deffered for now:
 
-- [ ] **Add package installation and update controls.** Installation currently uses local commands and requires restarting Lince. Provide a supported way to install, update, and remove packages, inspect their origin, and review changed access requests. Preserve saved Records and settings when a package is removed.
-
-- [ ] **Add enforceable access limits for plugins.** Current native plugins run with the computer account’s file and network access. Choose a sandbox or restricted runtime, let people grant specific access, and make revoking that access stop the affected operations. Process timeouts already exist; they do not restrict filesystem or network access.
-
-- [ ] **Allow plugin Actions to work through Karma.** Actions currently run through local interface controls. Add an authorized automation path so a rule can invoke an approved Action, with saved intentions, results, and protection against repeating an external effect after a retry.
-
-- [ ] **Add simulated plugin responses.** Executable plugins are currently blocked during Simulation. Let simulations use recorded inputs and mock results, so people can test rules and integrations without publishing messages or contacting real services.
-
-- [ ] **Provide a conflict review screen.** When an imported object changes upstream, Sync currently stops with a conflict rather than overwriting the local Record. Show the original, local, and incoming versions, and let the person choose what to keep while preserving local annotations.
-
-- [ ] **Finish delivery history and unresolved-delivery controls.** Failed and uncertain deliveries have retry controls, but receipts have a fixed storage limit and no maintenance interface. Let people inspect and clear completed history, and resolve pending deliveries before changing connection settings.
-
-- [ ] **Support continuous plugin connections.** The host currently starts a process for each operation. Add supervised, long-running sessions with reconnecting, cancellation, and clean shutdown. This is needed for protocols such as IRC that should stay connected.
-
-- [ ] **Build a second communication provider.** Choose IRC or ActivityPub and implement its supported receiving and sending operations through the existing registries. Use it to verify that another protocol can work without adding protocol-specific branches to Lince’s engine or interface.
-
-- [ ] **Make connections reusable across Sync bindings.** Separate the account or endpoint from each binding’s filters, direction, and destination. Several bindings should be able to use one connection while keeping their selections and delivery state independent.
-
-- [ ] **Coordinate execution across Cells.** Choose which Cell runs a shared connection and provide an explicit handover and recovery process. Prevent two disconnected Cells from independently sending the same queued publication.
-
-- [ ] **Bring built-in Sync implementations into the shared catalogues.** Register existing file and Organ synchronization through the common discovery and status system, while preserving how each kind of synchronization works.
-
-- [ ] **Expand Record mappings and writeback.** Current imports produce plain Records with metadata. Add mappings for Threads, Messages, authors, relations, and supported editable fields. Clearly distinguish changing a local copy, updating the external object, and requesting remote deletion.
-
-- [ ] **Choose any additional Nostr features explicitly.** The example handles public text notes. Private messages, relay authentication, reactions, deletion requests, and fuller history remain outside its current scope. Each chosen feature needs its own mapping, controls, and verification.
-
-- [ ] **Add plugin views and Record editors when needed.** Let packages supply specialized Sands, Castles, and field editors through defined interfaces. Keep generic Record inspection usable when the package is unavailable, and include accessibility, licenses, and credits.
-
-- [ ] **Add further plugin families one at a time.** The plan proposed knowledge sources, Vocabulary packages, Fiote providers, IDE tools, document readers, media processing, maps, devices, notifications, and Transfer integrations. Implement each only alongside a concrete feature, its controls, and tests. These are later extensions, not requirements for finishing the current version.
-
-- [ ] **Verify each extension across its supported platforms.** Test restarts, interrupted operations, duplicate events, revoked access, conflicting updates, and resource limits. The existing management controls are desktop-based; mobile support needs its own interface and a compatible execution approach.
-
-- [ ] **Close the recorded calendar verification gap.** Confirm whether a later native Time Castle test run covered the shared cursor behavior used by .ics exports. If it did not, rerun those tests. The export notes recorded passing format and Sync tests, but their native clock test run was interrupted by a concurrent map compile error. Check the current result rather than assuming that old error still exists.
+- [ ] Lince as an Internet Service Provider tool too, with DNS resolution and all the good stuff.
+  - [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start. LoRa remains a deferred implementation task. It needs its own transport adapter designed around radio’s limited bandwidth, small messages, and intermittent connections. This would provide another way for Cells to communicate where ordinary internet access is unavailable.
 }
-
-Lingua (@lingua: 0, #instinct, #part-of @ontology) {
-
-For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectional sync with the database.
-
-## Vocabulary
-
-We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
-
-- [ ] **Give meanings a version history.** Keep a saved version of each Concept’s definition. Assertions should remember which version they use, so changing a definition cannot change what an older Assertion meant.
-
-- [ ] **Let people publish and adopt Vocabularies.** A person should be able to publish a collection of meanings, inspect someone else’s collection, and choose to use it. Removing a publication should leave already saved meanings usable.
-
-- [ ] **Finish terminology preferences.** Let people choose sets of terms for different contexts, hide unwanted source terms, use their own wording, and restore the original wording. Updates should preserve these choices.
-
-- [ ] **Use Concept identities throughout built-in features.** Features such as assignment and containment still depend on particular words in some places. Change them to recognize the selected meaning, so translations and personal names work consistently.
-
-- [ ] **Add controls for choosing feature meanings.** Let authorized people decide which Concepts a feature accepts and which Concept its controls write. Show the effect of a change and apply the same permission checks everywhere.
-
-- [ ] **Keep selected meanings stable throughout editing.** Rules, filters, drafts, undo, and imported/exported files should retain the chosen Concept even after its label or display language changes. Ambiguous words should ask for a selection.
-
-- [ ] **Improve the meaning inspector.** Show a Concept’s definition, origin, versions, terms, and where it is used. Make changing a label, changing a definition, and creating a different meaning clearly separate actions.
-
-- [ ] **Finish sharing terminology and accepting translation packages.** Share public definitions and terms while keeping personal wording private. Translation packages should add wording without gaining permission to change feature behavior.
-
-- [ ] **Build connections to external knowledge sources.** Create a common way for Lince to search and read other databases. Start with a test source, with permission checks, cancellation, and limits on requests and downloaded data.
-
-- [ ] **Preserve the full meaning of imported claims.** Keep their values, conditions, references, source, and revision. Connect external meanings to local Concepts explicitly, without assuming that matching words mean the same thing.
-
-- [ ] **Show local and external information together.** Let people choose sources and browse their results beside local Records. Clearly show where each result comes from, whether loading is complete, and what is available offline.
-
-- [ ] **Keep lasting links to external results.** A local annotation or relation should remain usable after temporary downloaded content is cleared. Keep a small reference Record that can later receive the full saved content.
-
-- [ ] **Add temporary storage and offline sources.** Separate disposable downloaded data from permanent Organ data. Limit storage and memory use, keep private data separated, and show what is cached or unavailable.
-
-- [ ] **Preview what will be saved into an Organ.** Show the selected content, required related data, assets, licenses, missing pieces, and estimated size before saving. Check that the person can read the source and write to the destination.
-
-- [ ] **Make saving reliable.** Save the selected material and its required dependencies together. Repeating or retrying a save should reuse the same Records, and interrupted saves should recover cleanly.
-
-- [ ] **Make saved knowledge independent of its source.** Saved content should remain readable after disconnecting and clearing temporary storage. Include its meanings, references, attribution, and required assets when syncing or exporting it.
-
-- [ ] **Let people review source updates.** Compare a new source version with the saved version and local edits. Let the person choose which changes to accept or create a separate local copy, while preserving their annotations.
-
-- [ ] **Add Wikidata support.** Search and read entities, properties, and statements, preserving their values, conditions, references, and source versions.
-
-- [ ] **Add Wikipedia support.** Search and read article revisions in the native interface, preserving source links, attribution, and licenses.
-
-- [ ] **Add local archive and dump support.** Let people browse supported offline knowledge collections through the same reading and saving workflow.
-
-- [ ] **Verify the complete experience.** Test permissions, retries, offline use, sync, export, and resource limits. Check keyboard use, multilingual input, right-to-left text, screen readers, and mobile layouts, including real devices where available.
-
-## Expressions, configuration, and scripts
-
-The planned language work makes Lingua the shared syntax for expressions, while Nucleus evaluates them and the engine supplies permitted Record readings. The first script feature should select a Lince directory, use local variables, read Record quantities, and print results. Checking, formatting, importing, and syncing files must remain separate from explicitly running a script. Functions and broader computation can come later as real uses require them. The details below are work still to do; the proposed syntax and typing rules need to be settled before implementation.
-
-- [ ] **Settle the first script’s rules.** Decide how variables, text, numbers, and directory selection behave. For example, with quantity 10, the proposed `print("Quantity is: " + str(@my-record + 2))` prints `Quantity is: 12`. Explicit `str(...)` conversion is still a proposal.
-
-- [ ] **Make Lingua parse expressions itself.** Conditions currently contain quoted text that Nucleus parses separately. Add shared expression syntax for arithmetic, comparisons, references, names, and calls. Preserve source locations so errors can point to the offending expression.
-
-- [ ] **Move existing expression users to the shared grammar.** Update Karma conditions, Transfer formulas, reference extraction, and binding resolution. Preserve existing exact arithmetic, short-circuit evaluation, gates, and carry behavior. Remove the handwritten expression parser after its consumers have moved.
-
-- [ ] **Keep document handling separate from script execution.** Checking, formatting, importing, syncing, and inserting Record IDs must never run statements or change the selected instance. Extend these operations to preserve new syntax and clearly reject statements where they are unsupported. Record descriptions must remain ordinary prose.
-
-- [ ] **Read directory configuration before opening an instance.** Add explicit selection of a configuration or script file containing a literal `dir` assignment. Resolve relative paths from that file’s folder, define command-line precedence, and reject invalid configuration before opening a database or creating instance files. Reuse the existing directory override and ownership guard.
-
-- [ ] **Implement variables and the read-only script evaluator.** Add checked local bindings, explicit value types, `str`, and `print`. Resolve Record references through the engine and read quantities from a consistent snapshot. Missing references, mixed-type arithmetic, overflow, and output failures should produce useful errors.
-
-- [ ] **Bound script execution.** Limit expression depth, execution work, memory, output, and host reads; support cancellation. The first runner should expose only permitted Record reads and printing. Repeated references should reuse the run’s readings.
-
-- [ ] **Expose language commands through `cargo xtask`.** Lingua already has standalone checking and formatting, but no script runner or xtask language commands. Add check, format, and explicit run commands. Checking and formatting must work without starting an instance.
-
-- [ ] **Verify the complete first increment.** Add focused coverage for grammar precedence, decimal behavior, reference names, diagnostics, statement preservation, execution limits, and directory selection. Verify that the example reads the chosen instance and that file sync never executes scripts.
-
-- [ ] **Remove the unused Rhai declaration.** It remains in the workspace manifest, and no crate currently consumes it. Remove it as part of establishing the single language implementation.
-
-- [ ] **Optional interface, after approval: add script controls.** Provide source diagnostics, the effective directory, Run, output, and Stop using native Rust components. Reuse the same evaluator as the command line.
-
-- [ ] **Later: grow the language from actual needs.** Add functions and lexical scopes first, then branching, collections, and bounded loops. Prototype indentation handling before choosing block syntax. Modules and Record writes need separate rules; writes should use existing authorized engine actions.
-}
-
-Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
-Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
-
-- Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
-- Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
-- Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
-
-And many more. They are one way to add logic and customization to your experience on the interface.
-
-- [ ] **Fix selecting areas directly on the canvas.** Preserve which area was clicked when forwarding input to its contents. Selection, inspection, editing, dragging, and the Delete menu should agree on the selected item, while nested buttons remain usable.
-
-- [ ] **Explain exactly what Delete will remove.** Deleting a Kanban column currently removes the whole grouped board. Show the affected items before confirmation, and distinguish selecting one member for editing from selecting its whole group.
-
-- [ ] **Clarify deletion of generated cards.** Removing their owner should stop its subscriptions and remove its generated contents. Decide whether removing an individual card permanently hides it or allows the feed to recreate it. Explain the difference between removing a canvas view and deleting its underlying Record.
-
-- [ ] **Explain why an item cannot be deleted.** Replace silent failures with a useful reason, such as needing edit mode, belonging to another workspace, or the selection changing before confirmation. Keep the existing workspace and Practice restrictions.
-
-- [ ] **Verify nested Fiote controls and duplicate views.** Test buttons, typing, press/release handling, drafts, and focus with rendering enabled. Two castles showing the same Person must keep their interaction state separate. A test already covers unchanged status updates preserving controls and focus; verify that behavior in the complete canvas.
-
-- [ ] **Reproduce the reported Relation Castle crash.** The audit could not reproduce it. Test selecting its surface, selecting it through Areas, and switching between the two identically named areas with their contents loaded. Capture the actual failure before choosing a fix.
-
-- [ ] **Show empty sources and missing castle behavior clearly.** A query matching no Records should explain that result and retain editing/deletion controls. An area named “Relation Castle” without relation behavior should show its actual configuration and offer an explicit way to restore that behavior.
-
-- [ ] **Add workspace checks and targeted repairs.** Check saved geometry, identities, layout links, groups, and generated-item ownership. Separate valid empty queries from broken references. Preserve the original snapshot and offer specific repairs for confirmed problems.
-
-- [ ] **Test the complete interaction path.** Cover flat and spatial views, ordinary areas, generated cards, duplicate Fiote views, and Kanban groups. Verify selection, visible Delete controls, confirmation scope, cancellation, cleanup, and persistence after reopening. Existing tests bypass parts of the pointer routing where the failure occurs.
-}
-
-Embedded (@embedded: 0) {
-Embedded connects small devices, such as ESPs, to Signals in Lince. Each device has its own identity and can update only the Signal granted to it. It cannot run commands, read private Records, change access, or enroll another device.
-
-Lince keeps the access settings: enabled or disabled, the allowed Signal, minimum time between readings, accepted value range, and an expiry. Changes take effect on the next request. A device sends signed readings over HTTPS. The private key stays on the device; Lince stores only its public key. There is no permanent bearer token to copy or renew.
-
-Every accepted reading has a sequence number and a receipt. Retrying the latest identical request returns its receipt without changing the Signal again. Old requests and changed retries are refused. The sequence survives Lince restarts. Requests also expire, so an old instruction cannot become a new reading much later. Device identity replacement invalidates the previous identity and starts a new sequence.
-
-Internet and power do not make a device open to everybody. The device connects outward to Lince. This first implementation only accepts readings; remote control, Bluetooth setup, Wi-Fi setup mode, and firmware updates are separate future work. Nearby people have no authority just because they are nearby. A future setup mode must require a physical action, a unique setup secret, a short setup window, and owner approval.
-
-Copy protection depends on the board and its firmware. Use a protected signing key, secure boot, encrypted storage, and restricted debugging where supported. A software key in readable flash can be copied. Even a protected key does not stop somebody using the stolen device itself; disable that device in Lince. Choose recovery procedures before setting irreversible chip protection settings.
-
-Steps after the Lince coding is implemented:
-
-1. Choose the exact ESP board and prepare firmware supporting P-256 signing and HTTPS certificate verification. Check its protected key storage and recovery options. This Lince implementation does not flash or harden an ESP.
-2. Use a trusted cable connection for the first installation. Create a unique private key on the device or its secure element, provision Wi-Fi and the public Lince HTTPS address, and obtain only the public key for enrollment. Do not upload the private key to Lince.
-3. Open Embedded in the native Karma Castle. Enroll the public key with a name and a Signal slug. Lince creates a dedicated Signal. Set a cooldown, a value range, and an access expiry. Use Copy setup to obtain the server identity, device identity, Signal identity, and key generation. Add the public HTTPS server address in firmware. Enable the device in Lince when ready.
-4. Publish Facade through an HTTPS reverse proxy. The ESP must verify the server certificate. The local unencrypted Facade listener is for the reverse proxy, not an internet device endpoint.
-5. Implement the documented signed request format in firmware. Persist a pending reading and sequence before sending. Retry that same request after a lost response; advance only after a confirmed receipt. Synchronize the device clock and create a new request if a pending reading has expired.
-6. Send a harmless test measurement. Inspect the Signal and receipt. Test a duplicate, another Signal, a value outside the range, and a request during cooldown. Only the first permitted reading should change the Signal.
-7. Use the Signal quantity or signal(@slug) in a Rule. Rule consequences retain their normal permissions and execution controls.
-8. Change access or disable the device in Lince without a cable. Renew access expiry in Lince when wanted. No credential refresh is necessary for each reading because the device proves its identity with its key.
-9. If the device or key is compromised, disable it first. Use a trusted cable to install a new key and replace its registered public key in Lince. Copy the new setup, update the key generation, reset the request sequence, and enable the device when ready. Ordinary renewal with the old key is not recovery.
-
-Firmware request format:
-
-Send a JSON POST to /embedded/readings on the configured HTTPS server. The fields are audience (the server identity), device (the device UID), key_epoch (the key generation), signal (the granted Signal UID), sequence (a positive integer), issued_at (Unix seconds), value (a canonical decimal string), and signature (lowercase hexadecimal). Unknown fields are refused. The body is limited to 2048 bytes.
-
-Sign the following UTF-8 lines in this exact order, including a newline after the last line: lince-embedded-v1, audience, device, key_epoch, signal, sequence, issued_at, value. Use ECDSA with P-256 and SHA-256. The signature contains the 32-byte r followed by the 32-byte s, encoded as 128 lowercase hex characters; it is not DER. The public key is compressed SEC1, encoded as 66 lowercase hex characters.
-
-For example, a value is "23.7", not a JSON floating-point number. A decimal string uses an optional minus sign, an integer without unnecessary leading zeros, and an optional fraction. Exponents, a plus sign, negative zero, and embedded whitespace are refused. Keep integer protocol fields in decimal without padding when constructing the signed lines. Use an integer representation that preserves the full sequence; do not convert it through a floating-point number.
-
-A new reading may be at most 120 seconds old or 30 seconds ahead of the server clock. Persist the full pending request before sending. Only the latest accepted identical request can be retried for its old receipt, even after its timestamp expires; it must still pass current access checks. A higher sequence can replace an expired unaccepted request. Never reuse an accepted sequence with a changed value or timestamp.
-
-Success returns device, key_epoch, sequence, fact, and received_at (Unix milliseconds). Confirm that these identify the pending request before advancing. HTTP 429 means cooldown or an ingress limit: back off and retry, refreshing an expired unaccepted reading with a higher sequence. HTTP 403 means access was refused; stop sending and inspect access in Lince. HTTP 409 means a used sequence; recover the pending sequence through the trusted setup process rather than guessing. HTTP 400 means a malformed, expired, or out-of-range reading. Lost responses and temporary server errors use bounded exponential backoff with jitter. Lince also limits concurrent reading requests and total request attempts before signature verification.
-}
-
-Interfaceless - Ailuros (@ailuros: 0, #instinct) {
-What is more embarrassing, to dream or not to dream something like this? That is the question.
-
-Writing and not doing is fiction. If the process of ordering the steps, building and documenting the work is done in the open, there is no such thing as too much ambition. 
-
-![](/assets/photos/ailouros.png)
-
-# The Ultimate Hardware
-
-How do we have one device only, for doing anything Lince and not Lince related, that can carry it's own battery that lasts a long time, is light, adjustable for people of different sizes and capabilites, has all the instructions on how to build as a Trail in Lince and most important, is pretty?
-
-What if we could make the smallest piece of it, that could connect with others, that had:
-- [ ] Micro-fission reactor for energy, rechargeable by the sun and movements too.
-- [ ] Carbon for structure and photon for state and energy transmission.
-- [ ] Connectable to other parts of it physically.
-- [ ] Wireless connection with devices around it.
-- [ ] Screen parts, chassi parts or an all-in-one.
-
-Learning how hardware works, and how to build and research it is fun and cool. Having in the base app the capabilities of modeling things like Figma and/or CAD programs, from mechanical parts to GPUs, molecules and biology is an amazing dream. The edge cases and the architecture keeps on facing issues, and we keep on improving it. This would be the capabilities to use Lince as a laboratory for creation and inovation, the hardware that is self composable to help you on the day to day, and to change it's composition to become the lab/infrastructure you need to work or live is sci-fi, and in the future, the next undone task.
-
-- [ ] Molecule lab.
-	- [ ] CAD-like for modeling mechanical parts.
-	- [ ] CAD-like for modeling electrical parts.
-	- [ ] Biology lab.
-
-
-- [ ] For funsies, use Ithkuil as one of the languages
-
-We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
-
-For that a system that allows for maximum control of the scenes, is needed, the freedom of Minecraft with real world data and tiny, tiny voxels. That would be the end of the Lince's interface, nothing grater is justified to be built according to the philosophy. It would easily be able to display current web pages, launch other systems and games inside it. You open Lince, it has everything you should Need, and give you freedom to do anything you want in it's digital representation, connected completely with the real world if you want it.
-
-- [ ] Voxel system to go from outer zoom of the observable universe down to atoms (Bevy's Big Space: https://github.com/aevyrie/big_space/tree/bevy-0.19).
-- [ ] With the interface that has virtually limitless scale, we focus on centering the experience on the user's interest, Earth's globe as a 3D space with it's real topography, updateable in real time.
-- [ ] In any scale, one can take what is there as a point in which the components/widgets/sands/visual tools have at their disposal will be in a size it is good to work with, either locking things to the HUD with pinned sands, or putting them geographically in one region of the space: only in their house when they zoom in the map into their room, or the part of the room in space that is their desk, and inside they will see their widgets. In summary going from 3D to 2D, where you feel more productive with the dimensions you want.
-- [ ] Being able to connect the data of parts that are anywhere in the Space.
-- [ ] Being able to generate instantly a representation of something you want in any part of the Space, using Fiote (JEPA model?).
-- [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
-- [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
-
-AI text below:
-
-# CAD for Ailuros — research
-
-Researched 2026-09-16. Answers the `- [ ] Research` box in `Ailuros` (`@ailuros`).
-Question asked: how does CAD work in the core, can we embed an open source one in
-Lince — possibly as an external castle that still behaves natively — or do we
-build our own.
-
-Lince is MIT. The interface is Bevy 0.19 + avian3d, native, no embedded browser
-(CEF rejected, Servo unresolved). Those three facts eliminate most of the field
-before any geometry question is asked.
-
-## 1. What a CAD program actually is
-
-Every parametric CAD, from CATIA to Dune3D, is the same five layers stacked.
-Nothing about the stack is secret; each layer is decades of edge cases.
-
-**Layer 1 — the geometry kernel.** Curves and surfaces, almost always NURBS
-(non-uniform rational B-splines): control points, knot vector, weights. A plane,
-a cylinder and a torus are usually kept as analytic special cases because exact
-forms intersect far better than sampled ones. This layer answers "where is this
-surface at parameter (u,v)" and "where do these two surfaces cross".
-
-**Layer 2 — topology (B-rep).** Boundary representation: a solid is a shell, a
-shell is faces, a face is a trimmed surface bounded by loops of edges, an edge is
-a curve between two vertices, and every one of them carries a tolerance. The
-topology is what makes a bag of surfaces a watertight object. Booleans
-(union/subtract/intersect) are the hard part: intersect every surface pair, build
-the intersection curves, split faces along them, classify each piece as inside or
-outside the other solid, stitch the survivors. Tangency, near-tangency and
-coincident faces are where kernels die. This is why there are perhaps six
-production-grade B-rep kernels on Earth — Parasolid, ACIS, CGM, OCCT, Solid
-Modeling Solutions, and whatever Autodesk uses internally.
-
-**Layer 3 — the constraint solver.** A sketch is points and lines plus
-constraints (coincident, parallel, tangent, distance, angle, equal). The solver
-turns those into a system of nonlinear equations and runs Newton-Raphson (usually
-with a rank/DoF analysis first, to report under- and over-constrained sketches
-instead of diverging). Solvespace's solver and Zoo's `ezpz` are both this. It is
-a smaller, much more tractable problem than the kernel.
-
-**Layer 4 — the feature tree (history).** A part is not geometry, it is a recipe:
-sketch → extrude → fillet → pattern, replayed on every edit. This is what makes
-CAD parametric, and it produces the single worst problem in the field:
-
-> **Topological naming.** "Fillet the edge between face 3 and face 7" has to
-> survive the earlier sketch changing so that the old face 7 no longer exists.
-> Kernels name topology by generation order, so an upstream edit silently
-> repoints the fillet at the wrong edge and the model explodes. FreeCAD lived
-> with this for fifteen years and only shipped a real fix in 1.0 (the Ondsel
-> naming algorithm). Any "build our own" plan pays this cost, and it is not a
-> geometry cost — it is a persistent-identity cost, which is Lince's home turf.
-
-**Layer 5 — tessellation and exchange.** The screen never sees B-rep; faces get
-meshed into triangles per frame budget, with a separate high-quality mesh for
-export. Interchange is STEP (ISO 10303, AP203/214/242 — the only format that
-carries real B-rep between systems), IGES (dead but everywhere), STL/3MF for
-printing, glTF for display.
-
-### The alternative stacks
-
-- **Mesh CSG.** Skip exact surfaces; keep triangle meshes and do robust boolean
-  ops on them. Manifold's algorithm guarantees manifold-in → manifold-out. This
-  is what OpenSCAD uses now. Cheap, robust, but you lose exact circles, exact
-  fillets, and STEP export fidelity.
-- **Implicit / f-rep.** A shape is a function f(x,y,z) < 0. Union is min,
-  intersection is max, blends and lattices and offsets are trivial, booleans can
-  never fail because there is no topology to corrupt. Mesh only at the end (dual
-  contouring). This is libfive, Curv, Fidget, and commercially nTop. The trade:
-  no exact edges to dimension, no B-rep to export, and mating/tolerancing —
-  "this piece connects to that piece" — is genuinely awkward.
-- **Voxel.** Only relevant if Ailuros' "tiny, tiny voxels" line from
-  `Interfaceless` is taken literally. Not manufacturable-precision.
-
-## 2. The decision that decides everything else
-
-Ailuros wants "the smallest piece of it, that could connect with others" — parts
-that mate, with tolerances, with build instructions as a Trail. That is a
-B-rep/STEP problem, not an implicit problem. Implicit is the only option that
-drops cleanly into a Bevy canvas at interactive rates with no C++ in the build,
-and it is the wrong representation for the stated use.
-
-So: exactness is needed, and exactness is not obtainable in pure Rust today.
-
-## 3. The field itself
-
-Before asking what we can embed, what exists and how each one is built.
-
-### The commercial tier — kernels you rent
-
-Almost no CAD vendor writes its own kernel. There are four that matter and they
-are licensed, not sold, at five to six figures plus royalties.
-
-- **Parasolid** (Siemens, from the 1988 Romulus lineage) — the industry default.
-  NX, Solid Edge, SolidWorks (until its own fork), **Onshape**, **Shapr3D**,
-  **Plasticity**. If a young commercial CAD feels unreasonably solid at
-  booleans and fillets, it is Parasolid underneath and the company's real work
-  is the UI.
-- **ACIS** (Spatial/Dassault) — the other old one. DraftSight, many CAM tools.
-- **CGM** (Dassault) — CATIA's kernel, now sold separately.
-- **D-Cubed DCM** (Siemens) — not a kernel, the *constraint solver* half,
-  licensed separately and used by most of the above. That it is a separate
-  product is the evidence that layer 3 is genuinely separable.
-
-What renting buys: thirty years of boolean edge cases and someone else's
-liability. What it costs: money, a closed binary, and no chance of it living
-inside an MIT program. Out of reach for us, and worth knowing precisely *what*
-is out of reach — the kernel, not the application.
-
-### The free field
-
-- **FreeCAD** (LGPL) — OCCT + Coin3D + Qt + Python. A workbench shell rather
-  than a program; every discipline is a plugin. Its Python layer means a feature
-  is a script, which is the pattern worth stealing. 1.0 finally shipped the
-  topological-naming fix. Huge, C++, a whole desktop app — a teacher, not a
-  dependency.
-- **Dune3D** (GTK4, v1.4.0 "Einstein", Jan 2026) — Solvespace's solver + OCCT +
-  a modern UI, 33 MB, one person, 2.5 years. The proof that the stack is
-  assemblable at small scale by one determined human.
-- **SolveSpace** (GPLv3) — tiny, its own kernel and its own NURBS, and the
-  solver everyone else extracts. Famous for the solver, limited at booleans.
-- **OpenSCAD** (GPL) — script only, no GUI model, **no constraint solver, no
-  feature tree**, mesh CSG (now on Manifold). The existence proof that layers 3
-  and 4 are optional if your input language is good enough. Its descendants:
-  **ImplicitCAD**, **Curv**, **Antimony**.
-- **CadQuery** and **build123d** (Apache-2.0, Python over OCCT) — the closest
-  prior art to what Lince should do. A part is a program; selectors pick faces
-  and edges by *query* ("the topmost circular face") rather than by index, which
-  is an answer to topological naming that sidesteps persistent ids entirely.
-  Read build123d's selector design before designing ours.
-- **BRL-CAD** (BSD/LGPL, in continuous development since **1979**, ~1M lines) —
-  the great unknown major. Its architecture is a third option nobody else
-  offers: CSG-primary, and geometry is evaluated by **ray-tracing** (`librt`)
-  rather than tessellated. Instead of computing a boundary, you shoot rays and
-  classify intervals per ray, which makes booleans trivially robust and gives
-  you analysis (mass, shielding, line-of-sight) as a by-product. It is slow to
-  edit, alien to modern CAD UI, and unmatched at "is this assembly actually
-  solid". Worth knowing about if Ailuros ever needs to *analyse* a device rather
-  than draw one.
-- **openNURBS** (Rhino, freely licensed C++ with source) — not a kernel, a
-  read/write library for the `.3dm` format plus NURBS evaluation. The way into
-  the Rhino/Grasshopper world if that ever matters.
-- **Blender / Gmsh / Salome** — mesh modelling, meshing and FEA respectively.
-  Adjacent, not CAD.
-- **Zoo Design Studio** — the app is open source, the geometry engine is a
-  hosted GPU service; the "3D view" is a video stream over WebSocket. Their
-  language KCL is Rust and their solver `ezpz` is MIT. Take those two, leave the
-  architecture.
-- **nTop** — commercial implicit modelling, originally built on Matt Keeter's
-  libfive. The proof that f-rep is a real engineering stack and not a demo, for
-  lattices, blends and generative shapes specifically.
-
-## 4. Candidates, filtered
-
-Filter order: license compatible with MIT → no browser, no Qt/GTK app → buildable
-in our tree → geometry depth.
-
-### Usable
-
-| Thing | License | What it is | Verdict |
-|---|---|---|---|
-| **OCCT** (via `opencascade-rs` / `occt-rs`) | LGPL-2.1 **with a narrow exception** — see below | The only free production B-rep kernel. Booleans, fillets, STEP r/w, healing. Powers FreeCAD, Dune3D, CadQuery, KiCad's 3D. | Usable, with a licensing catch that bites our single-binary shape. Cost: a C++ build (CMake, minutes to tens of minutes), and the Rust bindings are partial. `bschwind/opencascade-rs` is the established one but thin; `occt-rs` is 2026, early, partly AI-written, AGPL-with-CLA — avoid that one. |
-| **`ezpz`** (Zoo/KittyCAD) | MIT | 2D geometric constraint solver in Rust, ships in Zoo Design Studio, works native or wasm. Built specifically because slvs is GPL and D-Cubed is expensive. | Best-in-class fit. Layer 3 is solved for us, for free, in-language. |
-| **Manifold** — `meshbool` (pure Rust port, Apache-2.0, tracks upstream v3.5.1, passes 245 of the C++ tests), or `manifold-csg` (bindings) | Apache-2.0 | Guaranteed-manifold mesh booleans. | The pragmatic middle. No C++ needed with `meshbool`. `meshbool` is small and young (7 stars) but the boolean core is the part that is done. |
-| **Fidget** (Matt Keeter) | MPL-2.0 | Implicit-surface evaluation with a hand-written aarch64/x86_64 JIT, 31× over its own interpreter; manifold dual contouring meshing; 2D/3D bitmap rendering. | The best Rust engine in the whole survey, for the representation we probably don't want. Keep for organic/lattice/blend work, not for mating parts. |
-| **truck** / **monstertruck** | Apache-2.0 | Pure-Rust B-rep with NURBS, `truck-shapeops` booleans, `truck-stepio` STEP. `monstertruck` is virtualritz's fork (upstream PRs were stalling) adding a rewritten fillet engine with per-edge and variable radii, chamfers, `Result`-returning booleans, shape healing, T-splines, STEP assembly output. | The only pure-Rust path to exact B-rep. Booleans exist but are not battle-hardened — the docs themselves ship a "robust version of splitting closed edges and faces" as a separate opt-in, which tells you what the default is. |
-| **`csgrs`** | MIT | OpenSCAD-shaped CSG over BSP trees, wired into the dimforge ecosystem (nalgebra/parry/rapier) we already use via avian3d. 32/64-bit, wasm. | Easiest thing to get a shape on screen with. Ceiling is low. |
-
-### Read the OCCT exception before counting on it
-
-I read the actual text (`OCCT_LGPL_EXCEPTION.txt`). It is much narrower than its
-reputation:
-
-> "The object code form of a 'work that uses the Library' can incorporate
-> material from a header file that is part of the Library. As a special
-> exception to the GNU Lesser General Public License version 2.1, you may
-> distribute such object code incorporating material from header files provided
-> with the Open CASCADE Technology libraries (including code of CDL generic
-> classes) under terms of your choice, provided that you give prominent notice
-> in supporting documentation to this code that it makes use of or is based on
-> facilities provided by the Open CASCADE Technology software."
-
-That only lifts the header/inline/template-instantiation clause of LGPL 2.1. It
-does **not** grant general static-linking freedom. So the ordinary LGPL rule
-still applies: dynamic linking is fine and our own code stays MIT, but the user
-must be able to swap in their own build of the library. Lince ships as **one
-binary** (`lince`, Cell plus optional UI) — statically linking OCCT into it would
-put us in the "provide object files or otherwise allow relinking" obligation,
-which is a distribution and CI problem, not a code problem. Dynamic linking a
-system OCCT is clean but makes the single binary depend on a large C++ library
-being present, which contradicts the whole point of shipping one file. Decide
-this before writing any binding code; it is the actual blocker on OCCT, not the
-API.
-
-### Rejected, and why
-
-- **FreeCAD / Dune3D / SolveSpace as embedded apps** — all are Qt/GTK
-  applications with their own event loop and document model. Embedding means
-  either a second window we do not control or a browser we already rejected.
-  Dune3D (v1.4.0 "Einstein", Jan 2026, GTK4) is worth studying as a design: it
-  is precisely Solvespace's solver + OCCT + a modern UI, in 33 MB. That is the
-  architecture, proven at small scale, by one person.
-- **Solvespace's `slvs` / the `slvs` Rust crate** — GPLv3. Incompatible with MIT
-  Lince. `ezpz` exists to replace exactly this.
-- **Zoo Design Studio** — the app is open, the geometry engine is not: it is a
-  hosted GPU service and the 3D view is a **video stream over WebSocket**. Nothing
-  to embed, and it inverts our model of where data lives. Take `ezpz` and leave
-  the rest.
-- **Fornjot** — the obvious answer two years ago, an all-Rust b-rep kernel. Hanno
-  Braun ended it; the repository was archived 2026-06-19 with the goals
-  explicitly not reached. Read its post-mortems before starting a kernel.
-- **`zenith-cad-kernel`** — from-scratch Rust B-rep, exact booleans, STEP, ~132k
-  lines, 8 crates, MPL-2.0. Written in **29 days** (2026-08-19 → 09-16) by one
-  person with an AI, zero stars, cannot read all real STEP files. Genuinely
-  interesting and completely unproven. Watch; do not depend.
-- **CADmium** — browser CAD over `truck`, prototype, quiet since 2024.
-- **libfive / Curv** — C++ ancestors of Fidget. Use Fidget instead.
-
-## 5. What "external castle that behaves natively" costs
-
-Worth pricing honestly, because it sounds free and is not.
-
-A separate process holding the model means the geometry state lives **outside the
-Box**. Protein supplies authorized reads and Actions own writes; a CAD process
-with its own document is a second source of truth with no Protein binding, so no
-Area of Influence can filter parts, no Protein Action can change a dimension, and
-nothing about the model syncs to another Organ. We would have to invent a bridge
-whose only job is re-teaching the external tool what a Record is — the same
-mistake the web crate made with its own state, one process further away.
-
-It also breaks rendering: to "behave natively" the castle must draw inside our
-canvas, and an external GTK/Qt app cannot. The only ways are a video stream
-(Zoo's answer — and it forces their hosted-engine architecture on us) or shared
-GPU buffers (fragile, platform-specific).
-
-And determinism. The interface already runs avian3d with `enhanced-determinism`,
-and the DST plan wants a seed to reproduce a run exactly. If part geometry ends
-up in Records that sync, a nondeterministic kernel — floating-point tolerance
-decisions, thread-order-dependent boolean results — is a **sync divergence**, not
-just a rendering wobble. An in-process Rust library we can pin and seed is
-checkable; an external binary is not.
-
-Conclusion: an external process is fine as a **converter** (feed it a file, get a
-file back, e.g. headless FreeCAD for a STEP import we cannot parse) and wrong as
-a castle.
-
-## 6. What this points at
-
-Not "embed a CAD". Not "write a kernel". The third thing:
-
-**Lince owns layers 3 and 4, and borrows layers 1, 2 and 5.**
-
-Layer 4 — the feature tree with stable names — is the part Lince is already
-unusually well equipped for. A feature tree is an ordered DAG of parameterised
-operations with durable identity, which is a Record tree with `@part-of` and
-uids. The topological naming problem is a persistent-identity problem, and
-Lince's whole thesis is that identity is a uid, never a position. A sketch
-dimension that is a Record quantity is dimension-driven design for free, and
-makes a part a thing you can Need, contribute to, transfer and sync — which no
-CAD file can be. That is the part worth building, and it is the part nobody else
-has.
-
-Layers 1–2 stay borrowed: `monstertruck`/`truck` while it holds, OCCT when
-exactness wins over the single-binary constraint, `meshbool` for display-time and
-for anything that only has to be printable. Layer 3 is `ezpz`. Layer 5 is
-`truck-stepio` plus our own tessellation into Bevy meshes. Fidget lives beside
-it all as a second representation for the organic parts, never as the mating
-geometry.
-
-**The one architectural decision, and it has to be made on day one.** Layers 3
-and 4 — sketch points as Records, constraints as assertions, the feature DAG —
-are portable across every kernel in this document. Layers 1 and 2 are not: a mesh
-fillet is not a B-rep fillet, and a feature tree written directly against mesh
-CSG does not carry forward, it gets rewritten. So the kernel must sit behind one
-narrow internal trait from the very first commit — roughly `solid from profile +
-extrusion`, `boolean`, `fillet edges`, `tessellate`, `export` — with mesh CSG as
-its first implementation and B-rep as a later one. Put that seam in on day one
-and the prototype is a prototype; leave it out and the prototype is a throwaway.
-That is the only decision here that is expensive to reverse.
-
-Concretely the first honest step is small: one castle that holds a 2D sketch
-whose points are Records and whose constraints are assertions, solved by `ezpz`,
-extruded into a Bevy mesh through that trait, implemented by `csgrs` or
-`meshbool`. No kernel, no C++, no external process, MIT throughout. If
-sketch-plus-extrude-plus-boolean survives contact with a real part, the B-rep
-question becomes answerable with evidence rather than by survey.
-
-## 7. Numbers worth keeping
-
-- Production free B-rep kernels: **one** (OCCT). Rust ones: **zero proven**.
-- Fornjot: **archived 2026-06-19**, goals not met, after ~4 years.
-- Dune3D: one person, 2.5 years, 33 MB, solver + OCCT + GTK4 — the whole
-  architecture, at the smallest size anyone has managed.
-- FreeCAD: **15 years** to fix topological naming.
-- Fidget JIT: 1024² brute-force, 5.8 s interpreted → **182 ms** JIT.
-
-## Sources
-
-- Fornjot archived: https://github.com/hannobraun/fornjot · https://www.fornjot.app/
-- truck: https://github.com/ricosjp/truck · https://docs.rs/truck-shapeops
-- monstertruck: https://github.com/virtualritz/monstertruck
-- zenith: https://github.com/hinatahugu29/zenith-cad-kernel
-- opencascade-rs: https://github.com/bschwind/opencascade-rs · occt-rs: https://github.com/occt-rs/occt-rs
-- Fidget: https://github.com/mkeeter/fidget · https://www.mattkeeter.com/projects/fidget/ · meshing idea: https://www.mattkeeter.com/blog/2026-07-03-meshing/
-- Manifold: https://github.com/elalish/manifold · meshbool: https://github.com/BorgerLand/meshbool · manifold-csg: https://github.com/zmerlynn/manifold-csg
-- csgrs: https://github.com/timschmidt/csgrs
-- ezpz: https://github.com/KittyCAD/ezpz · https://zoo.dev/blog/announcing-solver
-- Zoo engine as video stream: https://github.com/KittyCAD/modeling-app
-- slvs GPL: https://solvespace.com/library.pl · https://github.com/thekakkun/rust_slvs
-- Dune3D: https://github.com/dune3d/dune3d · https://docs.dune3d.org/en/latest/why-another-3d-cad.html · FOSDEM 2026: https://fosdem.org/2026/schedule/event/UUVWPM-dune_3d_-_2_12_years_in_the_3rd_dimension/
-- Topological naming: https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Topological_naming_problem.md
-- B-rep vs implicit: https://www.ntop.com/resources/blog/understanding-the-basics-of-b-reps-and-implicits/
-- libfive: https://github.com/libfive/libfive
-- CADmium: https://mattferraro.dev/posts/cadmium
-- OCCT exception text: https://raw.githubusercontent.com/Open-Cascade-SAS/OCCT/master/OCCT_LGPL_EXCEPTION.txt
-- BRL-CAD: https://brl-cad.github.io/docs/index.html · https://brlcad.org/~maths22/books/en/HACKING_BRL-CAD.html
-- openNURBS: https://www.rhino3d.com/features/developer/opennurbs/
-- Parasolid / the rented-kernel tier: https://en.wikipedia.org/wiki/Parasolid
-}
-
 
 Instinct handbook (@instinct-handbook: 0, is #chapter, #instinct) { r_0SMVW3VGREZ6TYYQ5PQVKD268A
 Begin with Welcome, Interface and Areas, then Records and Protein. Later chapters are optional. Every page is accessible directly. Suggested earlier ideas are links, never locks. Practice is disposable, and reading needs no database import.

@@ -5,6 +5,8 @@ edition.workspace = true
 publish = false
 
 [dependencies]
+reqwest = { workspace = true }
+sha2 = { workspace = true }
 serde = { workspace = true }
 lince-interface = { workspace = true, default-features = false }
 axum = { workspace = true }

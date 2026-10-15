@@ -8,14 +8,71 @@ use std::{
     io::Read,
     path::{Component, Path, PathBuf},
     process::Stdio,
-    sync::Arc,
+    sync::{Arc, RwLock},
     time::Duration,
 };
 use tokio::{
     io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::{Child, ChildStdin, ChildStdout},
-    sync::Semaphore,
+    sync::{Mutex, Semaphore},
 };
+use tokio_util::sync::CancellationToken;
+
+mod packages;
+pub use packages::install_current;
+
+pub async fn serve<H, F>(mut handle: H) -> Result<(), String>
+where
+    H: FnMut(RpcRequest) -> F,
+    F: std::future::Future<Output = Result<Value, String>>,
+{
+    let mut reader = BufReader::new(tokio::io::stdin());
+    let mut output = tokio::io::stdout();
+    loop {
+        let frame = match read_frame(&mut reader).await {
+            Ok(frame) => frame,
+            Err(error) if error == "Plugin connection closed" => return Ok(()),
+            Err(error) => return Err(error),
+        };
+        let request: RpcRequest =
+            serde_json::from_slice(&frame).map_err(|_| "Invalid plugin request")?;
+        let id = request.id;
+        let result = if request.protocol != PROTOCOL {
+            Err("Unsupported plugin protocol".into())
+        } else if request.operation == "initialize" {
+            Ok(json!({"protocol": PROTOCOL}))
+        } else {
+            handle(request).await
+        };
+        let response = match result {
+            Ok(result) => RpcResponse {
+                protocol: PROTOCOL.into(),
+                id,
+                result: Some(result),
+                error: None,
+            },
+            Err(error) => RpcResponse {
+                protocol: PROTOCOL.into(),
+                id,
+                result: None,
+                error: Some(error),
+            },
+        };
+        let mut bytes = serde_json::to_vec(&response).map_err(|error| error.to_string())?;
+        if bytes.len() >= MAX_BYTES {
+            return Err("Plugin response is too large".into());
+        }
+        bytes.push(b'\n');
+        output
+            .write_all(&bytes)
+            .await
+            .map_err(|_| "Plugin connection closed")?;
+        output
+            .flush()
+            .await
+            .map_err(|_| "Plugin connection closed")?;
+    }
+}
 
 struct Installed {
     manifest: Manifest,
@@ -25,9 +82,20 @@ struct Installed {
     manifest_path: PathBuf,
 }
 
+struct Snapshot {
+    installed: BTreeMap<String, Arc<Installed>>,
+    diagnostics: Vec<String>,
+}
+
+struct Session {
+    connection: Mutex<Option<Connection>>,
+    cancelled: CancellationToken,
+}
+
 pub struct Host {
-    installed: BTreeMap<String, Installed>,
-    pub diagnostics: Vec<String>,
+    directory: PathBuf,
+    snapshot: RwLock<Snapshot>,
+    sessions: std::sync::Mutex<BTreeMap<String, Arc<Session>>>,
     capacity: Arc<Semaphore>,
 }
 
@@ -88,10 +156,13 @@ impl Host {
 
     fn load(directory: &Path) -> Result<Self, String> {
         std::fs::create_dir_all(directory).map_err(|e| e.to_string())?;
-        let mut host = Self {
+        let directory = directory
+            .canonicalize()
+            .map_err(|error| error.to_string())?;
+        let directory = directory.as_path();
+        let mut host = Snapshot {
             installed: BTreeMap::new(),
             diagnostics: Vec::new(),
-            capacity: Arc::new(Semaphore::new(4)),
         };
         let mut paths: Vec<_> = std::fs::read_dir(directory)
             .map_err(|e| e.to_string())?
@@ -161,7 +232,7 @@ impl Host {
                             "Duplicate plugin ID {id}; all copies are unavailable"
                         ));
                     } else {
-                        host.installed.insert(id, installed);
+                        host.installed.insert(id, Arc::new(installed));
                     }
                 }
                 Err(error) => host.diagnostics.push(format!(
@@ -189,11 +260,99 @@ impl Host {
                 host.diagnostics.push(format!("Conflicting schema namespace {namespace}; affected packages are unavailable: {}",owners.join(", ")));
             }
         }
-        Ok(host)
+        let mut remaining = std::mem::take(&mut host.installed);
+        for (id, installed) in &remaining {
+            let compatibility = &installed.manifest.compatibility;
+            if !compatibility.operating_systems.is_empty()
+                && !compatibility
+                    .operating_systems
+                    .iter()
+                    .any(|os| os == std::env::consts::OS)
+            {
+                host.diagnostics.push(format!(
+                    "{id}: unsupported operating system {}",
+                    std::env::consts::OS
+                ));
+            } else if let Some(interface) = compatibility
+                .interfaces
+                .iter()
+                .find(|interface| interface.as_str() != PROTOCOL)
+            {
+                host.diagnostics
+                    .push(format!("{id}: unsupported Lince interface {interface}"));
+            } else {
+                continue;
+            }
+            duplicates.insert(id.clone());
+        }
+        remaining.retain(|id, _| !duplicates.contains(id));
+        loop {
+            let ready: Vec<_> = remaining
+                .iter()
+                .filter(|(_, package)| {
+                    package
+                        .manifest
+                        .compatibility
+                        .dependencies
+                        .iter()
+                        .all(|(id, version)| {
+                            host.installed
+                                .get(id)
+                                .is_some_and(|dependency| dependency.manifest.version >= *version)
+                        })
+                })
+                .map(|(id, _)| id.clone())
+                .collect();
+            if ready.is_empty() {
+                break;
+            }
+            for id in ready {
+                host.installed
+                    .insert(id.clone(), remaining.remove(&id).unwrap());
+            }
+        }
+        for (id, package) in remaining {
+            host.diagnostics.push(format!(
+                "{id}: missing, incompatible or cyclic package dependencies: {:?}",
+                package.manifest.compatibility.dependencies
+            ));
+        }
+        Ok(Self {
+            directory: directory.to_path_buf(),
+            snapshot: RwLock::new(host),
+            sessions: Default::default(),
+            capacity: Arc::new(Semaphore::new(4)),
+        })
+    }
+
+    pub fn diagnostics(&self) -> Vec<String> {
+        self.snapshot.read().unwrap().diagnostics.clone()
+    }
+
+    pub async fn reload(&self) -> Result<(), String> {
+        let fresh = Self::discover(self.directory.clone()).await?;
+        self.stop_all();
+        *self.snapshot.write().unwrap() = fresh.snapshot.into_inner().unwrap();
+        Ok(())
+    }
+
+    pub fn stop(&self, plugin: &str) {
+        if let Some(session) = self.sessions.lock().unwrap().remove(plugin) {
+            session.cancelled.cancel();
+        }
+    }
+
+    pub fn stop_all(&self) {
+        for (_, session) in std::mem::take(&mut *self.sessions.lock().unwrap()) {
+            session.cancelled.cancel();
+        }
     }
 
     pub fn packages(&self) -> Vec<Package> {
-        self.installed
+        self.snapshot
+            .read()
+            .unwrap()
+            .installed
             .values()
             .map(|installed| Package {
                 manifest: installed.manifest.clone(),
@@ -203,21 +362,22 @@ impl Host {
             .collect()
     }
 
-    pub fn contribution(&self, qualified: &str) -> Result<(&Manifest, &Contribution), String> {
+    pub fn contribution(&self, qualified: &str) -> Result<(Manifest, Contribution), String> {
         let (id, name) = qualified
             .split_once('/')
             .ok_or("Choose a plugin contribution")?;
-        let installed = self
+        let snapshot = self.snapshot.read().unwrap();
+        let installed = snapshot
             .installed
             .get(id)
-            .ok_or("Plugin is unavailable; install it and restart Lince")?;
+            .ok_or("Plugin is unavailable; install it and reload packages")?;
         let contribution = installed
             .manifest
             .contributions
             .iter()
             .find(|c| c.id() == name)
             .ok_or("Plugin contribution is unavailable")?;
-        Ok((&installed.manifest, contribution))
+        Ok((installed.manifest.clone(), contribution.clone()))
     }
 
     pub async fn call(
@@ -228,7 +388,14 @@ impl Host {
         operation: &str,
         input: Value,
     ) -> Result<Value, String> {
-        let installed = self.installed.get(plugin).ok_or("Plugin is unavailable")?;
+        let installed = self
+            .snapshot
+            .read()
+            .unwrap()
+            .installed
+            .get(plugin)
+            .cloned()
+            .ok_or("Plugin is unavailable")?;
         if approved_digest != installed.digest {
             return Err("Plugin changed; review and enable this version".into());
         }
@@ -241,7 +408,19 @@ impl Host {
         {
             return Err("Unknown plugin contribution".into());
         }
-        let permit = self
+        let session = self
+            .sessions
+            .lock()
+            .unwrap()
+            .entry(plugin.into())
+            .or_insert_with(|| {
+                Arc::new(Session {
+                    connection: Mutex::new(None),
+                    cancelled: CancellationToken::new(),
+                })
+            })
+            .clone();
+        let _permit = self
             .capacity
             .clone()
             .acquire_owned()
@@ -253,8 +432,17 @@ impl Host {
             .await
             .map_err(|e| e.to_string())??;
         if current != approved_digest {
+            self.stop(plugin);
             return Err("Plugin files changed; restart and review this version".into());
         }
+        let mut connection = session.connection.lock().await;
+        if session.cancelled.is_cancelled() {
+            return Err("Plugin connection stopped".into());
+        }
+        let result = tokio::select! {
+            _ = session.cancelled.cancelled() => Err("Plugin connection stopped; inspect delivery before retrying".into()),
+            result = tokio::time::timeout(Duration::from_secs(45), async {
+        if connection.is_none() {
         tokio::fs::create_dir_all(&installed.state)
             .await
             .map_err(|e| e.to_string())?;
@@ -282,19 +470,27 @@ impl Host {
         let child = command
             .spawn()
             .map_err(|_| "Cannot start installed plugin")?;
-        let mut connection = Connection::new(child)?;
-        let result = tokio::time::timeout(Duration::from_secs(45), async {
-            let initialized = connection
+        let mut opened = Connection::new(child)?;
+            let initialized = opened
                 .request(1, "", "initialize", json!({"protocol":PROTOCOL}))
                 .await?;
             if initialized["protocol"] != PROTOCOL {
                 return Err("Plugin uses an unsupported protocol".into());
             }
-            connection.request(2, contribution, operation, input).await
+            *connection = Some(opened);
+        }
+            connection.as_mut().unwrap().request(2, contribution, operation, input).await
         })
-        .await
-        .map_err(|_| "Plugin operation timed out; inspect delivery before retrying".to_string())?;
-        drop(permit);
+        => result.unwrap_or_else(|_| Err("Plugin operation timed out; inspect delivery before retrying".into())),
+        };
+        if result.is_err()
+            && (session.cancelled.is_cancelled()
+                || connection
+                    .as_ref()
+                    .is_none_or(|connection| !connection.healthy))
+        {
+            *connection = None;
+        }
         result
     }
 }
@@ -303,6 +499,7 @@ struct Connection {
     child: Child,
     input: ChildStdin,
     output: BufReader<ChildStdout>,
+    healthy: bool,
 }
 
 impl Connection {
@@ -313,6 +510,7 @@ impl Connection {
             child,
             input,
             output,
+            healthy: true,
         })
     }
 
@@ -323,6 +521,7 @@ impl Connection {
         operation: &str,
         input: Value,
     ) -> Result<Value, String> {
+        self.healthy = false;
         let request = RpcRequest {
             protocol: PROTOCOL.into(),
             id,
@@ -352,6 +551,7 @@ impl Connection {
         {
             return Err("Plugin response does not match its request".into());
         }
+        self.healthy = true;
         match response.error {
             Some(error) => Err(error
                 .chars()

@@ -119,11 +119,13 @@ async fn assert_payload(store: &Store, expected: &AssertionRow) {
         json!({
             "subject_uid": stored.subject_uid,
             "predicate_uid": stored.predicate_uid,
+            "predicate_revision": stored.predicate_revision,
             "object_uid": stored.object_uid,
             "role": stored.role,
             "quantity_mantissa": stored.quantity.map(|quantity| quantity.mantissa().to_string()),
             "quantity_scale": stored.quantity.map(|quantity| quantity.scale()),
             "unit_uid": stored.unit_uid,
+            "unit_revision": stored.unit_revision,
             "asserted_by": stored.asserted_by,
             "created_at": stored.created_at,
         })

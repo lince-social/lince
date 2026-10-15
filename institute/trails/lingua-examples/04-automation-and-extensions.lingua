@@ -1,0 +1,73 @@
+Counter (@syntax-counter: 0) { r_01JA0000000000000000000301
+The Frequency, Karma, and Extension declarations below belong to this local example.
+Running this file only prints them.
+} r_01JA0000000000000000000301
+
+Frequency syntax-daily {
+    title "Daily in UTC"
+    quantity 0
+    every 1 day
+    timezone "UTC"
+    next_at 2026-10-15T09:00:00Z
+} ^freq_01JA0000000000000000000302
+
+Frequency syntax-elapsed {
+    title "Every five seconds"
+    quantity 0
+    definition "{\"schema\":\"karma.frequency.v1\",\"slug\":\"syntax-elapsed\",\"purpose\":\"Every five seconds\",\"cadence\":{\"kind\":\"elapsed\",\"interval\":{\"kind\":\"literal\",\"value\":5000},\"anchor\":0},\"timer\":{\"required_resolution\":{\"kind\":\"literal\",\"value\":1},\"max_lateness\":{\"kind\":\"literal\",\"value\":100},\"coalesce_window\":{\"kind\":\"literal\",\"value\":0}},\"missed\":{\"kind\":\"replay\",\"max\":16},\"inactive_gap\":\"skip-to-next-anchor\",\"rephase\":\"preserve-anchor\",\"overload\":\"pause-and-ask\"}"
+} ^r_01JA0000000000000000000303
+
+Karma syntax-automation {
+    Rules {
+        Rule syntax-toggle {
+            quantity 0
+            frequency @syntax-daily
+            record @syntax-counter
+            condition """1 - @syntax-counter"""
+            gate always
+            carry value
+            consequences """[{"kind":"set-quantity"}]"""
+            note "A stored condition and its consequences are definitions, not script calls."
+        } ^rule_01JA0000000000000000000304
+        Rule syntax-recurring {
+            quantity 0
+            record @r_01JA0000000000000000000301
+            cadence "{\"every\":{\"days\":1},\"bound\":{\"kind\":\"count\",\"occurrences\":3}}"
+            anchor_at 2026-10-15T09:00:00-03:00
+            condition """sum(@syntax-counter, 30d) >= 0 and extension(@syntax-counter, "work", "score") > 0"""
+            gate !=0
+            carry one
+            consequences """[{"kind":"set-concept","concept":"reviewed"}]"""
+            note "Windowed readings belong to the Karma condition host."
+        } ^rec_01JA0000000000000000000305
+    }
+}
+
+Extension @syntax-counter "work" {
+    score 2.5
+    title "A \"quoted\" value"
+    verified true
+    archived false
+    missing null
+    tiny 1e-6
+    adjustment -2
+    nested {
+        owner "local"
+        enabled true
+    }
+    values [1 "two" true false null {
+        score 3
+    } [4 5]]
+}
+
+print(frequency(@syntax-daily));
+
+print(frequency(@syntax-elapsed));
+
+print(karma("syntax-automation"));
+
+print(rule(@syntax-toggle));
+
+print(rule(@rec_01JA0000000000000000000305));
+
+print(extension(@syntax-counter, "work"));

@@ -110,14 +110,30 @@ impl TransferItem {
         if let Some(exchange) = &self.exchange {
             exchange.validate()?;
         }
-        if [self.loan.is_some(), self.return_of.is_some(), self.future_need_for.is_some()].into_iter().filter(|present| *present).count() > 1 {
+        if [
+            self.loan.is_some(),
+            self.return_of.is_some(),
+            self.future_need_for.is_some(),
+        ]
+        .into_iter()
+        .filter(|present| *present)
+        .count()
+            > 1
+        {
             return Err("choose a loan, a return or a future Need for this item");
         }
         if let Some(loan) = &self.loan {
             loan.bounds()?;
-            if self.exchange.is_none() { return Err("a loan needs a lender and borrower"); }
+            if self.exchange.is_none() {
+                return Err("a loan needs a lender and borrower");
+            }
         }
-        for link in [&self.return_of, &self.future_need_for].into_iter().flatten() { link.validate()?; }
+        for link in [&self.return_of, &self.future_need_for]
+            .into_iter()
+            .flatten()
+        {
+            link.validate()?;
+        }
         for (_, field) in self.disclosure.fields() {
             if field.people.len() > 100
                 || field.people.iter().any(|p| p.is_empty() || p.len() > 512)
@@ -259,7 +275,10 @@ fn cancellation_action(value: &Value) -> Value {
 
 fn redact_item(row: &mut Value, access: ItemAccess) {
     if !access.parties || !access.quantity {
-        hide(row, &["loan", "accepted_loan", "return_of", "future_need_for"]);
+        hide(
+            row,
+            &["loan", "accepted_loan", "return_of", "future_need_for"],
+        );
     }
     let cancellation_action_payload = (access.quantity && access.parties)
         .then(|| cancellation_action(&row["action_payloads"]["propose_cancellation"]))

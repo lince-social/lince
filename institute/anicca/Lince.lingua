@@ -1,112 +1,11 @@
-Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
-A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
-
-I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
-
-We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
-
-I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
-
-We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
-
-That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
-
-On Trust: When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
-
-2. [ ] **Public Transfer history / trust portfolio:** let people inspect a party's permitted completed Transfer history with verifiable identity, preserving private fields. This comes from the broader Transfer Record and was outside the implementation plan.
-
-"The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
-
-- [ ] **Handle different device clocks safely.** Location fixes are still accepted or rejected using source and authority timestamps. Use a bounded age protocol so a wrong or changed clock cannot reject fresh positions or keep old ones alive. Preserve source approval and replay protection.
-
-- [ ] **Make sharing-authority changes usable.** The authority endpoint is displayed, but there is no explicit handover of its private settings to another Cell. Show connection status clearly and provide an authorized handover that ends the old session and requires fresh source approval.
-
-- [ ] **Finish location invitations.** Person and device selection already exist, but outside viewers still copy and paste a private reference. Add sending and opening invitations through the normal private conversation flow, with a clear audience, precision, and stopping condition. Receiving an invitation must still require permission.
-
-- [ ] **Build the guided Transport Transfer flow.** Bring existing Needs, Contributions, private requests, agreements, reservations, and completion controls into a simple “Need transport” / “Offer transport” workflow. Ask for origin, destination, time window, and capacity. Keep it usable as a list when maps or discovery services are unavailable.
-
-- [ ] **Add reviewed sharing shortcuts for participants.** Let a driver review sharing with selected passengers, and let each passenger independently choose the driver or outside observers. Adding someone to a Transfer must require a separate decision before sharing their location.
-
-- [ ] **Add reusable journey progress actions.** Provide explicit actions such as arrived, met/boarded, departed, and reached destination. These controls are missing. They should describe progress without automatically confirming fulfillment or creating another accounting result.
-
-- [ ] **Add geographic and time-sensitive announcements.** Public announcements currently store area and availability as text, with publication lifetimes of one to seven days. Add bounded approximate origin/destination areas, structured time windows, and shorter expiry for immediate availability. Review the public information before publishing and reuse existing signatures, withdrawals, and private replies.
-
-- [ ] **Connect geographic discovery to Protein and maps.** Protein has no public-announcement source or viewport query. Add permitted discovery results with area/time filters, then show public areas, private saved places, and granted live positions as distinct layers. Keep Records without coordinates accessible in the accompanying list.
-
-- [ ] **Support larger map result sets.** Maps currently take only the first 32 source Records. Add bounded viewport results and grouping of nearby visible markers. Counts, filtering, and distance calculations must use information the viewer may access. Add a spatial index if measurements show it is needed.
-
-- [ ] **Preserve live-position age and accuracy on maps.** Map markers currently discard the reply’s capture age and device accuracy, and their local freshness timer starts when the reply arrives. Carry the original age through delivery, expire markers accordingly, and show permitted measurement accuracy separately from a deliberately approximate sharing area.
-
-- [ ] **Add an explicit “locate me” control.** Maps can center on Records, but cannot request the current device’s position through a dedicated control. Make acquisition require a user action and keep it separate from saving a place or sharing with others.
-
-- [ ] **Finish regional map package management.** Local directories, PMTiles, and area downloads already work. Add package metadata for coverage, source version/date, hashes, resources, and credits, plus safe installation and replacement. An interrupted update must preserve the working pack. Version the cache by dataset, rather than only server URL.
-
-- [ ] **Complete map keyboard access.** Zoom buttons and accessibility labels exist, but panning, choosing a point, and drawing a download area rely on pointer gestures. Provide keyboard alternatives and verify focus, marker navigation, and screen-reader descriptions.
-
-- [ ] **Finish desktop map quality and performance measurements.** Basic GPU rendering is already demonstrated. Measure dense scenes, multiple maps, repeated theme changes, resizing and display scaling, memory/resource cleanup, and release size on named hardware. Check difficult place names and glyph coverage, and clearly describe unsupported cartography.
-
-- [ ] **Validate real desktop location delivery.** Existing simulations cover permissions and Transfer completion, but do not establish Linux portal behavior or real-network performance. Exercise driver, passenger, and outside-observer sessions across actual instances, including permission denial, disconnection, stopping, and handover. Measure delivery delay, traffic, and memory.
-
-- [ ] **Integrate maps and the transport workflow into mobile.** Mobile location controls already exist, but the map presentation does not. Reuse the completed capabilities with touch/pinch controls, readable cards, accessibility, and correct cleanup when the app pauses or its graphics surface is recreated.
-
-- [ ] **Complete Android location and map validation.** Android setup/run tooling exists; validate the actual target and application through that workflow. Check approximate, denied, and revoked permissions, locked-screen sharing, notification Stop, process termination, network changes, and Transfer completion. Measure sustained battery, thermal, bandwidth, memory, and rendering behavior.
-
-- [ ] **Later extension: add multi-stop journeys and capacity per segment.** Ordered itineraries and segment-aware reservations are missing. Check capacity for overlapping portions of a journey, allow reuse after someone leaves, and preserve independent passenger privacy using the existing Transfer structure.
-
-- [ ] **Optional later extension: add address search and route estimates.** Geocoding and routing providers are absent. Use replaceable providers, make disclosure of private endpoints explicit, and show the provider and age of estimates. Maps and Transfer completion should remain usable without them.
-} r_00ECACY50NWQQ3S0YH37V8KMK6
-
-Embedded (@embedded: 0) {
-Embedded connects small devices, such as ESPs, to Signals in Lince. Each device has its own identity and can update only the Signal granted to it. It cannot run commands, read private Records, change access, or enroll another device.
-
-Lince keeps the access settings: enabled or disabled, the allowed Signal, minimum time between readings, accepted value range, and an expiry. Changes take effect on the next request. A device sends signed readings over HTTPS. The private key stays on the device; Lince stores only its public key. There is no permanent bearer token to copy or renew.
-
-Every accepted reading has a sequence number and a receipt. Retrying the latest identical request returns its receipt without changing the Signal again. Old requests and changed retries are refused. The sequence survives Lince restarts. Requests also expire, so an old instruction cannot become a new reading much later. Device identity replacement invalidates the previous identity and starts a new sequence.
-
-Internet and power do not make a device open to everybody. The device connects outward to Lince. This first implementation only accepts readings; remote control, Bluetooth setup, Wi-Fi setup mode, and firmware updates are separate future work. Nearby people have no authority just because they are nearby. A future setup mode must require a physical action, a unique setup secret, a short setup window, and owner approval.
-
-Copy protection depends on the board and its firmware. Use a protected signing key, secure boot, encrypted storage, and restricted debugging where supported. A software key in readable flash can be copied. Even a protected key does not stop somebody using the stolen device itself; disable that device in Lince. Choose recovery procedures before setting irreversible chip protection settings.
-
-Steps after the Lince coding is implemented:
-
-1. Choose the exact ESP board and prepare firmware supporting P-256 signing and HTTPS certificate verification. Check its protected key storage and recovery options. This Lince implementation does not flash or harden an ESP.
-2. Use a trusted cable connection for the first installation. Create a unique private key on the device or its secure element, provision Wi-Fi and the public Lince HTTPS address, and obtain only the public key for enrollment. Do not upload the private key to Lince.
-3. Open Embedded in the native Karma Castle. Enroll the public key with a name and a Signal slug. Lince creates a dedicated Signal. Set a cooldown, a value range, and an access expiry. Use Copy setup to obtain the server identity, device identity, Signal identity, and key generation. Add the public HTTPS server address in firmware. Enable the device in Lince when ready.
-4. Publish Facade through an HTTPS reverse proxy. The ESP must verify the server certificate. The local unencrypted Facade listener is for the reverse proxy, not an internet device endpoint.
-5. Implement the documented signed request format in firmware. Persist a pending reading and sequence before sending. Retry that same request after a lost response; advance only after a confirmed receipt. Synchronize the device clock and create a new request if a pending reading has expired.
-6. Send a harmless test measurement. Inspect the Signal and receipt. Test a duplicate, another Signal, a value outside the range, and a request during cooldown. Only the first permitted reading should change the Signal.
-7. Use the Signal quantity or signal(@slug) in a Rule. Rule consequences retain their normal permissions and execution controls.
-8. Change access or disable the device in Lince without a cable. Renew access expiry in Lince when wanted. No credential refresh is necessary for each reading because the device proves its identity with its key.
-9. If the device or key is compromised, disable it first. Use a trusted cable to install a new key and replace its registered public key in Lince. Copy the new setup, update the key generation, reset the request sequence, and enable the device when ready. Ordinary renewal with the old key is not recovery.
-
-Firmware request format:
-
-Send a JSON POST to /embedded/readings on the configured HTTPS server. The fields are audience (the server identity), device (the device UID), key_epoch (the key generation), signal (the granted Signal UID), sequence (a positive integer), issued_at (Unix seconds), value (a canonical decimal string), and signature (lowercase hexadecimal). Unknown fields are refused. The body is limited to 2048 bytes.
-
-Sign the following UTF-8 lines in this exact order, including a newline after the last line: lince-embedded-v1, audience, device, key_epoch, signal, sequence, issued_at, value. Use ECDSA with P-256 and SHA-256. The signature contains the 32-byte r followed by the 32-byte s, encoded as 128 lowercase hex characters; it is not DER. The public key is compressed SEC1, encoded as 66 lowercase hex characters.
-
-For example, a value is "23.7", not a JSON floating-point number. A decimal string uses an optional minus sign, an integer without unnecessary leading zeros, and an optional fraction. Exponents, a plus sign, negative zero, and embedded whitespace are refused. Keep integer protocol fields in decimal without padding when constructing the signed lines. Use an integer representation that preserves the full sequence; do not convert it through a floating-point number.
-
-A new reading may be at most 120 seconds old or 30 seconds ahead of the server clock. Persist the full pending request before sending. Only the latest accepted identical request can be retried for its old receipt, even after its timestamp expires; it must still pass current access checks. A higher sequence can replace an expired unaccepted request. Never reuse an accepted sequence with a changed value or timestamp.
-
-Success returns device, key_epoch, sequence, fact, and received_at (Unix milliseconds). Confirm that these identify the pending request before advancing. HTTP 429 means cooldown or an ingress limit: back off and retry, refreshing an expired unaccepted reading with a higher sequence. HTTP 403 means access was refused; stop sending and inspect access in Lince. HTTP 409 means a used sequence; recover the pending sequence through the trusted setup process rather than guessing. HTTP 400 means a malformed, expired, or out-of-range reading. Lost responses and temporary server errors use bounded exponential backoff with jitter. Lince also limits concurrent reading requests and total request attempts before signature verification.
-}
-
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
-Interfaces should ask for as little attention as possible throughout the user's life. Choices can be done quickly. The best interface is Interfaceless.
-Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Full control is always available.
+Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
 
-Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism.
+Choices can be done quickly. Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Full control is always available.
 
-Shadows and hints can be used for subtle differentiation of areas, components and data.
+Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design.
 
-Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design.
-
-Tooltips and placeholders should contain minimal text.
-
-The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record.
-
-Common choices should be quick, and the person should be able to inspect and change the details.
+Shadows and hints can be used for subtle differentiation of areas, components and data. Tooltips and placeholders should contain minimal text.
 
 Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions.
 
@@ -117,43 +16,11 @@ Areas of Influence are shapes you put in the canvas. They can have some logic be
 - Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
 - Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
 - Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
+- Immunity from external forces, and/or from making internal effects inside the area leak to the outside, a bubble.
 
-And many more. They are one way to add logic and customization to your experience on the interface.
+These and many more behaviors add logic and customization to your experience on the interface.
 
-There are several components made, here is the documentation on how to use them:
-
-### IDE
-
-A local text editor with a reusable File Explorer Castle. Rust handles directory listing and file operations directly. Loro retains edits and merges independent changes made on disk; competing changes require review. This is separate from Record sync and blob transfers. Opening a folder creates no File Records or database copies. Unsaved recovery drafts are stored locally beside the workspace.
-
-Add the project folder, open a file, then open **Language tools**. Lince uses installed programs; connecting is manual and downloads nothing.
-
-Install the tools you use:
-
-- **NixOS or Linux with Nix:** `nix shell nixpkgs#bash-language-server nixpkgs#shfmt nixpkgs#shellcheck --command lince`. For permanent installation, add those packages to `environment.systemPackages` or Home Manager's `home.packages`. For Nix files, install `nixd nixfmt statix` instead. [Nix setup](https://wiki.nixos.org/wiki/Adding_programs_to_PATH)
-- **Arch:** `sudo pacman -Syu bash-language-server shfmt shellcheck`.
-- **Debian/Ubuntu:** `sudo apt install shfmt shellcheck`; with Node.js 20+ and npm, run `npm install --global --prefix "$HOME/.local" bash-language-server`, then `export PATH="$HOME/.local/bin:$PATH"`. [Server installation](https://github.com/bash-lsp/bash-language-server#installation)
-
-Launch Lince from that terminal. From a configured checkout, use `cargo run -p lince`. With Nix, first enter `nix develop .#interface`, then use the tooling shell above with `--command cargo run -p lince`.
-
-Check the prefilled fields for the open file's language:
-
-| Language | Server | Formatter | Linter |
-| --- | --- | --- | --- |
-| Bash (`.sh`) | `["bash-language-server","start"]` | `["shfmt"]` | `["shellcheck","-"]` |
-| Nix (`.nix`) | `["nixd"]` | `["nixfmt"]` | `["statix","check","--stdin"]` |
-
-Fields are JSON lists: executable, then arguments. Use PATH names or full paths; `~`, `$HOME`, aliases and pipes are not expanded. `[]` disables a command. Connecting or running saves the settings. The deepest selected folder containing the file is its project root; otherwise its parent is used.
-
-Click **Connect / Restart** and wait for Connected. **Ctrl+Space** requests completion; click a diagnostic to visit it. **Ctrl+Shift+I / Format** uses the server when supported, otherwise the formatter. **Format with command** always uses the formatter; **Run linter** shows its output. Formatting is one undo step and reaches disk through Save or autosave. **Disconnect** leaves normal editing and highlighting available.
-
-Test with a small Bash file: expect a warning for unquoted `$1`, completion of a function name, and undoable formatting. Keep autosave off to check that only Save changes disk contents.
-
-If a tool is missing, run `command -v bash-language-server shfmt shellcheck`, then restart Lince from that environment or enter the full path. An already running Lince does not inherit later environment changes.
-
-Tools handle files up to 2 MiB, with four shared servers. Completion is plain text. Server settings currently use defaults; custom NixOS/Home Manager option completion may need settings the UI does not expose. [nixd settings](https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md)
-
-
+# Lab
 
 Learning how hardware works, and how to build and research it is fun and cool. Having in the base app the capabilities of modeling things like Figma and/or CAD programs, from mechanical parts to GPUs, molecules and biology is an amazing dream. The edge cases and the architecture keeps on facing issues, and we keep on improving it. This would be the capabilities to use Lince as a laboratory for creation and inovation, the hardware that is self composable to help you on the day to day, and to change it's composition to become the lab/infrastructure you need to work or live is sci-fi, and in the future, the next undone task.
 
@@ -161,8 +28,6 @@ Learning how hardware works, and how to build and research it is fun and cool. H
 	- [ ] CAD-like for modeling mechanical parts.
 	- [ ] CAD-like for modeling electrical parts.
 	- [ ] Biology lab.
-
-
 - [ ] For funsies, use Ithkuil as one of the languages
 
 We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
@@ -498,12 +363,74 @@ question becomes answerable with evidence rather than by survey.
 - Parasolid / the rented-kernel tier: https://en.wikipedia.org/wiki/Parasolid
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 
+Command (@command: 1) {
+  One can run shell commands in Lince. When running as part of a Condition, the output is saved into a Signal, a holder of a value. Such Signal can be changed by an HTTP call with authentication. This can be useful for integrating with microcontrollers. Some device creates a public/private key pair, uploads the public to Lince, and can then alter a Signal from the outside (dangerous, use at your own discretion).
+
+Lince keeps the access settings: enabled or disabled, the allowed Signal, minimum time between readings, accepted value range, and an expiry. Changes take effect on the next request. A device sends signed readings over HTTPS. The private key stays on the device; Lince stores only its public key. There is no permanent bearer token to copy or renew.
+
+Every accepted reading has a sequence number and a receipt. Retrying the latest identical request returns its receipt without changing the Signal again. Old requests and changed retries are refused. The sequence survives Lince restarts. Requests also expire, so an old instruction cannot become a new reading much later. Device identity replacement invalidates the previous identity and starts a new sequence.
+
+Copy protection depends on the board and its firmware. Use a protected signing key, secure boot, encrypted storage, and restricted debugging where supported. A software key in readable flash can be copied. Even a protected key does not stop somebody using the stolen device itself; disable that device in Lince. Choose recovery procedures before setting irreversible chip protection settings.
+
+# Steps to configure an ESP to change an authenticated Signal:
+
+1. Choose the exact ESP board and prepare firmware supporting P-256 signing and HTTPS certificate verification. Check its protected key storage and recovery options. This Lince implementation does not flash or harden an ESP.
+
+2. Use a trusted cable connection for the first installation. Create a unique private key on the device or its secure element, provision Wi-Fi and the public Lince HTTPS address, and obtain only the public key for enrollment. Do not upload the private key to Lince.
+
+3. Open Embedded in the native Karma Castle. Enroll the public key with a name and a Signal slug. Lince creates a dedicated Signal. Set a cooldown, a value range, and an access expiry. Use Copy setup to obtain the server identity, device identity, Signal identity, and key generation. Add the public HTTPS server address in firmware. Enable the device in Lince when ready.
+
+4. Publish Facade through an HTTPS reverse proxy. The ESP must verify the server certificate. The local unencrypted Facade listener is for the reverse proxy, not an internet device endpoint.
+
+5. Implement the documented signed request format in firmware. Persist a pending reading and sequence before sending. Retry that same request after a lost response; advance only after a confirmed receipt. Synchronize the device clock and create a new request if a pending reading has expired.
+
+6. Send a harmless test measurement. Inspect the Signal and receipt. Test a duplicate, another Signal, a value outside the range, and a request during cooldown. Only the first permitted reading should change the Signal.
+
+7. Use the Signal quantity or signal(@slug) in a Rule. Rule consequences retain their normal permissions and execution controls.
+
+8. Change access or disable the device in Lince without a cable. Renew access expiry in Lince when wanted. No credential refresh is necessary for each reading because the device proves its identity with its key.
+
+9. If the device or key is compromised, disable it first. Use a trusted cable to install a new key and replace its registered public key in Lince. Copy the new setup, update the key generation, reset the request sequence, and enable the device when ready. Ordinary renewal with the old key is not recovery.
+
+Firmware request format:
+
+Send a JSON POST to /embedded/readings on the configured HTTPS server. The fields are audience (the server identity), device (the device UID), key_epoch (the key generation), signal (the granted Signal UID), sequence (a positive integer), issued_at (Unix seconds), value (a canonical decimal string), and signature (lowercase hexadecimal). Unknown fields are refused. The body is limited to 2048 bytes.
+
+Sign the following UTF-8 lines in this exact order, including a newline after the last line: lince-embedded-v1, audience, device, key_epoch, signal, sequence, issued_at, value. Use ECDSA with P-256 and SHA-256. The signature contains the 32-byte r followed by the 32-byte s, encoded as 128 lowercase hex characters; it is not DER. The public key is compressed SEC1, encoded as 66 lowercase hex characters.
+
+For example, a value is "23.7", not a JSON floating-point number. A decimal string uses an optional minus sign, an integer without unnecessary leading zeros, and an optional fraction. Exponents, a plus sign, negative zero, and embedded whitespace are refused. Keep integer protocol fields in decimal without padding when constructing the signed lines. Use an integer representation that preserves the full sequence; do not convert it through a floating-point number.
+
+A new reading may be at most 120 seconds old or 30 seconds ahead of the server clock. Persist the full pending request before sending. Only the latest accepted identical request can be retried for its old receipt, even after its timestamp expires; it must still pass current access checks. A higher sequence can replace an expired unaccepted request. Never reuse an accepted sequence with a changed value or timestamp.
+
+Success returns device, key_epoch, sequence, fact, and received_at (Unix milliseconds). Confirm that these identify the pending request before advancing. HTTP 429 means cooldown or an ingress limit: back off and retry, refreshing an expired unaccepted reading with a higher sequence. HTTP 403 means access was refused; stop sending and inspect access in Lince. HTTP 409 means a used sequence; recover the pending sequence through the trusted setup process rather than guessing. HTTP 400 means a malformed, expired, or out-of-range reading. Lost responses and temporary server errors use bounded exponential backoff with jitter. Lince also limits concurrent reading requests and total request attempts before signature verification.
+}
+
 Interfaceless - Ailuros (@ailuros: 0, #instinct) {
 What is more embarrassing, to dream or not to dream something like this? That is the question.
 
 Writing and not doing is fiction. If the process of ordering the steps, building and documenting the work is done in the open, there is no such thing as too much ambition. 
 
 ![](/assets/photos/ailouros.png)
+
+# First practical milestone: cameras and surface projection
+
+After the initial learning and bench preparation, one of our first practical hardware projects should connect a camera and a projector to Lince. Start with a fixed workstation and one desk or wall. It should make the computer more useful and let us interact with real objects through their connection to Records. A wearable device or a small enclosure is not required for this first experiment.
+
+The Lince software already has surface output, calibration controls, explicit camera capture, a local connection for future hardware drivers, task interaction and concurrent Fiote requests. Software tests and rendered examples passed; the real equipment has not been tested. Keep the software instructions and verification in [Shader effects and the physical workstation](Shader-effects.md).
+
+Do these tasks in order:
+
+- [ ] Choose the first camera, projector and working surface. Record their interfaces, operating system, resolution, mounting, working distance, coverage and ambient light. Plan power, cooling and a stable mounting arrangement before designing an enclosure. Choose alignment and response-time targets from actual measurements.
+- [ ] Bring up the camera and projector on the workstation. Show only the Lince content assigned to the surface, with controls to blank output and stop camera input from the normal computer interface. Connect any required hardware driver through Lince's existing local adapter. Blanking should keep a black output window; closing it can reveal the desktop behind it.
+- [ ] Measure and calibrate the first surface. Save its dimensions and position in meters, and match the camera and projector corners to it. Check points inside the surface as well as its corners. Recalibrate when equipment moves. Moving a virtual Room around the Lince canvas must not change this physical alignment.
+- [ ] Show the same task or Kanban on the computer and the real surface. Change a Record's quantity and see its WGSL effect update in both places. Check text size, contrast, focus and glow under the actual lighting. A projected image of a 3D sphere is still an image on a surface, not a free-floating hologram.
+- [ ] Request a real camera frame and deliberately associate the object being discussed with a Record. Make it possible to correct or remove that association. Measure how long projection must be blanked before capture, or mask projected regions, so our own projected text is not mistaken for independent evidence. Images go to Fiote only through an explicit request; a camera observation must not automatically change a Record or complete a task.
+- [ ] Choose and implement a reliable way to point, select and release on the surface, using a marker, pointing device, touch sensor or deliberate gesture suited to the equipment. Feed those interactions through the existing Lince connection. Test moving a placement, changing a Kanban task and Undo, with keyboard and mouse recovery. Tracking loss, low confidence, recalibration or disconnect must cancel an unfinished action. Use a stationary layout for the first test; later canvas changes, including physics movement, can correctly invalidate an Undo receipt.
+- [ ] Run two useful Fiote requests at the same time with the chosen model providers. Keep each request's image, Record, conversation and output destination separate. Check waiting questions, stale answers and individual cancellation. Pointing and rendering must remain responsive while Fiotes work; do not request model work for every camera frame.
+- [ ] After the first complete loop works reliably, add cameras and projectors one at a time. Keep calibration, timing, connection status and surface ownership separate for each device. Test duplicate observations, overlap, reconnect and losing one device without damaging the others. Start with one projector per surface; add blending, automatic handoff or network transport only when the setup needs them.
+- [ ] Measure the combined setup in normal use and an optimized run. Record alignment error, pointing accuracy, frame times, camera-to-pointer delay, Record-to-projection delay, Fiote response time and resource use. Tune effects, display resolution, capture rate and request limits together. Document the exact equipment, setup, failures and recovery steps as a reproducible Trail in Lince.
+
+Room scans and room-wide effects can follow separately. Begin with measured surfaces for reliable placement and occlusion. Automatic recognition, OCR, voice and identity across camera views need their own refinement. Free-floating holography, mobile aiming and a compact lightbulb enclosure remain later research and hardware projects; they must not delay the fixed camera/projector workstation.
 
 # The Ultimate Hardware
 
@@ -1034,6 +961,10 @@ Here are the subjects wanted to create Trails for, from fields of knowledge to s
   keeps a generated fallback rather than silently producing a broken plan.
 
 } r_Q46Z5FZHZFACPNSNPJP2GEDC1D
+
+Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
+A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+} r_00ECACY50NWQQ3S0YH37V8KMK6
 
 Sync (@sync: 0, #instinct, #part-of @ontology) {
 Sync connects a selected Protein to a local Lingua or Markdown directory. Inspect status and conflicts, and stop it when you no longer want incoming and outgoing edits. One-time import is separate.

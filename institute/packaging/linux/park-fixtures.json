@@ -1,0 +1,10 @@
+{
+  "terminal": {
+    "program": "xdg-terminal-exec",
+    "arguments": []
+  },
+  "clients": [],
+  "lifecycle_rounds": 1,
+  "observation_seconds": 90,
+  "soak_seconds": 0
+}

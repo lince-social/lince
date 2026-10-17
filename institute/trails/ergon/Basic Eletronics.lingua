@@ -1,0 +1,993 @@
+Basic Eletronics (@basic-eletronics: 0, is #trail) {
+A beginner's trail from electric circuits to connected embedded systems. Electronics studies how circuits control electrical energy and represent, process, and communicate information. The filename preserves the requested name; the field is normally spelled electronics.
+
+Read the chapters in their numbered order. Each chapter explains a piece of the next one. You need arithmetic, a willingness to measure, and no previous electronics experience. By the end, you should be able to explain a circuit, calculate basic component values, distinguish a chip from a board, choose compatible modules, and describe how an ESP device measures something and sends it over Wi-Fi.
+
+## How to study
+
+Work in four passes: quantities and circuit analysis in chapters 1–6; components and physical behavior in chapters 7–13; controllers, power, firmware, and interfaces in chapters 14–19; and connected systems in chapters 20–28. Use chapter 29 to find gaps, then return to the relevant lesson. Chapter 30 points to original technical sources.
+
+For each circuit, draw the connections, state assumptions, predict voltages and currents, check ratings, and only then measure. Write an explanation before reading an exercise's answer. If hardware is unavailable, calculations and tracing current paths are still useful; mark the predictions as unmeasured.
+
+Equations use × for multiplication, / for division, and powers such as I² for I multiplied by itself. Δ means a change: ΔV is final voltage minus initial voltage. A derivative such as dV/dt means the instantaneous rate of change, measured here in volts per second. You can understand the first examples as changes over short time intervals without having studied calculus. π is approximately 3.1416; e is approximately 2.718, the base of the exponential function used in charging curves.
+
+The mathematics grows gradually from arithmetic to algebra, exponentials, and a first look at frequency-domain notation. Use a scientific calculator for these examples. The complex-impedance paragraph is a bridge to later study; understanding that phase matters is enough on a first reading.
+
+This is a substantial foundation, not all of electrical engineering. The explanations state when they use ideal parts, steady conditions, or a particular product. A worked design calculation is a prediction; a datasheet specification is a manufacturer's statement under stated conditions; a measurement is evidence from a particular physical circuit.
+
+The practical destination is a low-voltage environmental monitor: a microcontroller reads a sensor, indicates its state with an LED, and publishes measurements over a network. The exercises develop the parts of that project separately before combining them. They are learning activities, not claims that hardware has already been assembled or tested.
+
+All construction exercises use isolated, current-limited low-voltage DC power. Leave wall wiring, exposed mains, opened power supplies, high-voltage capacitors, and unprotected battery packs outside these exercises. Even a low-voltage battery can deliver enough short-circuit current to burn wires.
+
+Keep a notebook with the schematic, exact part numbers, calculations, predicted measurements, actual measurements, firmware version, and what changed. Understanding means being able to predict a result, measure it, and explain the difference.
+
+The trail contains 30 ordered chapters: electrical quantities; Ohm's law; power; circuit laws; resistors; measurement; capacitors; inductors; diodes; transistors; analog signals; digital logic; chips; processors and memory; power supplies; prototyping; firmware; GPIO; communication buses; ESP families; Wi-Fi hardware; expansion modules; networking; connected firmware; power management; datasheets; a complete project; troubleshooting; review; and sources.
+}
+
+01 Electrical quantities and a complete circuit (@basic-eletronics-01: 0, is #chapter, #part-of @basic-eletronics: 1) {
+## Charge, current, voltage, and resistance
+
+Electric charge is a property of matter. Electrons carry negative charge. In a metal, some electrons can move through the material. A conductor allows charge to move easily; an insulator strongly resists that movement. Copper is a common conductor. Plastic around a wire is an insulator.
+
+Current, written I, is the rate at which charge passes a point. Its unit is the ampere, A. One ampere means one coulomb of charge per second. Conventional current is defined in the direction positive charge would move; electrons in metal drift in the opposite direction. Use conventional current consistently when analyzing circuits.
+
+Voltage, written V, is an electric potential difference between two points. Its unit is the volt, V. One volt means one joule of energy per coulomb of charge. Voltage is always measured between points: saying a pin is at 3.3 V usually means 3.3 V relative to the circuit's ground.
+
+Resistance, written R, describes opposition to current. Its unit is the ohm, Ω. A resistor converts electrical energy into heat. Current is not used up by a resistor: charge continues around the circuit while energy is transferred.
+
+Voltage can exist without a closed conducting path: an unconnected battery still has terminal voltage. Current through a load requires a path and a driving voltage. The charges already present in the wires respond to an electric field when a circuit is connected. The electrical disturbance travels much faster than individual electrons drift; a lamp does not wait for one electron to travel from the battery to the filament.
+
+A simple circuit has a source, a load, and a return path. A battery's positive terminal can feed a resistor, which connects back to its negative terminal. An open switch breaks that path. A short circuit creates an unintended very low resistance path, potentially causing a large current.
+
+Ground, GND, is the chosen reference node. It is not automatically the earth, a safety conductor, or a place where current disappears. In a battery circuit, battery negative is often chosen as ground. Protective earth, chassis ground, and signal ground have different jobs even when a design connects some of them.
+
+Write VAB = VA − VB. If A is 3.3 V and B is 1.0 V relative to the same ground, the voltage from A to B is 2.3 V. Reversing the meter leads gives −2.3 V. Likewise, an assumed current direction can give a negative result: the actual current then runs opposite your chosen arrow. A negative answer is useful information.
+
+DC means current maintains one direction, although its magnitude may change. AC means current reverses direction. A USB-powered circuit uses DC supply rails; its data signals still change quickly. Later, frequency and impedance explain what those changes do.
+
+## Units used throughout this trail
+
+| Prefix | Meaning | Example |
+| --- | --- | --- |
+| mega, M | 1,000,000 | 1 MΩ = 1,000,000 Ω |
+| kilo, k | 1,000 | 4.7 kΩ = 4,700 Ω |
+| milli, m | 0.001 | 20 mA = 0.020 A |
+| micro, µ | 0.000001 | 10 µF = 0.000010 F |
+| nano, n | 0.000000001 | 100 nF = 0.1 µF |
+| pico, p | 0.000000000001 | 22 pF = 0.000000000022 F |
+
+Capitalization matters: MΩ and mΩ differ by a billion. Convert quantities to compatible units before calculating.
+
+A compact calculation shortcut is V / kΩ = mA: 3.3 V / 2.2 kΩ = 1.5 mA. Keep units on the page so that a missing factor of 1,000 is visible. Electrical symbols and physical parts are different things: a schematic resistor symbol expresses a connection and value, while a real resistor also has a package, tolerance, and ratings.
+
+Checkpoint: explain why a voltage measurement needs two points and why a disconnected load draws no steady conduction current through the broken path.
+}
+
+02 Ohm's law and its limits (@basic-eletronics-02: 0, is #chapter, #part-of @basic-eletronics: 2) {
+For a resistor operating approximately linearly at a given temperature:
+
+- V = I × R.
+- I = V / R.
+- R = V / I.
+
+With 5 V across 1 kΩ, the current is 5 / 1,000 = 0.005 A = 5 mA. With 3.3 V across 330 Ω, the current is 0.010 A = 10 mA. A measured 2 V drop with 4 mA flowing corresponds to 500 Ω.
+
+These equations relate the voltage across a component to current through that same component. Do not automatically use the whole supply voltage when other components share it.
+
+A power supply marked 5 V, 2 A attempts to maintain 5 V and can supply up to its rated current under specified conditions. It does not force 2 A through every connected device. The load determines the current, until supply limits, wiring resistance, or faults change the situation. A current-regulated LED driver behaves differently: it adjusts voltage to maintain a selected current within its operating range.
+
+Ohm's law is a useful resistor model, not a fixed-resistance model for every device. LEDs and transistor junctions are nonlinear. Capacitor and inductor behavior depends on time. A chip changes its current demand as it computes, sleeps, or transmits. Temperature also changes resistance.
+
+An ideal voltage source maintains its voltage regardless of load current; an ideal current source maintains its current regardless of the required voltage. Real sources have limits. Model a battery as an ideal voltage with a series internal resistance for a first approximation: terminal voltage falls as current increases. This model is useful over a limited operating region; actual battery behavior also depends on chemistry, state of charge, temperature, and time.
+
+For example, an illustrative 3.3 V source with 1 Ω total source-and-wire resistance loses 0.2 V at 200 mA, leaving 3.1 V at the load. A multimeter at the source may miss the problem at the device. A short does not produce mathematically infinite current in a real circuit: source resistance, wiring, current limiting, and damage determine it.
+
+Exercise: predict the current through 2.2 kΩ at 3.3 V and through 470 Ω at 5 V. Answers: 1.5 mA and approximately 10.6 mA. Draw each complete circuit before measuring it.
+}
+
+03 Power, energy, and heat (@basic-eletronics-03: 0, is #chapter, #part-of @basic-eletronics: 3) {
+Power is the rate of energy transfer. At any instant, p(t) = v(t) × i(t), using voltage and current at the same component. For constant DC, P = V × I. Its unit is the watt, W. Combining this with Ohm's law gives resistor power P = I²R = V²/R. For changing waveforms, average the instantaneous power; multiplying average voltage by average current is not generally correct.
+
+When the chosen current arrow enters a component's positive-voltage terminal, positive power means it absorbs energy. A source delivering power has negative absorbed power under that convention. This sign rule makes energy accounting consistent: the power delivered by sources equals what loads absorb plus any increase in stored energy.
+
+A 1 kΩ resistor across 5 V dissipates 25 / 1,000 = 0.025 W. A 100 Ω resistor across 12 V dissipates 144 / 100 = 1.44 W. An ordinary 0.25 W resistor is unsuitable for that second circuit: it can overheat and fail. Choose ratings with margin and account for ambient temperature and the manufacturer's derating requirements.
+
+Energy is power accumulated over time: E = P × t for constant power. A 1 W load running for 3 hours consumes 3 Wh, which equals 10,800 J. A battery capacity of 2,000 mAh describes charge, not energy. At a nominal 3.7 V, that is approximately 7.4 Wh before conversion losses and operating limits.
+
+If a device averages 0.5 W and the battery has 7.4 Wh usable in an ideal estimate, runtime is 7.4 / 0.5 = 14.8 hours. Real runtime depends on usable battery energy, converter efficiency, temperature, age, discharge rate, and the device's cutoff voltage.
+
+A regulator dropping 5 V to 3.3 V at 0.2 A dissipates approximately (5 − 3.3) × 0.2 = 0.34 W if it is a linear regulator. Heat depends on package and board thermal resistance as well as watts. Never infer safe temperature from the electrical rating alone.
+
+Efficiency is η = Pout / Pin. If a converter supplies 3.3 V at 100 mA with an assumed 90% efficiency, Pout = 0.33 W, Pin ≈ 0.367 W, and input current at 5 V is approximately 73.3 mA. Voltage conversion changes the relationship between input and output current; energy is conserved with some lost as heat.
+
+For an approximate steady thermal estimate, temperature rise = dissipated power × thermal resistance. A hypothetical 0.34 W loss with an applicable 100 °C/W junction-to-ambient resistance suggests a 34 °C rise. Board copper, airflow, enclosure, and nearby heat sources affect that resistance; the package's headline thermal number is not a universal measurement of your assembly.
+
+Checkpoint: a component's voltage rating, current rating, and power rating constrain different things. Explain why satisfying one does not guarantee satisfying the others.
+}
+
+04 Series, parallel, and Kirchhoff's laws (@basic-eletronics-04: 0, is #chapter, #part-of @basic-eletronics: 4) {
+A node is a set of electrically connected points treated as having one voltage in the ideal-wire model. A branch connects nodes through one or more elements. Wires are often modeled as ideal connections at low frequency, but real wires have resistance and inductance. Two components are in series only if their shared junction offers no other current path; physical placement in a row does not establish series connection.
+
+In series, components carry the same current. Resistances add: Rtotal = R1 + R2. Across 5 V, a 1 kΩ resistor followed by 2 kΩ gives 3 kΩ total, 1.67 mA current, and voltage drops of approximately 1.67 V and 3.33 V.
+
+In parallel, components share the same two nodes and therefore the same voltage. Their currents add. For resistors, 1/Rtotal = 1/R1 + 1/R2. Two equal resistors in parallel have half the resistance of either one. A 1 kΩ and 2 kΩ pair in parallel is approximately 667 Ω.
+
+Kirchhoff's current law says that total current entering a node equals total current leaving it in the usual circuit model. Kirchhoff's voltage law says that signed voltage changes around a closed loop sum to zero, with the usual lumped-circuit assumptions. These laws organize circuits too complicated to solve by visual guesswork.
+
+## The voltage divider
+
+Connect Rtop from supply to a midpoint and Rbottom from midpoint to ground. With negligible output load:
+
+Vout = Vin × Rbottom / (Rtop + Rbottom).
+
+```text
+Vin ---- Rtop ----+---- Vout
+                 |
+              Rbottom
+                 |
+                GND
+```
+
+For 5 V, 10 kΩ on top, and 20 kΩ on the bottom, Vout is approximately 3.33 V. This can illustrate signal scaling; it is not a regulated 3.3 V power supply. Connecting a load changes the bottom resistance to Rbottom in parallel with that load, changing Vout. Supply tolerance, resistor tolerance, and transients also matter when protecting an input.
+
+A divider's effective source resistance is Rtop in parallel with Rbottom. An ADC may require a sufficiently low source resistance to charge its sampling capacitor accurately. Later chapters explain why a mathematically correct divider can still measure poorly.
+
+## A method that also works on unfamiliar circuits
+
+1. Choose a reference ground and label every distinct node.
+2. Mark source polarities and assume branch-current directions.
+3. Write each resistor's current as its node-voltage difference divided by resistance.
+4. Apply current conservation at the unknown nodes and solve the equations.
+5. Check that loop voltages balance, current directions make sense, and source power matches load power.
+
+For the loaded divider with two 10 kΩ resistors and a 10 kΩ load, let the midpoint be x volts. Current entering from 3.3 V is (3.3 − x)/10,000. Current leaving toward ground is x/10,000 + x/10,000. Equating them gives 3.3 − x = 2x, so x = 1.10 V. This is nodal analysis, using the same laws as the simpler divider formula.
+
+## Thévenin and Norton equivalents
+
+A linear circuit viewed from two terminals can often be replaced by its open-circuit voltage Vth in series with an effective resistance Rth. This Thévenin model predicts loading without repeatedly solving the whole source circuit. For the unloaded 10 kΩ / 10 kΩ divider at 3.3 V, Vth = 1.65 V and Rth = 5 kΩ. A 10 kΩ load then receives 1.65 × 10/(5 + 10) = 1.10 V.
+
+For a resistor network containing independent sources, find Rth by replacing ideal voltage sources with shorts and ideal current sources with opens, then looking into the terminals. Dependent sources require a test-source method. This is a calculation procedure on a model, not an instruction to short a powered bench supply. The equivalent Norton form uses current In = Vth/Rth in parallel with Rth. These simple DC forms need extension for nonlinear or frequency-dependent circuits. [MIT's circuit-analysis lessons](https://ocw.mit.edu/courses/6-002-circuits-and-electronics-spring-2007/video_galleries/video-lectures/).
+
+Exercise: calculate the midpoint of two 10 kΩ resistors at 3.3 V. Then add a 10 kΩ load from midpoint to ground. Answers: 1.65 V unloaded, 1.10 V loaded.
+}
+
+05 Resistors, pull-ups, and choosing real parts (@basic-eletronics-05: 0, is #chapter, #part-of @basic-eletronics: 5) {
+Resistors limit current, divide voltage, establish bias conditions, sense current, and define logic states. Resistance is only one specification: tolerance, power, maximum working voltage, temperature coefficient, package, and pulse capability can matter.
+
+A 1 kΩ resistor with ±5% tolerance may be between 950 Ω and 1,050 Ω under its specified conditions. Standard value series explain why values such as 220 Ω, 330 Ω, and 4.7 kΩ are common. A marking such as 4R7 means 4.7 Ω; 4k7 means 4.7 kΩ. Surface-mount marking systems vary, and very small parts may have no marking.
+
+A potentiometer is an adjustable resistor with a movable contact called a wiper. With its end terminals across a supply, the wiper gives an adjustable divider voltage. Keep it within its power rating and do not use a small signal potentiometer as a high-power speed controller.
+
+A digital input usually has high impedance. Left unconnected, it can float and pick up noise. A pull-up connects it weakly to the positive logic rail; a pull-down connects it weakly to ground. A 10 kΩ pull-up at 3.3 V draws about 0.33 mA while a button holds the node at ground. Released, the node is high; pressed, it is low. That is an active-low button.
+
+Pull resistance trades idle or active current against noise immunity and speed. Internal pulls are convenient but often weak and imprecise. A pull-up is not an all-purpose voltage converter: a pin still has voltage limits, and push-pull outputs may fight each other.
+
+Two further applications connect resistance to measurement. A current-sense shunt produces V = I × R: a 0.1 Ω shunt at 0.5 A drops 50 mV and dissipates 25 mW. The meter or amplifier must resolve that small voltage, and the shunt changes the circuit slightly. A thermistor's resistance depends strongly on temperature; it needs its specified temperature relationship and calibration rather than a single universal resistance-to-temperature rule.
+
+For worst-case design, use the limits in the direction that creates the risk. At a fixed maximum supply voltage, the minimum resistance gives the largest current and resistor power. A nominal 1 kΩ ±5% part at exactly 5 V could carry 5/950 ≈ 5.26 mA. A higher power rating allows more heat dissipation; it does not change the intended resistance.
+
+Checkpoint: draw a button that always has a defined state and calculate the current while pressed.
+}
+
+06 Measuring without changing the circuit into a fault (@basic-eletronics-06: 0, is #chapter, #part-of @basic-eletronics: 6) {
+A digital multimeter can measure voltage, resistance, continuity, and often current and diode voltage. Select the correct function, socket, and range before connecting it.
+
+Measure voltage in parallel: put the probes across the two points of interest. For DC, the display sign shows polarity relative to the probes. A voltmeter has high input resistance, but it can still load very high resistance circuits.
+
+For instance, an assumed 10 MΩ-input meter measuring the midpoint of a 1 MΩ / 1 MΩ divider at 3.3 V becomes another resistance to ground. The bottom becomes about 909 kΩ and the reading becomes about 1.57 V instead of the unloaded 1.65 V. This is a circuit change caused by measurement, not necessarily a faulty resistor.
+
+Measure current in series: turn power off, open the intended branch, insert the meter, and restore power. A current input has low resistance. Putting a meter in current mode directly across a supply creates a short circuit. Return the lead to the voltage socket after measuring current. Meter burden voltage can also change the circuit being measured.
+
+Measure resistance and continuity with the circuit unpowered and stored charge safely discharged. Other paths on a populated board can alter the reading; isolate a component when necessary. A continuity beep does not prove zero resistance or adequate high-current performance.
+
+A bench supply with a current limit helps during first power-up. Start with the specified voltage and a limit appropriate to the circuit. If it enters current limiting, the voltage may fall: that can mean either an intended load exceeds the limit or a fault exists.
+
+An oscilloscope shows voltage over time: pulses, ripple, ringing, and brief dips. Its bandwidth and sampling rate constrain what it can reveal. Many bench scope ground clips connect to protective earth. Clipping one to an arbitrary node can short that node to earth. Use ordinary grounded probes only on circuits and reference points you understand; the low-voltage exercises here do not require probing mains.
+
+A logic analyzer decodes digital transitions and buses but does not fully describe analog voltage quality. Confirm its input voltage limits too.
+
+For a scope, learn vertical volts per division, horizontal time per division, trigger level, and DC versus AC coupling. DC coupling retains the average level; AC coupling removes the DC component and also changes low-frequency behavior. A ×10 probe must be matched to the instrument setting and compensated as its manual describes. A long ground lead can add ringing that belongs to the measurement loop. Sampling rate, analog bandwidth, probe loading, and acquisition duration constrain different observations.
+
+Instrument digits do not equal guaranteed accuracy. A meter specification such as a percentage of reading plus counts depends on range and conditions. Record enough significant digits to answer the question, with uncertainty appropriate to the instrument and parts. Compare a measurement against a predicted interval, not an impossibly exact ideal number.
+
+Exercise: predict and measure a resistor's resistance, its powered voltage, and the circuit current. Compare the measured current with V/R and explain tolerance and instrument loading.
+}
+
+07 Capacitors, time, and decoupling (@basic-eletronics-07: 0, is #chapter, #part-of @basic-eletronics: 7) {
+A capacitor stores energy in an electric field between conductors separated by an insulating dielectric. Capacitance, C, is measured in farads, F. Charge and voltage relate through Q = C × V for an ideal constant capacitance.
+
+Its current follows I = C × dV/dt for constant C, with current defined into the terminal whose voltage is positive. The derivative means voltage slope: for example, 1 V per millisecond across 1 µF corresponds to 1 mA. Charge moves onto and off the plates; conduction through an intact ideal dielectric is not needed for this circuit current. An ideal capacitor draws no steady current when its voltage is constant. Real capacitors leak and have equivalent series resistance, ESR, and inductance, ESL.
+
+Finite current cannot change an ideal capacitor's voltage instantaneously. Its initial voltage matters: an uncharged capacitor may initially resemble a short in a resistor-limited charging circuit, but a previously charged one starts from its existing voltage. Direct connection to a stiff source can produce large inrush current limited by the real source and interconnections.
+
+Stored energy is E = ½CV². A capacitor can remain charged after power is removed. Discharge through an appropriately rated resistor and verify voltage rather than shorting terminals with a tool.
+
+## RC charging and filtering
+
+A resistor charging a capacitor creates a time constant τ = R × C. For a step from zero through R, capacitor voltage reaches about 63.2% of the final value after one τ, 95.0% after three, and 99.3% after five, assuming an ideal source and no other load.
+
+For 10 kΩ and 10 µF, τ = 0.1 s. After 0.1 s on a 3.3 V step, the ideal capacitor voltage is approximately 2.09 V. Discharging through the same resistor leaves about 37% after one τ.
+
+The general single-time-constant solution is Vc(t) = Vfinal + (Vinitial − Vfinal) × e^(−t/τ). It starts at Vinitial and approaches Vfinal; it does not jump to the final value at exactly five time constants. Use the resistance seen by the capacitor, including other branches, to find τ. [RC circuit theory](https://openstax.org/books/university-physics-volume-2/pages/10-5-rc-circuits).
+
+An ideal first-order RC low-pass filter has cutoff fc = 1 / (2πRC). With 1 kΩ and 100 nF, fc is approximately 1.59 kHz. At cutoff the sinusoidal output amplitude is about 0.707 of the input, not zero. The source and load alter a real filter's response.
+
+In that low-pass circuit, R is in series with the input and C connects the output node to ground. Swapping their positions gives a high-pass circuit: C in series, R to ground, output across R. It suppresses steady DC and passes faster variation over its useful frequency range. Capacitive coupling uses this idea to pass an AC signal between stages with different DC operating points. The receiving stage still needs a defined bias voltage.
+
+```text
+Vin ------ R ----+---- Vout
+                |
+                C
+                |
+               GND
+```
+
+Capacitances in parallel add: Ctotal = C1 + C2. In series, 1/Ctotal = 1/C1 + 1/C2 for ideal parts. Voltage sharing between real series capacitors can be unequal because leakage differs, so series connection does not automatically give a safely doubled voltage rating.
+
+## Why chips need capacitors nearby
+
+A chip can demand current faster than a long supply trace can deliver it. A decoupling capacitor provides a nearby charge reservoir and reduces supply disturbances. Placement and a short current-return loop matter as much as nominal capacitance. A bulk capacitor helps with slower or larger load changes; small ceramic capacitors often help at higher frequencies. Follow the chip and regulator reference designs rather than choosing values by a universal rule.
+
+For a short pulse, ΔV ≈ I × Δt / C before accounting for ESR and the supply's response. A 0.1 A pulse lasting 10 µs from 10 µF gives approximately 0.1 V of ideal droop. This is a simplified local estimate, not a complete regulator design.
+
+For a charging experiment visible on an ordinary meter, use a 3.3 V source, 100 kΩ in series, and a correctly oriented 100 µF capacitor rated above the supply voltage. Measure across the capacitor. Nominal τ = 10 s, with about 2.09 V predicted after 10 s from an initially discharged state. Capacitor tolerance, leakage, the meter's input resistance, and actual source voltage alter the result. Disconnect the source and discharge through a suitable resistor before repeating. The slow experiment shows the curve; it does not measure a microsecond decoupling event.
+
+Ceramic capacitors are commonly unpolarized. High-permittivity types such as X5R and X7R can lose substantial effective capacitance under DC bias; C0G/NP0 types are much more stable in this respect but usually offer less capacitance in a given size. Consult the actual part's bias and temperature curves. Aluminum electrolytic and many tantalum capacitors are polarized: incorrect polarity can cause damage. Check capacitance, voltage rating with margin, tolerance, temperature, ripple-current rating, ESR, and regulator stability requirements. A marking of 104 commonly means 100,000 pF = 100 nF. [Murata on DC bias](https://www.murata.com/support/faqs/capacitor/ceramiccapacitor/char/0005).
+
+ESR adds an immediate load-step drop of approximately ΔI × ESR and produces heating under ripple current. ESL makes impedance rise at sufficiently high frequency; capacitors have a self-resonant region, so a physically large capacitor is not automatically a better high-frequency bypass. More capacitance cannot supply energy indefinitely or correct an unstable regulator by assumption.
+
+Exercise: calculate the time constant of 100 kΩ and 1 µF. Explain why increasing capacitance may reduce a reset problem without fixing an undersized supply.
+}
+
+08 Inductors, magnetic fields, and changing current (@basic-eletronics-08: 0, is #chapter, #part-of @basic-eletronics: 8) {
+An inductor stores energy in a magnetic field. Inductance, L, is measured in henries, H. Its ideal voltage follows V = L × dI/dt. It opposes rapid changes in current rather than simply opposing all current. Stored energy is E = ½LI².
+
+Here dI/dt is current slope. With 1 V across an ideal 1 mH inductor, current initially changes at 1,000 A/s, or 1 A per millisecond. Finite voltage cannot change its current instantly. In a series R–L circuit driven by a DC step, current approaches V/R with time constant τ = L/R. An ideal inductor has zero voltage at constant current, while a real winding still drops I × Rwinding.
+
+A real coil has winding resistance, a current limit, losses, and often a magnetic core that can saturate. Saturation reduces effective inductance and can produce excessive current in a converter.
+
+Motors, relay coils, solenoids, and even wires have inductance. When a switch suddenly interrupts coil current, the inductor can generate a large voltage to keep current flowing. A flyback diode across a unidirectional DC coil gives that current a path after switch-off. Its orientation normally blocks current while the coil is powered. Different switching requirements may need a different clamp circuit.
+
+For the low-side switch introduced in chapter 10, put the diode cathode at the coil's positive supply and its anode at the switched lower end of the coil. After turn-off, current circulates through coil and diode in its original coil direction while stored energy decays. Check diode current and reverse-voltage ratings. A simple diode can slow relay release, and it does not work unchanged for an AC coil or a bidirectional motor drive.
+
+A transformer uses changing magnetic flux to transfer energy between windings. A conventional transformer needs changing excitation; applying steady DC can overheat it. A switch-mode converter uses fast switching and inductors or transformers to transfer energy efficiently.
+
+For an ideal transformer in its intended AC operating conditions, Vs/Vp = Ns/Np, where N counts winding turns. A secondary with half the primary turns gives half the voltage and can carry twice the current for the same ideal transferred power. Real winding resistance, core losses, frequency, flux limits, and insulation impose constraints. A transformer does not create energy, and an autotransformer does not provide galvanic isolation between its input and output. [Transformer theory](https://openstax.org/books/university-physics-volume-2/pages/15-6-transformers).
+
+At a sinusoidal frequency f, ideal capacitor reactance magnitude is 1/(2πfC), and inductor reactance magnitude is 2πfL. Reactance contributes to impedance, which includes both resistance and phase-dependent behavior. Frequency explains why a component that looks harmless at DC can strongly affect a fast signal.
+
+## AC waveforms, phase, and RMS
+
+A sine wave repeats smoothly; a square wave has rapid transitions and contains many frequency components. Frequency describes repetition rate, while rise time describes an edge. A slow repetition rate can therefore still require fast-signal wiring practices.
+
+Phase describes relative timing within a cycle. In ideal sinusoidal steady state, resistor current is in phase with its voltage; capacitor current leads its voltage by a quarter cycle; inductor current lags its voltage by a quarter cycle. These statements concern voltage across and current through the same element. [AC element relationships](https://openstax.org/books/university-physics-volume-2/pages/15-2-simple-ac-circuits).
+
+RMS, root mean square, is the square root of the average of the squared waveform. It gives a voltage or current's equivalent heating effect in a fixed resistor. A zero-mean sine wave has Vrms = Vpeak/√2 and Vpeak-to-peak = 2Vpeak. A 1 V-peak sine across 1 kΩ has approximately 0.707 V RMS and dissipates 0.5 mW on average. That √2 conversion does not apply to every waveform. A signal alternating between 0 V and 3.3 V with 25% duty has 0.825 V average but 1.65 V RMS. Across a fixed 1 kΩ resistor it dissipates about 2.72 mW, not the power calculated from its average voltage.
+
+## Impedance and resonance
+
+Use complex impedance when combining sinusoidal voltages that have different phases. The symbol j represents a 90° rotation: ZR = R, ZL = j2πfL, and ZC = 1/(j2πfC). Complex impedances combine in series and parallel using the same algebraic patterns as resistances; adding their magnitudes alone generally gives the wrong answer.
+
+For a series RLC circuit, |Z| = √(R² + (XL − XC)²). At f0 = 1/(2π√(LC)), the ideal inductive and capacitive reactances cancel. Real resistance limits the resulting current and damps oscillation. Resonance explains both useful tuning and unwanted ringing in wiring and power networks. For sinusoidal voltage and current, average power is Vrms × Irms × cos(φ), where φ is their phase difference. Ideal reactances exchange stored energy with the source and absorb zero average power. [Series RLC analysis](https://openstax.org/books/university-physics-volume-2/pages/15-3-rlc-series-circuits-with-ac).
+
+Checkpoint: explain why a relay coil needs a driver and usually a suppression path rather than a direct GPIO connection.
+}
+
+09 Diodes and LEDs (@basic-eletronics-09: 0, is #chapter, #part-of @basic-eletronics: 9) {
+A diode conducts much more easily in one direction than the other. The anode and cathode define its orientation; a package band often marks the cathode, but verify the part drawing. Forward voltage depends on current, material, and temperature. A diode is not an ideal one-way wire.
+
+In a p–n junction diode, adjoining semiconductor regions create a depletion region and an internal electric field. Forward bias reduces the barrier to carrier flow; reverse bias widens the depleted region and usually allows only small leakage until breakdown. Chapter 13 explains the carriers and doping. A diode's current rises steeply with forward voltage, so a silicon diode does not have a universal fixed 0.7 V drop or a perfectly sharp turn-on point.
+
+Ordinary rectifier diodes route current. Schottky diodes often have a lower forward drop and different leakage characteristics. Zener diodes are designed for controlled reverse breakdown at specified conditions. TVS diodes suppress transients. Each has limits for reverse voltage, continuous current, pulse energy, and temperature.
+
+Rectification turns an alternating input into one-direction output. A bridge rectifier uses four diodes so both input half-cycles drive the load in the same direction; two diodes conduct in each path and contribute forward-voltage losses. A following capacitor can reduce ripple, but rectification and smoothing alone do not regulate the output voltage. Study this with an isolated low-voltage AC source or a diagram, not a mains connection.
+
+A Zener clamp also needs a way to limit current: directly connecting it across a stiff supply above its breakdown voltage can destroy it. An ordinary LED may tolerate very little reverse voltage, so do not assume it behaves like a high-voltage rectifier when reversed.
+
+An LED is a light-emitting diode. It needs current control. Its forward voltage depends on color, current, and temperature; do not connect an ordinary bare LED directly across a voltage supply.
+
+For a resistor-fed LED, approximate R = (Vsupply − Vforward) / I. With 3.3 V supply, an assumed 2.0 V red LED, and 5 mA target, R = 260 Ω. A 270 Ω resistor gives approximately 4.8 mA. Its dissipation is approximately 1.3²/270 = 0.0063 W. Verify the actual LED and driver limits, including supply and forward-voltage tolerances.
+
+The connection is positive supply → resistor → LED anode → LED cathode → ground. The resistor can also go after the LED in the same unbranched series path: both carry the same current. If a GPIO drives the pair, use its guaranteed output voltage at the load current, not an assumption that its output equals the supply exactly. Give parallel LED branches their own current control rather than assuming bare parallel LEDs share current equally.
+
+A blue or white LED can have a forward voltage close to 3.3 V, leaving little control margin for a simple resistor at that supply. High-power LEDs generally need a suitable constant-current driver and thermal management.
+
+The longest lead is often the anode on a new through-hole LED, but trimmed leads and unfamiliar packages make that an unreliable final test. Use its datasheet or a suitable diode-test function.
+
+Exercise: calculate the resistor for a 2 V LED at 5 V and 3 mA. Answer: 1 kΩ. Identify the expected current path before powering it.
+}
+
+10 Transistors as switches and amplifiers (@basic-eletronics-10: 0, is #chapter, #part-of @basic-eletronics: 10) {
+A transistor lets one signal control another current path. It can switch a load or operate in a region suitable for amplification. A GPIO can provide a control signal; the transistor and supply carry the load current.
+
+A bipolar junction transistor, BJT, has base, collector, and emitter terminals. Base-emitter drive and base current establish its operating condition. A base resistor limits drive current. For a saturated switch, use the datasheet's specified saturation test conditions rather than relying on an optimistic typical gain.
+
+For an NPN low-side switch, the emitter goes to ground, the collector to the load's lower end, and the load's upper end to its positive supply. A resistor connects the controller to the base. In cutoff the device carries little current. In forward-active operation, collector current depends strongly on base-emitter voltage, and Ic ≈ βIb is a useful limited model. In saturation, load current is mainly limited by the external circuit and there is a small collector-emitter voltage. The gain β varies with device, current, and temperature.
+
+As a deliberately hypothetical calculation, suppose a 20 mA load requires 2 mA base drive according to the chosen switch conditions, the GPIO guarantees 3.0 V at that current, and the assumed base-emitter drop is 0.8 V. Then Rbase ≈ (3.0 − 0.8)/0.002 = 1.1 kΩ. Check the actual transistor, GPIO, and worst-case voltage limits before using the value. The ratio of ten here is an example of forced gain for switching, not a universal transistor gain. [BJT switching lesson](https://wiki.analog.com/university/courses/alm1k/alm-lab-4s).
+
+A MOSFET has gate, drain, and source terminals. Gate-to-source voltage controls conduction. Its gate draws little steady DC current but must be charged and discharged during switching. Fast or large MOSFETs can require a dedicated gate driver.
+
+Most beginner switching circuits use enhancement-mode devices, which are off near zero gate-to-source voltage. An N-channel device needs the gate sufficiently positive relative to its source; a P-channel device uses the opposite polarity. Gate voltage must always be considered relative to source, including during switching, and must remain within its maximum rating.
+
+For an N-channel low-side switch, connect the load from its positive supply to the drain, the source to ground, and the control signal to the gate through an appropriate small resistor. A gate-to-source pull-down keeps it off during reset. The controller and load supply normally share a signal reference in this non-isolated arrangement. Add the appropriate clamp for an inductive load.
+
+Choose a MOSFET whose on-resistance, RDS(on), is specified at the gate voltage you actually provide, such as 2.5 V or 3.3 V. Gate threshold voltage means the channel has just begun to conduct under a small test current; it does not mean the part is fully on. Conduction loss is approximately I² × RDS(on), and switching creates additional losses.
+
+For example, a hypothetical 50 mΩ on-resistance at the actual gate drive and operating temperature gives 0.2 W loss at 2 A. Verify package heating and allowed operating conditions. A large advertised drain-current rating may assume cooling that a small board cannot provide. Gate charge, switching frequency, driver current, and the safe operating area also matter. A common power MOSFET includes a body diode, so one device does not block both directions in every off-state arrangement. [TI on gate threshold and on-resistance](https://www.ti.com/lit/pdf/slva315).
+
+A high-side switch controls the positive supply path. An N-channel MOSFET used there generally needs a gate drive above its moving source voltage; simply connecting its gate to 3.3 V does not make it a general 3.3 V high-side switch. Load-switch ICs and dedicated drivers implement suitable arrangements.
+
+For amplification, establish a DC operating point, or bias, so the signal has room to vary without cutoff or clipping. A small change at the control terminal then produces a larger signal change at the output. Output energy comes from the supply; a transistor does not create energy. Local feedback and resistors can make gain less dependent on a transistor's uncertain parameters. Also note a naming trap: a BJT switch commonly uses saturation, while a fully conducting MOSFET switch normally operates in its ohmic region. MOSFET saturation names a different operating region, often used for amplification.
+
+A mechanical relay uses a coil to move contacts. Its contacts can isolate a separate circuit, but isolation depends on the complete board, spacing, and wiring. A relay module may include a transistor and diode; a bare relay generally does not. Check input logic, coil power, contact ratings for the actual load type, and default state.
+
+Checkpoint: explain why a GPIO must not directly power a motor, relay coil, or high-current LED strip. Use only low-voltage loads in this trail.
+}
+
+11 Analog signals, sensors, and feedback (@basic-eletronics-11: 0, is #chapter, #part-of @basic-eletronics: 11) {
+An analog signal represents a quantity through a continuous physical value, commonly voltage or current. A temperature sensor might produce a voltage related to temperature. A thermistor changes resistance with temperature; a light-dependent resistor changes resistance with illumination. A divider can turn such a resistance change into a voltage change.
+
+A signal can contain a DC operating level plus variation. For example, 1.5 V with a small changing component can represent a sensor near the middle of its range. Signal conditioning may scale, buffer, filter, or shift that signal before measurement. A negative-going sensor voltage needs suitable conditioning before a ground-referenced ADC that cannot accept negative input.
+
+A sensor is a transducer: it converts a physical quantity into an electrical one. An actuator does the reverse, producing movement, heat, light, or sound from electrical input. A useful measurement chain includes the sensor, excitation if required, signal conditioning, conversion, calibration, and units.
+
+An operational amplifier, or op-amp, is an analog chip that amplifies a difference between inputs. Negative feedback can make a buffer or set a predictable gain. For an ideal non-inverting amplifier, gain is 1 + Rfeedback/Rground. Real op-amps have supply limits, input common-mode limits, output swing limits, offset, noise, bandwidth, and stability constraints. An arbitrary op-amp is not guaranteed to work from 3.3 V or reach either supply rail.
+
+To make a voltage follower with a suitable voltage-feedback op-amp, connect the signal to its non-inverting (+) input and connect output to inverting (−) input. If output rises too far, the returned voltage reduces the input difference, pushing output back down. This negative feedback gives approximately unity gain and isolates a weak source from a heavier load, within the amplifier's current and bandwidth limits.
+
+For the non-inverting gain circuit, connect Rfeedback from output to (−), and Rground from (−) to ground. With Rfeedback = 20 kΩ and Rground = 10 kΩ, gain is approximately 3, so 0.5 V input predicts 1.5 V output. The near-equality of input voltages is a consequence of stable negative feedback while the output remains in range. It is not a rule for every op-amp connection. Neither the input symbols nor feedback connections replace its power-supply pins. [Voltage-feedback amplifier theory](https://wiki.analog.com/university/courses/electronics/text/chapter-2).
+
+Negative feedback can become unstable when delays and phase shift make a correction reinforce the error. Capacitive loads and layout can matter, and some amplifiers require a minimum gain. A label such as rail-to-rail also needs qualification: input range and output swing are separate specifications, and output swing depends on load. [Analog Devices on input and output limits](https://www.analog.com/en/resources/analog-dialogue/raqs/raq-issue-141.html).
+
+A comparator reports which of two voltages is higher. Hysteresis sets different rising and falling thresholds so a noisy input does not cause repeated switching. A thermostat turning on below one temperature and off above another illustrates the idea.
+
+Accuracy means closeness to the true value; precision describes repeatability or spread. Resolution is the smallest representable step, not a guarantee of accuracy. Calibration estimates systematic error using a trustworthy reference. Filtering reduces some noise but cannot create information that the sensor never measured.
+
+If an otherwise linear sensor's reported voltage has an offset and a gain error, two known reference points can fit a correction y = ax + b. One reference point cannot independently determine both. Nonlinear behavior needs an appropriate model or more reference points. Averaging independent zero-mean random noise can reduce its spread, approximately with the square root of the sample count; it does not remove a fixed offset, systematic interference, or a bad calibration.
+
+Unwanted signals enter through supply variation, electromagnetic pickup, shared return impedance, sensor self-heating, and intrinsic device noise. Ground is a reference in the schematic, but a real return trace can develop voltage under current. Keeping a noisy load's return current away from a sensitive measurement path is often more effective than adding software smoothing afterward.
+
+Checkpoint: draw the stages from room temperature to a number sent over Wi-Fi. Identify at least one possible error at each stage.
+}
+
+12 Digital logic, clocks, and binary numbers (@basic-eletronics-12: 0, is #chapter, #part-of @basic-eletronics: 12) {
+Digital circuits interpret voltage ranges as logic states. A 3.3 V system does not require every high to be exactly 3.3 V, but the receiving chip specifies minimum high and maximum low input voltages. The region between them is not a valid guaranteed state.
+
+One bit represents 0 or 1. Eight bits form a byte. Binary 1010 equals decimal 10. Hexadecimal uses sixteen symbols, 0–9 and A–F; 0xFF equals decimal 255. Eight unsigned bits represent 0–255. Signed formats and interpretation must be agreed before bytes become meaningful data.
+
+Logic gates implement operations such as AND, OR, and NOT. Flip-flops store state, often updating on a clock edge. Registers group storage bits. Counters, arithmetic units, and control logic combine these building blocks.
+
+| Input A | Input B | A AND B | A OR B | A XOR B |
+| --- | --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 | 0 |
+| 0 | 1 | 0 | 1 | 1 |
+| 1 | 0 | 0 | 1 | 1 |
+| 1 | 1 | 1 | 1 | 0 |
+
+NOT inverts one bit. NAND is NOT of AND; NOR is NOT of OR. XOR reports whether two bits differ. An adder combines such operations to produce sum and carry bits. Combinational logic depends on present inputs; sequential logic also depends on stored state. A latch is level-sensitive, while an edge-triggered flip-flop changes its stored value at a specified edge.
+
+In ordinary 8-bit two's-complement representation, the range is −128 to 127. The bit pattern 11111111 can therefore mean unsigned 255 or signed −1. Endianness is the order of bytes in a multi-byte value, not a change in the value of one bit. A sensor's byte order, signedness, scale, and units must all be decoded correctly.
+
+A clock is a repeating timing signal, often derived from a crystal or oscillator. Frequency is cycles per second, measured in hertz, Hz; period T = 1/f. A 1 MHz clock has a 1 µs period. Clock frequency alone does not tell you how much useful work a processor completes.
+
+Digital edges have analog behavior: finite rise time, ringing, noise, and timing requirements. Logic inputs may require setup and hold times around a clock edge. Mechanical buttons bounce, producing several transitions during one press. Firmware or a suitable circuit must debounce them.
+
+Propagation delay is the time from an input change to its output effect. Setup time requires data to be stable before a sampling edge, and hold time requires it to remain stable afterward. An asynchronous input near that edge can cause metastability, a temporary uncertain state. Synchronizers reduce the probability that it propagates into the system; they do not replace button debouncing or guarantee zero risk.
+
+Logic compatibility needs guaranteed output and input levels under the actual load. High-state margin is VOH(min) − VIH(min); low-state margin is VIL(max) − VOL(max). Both should be positive with room for interference. A high-impedance input draws little steady current but still has capacitance and protection structures.
+
+A GPIO configured as output may actively drive both high and low; that is push-pull. An open-drain output actively pulls low and otherwise releases the line, which needs a pull-up. Never tie two push-pull outputs together when they might disagree.
+
+Checkpoint: explain why a slow-looking communication bus can still suffer from fast-edge wiring problems.
+}
+
+13 What chips are and how they are made (@basic-eletronics-13: 0, is #chapter, #part-of @basic-eletronics: 13) {
+A chip, or integrated circuit, IC, contains many microscopic electronic structures fabricated together on a semiconductor die. The die sits inside a package that protects it and connects it to external pins or pads. A black package is not necessarily a processor: it could be a regulator, amplifier, memory, sensor, radio, or logic gate.
+
+Silicon is a semiconductor. Controlled impurities, called doping, create regions with different electrical behavior. In a MOS transistor, a gate electric field controls a conducting channel through structures separated by a thin insulator. Large numbers of carefully connected transistors implement logic, memory, and analog functions.
+
+## From carriers to controllable devices
+
+In a crystal, electrons occupy allowed energy states. The energy gap between filled and conducting states helps explain why a material behaves as a conductor, insulator, or semiconductor. In silicon, doping changes the population of mobile carriers. Donor doping produces n-type material with electrons as majority carriers. Acceptor doping produces p-type material with holes as majority carriers. A hole is a missing electron in an otherwise occupied bonding state; its motion behaves like a positive carrier. Neither name means the entire piece of material has a large net electric charge.
+
+At a p–n junction, carrier diffusion leaves fixed ionized dopants near the boundary and builds a depletion region with an internal field. Applied voltage changes carrier flow across it, producing diode behavior. A BJT uses coupled junctions and a thin base region to control carrier transport. It is not electrically equivalent to two separate diodes wired together. A MOSFET uses the gate field across an insulating layer to change the channel; intended gate control does not require a conducting path through the insulator.
+
+## How transistors become digital logic
+
+CMOS, complementary MOS, combines N-channel and P-channel devices. In a simple CMOS inverter, a P-channel device connects output toward the positive rail and an N-channel device connects it toward ground. Their gates share the input. Low input turns the upper device on and lower off, giving high output; high input reverses them, giving low output. Larger networks implement NAND, NOR, and other logic.
+
+In a settled ideal state there is no direct supply-to-ground conducting path through that inverter. Real chips still leak, and switching charges and discharges capacitances and can briefly turn both paths on. A useful dynamic-power model is P ≈ αCV²f, where C is the effective switched capacitance, f is clock frequency, and α describes switching activity. This helps explain why higher supply voltage, faster operation, and more activity tend to raise power. Feedback between logic elements stores state, while flash uses different structures that retain information without continuous power.
+
+For that power formula, define α as the average number of charging transitions per clock period for the modeled capacitance; this avoids confusing it with a convention that counts both rising and falling edges. The formula covers capacitive switching power, not all leakage, analog, or radio power. [MIT on switching energy and power](https://ocw.mit.edu/courses/6-002-circuits-and-electronics-spring-2007/aaaba9c602f1fc4e42d29e04db1c7dff_6_0022007L022.pdf).
+
+Manufacturing begins with a highly controlled wafer. Repeated steps deposit materials, pattern them using lithography, etch selected areas, modify material properties, and build interconnect layers. Tests identify functioning dies. Packaging connects them to usable terminals, and final testing checks specified behavior. The exact process differs by technology and device.
+
+Chip design starts before fabrication: engineers specify functions, design and verify logic and analog circuits, place structures, route interconnections, and check the result against manufacturing rules. Lithography patterns a light-sensitive resist that guides later processing; it does not directly print a complete working CPU in a single exposure. Many repeated layers form the devices and their wiring. Some packages contain several dies rather than just one. [ASML's manufacturing explanation](https://www.asml.com/en/technology/all-about-microchips/how-microchips-are-made).
+
+A printed circuit board, PCB, is different: it connects packaged components through copper traces, pads, and vias. Solder mask covers selected areas; silkscreen adds labels. A multilayer PCB may include internal power and ground planes. A schematic describes logical connections; the PCB layout determines their physical geometry.
+
+Through-hole components have leads through board holes. Surface-mount devices sit on pads. Package names describe physical forms, and pin numbers follow a specific orientation. A notch, dot, or bevel may identify pin 1. Looking at a package from below instead of above can reverse your interpretation, so read the drawing.
+
+Checkpoint: describe the chain from transistor to die to package to PCB to finished device. Explain why replacing a chip requires more than matching its number of pins.
+}
+
+14 Microcontrollers, microprocessors, and memory (@basic-eletronics-14: 0, is #chapter, #part-of @basic-eletronics: 14) {
+A CPU executes instructions. A microcontroller, MCU, combines a CPU with memory and peripherals designed to control hardware. A microprocessor is typically used with more external system resources, often to run a rich operating system. These categories overlap, and a system-on-chip, SoC, integrates several major functions into one chip.
+
+At a conceptual level, a CPU fetches an instruction at the program counter, decodes it, operates on registers or memory, and selects the next instruction. Arithmetic and logic units manipulate bit patterns. Branch instructions change program flow based on a condition. An instruction-set architecture defines what machine instructions mean; a compiler must target that architecture. Real CPUs may pipeline or cache work, but this model explains how stored bytes become actions.
+
+A microcontroller may include timers, GPIO, serial controllers, ADCs, cryptographic engines, watchdogs, and sometimes radio hardware. Peripherals can perform work without asking the CPU to toggle every signal manually. Direct memory access, DMA, transfers data with less CPU involvement.
+
+RAM holds working data and normally loses it when power disappears. Flash retains firmware and other data without power but has limited erase/write endurance and block-based erase behavior. ROM contains code or data fixed by manufacture. EEPROM is another nonvolatile technology; a software API named EEPROM may instead emulate it using flash.
+
+External flash stores programs or files. PSRAM adds working memory on supported chips; it does not automatically become persistent storage. More flash does not fix a shortage of RAM. Peripheral buffers, network connections, encryption, and display graphics all consume working memory.
+
+SRAM is fast working storage maintained while powered; DRAM stores charge that needs refreshing. PSRAM presents a simpler interface while managing DRAM-like refresh internally. A cache keeps copies of recently used instructions or data to reduce access time. A register is a small fast storage location inside a CPU or peripheral; it is not the same thing as a disk file or a saved setting.
+
+Many MCUs expose peripheral-control registers at memory addresses. A driver writing the right bits can configure a GPIO or start a timer. The electrical hardware then changes the pin or counts clock ticks. Firmware usually uses documented libraries instead of unexplained numeric addresses. Selecting a pin's peripheral function and enabling that peripheral are separate configuration steps on many devices.
+
+Interrupts let hardware request attention. A watchdog resets or otherwise intervenes when expected progress stops. Neither substitutes for correct design: keep interrupt work bounded and investigate repeated watchdog resets.
+
+A reset restarts execution but is not necessarily a complete power cycle. A brownout detector responds to an inadequate supply; external reset, watchdog reset, software reset, and deep-sleep wake can initialize different state. Inspect the reset reason and target documentation before assuming all RAM and peripherals have been preserved or cleared.
+
+A single-board computer is a board built around a computing system, often with external RAM, storage, and an operating system. A development board is a board designed to make a chip easy to experiment with. A board's product name is not the same as its processor model.
+
+Checkpoint: identify where program instructions, a temporary sensor reading, and saved Wi-Fi settings would usually live.
+}
+
+15 Power supplies, regulators, and protection (@basic-eletronics-15: 0, is #chapter, #part-of @basic-eletronics: 15) {
+A power rail supplies a circuit at a nominal voltage. Every connected part must tolerate the actual range, ripple, and transients. A 3.3 V logic label does not imply that all power pins on a development board take 3.3 V: USB, VIN, 5V, 3V3, and battery pins can have different roles.
+
+An LDO is a linear regulator designed to operate with a relatively small input-output difference. Its dropout voltage, current capability, stability capacitors, quiescent current, and thermal behavior matter. It cannot maintain 3.3 V from an input below its required headroom.
+
+Most regulators use feedback: a reference is compared with a scaled output voltage, and the circuit changes conduction or switching to correct the error. Line regulation describes response to input changes; load regulation describes response to load changes; transient response concerns the time before the output settles again. Stability depends on the regulator and its permitted input/output capacitor network. Choosing a larger capacitor without checking the regulator is not a complete design method.
+
+A buck converter steps voltage down; a boost converter steps it up; a buck-boost can do both within its specifications. Switching conversion is often efficient but introduces ripple, switching noise, and layout requirements. A converter's advertised peak current may exceed what its board can continuously deliver thermally.
+
+In a buck converter, switches apply pulses to an inductor and an output capacitor smooths the result. In an ideal continuous-current buck, Vout ≈ duty × Vin; real control and operating modes add limits and losses. In a boost converter, a switch first builds inductor current and then the circuit transfers energy to the higher-voltage output. At higher output voltage, available output current is constrained by input power and efficiency. A boost converter does not normally regulate its output below its input.
+
+A fuse interrupts excessive current under specified conditions. Reverse-polarity protection, current limiting, and transient suppression address different faults. None makes every connection safe. A connector's mechanical fit does not establish its polarity or voltage.
+
+A common lithium-ion cell specified for a 4.2 V charge limit can reach that voltage even if labeled 3.6 V or 3.7 V nominal. Other chemistries and variants have different charge limits; read the cell specification. Do not connect such a cell directly to a 3.3 V-only rail. Charging requires a charger matched to the battery chemistry and configuration, with appropriate protection. A regulator is not a charger, and a protection board does not necessarily perform charging. Begin with an enclosed USB supply or current-limited bench supply rather than designing a battery pack.
+
+For USB-powered boards, read the schematic before powering through another pin at the same time. Unintended backfeeding can power a computer port or regulator in a way the board did not allow.
+
+Exercise: draw the path from a 5 V source through a suitable regulator to a 3.3 V MCU and sensor. Add ground connections and the capacitors specified by the component documentation.
+}
+
+16 Breadboards, schematics, soldering, and layout (@basic-eletronics-16: 0, is #chapter, #part-of @basic-eletronics: 16) {
+A solderless breadboard joins particular groups of holes internally. The central gap usually separates groups for IC placement; long power rails may be split midway. Verify continuity rather than trusting the printed stripe. Crossing wires are not necessarily connected in a schematic unless the drawing's junction convention says so.
+
+Use short, clearly routed wires and label the supply rails. Place an unpowered component first, check its pinout, connect ground and power correctly, then add signals. Avoid moving wires on an energized circuit. A single misplaced row can connect a supply to the wrong pin.
+
+Give parts reference designators: R1 for a resistor, C1 for a capacitor, U1 for an IC, Q1 for a transistor, and J1 for a connector are common conventions. Net labels such as GND and 3V3 join points with the same name in the drawing. Labels such as SDA describe a signal's function; they do not establish its voltage tolerance. Draw all power pins, required support parts, and connector pin numbers, including an IC's exposed pad when relevant.
+
+Breadboards are useful for slow, low-current experiments. Their contacts, capacitance, and inductance make them unsuitable for some high-current, precision, high-frequency, or radio circuits. A module can contain the difficult radio layout while exposing manageable lower-speed connections.
+
+Solder forms an electrical and mechanical joint between suitable clean surfaces. Use ventilation, eye protection, a stable iron stand, and careful handling of hot tools. Follow the solder and flux handling instructions. Inspect for bridges and poor joints, and check continuity before power-up.
+
+On a PCB, current needs a return path. Keep high-current switching loops compact, follow the regulator layout guidance, and keep sensitive analog circuits away from noisy switching paths. Decoupling connections must be physically short. Antennas require the manufacturer's placement and copper-clearance rules.
+
+At fast edges, return current tends to follow a nearby reference plane to reduce loop inductance. A plane split under a signal can force a detour and increase interference. A ground symbol alone does not solve layout. RF connections also have characteristic impedance, which is a traveling-wave voltage/current relationship determined by geometry, not the resistance a multimeter reads. Use a complete radio module and its integration guidance before attempting a bare radio layout.
+
+Handle bare semiconductor parts with suitable electrostatic-discharge precautions. A static event may damage a tiny gate structure without producing a visible spark. Inspect orientation and power-off continuity before first power-up; then observe current and rail voltage with a sensible supply limit.
+
+Checkpoint: turn a simple LED schematic into a breadboard connection list, then independently trace the return path before applying power.
+}
+
+17 Firmware and the path from source to a running device (@basic-eletronics-17: 0, is #chapter, #part-of @basic-eletronics: 17) {
+Firmware is software intended to run as part of a hardware device and closely control its behavior. It usually resides in nonvolatile memory and starts when the device boots. It can read buttons, configure sensors, run communication protocols, control motors, and decide when to sleep. The term does not imply that the software is impossible to update.
+
+Hardware provides the physical capability; firmware configures and coordinates it. A radio chip without usable firmware cannot run your application protocol, while firmware alone cannot create a radio in a chip that lacks one. Some systems run an interpreter such as MicroPython: the interpreter is firmware, and the user's script is another layer executed by it. Both layers can affect hardware behavior.
+
+Source code is written in a language such as C, C++, or Rust. A compiler translates it for a specific CPU architecture. A linker combines code and data into a memory layout. A firmware image is the resulting data arranged for installation, sometimes with headers, checksums, signatures, and several partitions. Copying a text source file onto arbitrary flash does not make it executable.
+
+A programmer or flashing tool transfers the image through an interface such as a ROM serial downloader, USB, or a debug probe. A USB-to-UART bridge only translates interfaces; it does not add Wi-Fi. A data-capable USB cable is required when that connection carries programming data.
+
+At reset, a chip starts at a defined entry path. ROM boot code may choose between loading an application and accepting a download. A bootloader may validate an image, select a partition, initialize hardware, and start the application. Exact boot sequences depend on the chip and framework.
+
+A driver implements the device-specific operations needed to use hardware. An SDK supplies libraries, interfaces, build support, and examples. An RTOS schedules tasks and provides timing and synchronization services; many embedded applications use one, while others run directly with a main loop and interrupts.
+
+An application might repeatedly perform these actions: check elapsed time, start a sensor conversion, return to other work, read the completed result, validate it, and queue a network message. An interrupt can notify a task that an event occurred. Task priority, shared data, and blocking calls affect responsiveness even if the CPU is fast. Use a monotonic timer for elapsed intervals; calendar time can jump when synchronized.
+
+The stack holds call frames and local data; a heap supplies dynamically allocated memory in environments that use one. Overflow, out-of-bounds access, use-after-free, and unsynchronized shared state can crash a device or expose it to malicious input. Limited memory makes bounded message sizes and careful ownership especially useful. A compiler success proves neither correct wiring nor reliable runtime behavior.
+
+Firmware must match the target chip, board wiring, memory configuration, and peripherals. Flashing a program for one ESP family member onto another is not generally valid. Flashing may also replace factory AT firmware or erase saved settings, depending on what is written.
+
+OTA means over-the-air update: transferring a new image through a network. A robust update system verifies integrity and authenticity, tolerates interruption, and can recover to a working image. Do not treat a successful download alone as proof that an update is safe to boot.
+
+A checksum can reveal accidental corruption; it does not authenticate who produced an image. A signed image needs verification against a trusted key. A common resilient arrangement downloads into an inactive application slot, validates it, boots it provisionally, and confirms it only after a health check. Rollback requires suitable partitions, a working previous image, and enabled support; it is not automatic on every board. Settings need their own power-loss-safe storage policy. [ESP-IDF OTA and rollback documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/ota.html).
+
+For a first ESP project, use the exact target's official SDK getting-started instructions, then a minimal example, serial logs, and one peripheral at a time. ESP-IDF is Espressif's framework; third-party frameworks and Rust support must also match the chip and needed peripherals. Record the toolchain and SDK versions because examples and supported targets evolve. [ESP-IDF's ESP32-C3 introduction](https://docs.espressif.com/projects/esp-idf/en/stable/esp32c3/get-started/).
+
+Checkpoint: distinguish source code, firmware image, bootloader, driver, and configuration data in your own words.
+}
+
+18 GPIO, ADC, DAC, PWM, and timing (@basic-eletronics-18: 0, is #chapter, #part-of @basic-eletronics: 18) {
+GPIO means general-purpose input/output. Firmware configures a pin as an input, output, or peripheral signal where the chip allows it. Physical board labels, module pad numbers, and GPIO numbers can differ. Some pins are input-only, reserved for memory, involved in boot selection, or connected to on-board hardware.
+
+An output can source or sink only a limited current, and groups of pins can have combined limits. Use a resistor with an LED and a suitable driver for larger loads. Do not assume a pin marked 3V3 is a GPIO or that a pin labeled VIN is a safe logic input.
+
+An ADC converts an analog input into a digital code. An ideal N-bit ADC has 2^N possible codes, numbered 0 through 2^N − 1. A hypothetical ideal 12-bit conversion across a 3.3 V span has nominal steps of about 3.3/4096 = 0.806 mV. This is a teaching example, not an ESP input-range specification. Actual range, reference, attenuation, calibration, nonlinearity, and noise must come from the target documentation. A 12-bit result is not a promise of 12 accurate bits, and an endpoint-scaled software conversion may use a different convention from the nominal quantization-step calculation.
+
+A voltage reference establishes the conversion scale, internally or externally. It is not necessarily equal to the supply rail. Its error, noise, and temperature drift can change the relationship between input voltage and code. Input attenuation scales a signal before conversion; calibration estimates the mapping from code to voltage. These are distinct from the pin's survival limits. [Analog Devices on ADC voltage-reference noise](https://www.analog.com/en/resources/analog-dialogue/articles/2020/02/27/17/02/why-does-voltage-reference-noise-matter.html).
+
+Many ADCs briefly connect an internal sampling capacitor to the input. The source must charge it sufficiently during acquisition. A large divider resistance, an earlier channel's voltage, and too little settling time can create an error even if the input voltage is steady. A suitable buffer or adjusted acquisition time may help; any input filter must also respect the ADC's drive requirements. Never use attenuation settings as evidence that the pin can survive a voltage outside its electrical ratings.
+
+For ordinary baseband measurement, sample faster than twice the highest frequency you intend to reconstruct and attenuate unwanted higher-frequency components before the sampling step. The practical filter needs a transition band and margin. For example, an unfiltered 900 Hz sine sampled at 1,000 samples/s can appear as a 100 Hz signal. A digital smoothing filter applied afterward cannot generally tell that alias from a real 100 Hz input. Noise can alias too. [Why ADC inputs need anti-alias filtering](https://www.analog.com/en/resources/faqs/faq_antialiasing_filter.html).
+
+On some chips, ADC hardware is shared with another function. The classic ESP32's ADC2 is shared with Wi-Fi, so application access has restrictions. That is a target-specific resource conflict, not a rule that every ESP ADC stops working with Wi-Fi. Read the selected target's ADC driver documentation. [Classic ESP32 ADC documentation, ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/api-reference/peripherals/adc_oneshot.html).
+
+A DAC converts a code into an analog output on chips that include one. Many MCUs do not. PWM instead switches between logic states and varies the fraction of time high, called duty cycle. With a suitable filter and load, 25% duty at 3.3 V can approximate a 0.825 V average, but the raw pin still delivers pulses. PWM is useful for LED brightness and controlling a proper motor driver.
+
+PWM frequency and duty resolution trade off when both come from a fixed timer clock: more counter steps take more clock ticks per cycle. A low-pass filter reduces ripple but slows response. A hobby servo commonly interprets timed control pulses as a requested position; that signal does not supply the servo's motor power, and its timing must match the servo specification.
+
+Timers provide repeatable timing. Blocking delays are easy for early experiments but can interfere with button response, network handling, and watchdog servicing. Later projects should organize work around elapsed time, events, or tasks.
+
+Checkpoint: explain why a PWM pin is not automatically a true adjustable DC voltage source.
+}
+
+19 UART, I²C, SPI, and other interfaces (@basic-eletronics-19: 0, is #chapter, #part-of @basic-eletronics: 19) {
+A communication bus defines how devices exchange signals. Wiring compatibility, voltage compatibility, protocol compatibility, and firmware support are separate requirements.
+
+| Interface | Main signals | Typical role | Common mistake |
+| --- | --- | --- | --- |
+| UART | TX, RX, reference ground | Logs, serial modules, AT commands | Connecting TX to TX or mismatching baud |
+| I²C | SDA, SCL, reference ground | Sensors, small displays, expanders | Missing pull-ups or pulling to 5 V |
+| SPI | Clock, controller data out/in, chip select | Displays, storage, fast peripherals | Wrong mode, chip select, or wiring |
+| I²S | Clock, word select, data, sometimes master clock | Digital audio | Treating it as I²C |
+| USB | Depends on connector and speed | Host/device communication and sometimes power | Assuming every MCU or USB connector supports host mode |
+
+UART is asynchronous: devices agree on baud rate, data bits, parity, and stop bits. Connect one transmitter to the other's receiver and vice versa. Ordinary MCU UART logic is not the same electrical interface as RS-232 or RS-485; those need appropriate transceivers. A serial line carrying bytes is not automatically a network connection.
+
+An ordinary non-inverted UART line idles high. In 8-N-1 framing, one low start bit precedes eight data bits, with no parity and one high stop bit. That is ten transmitted bits for one eight-bit byte. At 115,200 bits/s, the theoretical ceiling is 11,520 such bytes/s before gaps and higher-level protocol overhead. Hardware flow control, such as RTS/CTS where supported, can prevent a fast sender from overflowing a receiver's buffers.
+
+I²C normally uses open-drain SDA and SCL with pull-ups. Devices have addresses, and two fixed identical addresses may require a multiplexer or separate buses. Breakout boards can already have pull-ups; several in parallel may become too strong. Pull resistance and bus capacitance limit rise time. I²C is usually best kept local rather than run over long loose wires.
+
+A typical register read uses START, the 7-bit address plus a write bit, a register identifier, repeated START, the same address plus a read bit, returned data, and STOP. Each byte has a ninth acknowledgment clock; the receiver pulls SDA low for ACK, while a controller normally ends a read with NACK on the last byte. The device datasheet defines the actual register protocol. A 7-bit address is not the same number as the shifted address-plus-direction byte, so check what a software API expects. [NXP I²C specification](https://www.nxp.com/docs/en/user-guide/UM10204.pdf).
+
+An RC calculation explains pull-up selection. For ordinary Standard/Fast-mode passive pull-ups, the 30%-to-70% rise time is approximately tr = 0.8473 × Rpullup × Cbus. At an assumed 100 pF, 4.7 kΩ gives about 398 ns, exceeding the 300 ns Fast-mode limit even though it can satisfy the 1,000 ns Standard-mode limit. A 2.2 kΩ resistor gives about 186 ns. The lower resistance increases low-state sink current, so also check Rmin = (Vpullup − VOLmax)/IOL and every device's specifications. These figures are an example, not approval of any particular bus. [TI pull-up calculations](https://www.ti.com/lit/pdf/slva689).
+
+A device holding SCL low can be clock stretching rather than a wiring short, if the controller and target support that behavior. Handle timeouts and stuck lines explicitly. An address scanner can help locate a response, but some devices do not support every probing method and an ACK is not a complete device-identification test.
+
+SPI normally uses a separate select line for each peripheral. Clock polarity and phase define its mode. Different devices can require different speeds and transactions. Shared data lines work only if inactive devices release them as required.
+
+The controller supplies the clock and selects a peripheral; the peripheral's documentation defines command bits, data direction, and timing. SCLK/SCK names the clock, while MOSI/COPI and MISO/CIPO are common names for controller-out and controller-in signals. Some devices use one bidirectional data wire or multiple data lines. Unlike I²C, basic SPI has no universal device-address or acknowledgment scheme.
+
+CAN controllers require physical transceivers for a CAN bus. RS-485 is a physical interface and does not itself define an application protocol; Modbus RTU is one protocol that can run over it. Termination, topology, protection, and grounding depend on the selected bus.
+
+USB assigns host and device roles and requires appropriate hardware and a software stack. A connector's shape says little about which signals the board actually wires. SDIO is another synchronous interface used by some storage and wireless devices; the host controller, wiring, and drivers must support the intended function. Similar-looking pin counts do not make UART, SPI, SDIO, and USB interchangeable.
+
+Checkpoint: before connecting a module, identify power, ground, signal directions, voltage limits, bus configuration, and the exact software driver.
+}
+
+20 Understanding ESP chips, modules, and boards (@basic-eletronics-20: 0, is #chapter, #part-of @basic-eletronics: 20) {
+ESP commonly refers to microcontrollers and SoCs made by Espressif. It is a family name, not a universal pinout or capability list. Always identify the complete chip and board model.
+
+There are three physical levels:
+
+1. The SoC is the integrated circuit containing the CPU and its supported hardware blocks.
+2. A radio module combines a SoC with supporting parts such as a crystal, flash where required, RF circuitry, and an antenna or antenna connector. Exact contents vary.
+3. A development board mounts a module or chip alongside conveniences such as a regulator, USB connection, buttons, and headers.
+
+WROOM and WROVER are examples of module naming families; DevKit names refer to development boards. Memory capacity, exposed pins, antenna type, and USB circuitry depend on the exact variant. A metal shield over a module is not the whole development board.
+
+Many familiar ESP devices include Wi-Fi, but some do not. ESP32-C6 combines 2.4 GHz Wi-Fi 6, Bluetooth LE, and IEEE 802.15.4. ESP32-H2 provides Bluetooth LE and IEEE 802.15.4 without native Wi-Fi. ESP32-P4 also needs external hardware for Wi-Fi. The radios and frequency bands of one family member must not be assumed for another. [ESP32-C6 product details](https://www.espressif.com/en/products/socs/esp32-c6), [Espressif's explanation of external Wi-Fi](https://developer.espressif.com/blog/2025/09/esp-wifi-remote/).
+
+ESP8266 and ESP32 are not pin-compatible synonyms, and suffixes such as C3, C6, S3, H2, and P4 identify materially different chips. CPU architecture, number of cores, analog peripherals, USB functions, radio capabilities, and memory interfaces vary. A Wi-Fi generation number does not itself specify a band: C6's stated Wi-Fi 6 capability is in 2.4 GHz, so it cannot join a 5 GHz-only access point using its native radio.
+
+Read the exact board schematic before following a pin diagram from a different product. USB can use an external serial bridge or native chip hardware, and that changes programming and debugging connections. This is an identification exercise rather than a shopping list: choose only after checking the requirements in chapter 26.
+
+Exercise: inspect a board or its documentation and list its SoC, module if present, regulator, programming interface, supply inputs, and antenna arrangement.
+}
+
+21 Adding Wi-Fi: built-in radios and external coprocessors (@basic-eletronics-21: 0, is #chapter, #part-of @basic-eletronics: 21) {
+## When the radio is already present
+
+If the chosen ESP already supports the required Wi-Fi, it normally needs suitable firmware, power, and antenna integration rather than another Wi-Fi module. A module may already include the antenna. An external antenna connector does not mean Wi-Fi is missing. An antenna is a passive RF component; it cannot add a missing radio or change a chip's supported bands by itself.
+
+The radio converts data into a modulated high-frequency electrical signal and receives the reverse conversion. The antenna couples that signal to an electromagnetic wave and receives incoming waves. RF matching, antenna placement, enclosure material, and the nearby ground structure affect performance. A wire soldered to an arbitrary GPIO is not a Wi-Fi antenna connection. Follow the module's antenna and connector instructions before enabling transmission.
+
+## When another processor needs connectivity
+
+A non-Wi-Fi host can communicate with a Wi-Fi-capable ESP acting as a coprocessor. The host runs the main application while the ESP handles some or all wireless networking. This can apply to another manufacturer's MCU or to an ESP without native Wi-Fi.
+
+There are several architectures, and their software is not interchangeable:
+
+- AT firmware exposes commands and responses to the host, commonly over UART. The host requests connections and transfers data through a command protocol. ESP-AT documents this approach. A module is usable this way only if the correct compatible AT firmware is installed. [ESP-AT overview](https://docs.espressif.com/projects/esp-at/en/latest/esp32/about.html).
+- A hosted driver approach connects a host driver to coprocessor firmware over a supported link. ESP-Hosted supports configurations using SDIO, SPI, or UART; available combinations depend on the host, target, and software. Check the support matrix and reference wiring before selecting pins. [ESP-Hosted project](https://github.com/espressif/esp-hosted-mcu).
+- A custom application protocol exchanges your own messages, such as sensor readings, between two programmed MCUs. This can simplify a small application but makes you responsible for framing, validation, flow control, versioning, and recovery.
+
+Choose the architecture by deciding who owns the application and the network functions:
+
+| Arrangement | Main application | Host-to-radio relationship |
+| --- | --- | --- |
+| One Wi-Fi-capable ESP | Runs on that ESP | Firmware uses its own radio drivers and network stack |
+| MCU plus ESP-AT coprocessor | Usually runs on the host MCU | Commands request networking services implemented by the ESP firmware |
+| Host plus ESP-Hosted | Usually runs on the host | Matching drivers and coprocessor firmware expose networking; stack placement depends on the supported configuration |
+| Two MCUs with a custom protocol | Deliberately divided between them | Your protocol defines which processor sends measurements, opens connections, and handles errors |
+
+In every two-processor arrangement, two firmware images and their interface versions must agree. Loading an ordinary sensor application onto a module can replace its AT service. ESP-WiFi-Remote provides host-side Wi-Fi APIs for supported external-radio setups; it is software used with actual radio hardware, not a virtual replacement for that hardware. [ESP-WiFi-Remote project](https://github.com/espressif/esp-wifi-remote).
+
+A small ESP8266-based module such as an ESP-01 is an example encountered in UART Wi-Fi projects, not a universal plug-in adapter. Its supply, boot pins, flash size, installed firmware, and host support must be verified. The module's raw supply must not be assumed to accept the host board's 5 V rail.
+
+## Electrical integration
+
+The connection needs a supply that tolerates radio current bursts, compatible logic voltages, a reference ground for non-isolated signals, correct boot/reset states, and firmware at both ends that agrees on the protocol. Use the exact module's reference circuit. A weak power source can cause resets that look like serial or Wi-Fi errors.
+
+As a concrete specification example, Espressif's classic ESP32 hardware guide recommends 3.3 V and supply capability of at least 500 mA for the described single-supply design. That is supply design guidance, not a claim that every ESP constantly draws 500 mA or that every board has identical requirements. [ESP32 schematic checklist](https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html).
+
+A resistor divider is not a radio power supply. A 5 V UART transmitter may need proper level translation before a 3.3 V input. Confirm the reverse direction's receiver threshold too. Boot messages, partial serial reads, and unsolicited connection events must be handled by the host protocol parser.
+
+For example, an assumed 5 V signal divided by 10 kΩ on top and 20 kΩ below gives 3.33 V nominally, but whether this is usable depends on maximum supply voltage, resistor tolerance, input limits, and edge settling. It is a one-direction, resistive signal-scaling example, not a general bidirectional level shifter. Open-drain I²C translation and fast push-pull SPI translation need circuits suited to those interfaces.
+
+Prove a coprocessor link before adding a sensor: establish power and reset, identify firmware, exchange a documented basic request, configure networking, and observe a response at a receiver. Define maximum message length, framing, timeouts, and recovery if either processor resets halfway through a transfer. A UART read returning a few bytes need not contain one complete reply.
+
+Checkpoint: explain where the application runs, where the network stack runs, and how bytes cross between them in each architecture.
+}
+
+22 Modules that extend an ESP system (@basic-eletronics-22: 0, is #chapter, #part-of @basic-eletronics: 22) {
+A module is a small assembly intended to provide a function. A breakout board mainly exposes difficult package pins; some also add regulators or level shifting. A board accepting 5 V power does not necessarily produce 3.3 V-safe signals. Read both the circuit and the component datasheets.
+
+| Module category | What it adds | Typical interface | What to verify |
+| --- | --- | --- | --- |
+| Temperature, humidity, pressure | Environmental measurements | I²C, SPI, sometimes a dedicated protocol | Range, accuracy, address, sampling limits |
+| Motion or orientation | Acceleration, rotation, sometimes magnetic field | I²C or SPI | Calibration, axes, mounting, interrupt voltage |
+| Light or distance | Illumination or proximity measurements | I²C, analog, pulse timing | Optical conditions and output voltage |
+| Display | Local measurements and status | I²C, SPI, parallel | Driver chip, RAM demand, backlight current |
+| Storage | Logs or extra memory | SPI, SDIO, I²C | Supply, filesystem, write endurance, power-loss behavior |
+| ADC or DAC | Additional analog channels or conversion capability | I²C or SPI | Input range, reference, resolution, sample rate |
+| GPIO expander | Additional digital inputs or outputs | I²C or SPI | Output current, interrupt handling, reset state |
+| Motor or servo driver | Controlled movement | PWM, direction pins, I²C, SPI | Separate load power, stall current, protection |
+| Relay board | Switched contacts | Digital input | Input polarity, coil current, default state, real isolation |
+| Ethernet controller or PHY | Wired networking | SPI or a supported MAC/PHY interface | Driver support, connector magnetics, power |
+| GNSS receiver | Position and time reception | UART or I²C | Antenna and signal visibility; it does not provide Internet |
+| Cellular modem | Mobile network data | UART, USB, sometimes other links | Network support, SIM, antenna, large current bursts |
+| LoRa radio | Long-range low-data-rate radio | Commonly SPI | Regional radio settings and gateway needs |
+| Audio board | Microphone input or sound output | I²S, analog, control bus | Clocking, voltage, amplifier and speaker load |
+| RS-485 or CAN transceiver | Electrical bus connection | UART or CAN controller | Correct protocol controller, termination, protection |
+
+A LoRa radio does not automatically provide Internet, and LoRaWAN requires an appropriate network architecture. Bluetooth, Thread, Zigbee, Wi-Fi, and cellular are different communication systems. A gateway may bridge one to another, but a firmware setting cannot create absent radio hardware.
+
+LoRa names the radio physical-layer technology; LoRaWAN adds a networking protocol and architecture using end devices, gateways, and servers. A pair of raw LoRa radios can exchange application-defined packets without being a complete LoRaWAN network. Regional frequency plans and the intended network must match the chosen hardware and software. [LoRa Alliance's explanation](https://lora-alliance.org/about-lorawan/).
+
+The rows describe functions, not guarantees that every ESP can drive every module. An Ethernet PHY needs a compatible MAC interface elsewhere in the system; a module containing its own Ethernet controller can instead expose a supported host interface such as SPI. A CAN transceiver changes electrical signaling but still needs a CAN controller. A GPIO expander adds control pins but does not turn their limited outputs into motor-power drivers.
+
+Analog sensor modules may expose a voltage above an ESP ADC's permitted range even when their digital companion boards look similar. Displays and memory cards can have startup current peaks. A nominal 3.3 V storage module with a poorly documented regulator or level shifter may behave differently from the bare chip. Check the complete assembly, including pull-ups, enable pins, and powered-off behavior.
+
+Some outputs need an external driver even if a module calls its input a control pin. A servo needs motor power and a specified pulse signal; a stepper driver needs suitable phase-current limits; a relay's contacts have load-specific ratings. Keep control-signal current separate in your calculations from the energy supplied to the load.
+
+Before adding several modules, budget GPIO, bus addresses, chip-select lines, memory, voltage rails, peak current, and firmware support. Two individually working modules can conflict through an address, a boot pin, or a shared resource.
+
+Exercise: design a compatibility table for an ESP board, one environmental sensor, a display, and a storage module. Resolve every shared pin and voltage before wiring.
+}
+
+23 What a Wi-Fi connection actually provides (@basic-eletronics-23: 0, is #chapter, #part-of @basic-eletronics: 23) {
+Wi-Fi provides a local wireless network link. Internet access additionally requires a route through the network and an available upstream service. A sensor can communicate locally even when the Internet is unavailable.
+
+A station joins an access point, AP, using a supported band and security mode. The network name is the SSID. In access-point mode, a device offers a local wireless network; that alone does not make it an Internet router. Combined AP and station operation has target-specific restrictions.
+
+Association and authentication establish the Wi-Fi connection. DHCP commonly supplies an IP address, network mask, gateway, and DNS configuration. DNS resolves names into addresses. Having an IP address does not prove that a remote server is reachable or that its name resolves correctly.
+
+An IP address identifies a network interface for routing; a transport port selects an endpoint on a host. The receiver must listen on the expected address and port. A local address can be valid even without Internet access, and a firewall or isolated guest network can block traffic between otherwise connected devices. These are different faults from insufficient radio signal.
+
+TCP provides a reliable ordered byte stream while the connection remains viable; it does not preserve your application message boundaries. UDP sends datagrams without TCP's delivery and ordering guarantees. Application protocols define what those bytes mean.
+
+HTTP exchanges requests and responses. HTTPS adds TLS for transport protection and server authentication when certificate verification is correctly configured. MQTT is a publish/subscribe protocol commonly used for telemetry through a broker. MQTT topic names and access permissions should match the device's intended role.
+
+For MQTT, a publisher sends a payload under a topic such as lab/room1/temperature; a broker routes it to subscribed clients. The topic does not define the payload's units or data type. Define those in your application. MQTT does not imply encryption by itself: choose and configure a protected transport when confidentiality and authentication are required.
+
+MQTT QoS 0 means at most once, QoS 1 means at least once, and QoS 2 provides exactly-once delivery at the relevant MQTT protocol delivery step. QoS 2 is not a guarantee that an actuator physically operates exactly once across all failures. Retained messages can supply a previous published value to a new subscriber; they need age or validity information when freshness matters. Broker acknowledgment is not automatically confirmation that a separate subscriber processed a measurement. [OASIS MQTT specification](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html).
+
+TLS requires memory and correct trust configuration. Certificate validity checks commonly require a reasonably correct clock. Encryption without authenticating the server still leaves important attacks possible. Avoid placing passwords or private keys in public source code, screenshots, or logs.
+
+RSSI is a received signal-strength indicator, commonly reported in dBm. More negative values generally mean weaker reception, but signal strength alone does not determine quality: interference, congestion, antenna placement, and retransmissions matter.
+
+dBm expresses power relative to 1 mW on a logarithmic scale: dBm = 10 × log10(P/1 mW). A 10 dB difference is a factor of ten in power, so −60 dBm is ten times the received power of −70 dBm. This does not imply ten times the data rate or range. Radio range depends on both directions of the link, antennas, obstacles, interference, and receiver performance.
+
+Checkpoint: distinguish a Wi-Fi association failure, DHCP failure, DNS failure, TCP connection failure, and rejected application credentials.
+}
+
+24 Designing connected firmware that recovers (@basic-eletronics-24: 0, is #chapter, #part-of @basic-eletronics: 24) {
+A useful connected device must keep working when a sensor disconnects, the router restarts, or a server is unavailable. Design these cases explicitly.
+
+Use clear operating states: initialize hardware, obtain configuration, join the network, acquire an address, connect to the service, measure, publish, and recover after errors. Give operations timeouts. Retry with increasing delays and some randomness rather than hammering a failed network continuously.
+
+A state machine makes each transition explicit: a successful association leads to address acquisition; a timeout schedules a later retry; losing the link closes or re-establishes the service connection. These are separate from a sensor's ready, measuring, valid, and fault states. A device can still show useful local measurements while its network state is offline.
+
+Keep local sampling independent enough from networking that a slow server does not freeze every function. Bound queues and buffers. Decide whether old readings should be discarded, summarized, or retained. An unlimited offline queue eventually exhausts memory or storage.
+
+Define messages with units, sensor identity, status, and a sequence number or timestamp. Distinguish an invalid reading from a valid zero. Validate lengths and ranges on received data. A network peer can send malformed or unexpected messages even on a home network.
+
+Use a sample's measurement time rather than only its eventual publication time. If no trustworthy calendar clock exists, report uptime or a sequence number with a boot/session identifier and say what it means. Do not label an uptime counter as a calendar timestamp. A newly restarted sequence counter otherwise looks like old or duplicated data to a receiver.
+
+For MQTT, understand delivery quality settings and duplicate delivery. For commands that change physical state, use an explicit command identifier and design repeat handling. A retried message should not unexpectedly run a motor twice.
+
+An idempotent command has the same intended result when repeated: set output off is easier to repeat safely than toggle output. Even then, acknowledgments, persistent state, and power loss need attention. Keep a receiving device's allowed commands and parameter ranges narrow, and reject malformed inputs before changing physical outputs.
+
+Provisioning means supplying configuration, such as Wi-Fi credentials, to a new or reset device. The setup mechanism should authenticate access where needed and stop exposing configuration after setup. Provide an intentional way to clear credentials without printing them during normal operation.
+
+Update firmware through an authenticated path. Plan rollback and power-loss recovery. Secure boot checks permitted firmware; flash encryption protects stored contents under a particular threat model. Their details and irreversible configuration steps vary by chip, so study them before enabling production security settings.
+
+Hardware outputs need safe reset defaults too. Firmware cannot guarantee a relay is off during boot if the electrical circuit leaves its control pin floating.
+
+Checkpoint: write down the device's behavior after ten minutes without Wi-Fi, an invalid sensor response, and interrupted power during a firmware update.
+}
+
+25 Radio power, sleep, and battery life (@basic-eletronics-25: 0, is #chapter, #part-of @basic-eletronics: 25) {
+Radio transmission and reception can produce short current peaks much larger than sleep current. Size the power path for those peaks, then estimate runtime from the whole operating cycle. Cable resistance, regulator response, and capacitor placement can matter even when average current looks small.
+
+For operating phases at approximately the same supply voltage:
+
+Iaverage = sum of each phase's current × duration / total duration.
+
+Suppose a device draws 100 mA for 2 s and 0.1 mA for 58 s. Its ideal average is (100 × 2 + 0.1 × 58) / 60 = 3.43 mA. These are illustrative values, not ESP specifications. Reconnection time, sensor warm-up, retries, and regulator losses can change the result substantially.
+
+A 1,000 mAh battery divided by the unrounded cycle average gives about 291.5 hours, or roughly 292 hours, only when the capacity, load current, voltage conversion, and usable discharge range are compatible. If voltages differ, compare energy or model the converter input current rather than dividing unrelated mAh and mA figures.
+
+For an idealized energy example, a nominal 3.7 V, 1 Ah battery contains about 3.7 Wh. With 85% assumed conversion efficiency, that would deliver about 3.145 Wh to a constant 3.3 V, 10 mA load drawing 0.033 W, suggesting 95.3 hours before other losses and usable-capacity limits. Include converter quiescent current and every powered module; the advertised efficiency at heavy load may not apply during sleep.
+
+Deep sleep reduces activity, but wake sources, retained memory, and peripheral behavior depend on the chip. A development board's regulator, indicator LED, USB bridge, and attached modules may dominate consumption. A chip's datasheet sleep current is not necessarily the board's sleep current.
+
+Powering down a sensor can save energy, but a signal pin can accidentally backfeed an unpowered device through internal protection structures. Check sequencing requirements and isolate or reconfigure signals appropriately.
+
+Checkpoint: create a cycle budget containing wake-up, sensor warm-up, measurement, network connection, transmission, and sleep. Measure the full cycle before claiming battery life.
+}
+
+26 Reading datasheets and selecting compatible hardware (@basic-eletronics-26: 0, is #chapter, #part-of @basic-eletronics: 26) {
+The exact manufacturer's datasheet and board schematic outrank a generic tutorial pinout. A seller's module title is a starting point, not an electrical specification.
+
+Read in this order:
+
+1. Identify the complete part number, revision, package, and board variant.
+2. Read the feature overview and block diagram to establish what hardware exists.
+3. Check recommended operating conditions. These are the design region.
+4. Check absolute maximum ratings. These are stress boundaries, not normal operating targets or guarantees of function.
+5. Read pin functions, input thresholds, output current limits, power sequencing, and boot restrictions.
+6. Check timing, analog accuracy, radio bands, memory, and bus requirements.
+7. Follow the application circuit, layout guidance, and required external parts.
+8. Check errata and the driver's support for the intended hardware and software versions.
+
+A pin's tolerance while powered does not automatically apply while unpowered. A module's input regulator does not automatically level-shift its signals. A part's typical value is not a guaranteed maximum or minimum.
+
+For every external connection, answer: what drives it, what receives it, what voltage can occur, what happens during reset, and what happens if one side is unpowered? For every rail, record voltage range, average current, peak current, and source capability.
+
+Build a limits table with columns for quantity, minimum, typical, maximum, test condition, and design value. For a digital connection, compare transmitter VOH/VOL guarantees with receiver VIH/VIL requirements. For a supply, compare the lowest voltage at the load with the part's minimum operating voltage, then check highest voltage and transients against permitted operating conditions. Use absolute maxima only to identify stress limits. Remaining below those maxima does not guarantee correct or long-term operation.
+
+A functional block diagram tells you what the chip can contain. A pin multiplexing table tells you which functions can reach each pad. A board schematic tells you which pads are already connected. A driver manual tells you which combinations the software implements. All four are needed to turn a feature-list claim into a usable connection.
+
+For a board choice, start from requirements: Wi-Fi band, desired interfaces, accessible pins, memory, supply, programming connection, antenna placement, firmware support, and physical size. This trail does not prescribe a particular board because those requirements differ.
+
+Checkpoint: produce a one-page compatibility sheet before ordering or connecting parts.
+}
+
+27 Build a complete environmental monitor in stages (@basic-eletronics-27: 0, is #chapter, #part-of @basic-eletronics: 27) {
+## Define the system
+
+Use a documented development board with the Wi-Fi capability your network supports, a documented 3.3 V-compatible digital environmental sensor, a low-current indicator LED with a calculated series resistor, a breadboard, jumper wires, and a suitable enclosed power source. Use a multimeter and a data-capable programming cable. A button is optional.
+
+Select the exact parts and firmware framework before choosing GPIO numbers. Use an existing supported sensor driver. No universal pin assignment is safe across all ESP boards. If the selected host lacks Wi-Fi, add a supported coprocessor architecture from chapter 21 and first validate the host-to-radio connection separately.
+
+The electrical path is: source → board power circuit → MCU and sensor. The information path is: environment → sensor → local bus → firmware → Wi-Fi → local receiver. The LED reports a defined local status. These paths share hardware but are different things to debug.
+
+## A concrete reference for the wiring exercise
+
+As an example tied to official documentation, use an ESP32-C3-DevKitM-1 variant whose pinout matches the linked guide, with GPIO0 as SDA, GPIO1 as SCL, and GPIO3 for an external indicator. These are application choices that firmware must configure. They assume those pins have no other assigned function in this project. Use the board's documented USB input only. The guide identifies the serial bridge, on-board GPIO8 RGB LED, and C3 strapping pins; leave those out of this example's external wiring. Verify the exact revision before following it. [Board guide and pin map](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html).
+
+For one sensor example, a documented 3.3 V-compatible BME280 breakout provides temperature, humidity, and pressure. The bare chip permits VDD from 1.71 to 3.6 V and VDDIO from 1.2 to 3.6 V. I²C requires CSB high and a defined SDO state, selecting 7-bit address 0x76 or 0x77. Breakouts may set these internally. Read ID register 0xD0 expecting 0x60, and use a driver that reads the factory calibration and applies compensation. A raw register value is not already a temperature in degrees. [Bosch BME280 datasheet, revision 1.24](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf).
+
+| Connection | Reference wiring | Check before power |
+| --- | --- | --- |
+| Board supply | Documented USB connection | Use one allowed power input and a data-capable cable |
+| Sensor supply | Board 3V3 to the breakout's documented 3.3 V input | Confirm breakout schematic and available rail current |
+| Sensor return | Board GND to sensor GND | Confirm a shared reference |
+| Sensor data | GPIO0 to SDA | Verify pull-up rail, total pull resistance, and pin assignment |
+| Sensor clock | GPIO1 to SCL | Verify the same conditions and start at a supported modest bus speed |
+| Indicator | GPIO3 → 1 kΩ → red LED anode; cathode → GND | Check polarity, output limits, and boot behavior |
+
+With an assumed 2.0 V LED drop and ideal 3.3 V drive, that indicator draws about 1.3 mA, with about 1.69 mW dissipated in its resistor. Recalculate using the actual GPIO output and LED specifications. Treat any existing sensor-board pull-ups as part of the bus calculation rather than automatically adding another pair. Keep a temperature sensor away from the regulator and radio's heat when evaluating ambient temperature.
+
+This reference makes the design exercise specific without making its pin assignments universal. A different board or breakout requires a new wiring check and matching firmware configuration.
+
+## Stage 1: prove the passive circuit
+
+Build an LED and resistor circuit from the low-voltage source, with polarity and ratings checked. Predict its current and resistor power. Measure the resistor voltage and compare current inferred from V/R with the design. Power down before moving connections.
+
+Pass condition: the measurement is consistent with component tolerance and the assumed LED forward voltage, and no component overheats.
+
+## Stage 2: prove the controller
+
+Power the development board through its documented input. Install a minimal firmware image for the exact target. Confirm a startup message and board identity. Drive the external LED through its resistor using an allowed GPIO at a safe current. Define what the LED does during startup and after initialization.
+
+Pass condition: repeated resets start predictably, and disconnecting the network does not affect this basic test.
+
+## Stage 3: prove the sensor
+
+With power off, connect the sensor's power, ground, and chosen bus. Verify pull-ups are appropriate for 3.3 V. Start with one sensor and short wires. Confirm its address or identity where supported, then read its documented measurement and error status.
+
+Pass condition: readings have units, fall within the sensor's specified range, and respond plausibly to a modest environmental change. A plausible value alone does not prove accuracy; compare against a reference if accuracy matters.
+
+## Stage 4: prove local processing
+
+Sample at a rate the sensor supports. Print or otherwise inspect the values locally. Report errors explicitly instead of replacing them with zero. Debounce the optional button and keep the sample schedule responsive.
+
+Pass condition: an unplugged sensor produces a controlled error and reconnecting it follows the recovery behavior you defined. Change wiring only with power removed unless the hardware explicitly supports hot plugging.
+
+## Stage 5: prove network layers separately
+
+Configure the network without committing credentials to public files. Confirm Wi-Fi association, address acquisition, and reachability of a local receiver. Then add the application protocol and any TLS configuration. Keep an offline status indicator that does not expose secrets.
+
+Pass condition: distinguish wrong credentials from an unavailable receiver in the device's diagnostics. Restore correct configuration and confirm recovery.
+
+## Stage 6: publish meaningful measurements
+
+Send sensor identity, value, unit, validity, and sequence or time information at a modest interval. Use authenticated encrypted transport where the deployment calls for it. Have the receiver show or log the actual payload so success is observable at both ends.
+
+Pass condition: the receiver gets measurements matching local readings, and stale or invalid data is distinguishable from new valid data.
+
+For a first complete behavior, sample once every ten seconds, allow a bounded sensor-read timeout chosen from the driver and sensor specifications, and keep only the newest valid unsent reading in RAM. Report sensor status separately. On reconnection, publish the reading with its original sequence and age, or take a fresh sample according to a documented policy. This intentionally simple choice loses intermediate offline samples but cannot fill memory indefinitely.
+
+## Stage 7: test failure and power behavior
+
+Restart the router, stop the receiver, reset the MCU, and interrupt ordinary operation by removing its low-voltage power. Verify bounded retries and queues. Measure supply voltage during operation; use suitable instrumentation if brief radio bursts cause unexplained resets. Check that recovery does not produce unsafe output states.
+
+Pass condition: the device resumes useful operation after each recoverable failure without manual reflashing or disclosure of credentials. Record limitations such as lost offline samples or lack of OTA recovery rather than claiming untested behavior.
+
+## Stage 8: record a reproducible result
+
+Save the schematic, exact component and board identifiers, wiring table, firmware target and version, dependency versions, power budget, configuration procedure, observed readings, and failure-test results. If moving to a PCB, repeat electrical and radio verification because a working breadboard does not validate a new layout.
+}
+
+28 Troubleshooting by evidence (@basic-eletronics-28: 0, is #chapter, #part-of @basic-eletronics: 28) {
+Change one thing at a time and write down the result. Start with supply and physical connections before assuming a software problem. A known-good minimum circuit makes faults easier to isolate.
+
+| Symptom | Possible cause | First useful check |
+| --- | --- | --- |
+| Nothing starts | Wrong input, open rail, reversed polarity | Measure the documented power rail relative to ground |
+| Reset during radio activity | Supply droop, wiring impedance, software fault | Read reset reason and inspect supply behavior |
+| Cannot flash | Wrong port, cable, target, boot state | Confirm data connection and target boot procedure |
+| Serial output is garbage | Baud mismatch, wrong voltage, noise | Match settings and inspect logic compatibility |
+| Button changes randomly | Floating input or bounce | Verify pull resistor and debounce behavior |
+| Sensor not detected | Wiring, address, supply, missing pull-up | Check pinout, bus voltage, and identity transaction |
+| Sensor reads wrong | Units, calibration, timing, decoding | Compare raw response with the sensor documentation |
+| ADC value is noisy | Source impedance, reference, layout, interference | Measure a known steady input and examine configuration |
+| Wi-Fi joins but no data arrives | Addressing, DNS, service, credentials | Test network layers and receiver logs separately |
+| Relay activates at boot | Active-low input, floating control, boot pin | Check hardware default and reset waveform |
+| Chip or resistor gets hot | Excess current, wrong part, short, oscillation | Remove power, inspect, and recheck the power calculation |
+
+A software log is evidence of what the program observed, not proof that the electrical signal was correct. A multimeter reading is often an average and can miss brief dips. A bus address response proves some communication, not necessarily that every sensor setting is correct.
+
+Follow a diagnostic sequence: verify the exact part and orientation; inspect unpowered continuity; measure rails at the load; confirm reset and boot state; run a minimal known-good firmware; test one interface; then add application and networking layers. Compare against a specific prediction. If an I²C line never rises, inspect pull-ups and held-low devices before changing sensor arithmetic. If a resistor overheats, calculate its current and power before replacing it with another of the same inadequate rating.
+
+Checkpoint: for each suspected fault, state what observation would support it and what observation would rule it out.
+}
+
+29 Review problems, answers, and next learning steps (@basic-eletronics-29: 0, is #chapter, #part-of @basic-eletronics: 29) {
+Try these before reading the answers:
+
+1. What current and power result from 3.3 V across 1 kΩ?
+2. What resistor approximates 5 mA through a 2 V LED from 5 V?
+3. What does a 10 kΩ / 10 kΩ divider produce from 5 V before loading?
+4. What happens to that midpoint if a 10 kΩ load is added to ground?
+5. What is the time constant of 4.7 kΩ and 10 µF?
+6. Why is a 5 V-compatible supply pin not proof of 5 V-compatible data pins?
+7. Why does a MOSFET's threshold voltage not establish its useful load current?
+8. Does every ESP have Wi-Fi? Can an antenna add it to a chip without a radio?
+9. What is firmware, and what differs between flashing and changing settings?
+10. Why can a device work on USB yet fail on a nominally adequate battery?
+11. Why can a 12-bit ADC have less than 12 bits of useful measurement accuracy?
+12. Why is a Wi-Fi connection not proof of an Internet connection?
+13. A 3.3 V source and wiring have 1 Ω total series resistance. What reaches a 200 mA load?
+14. What Thévenin voltage and resistance represent a 10 kΩ / 10 kΩ divider at 3.3 V?
+15. What fraction of its final voltage has an initially empty ideal RC circuit reached after one and five time constants?
+16. A 1 µF capacitor's voltage rises by 1 V in 1 ms at a constant rate. What is its ideal current?
+17. What is the RMS voltage of pulses switching between 0 V and 3.3 V with 25% duty? What is their average voltage?
+18. Where do the cathode and anode of a flyback diode go on a positive-supply coil with an N-channel low-side switch?
+19. What happens to a non-inverting amplifier's output for 0.5 V input, 20 kΩ feedback resistance, and 10 kΩ to ground, assuming valid operating conditions?
+20. What unsigned and two's-complement signed values can the byte 11111111 represent?
+21. How many transmitted bits carry one byte in UART 8-N-1 framing? What is the ideal byte rate at 115,200 bits/s?
+22. Estimate I²C rise time with 4.7 kΩ and 100 pF. Does it satisfy a 300 ns rise-time limit?
+23. Why can a 900 Hz sine look like 100 Hz when sampled at 1,000 samples/s?
+24. Does a valid checksum prove a firmware image came from its authorized author? Does MQTT QoS 2 prove a physical action occurred exactly once?
+
+## Answers
+
+1. I = 3.3 mA; P = 10.89 mW.
+2. R = 600 Ω. Select an appropriate available value, then recalculate current and check tolerances; 620 Ω gives approximately 4.84 mA under the stated assumptions.
+3. 2.5 V, assuming negligible load.
+4. The bottom becomes 5 kΩ, so the output becomes about 1.67 V.
+5. 0.047 s, or 47 ms.
+6. A board can regulate its supply without translating its signal voltages.
+7. Threshold specifies the beginning of conduction under a test condition. Use on-resistance specified at the available gate drive and check thermal limits.
+8. No to both. Some ESPs need an external Wi-Fi-capable device and compatible host software.
+9. Firmware is executable device software. Flashing writes an image to nonvolatile memory; settings change data used by that software, although some update operations can affect both.
+10. Battery voltage, regulator dropout, peak current, cable or contact resistance, and usable capacity can differ from the USB setup.
+11. Noise, nonlinearity, reference error, source settling, and calibration affect accuracy independently of code width.
+12. Wi-Fi establishes a local link; routing, upstream service, name resolution, transport, and application access still need to work.
+13. The series drop is 0.2 A × 1 Ω = 0.2 V, leaving 3.1 V under the stated steady conditions.
+14. Vth = 1.65 V and Rth = 10 kΩ in parallel with 10 kΩ = 5 kΩ.
+15. Approximately 63.2% and 99.3%. The general response depends on both initial and final voltage.
+16. I = C × ΔV/Δt = 0.000001 × 1/0.001 = 0.001 A, or 1 mA.
+17. Vrms = 3.3 × √0.25 = 1.65 V; Vaverage = 3.3 × 0.25 = 0.825 V. Use the correct one for the question being asked.
+18. Cathode to positive coil supply, anode to the coil's switched lower end. It blocks during normal on-time and carries recirculating current after turn-off.
+19. Gain = 1 + 20/10 = 3, so output is approximately 1.5 V. The prediction fails if common-mode range, output swing, stability, or other operating limits are violated.
+20. Unsigned 255 or signed −1. The data format determines the interpretation.
+21. Ten bits: one start, eight data, one stop. At the stated rate that is at most 11,520 bytes/s before gaps and protocol overhead.
+22. tr ≈ 0.8473 × 4,700 × 100 × 10^−12 = 398 ns. No; the example exceeds 300 ns. A smaller pull-up must still satisfy sink-current limits.
+23. Sampling loses the distinction between frequency components separated by multiples of the sample rate. The 900 Hz component folds into the baseband as 100 Hz; suitable analog filtering must precede sampling.
+24. No to both. Authenticity requires an appropriate trusted authentication mechanism. MQTT delivery guarantees concern protocol exchanges; physical execution and recovery need application-level design.
+
+## A final design challenge
+
+Someone proposes this monitor: use a resistor divider to power an ESP from 5 V; connect a sensor's 5 V output directly to an ADC; switch a relay coil from a GPIO; omit its flyback path; rely on a MOSFET's threshold rating for a later motor upgrade; and assume association with an access point proves every measurement reached the receiver. Explain each failure before proposing a replacement design.
+
+A sound correction supplies the board through an allowed regulated input, conditions the sensor signal within the exact ADC's range, uses a rated load driver and appropriate inductive suppression, selects a MOSFET by its guaranteed behavior at the actual drive, and verifies network and application delivery separately. Draw the corrected power and information paths and calculate the values instead of relying on labels alone.
+
+## Terms to be able to explain without looking them up
+
+| Term | Essential distinction |
+| --- | --- |
+| Voltage / current / power / energy | Potential difference / charge flow rate / energy-transfer rate / accumulated transferred energy |
+| Resistance / reactance / impedance | Dissipative opposition / frequency-dependent reactive contribution / full voltage-current relationship including phase |
+| Decoupling / filtering / regulation | Local supply support / selective response to signal variation / maintaining an output despite disturbances |
+| Chip / module / development board | Integrated circuit / functional assembly / board making development and connection convenient |
+| RAM / flash / firmware | Working storage / nonvolatile storage technology / device software that can be stored there |
+| Driver / protocol / physical interface | Hardware-operating software / agreed message and timing rules / electrical connection behavior |
+| Wi-Fi / IP / application protocol | Local radio link / network addressing and routing / the meaning and exchange of application data |
+| Resolution / precision / accuracy | Representable step size / repeatability / closeness to the reference or true value |
+
+## What to learn next
+
+For deeper circuit design, study network analysis, transistor biasing, feedback, stability, and frequency response. For power electronics, study switching converters, magnetics, thermal design, and protection. For embedded systems, study interrupts, concurrency, memory use, debugging, and reliable update systems. For PCB work, study grounding, return currents, electromagnetic compatibility, and manufacturing constraints. For chips, study semiconductor physics, digital design, hardware description languages, verification, and fabrication.
+
+Progress checkpoint: explain the complete environmental monitor to someone else, including its power path, information path, electrical limits, firmware lifecycle, network behavior, and recovery from failures. Identify which results you calculated, which you measured, and which still need verification.
+}
+
+30 Sources and how to keep the trail accurate (@basic-eletronics-30: 0, is #chapter, #part-of @basic-eletronics: 30) {
+The trail was reviewed and expanded on 2026-10-16. The worked examples were recalculated, and the references below were used to check physical models, interface details, and product-specific claims. The prose and exercises are original explanations; the links let a learner inspect the underlying theory and specifications.
+
+The calculations use standard ideal models and explicitly stated assumptions. Real construction must use the exact component datasheets, board schematic, and software documentation. Manufacturer documentation can change: record document revisions and software versions with your project. A source check does not establish that a particular purchased module, wiring assembly, or firmware image has been tested.
+
+## Circuit theory and components
+
+- [MIT 6.002 circuit-analysis lessons](https://ocw.mit.edu/courses/6-002-circuits-and-electronics-spring-2007/video_galleries/video-lectures/): circuit analysis, Thévenin/Norton equivalents, devices, and a deeper study sequence.
+- [MIT 6.012 device-physics notes](https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/pages/lecture-notes/): doping, carriers, junctions, MOSFETs, and CMOS inverters; a route from the simplified explanations here to quantitative device theory.
+- [OpenStax RC circuits](https://openstax.org/books/university-physics-volume-2/pages/10-5-rc-circuits): exponential charging and discharging under ideal circuit assumptions.
+- [OpenStax simple AC circuits](https://openstax.org/books/university-physics-volume-2/pages/15-2-simple-ac-circuits): phase, reactance, and sinusoidal RMS relationships.
+- [OpenStax series RLC circuits](https://openstax.org/books/university-physics-volume-2/pages/15-3-rlc-series-circuits-with-ac): complex impedance relationships, phase, and average AC power.
+- [OpenStax transformers](https://openstax.org/books/university-physics-volume-2/pages/15-6-transformers): turns, voltage, current, and ideal power relationships.
+- [Murata ceramic-capacitor DC bias](https://www.murata.com/support/faqs/capacitor/ceramiccapacitor/char/0005): the difference between high-permittivity and temperature-compensating ceramic types.
+- [Analog Devices BJT switching exercise](https://wiki.analog.com/university/courses/alm1k/alm-lab-4s): base drive, cutoff, and saturation.
+- [TI low-voltage MOSFET discussion](https://www.ti.com/lit/pdf/slva315): gate threshold versus useful on-resistance in a low-voltage switching example.
+- [Analog Devices voltage-feedback op-amps](https://wiki.analog.com/university/courses/electronics/text/chapter-2): feedback assumptions, buffers, and gain relationships.
+- [Analog Devices rail-related amplifier limits](https://www.analog.com/en/resources/analog-dialogue/raqs/raq-issue-141.html): input common-mode range and output capability are different specifications.
+- [MIT switching energy and power](https://ocw.mit.edu/courses/6-002-circuits-and-electronics-spring-2007/aaaba9c602f1fc4e42d29e04db1c7dff_6_0022007L022.pdf): capacitive switching energy and its relation to CMOS power.
+- [ASML on chip manufacturing](https://www.asml.com/en/technology/all-about-microchips/how-microchips-are-made): repeated fabrication steps, lithography, and device production.
+
+## Sampling, interfaces, and application protocols
+
+- [Analog Devices on anti-alias filtering](https://www.analog.com/en/resources/faqs/faq_antialiasing_filter.html): unwanted out-of-band components fold into sampled measurements.
+- [Analog Devices on voltage-reference noise](https://www.analog.com/en/resources/analog-dialogue/articles/2020/02/27/17/02/why-does-voltage-reference-noise-matter.html): the conversion reference is part of an ADC's measurement accuracy.
+- [NXP UM10204 I²C specification](https://www.nxp.com/docs/en/user-guide/UM10204.pdf): bus signaling, addresses, acknowledgments, and timing. The inspected document is revision 7.0, dated 2021-10-01.
+- [TI I²C pull-up calculations](https://www.ti.com/lit/pdf/slva689): rise-time and sink-current constraints on pull resistance.
+- [OASIS MQTT 3.1.1 specification](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html): publish/subscribe behavior, delivery quality, and retained messages. Later MQTT versions add features; they still require correct application semantics.
+- [LoRa Alliance on LoRaWAN](https://lora-alliance.org/about-lorawan/): the distinction between the physical radio and the network architecture.
+
+## ESP hardware, firmware, and the project reference
+
+- [Espressif ESP32-C6 product information](https://www.espressif.com/en/products/socs/esp32-c6): the stated combination of Wi-Fi, Bluetooth LE, and IEEE 802.15.4.
+- [Espressif on Wi-Fi for ESP devices without native Wi-Fi](https://developer.espressif.com/blog/2025/09/esp-wifi-remote/): the ESP32-H2 and ESP32-P4 distinction and external-radio architecture.
+- [ESP-AT overview](https://docs.espressif.com/projects/esp-at/en/latest/esp32/about.html): command-based and related connectivity approaches.
+- [ESP-Hosted source and documentation](https://github.com/espressif/esp-hosted-mcu): host/coprocessor integration, interfaces, and support details.
+- [ESP-WiFi-Remote source and documentation](https://github.com/espressif/esp-wifi-remote): Wi-Fi APIs backed by another device's radio.
+- [ESP32 hardware schematic checklist](https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html): the specific classic ESP32 supply example and reference-design requirements.
+- [ESP32 datasheet](https://documentation.espressif.com/esp32_datasheet_en.html): exact classic ESP32 electrical, pin, boot, and peripheral specifications. Do not apply its pin assignments to other ESP families.
+- [Classic ESP32 ADC driver, ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/api-reference/peripherals/adc_oneshot.html): acquisition, calibration references, and the ADC2/Wi-Fi shared-resource example. Use the manual matching your actual target and SDK version.
+- [ESP-IDF OTA documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/ota.html): update slots, validation, health confirmation, and rollback requirements.
+- [ESP-IDF ESP32-C3 getting started](https://docs.espressif.com/projects/esp-idf/en/stable/esp32c3/get-started/): target identification and the supported development workflow.
+- [ESP32-C3-DevKitM-1 board guide](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html): the project's example pin map, programming connection, strapping pins, and power options.
+- [Bosch BME280 datasheet](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf): revision 1.24, dated February 2024; electrical ranges, interface selection, identity, and compensation requirements for the example sensor.
+
+When extending this trail, preserve the distinction between an ideal explanation, a product specification, and an actual measurement. Add worked examples with units, name the relevant hardware variant, and explain how the learner can verify the result.
+}

@@ -60,6 +60,7 @@ pub async fn publication_input(
         creator_person_uid: creator,
         proposal_author_person_uid: person.into(),
         terms: TransferDraftTermsInput {
+            public_history: terms.public_history,
             slug: terms.slug,
             head: terms.head,
             agreement_type: terms.agreement_type,

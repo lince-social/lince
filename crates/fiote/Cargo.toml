@@ -21,6 +21,19 @@ required-features = ["test-agent"]
 [dependencies]
 nucleus = { workspace = true }
 hound = "=3.5.1"
+earshot = "=1.2.2"
+wake-reference = { package = "lince-wake-reference", path = "../vendor/wake-reference" }
+tract-onnx = { version = "=0.23.8", default-features = false }
+best-tts = { git = "https://github.com/studio-ransom/best-tts-rust", rev = "5f9280c761a5c147bb682321f3f019482fab3e7b", default-features = false }
+phonon = { package = "phonon-rs", version = "=0.1.3", default-features = false }
+rayon = "=1.12.0"
+candle-core = { version = "=0.11.0", default-features = false }
+candle-nn = { version = "=0.11.0", default-features = false }
+candle-transformers = { version = "=0.11.0", default-features = false }
+tokenizers = { version = "=0.22.2", default-features = false, features = ["onig"] }
+ruzstd = "=0.8.3"
+tar = "=0.4.46"
+laya = { path = "../vendor/laya", package = "lince-laya" }
 base64 = { workspace = true }
 portable-pty = { workspace = true }
 agent-client-protocol = "=2.2.0"

@@ -1,4 +1,6 @@
 pub mod geometry;
+pub mod diagnostics;
+pub mod pack;
 pub mod scene;
 pub mod source;
 

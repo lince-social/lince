@@ -114,6 +114,7 @@ fn request(world: &mut World, root: Entity, command: model::Command) -> Result<(
     let id = nucleus::new_uid("package-action");
     panel::send(
         world,
+        root,
         ClientMessage::Act {
             id: id.clone(),
             action: Backend::SandPackage {
@@ -133,7 +134,7 @@ impl Action for Command {
         if !world
             .get::<crate::native::edit_mode::EditMode>(root)
             .is_some_and(|mode| mode.enabled)
-            || crate::native::laboratory::active(world)
+            || crate::native::laboratory::blocked(world, root)
         {
             return;
         }
@@ -340,7 +341,7 @@ pub(super) fn update(world: &mut World, root: Entity, messages: &[ServerMessage]
         }
     }
     let state = world.get::<State>(root).unwrap();
-    if !state.loaded && state.pending.is_none() && !crate::native::laboratory::active(world) {
+    if !state.loaded && state.pending.is_none() && !crate::native::laboratory::blocked(world, root) {
         let command = model::Command::List {
             organ: state.organ.clone(),
             offset: state.offset,

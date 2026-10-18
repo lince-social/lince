@@ -1,4 +1,5 @@
 pub mod binary;
+pub mod assistant;
 pub mod communication;
 pub mod config;
 pub mod conversation;

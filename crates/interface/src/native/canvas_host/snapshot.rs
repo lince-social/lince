@@ -328,6 +328,7 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                 .iter()
                 .filter(|entity| {
                     world.get::<CanvasItem>(*entity).is_some()
+                        && !crate::native::laboratory::temporary_owner(world, *entity)
                         && super::authoring::owner(world, *entity) == *entity
                         && world.get::<WorkspaceMember>(*entity).is_none_or(|member| {
                             world.get::<Workspaces>(root).is_some_and(|spaces| {
@@ -361,9 +362,12 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
         .map(|selection| selection.0.as_slice())
         .unwrap_or_default();
     let camera = world.get::<CanvasView>(root).copied().unwrap_or_default();
+    let scope = crate::native::laboratory::scope(world)
+        .filter(|(owner, _, _, _)| *owner == root);
     let workspaces = spaces
         .entries
         .iter()
+        .filter(|space| scope.is_none_or(|(_, _, temporary, _)| space.id != temporary))
         .map(|space| {
             let view = if space.id == spaces.active {
                 world
@@ -454,7 +458,9 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
             .canvas_state
             .as_ref()
             .map_or(0, |state| state.snapshot.revision),
-        active_workspace: spaces.active,
+        active_workspace: scope.map_or(spaces.active, |(_, _, temporary, previous)| {
+            if spaces.active == temporary { previous } else { spaces.active }
+        }),
         workspaces,
         placements,
         next_offset: None,

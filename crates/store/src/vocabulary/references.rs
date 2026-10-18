@@ -3,6 +3,23 @@ use crate::StoreError;
 use nucleus::vocabulary::{DefinitionVersion, reference::MeaningReference};
 use sqlx::SqliteConnection;
 
+pub async fn current_meaning_reference_on(
+    connection: &mut SqliteConnection,
+    concept: &str,
+) -> Result<MeaningReference, StoreError> {
+    if !nucleus::valid_uid(concept, "c") {
+        return Err(invalid("Choose a canonical Concept identity"));
+    }
+    let (vocabulary, revision): (String, i64) = sqlx::query_as(
+        "SELECT s.lingua_uid,v.revision FROM concept_source s JOIN concept_definition_version v ON v.concept_uid=s.concept_uid WHERE s.concept_uid=? ORDER BY v.revision DESC LIMIT 1",
+    )
+    .bind(concept)
+    .fetch_optional(&mut *connection)
+    .await?
+    .ok_or_else(|| invalid("The Concept has no known versioned definition"))?;
+    meaning_reference_on(connection, &vocabulary, concept, revision).await
+}
+
 pub async fn conversion_reference_on(
     connection: &mut SqliteConnection,
     from_vocabulary: &str,

@@ -352,6 +352,10 @@ fn remapped_monitor_workspace_and_record_shortcuts_reach_the_host() {
             DesktopAction::MoveWorkspaceToOutput(Direction::Right),
         ),
         (Shortcut::WindowRecord, DesktopAction::InspectWindowRecord),
+        (Shortcut::Terminal, DesktopAction::OpenTerminal),
+        (Shortcut::Launcher, DesktopAction::OpenLauncher),
+        (Shortcut::Lock, DesktopAction::Lock),
+        (Shortcut::Logout, DesktopAction::Logout),
     ] {
         app.world_mut()
             .resource_mut::<Settings>()

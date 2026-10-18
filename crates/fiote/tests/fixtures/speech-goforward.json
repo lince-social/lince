@@ -1,0 +1,12 @@
+{
+  "file": "speech-goforward.wav",
+  "sha256": "97ec638609b9c7eeb616764b4e5713d7ed2d0a8e1a2f8246631d9074d47aaf11",
+  "repository": "https://github.com/cmusphinx/pocketsphinx",
+  "revision": "f20ff1b7a5db64c5e892a798479e20df86e79a35",
+  "source": "test/data/goforward.raw",
+  "reference": "test/unit/test_fsg/test_fsg.c",
+  "expected": "go forward ten meters",
+  "conversion": "Rust hound PCM16 mono 16000 Hz WAV header around the unchanged upstream raw samples",
+  "license": "LICENSE-PocketSphinx.txt",
+  "purpose": "Small human-voice segmentation fixture for offline unit tests; no speech-recognition model required"
+}

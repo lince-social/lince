@@ -1,0 +1,116 @@
+{
+  "model": "english-modern-nli",
+  "revision": "d421c4545a438fd006fb43f8b981c5d908faa1e1",
+  "thresholds": {
+    "admission": 0.9,
+    "routing": 0.85,
+    "margin": 0.15
+  },
+  "gate": {
+    "clear_count": 20,
+    "clear_required": 16,
+    "accepted_wrong_limit": 0
+  },
+  "cases": [
+    {
+      "request_id": "modern-route-01",
+      "expected": "r_00000000000000000000000001"
+    },
+    {
+      "request_id": "modern-route-02",
+      "expected": "r_00000000000000000000000001"
+    },
+    {
+      "request_id": "modern-route-03",
+      "expected": "r_00000000000000000000000001"
+    },
+    {
+      "request_id": "modern-route-04",
+      "expected": "r_00000000000000000000000001"
+    },
+    {
+      "request_id": "modern-route-05",
+      "expected": "r_00000000000000000000000001"
+    },
+    {
+      "request_id": "modern-route-06",
+      "expected": "r_00000000000000000000000001"
+    },
+    {
+      "request_id": "modern-route-07",
+      "expected": "r_00000000000000000000000002"
+    },
+    {
+      "request_id": "modern-route-08",
+      "expected": "r_00000000000000000000000002"
+    },
+    {
+      "request_id": "modern-route-09",
+      "expected": "r_00000000000000000000000002"
+    },
+    {
+      "request_id": "modern-route-10",
+      "expected": "r_00000000000000000000000002"
+    },
+    {
+      "request_id": "modern-route-11",
+      "expected": "r_00000000000000000000000002"
+    },
+    {
+      "request_id": "modern-route-12",
+      "expected": "r_00000000000000000000000002"
+    },
+    {
+      "request_id": "modern-route-13",
+      "expected": "r_00000000000000000000000003"
+    },
+    {
+      "request_id": "modern-route-14",
+      "expected": "r_00000000000000000000000003"
+    },
+    {
+      "request_id": "modern-route-15",
+      "expected": "r_00000000000000000000000003"
+    },
+    {
+      "request_id": "modern-route-16",
+      "expected": "r_00000000000000000000000003"
+    },
+    {
+      "request_id": "modern-route-17",
+      "expected": "r_00000000000000000000000003"
+    },
+    {
+      "request_id": "modern-route-18",
+      "expected": "r_00000000000000000000000003"
+    },
+    {
+      "request_id": "modern-route-19",
+      "expected": "r_00000000000000000000000004"
+    },
+    {
+      "request_id": "modern-route-20",
+      "expected": "r_00000000000000000000000004"
+    },
+    {
+      "request_id": "modern-route-ambiguous-1",
+      "expected": null
+    },
+    {
+      "request_id": "modern-route-ambiguous-2",
+      "expected": null
+    },
+    {
+      "request_id": "modern-route-ambiguous-3",
+      "expected": null
+    },
+    {
+      "request_id": "modern-route-ambiguous-4",
+      "expected": null
+    },
+    {
+      "request_id": "modern-route-ambiguous-5",
+      "expected": null
+    }
+  ]
+}

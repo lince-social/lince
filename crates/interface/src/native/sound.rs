@@ -15,6 +15,12 @@ use std::{
 };
 
 pub(crate) enum Command {
+    Speak {
+        owner: Entity,
+        clip: Arc<Clip>,
+        output: Option<String>,
+        cancelled: Arc<std::sync::atomic::AtomicBool>,
+    },
     Refresh,
     Record(Entity, String),
     Finish(Entity),
@@ -30,6 +36,7 @@ pub(crate) enum Command {
 }
 
 pub(crate) enum Event {
+    Spoken(Entity, Arc<std::sync::atomic::AtomicBool>, Result<(), String>),
     Library(Vec<String>),
     Status(Entity, String),
     Recording(Entity, bool),
@@ -50,6 +57,16 @@ pub(crate) struct StopPending;
 
 #[derive(Component)]
 pub(crate) struct StoppedPlayback;
+
+#[derive(Component)]
+pub(crate) struct SpokenPlayback(pub Result<(), String>, pub Arc<std::sync::atomic::AtomicBool>);
+
+#[derive(Component)]
+pub(crate) struct VoiceOutputActive;
+
+pub(crate) fn speaking(world: &mut World) -> bool {
+    world.query_filtered::<Entity, (With<VoiceOutputActive>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>().iter(world).next().is_some()
+}
 
 #[derive(Resource)]
 pub struct Audio {
@@ -102,7 +119,7 @@ impl Audio {
 }
 
 pub(crate) fn send(world: &World, command: Command) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return Err("Audio is disabled in the Laboratory".into());
     }
     let owner = match &command {
@@ -111,7 +128,8 @@ pub(crate) fn send(world: &World, command: Command) -> Result<(), String> {
         | Command::Cancel(owner)
         | Command::Stop(owner)
         | Command::Apply(owner, _, _)
-        | Command::Play { owner, .. } => Some(*owner),
+        | Command::Play { owner, .. }
+        | Command::Speak { owner, .. } => Some(*owner),
         Command::Refresh => None,
     };
     match owner {
@@ -124,6 +142,7 @@ pub(crate) fn send(world: &World, command: Command) -> Result<(), String> {
 }
 
 pub(crate) fn audio_for(world: &World, owner: Entity) -> Option<&Audio> {
+    if crate::native::laboratory::blocked(world, owner) { return None; }
     if let Some(source) = crate::native::practice_cells::source(world, owner) {
         return world
             .get_resource::<crate::native::practice_cells::PracticeCells>()?
@@ -134,7 +153,7 @@ pub(crate) fn audio_for(world: &World, owner: Entity) -> Option<&Audio> {
 }
 
 pub(crate) fn send_to(world: &World, owner: Entity, command: Command) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Audio is disabled in the Laboratory".into());
     }
     audio_for(world, owner)
@@ -218,6 +237,11 @@ fn receive(world: &mut World) {
                 crate::native::recorder_castle::recording(world, owner, recording)
             }
             Event::Saved(owner, path) => crate::native::recorder_castle::saved(world, owner, path),
+            Event::Spoken(owner, cancelled, result) => {
+                if world.get_entity(owner).is_ok() && !cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                    world.entity_mut(owner).insert(SpokenPlayback(result, cancelled));
+                }
+            }
             Event::Playback(owner, result) => {
                 if world.get_entity(owner).is_ok() {
                     world.entity_mut(owner).insert(PlaybackResult(result));
@@ -234,11 +258,12 @@ fn receive(world: &mut World) {
 
 fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(Event)) {
     let mut output: Option<device::Output> = None;
+    let mut speech: Option<(Entity, device::Output, std::time::Instant, Arc<std::sync::atomic::AtomicBool>)> = None;
     let mut capture: Option<(Entity, String, device::Capture)> = None;
     let mut cache: HashMap<String, Arc<Clip>> = HashMap::new();
     refresh(&library, notify);
     loop {
-        let command = if output.is_none() && capture.is_none() {
+        let command = if output.is_none() && capture.is_none() && speech.is_none() {
             match receiver.recv() {
                 Ok(command) => Some(command),
                 Err(_) => break,
@@ -268,8 +293,35 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
                 notify(Event::Failure(format!("Sound output stopped: {error}")));
             }
         }
+        if let Some((owner, device, deadline, cancelled)) = &speech {
+            let owner = *owner;
+            let cancelled = cancelled.clone();
+            let error = device.error.lock().unwrap().take().or_else(|| {
+                (std::time::Instant::now() >= *deadline).then(|| "The speaker stopped producing audio. Choose an output and retry.".into())
+            });
+            if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                speech = None;
+            } else if error.is_some() || !device.playing(owner) {
+                speech = None;
+                notify(Event::Spoken(owner, cancelled, error.map_or(Ok(()), Err)));
+            }
+        }
         let Some(command) = command else { continue };
         let (owner, result) = match command {
+            Command::Speak { owner, clip, output: selected, cancelled } => {
+                if cancelled.load(std::sync::atomic::Ordering::Acquire) { continue; }
+                let result: Result<(), String> = (|| {
+                    if speech.is_some() { return Err("Another spoken reply is playing.".into()); }
+                    let device = device::Output::open_on(selected.as_deref())?;
+                    if cancelled.load(std::sync::atomic::Ordering::Acquire) { return Ok(()); }
+                    let duration = Duration::from_secs_f64(clip.samples.len() as f64 / f64::from(clip.rate)) + Duration::from_secs(5);
+                    device.speak(owner, clip, cancelled.clone());
+                    speech = Some((owner, device, std::time::Instant::now() + duration, cancelled.clone()));
+                    Ok(())
+                })();
+                if let Err(error) = &result { notify(Event::Spoken(owner, cancelled, Err(error.clone()))); }
+                (owner, result)
+            }
             Command::Refresh => {
                 cache.clear();
                 refresh(&library, notify);
@@ -297,6 +349,9 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
                 continue;
             }
             Command::Cancel(owner) => {
+                if speech.as_ref().is_some_and(|speech| speech.0 == owner) {
+                    speech = None;
+                }
                 if capture.as_ref().is_some_and(|c| c.0 == owner) {
                     capture = None;
                     notify(Event::Recording(owner, false));
@@ -307,6 +362,9 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
                 continue;
             }
             Command::Stop(owner) => {
+                if speech.as_ref().is_some_and(|speech| speech.0 == owner) {
+                    speech = None;
+                }
                 notify(Event::Status(owner, "Playback stopped".into()));
                 if let Some(output) = &output {
                     output.stop(owner);

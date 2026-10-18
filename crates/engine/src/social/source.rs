@@ -106,6 +106,9 @@ impl Engine {
         source: &str,
         actor: Option<&str>,
     ) -> Result<(String, PostDraft), EngineError> {
+        if let Some(draft) = self.social_transport_draft(source, actor).await? {
+            return Ok((source.into(), draft));
+        }
         let promise = store::misc::get_promise(&self.store.pool, source).await?;
         if promise
             .as_ref()
@@ -202,6 +205,7 @@ impl Engine {
                     candidate.direction = projection.direction;
                     candidate.quantity = projection.quantity;
                     candidate.unit = projection.unit;
+                    candidate.transport = projection.transport;
                     (
                         json!(fingerprint),
                         serde_json::to_value(candidate)?,

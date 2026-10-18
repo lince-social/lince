@@ -1,4 +1,8 @@
+mod diagnostics;
 mod feed;
+mod input;
+mod locating;
+mod paging;
 mod persistence;
 mod render;
 mod settings;
@@ -69,6 +73,21 @@ pub const CREDITS: &[crate::native::credits::Attribution] = &[
         license: crate::native::credits::LATO_LICENSE,
     },
     crate::native::credits::DEJAVU,
+    crate::native::credits::Attribution {
+        name: "wgpu",
+        author: "gfx-rs developers",
+        license: include_str!("../../../map/licenses/wgpu-MIT.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "Linux location portal · zbus",
+        author: "zbus contributors",
+        license: include_str!("../../licenses/native/zbus-MIT.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "Asynchronous streams",
+        author: "futures-rs contributors",
+        license: include_str!("../../licenses/native/futures-MIT.txt"),
+    },
 ];
 
 #[derive(Component)]
@@ -78,6 +97,18 @@ pub struct MapSand {
     pub person: String,
     pub area: Option<String>,
     pub authority_node_id: Option<String>,
+    invitation: Option<nucleus::location::Invitation>,
+    live_offset: usize,
+    record_list: Entity,
+    show_saved: bool,
+    show_live: bool,
+    show_public: bool,
+    public_markers: Vec<feed::Marker>,
+    public_deadline: Option<std::time::Instant>,
+    device_centered: bool,
+    keyboard_anchor: Option<Coordinate>,
+    diagnostics: Option<Entity>,
+    pending_input: Option<std::time::Instant>,
     source_picker: Option<Entity>,
     auto_center: bool,
     viewport: Entity,
@@ -152,9 +183,15 @@ impl Plugin for MapPlugin {
                 Update,
                 (
                     settings::initialize,
+                    paging::receive,
+                    settings::poll,
+                    paging::maintain,
+                    locating::maintain,
+                    input::maintain,
                     feed::receive,
                     feed::maintain,
                     ui::update,
+                    diagnostics::maintain,
                 )
                     .chain(),
             );
@@ -222,11 +259,68 @@ pub fn observe(
         world,
         parent,
         Camera::default(),
-        vec![invitation.record_uid],
+        vec![invitation.record_uid.clone()],
         person,
     );
-    world.get_mut::<MapSand>(owner).unwrap().authority_node_id = Some(invitation.authority_node_id);
+    world.get_mut::<MapSand>(owner).unwrap().authority_node_id =
+        Some(invitation.authority_node_id.clone());
+    if invitation.grant.is_some() {
+        world.get_mut::<MapSand>(owner).unwrap().invitation = Some(invitation);
+    }
     Ok(owner)
+}
+
+#[derive(Clone)]
+pub(crate) struct PublicTransport(pub nucleus::social::transport::Announcement, pub i64);
+
+impl crate::native::actions::Action for PublicTransport {
+    fn apply(&self, world: &mut World, target: Entity) {
+        if self.0.validate().is_err() {
+            return;
+        }
+        let remaining = self
+            .1
+            .saturating_sub(chrono::Utc::now().timestamp())
+            .clamp(0, nucleus::social::MAX_LIFETIME);
+        if remaining == 0 {
+            return;
+        }
+        let Some((root, workspace)) = ui::scope(world, target) else {
+            return;
+        };
+        let owner = spawn(
+            world,
+            root,
+            workspace,
+            DVec2::ZERO,
+            Camera::default(),
+            Vec::new(),
+            String::new(),
+        );
+        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+        for (label, area) in [
+            ("Public origin area", &self.0.origin),
+            ("Public destination area", &self.0.destination),
+        ] {
+            sand.public_markers.push(feed::Marker {
+                record: label.into(),
+                coordinate: Coordinate {
+                    latitude: f64::from(area.latitude_e5) / 100_000.0,
+                    longitude: f64::from(area.longitude_e5) / 100_000.0,
+                },
+                live: false,
+                view: None,
+                observed: engine::location::clock::Instant::now(),
+                radius_metres: Some(area.radius_metres),
+            });
+        }
+        sand.camera.center = sand.public_markers[0].coordinate;
+        sand.camera.zoom = 10.0;
+        sand.public_deadline =
+            Some(std::time::Instant::now() + std::time::Duration::from_secs(remaining as u64));
+        sand.notice =
+            "Public approximate route. Exact addresses and live sharing are separate.".into();
+    }
 }
 
 #[derive(Clone)]
@@ -284,6 +378,20 @@ pub fn group_controls(
 
 #[derive(Clone)]
 enum Command {
+    CopyDiagnostics,
+    ResetDiagnostics,
+    Diagnostics,
+    FocusRecord(String),
+    RecordListPage(isize),
+    Pan([f64; 2]),
+    PickCenter,
+    ClearSelection,
+    PublicLayer,
+    Locate,
+    SavedLayer,
+    LiveLayer,
+    More,
+    OpenRecord(String),
     Create,
     Zoom(f64),
     Select,

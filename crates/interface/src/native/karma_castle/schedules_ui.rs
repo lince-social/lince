@@ -598,7 +598,7 @@ pub(super) fn maintain(world: &mut World) {
         .collect();
     for owner in owners {
         if crate::native::practice_cells::sender(world, owner).is_none()
-            || crate::native::laboratory::active(world)
+            || crate::native::laboratory::blocked(world, owner)
         {
             continue;
         }

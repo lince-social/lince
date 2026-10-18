@@ -96,6 +96,7 @@ fn send(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<u
     for request in requests {
         if let Err(error) = crate::native::sand_panel::send(
             world,
+            request.owner,
             cell::ClientMessage::Act {
                 id: request.id.clone(),
                 action: engine::actions::Action::Visibility {

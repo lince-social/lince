@@ -1,0 +1,16 @@
+{
+   "add-detail" : "assistant_request",
+   "answer-no" : "assistant_request",
+   "answer-yes" : "assistant_request",
+   "background" : "ordinary_conversation",
+   "correction" : "assistant_request",
+   "dismissal" : "ordinary_conversation",
+   "ending" : "ordinary_conversation",
+   "further-question" : "assistant_request",
+   "human-same-topic" : "ordinary_conversation",
+   "injection-quotation" : "ordinary_conversation",
+   "other-human" : "ordinary_conversation",
+   "quoted-media" : "ordinary_conversation",
+   "thanks-and-more" : "assistant_request",
+   "unclear" : "unclear"
+}

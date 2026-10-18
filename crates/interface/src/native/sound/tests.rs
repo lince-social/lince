@@ -4,6 +4,27 @@ use super::{
 };
 
 #[test]
+fn cancelled_queued_speech_never_opens_output_or_reports_playback() {
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc};
+    let root = tempfile::tempdir().unwrap();
+    let library = Library::open(root.path()).unwrap();
+    let (sender, receiver) = mpsc::sync_channel(1);
+    let cancelled = Arc::new(AtomicBool::new(false));
+    sender.try_send(super::Command::Speak {
+        owner: bevy::prelude::Entity::PLACEHOLDER,
+        clip: Arc::new(Clip { samples: vec![0.0; 240], rate: 24_000 }),
+        output: Some("Unavailable output must never be opened".into()),
+        cancelled: cancelled.clone(),
+    }).unwrap();
+    assert!(matches!(sender.try_send(super::Command::Stop(bevy::prelude::Entity::PLACEHOLDER)), Err(mpsc::TrySendError::Full(_))));
+    cancelled.store(true, Ordering::Release);
+    drop(sender);
+    let events = std::cell::RefCell::new(Vec::new());
+    super::worker(library, receiver, &|event| events.borrow_mut().push(event));
+    assert!(events.borrow().iter().all(|event| !matches!(event, super::Event::Spoken(..) | super::Event::Failure(_) | super::Event::Status(..))));
+}
+
+#[test]
 fn sound_effects_are_bounded_and_bypass_preserves_original() {
     let samples: Vec<_> = (0..4800).map(|i| (i as f32 * 0.07).sin() * 0.3).collect();
     assert_eq!(Effects::default().process(&samples, 48000), samples);

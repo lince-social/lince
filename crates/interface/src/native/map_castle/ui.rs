@@ -21,13 +21,32 @@ pub(super) fn mount(
         ("−", Command::Zoom(-1.0)),
         ("+", Command::Zoom(1.0)),
         ("World", Command::Center),
+        ("Locate me", Command::Locate),
         ("Go to Record", Command::RecordCenter),
         ("Protein source", Command::SourcePicker),
         ("Shared location", Command::SharedPicker),
         ("Draw area", Command::Select),
         ("Retry", Command::Retry),
+        ("Diagnostics", Command::Diagnostics),
+        ("Reset measurements", Command::ResetDiagnostics),
+        ("Copy measurement trace", Command::CopyDiagnostics),
+        ("Next locations", Command::More),
+        ("Saved locations", Command::SavedLayer),
+        ("Live locations", Command::LiveLayer),
+        ("Public areas", Command::PublicLayer),
     ] {
-        crate::native::sand_panel::button(world, controls, owner, caption, command);
+        let layer = match &command {
+            Command::SavedLayer => Some(0),
+            Command::LiveLayer => Some(1),
+            Command::PublicLayer => Some(2),
+            _ => None,
+        };
+        let button = crate::native::sand_panel::button(world, controls, owner, caption, command);
+        if let Some(layer) = layer {
+            world
+                .entity_mut(button)
+                .insert(input::LayerButton { owner, layer });
+        }
     }
     settings_button(world, controls, owner);
     let status = crate::native::edit_mode::label(world, owner, "World overview · offline", 13.0);
@@ -66,6 +85,7 @@ pub(super) fn mount(
         "Map. Drag to pan, use plus and minus to zoom, or Draw area to select an offline download.",
         false,
     );
+    input::install(world, viewport);
     let overlay = world
         .spawn((
             Node {
@@ -91,7 +111,7 @@ pub(super) fn mount(
     let records: Vec<_> = records
         .into_iter()
         .filter(|record| nucleus::valid_uid(record, "r"))
-        .take(32)
+        .take(10_000)
         .collect();
     crate::native::sand_panel::button(
         world,
@@ -108,6 +128,14 @@ pub(super) fn mount(
     );
     crate::native::sand_panel::credits(world, controls, owner, CREDITS);
     let auto_center = !records.is_empty();
+    let record_list = crate::native::sand_panel::column(world, owner);
+    world.entity_mut(record_list).insert(Node {
+        max_height: px(180),
+        overflow: Overflow::scroll_y(),
+        flex_shrink: 0.0,
+        ..default()
+    });
+    crate::native::scroll_sand::attach(world, record_list);
     world.entity_mut(owner).insert(MapSand {
         camera: if camera.valid() {
             camera
@@ -135,6 +163,18 @@ pub(super) fn mount(
         drag_start: None,
         picked: None,
         markers: Vec::new(),
+        invitation: None,
+        live_offset: 0,
+        record_list,
+        show_saved: true,
+        show_live: true,
+        show_public: true,
+        public_markers: Vec::new(),
+        public_deadline: None,
+        device_centered: false,
+        keyboard_anchor: None,
+        diagnostics: None,
+        pending_input: None,
         marker_stamp: String::new(),
         job: None,
         notice: String::new(),
@@ -166,6 +206,75 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
 }
 
 pub(super) fn command(world: &mut World, target: Entity, command: Command) {
+    if let Some(mut sand) = world.get_mut::<MapSand>(target) {
+        sand.pending_input = Some(std::time::Instant::now());
+    }
+    if matches!(command, Command::Diagnostics) {
+        diagnostics::toggle(world, target);
+        return;
+    }
+    if matches!(command, Command::ResetDiagnostics) {
+        diagnostics::reset(world);
+        return;
+    }
+    if matches!(command, Command::CopyDiagnostics) {
+        let document =
+            serde_json::to_string_pretty(&diagnostics::snapshot(world)).unwrap_or_default();
+        let result = world
+            .get_resource_mut::<bevy::clipboard::Clipboard>()
+            .ok_or_else(|| "Clipboard is unavailable".to_owned())
+            .and_then(|mut clipboard| {
+                clipboard
+                    .set_text(&document)
+                    .map_err(|error| error.to_string())
+            });
+        world.get_mut::<MapSand>(target).unwrap().notice =
+            result.map_or_else(|error| error, |()| "Measurement trace copied".into());
+        return;
+    }
+    if let Command::RecordListPage(delta) = command {
+        paging::list_page(world, target, delta);
+        return;
+    }
+    if let Command::FocusRecord(uid) = &command {
+        let viewport = {
+            let mut sand = world.get_mut::<MapSand>(target).unwrap();
+            if let Some(point) = sand
+                .markers
+                .iter()
+                .find(|marker| marker.record == *uid)
+                .map(|marker| marker.coordinate)
+            {
+                sand.camera.center = point;
+                sand.auto_center = false;
+            }
+            sand.viewport
+        };
+        if let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>() {
+            focus.set(viewport, bevy::input_focus::FocusCause::Navigated);
+        }
+        return;
+    }
+    if matches!(command, Command::Locate) {
+        locating::start(world, target);
+        return;
+    }
+    if matches!(command, Command::More) {
+        paging::more(world, target);
+        return;
+    }
+    if let Command::OpenRecord(uid) = &command {
+        crate::native::actions::Action::apply(
+            &crate::native::full_record::Open(crate::native::protein_area::RecordBinding {
+                area: target,
+                uid: uid.clone(),
+                source: crate::native::protein_area::Source::Local,
+            }),
+            world,
+            target,
+        );
+        return;
+    }
     if matches!(command, Command::Create) {
         let workspace = world
             .get::<crate::native::workspace::Workspaces>(target)
@@ -212,8 +321,17 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
                 let mut sand = world.get_mut::<MapSand>(target).unwrap();
                 sand.source_picker = None;
                 sand.area = None;
-                sand.records = vec![invitation.record_uid];
-                sand.authority_node_id = Some(invitation.authority_node_id);
+                sand.records = vec![invitation.record_uid.clone()];
+                sand.authority_node_id = Some(invitation.authority_node_id.clone());
+                sand.invitation = invitation.grant.is_some().then_some(invitation);
+                if sand.person.is_empty()
+                    && let Some(grant) = sand
+                        .invitation
+                        .as_ref()
+                        .and_then(|invitation| invitation.grant.as_ref())
+                {
+                    sand.person = grant.recipient.clone();
+                }
                 sand.camera = Camera::default();
                 sand.auto_center = true;
                 sand.notice = "Viewing permitted saved and live locations".into();
@@ -234,6 +352,30 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
         return;
     };
     match command {
+        Command::Pan(delta) => {
+            sand.camera.pan(delta);
+            sand.auto_center = false;
+        }
+        Command::PickCenter => {
+            if sand.select_area {
+                if let Some(anchor) = sand.keyboard_anchor.take() {
+                    sand.selection = Some(Bounds::between(anchor, sand.camera.center));
+                } else {
+                    sand.keyboard_anchor = Some(sand.camera.center);
+                    sand.notice =
+                        "First area corner selected. Pan to the second corner and press Enter."
+                            .into();
+                }
+            } else {
+                sand.picked = Some(sand.camera.center);
+            }
+        }
+        Command::ClearSelection => {
+            sand.keyboard_anchor = None;
+            sand.selection = None;
+            sand.picked = None;
+            sand.select_area = false;
+        }
         Command::Zoom(amount) => {
             let size = sand.size.map(f64::from);
             sand.camera
@@ -270,9 +412,22 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
         Command::Source(area) => {
             sand.area = area;
             sand.authority_node_id = None;
+            sand.invitation = None;
             sand.records.clear();
             sand.markers.clear();
             sand.auto_center = true;
+        }
+        Command::SavedLayer => {
+            sand.show_saved = !sand.show_saved;
+            sand.marker_stamp.clear();
+        }
+        Command::LiveLayer => {
+            sand.show_live = !sand.show_live;
+            sand.marker_stamp.clear();
+        }
+        Command::PublicLayer => {
+            sand.show_public = !sand.show_public;
+            sand.marker_stamp.clear();
         }
         Command::Select => {
             sand.select_area = !sand.select_area;
@@ -368,6 +523,17 @@ pub(super) fn update(world: &mut World) {
     for owner in owners {
         if !visible(world, owner) {
             world.resource_mut::<render::Scenes>().0.remove(&owner);
+            let viewport = {
+                let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+                sand.scene = None;
+                sand.job = None;
+                sand.rendered_camera = None;
+                sand.size = [0, 0];
+                sand.viewport
+            };
+            if let Some(mut image) = world.get_mut::<ImageNode>(viewport) {
+                image.image = Handle::default();
+            }
             continue;
         }
         source_records(world, owner);
@@ -463,18 +629,41 @@ pub(super) fn update(world: &mut World) {
                     .unwrap_or_else(|error| error.into_inner())
                     .load();
             }
-            world
-                .resource_mut::<render::Scenes>()
-                .0
-                .insert(owner, render::Target { scene, image, size });
+            let input_sent = world.get::<MapSand>(owner).unwrap().pending_input;
+            let on_render = Some(diagnostics::callback(world, owner));
+            world.resource_mut::<render::Scenes>().0.insert(
+                owner,
+                render::Target {
+                    scene,
+                    image,
+                    size,
+                    input_sent,
+                    on_render,
+                },
+            );
         }
         {
-            let now = chrono::Utc::now().timestamp_millis();
             let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+            if sand
+                .public_deadline
+                .is_some_and(|deadline| deadline <= std::time::Instant::now())
+            {
+                sand.public_markers.clear();
+                sand.public_deadline = None;
+            }
             sand.markers.retain(|marker| {
                 !marker.live
-                    || (marker.observed.elapsed().as_secs() < 60
-                        && marker.expires.is_none_or(|expires| expires > now))
+                    || marker.view.as_ref().is_some_and(|view| {
+                        let mut view = view.clone();
+                        view.elapse(
+                            marker
+                                .observed
+                                .elapsed()
+                                .as_millis()
+                                .min(u128::from(u64::MAX)) as u64,
+                        );
+                        view.fix.is_some()
+                    })
             });
             if sand.auto_center
                 && let Some(marker) = sand.markers.first()
@@ -600,33 +789,8 @@ fn progress_caption(progress: &Progress, frame: usize) -> String {
 }
 
 pub(super) fn palette(world: &World, owner: Entity) -> Palette {
-    let resolve = |token| {
-        let linear = crate::native::token_style::resolve(world, owner, token)
-            .0
-            .color()
-            .to_linear();
-        [linear.red, linear.green, linear.blue, linear.alpha]
-            .map(|value| (value * 255.0).round() as u8)
-    };
-    let mix = |a: [u8; 4], b: [u8; 4], amount: f64| {
-        std::array::from_fn(|i| {
-            if i == 3 {
-                255
-            } else {
-                (f64::from(a[i]) * (1.0 - amount) + f64::from(b[i]) * amount).round() as u8
-            }
-        })
-    };
-    let land = resolve(crate::native::tokens::Token::Surface);
-    let ink = resolve(crate::native::tokens::Token::Ink);
-    let accent = resolve(crate::native::tokens::Token::Accent);
-    Palette {
-        land,
-        water: mix(land, accent, 0.35),
-        roads: mix(land, ink, 0.7),
-        nature: mix(land, accent, 0.15),
-        ink,
-    }
+    let color = |token| crate::native::token_style::resolve(world, owner, token).0.color();
+    crate::map_view::palette(color(crate::native::tokens::Token::Surface), color(crate::native::tokens::Token::Ink), color(crate::native::tokens::Token::Accent))
 }
 
 fn overlays(world: &mut World, owner: Entity) {
@@ -639,6 +803,12 @@ fn overlays(world: &mut World, owner: Entity) {
         sand.picked,
         sand.markers
             .iter()
+            .filter(|marker| if marker.live {
+                sand.show_live
+            } else {
+                sand.show_saved
+            })
+            .chain(sand.public_markers.iter().filter(|_| sand.show_public))
             .map(|marker| (
                 &marker.record,
                 marker.coordinate,
@@ -657,7 +827,18 @@ fn overlays(world: &mut World, owner: Entity) {
         sand.size.map(f64::from),
         sand.picked,
         sand.selection,
-        sand.markers.clone(),
+        sand.markers
+            .iter()
+            .filter(|marker| {
+                if marker.live {
+                    sand.show_live
+                } else {
+                    sand.show_saved
+                }
+            })
+            .chain(sand.public_markers.iter().filter(|_| sand.show_public))
+            .cloned()
+            .collect::<Vec<_>>(),
     );
     crate::native::sand_panel::clear(world, overlay);
     if let Some(bounds) = selection {
@@ -701,7 +882,7 @@ fn overlays(world: &mut World, owner: Entity) {
                         ))
                 ),
                 marker.live,
-                Some(marker.record.clone()),
+                nucleus::valid_uid(&marker.record, "r").then(|| marker.record.clone()),
                 marker.radius_metres,
             )
         })
@@ -901,7 +1082,7 @@ fn source_records(world: &mut World, owner: Entity) {
                         .filter(|uid| nucleus::valid_uid(uid, "r"))
                         .map(str::to_string)
                 })
-                .take(32)
+                .take(10_000)
                 .collect()
         });
     if world.get::<MapSand>(owner).unwrap().records != records {
@@ -911,7 +1092,7 @@ fn source_records(world: &mut World, owner: Entity) {
     }
 }
 
-fn scope(world: &World, mut entity: Entity) -> Option<(Entity, u64)> {
+pub(super) fn scope(world: &World, mut entity: Entity) -> Option<(Entity, u64)> {
     let mut workspace = None;
     loop {
         workspace = workspace.or_else(|| {
@@ -950,6 +1131,7 @@ fn scroll(mut event: On<Pointer<Scroll>>, mut commands: Commands) {
             return;
         };
         let size = sand.size.map(f64::from);
+        sand.pending_input = Some(std::time::Instant::now());
         sand.camera.zoom_at(amount.clamp(-3.0, 3.0), point, size);
     });
     event.propagate(false);
@@ -979,6 +1161,7 @@ fn drag(mut event: On<Pointer<Drag>>, mut commands: Commands) {
         let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
             return;
         };
+        sand.pending_input = Some(std::time::Instant::now());
         if sand.select_area {
             if let (Some(start), Some(point)) = (sand.drag_start, point) {
                 sand.selection = Some(sand.camera.area(start, point, sand.size.map(f64::from)));
@@ -1007,6 +1190,7 @@ fn click(mut event: On<Pointer<Click>>, mut commands: Commands) {
             return;
         };
         if !sand.select_area {
+            sand.pending_input = Some(std::time::Instant::now());
             sand.picked = Some(sand.camera.coordinate(point, sand.size.map(f64::from)));
         }
     });

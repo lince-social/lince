@@ -20,6 +20,7 @@ async fn speech_controls_are_local_and_work_without_a_fiote() {
                 ready: false,
                 detail: "fixture".into(),
                 job: None,
+                ..Default::default()
             })
         }
     }

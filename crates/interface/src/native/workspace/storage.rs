@@ -315,6 +315,7 @@ pub(crate) mod tests {
         let mut workspaces = super::super::Workspaces::default().entries;
         workspaces[0].name = name.into();
         Document {
+            physical_workspaces: Vec::new(),
             shader_editors: Vec::new(),
             shader_settings: Default::default(),
             terrain_effects: Vec::new(),
@@ -353,6 +354,35 @@ pub(crate) mod tests {
             sands: Vec::new(),
             records: Vec::new(),
         }
+    }
+
+    #[test]
+    fn physical_surface_configuration_survives_storage_and_recovers_invalid_entries() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let mut saved = document("Physical workstation");
+        let configuration = crate::native::physical_workspace::replay_configuration(1);
+        saved.physical_workspaces.push(configuration.clone());
+        let mut storage = Storage::new(path.clone(), None, Default::default());
+        storage.save(&saved, 1_000_000).unwrap();
+        assert_eq!(
+            load(&path).unwrap().unwrap().physical_workspaces,
+            vec![configuration.clone()]
+        );
+        let mut damaged = serde_json::to_value(&saved).unwrap();
+        let mut invalid = serde_json::to_value(&configuration).unwrap();
+        invalid["configuration"]["surfaces"][0]["size_meters"][0] = 0.into();
+        damaged["physical_workspaces"]
+            .as_array_mut()
+            .unwrap()
+            .push(invalid);
+        let snapshot = path
+            .with_extension("snapshots")
+            .join("00000000000002000000.json");
+        std::fs::write(snapshot, serde_json::to_vec(&damaged).unwrap()).unwrap();
+        let recovered = load(&path).unwrap().unwrap();
+        assert_eq!(recovered.physical_workspaces, vec![configuration]);
+        assert_eq!(recovered.workspaces[0].name, "Physical workstation");
     }
 
     #[cfg_attr(test, test)]

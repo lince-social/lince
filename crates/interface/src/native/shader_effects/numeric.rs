@@ -137,7 +137,7 @@ pub(super) fn update(world: &mut World) {
         .query::<(Entity, &shader::EffectPreview, &Context)>()
         .iter(world)
         .filter_map(|(entity, preview, context)| {
-            if preview.disabled || disabled(world) {
+            if preview.disabled || disabled(world) || crate::native::laboratory::blocked(world, entity) {
                 return None;
             }
             let effect = shader::working(world, entity)?;
@@ -265,7 +265,7 @@ pub(super) fn update(world: &mut World) {
         if !retiring
             && !batch.sent
             && batch.retry <= Instant::now()
-            && !crate::native::laboratory::active(world)
+            && crate::native::laboratory::normal(world)
             && let Some(sender) = sender
         {
             let records: BTreeSet<_> = batch

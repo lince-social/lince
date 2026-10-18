@@ -328,7 +328,7 @@ pub(super) fn preview(world: &mut World, root: Entity) {
         .insert(root, session);
 }
 
-fn text_sand(
+pub(super) fn text_sand(
     world: &mut World,
     root: Entity,
     workspace: u64,
@@ -361,9 +361,7 @@ fn accept(world: &mut World, root: Entity, control: Control) {
         return;
     };
     if session.hovering
-        || world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .is_none_or(|spaces| spaces.active != session.workspace)
+        || !workspace_available(world, root, session.workspace)
     {
         return;
     }

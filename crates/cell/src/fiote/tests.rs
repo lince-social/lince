@@ -4,6 +4,106 @@ use serde_json::json;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
 mod working_directory;
+mod intake;
+mod handoff;
+mod entry;
+mod live_voice;
+
+#[tokio::test]
+async fn physical_workspace_requests_use_existing_fiote_conversations_and_exact_replies() {
+    let (host, script, _root, _record, thread) = fixture(false).await;
+    let turn = host
+        .start_physical_request("physical-test", &thread, "Explain this task")
+        .await
+        .unwrap();
+    let answer = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        loop {
+            if let Some(answer) = host.physical_reply(&turn).await.unwrap() {
+                return answer;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(answer, "Hello!");
+    assert_eq!(turn.request(), "physical-test");
+    assert_eq!(turn.thread(), thread);
+    assert!(!script.observed.lock().unwrap().is_empty());
+    assert!(
+        host.start_physical_request("invalid/id", &thread, "Hello")
+            .await
+            .is_err()
+    );
+    use base64::{Engine as _, prelude::BASE64_STANDARD};
+    let photo = nucleus::message::MessagePart::Attachment {
+        name: "Requested camera frame.png".into(),
+        mime_type: "image/png".into(),
+        data: BASE64_STANDARD.encode(include_bytes!(
+            "../../../interface/tests/fixtures/fiote/photo.png"
+        )),
+    };
+    let image_turn = host
+        .start_physical_request_with_content(
+            "physical-image",
+            &thread,
+            "Explain this explicitly attached frame",
+            std::slice::from_ref(&photo),
+        )
+        .await
+        .unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        while host.physical_reply(&image_turn).await.unwrap().is_none() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert!(script.observed.lock().unwrap().iter().any(|(_, messages)| messages.iter().any(|message| matches!(message, Message::RichUser { content, .. } if content.contains(&photo)))));
+}
+
+#[tokio::test]
+async fn physical_workspace_cancellation_keeps_the_other_fiote_thread_running() {
+    let (host, _, _root, record, thread) = fixture(true).await;
+    let second = host
+        .engine
+        .act(
+            Action::CreateThread {
+                target: record.clone(),
+                head: "Second surface".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let first = host
+        .start_physical_request("first", &thread, "First task")
+        .await
+        .unwrap();
+    let second = host
+        .start_physical_request("second", &second, "Second task")
+        .await
+        .unwrap();
+    assert!(host.physical_reply(&first).await.unwrap().is_none());
+    assert!(host.physical_reply(&second).await.unwrap().is_none());
+    assert!(!host.physical_waiting(&first).await.unwrap());
+    store::message_content::save(&host.engine.store.pool, first.reply(), &[nucleus::message::MessagePart::Question { question: nucleus::question::Question {
+        prompt: "Choose the physical task".into(), responder: record, schema: json!({"type":"object","properties":{"choice":{"type":"string"}},"required":["choice"]}), state: nucleus::question::State::Pending, answers: None, expires_ms: None,
+    }}]).await.unwrap();
+    assert!(host.physical_waiting(&first).await.unwrap());
+    host.stop_physical_request(&first).await.unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        while host.physical_reply(&first).await.is_ok() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert!(host.physical_reply(&second).await.unwrap().is_none());
+    host.stop_physical_request(&second).await.unwrap();
+}
 
 #[tokio::test]
 async fn native_refresh_guards_serialize_separate_connections_and_release_on_drop() {
@@ -310,7 +410,7 @@ async fn failed_agent_check_reports_status_without_saving_or_sending_messages() 
 
 #[tokio::test]
 async fn cancelling_agent_login_ignores_stale_results_and_allows_retry() {
-    let (host, _, _, record, _) = fixture(false).await;
+    let (host, _, _root, record, _) = fixture(false).await;
     host.agents
         .info
         .lock()
@@ -2518,7 +2618,8 @@ async fn inherited_instructions_are_pinned_and_explicitly_refreshed() {
     let parent = host.behavior(&record).await.unwrap().prompt_parent.unwrap();
     let sources = host.prompt_sources(&record).await.unwrap();
     assert_eq!(sources.len(), 2);
-    assert_eq!(sources[0].body, fiote::prompt::DEFAULT);
+    assert!(sources[0].body.contains(fiote::prompt::DEFAULT));
+    assert!(sources[0].body.contains("lince_delegate"));
     assert_eq!(sources[1].body, "Be useful. This is my prompt.");
     let pinned = host.session_instructions(&record, &thread).await.unwrap();
     host.engine
@@ -3171,32 +3272,32 @@ async fn six_valid_media_files_are_retained_in_ordinary_and_fiote_conversations(
         (
             "note.txt",
             "text/plain",
-            include_bytes!("../../../sandbox/tests/fixtures/fiote/note.txt"),
+            include_bytes!("../../../interface/tests/fixtures/fiote/note.txt"),
         ),
         (
             "table.csv",
             "text/csv",
-            include_bytes!("../../../sandbox/tests/fixtures/fiote/table.csv"),
+            include_bytes!("../../../interface/tests/fixtures/fiote/table.csv"),
         ),
         (
             "document.pdf",
             "application/pdf",
-            include_bytes!("../../../sandbox/tests/fixtures/fiote/document.pdf"),
+            include_bytes!("../../../interface/tests/fixtures/fiote/document.pdf"),
         ),
         (
             "photo.png",
             "image/png",
-            include_bytes!("../../../sandbox/tests/fixtures/fiote/photo.png"),
+            include_bytes!("../../../interface/tests/fixtures/fiote/photo.png"),
         ),
         (
             "audio.wav",
             "audio/wav",
-            include_bytes!("../../../sandbox/tests/fixtures/fiote/audio.wav"),
+            include_bytes!("../../../interface/tests/fixtures/fiote/audio.wav"),
         ),
         (
             "video.mp4",
             "video/mp4",
-            include_bytes!("../../../sandbox/tests/fixtures/fiote/video.mp4"),
+            include_bytes!("../../../interface/tests/fixtures/fiote/video.mp4"),
         ),
     ];
     for (name, mime_type, bytes) in files {

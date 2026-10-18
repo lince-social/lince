@@ -1,0 +1,272 @@
+[
+  {
+    "request_id": "modern-positive-01",
+    "generation": 1,
+    "text": "Assistant, rename the project notes file to meeting-notes.txt.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-02",
+    "generation": 1,
+    "text": "Assistant, explain why my database query returns duplicate rows.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-03",
+    "generation": 1,
+    "text": "Assistant, add a follow-up appointment to my calendar next Tuesday.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-04",
+    "generation": 1,
+    "text": "Assistant, show the unfinished items on my shopping list.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-05",
+    "generation": 1,
+    "text": "Assistant, summarize the spreadsheet that I just attached.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-06",
+    "generation": 1,
+    "text": "Assistant, help me find a calmer evening routine.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-07",
+    "generation": 1,
+    "text": "Assistant, open a new workspace for my research notes.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-08",
+    "generation": 1,
+    "text": "Assistant, move the calendar component to the left side of this canvas.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-09",
+    "generation": 1,
+    "text": "Assistant, remind me to review this document after lunch.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-10",
+    "generation": 1,
+    "text": "Assistant, find the mistake in this Rust function.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-11",
+    "generation": 1,
+    "text": "Assistant, tell me what appointments I have on Friday.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-12",
+    "generation": 1,
+    "text": "Assistant, make a checklist for preparing my presentation.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-13",
+    "generation": 1,
+    "text": "Fiote, please organize the photographs in my downloads directory.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-14",
+    "generation": 1,
+    "text": "Fiote, explain this error message in plain English.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-15",
+    "generation": 1,
+    "text": "Fiote, put a timer on my canvas.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-16",
+    "generation": 1,
+    "text": "Fiote, help me decide which of these tasks to do first.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-17",
+    "generation": 1,
+    "text": "Fiote, search my notes for the invoice number.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-18",
+    "generation": 1,
+    "text": "Fiote, create a fact saying that I prefer afternoon meetings.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-19",
+    "generation": 1,
+    "text": "Fiote, answer my question without changing any files.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-20",
+    "generation": 1,
+    "text": "Fiote, help me plan a ten-minute stretching break.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-15",
+    "generation": 1,
+    "text": "Waiter, may we have the bill?",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-31",
+    "generation": 1,
+    "text": "The television narrator says assistant turn off the security camera.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-35",
+    "generation": 1,
+    "text": "A recorded demonstration tells the assistant to delete a sample document.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-38",
+    "generation": 1,
+    "text": "The speaker on the broadcast says assistant answer this question.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-39",
+    "generation": 1,
+    "text": "A movie character orders a computer to unlock a door.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-41",
+    "generation": 1,
+    "text": "Could you handle it?",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-42",
+    "generation": 1,
+    "text": "Do the thing we mentioned earlier.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-43",
+    "generation": 1,
+    "text": "Maybe this should be changed.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-44",
+    "generation": 1,
+    "text": "Please put it over there.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-45",
+    "generation": 1,
+    "text": "That could be useful.",
+    "context": "{\"assistant_names\":[\"Assistant\",\"Fiote\"]}",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  }
+]

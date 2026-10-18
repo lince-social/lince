@@ -98,6 +98,13 @@ pub fn validate_profile(doc: &Profile, now: i64) -> Result<(), EngineError> {
         return Err(invalid("Invalid public-profile revision or lifetime"));
     }
     validate_fields(&doc.fields)?;
+    for claim in &doc.fields.claims {
+        if claim.statement.descriptor.subject != nucleus::trust_analysis::Identity::Organ(doc.authority.organ.clone())
+            || claim.statement.issued_at > doc.issued_at
+        {
+            return Err(invalid("A profile claim must describe this Organ and exist at the profile's issue time"));
+        }
+    }
     if serde_json::to_vec(doc)?.len() > MAX_PROFILE_BYTES
         || !crate::roster::verify_with(
             &doc.authority.editor_key,
@@ -115,9 +122,33 @@ fn validate_fields(fields: &ProfileFields) -> Result<(), EngineError> {
     text(&fields.description, 8000, true).map_err(invalid)?;
     text(&fields.area, 160, true).map_err(invalid)?;
     text(&fields.contact, 512, true).map_err(invalid)?;
+    validate_claims(&fields.claims)?;
     for hash in [&fields.avatar, &fields.banner].into_iter().flatten() {
         if hash.len() != 64 || !hash.bytes().all(|b| b.is_ascii_hexdigit()) {
             return Err(invalid("Select a public image content hash"));
+        }
+    }
+    Ok(())
+}
+
+fn validate_claims(claims: &[nucleus::trust_analysis::claims::Document]) -> Result<(), EngineError> {
+    use nucleus::trust_analysis::{claims::Authorship, contacts::Audience};
+    if claims.len() > 4 || serde_json::to_vec(claims)?.len() > 10240 {
+        return Err(invalid("Select at most four public claim snapshots within 10 KiB; the full profile also has a 16-KiB limit"));
+    }
+    let mut series = std::collections::BTreeSet::new();
+    for claim in claims {
+        claim.validate().map_err(invalid)?;
+        if !matches!(claim.statement.audience, Audience::Public)
+            || !series.insert(claim.statement.series().map_err(invalid)?)
+            || !crate::trust::verify_bytes_strict(&claim.public_key, &claim.signing_bytes().map_err(invalid)?, &claim.signature)
+        {
+            return Err(invalid("Use distinct, validly signed public claims; selected-audience claims cannot be included in a public profile"));
+        }
+        if let Authorship::Generated { permit, .. } = &claim.statement.authorship {
+            if !crate::trust::verify_bytes_strict(&permit.public_key, &permit.signing_bytes().map_err(invalid)?, &permit.signature) {
+                return Err(invalid("The generated claim's original publication permit is invalid"));
+            }
         }
     }
     Ok(())
@@ -207,7 +238,7 @@ pub(super) fn profile_editor(state: &Value) -> Value {
         })
         .map(|(_, doc)| &doc["fields"]);
     let mut conflicts = Vec::new();
-    for key in ["name", "description", "area", "contact", "avatar", "banner"] {
+    for key in ["name", "description", "area", "contact", "avatar", "banner", "claims"] {
         let mut changed = Vec::new();
         for (_, doc) in &heads {
             let value = &doc["fields"][key];
@@ -769,6 +800,9 @@ impl Engine {
             let organ = store::organs::local(&self.store.pool)
                 .await?
                 .ok_or_else(|| invalid("No local Organ"))?;
+            if fields.claims.iter().any(|claim| claim.statement.descriptor.subject != nucleus::trust_analysis::Identity::Organ(organ.uid.clone()) || claim.statement.issued_at > now.timestamp()) {
+                return Err(invalid("Select already-issued claims describing this Organ; member history is separate"));
+            }
             let mut state =
                 store::records::get_extension(&self.store.pool, &organ.uid, PROFILE_NAMESPACE)
                     .await?

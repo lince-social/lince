@@ -88,7 +88,7 @@ pub struct TerminalSand {
 struct Screen(Entity);
 
 #[derive(Resource, Default)]
-struct Sessions(HashMap<Entity, String>);
+struct Sessions(HashMap<Entity, (String, tokio::sync::mpsc::Sender<ClientMessage>)>);
 
 pub struct TerminalPlugin;
 impl Plugin for TerminalPlugin {
@@ -189,7 +189,7 @@ impl Action for Command {
             );
             return;
         }
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         let Some(terminal) = world.get::<TerminalSand>(owner) else {
@@ -291,6 +291,7 @@ fn open(world: &mut World, owner: Entity) -> Result<(), String> {
     let id = nucleus::new_uid("terminal");
     panel::send(
         world,
+        owner,
         ClientMessage::TerminalOpen {
             id: id.clone(),
             cols,
@@ -299,7 +300,9 @@ fn open(world: &mut World, owner: Entity) -> Result<(), String> {
             pixel_height: rows * 18,
         },
     )?;
-    world.resource_mut::<Sessions>().0.insert(owner, id.clone());
+    let sender = crate::native::practice_cells::sender(world, owner)
+        .ok_or("The terminal connection is unavailable")?;
+    world.resource_mut::<Sessions>().0.insert(owner, (id.clone(), sender));
     let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
     terminal.session = Some(id);
     terminal.worker = Some(worker);
@@ -339,15 +342,16 @@ fn update(
         .resource::<Sessions>()
         .0
         .iter()
-        .filter(|(entity, id)| {
+        .filter(|(entity, (id, _))| {
             world
                 .get::<TerminalSand>(**entity)
-                .is_none_or(|view| view.session.as_ref() != Some(*id))
+                .is_none_or(|view| view.session.as_ref() != Some(id))
         })
-        .map(|(entity, id)| (*entity, id.clone()))
+        .map(|(entity, (id, sender))| (*entity, id.clone(), sender.clone()))
         .collect();
-    for (entity, id) in removed {
-        if panel::send(world, ClientMessage::TerminalClose { id }).is_ok() {
+    for (entity, id, sender) in removed {
+        if !matches!(sender.try_send(ClientMessage::TerminalClose { id }),
+            Err(tokio::sync::mpsc::error::TrySendError::Full(_))) {
             world.resource_mut::<Sessions>().0.remove(&entity);
         }
     }
@@ -378,6 +382,7 @@ fn update(
             let result = if terminal.opened {
                 panel::send(
                     world,
+                    owner,
                     ClientMessage::TerminalResize {
                         id: terminal.session.clone().unwrap(),
                         cols: geometry.0,
@@ -463,7 +468,7 @@ fn update(
                     data_base64: BASE64.encode(bytes),
                 }
             };
-            if let Err(error) = panel::send(world, message) {
+            if let Err(error) = panel::send(world, owner, message) {
                 panel::status(world, status, error);
                 break;
             }

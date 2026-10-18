@@ -86,6 +86,44 @@ impl Engine {
     ) -> Result<Vec<String>, EngineError> {
         use crate::actions::Action;
         let named: Vec<&String> = match action {
+            Action::Identity {request} => match request {
+                nucleus::identity::Command::PersonKeys {subject} => vec![subject],
+                nucleus::identity::Command::PreviewPersonKey {key} | nucleus::identity::Command::AcceptPersonKey {key,..} => vec![&key.subject],
+                nucleus::identity::Command::OrganRoots {subject} | nucleus::identity::Command::ExportOrganRoot {subject} | nucleus::identity::Command::PreviewOrganRoot {subject,..} => vec![subject],
+                nucleus::identity::Command::AcceptOrganRoot {review,..} => vec![&review.proof.organ],
+            },
+            Action::TransferReceipt { request, .. } => match request {
+                nucleus::transfer::receipt::Command::Delivery {request}=>request.records(),
+                nucleus::transfer::receipt::Command::PreviewEvent { request } | nucleus::transfer::receipt::Command::PublishEvent { request, .. } => {
+                    let mut records = vec![&request.record, &request.authority_record];
+                    if let nucleus::transfer::receipt::EventSource::Outcome { record } | nucleus::transfer::receipt::EventSource::Snapshot {record} = &request.source { records.push(record); }
+                    records
+                },
+                nucleus::transfer::receipt::Command::PrepareParticipation { transfer, party, .. } => std::iter::once(transfer).chain(party.iter()).collect(),
+                nucleus::transfer::receipt::Command::RecordSource {request} => {
+                    let mut records=vec![&request.receipt];
+                    match &request.outcome {
+                        nucleus::transfer::outcome::Request::BindNeed {selection,supersedes,..}=>{records.push(&selection.need);records.extend(supersedes.iter());},
+                        nucleus::transfer::outcome::Request::State {measure,need_binding,supersedes,..}=>{records.extend(measure.object.iter().chain(need_binding.iter()).chain(supersedes.iter()));},
+                    }
+                    records
+                },
+                nucleus::transfer::receipt::Command::InspectSource {record}=>vec![record],
+                nucleus::transfer::receipt::Command::SourceOptions {receipt}=>vec![receipt],
+                nucleus::transfer::receipt::Command::ApprovePerson {record,..} => vec![record],
+                nucleus::transfer::receipt::Command::Approve { record, authority_record, .. } => vec![record, authority_record],
+                nucleus::transfer::receipt::Command::Inspect { record } | nucleus::transfer::receipt::Command::Export { record }
+                | nucleus::transfer::receipt::Command::InspectVersion {record,..} | nucleus::transfer::receipt::Command::ExportVersion {record,..}
+                | nucleus::transfer::receipt::Command::Versions {record,..} | nucleus::transfer::receipt::Command::Proof {record,..} => vec![record],
+                nucleus::transfer::receipt::Command::Prepare { scope } => scope.outcome_records.iter().collect(),
+                _ => vec![],
+            },
+            Action::ActivateTransferOccurrence { original_authorities, .. } => {
+                if original_authorities.len() > nucleus::transfer::receipt::MAX_AUTHORITIES {
+                    return Err(EngineError::Consequence("Select at most 64 participation approvals".into()));
+                }
+                original_authorities.iter().collect()
+            },
             Action::RecordTransferOutcome { request, .. } => match request {
                 nucleus::transfer::outcome::Request::BindNeed { selection, supersedes, .. } => {
                     std::iter::once(&selection.need).chain(supersedes.iter()).collect()

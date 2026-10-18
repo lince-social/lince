@@ -163,6 +163,28 @@ pub async fn keys_of(store: &Store, actor_uid: &str) -> Result<Vec<(String, Stri
     .await?)
 }
 
+pub(crate) fn verify_bytes_strict(key: &str, message: &[u8], signature: &str) -> bool {
+    if key.len() != 44 || signature.len() != 88 {
+        return false;
+    }
+    let Ok(key) = B64.decode(key) else {
+        return false;
+    };
+    let Ok(key): Result<[u8; 32], _> = key.try_into() else {
+        return false;
+    };
+    let Ok(key) = VerifyingKey::from_bytes(&key) else {
+        return false;
+    };
+    let Ok(signature) = B64.decode(signature) else {
+        return false;
+    };
+    let Ok(signature) = Signature::from_slice(&signature) else {
+        return false;
+    };
+    key.verify_strict(message, &signature).is_ok()
+}
+
 pub async fn key_of(
     store: &Store,
     actor_uid: &str,
@@ -183,6 +205,21 @@ pub async fn adopt_key(
     key_id: &str,
     public_key_b64: &str,
 ) -> Result<(), EngineError> {
+    adopt_key_on(
+        &mut *store.pool.acquire().await?,
+        actor_uid,
+        key_id,
+        public_key_b64,
+    )
+    .await
+}
+
+pub(crate) async fn adopt_key_on(
+    connection: &mut store::sqlx::SqliteConnection,
+    actor_uid: &str,
+    key_id: &str,
+    public_key_b64: &str,
+) -> Result<(), EngineError> {
     store::sqlx::query(
         "INSERT INTO identity_key (actor_uid, key_id, public_key) VALUES (?, ?, ?)
          ON CONFLICT(actor_uid, key_id) DO NOTHING",
@@ -190,9 +227,23 @@ pub async fn adopt_key(
     .bind(actor_uid)
     .bind(key_id)
     .bind(public_key_b64)
-    .execute(&store.pool)
+    .execute(&mut *connection)
     .await?;
-    require_published_key(store, actor_uid, key_id, public_key_b64).await
+    let bound: String = store::sqlx::query_scalar(
+        "SELECT public_key FROM identity_key WHERE actor_uid=? AND key_id=?",
+    )
+    .bind(actor_uid)
+    .bind(key_id)
+    .fetch_one(&mut *connection)
+    .await?;
+    if bound != public_key_b64 {
+        return Err(EngineError::Conflict {
+            code: "identity_key_id_conflict",
+            message: "Published key identifiers are immutable; use a new identifier for rotation"
+                .into(),
+        });
+    }
+    Ok(())
 }
 
 async fn require_published_key(
@@ -223,10 +274,16 @@ pub async fn verify_fact(store: &Store, fact: &Fact) -> Result<bool, EngineError
         if let Ok(sig_bytes) = B64.decode(signature) {
             if let Ok(sig) = Signature::from_slice(&sig_bytes) {
                 let keys: Vec<String> = store::sqlx::query_scalar(
-                    "SELECT public_key FROM identity_key WHERE actor_uid = ?
+                    "SELECT binding.public_key FROM identity_key AS binding
+                     WHERE binding.actor_uid = ? AND NOT EXISTS(
+                         SELECT 1 FROM identity_revocation AS revoked
+                         WHERE revoked.organ_uid=binding.actor_uid AND revoked.revoked_key=binding.public_key)
                      UNION SELECT json_extract(member.value, '$.operational_key')
                      FROM organ_roster AS roster, json_each(roster.payload, '$.cells') AS member
-                     WHERE roster.organ_uid = ? AND json_type(member.value, '$.operational_key') = 'text'",
+                     WHERE roster.organ_uid = ? AND json_type(member.value, '$.operational_key') = 'text'
+                     AND NOT EXISTS(SELECT 1 FROM identity_revocation AS revoked
+                         WHERE revoked.organ_uid=roster.organ_uid
+                         AND revoked.revoked_key=json_extract(member.value, '$.operational_key'))",
                 )
                 .bind(actor)
                 .bind(actor)
@@ -264,7 +321,9 @@ async fn verify_fact_action_intent(store: &Store, fact: &Fact) -> Result<bool, E
         return Ok(false);
     }
     let public_key: Option<String> = store::sqlx::query_scalar(
-        "SELECT public_key FROM identity_key WHERE actor_uid = ? AND key_id = ?",
+        "SELECT binding.public_key FROM identity_key AS binding WHERE binding.actor_uid = ? AND binding.key_id = ?
+         AND NOT EXISTS(SELECT 1 FROM identity_revocation AS revoked
+             WHERE revoked.organ_uid=binding.actor_uid AND revoked.revoked_key=binding.public_key)",
     )
     .bind(actor)
     .bind(&intent.key_id)

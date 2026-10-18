@@ -1,0 +1,52 @@
+{
+  "repository": "cmusphinx/pocketsphinx",
+  "revision": "f20ff1b7a5db64c5e892a798479e20df86e79a35",
+  "license": "Upstream LICENSE notices are saved with the fixtures; Austen text and LibriVox recordings are public domain",
+  "license_sources": [
+    "https://github.com/cmusphinx/pocketsphinx/blob/f20ff1b7a5db64c5e892a798479e20df86e79a35/LICENSE",
+    "https://librivox.org/pages/public-domain/"
+  ],
+  "comparison": "Ignore punctuation/case, compare zero through ten with their digit spellings, and compare mister with mr; preserve word order and all other words",
+  "cases": [
+    {
+      "file": "cards-001.wav",
+      "source": "test/data/cards/001.wav",
+      "sha256": "899951e768666f27c8f8b1d4090b96fe7909cae9cec01bec0a5d5d1b8a8d566e",
+      "reference": "test/data/cards/cards.transcription",
+      "expected": "ten of clubs",
+      "scope": "single quantity"
+    },
+    {
+      "file": "cards-003.wav",
+      "source": "test/data/cards/003.wav",
+      "sha256": "00d283e46bc257ae479e4aa86593cadb541656eba1d19fc8abeece37f6a5a18b",
+      "reference": "test/data/cards/cards.transcription",
+      "expected": "seven of clubs",
+      "scope": "single quantity"
+    },
+    {
+      "file": "cards-005.wav",
+      "source": "test/data/cards/005.wav",
+      "sha256": "090f18f5f76cf8b2b43cd9e6b07823f4685a4742d9a36cd98b174a6586c18cf9",
+      "reference": "test/data/cards/cards.transcription",
+      "expected": "eight of spades four of clubs seven of hearts",
+      "scope": "ordered quantities"
+    },
+    {
+      "file": "names-0870.wav",
+      "source": "test/data/librivox/sense_and_sensibility_01_austen_64kb-0870.wav",
+      "sha256": "b0557cf95c974d930577e58e46b7f068c432a6e3afcc286563d88922b2a5315c",
+      "reference": "test/data/librivox/transcription",
+      "expected": "and mister john dashwood had then leisure to consider how much there might be prudently in his power to do for them",
+      "scope": "ordinary proper name in a sentence"
+    },
+    {
+      "file": "negation-0880.wav",
+      "source": "test/data/librivox/sense_and_sensibility_01_austen_64kb-0880.wav",
+      "sha256": "fbec491ef00ee734a67f0ee318e98c51c157b479e1629ff4f4426861ecac0414",
+      "reference": "test/data/librivox/transcription",
+      "expected": "he was not an ill disposed young man",
+      "scope": "explicit negation"
+    }
+  ]
+}

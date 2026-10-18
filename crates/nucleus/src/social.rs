@@ -6,6 +6,7 @@ pub mod gossip;
 pub mod reports;
 pub mod requests;
 pub mod subscriptions;
+pub mod transport;
 
 pub const PRIVATE_NAMESPACE: &str = "lince.social.private";
 pub const PUBLICATION_NAMESPACE: &str = "lince.social.publication";
@@ -19,6 +20,8 @@ pub const CONVERSATION_VECTOR_PREFIX: &str = "lince.own-conversation/";
 
 pub fn private_sync_field(table: &str, field: &str) -> bool {
     table == "data_visibility"
+        || table == "record_extension" && field.starts_with(crate::transfer::surplus::NAMESPACE)
+        || table == "record_extension" && field.starts_with(crate::visibility::plan::PRIVATE_NAMESPACE)
         || (table == "record_extension" && field.starts_with("lince.social."))
 }
 
@@ -51,6 +54,8 @@ pub enum PostState {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PostDraft {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transport: Option<transport::Announcement>,
     pub title: String,
     pub text: String,
     pub direction: Direction,
@@ -79,6 +84,7 @@ pub struct PostDraft {
 
 impl PostDraft {
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(transport) = &self.transport { transport.validate()?; }
         if self
             .lifetime_days
             .is_some_and(|days| !(1..=7).contains(&days))
@@ -202,6 +208,8 @@ pub struct ProfileFields {
     pub avatar: Option<String>,
     #[serde(default)]
     pub banner: Option<String>,
+    #[serde(default)]
+    pub claims: Vec<crate::trust_analysis::claims::Document>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -241,6 +249,8 @@ pub struct PublicImage {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Snippet {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transport: Option<transport::Announcement>,
     pub protocol: String,
     pub id: String,
     pub nonce: String,
@@ -275,6 +285,8 @@ pub struct Snippet {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Search {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transport: Option<transport::Filter>,
     pub text: String,
     #[serde(default)]
     pub direction: Option<Direction>,
@@ -560,6 +572,18 @@ pub struct ServerChoice {
     pub publication: bool,
     pub query: bool,
     pub mailbox: bool,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub organ:Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub preset:Option<ServerPreset>,
+}
+
+#[derive(Debug,Clone,Copy,PartialEq,Eq,Serialize,Deserialize,JsonSchema)]
+#[serde(rename_all="snake_case")]
+pub enum ServerPreset {InstituteDiscovery}
+
+impl ServerChoice {
+    pub fn institute_helper()->Self {Self {label:"Optional Institute discovery helper".into(),preset:Some(ServerPreset::InstituteDiscovery),..Default::default()}}
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
@@ -622,6 +646,12 @@ pub struct ServiceDescriptor {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "request", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum PublicRequest {
+    CustodyBegin {offer:Box<crate::trust_analysis::custody::Offer>},
+    CustodyChunk {upload:String,offset:u32,bytes:String},
+    CustodyFinish {upload:String},
+    CustodyCancel {upload:String},
+    DiscoverEvidence { document: Box<crate::trust_analysis::discovery::Request> },
+    FetchEvidence {hash:crate::karma::CanonicalHash,offset:u32},
     DescribeService,
     SubmitReport {
         document: Box<reports::Report>,

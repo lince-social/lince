@@ -78,6 +78,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn scoped_laboratory_denies_real_bindings_and_keeps_ordinary_edits_live() {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        let root = world.spawn_empty().id();
+        world.entity_mut(first).insert((ChildOf(root), crate::native::workspace::WorkspaceMember(1)));
+        world.entity_mut(second).insert((ChildOf(root), crate::native::workspace::WorkspaceMember(1)));
+        let temporary = world.spawn((ChildOf(root), crate::native::workspace::WorkspaceMember(2))).id();
+        let denied = world.spawn((ChildOf(temporary), EditableText::new("Private benchmark"))).id();
+        world.insert_resource(crate::native::laboratory::Laboratory::scoped_for_test(root, 2, 1));
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        attach(&mut world, denied, record, "body", None);
+        assert!(world.get::<TextBinding>(denied).is_none());
+        assert!(crate::native::practice_cells::sender(&world, denied).is_none());
+        assert!(crate::native::practice_cells::runtime(&world, denied).is_none());
+        let source = crate::native::practice_cells::source(&world, denied).unwrap();
+        assert!(crate::native::practice_cells::engine(&world, &Source::Organ(source)).is_none());
+        let injected = world.get::<TextBinding>(first).unwrap().clone();
+        world.entity_mut(denied).insert(injected);
+        assert!(!can_edit(&world, denied));
+        assert!(can_edit(&world, first));
+        world.get_mut::<EditableText>(first).unwrap().editor.set_text("Ordinary live change");
+        update(&mut world);
+        assert_eq!(world.get::<EditableText>(second).unwrap().value().to_string(), "Ordinary live change");
+        assert_eq!(world.get::<EditableText>(denied).unwrap().value().to_string(), "Private benchmark");
+        pump(&mut world, |world| world.resource::<Bindings>().documents.values()
+            .all(|document| document.pending.is_empty() && !document.saving)).await;
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Ordinary live change");
+        assert_eq!(world.get::<EditableText>(denied).unwrap().value().to_string(), "Private benchmark");
+    }
+
+    #[tokio::test]
     async fn fiote_native_edits_merge_with_typing_and_appear_in_both_views() {
         let (mut world, engine, uid, first, second) = fixture().await;
         let agent = engine
@@ -740,7 +770,7 @@ impl Default for Bindings {
 pub struct RecordBindingPlugin;
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct SyncBindings;
+pub struct SyncBindings;
 
 impl Plugin for RecordBindingPlugin {
     fn build(&self, app: &mut App) {
@@ -767,7 +797,8 @@ impl Plugin for RecordBindingPlugin {
     }
 }
 
-pub(crate) fn can_edit(world: &World, entity: Entity) -> bool {
+pub fn can_edit(world: &World, entity: Entity) -> bool {
+    if crate::native::laboratory::blocked(world, entity) { return false; }
     let Some(binding) = world.get::<TextBinding>(entity) else {
         return false;
     };
@@ -779,9 +810,9 @@ pub(crate) fn can_edit(world: &World, entity: Entity) -> bool {
         })
 }
 
-fn gate(bindings: Res<Bindings>, mut fields: Query<(&TextBinding, &mut EditableText)>) {
-    for (binding, mut text) in &mut fields {
-        let writable = bindings
+fn gate(bindings: Res<Bindings>, access: crate::native::laboratory::OwnerAccess, mut fields: Query<(Entity, &TextBinding, &mut EditableText)>) {
+    for (entity, binding, mut text) in &mut fields {
+        let writable = !access.blocked(entity) && bindings
             .documents
             .get(&key(&binding.record))
             .is_some_and(|document| {
@@ -828,6 +859,7 @@ pub fn attach(
     property: &str,
     status: Option<Entity>,
 ) {
+    if crate::native::laboratory::blocked(world, entity) { return; }
     if let Some(status) = status {
         world.entity_mut(status).insert(BindingStatus);
     }
@@ -945,7 +977,7 @@ pub(crate) fn submit(
     record: &RecordBinding,
     request: engine::record_change::Request,
 ) -> Result<(), String> {
-    if crate::native::laboratory::suspended(world, record.area) {
+    if crate::native::laboratory::blocked(world, record.area) {
         return Err("Workspace is suspended".into());
     }
     let engine = crate::native::practice_cells::engine(world, &record.source)
@@ -1103,6 +1135,7 @@ fn update(world: &mut World) {
     let mut views: Vec<_> = world
         .query::<(Entity, &TextBinding)>()
         .iter(world)
+        .filter(|(entity, _)| !crate::native::laboratory::blocked(world, *entity))
         .map(|(entity, binding)| (entity, binding.clone()))
         .collect();
     views.sort_by_key(|(entity, _)| focus != Some(*entity));
@@ -1585,6 +1618,9 @@ fn paint_cursors(world: &mut World) {
         .query::<(Entity, &TextBinding, &EditableText)>()
         .iter(world)
     {
+        if crate::native::laboratory::blocked(world, entity) {
+            continue;
+        }
         let Some(document) = bindings.documents.get(&key(&binding.record)) else {
             continue;
         };

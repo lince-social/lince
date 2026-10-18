@@ -325,7 +325,7 @@ impl Action for Command {
             | Self::FindLan
             | Self::SavePeerPort
             | Self::SaveContact => actions(world, owner, self).and_then(|actions| {
-                if crate::native::laboratory::active(world) {
+                if crate::native::laboratory::blocked(world, owner) {
                     return Err("Changes are unavailable in the Laboratory".into());
                 }
                 world.get_mut::<ConfigurationSand>(owner).unwrap().pending = Some(Pending {
@@ -509,7 +509,7 @@ fn advance(world: &mut World, owner: Entity) -> Result<(), String> {
 }
 
 fn load(world: &mut World, owner: Entity) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Configuration is unavailable in the Laboratory".into());
     }
     let runtime =
@@ -543,7 +543,7 @@ fn budget_bytes(text: &str) -> Result<i64, String> {
 }
 
 fn save_budget(world: &mut World, owner: Entity) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
     let view = world.get::<ConfigurationSand>(owner).unwrap();

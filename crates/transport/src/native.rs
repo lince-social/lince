@@ -1,5 +1,6 @@
 mod catalog;
 mod messages;
+mod assistant;
 mod text;
 
 use std::{
@@ -58,6 +59,7 @@ pub struct NativeTools {
     instructions: Option<Arc<String>>,
     closed: Arc<AtomicBool>,
     source_message: Arc<std::sync::RwLock<Option<String>>>,
+    assistant: Option<Arc<dyn crate::fiote::Service>>,
 }
 
 impl NativeTools {
@@ -78,11 +80,17 @@ impl NativeTools {
             instructions: None,
             closed: Arc::new(AtomicBool::new(false)),
             source_message: Default::default(),
+            assistant: None,
         }
     }
 
     pub fn with_instructions(mut self, instructions: String) -> Self {
         self.instructions = Some(Arc::new(instructions));
+        self
+    }
+
+    pub fn with_fiote_service(mut self, service: Arc<dyn crate::fiote::Service>) -> Self {
+        self.assistant = Some(service);
         self
     }
 
@@ -124,6 +132,11 @@ impl NativeTools {
                 native: self.clone(),
                 kind,
             });
+        }
+        if self.assistant.is_some() {
+            for kind in [Kind::Fiotes, Kind::Delegate, Kind::Handoffs] {
+                registry.register(NativeTool { native: self.clone(), kind });
+            }
         }
     }
 
@@ -169,6 +182,9 @@ impl NativeTools {
 
 #[derive(Clone, Copy)]
 enum Kind {
+    Fiotes,
+    Delegate,
+    Handoffs,
     Instructions,
     Describe,
     Query,
@@ -226,6 +242,21 @@ impl Drop for PreviewPermit {
 impl Tool for NativeTool {
     fn definition(&self) -> ToolDefinition {
         let (name, description, schema) = match self.kind {
+            Kind::Fiotes => (
+                "lince_fiotes",
+                "Discover Fiotes eligible for native handoff, including their descriptions and connection state. Read every next_offset. The intake is selected by direct children then oldest creation time; explicit recipient choices remain unchanged.",
+                json!({"type":"object","properties":{"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":30}},"additionalProperties":false}),
+            ),
+            Kind::Delegate => (
+                "lince_delegate",
+                "Hand off this request to an enabled Fiote after reading its description. Use its stable Record UID and a stable request_id. Optional request is the delegated task; when omitted, the original request is forwarded. The saved source Message and attachments are preserved. Returns a durable receipt and child thread, not proof of completion. Inspect lince_handoffs before retrying uncertain work. Self-handoff and cycles are refused.",
+                json!({"type":"object","properties":{"request_id":{"type":"string","maxLength":128},"target":{"type":"string"},"request":{"type":"string","maxLength":65536}},"required":["request_id","target"],"additionalProperties":false}),
+            ),
+            Kind::Handoffs => (
+                "lince_handoffs",
+                "Inspect this conversation's durable handoff receipts and actual child reply state. Follow the returned thread/message/reply Record references to read output. A parent stopping does not stop an independently running child.",
+                json!({"type":"object","properties":{},"additionalProperties":false}),
+            ),
             Kind::Message => (
                 "lince_message",
                 "Write an attributed reply in this connection's thread. Start creates a writing message and returns its UID. Update supplies the complete text generated so far; only changes to your own text are applied through CRDT, preserving concurrent user edits. Finish or interrupt saves the final text and state. Reuse the same request_id to retry. Message UIDs must have been started by this connection.",
@@ -287,6 +318,9 @@ impl Tool for NativeTool {
         if serde_json::to_vec(&arguments).map_err(error)?.len() > MAX_RESULT_BYTES {
             return Err("Tool arguments exceed 128 KiB.".into());
         }
+        if matches!(self.kind, Kind::Fiotes | Kind::Delegate | Kind::Handoffs) {
+            return bounded(self.native.origin(self.run_assistant(arguments)).await?);
+        }
         if matches!(self.kind, Kind::Action)
             && let Ok(args) = serde_json::from_value::<ActionArguments>(arguments.clone())
             && matches!(args.action, Action::PreviewKarmaProposal { .. })
@@ -343,6 +377,7 @@ impl Tool for NativeTool {
                         ),
                         Err(err) => Err(error(err)),
                     },
+                    Kind::Fiotes | Kind::Delegate | Kind::Handoffs => Err("Assistant tools require their dedicated dispatch path.".into()),
                 };
                 result.map_err(engine::EngineError::Consequence)
             }))

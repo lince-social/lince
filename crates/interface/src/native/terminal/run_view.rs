@@ -117,7 +117,7 @@ pub(super) fn poll(world: &mut World, owner: Entity) {
             offset: view.offset,
         },
     };
-    if panel::send(world, request).is_ok() {
+    if panel::send(world, owner, request).is_ok() {
         let mut view = world.get_mut::<RunView>(owner).unwrap();
         view.pending = true;
         view.requested = false;
@@ -155,7 +155,7 @@ fn resize(world: &mut World, owner: Entity) {
             rows: geometry.1,
         },
     };
-    if panel::send(world, request).is_ok() {
+    if panel::send(world, owner, request).is_ok() {
         let _ = command(
             world,
             owner,

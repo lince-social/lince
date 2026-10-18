@@ -5,8 +5,12 @@ use nucleus::social::{
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 
+#[path = "social_discovery/helper.rs"]
+mod helper;
 #[path = "social_discovery/search_execution.rs"]
 mod search_execution;
+#[path = "social_discovery/transport.rs"]
+mod transport;
 
 struct DescriptorHost {
     engine: Arc<Engine>,

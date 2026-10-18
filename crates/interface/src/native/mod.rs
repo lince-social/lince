@@ -13,6 +13,9 @@ pub mod app;
 pub mod output_views;
 
 #[cfg(feature = "native-presentation")]
+pub mod physical_workspace;
+
+#[cfg(feature = "native-presentation")]
 pub mod drawing;
 
 #[cfg(feature = "native-presentation")]
@@ -23,6 +26,8 @@ pub mod actions;
 
 #[cfg(feature = "native-presentation")]
 mod accessibility;
+#[cfg(feature = "native-presentation")]
+pub use accessibility::{protected_text_input, secret as protect_text_input};
 
 #[cfg(feature = "native-presentation")]
 pub mod notifications;
@@ -68,6 +73,7 @@ pub mod frequency_castle;
 pub mod access_control;
 #[cfg(feature = "native-presentation")]
 pub mod visibility_castle;
+pub mod trust_castle;
 pub mod workspace_sync;
 
 #[cfg(feature = "native-presentation")]

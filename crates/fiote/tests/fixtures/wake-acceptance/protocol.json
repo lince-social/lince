@@ -1,0 +1,250 @@
+{
+  "purpose": "Fresh acceptance, frozen before audio generation and evaluation. Do not tune the detector using these outputs.",
+  "source": {
+    "wake": "4d573a313589c4cc2996145ff047ba8f538d5bcd2aa341086b31ca9dd93e4f09",
+    "features": "3f537ea2801dbdffa4aced46b109dafaa90dd5643918ad1e3b091b14fb692d87"
+  },
+  "profile_version": 2,
+  "threshold": 0.81,
+  "peak_frames": 5,
+  "mel_sha256": "ba2b0e0f8b7b875369a2c89cb13360ff53bac436f2895cced9f479fa65eb176f",
+  "embedding_sha256": "70d164290c1d095d1d4ee149bc5e00543250a7316b59f31d056cff7bd3075c1f",
+  "synthesis": "Pinned Lince Kokoro assets, best-tts revision 5f9280c761a5c147bb682321f3f019482fab3e7b; Rust CPU inference",
+  "audio": "Mono 16 kHz signed 16-bit PCM, Rust linear resampling from 24 kHz, no spoken-text alterations",
+  "enrollment": {
+    "heart": [
+      "Existing frozen wake-statement, wake-question and wake-exclamation conversation WAVs"
+    ],
+    "michael": [
+      "m-e01",
+      "m-e02",
+      "m-e03"
+    ]
+  },
+  "gate": {
+    "heart": "At least nine of ten combined requests; zero activations on ten negatives",
+    "michael": "All three requests; zero activations on three negatives, using that voice's three references",
+    "quote": "Keyword detection may occur, but no complete request segment or Message may be emitted without following request speech",
+    "delivery": "Original failed combined acoustic/native tests must pass; preserve first words, one delivery and replay refusal; do not rewrite ASR text"
+  },
+  "scope": "Synthetic corpus only; no natural-voice accuracy, speaker authentication, or general false-activation-rate claim.",
+  "cases": [
+    {
+      "name": "h-p01",
+      "text": "Hey Fiote, show my tasks for today.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p02",
+      "text": "Hey Fiote, make a note about the garden.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p03",
+      "text": "Hey Fiote, explain how this canvas works.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p04",
+      "text": "Hey Fiote, help me organize this workspace.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p05",
+      "text": "Hey Fiote, please list the available components.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p06",
+      "text": "Hey Fiote, what should I do next?",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p07",
+      "text": "Hey Fiote, can you create an empty workspace?",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p08",
+      "text": "Hey Fiote, move the calendar to the left.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p09",
+      "text": "Hey Fiote, rename this thread to Planning.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-p10",
+      "text": "Hey Fiote, remind me to stretch this evening.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "request"
+    },
+    {
+      "name": "h-n01",
+      "text": "Hey Theo, show my tasks for today.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n02",
+      "text": "Hey Felix, make a note about the garden.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n03",
+      "text": "Hey Fiona, explain how this canvas works.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n04",
+      "text": "Please tell my father about tomorrow.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n05",
+      "text": "The photo is inside the blue folder.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n06",
+      "text": "Feel free to wait while I get a drink.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n07",
+      "text": "I thought you were going to call Fiona.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n08",
+      "text": "Could somebody open the window?",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n09",
+      "text": "Hey Leo, rename this thread to Planning.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "h-n10",
+      "text": "Hey Peter, remind me to stretch this evening.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "negative"
+    },
+    {
+      "name": "m-e01",
+      "text": "Hey Fiote.",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "reference"
+    },
+    {
+      "name": "m-e02",
+      "text": "Hey Fiote?",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "reference"
+    },
+    {
+      "name": "m-e03",
+      "text": "Hey Fiote!",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "reference"
+    },
+    {
+      "name": "m-p01",
+      "text": "Hey Fiote, open the task list.",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "request"
+    },
+    {
+      "name": "m-p02",
+      "text": "Hey Fiote, please explain this note.",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "request"
+    },
+    {
+      "name": "m-p03",
+      "text": "Hey Fiote, help me arrange my canvas.",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "request"
+    },
+    {
+      "name": "m-n01",
+      "text": "Hey Tony, open the task list.",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "negative"
+    },
+    {
+      "name": "m-n02",
+      "text": "The phone is beside the notebook.",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "negative"
+    },
+    {
+      "name": "m-n03",
+      "text": "Could you help me with the groceries, Maria?",
+      "voice": "am_michael",
+      "profile": "michael",
+      "kind": "negative"
+    },
+    {
+      "name": "h-q01",
+      "text": "The activation phrase is Hey Fiote.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "quote"
+    },
+    {
+      "name": "h-q02",
+      "text": "She repeated the phrase Hey Fiote.",
+      "voice": "af_heart",
+      "profile": "heart",
+      "kind": "quote"
+    }
+  ]
+}

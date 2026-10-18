@@ -237,7 +237,7 @@ impl Action for Control {
         let Some(castle) = world.get::<CommandCastle>(owner) else {
             return;
         };
-        if castle.binding.source != Source::Local || crate::native::laboratory::active(world) {
+        if castle.binding.source != Source::Local || crate::native::laboratory::blocked(world, owner) {
             return;
         }
         let status = castle.status;
@@ -307,6 +307,7 @@ fn send(world: &mut World, owner: Entity, request: Request) -> Result<(), String
     let id = nucleus::new_uid("command-request");
     panel::send(
         world,
+        owner,
         ClientMessage::Command {
             id: id.clone(),
             request,
@@ -442,6 +443,7 @@ fn update(
         }
         if panel::send(
             world,
+            owner,
             ClientMessage::Command {
                 id: castle.history_request.clone(),
                 request: Request::History {

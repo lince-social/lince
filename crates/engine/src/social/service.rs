@@ -44,6 +44,7 @@ fn hinted_budget_class(bytes: &[u8], verb: &str) -> store::social::BudgetClass {
         | "acknowledge-private"
         | "discard-private"
         | "inspect-private" => true,
+        "custody-finish" | "custody-cancel" => true,
         "deliver-private" => serde_json::from_slice::<DocumentHint<EnvelopeHint>>(bytes)
             .is_ok_and(|hint| hint.document.envelope.purpose == EnvelopePurpose::Control),
         _ => false,
@@ -80,6 +81,7 @@ fn budget_class(request: &PublicRequest) -> store::social::BudgetClass {
         | PublicRequest::AcknowledgePrivate { .. }
         | PublicRequest::DiscardPrivate { .. }
         | PublicRequest::InspectPrivate { .. } => true,
+        PublicRequest::CustodyFinish {..} | PublicRequest::CustodyCancel {..} => true,
         PublicRequest::DeliverPrivate { document } => {
             document.envelope.purpose == EnvelopePurpose::Control
         }
@@ -235,11 +237,23 @@ impl Engine {
                     | PublicRequest::GossipOffer { .. }
                     | PublicRequest::GossipDeliver { .. }
                     | PublicRequest::AskContacts { .. }
+                    | PublicRequest::FetchEvidence { .. }
+                    | PublicRequest::DiscoverEvidence { .. }
+                    | PublicRequest::CustodyBegin {..}
+                    | PublicRequest::CustodyChunk {..}
+                    | PublicRequest::CustodyFinish {..}
+                    | PublicRequest::CustodyCancel {..}
             )
         {
             return Err(invalid("This Cell has not enabled public social services"));
         }
         let response = match request {
+            PublicRequest::CustodyBegin {offer} => self.begin_evidence_custody(source,node_id,*offer,now).await?,
+            PublicRequest::CustodyChunk {upload,offset,bytes} => self.chunk_evidence_custody(source,node_id,&upload,offset,&bytes).await?,
+            PublicRequest::CustodyFinish {upload} => self.finish_evidence_custody(source,node_id,&upload,now).await?,
+            PublicRequest::CustodyCancel {upload} => self.cancel_evidence_custody(source,node_id,&upload).await?,
+            PublicRequest::DiscoverEvidence {document} => self.discover_served_evidence(source,node_id,&document,now).await?,
+            PublicRequest::FetchEvidence {hash,offset} => self.fetch_served_evidence(source,node_id,&hash,offset,now).await?,
             PublicRequest::DescribeService => {
                 json!({"descriptor":descriptor::describe(node_id,&settings,now)?})
             }
@@ -703,7 +717,7 @@ impl Engine {
     pub(super) async fn social_search(
         &self,
         query: Search,
-        services: Vec<String>,
+        mut services: Vec<String>,
         now: i64,
     ) -> Result<Value, EngineError> {
         validate_search(&query)?;
@@ -711,6 +725,16 @@ impl Engine {
             return Err(invalid("Search at most eight chosen services"));
         }
         let mut failures = Vec::new();
+        let configured=self.social_servers().await?;
+        let mut permitted=Vec::new();
+        for service in services {
+            if let Some(choice)=configured.iter().find(|choice|choice.endpoint==service && (choice.preset.is_some() || choice.organ.is_some())) {
+                let status=if choice.preset.is_some() && !choice.query {Err(invalid("The optional discovery helper is disabled"))}else if let Some(organ)=&choice.organ {self.require_known_server_endpoint(organ,&service).await}else{Err(invalid("The helper has no recognized Organ identity"))};
+                if let Err(error)=status {failures.push(json!({"service":service,"error":error.to_string()}));continue;}
+            }
+            permitted.push(service);
+        }
+        services=permitted;
         let known = if services.is_empty() {
             Vec::new()
         } else {

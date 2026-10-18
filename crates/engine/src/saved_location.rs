@@ -4,6 +4,8 @@ use nucleus::vocabulary::{SavedLocation, SavedLocationCommand};
 use serde_json::json;
 use std::collections::HashSet;
 
+mod paging;
+
 impl Engine {
     async fn saved_location_readable(
         &self,
@@ -60,6 +62,7 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
         match command {
+            SavedLocationCommand::Page { query, records, after, generation, bounds } => self.saved_location_page(query, records, after, generation, bounds, actor).await,
             SavedLocationCommand::Observe { record, node_id } => Ok(ActionOutcome {
                 data: Some(serde_json::to_value(
                     self.observe_saved_location(&record, &node_id, actor)
@@ -277,6 +280,7 @@ impl Engine {
         nucleus::location::Invitation {
             record_uid: record.into(),
             authority_node_id: node.into(),
+            grant: None,
         }
         .reference()
         .map_err(|message| EngineError::Consequence(message.into()))?;

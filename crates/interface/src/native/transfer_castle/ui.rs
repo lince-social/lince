@@ -28,6 +28,12 @@ pub(super) enum Command {
     Add(String),
     Remove(String, usize),
     Submit,
+    CopyReceipt,
+    CopyText(String),
+    ReceiptPage(usize),
+    ImportReceiptFile,
+    ExportReceiptFile,
+    ReviewParticipation,
     Preview,
     ViewAs(Option<String>),
     SelectOccurrence(String),
@@ -59,7 +65,19 @@ impl Action for Command {
             return;
         }
         capture(world, owner);
-        if world.get::<View>(owner).unwrap().pending.is_some() {
+        if world
+            .get::<View>(owner)
+            .unwrap()
+            .pending
+            .as_ref()
+            .is_some_and(|pending| {
+                !matches!(self, Self::Person(_))
+                    || !matches!(
+                        pending.form.data["action"].as_str(),
+                        Some("transfer-receipt" | "identity" | "surplus")
+                    )
+            })
+        {
             status(world, owner, "Waiting for the Cell to finish this action");
             return;
         }
@@ -172,8 +190,66 @@ impl Action for Command {
             Self::Sort(sort) => world.get_mut::<TransferCastle>(owner).unwrap().sort = sort.clone(),
             Self::Tree(tree) => world.get_mut::<TransferCastle>(owner).unwrap().tree = *tree,
             Self::Page(page) => world.get_mut::<View>(owner).unwrap().page = *page,
+            Self::ReceiptPage(page) => world.get_mut::<View>(owner).unwrap().receipt_page = *page,
             Self::Person(person) => {
-                world.get_mut::<TransferCastle>(owner).unwrap().person = person.clone()
+                world.get_mut::<TransferCastle>(owner).unwrap().person = person.clone();
+                super::receipts::clear_form(world, owner);
+                stock::clear_form(world, owner);
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                view.receipt = None;
+                if view.pending.as_ref().is_some_and(|pending| {
+                    matches!(
+                        pending.form.data["action"].as_str(),
+                        Some("transfer-receipt" | "identity" | "surplus")
+                    )
+                }) {
+                    view.pending = None;
+                }
+                view.receipt_page = 0;
+                view.receipt_file_job = None;
+                view.receipt_list = Value::Null;
+                view.receipt_export = None;
+            }
+            Self::CopyReceipt | Self::CopyText(_) => {
+                let document = if let Self::CopyText(text) = self {
+                    Some(text.clone())
+                } else {
+                    world.get::<View>(owner).unwrap().receipt_export.clone()
+                };
+                let Some(document) = document else {
+                    return;
+                };
+                let result = world
+                    .get_resource_mut::<bevy::clipboard::Clipboard>()
+                    .ok_or_else(|| "Clipboard is unavailable".to_string())
+                    .and_then(|mut clipboard| {
+                        clipboard
+                            .set_text(&document)
+                            .map_err(|error| error.to_string())
+                    });
+                status(
+                    world,
+                    owner,
+                    match result {
+                        Ok(()) => {
+                            if matches!(self, Self::CopyText(_)) {
+                                "Copied".into()
+                            } else {
+                                "Receipt document copied".into()
+                            }
+                        }
+                        Err(error) => error,
+                    },
+                );
+                return;
+            }
+            Self::ImportReceiptFile => {
+                receipt_files::choose(world, owner, false);
+                return;
+            }
+            Self::ExportReceiptFile => {
+                receipt_files::choose(world, owner, true);
+                return;
             }
             Self::Toggle(key) => {
                 let mut view = world.get_mut::<View>(owner).unwrap();
@@ -258,6 +334,9 @@ impl Action for Command {
                     status(world, owner, error);
                     return;
                 }
+                if key == "public_history" {
+                    form.data[key] = if matches!(self, Self::Remove(_, _)) { Value::Null } else { serde_json::to_value(nucleus::transfer::public_history::Terms::default()).unwrap() };
+                }
                 let new = if key == "promises" {
                     model::promise(&text(&form.data, "creator"))
                 } else if key == "effects" {
@@ -285,6 +364,19 @@ impl Action for Command {
             }
             Self::Preview => {
                 forms::request_preview(world, owner);
+                return;
+            }
+            Self::ReviewParticipation => {
+                let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone()
+                else {
+                    return;
+                };
+                if let Err(error) = receipts::review_participation_form(&mut form) {
+                    status(world, owner, error);
+                    return;
+                }
+                world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+                forms::render(world, owner);
                 return;
             }
             Self::AcceptReview => {
@@ -449,6 +541,7 @@ pub(super) fn input(
 }
 
 pub(super) fn capture(world: &mut World, owner: Entity) {
+    audience::capture(world, owner);
     let values: Vec<_> = world
         .query::<(&Input, &EditableText)>()
         .iter(world)
@@ -486,6 +579,7 @@ pub(super) fn inputs(world: &mut World) {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
+    audience::capture(world, owner);
     let castle = world.get::<TransferCastle>(owner).unwrap().clone();
     let view = world.get::<View>(owner).unwrap();
     let (controls, summary, list, detail, page) = (
@@ -502,6 +596,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     clear(world, summary);
     clear(world, list);
     clear(world, detail);
+    crate::native::trust_castle::entry_controls(world,controls);
     for (mine, label) in [(false, "All"), (true, "Mine")] {
         let count = rows
             .iter()
@@ -716,6 +811,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             button(world, pages, owner, "Next", Command::Page(page + 1));
         }
     }
+    super::receipts::render(world, owner, detail);
     if let Some(transfer) = rows.iter().find(|row| text(row, "uid") == castle.selected) {
         super::detail::render(world, owner, detail, transfer);
     } else {

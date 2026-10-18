@@ -7,6 +7,7 @@ use crate::StoreError;
 pub enum RateKind {
     Refusal,
     FullLogServe,
+    EvidenceServe,
 }
 
 impl RateKind {
@@ -14,6 +15,7 @@ impl RateKind {
         match self {
             RateKind::Refusal => "refusal",
             RateKind::FullLogServe => "full-log-serve",
+            RateKind::EvidenceServe => "evidence-serve",
         }
     }
 
@@ -21,17 +23,22 @@ impl RateKind {
         match self {
             RateKind::Refusal => 200,
             RateKind::FullLogServe => 4,
+            RateKind::EvidenceServe => 128,
         }
     }
 
     fn window(self) -> Duration {
-        Duration::hours(1)
+        match self {
+            Self::EvidenceServe => Duration::minutes(1),
+            _ => Duration::hours(1),
+        }
     }
 
     fn backoff(self) -> Duration {
         match self {
             RateKind::Refusal => Duration::hours(1),
             RateKind::FullLogServe => Duration::hours(6),
+            RateKind::EvidenceServe => Duration::minutes(1),
         }
     }
 
@@ -43,6 +50,9 @@ impl RateKind {
             RateKind::FullLogServe => {
                 "asked for the whole log too many times in one hour; \
                  answering this contact less often"
+            }
+            RateKind::EvidenceServe => {
+                "too many evidence fetches in one minute; answering evidence queries less often"
             }
         }
     }
@@ -159,6 +169,7 @@ pub async fn states(pool: &SqlitePool, from_organ: &str) -> Result<Vec<RateState
         let kind: String = row.get("kind");
         let allowance = match kind.as_str() {
             "refusal" => RateKind::Refusal.allowance(),
+            "evidence-serve" => RateKind::EvidenceServe.allowance(),
             _ => RateKind::FullLogServe.allowance(),
         };
         RateState {

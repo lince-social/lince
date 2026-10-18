@@ -70,7 +70,7 @@ impl Engine {
         Ok(tx)
     }
 
-    pub(super) async fn social_require_local_write_on(
+    pub(crate) async fn social_require_local_write_on(
         &self,
         tx: &mut Transaction<'_, Sqlite>,
     ) -> Result<(), EngineError> {

@@ -150,7 +150,12 @@ async fn drive_session(
             message = outgoing.recv() => {
                 let Some(message) = message else { return Ok(()) };
                 let message = match message {
-                    ClientMessage::Act { id, action } => {
+                    ClientMessage::Act { id, mut action } => {
+                        if let Err(error) = engine::transfer_receipts::sign_person_consent(&mut action,&signer).and_then(|()| engine::trust_analysis::prepare_contact_action(&mut action,&signer)) {
+                            incoming.send(ServerMessage::Error {id,message:error.to_string(),code:error.code().map(str::to_owned)}).await.map_err(|_|"View closed")?;
+                            wake();
+                            continue;
+                        }
                         sequence += 1;
                         let action_base64 = STANDARD.encode(serde_json::to_vec(&action).map_err(|error| error.to_string())?);
                         let signature = signer.sign_bytes(&nucleus::action_intent::signing_bytes(&session_id, &challenge, sequence, &id, &action_base64));

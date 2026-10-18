@@ -7,6 +7,27 @@ pub struct Page {
 }
 
 impl Engine {
+    pub async fn export_conversation_page(
+        &self,
+        authenticated:&str,
+        root:&str,
+        vector:&[store::sync_ops::VectorEntry],
+        limit:i64,
+    )->Result<Page,EngineError> {
+        if vector.len()>4096 || vector.iter().any(|entry|entry.actor_cell.len()>200) {return Err(EngineError::Consequence("The conversation vector exceeds its bounds".into()));}
+        if !store::replica::is_accepted(&self.store.pool,root,authenticated).await? {return Err(EngineError::Forbidden("No accepted conversation grant".into()));}
+        let local=store::organs::local(&self.store.pool).await?.ok_or_else(||EngineError::Consequence("No local Organ".into()))?.uid;
+        let rows=store::sync_ops::ops_missing_from_vector_in_root(&self.store.pool,root,vector,limit.clamp(1,2000)).await?;
+        let head=rows.last().map_or(0,|row|row.seq);
+        let mut permitted=Vec::new();
+        let hidden=self.outgoing_hidden_from_organ(authenticated).await?;
+        for row in rows {
+            if authenticated!=local && (nucleus::social::private_sync_field(&row.tbl,&row.field) || store::visibility::op_hidden_from(&self.store.pool,&hidden,&row.tbl,&row.uid).await?) {continue;}
+            permitted.push(row);
+        }
+        Ok(Page {batch:OpBatch {from_organ:local,ops:self.hydrate_ops(permitted).await?},head})
+    }
+
     pub async fn export_sync_page(
         &self,
         authenticated: &str,
@@ -77,7 +98,7 @@ impl Engine {
         let scope = contact.and_then(|contact| contact.scope_fields);
         let links = store::sync_ops::resolve_link_scope(&self.store.pool, scope.as_deref()).await?;
         let rows = store::sync_ops::narrow_ops_to_scope(rows, scope.as_deref(), &links);
-        let hidden = store::visibility::hidden_from_organ(&self.store.pool, authenticated).await?;
+        let hidden = self.outgoing_hidden_from_organ(authenticated).await?;
         let moved = store::record_move::to_contact(&self.store.pool, authenticated).await?;
         let waiting = store::record_move::waiting_for_contact(&self.store.pool, authenticated).await?;
         let mut visible = Vec::new();

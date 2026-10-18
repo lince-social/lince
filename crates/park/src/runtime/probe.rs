@@ -110,6 +110,7 @@ pub fn probe() -> Result<(), ProbeFailure> {
                 let bounds = Rectangle::new([0.0; 2], [800.0, 480.0]).unwrap();
                 worker
                     .scene(Scene {
+                        revision: 0,
                         outputs: vec![crate::presentation::Output {
                             name: "Park-1".into(),
                             viewport: OutputViewport {
@@ -363,6 +364,7 @@ pub fn probe() -> Result<(), ProbeFailure> {
                 "surface pixels or native modal routing were not observed".into(),
             ));
         }
+        logout_check(&mut worker, directory.path(), &mut server)?;
         Ok(())
     })();
     stop.store(true, Ordering::Release);
@@ -374,4 +376,86 @@ pub fn probe() -> Result<(), ProbeFailure> {
     result?;
     stopped?;
     client_result
+}
+
+fn logout_check(
+    worker: &mut CanvasWorker,
+    directory: &std::path::Path,
+    server: &mut Server,
+) -> Result<(), ProbeFailure> {
+    let snapshots = directory.join("interface.snapshots");
+    let retained = directory.join("interface-retained.snapshots");
+    if snapshots.exists() {
+        std::fs::rename(&snapshots, &retained).map_err(|error| failure(error.to_string()))?;
+    }
+    std::fs::write(&snapshots, b"blocked snapshot directory")
+        .map_err(|error| failure(error.to_string()))?;
+    worker
+        .input(Input::Action(DesktopAction::SetLayout(
+            lince_interface::host::WorkspaceLayout::Grid,
+        )))
+        .map_err(|_| failure("Could not change the workspace before logout".into()))?;
+    let serial = worker
+        .input(Input::Logout)
+        .map_err(|_| failure("Could not request logout".into()))?;
+    let deadline = Instant::now() + Duration::from_secs(12);
+    loop {
+        server
+            .dispatch()
+            .map_err(|error| failure(error.to_string()))?;
+        if let Some(error) = worker.failure() {
+            return Err(error);
+        }
+        if matches!(worker.request(), Some(HostRequest::Exit)) {
+            return Err(failure("Logout ignored a workspace save failure".into()));
+        }
+        if let Some(frame) = worker.frame()
+            && frame.input_serial >= serial
+        {
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err(failure(
+                "The canvas did not resume after cancelling logout".into(),
+            ));
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    if !worker.is_running() {
+        return Err(failure("A failed save stopped the canvas".into()));
+    }
+    std::fs::remove_file(&snapshots).map_err(|error| failure(error.to_string()))?;
+    if retained.exists() {
+        std::fs::rename(&retained, &snapshots).map_err(|error| failure(error.to_string()))?;
+    }
+    worker
+        .input(Input::Logout)
+        .map_err(|_| failure("Could not retry logout".into()))?;
+    let deadline = Instant::now() + Duration::from_secs(12);
+    loop {
+        server
+            .dispatch()
+            .map_err(|error| failure(error.to_string()))?;
+        if let Some(error) = worker.failure() {
+            return Err(error);
+        }
+        if matches!(worker.request(), Some(HostRequest::Exit)) {
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err(failure(
+                "Logout did not complete after restoring workspace storage".into(),
+            ));
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    if !snapshots.is_dir() {
+        return Err(failure(
+            "Successful logout did not save a workspace snapshot".into(),
+        ));
+    }
+    eprintln!(
+        "Park logout check: a failed save kept the canvas running; retry saved and completed logout."
+    );
+    Ok(())
 }

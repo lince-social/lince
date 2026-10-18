@@ -90,7 +90,7 @@ pub(super) fn keyboard(world: &mut World) {
     let Some(owner) = owner else {
         return;
     };
-    if crate::native::laboratory::suspended(world, owner) {
+    if crate::native::laboratory::blocked(world, owner) {
         return;
     }
     let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() else {

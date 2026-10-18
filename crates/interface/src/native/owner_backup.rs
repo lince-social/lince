@@ -57,6 +57,15 @@ impl Plugin for BackupPlugin {
 pub(crate) fn populate(world: &mut World, parent: Entity) {
     let form = panel::column(world, parent);
     crate::native::edit_mode::label(world, form, "Encrypted owner backup", 16.0);
+    if world.contains_resource::<crate::native::layout::desktop::HostRequests>() {
+        crate::native::edit_mode::label(
+            world,
+            form,
+            "Log out of Park and open Lince in Sandbox to create an owner backup. Backups require stopped storage; they cannot restart your active desktop.",
+            13.0,
+        );
+        return;
+    }
     crate::native::edit_mode::label(
         world,
         form,
@@ -82,7 +91,7 @@ pub(crate) fn populate(world: &mut World, parent: Entity) {
     });
 }
 
-fn secret_field(world: &mut World, parent: Entity, caption: &str) -> Entity {
+pub(crate) fn secret_field(world: &mut World, parent: Entity, caption: &str) -> Entity {
     crate::native::edit_mode::label(world, parent, caption, 13.0);
     let bundle = crate::native::sand::text_editor(
         "",

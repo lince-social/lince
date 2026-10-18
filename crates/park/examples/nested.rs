@@ -14,9 +14,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut applications = Vec::new();
     let mut smoke = false;
     let mut outputs = 1;
+    let mut ready_hook = false;
     let mut index = 0;
     while index < arguments.len() {
         match arguments[index].to_str() {
+            Some("--ready-hook") => ready_hook = true,
             Some("--outputs") => {
                 index += 1;
                 outputs = arguments
@@ -63,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Some("--help" | "-h") => {
                 println!(
-                    "cargo xtask park nested --directory PATH [--duration SECONDS] [--outputs COUNT] [-- PROGRAM ARGUMENTS]\ncargo xtask park nested --smoke"
+                    "cargo xtask park nested --directory PATH [--duration SECONDS] [--outputs COUNT] [--ready-hook] [-- PROGRAM ARGUMENTS]\ncargo xtask park nested --smoke"
                 );
                 return Ok(());
             }
@@ -104,6 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         applications,
         lince_park::nested::Options {
+            ready_hook,
             duration,
             smoke,
             outputs,

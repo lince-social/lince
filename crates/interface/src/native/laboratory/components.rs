@@ -117,6 +117,7 @@ pub(crate) fn show(world: &mut World, root: Entity, index: usize) {
     let gallery = world
         .spawn((
             ComponentGallery,
+            super::LaboratoryOwner,
             ChildOf(root),
             GlobalZIndex(45),
             crate::native::token_style::background(crate::native::tokens::Token::Surface),
@@ -135,6 +136,9 @@ pub(crate) fn show(world: &mut World, root: Entity, index: usize) {
         ))
         .id();
     let controls = crate::native::sand_panel::row(world, gallery);
+    if let Some((_, _, workspace, _)) = super::scope(world).filter(|(owner, _, _, _)| *owner == root) {
+        world.entity_mut(gallery).insert(crate::native::workspace::WorkspaceMember(workspace));
+    }
     for (title, action) in [
         (
             "Previous component",

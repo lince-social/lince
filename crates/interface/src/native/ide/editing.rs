@@ -62,7 +62,7 @@ pub(super) fn prepare(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             continue;
         }
         let view = world.get::<View>(owner).unwrap();

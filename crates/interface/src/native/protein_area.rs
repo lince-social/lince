@@ -620,6 +620,8 @@ pub(crate) fn auxiliary_sender(
     world: &World,
     source: &Source,
 ) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+    if let Source::Organ(source) = source
+        && crate::native::laboratory::reserved_source(source) { return None; }
     match source {
         Source::Local => world
             .get_non_send::<CellBridge>()
@@ -629,6 +631,8 @@ pub(crate) fn auxiliary_sender(
 }
 
 pub(crate) fn ensure_auxiliary(world: &mut World, source: &Source) {
+    if let Source::Organ(source) = source
+        && crate::native::laboratory::reserved_source(source) { return; }
     if let Source::Organ(organ) = source {
         sessions::ensure_auxiliary(world, organ);
     }
@@ -709,6 +713,7 @@ fn observe(world: &mut World, source: &Source, message: &ServerMessage) {
                 | ServerMessage::Snapshot { .. }
                 | ServerMessage::Update { .. }
                 | ServerMessage::Fiote { .. }
+                | ServerMessage::Speech { .. }
         )
     {
         if let (
@@ -881,7 +886,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
 }
 
 fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     filter::maintain(world);
@@ -891,6 +896,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         .map(|(link, castle)| (link.0, castle.draft.clone()))
         .collect();
     for (owner, draft) in editors {
+        if crate::native::laboratory::blocked(world, owner) { continue; }
         if let Some(mut config) = configuration(world, owner) {
             if config.draft != draft {
                 config.draft = draft;
@@ -910,6 +916,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             .iter(world)
             .filter_map(|(entity, _)| configuration(world, entity).map(|config| (entity, config))),
     );
+    configs.retain(|(owner, _)| !crate::native::laboratory::blocked(world, *owner));
     for (entity, config) in &mut configs {
         let owner = world
             .get::<filter::Subscription>(*entity)
@@ -1088,7 +1095,7 @@ fn execute_action(
     editor: Entity,
     action: engine::actions::Action,
 ) -> Result<(), String> {
-    if crate::native::laboratory::suspended(world, editor) {
+    if crate::native::laboratory::blocked(world, editor) {
         return Err("Workspace is suspended".into());
     }
     let runtime = world.resource::<Runtime>();
@@ -1231,6 +1238,7 @@ pub(crate) fn editor_sender(
     world: &World,
     binding: &RecordBinding,
 ) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+    if binding.area != Entity::PLACEHOLDER && crate::native::laboratory::blocked(world, binding.area) { return None; }
     match &binding.source {
         Source::Local => world
             .get_non_send::<CellBridge>()

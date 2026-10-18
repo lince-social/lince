@@ -115,6 +115,49 @@ async fn wire_catch_up(from: &Engine, to: &Engine, from_organ: &str) -> usize {
     applied
 }
 
+#[tokio::test]
+async fn paged_conversation_delivery_stops_when_visibility_changes_between_pages() {
+    use base64::Engine as _;
+    let (source, origin) = cell("http://paged-source").await;
+    let (target, recipient) = cell("http://paged-target").await;
+    pair_push(&source, &target, &recipient).await;
+    store::organs::set_sync_policy(&source.store.pool,&recipient,false,false).await.unwrap();
+    store::organs::set_sync_policy(&target.store.pool,&origin,false,false).await.unwrap();
+    let (root, _) = source.start_conversation(&recipient,"Paged conversation").await.unwrap();
+    store::replica::accept(&source.store.pool,&root,&recipient).await.unwrap();
+    store::replica::accept(&target.store.pool,&root,&origin).await.unwrap();
+    let message = store::records::create_in_root(&source.store.pool,NewRecord {slug:None,kind:RecordKind::Message,head:"Large message",body:"",quantity:store::exact::one()},Some(&root)).await.unwrap().uid;
+    store::message_content::save(&source.store.pool,&message,&[nucleus::message::MessagePart::Attachment {
+        name:"payload.bin".into(),mime_type:"application/octet-stream".into(),data:base64::engine::general_purpose::STANDARD.encode(vec![42u8;950_000]),
+    }]).await.unwrap();
+    let mut pages=0;
+    let source_ref=&source;
+    let target_ref=&target;
+    let message_ref=&message;
+    let recipient_ref=&recipient;
+    let sent=source.drain_outbox(|_,root,batch| {
+        pages+=1;
+        async move {
+            target_ref.import_grant_batch(&root.unwrap(),&batch).await.unwrap();
+            store::visibility::set_hidden_from_organ(&source_ref.store.pool,recipient_ref,message_ref,true).await.unwrap();
+            Delivery::Sent
+        }
+    }).await.unwrap();
+    assert_eq!(sent,0);
+    assert_eq!(pages,1);
+    assert!(store::message_content::load(&target.store.pool,&message).await.map_or(true,|parts|parts.is_empty()));
+    let queued:i64=store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_outbox WHERE contact_organ=? AND uid=?").bind(&recipient).bind(&message).fetch_one(&source.store.pool).await.unwrap();
+    assert!(queued>0);
+    source.drain_outbox(|_,root,batch| {
+        assert!(batch.ops.iter().all(|op|op.uid!=message));
+        async move {
+            target_ref.import_grant_batch(&root.unwrap(),&batch).await.unwrap();
+            Delivery::Sent
+        }
+    }).await.unwrap();
+    assert!(store::message_content::load(&target.store.pool,&message).await.map_or(true,|parts|parts.is_empty()));
+}
+
 async fn pair_push(a: &Engine, b: &Engine, b_organ: &str) {
     let a_intro = a.introduction().await.unwrap();
     let b_intro = b.introduction().await.unwrap();

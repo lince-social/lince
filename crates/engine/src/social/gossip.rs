@@ -74,7 +74,7 @@ pub(super) fn validate_payload(payload: &Payload, now: i64) -> Result<(), Engine
 }
 
 impl Engine {
-    pub(super) async fn social_gossip_settings(&self) -> Result<Settings, EngineError> {
+    pub(crate) async fn social_gossip_settings(&self) -> Result<Settings, EngineError> {
         let cell = store::cells::local(&self.store.pool)
             .await?
             .ok_or_else(|| invalid("No local Cell"))?;

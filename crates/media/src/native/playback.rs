@@ -54,7 +54,12 @@ pub fn devices() -> Result<Vec<String>> {
     cpal::default_host()
         .output_devices()
         .map_err(error)?
-        .map(|device| device.name().map_err(error))
+        .map(|device| {
+            device
+                .description()
+                .map(|description| description.name().to_owned())
+                .map_err(error)
+        })
         .collect()
 }
 
@@ -68,9 +73,11 @@ impl Playback {
     pub fn with_speaker(device_name: Option<&str>, speaker: Speaker) -> Result<Self> {
         let host = cpal::default_host();
         let device = if let Some(name) = device_name {
-            host.output_devices()
-                .map_err(error)?
-                .find(|device| device.name().as_deref() == Ok(name))
+            host.output_devices().map_err(error)?.find(|device| {
+                device
+                    .description()
+                    .is_ok_and(|description| description.name() == name)
+            })
         } else {
             host.default_output_device()
         }
@@ -80,8 +87,8 @@ impl Playback {
             .map_err(error)?
             .filter(|config| config.channels() > 0 && config.channels() <= 8)
             .find(|config| {
-                config.min_sample_rate().0 <= SAMPLE_RATE
-                    && config.max_sample_rate().0 >= SAMPLE_RATE
+                config.min_sample_rate() <= SAMPLE_RATE
+                    && config.max_sample_rate() >= SAMPLE_RATE
                     && matches!(
                         config.sample_format(),
                         cpal::SampleFormat::F32 | cpal::SampleFormat::I16 | cpal::SampleFormat::U16
@@ -90,11 +97,18 @@ impl Playback {
             .ok_or_else(|| {
                 MediaError("The selected speaker does not support 48 kHz playback".into())
             })?
-            .with_sample_rate(cpal::SampleRate(SAMPLE_RATE));
+            .with_sample_rate(SAMPLE_RATE);
+        let mut requested = config.config();
+        if let cpal::SupportedBufferSize::Range { min, max } = config.buffer_size()
+            && *min > 0
+            && min <= max
+        {
+            requested.buffer_size = cpal::BufferSize::Fixed(512_u32.clamp(*min, *max));
+        }
         let stream = match config.sample_format() {
-            cpal::SampleFormat::F32 => output::<f32>(&device, &config.config(), speaker.clone()),
-            cpal::SampleFormat::I16 => output::<i16>(&device, &config.config(), speaker.clone()),
-            cpal::SampleFormat::U16 => output::<u16>(&device, &config.config(), speaker.clone()),
+            cpal::SampleFormat::F32 => output::<f32>(&device, &requested, speaker.clone()),
+            cpal::SampleFormat::I16 => output::<i16>(&device, &requested, speaker.clone()),
+            cpal::SampleFormat::U16 => output::<u16>(&device, &requested, speaker.clone()),
             _ => return Err(MediaError("Unsupported speaker format".into())),
         }?;
         stream.play().map_err(error)?;
@@ -119,7 +133,7 @@ where
     let mut cursor = FRAME_SAMPLES;
     device
         .build_output_stream(
-            config,
+            *config,
             move |output: &mut [T], _| {
                 for sample in output.chunks_mut(channels) {
                     if cursor == FRAME_SAMPLES {

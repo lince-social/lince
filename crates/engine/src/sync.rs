@@ -25,6 +25,35 @@ pub struct OpBatch {
     pub ops: Vec<WireOp>,
 }
 
+fn outgoing_pages(batch: OpBatch) -> Result<Vec<OpBatch>, EngineError> {
+    let mut pages = Vec::new();
+    let mut page = OpBatch {
+        from_organ: batch.from_organ,
+        ops: Vec::new(),
+    };
+    let overhead = serde_json::to_vec(&page)?.len();
+    let mut bytes = overhead;
+    for op in batch.ops {
+        let size = serde_json::to_vec(&op)?.len() + usize::from(!page.ops.is_empty());
+        if !page.ops.is_empty()
+            && (bytes.saturating_add(size) > crate::mailbox::MAX_BUNDLE_BYTES / 2
+                || page.ops.len() == 128)
+        {
+            pages.push(OpBatch {
+                from_organ: page.from_organ.clone(),
+                ops: std::mem::take(&mut page.ops),
+            });
+            bytes = overhead;
+        }
+        bytes = bytes.saturating_add(size);
+        page.ops.push(op);
+    }
+    if !page.ops.is_empty() {
+        pages.push(page);
+    }
+    Ok(pages)
+}
+
 impl Engine {
     pub async fn hydrate_ops(&self, rows: Vec<OpRow>) -> Result<Vec<WireOp>, EngineError> {
         let mut out = Vec::with_capacity(rows.len());
@@ -89,7 +118,9 @@ impl Engine {
         root: &str,
         batch: &OpBatch,
     ) -> Result<usize, EngineError> {
-        let own = store::organs::local(&self.store.pool).await?.is_some_and(|organ|organ.uid == batch.from_organ);
+        let own = store::organs::local(&self.store.pool)
+            .await?
+            .is_some_and(|organ| organ.uid == batch.from_organ);
         if !own && !store::replica::is_accepted(&self.store.pool, root, &batch.from_organ).await? {
             return Err(EngineError::Consequence(format!(
                 "no accepted grant on {root} for organ {}",
@@ -121,31 +152,59 @@ impl Engine {
     }
 
     pub async fn import_op_batch(&self, batch: &OpBatch) -> Result<usize, EngineError> {
-        let normal = OpBatch { from_organ:batch.from_organ.clone(),ops:batch.ops.iter().filter(|op|op.tbl != crate::social::history::TABLE).cloned().collect() };
+        let normal = OpBatch {
+            from_organ: batch.from_organ.clone(),
+            ops: batch
+                .ops
+                .iter()
+                .filter(|op| op.tbl != crate::social::history::TABLE)
+                .cloned()
+                .collect(),
+        };
         let mut imported = self.import_ops(&normal, None).await?;
-        for op in batch.ops.iter().filter(|op|op.tbl == crate::social::history::TABLE) {
+        for op in batch
+            .ops
+            .iter()
+            .filter(|op| op.tbl == crate::social::history::TABLE)
+        {
             imported += self.import_own_conversation(&batch.from_organ, op).await?;
         }
         Ok(imported)
     }
 
     pub async fn batch_is_saved(&self, batch: &OpBatch) -> Result<bool, EngineError> {
-        if !batch.ops.iter().any(|op|op.tbl == crate::social::history::TABLE) {
+        if !batch
+            .ops
+            .iter()
+            .any(|op| op.tbl == crate::social::history::TABLE)
+        {
             return self.plain_batch_is_saved(batch).await;
         }
         for op in &batch.ops {
             if op.tbl == crate::social::history::TABLE {
-                if !self.own_conversation_saved(op).await? { return Ok(false); }
+                if !self.own_conversation_saved(op).await? {
+                    return Ok(false);
+                }
             }
         }
-        let normal = OpBatch { from_organ:batch.from_organ.clone(),ops:batch.ops.iter().filter(|op|op.tbl != crate::social::history::TABLE).cloned().collect() };
+        let normal = OpBatch {
+            from_organ: batch.from_organ.clone(),
+            ops: batch
+                .ops
+                .iter()
+                .filter(|op| op.tbl != crate::social::history::TABLE)
+                .cloned()
+                .collect(),
+        };
         self.plain_batch_is_saved(&normal).await
     }
 
     pub(crate) async fn plain_batch_is_saved(&self, batch: &OpBatch) -> Result<bool, EngineError> {
         for op in &batch.ops {
             if op.tbl == "transfer_replication" {
-                if !self.transfer_transaction_saved(op).await? { return Ok(false); }
+                if !self.transfer_transaction_saved(op).await? {
+                    return Ok(false);
+                }
                 continue;
             }
             let exists: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE actor_cell = ? AND hlc = ? AND tbl = ? AND uid = ? AND field = ? AND kind = ?)")
@@ -265,9 +324,14 @@ impl Engine {
                 }
             }
         }
-        if op.tbl == "record" && matches!(op.field.as_str(), "quantity" | "unit_uid" | "organ_uid") {
+        if op.tbl == "record" && matches!(op.field.as_str(), "quantity" | "unit_uid" | "organ_uid")
+        {
             if let Some(limit) = store::transfer_stock::get(&self.store.pool, &op.uid).await? {
-                if limit.writer != op.actor_cell { return Ok(Some("stock change comes from a Cell without stock authority")); }
+                if limit.writer != op.actor_cell {
+                    return Ok(Some(
+                        "stock change comes from a Cell without stock authority",
+                    ));
+                }
             }
         }
         if op.tbl == "record_extension" && store::people::is_standing_field(&op.field) {
@@ -281,13 +345,23 @@ impl Engine {
             }
         }
         if nucleus::social::private_sync_field(&op.tbl, &op.field)
-            && store::organs::local(&self.store.pool).await?.is_none_or(|organ| organ.uid != batch.from_organ)
+            && store::organs::local(&self.store.pool)
+                .await?
+                .is_none_or(|organ| organ.uid != batch.from_organ)
         {
-            return Ok(Some("private state is synchronized only within its own Organ"));
+            return Ok(Some(
+                "private state is synchronized only within its own Organ",
+            ));
         }
         if let Some(signed) = self.roster_of(&batch.from_organ).await? {
-            if op.tbl == "data_visibility" && !signed.roster.cells.iter().any(|cell| cell.cell_uid == op.actor_cell && cell.may(crate::roster::CAP_WRITE)) {
-                return Ok(Some("only an authorized writing Cell may synchronize visibility policy"));
+            if op.tbl == "data_visibility"
+                && !signed.roster.cells.iter().any(|cell| {
+                    cell.cell_uid == op.actor_cell && cell.may(crate::roster::CAP_WRITE)
+                })
+            {
+                return Ok(Some(
+                    "only an authorized writing Cell may synchronize visibility policy",
+                ));
             }
             if !signed
                 .roster
@@ -408,7 +482,7 @@ impl Engine {
         replica_root: Option<&str>,
     ) -> Result<(usize, Vec<String>), EngineError> {
         let mut accept: Option<Vec<String>> = None;
-        let mut general_disabled=false;
+        let mut general_disabled = false;
         if let Some(contact) = store::organs::contact(&self.store.pool, &batch.from_organ).await? {
             if contact.trust == "blocked" {
                 return Err(EngineError::Consequence(format!(
@@ -416,7 +490,7 @@ impl Engine {
                     batch.from_organ
                 )));
             }
-            general_disabled=!contact.sync_in;
+            general_disabled = !contact.sync_in;
             accept = contact.accept_fields;
         }
         if let Some(reason) = store::contact_rate::backing_off(
@@ -432,7 +506,9 @@ impl Engine {
             .await?
             .is_some_and(|organ| organ.uid == batch.from_organ);
         if !ours && replica_root.is_none() && general_disabled {
-            return Err(EngineError::Forbidden("General replication from this contact is disabled".into()));
+            return Err(EngineError::Forbidden(
+                "General replication from this contact is disabled".into(),
+            ));
         }
         if !ours && self.roster_of(&batch.from_organ).await?.is_none() {
             store::organs::mark_awaiting_roster(&self.store.pool, &batch.from_organ).await?;
@@ -453,7 +529,8 @@ impl Engine {
         }
         let _import = self.import_lock.lock().await;
         let signature_keys = if ours && replica_root.is_none() {
-            self.transfer_signature_keys(&batch.ops, &batch.from_organ).await?
+            self.transfer_signature_keys(&batch.ops, &batch.from_organ)
+                .await?
         } else {
             std::collections::BTreeMap::new()
         };
@@ -465,8 +542,17 @@ impl Engine {
         let mut karma_definitions: Vec<String> = Vec::new();
         for op in &batch.ops {
             if op.tbl == "transfer_replication" {
-                if replica_root.is_some() { return Err(EngineError::Forbidden("private Transfer transactions cannot use an individual grant".into())); }
-                if self.import_transfer_transaction(op, &batch.from_organ).await? { applied += 1; }
+                if replica_root.is_some() {
+                    return Err(EngineError::Forbidden(
+                        "private Transfer transactions cannot use an individual grant".into(),
+                    ));
+                }
+                if self
+                    .import_transfer_transaction(op, &batch.from_organ)
+                    .await?
+                {
+                    applied += 1;
+                }
                 continue;
             }
             if !store::sync_ops::op_in_scope(&op.tbl, &op.kind, &op.field, accept.as_deref()) {
@@ -737,28 +823,37 @@ impl Engine {
         touched.dedup();
         let subjects = touched.iter().take(32).cloned().collect();
         for record_uid in touched {
-            if store::records::get_extension(pool,&record_uid,nucleus::social::requests::MESSAGE_NAMESPACE).await?.is_some() {
+            if store::records::get_extension(
+                pool,
+                &record_uid,
+                nucleus::social::requests::MESSAGE_NAMESPACE,
+            )
+            .await?
+            .is_some()
+            {
                 continue;
             }
             if store::records::get(pool, &record_uid).await?.is_some() {
                 let parent = received_parents.get(&record_uid).cloned();
                 let append = self.append(
-                        NewFact {
-                            uid: None,
-                            record_uid,
-                            delta: nucleus::fact::zero_delta(),
-                            at: None,
-                            actor_uid: None,
-                            cause: Cause {
-                                kind: CauseKind::Sync,
-                                uid: Some(batch.from_organ.clone()),
-                            },
-                            payload: Some("{\"sync\":true}".to_string()),
+                    NewFact {
+                        uid: None,
+                        record_uid,
+                        delta: nucleus::fact::zero_delta(),
+                        at: None,
+                        actor_uid: None,
+                        cause: Cause {
+                            kind: CauseKind::Sync,
+                            uid: Some(batch.from_organ.clone()),
                         },
-                        nucleus::execution::now(),
-                    );
+                        payload: Some("{\"sync\":true}".to_string()),
+                    },
+                    nucleus::execution::now(),
+                );
                 let result = if let Some(parent) = parent {
-                    crate::rule_runtime::RECEIVED_PARENT.scope(parent, append).await
+                    crate::rule_runtime::RECEIVED_PARENT
+                        .scope(parent, append)
+                        .await
                 } else {
                     append.await
                 };
@@ -857,9 +952,14 @@ impl Engine {
                 .await
                 .unwrap_or(false)
             && !fact.signature.as_ref().is_some_and(|signature| {
-                fact.actor_uid.as_ref().and_then(|actor| signature_keys.get(actor)).is_some_and(|keys| {
-                    keys.iter().any(|key| crate::roster::verify_with(key, fact.hash.as_bytes(), signature))
-                })
+                fact.actor_uid
+                    .as_ref()
+                    .and_then(|actor| signature_keys.get(actor))
+                    .is_some_and(|keys| {
+                        keys.iter().any(|key| {
+                            crate::roster::verify_with(key, fact.hash.as_bytes(), signature)
+                        })
+                    })
             })
         {
             store::organs::quarantine(
@@ -900,14 +1000,19 @@ impl Engine {
             .bind(&op.uid).bind(op.hlc).bind(&op.actor_cell).bind(&op.organ_uid).bind(root).execute(&mut *tx).await?;
         if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
             let existing = store::facts::get_in_transaction(&mut tx, &fact.uid).await?;
-            if existing.is_some_and(|existing| existing.cause.kind != CauseKind::Sync && existing.hash != fact.hash) {
+            if existing.is_some_and(|existing| {
+                existing.cause.kind != CauseKind::Sync && existing.hash != fact.hash
+            }) {
                 return Err(EngineError::Consequence(
                     "Fact identity was reused with different original evidence".into(),
                 ));
             }
             let imported: bool = store::sqlx::query_scalar(
                 "SELECT EXISTS(SELECT 1 FROM fact_origin WHERE fact_uid = ?)",
-            ).bind(&fact.uid).fetch_one(&mut *tx).await?;
+            )
+            .bind(&fact.uid)
+            .fetch_one(&mut *tx)
+            .await?;
             if imported {
                 store::facts::retain_origin(&mut tx, fact, &op.organ_uid, &op.actor_cell).await?;
             }
@@ -1037,7 +1142,15 @@ impl Engine {
             let mut kept = Vec::new();
             for row in rows {
                 match sync_ops::get_by_seq(pool, row.seq).await? {
-                    Some(op) if store::visibility::op_hidden_from(pool, &feed.hidden, &op.tbl, &op.uid).await? => {
+                    Some(op)
+                        if store::visibility::op_hidden_from(
+                            pool,
+                            &feed.hidden,
+                            &op.tbl,
+                            &op.uid,
+                        )
+                        .await? =>
+                    {
                         sync_ops::outbox_delete(pool, &row).await?;
                     }
                     Some(op) if !contact.sync_out && op.replica_root.is_none() => {
@@ -1102,7 +1215,7 @@ impl Engine {
             }
             let mut outcome = Delivery::Sent;
             let mut delivered_text = Vec::new();
-            for root in roots {
+            'roots: for root in roots {
                 let slice: Vec<_> = log_rows
                     .iter()
                     .filter(|op| op.replica_root == root)
@@ -1139,53 +1252,85 @@ impl Engine {
                     from_organ: from_organ.clone(),
                     ops: operations,
                 };
-                use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
-                let activity = Activity {
-                    instance: Instance::peer(&contact_uid, root.as_deref()),
-                    direction: Direction::Outgoing,
-                    update: Update::Incremental,
-                };
-                let count = batch.ops.len();
-                let subjects = batch.ops.iter().map(|op| op.uid.clone()).take(32).collect();
-                let delivered = self
-                    .sync_service
-                    .run(
-                        &self.store,
-                        activity,
-                        async {
-                            Ok::<_, std::convert::Infallible>(
-                                send(contact.clone(), root, batch).await,
-                            )
-                        },
-                        |delivery| {
-                            let (outcome, message) = match delivery {
-                                Delivery::Sent => (Outcome::Delivered, None),
-                                Delivery::Mailed => (
-                                    Outcome::Pending,
-                                    Some("Waiting in the mailbox for the destination".into()),
-                                ),
-                                Delivery::Failed(reason) => (Outcome::Failed, Some(reason.clone())),
-                            };
-                            Summary {
-                                outcome,
-                                count: count as u64,
-                                subjects,
-                                message,
+                for batch in outgoing_pages(batch)? {
+                    let current = store::organs::contact(pool, &contact_uid).await?;
+                    if current.as_ref().is_none_or(|contact| {
+                        contact.trust == "blocked" || root.is_none() && !contact.sync_out
+                    }) || contact_uid != from_organ
+                        && match root.as_deref() {
+                            Some(root) => {
+                                !store::replica::is_accepted(pool, root, &contact_uid).await?
                             }
-                        },
-                    )
-                    .await
-                    .unwrap();
-                match delivered {
-                    Delivery::Sent => {}
-                    Delivery::Mailed => {
-                        if outcome == Delivery::Sent {
-                            outcome = Delivery::Mailed;
+                            None => false,
+                        }
+                    {
+                        outcome = Delivery::Failed(
+                            "The contact or conversation no longer permits delivery"
+                                .into(),
+                        );
+                        break 'roots;
+                    }
+                    let hidden = self.outgoing_hidden_from_organ(&contact_uid).await?;
+                    for op in &batch.ops {
+                        if store::visibility::op_hidden_from(pool, &hidden, &op.tbl, &op.uid)
+                            .await?
+                        {
+                            outcome = Delivery::Failed(
+                                "Record permissions changed before delivery".into(),
+                            );
+                            break 'roots;
                         }
                     }
-                    failed @ Delivery::Failed(_) => {
-                        outcome = failed;
-                        break;
+                    use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
+                    let activity = Activity {
+                        instance: Instance::peer(&contact_uid, root.as_deref()),
+                        direction: Direction::Outgoing,
+                        update: Update::Incremental,
+                    };
+                    let count = batch.ops.len();
+                    let subjects = batch.ops.iter().map(|op| op.uid.clone()).take(32).collect();
+                    let delivered = self
+                        .sync_service
+                        .run(
+                            &self.store,
+                            activity,
+                            async {
+                                Ok::<_, std::convert::Infallible>(
+                                    send(current.unwrap(), root.clone(), batch).await,
+                                )
+                            },
+                            |delivery| {
+                                let (outcome, message) = match delivery {
+                                    Delivery::Sent => (Outcome::Delivered, None),
+                                    Delivery::Mailed => (
+                                        Outcome::Pending,
+                                        Some("Waiting in the mailbox for the destination".into()),
+                                    ),
+                                    Delivery::Failed(reason) => {
+                                        (Outcome::Failed, Some(reason.clone()))
+                                    }
+                                };
+                                Summary {
+                                    outcome,
+                                    count: count as u64,
+                                    subjects,
+                                    message,
+                                }
+                            },
+                        )
+                        .await
+                        .unwrap();
+                    match delivered {
+                        Delivery::Sent => {}
+                        Delivery::Mailed => {
+                            if outcome == Delivery::Sent {
+                                outcome = Delivery::Mailed;
+                            }
+                        }
+                        failed @ Delivery::Failed(_) => {
+                            outcome = failed;
+                            break 'roots;
+                        }
                     }
                 }
             }
@@ -1336,9 +1481,19 @@ impl Engine {
         let mut out = Materialised::default();
         match (op.tbl.as_str(), kind) {
             ("data_visibility", OpKind::Set) => {
-                let data: nucleus::visibility::Data = serde_json::from_value(serde_json::Value::String(op.field.clone()))?;
-                let saved: nucleus::visibility::SavedPolicy = serde_json::from_value(json_value(op.value.as_deref()))?;
-                store::sync_apply::ensure_record_stub(pool, &op.uid, "plain", &op.organ_uid, replica_root, Some(op.hlc)).await?;
+                let data: nucleus::visibility::Data =
+                    serde_json::from_value(serde_json::Value::String(op.field.clone()))?;
+                let saved: nucleus::visibility::SavedPolicy =
+                    serde_json::from_value(json_value(op.value.as_deref()))?;
+                store::sync_apply::ensure_record_stub(
+                    pool,
+                    &op.uid,
+                    "plain",
+                    &op.organ_uid,
+                    replica_root,
+                    Some(op.hlc),
+                )
+                .await?;
                 store::data_visibility::import(pool, &op.uid, data, &saved).await?;
                 out.applied += 1;
                 out.touched.push(op.uid.clone());
@@ -1464,27 +1619,48 @@ impl Engine {
             }
             ("concept", OpKind::Set) => {
                 if op.field == "feature_binding" {
-                    let local=store::organs::local(pool).await?.is_some_and(|organ|organ.uid==op.organ_uid);
+                    let local = store::organs::local(pool)
+                        .await?
+                        .is_some_and(|organ| organ.uid == op.organ_uid);
                     if local {
-                        let binding:nucleus::vocabulary::FeatureBinding=serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
-                        if binding.write_concept_uid!=op.uid {return Err(EngineError::Consequence("Feature binding identity mismatch".into()));}
-                        let mut tx=store::write_tx(pool).await?;
-                        let previous=store::vocabulary::feature_binding_on(&mut tx,&binding.feature).await?;
-                        if binding.revision>previous.revision {
-                            store::vocabulary::bind_feature_on(&mut tx,&binding,previous.revision).await?;
+                        let binding: nucleus::vocabulary::FeatureBinding =
+                            serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
+                        if binding.write_concept_uid != op.uid {
+                            return Err(EngineError::Consequence(
+                                "Feature binding identity mismatch".into(),
+                            ));
+                        }
+                        let mut tx = store::write_tx(pool).await?;
+                        let previous =
+                            store::vocabulary::feature_binding_on(&mut tx, &binding.feature)
+                                .await?;
+                        if binding.revision > previous.revision {
+                            store::vocabulary::bind_feature_on(
+                                &mut tx,
+                                &binding,
+                                previous.revision,
+                            )
+                            .await?;
                             store::sqlx::query("UPDATE vocabulary_role SET revision=? WHERE uid=(SELECT role_uid FROM vocabulary_feature WHERE feature=?)").bind(binding.revision).bind(&binding.feature).execute(&mut *tx).await?;
                         }
                         tx.commit().await?;
-                        out.applied+=1;
+                        out.applied += 1;
                         self.notify_query_changed();
                     }
                     return Ok(Some(out));
                 }
                 if op.field == "location_binding" {
-                    if op.uid != nucleus::vocabulary::TOPOS_UID { return Err(EngineError::Consequence("Unknown saved location binding role".into())); }
-                    let local = store::organs::local(pool).await?.is_some_and(|organ| organ.uid == op.organ_uid);
+                    if op.uid != nucleus::vocabulary::TOPOS_UID {
+                        return Err(EngineError::Consequence(
+                            "Unknown saved location binding role".into(),
+                        ));
+                    }
+                    let local = store::organs::local(pool)
+                        .await?
+                        .is_some_and(|organ| organ.uid == op.organ_uid);
                     if local {
-                        let binding: nucleus::vocabulary::LocationBinding = serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
+                        let binding: nucleus::vocabulary::LocationBinding =
+                            serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
                         store::vocabulary::apply_location_binding(pool, &binding).await?;
                         out.applied += 1;
                         self.notify_query_changed();
@@ -1492,10 +1668,18 @@ impl Engine {
                     return Ok(Some(out));
                 }
                 if op.field == "vocabulary" {
-                    let dictionary: nucleus::vocabulary::Dictionary = serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
-                    if dictionary.source.concept_uid != op.uid { return Err(EngineError::Consequence("Vocabulary dictionary identity mismatch".into())); }
-                    let local = store::organs::local(pool).await?.is_some_and(|local| local.uid == op.organ_uid);
-                    store::vocabulary::apply_dictionary(pool, &dictionary, &op.organ_uid, local).await?;
+                    let dictionary: nucleus::vocabulary::Dictionary =
+                        serde_json::from_str(op.value.as_deref().unwrap_or(""))?;
+                    if dictionary.source.concept_uid != op.uid {
+                        return Err(EngineError::Consequence(
+                            "Vocabulary dictionary identity mismatch".into(),
+                        ));
+                    }
+                    let local = store::organs::local(pool)
+                        .await?
+                        .is_some_and(|local| local.uid == op.organ_uid);
+                    store::vocabulary::apply_dictionary(pool, &dictionary, &op.organ_uid, local)
+                        .await?;
                     out.applied += 1;
                     self.notify_query_changed();
                     return Ok(Some(out));

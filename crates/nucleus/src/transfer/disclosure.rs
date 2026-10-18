@@ -97,6 +97,8 @@ pub struct TransferItem {
     pub loan: Option<super::loans::Interval>,
     pub return_of: Option<super::loans::Reference>,
     pub future_need_for: Option<super::loans::Reference>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transport: Option<super::transport::Terms>,
 }
 
 impl TransferItem {
@@ -109,6 +111,9 @@ impl TransferItem {
         }
         if let Some(exchange) = &self.exchange {
             exchange.validate()?;
+        }
+        if let Some(transport) = &self.transport {
+            transport.validate()?;
         }
         if [
             self.loan.is_some(),
@@ -352,6 +357,12 @@ fn redact_item(row: &mut Value, access: ItemAccess) {
     if !access.location {
         hide(row, &["place"]);
     }
+    if !access.location || !access.quantity {
+        hide(row, &["transport"]);
+        if let Some(item) = row.get_mut("item").and_then(Value::as_object_mut) {
+            item.remove("transport");
+        }
+    }
     if !access.complete() {
         hide(
             row,
@@ -405,6 +416,7 @@ fn redact_item(row: &mut Value, access: ItemAccess) {
                     "window_start",
                     "window_end",
                     "place",
+                    "transport",
                     "reuse_policy",
                     "condition",
                     "reserve_from",
@@ -524,6 +536,7 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
                 promise["loan"] = json!(item.loan);
                 promise["return_of"] = json!(item.return_of);
                 promise["future_need_for"] = json!(item.future_need_for);
+                promise["transport"] = json!(item.transport);
             }
             if !privileged && !participant {
                 hide(promise, &["return_of", "future_need_for", "accepted_loan"]);
@@ -613,6 +626,11 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
         row["history_disclosure"] =
             json!("Full signed history contains fields unavailable to this viewer");
     }
+    if !privileged && !participant {
+        hide(row, &["journey", "transport_capacity"]);
+    } else if !privileged && let Some(people) = row.get_mut("journey").and_then(|journey|journey.get_mut("participants")).and_then(Value::as_array_mut) {
+        people.retain(|progress|progress["person"].as_str().is_some_and(|person|visible_people.contains(person)));
+    }
     if hidden_source {
         hide(
             row,
@@ -627,6 +645,7 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
         row["settlement_progress"]["by_resource"] = Value::Null;
     }
     if hidden_quantity {
+        hide(row, &["transport_capacity"]);
         hide(
             row,
             &[

@@ -169,7 +169,7 @@ pub(crate) fn organs(world: &mut World) -> HashSet<String> {
 }
 
 fn send(world: &mut World, owner: Entity, message: ClientMessage) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Workspace Sync is unavailable in the Laboratory".into());
     }
     let source = world
@@ -244,6 +244,7 @@ fn local_draft_request(world: &mut World, owner: Entity, command: Backend, kind:
     let id = nucleus::new_uid("request");
     let result = panel::send(
         world,
+        owner,
         ClientMessage::Act {
             id: id.clone(),
             action: engine::actions::Action::Workspace {

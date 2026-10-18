@@ -30,6 +30,9 @@ pub struct ThreadCastle {
 }
 
 #[derive(Component)]
+pub(crate) struct RequestedThread(pub(crate) String);
+
+#[derive(Component)]
 struct Page {
     castle: Entity,
     uid: String,
@@ -515,6 +518,13 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         return false;
     };
     let mut selected_new = false;
+    let requested = world
+        .get::<RequestedThread>(castle.binding.area)
+        .map(|requested| requested.0.clone());
+    if let Some(requested) = &requested {
+        castle.select_new = Some(requested.clone());
+        castle.prefer_first = false;
+    }
     let mut retained = HashSet::new();
     for thread in data["threads"].as_array().into_iter().flatten() {
         let Some(uid) = thread["uid"].as_str() else {
@@ -633,6 +643,21 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             .filter_map(|thread| thread["uid"].as_str())
             .find(|uid| retained.contains(*uid))
             .map(str::to_owned);
+    }
+    if requested.is_some() {
+        if selected_new {
+            world
+                .entity_mut(castle.binding.area)
+                .remove::<RequestedThread>();
+            if let Some(mut text) = world.get_mut::<Text>(castle.status) {
+                text.0.clear();
+            }
+        } else {
+            castle.active = None;
+            if let Some(mut text) = world.get_mut::<Text>(castle.status) {
+                text.0 = "The requested conversation is not available in this Fiote yet.".into();
+            }
+        }
     }
     world.entity_mut(parent).insert(castle);
     show_active(world, parent);

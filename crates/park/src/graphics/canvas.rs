@@ -72,6 +72,7 @@ pub(super) fn run(report: &mut ProbeReport) -> super::Result<()> {
     backend.window().set_title("Lince Park graphics proof");
     super::live::with_client(&renderer, report, |texture| {
         let image = render(&renderer, texture)?;
+        image.wait_for_probe()?;
         let _ = events.dispatch_new_events(|_| {});
         let size = backend.window_size();
         let damage = smithay::utils::Rectangle::from_size(size);
@@ -270,6 +271,7 @@ fn render(
         })
         .map_err(|error| ProbeFailure::at("bevy_render", error))?;
     let exported = renderer.export_copy(&output_texture)?;
+    exported.wait_for_probe()?;
     let egl_device = EGLDevice::enumerate()
         .map_err(|error| ProbeFailure::at("bevy_egl", error))?
         .find(|device| !device.is_software())

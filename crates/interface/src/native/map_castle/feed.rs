@@ -1,15 +1,13 @@
 use super::*;
-use std::{
-    collections::HashMap,
-    time::{Duration, Instant},
-};
+use engine::location::clock::Instant;
+use std::{collections::HashMap, time::Duration};
 
 #[derive(Clone)]
 pub(super) struct Marker {
     pub record: String,
     pub coordinate: Coordinate,
     pub live: bool,
-    pub expires: Option<i64>,
+    pub view: Option<nucleus::location::View>,
     pub observed: Instant,
     pub radius_metres: Option<u32>,
 }
@@ -49,23 +47,25 @@ pub(super) fn maintain(world: &mut World) {
             world.get_mut::<MapSand>(owner).unwrap().markers.clear();
             continue;
         }
+        let records = paging::records(world, owner);
         let sand = world.get::<MapSand>(owner).unwrap();
-        if sand.records.is_empty() {
+        if records.is_empty() {
             world.entity_mut(owner).remove::<Feed>();
-            world.get_mut::<MapSand>(owner).unwrap().markers.clear();
+            world
+                .get_mut::<MapSand>(owner)
+                .unwrap()
+                .markers
+                .retain(|marker| !marker.live);
             continue;
         }
         let changed = world.get::<Feed>(owner).is_none_or(|feed| {
-            feed.records != sand.records
+            feed.records != records
                 || feed.person != sand.person
                 || feed.authority != sand.authority_node_id
         });
         if changed {
-            let (records, person, authority) = (
-                sand.records.clone(),
-                sand.person.clone(),
-                sand.authority_node_id.clone(),
-            );
+            let (records, person, authority) =
+                (records, sand.person.clone(), sand.authority_node_id.clone());
             world.entity_mut(owner).insert(Feed {
                 pending: HashMap::new(),
                 next: Instant::now(),
@@ -73,7 +73,12 @@ pub(super) fn maintain(world: &mut World) {
                 person,
                 authority,
             });
-            world.get_mut::<MapSand>(owner).unwrap().markers.clear();
+            world
+                .get_mut::<MapSand>(owner)
+                .unwrap()
+                .markers
+                .retain(|marker| !marker.live);
+            world.get_mut::<MapSand>(owner).unwrap().live_offset = 0;
         }
         let now = Instant::now();
         let stale: Vec<_> = world
@@ -81,7 +86,7 @@ pub(super) fn maintain(world: &mut World) {
             .unwrap()
             .pending
             .iter()
-            .filter(|(_, (_, _, sent))| now.duration_since(*sent) > Duration::from_secs(10))
+            .filter(|(_, (_, _, sent))| now - *sent > Duration::from_secs(10))
             .map(|(id, (record, kind, _))| (id.clone(), record.clone(), *kind))
             .collect();
         for (id, record, kind) in stale {
@@ -100,32 +105,53 @@ pub(super) fn maintain(world: &mut World) {
             .unwrap()
             .authority_node_id
             .clone();
-        world.get_mut::<Feed>(owner).unwrap().next = now + Duration::from_secs(5);
-        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-            wake.after(Duration::from_secs(5));
-        }
         if pending {
             continue;
         }
-        for record in records {
-            request(
-                world,
-                owner,
-                &record,
-                Kind::Saved,
-                engine::actions::Action::SavedLocation {
-                    request: if let Some(node) = &authority {
-                        nucleus::vocabulary::SavedLocationCommand::Observe {
-                            record: record.clone(),
-                            node_id: node.clone(),
-                        }
-                    } else {
-                        nucleus::vocabulary::SavedLocationCommand::Inspect {
-                            record: record.clone(),
-                        }
+        let offset = world
+            .get::<MapSand>(owner)
+            .unwrap()
+            .live_offset
+            .min(records.len());
+        let next_offset = (offset + 2).min(records.len());
+        let delay = if next_offset == records.len() {
+            Duration::from_secs(5)
+        } else {
+            Duration::from_millis(16)
+        };
+        world.get_mut::<MapSand>(owner).unwrap().live_offset = if next_offset == records.len() {
+            0
+        } else {
+            next_offset
+        };
+        world.get_mut::<Feed>(owner).unwrap().next = now + delay;
+        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+            wake.after(delay);
+        }
+        for record in records.into_iter().skip(offset).take(2) {
+            if authority.is_some() && world.get::<MapSand>(owner).unwrap().invitation.is_none() {
+                request(
+                    world,
+                    owner,
+                    &record,
+                    Kind::Saved,
+                    engine::actions::Action::SavedLocation {
+                        request: if let Some(node) = &authority {
+                            nucleus::vocabulary::SavedLocationCommand::Observe {
+                                record: record.clone(),
+                                node_id: node.clone(),
+                            }
+                        } else {
+                            nucleus::vocabulary::SavedLocationCommand::Inspect {
+                                record: record.clone(),
+                            }
+                        },
                     },
-                },
-            );
+                );
+            }
+            if !world.get::<MapSand>(owner).unwrap().show_live {
+                continue;
+            }
             if let Some(node) = &authority {
                 request(
                     world,
@@ -133,10 +159,19 @@ pub(super) fn maintain(world: &mut World) {
                     &record,
                     Kind::Live,
                     engine::actions::Action::Location {
-                        request: nucleus::location::Command::Observe {
-                            person: person.clone(),
-                            record_uid: record.clone(),
-                            node_id: node.clone(),
+                        request: if let Some(invitation) =
+                            world.get::<MapSand>(owner).unwrap().invitation.clone()
+                        {
+                            nucleus::location::Command::ObserveInvitation {
+                                person: person.clone(),
+                                invitation,
+                            }
+                        } else {
+                            nucleus::location::Command::Observe {
+                                person: person.clone(),
+                                record_uid: record.clone(),
+                                node_id: node.clone(),
+                            }
                         },
                     },
                 );
@@ -168,6 +203,7 @@ fn request(
     let id = nucleus::new_uid("map-location");
     match crate::native::sand_panel::send(
         world,
+        owner,
         cell::ClientMessage::Act {
             id: id.clone(),
             action,
@@ -216,7 +252,7 @@ pub(super) fn receive(
             .find(|(_, feed)| feed.pending.contains_key(&id))
             .map(|(entity, _)| entity);
         let Some(owner) = owner else { continue };
-        let Some((record, kind, _)) = world.get_mut::<Feed>(owner).unwrap().pending.remove(&id)
+        let Some((record, kind, sent)) = world.get_mut::<Feed>(owner).unwrap().pending.remove(&id)
         else {
             continue;
         };
@@ -253,7 +289,7 @@ pub(super) fn receive(
                                     record,
                                     coordinate,
                                     live: false,
-                                    expires: None,
+                                    view: None,
                                     observed: Instant::now(),
                                     radius_metres: selected.radius_metres,
                                 });
@@ -262,7 +298,11 @@ pub(super) fn receive(
                 }
             }
             Kind::Context => {
-                if let Ok(context) = serde_json::from_value::<nucleus::location::Context>(data) {
+                if let Ok(mut context) = serde_json::from_value::<nucleus::location::Context>(data)
+                {
+                    context
+                        .view
+                        .elapse(sent.elapsed().as_millis().min(u128::from(u64::MAX)) as u64);
                     let person = world.get::<MapSand>(owner).unwrap().person.clone();
                     if !person.is_empty() {
                         add_live(world, owner, &record, context.view);
@@ -284,7 +324,8 @@ pub(super) fn receive(
                 }
             }
             Kind::Live => {
-                if let Ok(view) = serde_json::from_value::<nucleus::location::View>(data) {
+                if let Ok(mut view) = serde_json::from_value::<nucleus::location::View>(data) {
+                    view.elapse(sent.elapsed().as_millis().min(u128::from(u64::MAX)) as u64);
                     add_live(world, owner, &record, view);
                 }
             }
@@ -300,18 +341,20 @@ pub(super) fn receive(
 
 fn add_live(world: &mut World, owner: Entity, record: &str, view: nucleus::location::View) {
     if view.record_uid != record
-        || view.status != nucleus::location::Status::Live
-        || view.age_ms.is_none_or(|age| age > 60_000)
+        || !matches!(
+            view.status,
+            nucleus::location::Status::Live | nucleus::location::Status::Stale
+        )
+        || view
+            .age_ms
+            .is_none_or(|age| age >= nucleus::location::MAX_FIX_AGE_MS as u64)
     {
         return;
     }
-    let Some(fix) = view.fix else { return };
-    let now = chrono::Utc::now().timestamp_millis();
-    if !(0..=60_000).contains(&now.saturating_sub(fix.captured_at_ms))
-        || view.expires_at_ms.is_some_and(|expires| expires <= now)
-    {
+    if view.remaining_millis.is_none_or(|remaining| remaining == 0) {
         return;
     }
+    let Some(fix) = &view.fix else { return };
     let coordinate = Coordinate {
         latitude: fix.latitude,
         longitude: fix.longitude,
@@ -329,7 +372,7 @@ fn add_live(world: &mut World, owner: Entity, record: &str, view: nucleus::locat
                 record: record.into(),
                 coordinate,
                 live: true,
-                expires: view.expires_at_ms,
+                view: Some(view.clone()),
                 observed: Instant::now(),
                 radius_metres: view.radius_metres,
             });
@@ -339,6 +382,48 @@ fn add_live(world: &mut World, owner: Entity, record: &str, view: nucleus::locat
 pub(super) mod tests {
     use super::*;
     use crate::native::actions::Action;
+
+    #[cfg_attr(test, test)]
+    fn scoped_invitation_cannot_be_downgraded_to_an_unrestricted_map_reference() {
+        let mut app = crate::native::sand_panel::tests::app();
+        let root = app.world_mut().spawn_empty().id();
+        let original = nucleus::new_uid("r");
+        let owner = mount(
+            app.world_mut(),
+            root,
+            Camera::default(),
+            vec![original.clone()],
+            String::new(),
+        );
+        let invitation = nucleus::location::Invitation {
+            record_uid: nucleus::new_uid("r"),
+            authority_node_id: "b".repeat(64),
+            grant: Some(nucleus::location::InvitationGrant {
+                uid: nucleus::new_uid("li"),
+                issuer: nucleus::new_uid("r"),
+                recipient: nucleus::new_uid("r"),
+                expires_at_ms: 1_800_000_000_000,
+                radius_metres: Some(1000),
+            }),
+        };
+        let input = crate::native::sand_panel::field(
+            app.world_mut(),
+            owner,
+            "Reference",
+            &invitation.reference().unwrap(),
+        );
+        Command::SharedReference(input).apply(app.world_mut(), owner);
+        let sand = app.world().get::<MapSand>(owner).unwrap();
+        assert_ne!(sand.records, vec![original]);
+        assert_eq!(sand.records, vec![invitation.record_uid.clone()]);
+        assert_eq!(
+            sand.authority_node_id.as_ref(),
+            Some(&invitation.authority_node_id)
+        );
+        assert_eq!(sand.invitation.as_ref(), Some(&invitation));
+        assert_eq!(sand.person, invitation.grant.as_ref().unwrap().recipient);
+        assert!(app.world().get::<Feed>(owner).is_none());
+    }
 
     #[cfg_attr(test, test)]
     fn changing_shared_authority_discards_pending_location_replies() {
@@ -364,6 +449,7 @@ pub(super) mod tests {
         let invitation = nucleus::location::Invitation {
             record_uid: record.clone(),
             authority_node_id: "22".repeat(32),
+            grant: None,
         };
         let field = crate::native::sand_panel::field(
             app.world_mut(),
@@ -572,8 +658,11 @@ pub(super) mod tests {
                 longitude: -46.63,
                 accuracy_metres: Some(10.0),
                 captured_at_ms: now,
+                capture_age_ms: 0,
             }),
             age_ms: Some(0),
+            remaining_millis: Some(30_000),
+            next_sequence: Some(2),
             radius_metres: None,
         };
         for index in 0..3 {
@@ -660,6 +749,14 @@ pub(super) mod tests {
         );
         let mut stale = view;
         stale.fix.as_mut().unwrap().captured_at_ms = now - 70_000;
+        add_live(app.world_mut(), owner, &record, stale.clone());
+        assert_eq!(app.world().get::<MapSand>(owner).unwrap().markers.len(), 1);
+        app.world_mut()
+            .get_mut::<MapSand>(owner)
+            .unwrap()
+            .markers
+            .clear();
+        stale.age_ms = Some(70_000);
         add_live(app.world_mut(), owner, &record, stale);
         assert!(
             app.world()
@@ -671,6 +768,7 @@ pub(super) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        scoped_invitation_cannot_be_downgraded_to_an_unrestricted_map_reference,
         changing_shared_authority_discards_pending_location_replies,
         async four_lince_transport_address_permissions_draw_exact_points_and_configurable_areas timeout 120,
         permissions_are_observed_per_map_and_denial_removes_previous_fix,

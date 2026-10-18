@@ -92,7 +92,17 @@ pub(super) fn render(
         13.0,
     );
     let person = person(world, owner);
+    let receipt = receipts::current_receipt(world, owner, occurrence);
     let can_report = capability(occurrence, "report_outcome");
+    if can_report {
+        button(
+            world,
+            parent,
+            owner,
+            "Review receipt sharing",
+            Command::Open(super::receipts::prepare_form(transfer, occurrence, &person)),
+        );
+    }
     let role = if occurrence["giver"].as_str() == Some(&person) {
         Some(Role::Giver)
     } else if occurrence["receiver"].as_str() == Some(&person) {
@@ -204,6 +214,19 @@ pub(super) fn render(
         );
         if evidence["author"].as_str() == Some(&person) {
             crate::native::visibility_castle::record_controls(world, parent, &uid);
+            if let Some(receipt) = &receipt {
+                button(
+                    world,
+                    parent,
+                    owner,
+                    "Review this public outcome…",
+                    Command::Open(receipts::event_form(
+                        &person,
+                        receipt,
+                        json!({"kind":"outcome","record":uid}),
+                    )),
+                );
+            }
         }
         if can_report
             && evidence["author"].as_str() == Some(&person)
@@ -232,6 +255,47 @@ pub(super) fn render(
                 "Withdraw this report",
                 Command::Open(form),
             );
+        }
+    }
+    if let Some(receipt) = &receipt {
+        for slice in array(&occurrence["settlement_progress"], "slices") {
+            if let Some(fact) = slice["evidence_fact"].as_str() {
+                button(
+                    world,
+                    parent,
+                    owner,
+                    &format!(
+                        "Review settlement event · {}…",
+                        text(slice, "cumulative_after")
+                    ),
+                    Command::Open(receipts::event_form(
+                        &person,
+                        receipt,
+                        json!({"kind":"settlement","fact":fact,"supersedes":null}),
+                    )),
+                );
+            }
+        }
+        for event in array(&occurrence["dispute"], "history") {
+            if event["person"].as_str() == Some(&person)
+                && let Some(fact) = event["fact"].as_str()
+            {
+                button(
+                    world,
+                    parent,
+                    owner,
+                    if event["disputed"] == true {
+                        "Review public dispute…"
+                    } else {
+                        "Review clearing public dispute…"
+                    },
+                    Command::Open(receipts::event_form(
+                        &person,
+                        receipt,
+                        json!({"kind":"dispute","fact":fact,"supersedes":null}),
+                    )),
+                );
+            }
         }
     }
     if history["more"] == true {

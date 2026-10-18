@@ -2,9 +2,9 @@
 #![recursion_limit = "256"]
 
 mod admin;
-mod lingua;
 #[cfg(feature = "ui")]
 mod fiote_laboratory;
+mod lingua;
 
 use std::{env, io::Error, net::SocketAddr, path::PathBuf};
 
@@ -13,7 +13,18 @@ use utils::logging::{init, set_quiet};
 
 fn main() -> Result<(), Error> {
     utils::build_info::set_revision(option_env!("LINCE_REVISION").unwrap_or("unknown"));
-    let args = env::args().collect::<Vec<String>>();
+    let mut args = env::args().collect::<Vec<String>>();
+    let application = if has_arg(&args, "--park") {
+        args.iter()
+            .position(|argument| argument == "--")
+            .map(|index| {
+                let application = args.split_off(index + 1);
+                args.pop();
+                application
+            })
+    } else {
+        None
+    };
     if args.get(1).is_some_and(|argument| argument == "lingua") {
         if let Err(error) = lingua::dispatch(&args[2..]) {
             eprintln!("{error}");
@@ -22,8 +33,11 @@ fn main() -> Result<(), Error> {
         return Ok(());
     }
     if has_arg(&args, "--mcp-stdio") {
-        return tokio::runtime::Builder::new_current_thread().enable_all().build()?
-            .block_on(cell::bridge_stdio()).map_err(Error::other);
+        return tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(cell::bridge_stdio())
+            .map_err(Error::other);
     }
     if has_arg(&args, "--simulation") {
         let result = std::thread::Builder::new()
@@ -49,6 +63,26 @@ fn main() -> Result<(), Error> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_help();
         return Ok(());
+    }
+    let park_mode = has_arg(&args, "--park");
+    #[cfg(not(all(target_os = "linux", feature = "park")))]
+    if park_mode {
+        return Err(Error::other(
+            "Park requires Linux and the park feature. Run cargo xtask park session.",
+        ));
+    }
+    if park_mode && has_arg(&args, "--server") {
+        return Err(Error::other("Choose either --park or --server."));
+    }
+    if application
+        .as_ref()
+        .is_some_and(|arguments| arguments.first().is_none_or(String::is_empty))
+    {
+        return Err(Error::other("Pass an application executable after --."));
+    }
+    #[cfg(all(target_os = "linux", feature = "park"))]
+    if park_mode && !lince_park::session::environment_ready() {
+        return Err(lince_park::session::reexec_environment());
     }
     #[cfg(not(feature = "facade"))]
     if has_arg(&args, "--facade") {
@@ -114,7 +148,7 @@ fn main() -> Result<(), Error> {
         };
     }
 
-    let server_mode = has_arg(&args, "--server") || cfg!(not(feature = "ui"));
+    let server_mode = !park_mode && (has_arg(&args, "--server") || cfg!(not(feature = "ui")));
     let _storage_host = if server_mode {
         let data_dir = utils::config::lince_data_dir()
             .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
@@ -122,7 +156,7 @@ fn main() -> Result<(), Error> {
     } else {
         None
     };
-    #[cfg(feature = "ui")]
+    #[cfg(any(feature = "ui", all(target_os = "linux", feature = "park")))]
     let instance = if !server_mode {
         let data_dir = utils::config::lince_data_dir()
             .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
@@ -267,6 +301,43 @@ fn main() -> Result<(), Error> {
         return Ok(());
     }
 
+    #[cfg(all(target_os = "linux", feature = "park"))]
+    if park_mode {
+        let data_dir = utils::config::lince_data_dir()
+            .expect("Park data directory was resolved before opening the Cell");
+        let applications = application
+            .map(|arguments| {
+                let mut application = lince_park::launch::Application::new(&arguments[0])?;
+                for argument in &arguments[1..] {
+                    application = application.arg(argument);
+                }
+                Ok::<_, Error>(application)
+            })
+            .transpose()?
+            .into_iter()
+            .collect();
+        let result = {
+            let _entered = runtime.enter();
+            lince_park::session::run(
+                lince_park::runtime::Configuration {
+                    size: [1280, 720],
+                    directory: data_dir,
+                    runtime: runtime.handle().clone(),
+                    cell: Some(lince_interface::native::app::CellHandle(
+                        cell.runtime().clone(),
+                    )),
+                },
+                instance
+                    .as_ref()
+                    .expect("Park claimed its Cell before startup"),
+                applications,
+            )
+        };
+        runtime.block_on(cell.shutdown());
+        drop(instance);
+        return result;
+    }
+
     #[cfg(feature = "ui")]
     {
         let cell_runtime = cell.runtime().clone();
@@ -283,7 +354,11 @@ fn main() -> Result<(), Error> {
                 &data_dir,
                 !has_arg(&args, "--no-tray"),
                 backup_handoff.clone(),
-                if has_arg(&args, "--laboratory-fiote") { Some(fiote_laboratory::options(&args)?) } else { None },
+                if has_arg(&args, "--laboratory-fiote") {
+                    Some(fiote_laboratory::options(&args)?)
+                } else {
+                    None
+                },
             )
         };
         runtime.block_on(cell.shutdown());
@@ -352,6 +427,8 @@ fn print_help() {
     println!("  -h, --help            Show this help message");
     println!("  lingua FILE          Run a Lingua script; check, fmt, and eval are also available");
     println!("      --directory <path> Override the Lince data directory");
+    println!("      --park           Run the native Wayland desktop (Linux, park feature)");
+    println!("                       Pass -- PROGRAM ARGUMENTS to open an application");
     println!("      --port <port>     Override the local HTTP listen port");
     println!(
         "      --peer-port <port> Save the peer UDP port for this Cell (default 6175; 0 automatic)"
@@ -381,14 +458,20 @@ fn print_help() {
         );
         println!("      --laboratory-max-sands N Limit each stress workload (default 8192)");
         println!("      --laboratory-output PATH Save the JSON report to a new file");
-        println!("      --laboratory-fiote     Guided real Fiote conversation test (uses provider usage)");
-        println!("      --laboratory-fiote --laboratory-headless  Run the same workflow without a window");
+        println!(
+            "      --laboratory-fiote     Guided real Fiote conversation test (uses provider usage)"
+        );
+        println!(
+            "      --laboratory-fiote --laboratory-headless  Run the same workflow without a window"
+        );
         println!("      --laboratory-record UID  Existing Fiote to test");
         println!("      --laboratory-separate    Create a test Fiote with the chosen connection");
         println!("      --laboratory-profile ID  Native connection saved for that Fiote");
         println!("      --laboratory-model ID    Override the model for this test thread only");
         println!("      --laboratory-reasoning LEVEL  Override reasoning for this test only");
-        println!("      --laboratory-vault-password-file PATH  Protected password file for headless use");
+        println!(
+            "      --laboratory-vault-password-file PATH  Protected password file for headless use"
+        );
     }
     println!("      --server         Headless: run the Cell with no window. Requires an");
     println!("                       admin account — pass one on first run:");
@@ -397,6 +480,10 @@ fn print_help() {
     println!();
     println!("Administering a Cell with no window (run as the Cell's own user):");
     println!("  lince organ list                       Contacts, their trust, their login");
+    println!("  lince ailuros inspect                  Hardware devices and their Signals");
+    println!("  lince ailuros enroll KEY NAME SLUG EXPIRY  Enroll a disabled JPEG camera");
+    println!("  lince ailuros enable <device-uid>       Enable a provisioned device");
+    println!("  lince ailuros disable <device-uid>      Revoke device publication");
     println!("  lince organ users                      Who can log into this Cell");
     println!("  lince organ trust <who> known          Let them sync");
     println!("  lince organ login <who> <username>     Let them ENTER as that user (live mode)");

@@ -3,6 +3,115 @@ use bevy::math::DVec2;
 use serde_json::json;
 
 #[test]
+fn protein_cards_open_typed_person_and_organ_experience_without_discovery() {
+    for (kind, organ) in [("person", false), ("organ", true)] {
+        let mut app = crate::native::sand_panel::tests::app();
+        let root = app.world_mut().spawn(crate::native::workspace::Workspaces::default()).id();
+        let area = app.world_mut().spawn((Node::default(), ChildOf(root))).id();
+        let row = app.world_mut().spawn((Node::default(), ChildOf(area))).id();
+        let uid = nucleus::new_uid("r");
+        rows::content(app.world_mut(), row, &Config {record_cards:true, ..Default::default()}, &json!({"uid":uid,"kind":kind,"head":"Experience subject"}), Some(RecordBinding {area,uid:uid.clone(),source:Source::Local}));
+        let subject = if organ {nucleus::trust_analysis::Identity::Organ(uid)} else {nucleus::trust_analysis::Identity::Person(uid)};
+        crate::native::trust_castle::tests::assert_subject_entry(app.world_mut(), row, subject);
+    }
+}
+
+#[tokio::test]
+async fn speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_disconnect() {
+    use crate::native::cell_bridge::{SpeechCancellation, connect};
+    use tokio::sync::mpsc;
+
+    let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    let runtime = cell::CellRuntime {
+        commands: Default::default(),
+        store: engine.store.clone(),
+        engine,
+        lanes: std::sync::Arc::new(cell::LaneHub::new()),
+        wire: Default::default(),
+        fiote: None,
+        speech: None,
+        information: None,
+    };
+    let mut bridge = connect(runtime.clone(), crate::native::wake::WakeSignal::new(|| {}));
+    let (personal, mut personal_requests) = mpsc::channel(1);
+    bridge.outgoing = personal;
+    let mut world = World::new();
+    world.insert_non_send(bridge);
+    world.init_resource::<Runtime>();
+    world.init_resource::<Messages<CellMessage>>();
+    world.init_resource::<crate::native::practice_cells::PracticeCells>();
+    world
+        .resource_mut::<crate::native::practice_cells::PracticeCells>()
+        .cells
+        .insert("speech-practice".into(), runtime);
+    let (sender, mut requests) = mpsc::channel(1);
+    sender
+        .try_send(ClientMessage::Speech {
+            id: "queued-inspection".into(),
+            request: cell::speech::Request::Inspect,
+        })
+        .unwrap();
+    let (_, incoming) = mpsc::channel(1);
+    let mut session = sessions::Session::connected(Remote {
+        outgoing: sender,
+        incoming,
+        task: tokio::spawn(std::future::pending()),
+    });
+    session.phase = sessions::Phase::Ready;
+    world
+        .resource_mut::<Runtime>()
+        .sessions
+        .insert("speech-practice".into(), session);
+    let parent = world
+        .spawn(crate::native::practice_cells::PracticeSource("speech-practice".into()))
+        .id();
+    let owner = world.spawn(ChildOf(parent)).id();
+    let cancellation = SpeechCancellation::for_owner(&world, owner).unwrap();
+    let job = nucleus::new_uid("speech");
+    let expected = job.clone();
+    let id = std::thread::spawn(move || {
+        cancellation
+            .send(cell::speech::Request::Voice {
+                request: cell::fiote_communication::speech::voice::Request::Cancel { job },
+            })
+            .unwrap()
+    })
+    .join()
+    .unwrap();
+    assert!(matches!(requests.recv().await, Some(ClientMessage::Speech { id, .. }) if id == "queued-inspection"));
+    let cancelled = tokio::time::timeout(std::time::Duration::from_secs(2), requests.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(matches!(cancelled, ClientMessage::Speech { id: observed, request: cell::speech::Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { job } } } if observed == id && job == expected));
+    assert!(personal_requests.try_recv().is_err());
+    let root = tempfile::tempdir().unwrap();
+    let speech = cell::speech::Host::open(root.path().join("speech.json")).unwrap();
+    let message = ServerMessage::Speech {
+        id: "speech-practice-result".into(),
+        status: cell::speech::Service::handle(&speech, cell::speech::Request::Inspect).await.unwrap(),
+    };
+    observe(&mut world, &Source::Organ("speech-practice".into()), &message);
+    observe(&mut world, &Source::Organ("other-cell".into()), &message);
+    let messages = world.resource::<Messages<CellMessage>>();
+    assert_eq!(messages.len(), 1);
+    assert!(messages.iter_current_update_messages().any(|message| matches!(&message.0, ServerMessage::Speech { id, .. } if id == "speech-practice-result")));
+    speech.shutdown().await;
+    world.resource_mut::<Runtime>().sessions.remove("speech-practice");
+    assert!(SpeechCancellation::for_owner(&world, owner).is_none());
+    assert!(personal_requests.try_recv().is_err());
+    let personal_owner = world.spawn_empty().id();
+    let cancellation = SpeechCancellation::for_owner(&world, personal_owner).unwrap();
+    let id = cancellation
+        .send(cell::speech::Request::StopListening {
+            owner: nucleus::new_uid("voice"),
+            generation: 0,
+        })
+        .unwrap();
+    assert!(matches!(personal_requests.recv().await, Some(ClientMessage::Speech { id: observed, request: cell::speech::Request::StopListening { .. } }) if observed == id));
+}
+
+#[test]
 fn stopping_room_producers_after_owned_entities_are_removed_is_idempotent() {
     let mut world = World::new();
     world.init_resource::<Runtime>();

@@ -601,7 +601,7 @@ fn revoking_a_different_cell_still_needs_publishing() {
 }
 
 #[test]
-fn a_capability_less_member_forces_a_republish() {
+fn unchanged_relays_stay_quiet_but_capability_changes_require_republishing() {
     use engine::roster::{Roster, needs_publishing};
 
     let mut stale = entry("laptop", "n-laptop", "k-laptop");
@@ -618,6 +618,8 @@ fn a_capability_less_member_forces_a_republish() {
         signature: "sig".into(),
     };
 
+    assert!(!needs_publishing(Some(&held), "root", &[stale.clone()]));
+    stale.capabilities = engine::roster::full_capabilities();
     assert!(needs_publishing(Some(&held), "root", &[stale]));
 }
 
@@ -678,6 +680,32 @@ async fn a_contact_offline_across_two_rotations_still_chains() {
         RosterOutcome::Accepted,
         "and a roster signed by it is accepted without re-pairing"
     );
+}
+
+#[tokio::test]
+async fn retiring_the_anchor_preserves_accepted_rotation_but_rejects_new_endorsements() {
+    let (source, organ) = cell("http://rotating-owner.test").await;
+    let (reader, _) = cell("http://rotation-reader.test").await;
+    let root = Signer::generate(&organ, engine::roster::ROOT_KEY_ID);
+    let successor = Signer::generate(&organ, engine::roster::ROOT_KEY_ID);
+    let attacker = Signer::generate(&organ, engine::roster::ROOT_KEY_ID);
+    engine::trust::adopt_key(&reader.store, &organ, engine::roster::ROOT_KEY_ID, &root.public_key_b64()).await.unwrap();
+    source.sign_succession(&root, &successor.public_key_b64()).await.unwrap();
+    let certificate = source.published_successions(&organ).await.unwrap().pop().unwrap();
+    assert!(reader.adopt_succession(&organ, &certificate.old_key, &certificate.new_key, &certificate.created_at, &certificate.signature).await.unwrap());
+    let (key, signature) = source.revocation_certificate(&root);
+    assert!(source.adopt_revocation(&organ, &key, &signature).await.unwrap());
+    assert!(reader.adopt_revocation(&organ, &key, &signature).await.unwrap());
+    assert!(!reader.key_chains(&organ, &root.public_key_b64()).await.unwrap());
+    assert!(reader.key_chains(&organ, &successor.public_key_b64()).await.unwrap());
+    assert!(source.sign_succession(&root, &attacker.public_key_b64()).await.is_err());
+    let at = nucleus::execution::now().to_rfc3339();
+    let signature = root.sign_bytes(&engine::roster::succession_signing_payload(&organ, &root.public_key_b64(), &attacker.public_key_b64(), &at));
+    assert!(!reader.adopt_succession(&organ, &root.public_key_b64(), &attacker.public_key_b64(), &at, &signature).await.unwrap());
+    assert!(!reader.key_chains(&organ, &attacker.public_key_b64()).await.unwrap());
+    let (key, signature) = source.revocation_certificate(&successor);
+    assert!(reader.adopt_revocation(&organ, &key, &signature).await.unwrap());
+    assert!(!reader.key_chains(&organ, &successor.public_key_b64()).await.unwrap());
 }
 
 #[tokio::test]

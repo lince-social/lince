@@ -1,0 +1,28 @@
+Local decision adapters
+
+Qwen3-0.6B: Qwen Team, Alibaba Cloud.
+Weights: https://huggingface.co/Qwen/Qwen3-0.6B-GGUF
+Pinned revision: 23749fefcc72300e3a2ad315e1317431b06b590a
+Tokenizer: https://huggingface.co/Qwen/Qwen3-0.6B
+Pinned revision: c1899de289a04d12100db370d81485cdf75e47ca
+License: Apache-2.0, upstream model license reproduced alongside this file.
+
+Inference: Hugging Face Candle 0.11.0, Apache-2.0 or MIT.
+Lince uses the Apache-2.0 option, CPU and the Rust quantized Qwen3 graph.
+Source: https://github.com/huggingface/candle
+No llama.cpp, ONNX Runtime, libtorch, CUDA or external model process is used.
+
+The Laya/ModernBERT and BERT adaptations have their exact provenance and
+Apache-2.0 license in crates/vendor/laya/CREDITS.txt and LICENSE.
+Laya weights: https://huggingface.co/convaiinnovations/laya (Apache-2.0).
+English NLI weights: Moritz Laurer;
+https://huggingface.co/MoritzLaurer/xtremedistil-l6-h256-zeroshot-v1.1-all-33
+Pinned revision: c07f66d9cbf781191bee66edfe8ad7856f045781 (declared MIT).
+Those checkpoints are explicitly acquired separately from Lince's source.
+
+Modern English NLI development probe: Moritz Laurer;
+https://huggingface.co/MoritzLaurer/ModernBERT-base-zeroshot-v2.0
+Pinned revision: d421c4545a438fd006fb43f8b981c5d908faa1e1 (Apache-2.0).
+The probe reuses the Rust ModernBERT encoder, explicit CPU/f32 weights,
+masked mean pooling and the checkpoint's classifier without bias.
+It is not a validated production admission or routing capability.

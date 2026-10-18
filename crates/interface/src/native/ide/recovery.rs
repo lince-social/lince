@@ -183,6 +183,7 @@ fn attach(world: &mut World) {
         let owner = world
             .query::<(Entity, &Ide)>()
             .iter(world)
+            .filter(|(entity, _)| !crate::native::laboratory::blocked(world, *entity))
             .find(|(_, ide)| ide.paths.len() < 16)
             .map(|(entity, _)| entity);
         let owner = owner.unwrap_or_else(|| {
@@ -190,6 +191,9 @@ fn attach(world: &mut World) {
                 .get::<crate::native::workspace::Workspaces>(root)
                 .unwrap()
                 .active;
+            let workspace = crate::native::laboratory::scope(world)
+                .filter(|(owner, _, temporary, _)| *owner == root && *temporary == workspace)
+                .map_or(workspace, |(_, _, _, previous)| previous);
             spawn(world, root, workspace, DVec2::ZERO, Ide::default())
         });
         let mut ide = world.get_mut::<Ide>(owner).unwrap();
@@ -239,6 +243,7 @@ fn capture_visible(world: &mut World) {
     let views: Vec<_> = world
         .query::<(Entity, &View)>()
         .iter(world)
+        .filter(|(entity, _)| !crate::native::laboratory::blocked(world, *entity))
         .filter(|(_, view)| view.draft)
         .filter_map(|(entity, view)| {
             view.path.as_ref().map(|path| {
@@ -287,6 +292,12 @@ fn capture_visible(world: &mut World) {
             }
             Err(e) => state.error = Some(e),
         }
+    }
+}
+
+pub(super) fn cancel_exit(world: &mut World) {
+    if let Some(mut state) = world.get_resource_mut::<Recovery>() {
+        state.quitting = false;
     }
 }
 

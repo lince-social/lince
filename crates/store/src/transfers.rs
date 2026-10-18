@@ -21,9 +21,12 @@ use crate::StoreError;
 use crate::records::{self, NewRecord};
 
 mod agreement_target;
+mod participation;
 pub use agreement_target::{AgreementTargetInput, AgreementTargetOutcome, assign_agreement};
 pub mod karma_snapshot;
 mod publication;
+mod history_terms;
+pub use history_terms::read as public_history;
 pub use publication::publication_input;
 
 #[derive(Debug, Clone)]
@@ -109,6 +112,7 @@ pub struct TransferDependencyInput {
 
 #[derive(Debug, Clone)]
 pub struct NewTransferDraft {
+    pub public_history: Option<nucleus::transfer::public_history::Terms>,
     pub idempotency_key: String,
     pub slug: Option<String>,
     pub head: String,
@@ -134,6 +138,7 @@ pub struct NewTransferDraft {
 
 #[derive(Debug, Clone)]
 pub struct TransferDraftTermsInput {
+    pub public_history: Option<nucleus::transfer::public_history::Terms>,
     pub slug: Option<String>,
     pub head: String,
     pub agreement_type: String,
@@ -286,6 +291,19 @@ where
     .await
 }
 
+pub async fn revise_whole_draft_guarded<F>(
+    pool: &SqlitePool,
+    input: WholeDraftRevisionInput,
+    expected_state: &nucleus::transfer::karma::Guard,
+    stock_basis: (&str,&str),
+    now: DateTime<Utc>,
+    fact_actor: Option<String>,
+    sign: F,
+) -> Result<RevisionCommit, StoreError>
+where F: Fn(&str) -> Option<String> + Send + Sync {
+    commit_whole_draft(pool,input,now,fact_actor,"revise-transfer-draft",false,true,Some((None,Some(expected_state),Some(stock_basis))),sign).await
+}
+
 pub async fn adopt_legacy_draft<F>(
     pool: &SqlitePool,
     input: WholeDraftRevisionInput,
@@ -354,7 +372,7 @@ where
 
 pub async fn publish_whole_draft_guarded<F>(pool: &SqlitePool, input: WholeDraftRevisionInput, expected: Option<&nucleus::transfer::AgreementGuard>, expected_state: Option<&nucleus::transfer::karma::Guard>, now: DateTime<Utc>, fact_actor: Option<String>, sign: F) -> Result<RevisionCommit, StoreError>
 where F: Fn(&str) -> Option<String> + Send + Sync {
-    commit_whole_draft(pool, input, now, fact_actor, "publish-transfer", false, false, Some((expected, expected_state)), sign).await
+    commit_whole_draft(pool, input, now, fact_actor, "publish-transfer", false, false, Some((expected, expected_state,None)), sign).await
 }
 
 pub async fn reopen_promise_revision<F>(
@@ -394,7 +412,7 @@ async fn commit_whole_draft<F>(
     action: &'static str,
     allow_legacy: bool,
     mark_submitting_party_as_creator: bool,
-    source_guard: Option<(Option<&nucleus::transfer::AgreementGuard>, Option<&nucleus::transfer::karma::Guard>)>,
+    source_guard: Option<(Option<&nucleus::transfer::AgreementGuard>, Option<&nucleus::transfer::karma::Guard>,Option<(&str,&str)>)>,
     sign: F,
 ) -> Result<RevisionCommit, StoreError>
 where
@@ -452,7 +470,13 @@ where
         return Ok(RevisionCommit::Replayed { revision, fact });
     }
 
-    if let Some((expected, expected_state)) = source_guard {
+    if let Some((expected, expected_state,stock_basis)) = source_guard {
+        if let Some((record,expected_basis))=stock_basis {
+            let balance=crate::transfer_balances::read_on(&mut tx,record).await?;
+            let unit:Option<String>=sqlx::query_scalar("SELECT unit_uid FROM record WHERE uid=? AND deleted_at IS NULL").bind(record).fetch_one(&mut *tx).await?;
+            let current=nucleus::karma::canonical_hash("lince.stock-policy-basis.v1",&serde_json::json!({"balance":balance,"unit":unit})).map_err(|error|sqlx::Error::Protocol(error.to_string()))?;
+            if current.as_str()!=expected_basis {return Err(sqlx::Error::Protocol("stock policy inputs changed; refresh the offer".into()));}
+        }
         karma_snapshot::check_on(&mut tx, &input.transfer_uid, expected_state).await?;
         karma_snapshot::check_participant_on(&mut tx, &input.transfer_uid, &input.proposal_author_person_uid, expected).await?;
     }
@@ -574,6 +598,7 @@ where
         .bind(&input.transfer_uid)
         .execute(&mut *tx)
         .await?;
+    records::set_transfer_public_history_on(&mut tx, &input.transfer_uid, input.terms.public_history.as_ref()).await?;
     let submitting_party_exists: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM transfer_party
          WHERE transfer_uid = ? AND actor_uid = ?)",
@@ -913,6 +938,7 @@ where
 }
 
 fn validate_revision_request(input: &WholeDraftRevisionInput) -> Result<(), StoreError> {
+    if let Some(terms) = &input.terms.public_history { terms.validate().map_err(sqlx::Error::Protocol)?; }
     let request_key = input.idempotency_key.trim();
     if request_key.is_empty() || request_key.chars().count() > 200 {
         return Err(sqlx::Error::Protocol(
@@ -1513,6 +1539,7 @@ pub struct ActivateOccurrencesInput {
     pub idempotency_key: String,
     pub actor_person_uid: String,
     pub occurrences: Vec<OccurrenceActivationInput>,
+    pub original_authority_records: Vec<String>,
     pub authorization_intent_uid: Option<String>,
 }
 
@@ -1983,6 +2010,7 @@ where
         return Err(sqlx::Error::Protocol(format!("invalid slug `{slug}`")));
     }
     validate_location(draft.default_place.as_ref())?;
+    if let Some(terms) = &draft.public_history { terms.validate().map_err(sqlx::Error::Protocol)?; }
     let supplied_promise_uids = draft
         .promises
         .iter()
@@ -2052,6 +2080,7 @@ where
     .execute(&mut *tx)
     .await?;
 
+    records::set_transfer_public_history_on(&mut tx, &transfer_uid, draft.public_history.as_ref()).await?;
     let party_uid = nucleus::new_uid("y");
     sqlx::query(
         "INSERT INTO transfer_party (uid, transfer_uid, actor_uid, kind)
@@ -2514,7 +2543,7 @@ async fn revision_snapshot(
     transfer_uid: &str,
 ) -> Result<TransferRevisionSnapshot, StoreError> {
     let row = sqlx::query(
-        "SELECT t.*, r.slug, r.head
+        "SELECT t.*, r.slug, r.head, r.organ_uid
          FROM transfer t JOIN record r ON r.uid = t.record_uid
          WHERE t.record_uid = ?",
     )
@@ -2523,8 +2552,9 @@ async fn revision_snapshot(
     .await?;
     let revision = row.get::<i64, _>("revision") as u64;
     let parties = sqlx::query(
-        "SELECT uid, actor_uid, kind FROM transfer_party
-         WHERE transfer_uid = ? ORDER BY uid",
+        "SELECT tp.uid, tp.actor_uid, tp.kind, person.organ_uid FROM transfer_party tp
+         JOIN record person ON person.uid = tp.actor_uid
+         WHERE tp.transfer_uid = ? ORDER BY tp.uid",
     )
     .bind(transfer_uid)
     .fetch_all(&mut **tx)
@@ -2533,6 +2563,7 @@ async fn revision_snapshot(
     .map(|row| TransferRevisionParty {
         uid: row.get("uid"),
         person_uid: row.get("actor_uid"),
+        organ_uid: row.get("organ_uid"),
         kind: row.get("kind"),
     })
     .collect();
@@ -2622,7 +2653,9 @@ async fn revision_snapshot(
     let mut snapshot = TransferRevisionSnapshot {
         revision,
         transfer: TransferRevisionTerms {
+            public_history: history_terms::read_on(tx, transfer_uid).await?,
             uid: row.get("record_uid"),
+            origin_organ_uid: row.get("organ_uid"),
             slug: row.get("slug"),
             head: row.get("head"),
             agreement_type: row.get("agreement_type"),
@@ -4786,27 +4819,26 @@ where F: Fn(&str) -> Option<String> + Send + Sync,
             current_revision: current_revision as u64,
         });
     }
-    let signed_revision_exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS(
-             SELECT 1 FROM transfer_revision tr
+    let signed_revision = sqlx::query(
+        "SELECT f.hash, f.payload FROM transfer_revision tr
              JOIN fact f ON f.uid = tr.fact_uid
              WHERE tr.transfer_uid = ? AND tr.revision = ?
                AND (f.signature IS NOT NULL OR EXISTS(
                    SELECT 1 FROM fact_action_intent fai
                    JOIN signed_action_intent sai ON sai.uid = fai.intent_uid
                    WHERE fai.fact_uid = f.uid AND sai.status = 'committed'
-               ))
-         )",
+               ))",
     )
     .bind(&input.transfer_uid)
     .bind(expected_revision)
-    .fetch_one(&mut **tx)
-    .await?;
-    if !signed_revision_exists {
-        return Err(sqlx::Error::Protocol(
-            "agreement requires an existing signed Transfer revision".into(),
-        ));
-    }
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| {
+        sqlx::Error::Protocol("agreement requires an existing signed Transfer revision".into())
+    })?;
+    let revision_evidence: TransferRevisionEvidence =
+        serde_json::from_str(&signed_revision.get::<String, _>("payload"))
+            .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
     let party_uid: String = sqlx::query_scalar(
         "SELECT tp.uid FROM transfer_party tp
          JOIN record person ON person.uid = tp.actor_uid AND person.kind = 'person'
@@ -4834,6 +4866,27 @@ where F: Fn(&str) -> Option<String> + Send + Sync,
         return Err(sqlx::Error::Protocol(format!(
             "agreement must move one adjacent level from {from_level}, not to {to_level}"
         )));
+    }
+    let signed_party = revision_evidence
+        .terms
+        .parties
+        .iter()
+        .find(|party| party.uid == party_uid && party.person_uid == input.person_uid)
+        .ok_or_else(|| {
+            sqlx::Error::Protocol("agreement party is absent from the signed revision".into())
+        })?;
+    if to_level > from_level {
+        let current_organ: Option<String> =
+            sqlx::query_scalar("SELECT organ_uid FROM record WHERE uid = ? AND kind = 'person'")
+                .bind(&input.person_uid)
+                .fetch_one(&mut **tx)
+                .await?;
+        if signed_party.organ_uid != current_organ {
+            return Err(sqlx::Error::Protocol(
+                "Person's Organ changed; review a new Transfer revision before advancing agreement"
+                    .into(),
+            ));
+        }
     }
     let cancellation_pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_cancellation WHERE transfer_uid = ? AND revision = ? AND applied_fact_uid IS NULL)")
         .bind(&input.transfer_uid).bind(expected_revision).fetch_one(&mut **tx).await?;
@@ -4910,6 +4963,8 @@ where F: Fn(&str) -> Option<String> + Send + Sync,
         revision: input.expected_revision,
         party_uid: party_uid.clone(),
         person_uid: input.person_uid.clone(),
+        organ_uid: signed_party.organ_uid.clone(),
+        revision_fact_hash: Some(signed_revision.get("hash")),
         from_level: from_level as u8,
         to_level: input.to_level,
     };
@@ -5474,7 +5529,12 @@ where
 pub async fn activate_occurrences_guarded<F>(pool: &SqlitePool, input: ActivateOccurrencesInput, expected: Option<&nucleus::transfer::AgreementGuard>, expected_state: Option<&nucleus::transfer::karma::Guard>, now: DateTime<Utc>, sign: F) -> Result<OccurrenceActivationCommit, StoreError>
 where F: Fn(&str) -> Option<String> + Send + Sync {
     let request_id = validate_request_key(&input.idempotency_key)?;
+    let original_authority_records = nucleus::transfer::receipt::original_authority_records(&input.original_authority_records)
+        .map_err(sqlx::Error::Protocol)?;
     if let Some(outcome) = activation_outcome_for_request(pool, request_id).await? {
+        let original: TransferActivationEvidence = serde_json::from_str(outcome.fact.payload.as_deref()
+            .ok_or_else(|| sqlx::Error::Protocol("missing original activation evidence".into()))?)
+            .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
         let requested = input
             .occurrences
             .iter()
@@ -5499,6 +5559,7 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
             || requested != replayed
             || input.occurrences.len() != outcome.occurrences.len()
             || !exact_terms
+            || original.original_authority_records != original_authority_records
         {
             return Err(sqlx::Error::Protocol(
                 "activation request id was already used with different targets".into(),
@@ -5578,8 +5639,8 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
             "occurrence activation requires an existing signed Transfer revision".into(),
         ));
     }
-    let revision_payload: String = sqlx::query_scalar(
-        "SELECT f.payload FROM transfer_revision tr
+    let signed_revision = sqlx::query(
+        "SELECT f.hash, f.payload FROM transfer_revision tr
          JOIN fact f ON f.uid = tr.fact_uid
          WHERE tr.transfer_uid = ? AND tr.revision = ?",
     )
@@ -5587,8 +5648,13 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
     .bind(expected_revision)
     .fetch_one(&mut *tx)
     .await?;
-    let revision_evidence: TransferRevisionEvidence = serde_json::from_str(&revision_payload)
-        .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let revision_evidence: TransferRevisionEvidence =
+        serde_json::from_str(&signed_revision.get::<String, _>("payload"))
+            .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let original_authorities = participation::read_on(
+        &mut tx, &original_authority_records, &input, &revision_evidence,
+        &signed_revision.get::<String, _>("hash"), now,
+    ).await?;
     let party = sqlx::query(
         "SELECT tp.uid, coalesce(ta.level, 0) AS level
          FROM transfer_party tp
@@ -5627,9 +5693,18 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
         }
     }
 
-    let readiness = crate::transfer_agreement::read_on(&mut tx, &input.transfer_uid).await?.0;
-    if input.occurrences.iter().any(|occurrence| !readiness.promises.get(&occurrence.promise_uid).is_some_and(|promise| promise.ready)) {
-        return Err(sqlx::Error::Protocol("current parent, party or dependency agreement is not ready".into()));
+    let readiness = crate::transfer_agreement::read_on(&mut tx, &input.transfer_uid)
+        .await?
+        .0;
+    if input.occurrences.iter().any(|occurrence| {
+        !readiness
+            .promises
+            .get(&occurrence.promise_uid)
+            .is_some_and(|promise| promise.ready)
+    }) {
+        return Err(sqlx::Error::Protocol(
+            "current parent, party or dependency agreement is not ready".into(),
+        ));
     }
     let at = now.to_rfc3339();
     let activation_event_uid = nucleus::new_uid("tac");
@@ -5799,6 +5874,18 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
             quantity: promise.delta.abs(),
             giver_person_uid: requested.giver_person_uid.clone(),
             receiver_person_uid: requested.receiver_person_uid.clone(),
+            giver_organ_uid: revision_evidence
+                .terms
+                .parties
+                .iter()
+                .find(|party| party.person_uid == requested.giver_person_uid)
+                .and_then(|party| party.organ_uid.clone()),
+            receiver_organ_uid: revision_evidence
+                .terms
+                .parties
+                .iter()
+                .find(|party| party.person_uid == requested.receiver_person_uid)
+                .and_then(|party| party.organ_uid.clone()),
             window_start: promise.window_start,
             window_end: promise.window_end,
             location: promise.location,
@@ -5811,6 +5898,9 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
         transfer_uid: input.transfer_uid.clone(),
         revision: input.expected_revision,
         actor_person_uid: input.actor_person_uid.clone(),
+        revision_fact_hash: Some(signed_revision.get("hash")),
+        original_authorities,
+        original_authority_records,
         occurrences: snapshots.clone(),
     };
     let payload = serde_json::to_string(&evidence)

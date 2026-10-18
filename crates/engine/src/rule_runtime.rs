@@ -221,7 +221,8 @@ impl Engine {
         condition: Option<&store::recurrence::RuleCondition>,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
-        if self.transfer_rule_anchor(consequences, actor).await?.is_none() {
+        let audience_only = consequences.iter().all(|effect| matches!(effect, nucleus::karma::Consequence::AdvanceAudience { .. }));
+        if !audience_only && self.transfer_rule_anchor(consequences, actor).await?.is_none() {
             self.require_permission(actor, "record:update").await?;
         }
         if consequences.iter().any(|effect| {
@@ -237,6 +238,9 @@ impl Engine {
             self.karma_condition_records(condition.parsed().map_err(|error| invalid(error.to_string()))?, actor).await?;
         }
         for consequence in consequences.iter() {
+            if let nucleus::karma::Consequence::AdvanceAudience { plan, commitment } = consequence {
+                self.validate_audience_rule(plan, commitment, actor).await?;
+            }
             if let nucleus::karma::Consequence::ShowComponent { component } = consequence {
                 self.authorize_component(component, actor).await?;
             }

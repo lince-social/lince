@@ -187,7 +187,7 @@ enum Command {
 }
 impl Action for Command {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         let wake = world

@@ -2,6 +2,22 @@ use crate::host::{DesktopAction, Direction, WorkspaceLayout};
 
 pub const COMMANDS: &[(&str, &str, DesktopAction)] = &[
     (
+        "/launch/terminal",
+        "Open the chosen terminal",
+        DesktopAction::OpenTerminal,
+    ),
+    (
+        "/launch/launcher",
+        "Open the chosen application launcher",
+        DesktopAction::OpenLauncher,
+    ),
+    (
+        "/session/lock",
+        "Request the chosen screen locker",
+        DesktopAction::Lock,
+    ),
+    ("/session/logout", "Log out of Park", DesktopAction::Logout),
+    (
         "/window/record",
         "Inspect the focused application's Record",
         DesktopAction::InspectWindowRecord,

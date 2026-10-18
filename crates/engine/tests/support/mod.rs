@@ -124,6 +124,17 @@ pub async fn create_transfer(
     promises: Vec<TransferPromiseInput>,
     options: DraftOptions<'_>,
 ) -> TransferFixture {
+    create_transfer_with_history(engine, creator, invitees, promises, options, None).await
+}
+
+pub async fn create_transfer_with_history(
+    engine: &Engine,
+    creator: &Person,
+    invitees: &[Person],
+    promises: Vec<TransferPromiseInput>,
+    options: DraftOptions<'_>,
+    public_history: Option<nucleus::transfer::public_history::Terms>,
+) -> TransferFixture {
     engine
         .set_signer(creator.signer.clone())
         .await
@@ -131,6 +142,7 @@ pub async fn create_transfer(
     let transfer = engine
         .act(
             Action::CreateTransferDraft {
+                public_history,
                 request_id: format!("create:{}", options.slug),
                 creator: Some(creator.uid.clone()),
                 slug: Some(options.slug.into()),
@@ -234,6 +246,7 @@ pub async fn activate(
     engine
         .act(
             Action::ActivateTransferOccurrence {
+                original_authorities: Vec::new(),
                 transfer: fixture.transfer.clone(),
                 promise: promise.into(),
                 expected_revision: fixture.revision,

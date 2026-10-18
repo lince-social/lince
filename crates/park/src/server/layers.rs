@@ -102,7 +102,7 @@ impl Server {
 }
 
 impl State {
-    fn layer_output(&self, surface: &WlSurface) -> &Output {
+    pub(super) fn layer_output(&self, surface: &WlSurface) -> &Output {
         self.layers
             .outputs
             .get(surface)

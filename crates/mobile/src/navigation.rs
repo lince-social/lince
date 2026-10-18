@@ -11,10 +11,16 @@ pub enum Page {
     Frequency,
     Credits,
     Knowledge,
+    Transfers,
+    Transfer(String),
+    Trust(String, String),
+    Map,
 }
 
 impl Page {
-    pub const MENU: [Self; 7] = [
+    pub const MENU: [Self; 9] = [
+        Self::Transfers,
+        Self::Map,
         Self::Records,
         Self::Kanban,
         Self::Organ,
@@ -26,6 +32,10 @@ impl Page {
 
     pub fn title(&self) -> &'static str {
         match self {
+            Self::Transfers => "Transfers",
+            Self::Transfer(_) => "Transfer",
+            Self::Trust(_, _) => "Transfer experience",
+            Self::Map => "Map",
             Self::Organ => "Organ",
             Self::Records => "Records",
             Self::Record(_) => "Record",

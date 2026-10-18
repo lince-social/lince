@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    esp-dev.url = "github:mirrexagon/nixpkgs-esp-dev/5287d6e1ca9e15ebd5113c41b9590c468e1e001b";
   };
 
   outputs =
@@ -11,6 +12,7 @@
       self,
       nixpkgs,
       flake-utils,
+      esp-dev,
     }:
     let
       binaryRelease =
@@ -34,6 +36,9 @@
           libGL
           libdrm
           libgbm
+          libinput
+          seatd
+          udev
           libx11
           libxcb
           libxcomposite
@@ -868,7 +873,7 @@
           interfaceLinuxRuntimeTools = runtimeTools pkgs;
 
           mkLince =
-            { pname, ui }:
+            { pname, ui, park ? false }:
             pkgs.rustPlatform.buildRustPackage {
               inherit pname version;
               src = cleanSrc;
@@ -876,6 +881,7 @@
               cargoLock = {
                 lockFile = ./Cargo.lock;
                 outputHashes = {
+                  "best-tts-0.1.0" = "sha256-7EQfXCyF+v+i3DvIXDN/2rSG56N9HBI2DpZRUss8H/k=";
                   "flexaudio-0.3.0" = "sha256-Cku6qBC22XC3xmtJ2u1oG3oUUEpX+XkP8UpSYk4qUWQ=";
                   "galileo-0.2.1" = "sha256-4UUmoj1fK9D8+7c2MWYdUpY+WCLbG/wqgzURdBh2Pw4=";
                 };
@@ -894,14 +900,14 @@
                 "--package"
                 "lince"
                 "--features"
-                "instinct"
+                ("instinct" + lib.optionalString park ",park")
               ]
               ++ lib.optional (!ui) "--no-default-features";
               cargoTestFlags = [
                 "--package"
                 "lince"
                 "--features"
-                "instinct"
+                ("instinct" + lib.optionalString park ",park")
               ]
               ++ lib.optional (!ui) "--no-default-features";
 
@@ -930,7 +936,15 @@
                 install -Dm644 institute/packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
                 install -Dm644 institute/packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
+              '' + lib.optionalString park ''
+                install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
+                install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"
+                install -Dm644 institute/packaging/linux/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
+                substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
+                  --replace-fail "Exec=lince --park" "Exec=$out/bin/lince --park"
               '';
+
+              passthru = lib.optionalAttrs park { providedSessions = [ "lince" ]; };
 
               postFixup = lib.optionalString (pkgs.stdenv.hostPlatform.isLinux && (ui || system == "x86_64-linux")) ''
                 wrapProgram "$out/bin/lince" ${
@@ -993,6 +1007,7 @@
           packages = {
             default = lince-ui;
             inherit lince lince-ui;
+            lince-park = mkLince { pname = "lince-park"; ui = true; park = true; };
           };
 
           apps = {
@@ -1235,6 +1250,11 @@
             )
             // lib.optionalAttrs (binaryRelease != null) { binary = lince; };
 
+          devShells.ailuros = pkgs.mkShell {
+            packages = [ esp-dev.packages.${system}.esp-idf-xtensa ];
+            IDF_TARGET = "esp32s3";
+          };
+
           devShells.default = pkgs.mkShell {
             LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             packages =
@@ -1372,6 +1392,24 @@
         imports = [ linceModule lincePackageDefaults ];
       };
       nixosModules.lince = self.nixosModules.default;
+
+      nixosModules.park = { config, lib, pkgs, ... }:
+        let cfg = config.programs.lince-park;
+        in {
+          options.programs.lince-park = {
+            enable = lib.mkEnableOption "the Lince Wayland session";
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${pkgs.stdenv.hostPlatform.system}.lince-park;
+              description = "Lince executable with the Park feature.";
+            };
+          };
+          config = lib.mkIf cfg.enable {
+            environment.systemPackages = [ cfg.package ];
+            services.displayManager.sessionPackages = [ cfg.package ];
+            hardware.graphics.enable = true;
+          };
+        };
 
       # `iroh-relay` is a DEPENDENCY Lince can use, not part of it, which is
       # why it keeps its own `services.iroh-relay` namespace and its own system

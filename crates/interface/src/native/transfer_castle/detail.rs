@@ -65,41 +65,7 @@ fn base(world: &World, owner: Entity, transfer: &Value, action: &str) -> Value {
     action_base(transfer, action, &person(world, owner))
 }
 
-pub(super) fn action_base(transfer: &Value, action: &str, person: &str) -> Value {
-    let mut payload = json!({"action":action,"transfer":transfer["uid"],"expected_revision":transfer["revision"],"person":person});
-    if matches!(
-        action,
-        "create-transfer-thread"
-            | "create-transfer-message"
-            | "reject-transfer-invitation"
-            | "set-transfer-occurrence-claim"
-            | "set-transfer-occurrence-dispute"
-            | "set-transfer-occurrence-application-formula"
-            | "settle-transfer-occurrence"
-            | "compensate-transfer-occurrence-settlement"
-    ) {
-        payload.as_object_mut().unwrap().remove("expected_revision");
-    }
-    if matches!(
-        action,
-        "withdraw-transfer-invitation"
-            | "reopen-transfer-invitation"
-            | "set-transfer-occurrence-claim"
-            | "set-transfer-occurrence-dispute"
-            | "set-transfer-occurrence-application-formula"
-            | "settle-transfer-occurrence"
-            | "compensate-transfer-occurrence-settlement"
-    ) {
-        payload.as_object_mut().unwrap().remove("transfer");
-    }
-    if matches!(
-        action,
-        "withdraw-transfer-invitation" | "reopen-transfer-invitation"
-    ) {
-        payload.as_object_mut().unwrap().remove("person");
-    }
-    payload
-}
+pub(super) use crate::transfers::actions::action_base;
 
 fn offer(world: &mut World, owner: Entity, parent: Entity, subject: &Value, cap: &str, form: Form) {
     if capability(subject, cap) {
@@ -119,6 +85,16 @@ fn choice(values: &[&str]) -> FieldKind {
     FieldKind::Choice(values.iter().map(|value| value.to_string()).collect())
 }
 
+pub(super) fn party_form(title: &str, action: Value, transfer: &Value) -> Form {
+    let mut form = Form::action(title, action);
+    form.review = json!({
+        "Recorded parties":transfer.pointer("/revision_evidence/current/terms/parties"),
+        "Optional public-history terms":transfer.pointer("/revision_evidence/current/terms/transfer/public_history"),
+        "Association":"These Person and Organ associations are fixed in this signed revision. A changed association requires new terms before advancing agreement. This alone does not prove authority to represent an Organ.",
+    });
+    form
+}
+
 pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer: &Value) {
     let heading = row(world, parent);
     button(
@@ -129,6 +105,9 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         Command::Select(String::new()),
     );
     crate::native::edit_mode::label(world, heading, &title(transfer), 21.0);
+    audience::render(world, owner, parent, transfer);
+    transport::render(world, owner, parent, transfer);
+    stock::controls(world, owner, parent, transfer);
     let location_transfer = text(transfer, "uid");
     let location_person = person(world, owner);
     crate::native::location::record_controls(
@@ -139,6 +118,7 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         Some(&location_person),
     );
     let map_records = std::iter::once(location_transfer.clone())
+        .chain(array(transfer, "promises").iter().flat_map(|promise| ["origin", "destination"].into_iter().filter_map(move |field| promise["transport"][field].as_str().map(str::to_owned))))
         .chain(
             array(transfer, "promises")
                 .iter()
@@ -177,6 +157,10 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
             "Use this outcome",
             Command::Open(model::observer(&person(world, owner), transfer)),
         );
+        button(world,heading,owner,"Propose another solution",Command::Open(workflows::alternative(&person(world,owner),transfer)));
+        if capability(transfer,"edit_terms") {
+            button(world,heading,owner,"Create a smaller linked Need",Command::Open(workflows::smaller_need(&person(world,owner),transfer)));
+        }
     }
     if capability(transfer, "edit_terms") || capability(transfer, "adopt_terms") {
         button(world, heading, owner, "Edit terms", Command::Edit(false));
@@ -315,7 +299,24 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
     }
     if let Some(block) = section(world, owner, parent, "agreement", "Agreement", true) {
         forms::review(world, block, &transfer["agreement"], 0);
+        let source = receipts::action_form(
+            &person(world, owner),
+            "Prepare source Organ participation request",
+            json!({
+                "kind":"prepare_participation", "transfer":transfer["uid"], "expected_revision":transfer["revision"], "party":null,
+            }),
+        );
+        button(
+            world,
+            block,
+            owner,
+            "Prepare source participation request",
+            Command::Open(source),
+        );
         for party in array(transfer, "parties") {
+            if let Some(actor) = party["actor"].as_str() {
+                crate::native::trust_castle::subject_controls(world, block, owner, nucleus::trust_analysis::Identity::Person(actor.into()));
+            }
             fact(
                 world,
                 block,
@@ -323,6 +324,20 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
                 text(party, "level_label"),
             );
             let controls = row(world, block);
+            let form = receipts::action_form(
+                &person(world, owner),
+                "Prepare private party participation request",
+                json!({
+                    "kind":"prepare_participation", "transfer":transfer["uid"], "expected_revision":transfer["revision"], "party":party["actor"],
+                }),
+            );
+            button(
+                world,
+                controls,
+                owner,
+                "Prepare participation request",
+                Command::Open(form),
+            );
             let level = party["level"].as_u64().unwrap_or(0);
             for (cap, label, target) in [
                 ("review", "Checked · ready to agree", 1),
@@ -338,7 +353,7 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
                     controls,
                     party,
                     cap,
-                    Form::action(label, action),
+                    party_form(label, action, transfer),
                 );
             }
             for target in 0..=2 {
@@ -356,7 +371,7 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
                         controls,
                         owner,
                         &label,
-                        Command::Open(Form::action(&label, action)),
+                        Command::Open(party_form(&label, action, transfer)),
                     );
                 }
             }
@@ -698,14 +713,12 @@ fn promises(world: &mut World, owner: Entity, parent: Entity, transfer: &Value) 
         }
         let mut action = base(world, owner, transfer, "activate-transfer-occurrence");
         action["promise"] = promise["uid"].clone();
-        offer(
-            world,
-            owner,
-            controls,
-            promise,
-            "activate",
-            Form::action("Activate occurrence", action),
+        let activation = receipts::activation_form(
+            transfer,
+            action,
+            &world.get::<View>(owner).unwrap().receipt_list,
         );
+        offer(world, owner, controls, promise, "activate", activation);
         let mut action = base(world, owner, transfer, "claim-open-transfer-promise");
         action["promise"] = promise["uid"].clone();
         let mut terms = model::promise(&person(world, owner));

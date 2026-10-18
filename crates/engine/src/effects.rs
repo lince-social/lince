@@ -303,6 +303,14 @@ impl Engine {
         use crate::actions::Action;
         use nucleus::karma::Consequence;
         let action = match consequence {
+            Consequence::RefreshStockPolicy { policy, commitment } => {
+                self.refresh_stock_policy(policy,commitment,rule.actor_uid.as_deref(),now).await?;
+                None
+            }
+            Consequence::AdvanceAudience { plan, commitment } => {
+                self.advance_audience(plan, commitment, rule.actor_uid.as_deref(), now).await?;
+                None
+            }
             Consequence::ShowComponent { component } => Some(Action::PresentComponent { target: rule.record_uid.clone(), component: component.clone() }),
             Consequence::SetConcept { concept } => Some(Action::SetIdentity {
                 subject: rule.record_uid.clone(),
@@ -367,6 +375,8 @@ fn database_effect(effect: &store::misc::EffectRow) -> bool {
         "consequence" => matches!(
             serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()),
             Ok(Consequence::SetConcept { .. }
+                | Consequence::AdvanceAudience { .. }
+                | Consequence::RefreshStockPolicy { .. }
                 | Consequence::AddConcept { .. }
                 | Consequence::RemoveConcept { .. }
                 | Consequence::SetQuantityWhere { .. }

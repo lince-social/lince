@@ -1,4 +1,5 @@
 use super::*;
+pub(crate) mod capture;
 use crate::server::SurfaceNode;
 use smithay::{
     backend::{
@@ -16,26 +17,48 @@ use smithay::{
 
 struct View {
     texture: GlesTexture,
-    version: u64,
-    size: [i32; 2],
+}
+
+struct Copy {
+    view: View,
+    _source: GlesTexture,
+    buffer: Arc<crate::server::ClientBuffer>,
+    fence: smithay::backend::renderer::sync::SyncPoint,
+    _watch: crate::graphics::wait::Watch,
+}
+
+impl Drop for Copy {
+    fn drop(&mut self) {
+        if !self.fence.is_reached() { let _ = self.fence.wait(); }
+        self.buffer.release();
+    }
 }
 
 #[derive(Default)]
-pub(super) struct Composition {
+pub(crate) struct Composition {
+    capture: capture::Captures,
+    reactor: Option<crate::graphics::wait::Reactor>,
+    copies: HashMap<(WlSurface, u64), Copy>,
+    acquiring: HashMap<(WlSurface, u64), crate::graphics::wait::Watch>,
+    imports: HashMap<WlSurface, smithay::backend::renderer::utils::CommitCounter>,
+    submitted: Option<smithay::backend::renderer::sync::SyncPoint>,
+    submitted_watch: Option<crate::graphics::wait::Watch>,
     canvases: HashMap<OutputId, GlesTexture>,
-    views: HashMap<WlSurface, View>,
+    views: HashMap<(WlSurface, u64), View>,
+    touched: HashSet<(WlSurface, u64)>,
     layers: HashMap<WlSurface, LayerSnapshot>,
     popups: HashMap<(WlSurface, OutputId), PopupScene>,
 }
 
 #[derive(Clone, PartialEq)]
-pub(super) enum PopupOwner {
+pub(crate) enum PopupOwner {
+    Native,
     Application(lince_interface::host::SurfaceId),
     Layer(WlSurface),
 }
 
 #[derive(Clone)]
-pub(super) struct PopupScene {
+pub(crate) struct PopupScene {
     pub owner: PopupOwner,
     pub surface: WlSurface,
     pub output: OutputId,
@@ -69,31 +92,50 @@ impl PopupScene {
     }
 }
 
-pub(super) struct Presented {
+pub(crate) struct Presented {
+    pub cursor: capture::Cursor,
+    pub drag: Vec<SurfaceNode>,
+    pub locked: bool,
+    pub callbacks: Vec<(Option<OutputId>, Vec<SurfaceNode>)>,
+    pub sync: smithay::backend::renderer::sync::SyncPoint,
     pub layers: Vec<LayerSnapshot>,
     pub clips: Vec<(OutputId, Rectangle)>,
     pub popups: Vec<PopupScene>,
 }
 
 impl Composition {
-    pub(super) fn canvas(
+    pub(crate) fn new(wake: lince_interface::host::WakeSignal) -> io::Result<Self> {
+        Ok(Self { reactor: Some(crate::graphics::wait::Reactor::new(move || wake.ring())?), ..Default::default() })
+    }
+
+    pub(crate) fn ready(&self) -> bool {
+        self.submitted.as_ref().is_none_or(|sync| sync.is_reached())
+    }
+
+    pub(crate) fn imports_changed(&self) -> bool {
+        self.copies.values().any(|copy| copy.fence.is_reached()) || self.acquiring.values().any(crate::graphics::wait::Watch::ready)
+    }
+
+    pub(crate) fn watch(&self, sync: smithay::backend::renderer::sync::SyncPoint) -> io::Result<crate::graphics::wait::Watch> {
+        self.reactor.as_ref().ok_or_else(|| io::Error::other("The compositor fence reactor is unavailable"))?.fence(sync)
+    }
+
+    pub(crate) fn canvas(
         &mut self,
-        backend: &mut WinitGraphicsBackend<GlesRenderer>,
+        renderer: &mut GlesRenderer,
         frame: &crate::presentation::Frame,
     ) -> io::Result<()> {
         let mut canvases = HashMap::new();
         canvases.insert(
             frame.output.unwrap_or(OutputId(1)),
-            backend
-                .renderer()
+            renderer
                 .import_dmabuf(frame.dmabuf(), None)
                 .map_err(error)?,
         );
         for output in &frame.outputs {
             canvases.insert(
                 output.id,
-                backend
-                    .renderer()
+                renderer
                     .import_dmabuf(output.dmabuf(), None)
                     .map_err(error)?,
             );
@@ -103,12 +145,28 @@ impl Composition {
     }
 
     fn import(&mut self, renderer: &mut GlesRenderer, node: &SurfaceNode) -> io::Result<bool> {
-        if self
-            .views
-            .get(&node.surface)
-            .is_some_and(|view| view.version == node.content.version)
-        {
+        let key = (node.surface.clone(), node.content.version);
+        self.touched.insert(key.clone());
+        if self.views.contains_key(&key) {
             return Ok(true);
+        }
+        if let Some(copy) = self.copies.get(&key) {
+            if !copy.fence.is_reached() { return Ok(false); }
+            let texture = copy.view.texture.clone();
+            self.views.insert(key.clone(), View { texture });
+            self.copies.remove(&key);
+            return Ok(true);
+        }
+        let pixels = u64::try_from(node.content.size[0]).unwrap_or(u64::MAX)
+            .saturating_mul(u64::try_from(node.content.size[1]).unwrap_or(u64::MAX));
+        if pixels > 64 * 1024 * 1024 { return Err(io::Error::other("The surface exceeds the compositor import budget")); }
+        let pending_pixels: u64 = self.copies.values().map(|copy| {
+            let size = copy.view.texture.size();
+            size.w.max(0) as u64 * size.h.max(0) as u64
+        }).sum();
+        if self.copies.len() >= 128 || self.acquiring.len() >= 128 && !self.acquiring.contains_key(&key)
+            || pending_pixels.saturating_add(pixels) > 64 * 1024 * 1024 {
+            return Ok(false);
         }
         if let Ok(dmabuf) = get_dmabuf(node.content.buffer()) {
             for fd in dmabuf.handles() {
@@ -125,26 +183,26 @@ impl Composition {
                 )
                 .map_err(error)?;
                 if !poll[0].revents().contains(rustix::event::PollFlags::IN) {
+                    if !self.acquiring.contains_key(&key) {
+                        let watch = self.reactor.as_ref().ok_or_else(|| io::Error::other("The compositor fence reactor is unavailable"))?.descriptor(fd.try_clone_to_owned()?)?;
+                        self.acquiring.insert(key, watch);
+                    }
                     return Ok(false);
                 }
             }
         }
+        self.acquiring.remove(&key);
         let size: Size<i32, Buffer> = (node.content.size[0], node.content.size[1]).into();
+        let damage = node.buffer_damage_since(self.imports.get(&node.surface).copied());
         let source = renderer
-            .import_buffer(node.content.buffer(), None, &[Rect::from_size(size)])
+            .import_buffer(node.content.buffer(), None, &damage)
             .ok_or_else(|| io::Error::other("unsupported layer buffer"))?
             .map_err(error)?;
-        let mut texture: GlesTexture = match self
-            .views
-            .get(&node.surface)
-            .filter(|view| view.size == node.content.size)
-        {
-            Some(view) => view.texture.clone(),
-            None => renderer
-                .create_buffer(Fourcc::Argb8888, size)
-                .map_err(error)?,
-        };
-        {
+        self.imports.insert(node.surface.clone(), node.damage.current_commit());
+        let mut texture: GlesTexture = renderer
+            .create_buffer(Fourcc::Argb8888, size)
+            .map_err(error)?;
+        let fence = {
             let mut target = renderer.bind(&mut texture).map_err(error)?;
             let dimensions: Size<i32, Physical> = (size.w, size.h).into();
             let damage = Rect::from_size(dimensions);
@@ -166,35 +224,69 @@ impl Composition {
                     1.0,
                 )
                 .map_err(error)?;
-            frame.finish().map_err(error)?.wait().map_err(error)?;
+            frame.finish().map_err(error)?
+        };
+        if fence.is_reached() {
+            node.content.release();
+            self.views.insert(key, View { texture });
+            Ok(true)
+        } else {
+            let watch = self.watch(fence.clone())?;
+            self.copies.insert(key, Copy { view: View { texture }, _source: source, buffer: node.content.clone(), fence, _watch: watch });
+            Ok(false)
         }
-        node.content.release();
-        self.views.insert(
-            node.surface.clone(),
-            View {
-                texture,
-                version: node.content.version,
-                size: node.content.size,
-            },
-        );
-        Ok(true)
     }
 
-    pub(super) fn present(
+    pub(crate) fn present(
         &mut self,
         backend: &mut WinitGraphicsBackend<GlesRenderer>,
         server: &mut Server,
         canvas: Option<&Completed>,
         pointer: [f64; 2],
     ) -> io::Result<Presented> {
-        self.views.retain(|surface, _| surface.is_alive());
+        let size = backend.window_size();
+        let presented = {
+            let (renderer, mut target) = backend.bind().map_err(error)?;
+            self.render(
+                renderer,
+                &mut target,
+                size,
+                Transform::Flipped180,
+                server,
+                canvas,
+                pointer,
+            )?
+        };
+        backend
+            .submit(Some(&[Rect::from_size(size)]))
+            .map_err(error)?;
+        backend.window().set_cursor_visible(false);
+        Ok(presented)
+    }
+
+    pub(crate) fn render(
+        &mut self,
+        renderer: &mut GlesRenderer,
+        target: &mut smithay::backend::renderer::gles::GlesTarget<'_>,
+        size: Size<i32, Physical>,
+        transform: Transform,
+        server: &mut Server,
+        canvas: Option<&Completed>,
+        pointer: [f64; 2],
+    ) -> io::Result<Presented> {
+        self.touched.clear();
+        if server.locked() {
+            return self.render_lock(renderer, target, size, transform, server);
+        }
+        self.views.retain(|(surface, _), _| surface.is_alive());
         let layers = server.layers();
+        let native_popups = server.native_popups();
         self.layers
             .retain(|surface, _| layers.iter().any(|layer| &layer.surface == surface));
         for layer in &layers {
             let mut ready = true;
             for node in &layer.nodes {
-                match self.import(backend.renderer(), node) {
+                match self.import(renderer, node) {
                     Ok(imported) => ready &= imported,
                     Err(error) => {
                         eprintln!("A Park layer buffer could not be imported: {error}");
@@ -219,11 +311,16 @@ impl Composition {
             Layer::Overlay => 3,
         });
         let cursor = server.cursor().clone();
+        let drag_nodes = server.drag_nodes();
+        let mut drag_ready = true;
+        for node in &drag_nodes {
+            drag_ready &= self.import(renderer, node).unwrap_or(false);
+        }
         let cursor_nodes = if let CursorImageStatus::Surface(surface) = &cursor {
             let nodes = server.surface_nodes(surface);
             let mut ready = true;
             for node in &nodes {
-                match self.import(backend.renderer(), node) {
+                match self.import(renderer, node) {
                     Ok(imported) => ready &= imported,
                     Err(error) => {
                         eprintln!("A Park cursor buffer could not be imported: {error}");
@@ -237,7 +334,6 @@ impl Composition {
         } else {
             Vec::new()
         };
-        let size = backend.window_size();
         let damage = Rect::from_size(size);
         let output_fullscreen = |id| {
             canvas.is_some_and(|canvas| {
@@ -336,6 +432,17 @@ impl Composition {
                 }
             }
         }
+        if let Some(geometry) = canvas.and_then(|canvas| canvas.frame.geometry.as_ref()) {
+            for popup in &native_popups {
+                let Some(mapping) = popup.layer_mapping([0.0; 2]) else { continue };
+                let parent = canvas.and_then(|canvas| canvas.frame.input.editor.as_ref());
+                let Some(output) = parent.and_then(|editor| geometry.outputs.iter().find(|output|
+                    output.bounds.contains([f64::from(editor.caret[0]), f64::from(editor.caret[1])]))) else { continue };
+                popup_plans.push((popup, PopupScene { owner: PopupOwner::Native,
+                    surface: popup.surface.clone(), output: output.id, mapping,
+                    nodes: popup.nodes.clone(), clips: vec![output.usable.unwrap_or(output.bounds)] }));
+            }
+        }
         let mut visible_popups = Vec::new();
         let mut popup_surfaces = HashSet::new();
         for (popup, scene) in popup_plans {
@@ -343,7 +450,7 @@ impl Composition {
             popup_surfaces.insert(key.clone());
             let mut ready = true;
             for node in &popup.nodes {
-                match self.import(backend.renderer(), node) {
+                match self.import(renderer, node) {
                     Ok(imported) => ready &= imported,
                     Err(_) => {
                         server.reject_surface(&popup.surface);
@@ -362,11 +469,8 @@ impl Composition {
         }
         self.popups
             .retain(|surface, _| popup_surfaces.contains(surface));
-        {
-            let (renderer, mut target) = backend.bind().map_err(error)?;
-            let mut frame = renderer
-                .render(&mut target, size, Transform::Flipped180)
-                .map_err(error)?;
+        let sync = {
+            let mut frame = renderer.render(target, size, transform).map_err(error)?;
             frame
                 .clear(
                     smithay::backend::renderer::Color32F::new(0.08, 0.08, 0.08, 1.0),
@@ -407,25 +511,20 @@ impl Composition {
                         .into(),
                 );
                 frame
-                    .render_texture_at(
+                    .render_texture_from_to(
                         texture,
-                        (
-                            rectangle.origin()[0].round() as i32,
-                            rectangle.origin()[1].round() as i32,
-                        )
-                            .into(),
-                        1,
-                        1.0,
-                        Transform::Normal,
+                        Rect::from_size(texture.size().to_f64()),
+                        clip,
                         &[clip],
                         &[],
+                        Transform::Normal,
                         1.0,
                     )
                     .map_err(error)?;
             }
             for popup in visible_popups
                 .iter()
-                .filter(|popup| matches!(popup.owner, PopupOwner::Application(_)))
+                .filter(|popup| matches!(popup.owner, PopupOwner::Application(_) | PopupOwner::Native))
             {
                 self.draw_popup(&mut frame, popup)?;
             }
@@ -468,28 +567,45 @@ impl Composition {
                     damage,
                 )?;
             }
-            frame.finish().map_err(error)?.wait().map_err(error)?;
-        }
-        backend.submit(Some(&[damage])).map_err(error)?;
-        match cursor {
-            CursorImageStatus::Named(icon) => {
-                backend.window().set_cursor_visible(true);
-                backend.window().set_cursor(icon);
+            if matches!(cursor, CursorImageStatus::Named(_)) {
+                let position = (pointer[0] as i32, pointer[1] as i32);
+                frame
+                    .draw_solid(
+                        Rect::new(position.into(), (4, 20).into()),
+                        &[damage],
+                        smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0),
+                    )
+                    .map_err(error)?;
+                frame
+                    .draw_solid(
+                        Rect::new(position.into(), (14, 4).into()),
+                        &[damage],
+                        smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0),
+                    )
+                    .map_err(error)?;
             }
-            CursorImageStatus::Hidden | CursorImageStatus::Surface(_) => {
-                backend.window().set_cursor_visible(false)
+            if drag_ready {
+                self.draw(&mut frame, &drag_nodes, pointer, damage)?;
             }
-        }
+            frame.finish().map_err(error)?
+        };
+        self.submitted_watch = if sync.is_reached() { None } else { Some(self.watch(sync.clone())?) };
+        self.submitted = Some(sync.clone());
+        let mut callbacks = Vec::new();
         for layer in layers
             .iter()
             .filter(|layer| layer.layer == Layer::Overlay || !output_fullscreen(layer.output))
         {
-            server.presented_nodes(&layer.nodes);
+            callbacks.push((Some(layer.output), layer.nodes.clone()));
         }
-        server.presented_nodes(&cursor_nodes);
+        let pointer_output = server.output_viewports().into_iter().find(|(_, output)| output.bounds.contains(pointer)).map(|(_, output)| output.id);
+        callbacks.push((pointer_output, cursor_nodes.clone()));
+        if drag_ready {
+            callbacks.push((pointer_output, drag_nodes.clone()));
+        }
         for popup in &visible_popups {
             if !popup.clips.is_empty() {
-                server.presented_nodes(&popup.nodes);
+                callbacks.push((Some(popup.output), popup.nodes.clone()));
             }
         }
         if let Some(canvas) = canvas
@@ -511,14 +627,63 @@ impl Composition {
                 if overlap
                     && let Some(window) = canvas.windows.iter().find(|window| window.id == id)
                 {
-                    server.presented_nodes(&window.nodes);
+                    callbacks.push((Some(item.output), window.nodes.clone()));
                 }
             }
         }
+        self.prune_views();
         Ok(Presented {
+            cursor: capture::Cursor::new(cursor, cursor_nodes.clone(), pointer),
+            drag: if drag_ready { drag_nodes } else { Vec::new() },
+            locked: false,
+            callbacks,
+            sync,
             layers,
             clips: plans,
             popups: visible_popups,
+        })
+    }
+
+    fn render_lock(
+        &mut self,
+        renderer: &mut GlesRenderer,
+        target: &mut smithay::backend::renderer::gles::GlesTarget<'_>,
+        size: Size<i32, Physical>,
+        transform: Transform,
+        server: &mut Server,
+    ) -> io::Result<Presented> {
+        let surfaces = server.lock_surfaces();
+        let mut ready = Vec::new();
+        for (id, origin, nodes) in surfaces {
+            let mut complete = true;
+            for node in &nodes {
+                complete &= self.import(renderer, node).unwrap_or(false);
+            }
+            if complete {
+                ready.push((id, origin, nodes));
+            }
+        }
+        let damage = Rect::from_size(size);
+        let mut frame = renderer.render(target, size, transform).map_err(error)?;
+        frame
+            .clear(smithay::backend::renderer::Color32F::BLACK, &[damage])
+            .map_err(error)?;
+        for (_, origin, nodes) in &ready {
+            self.draw(&mut frame, nodes, origin.map(f64::from), damage)?;
+        }
+        let sync = frame.finish().map_err(error)?;
+        self.submitted_watch = if sync.is_reached() { None } else { Some(self.watch(sync.clone())?) };
+        self.submitted = Some(sync.clone());
+        self.prune_views();
+        Ok(Presented {
+            cursor: capture::Cursor::hidden(),
+            drag: Vec::new(),
+            locked: true,
+            callbacks: ready.into_iter().map(|(id, _, nodes)| (Some(id), nodes)).collect(),
+            sync,
+            layers: Vec::new(),
+            clips: Vec::new(),
+            popups: Vec::new(),
         })
     }
 
@@ -530,6 +695,23 @@ impl Composition {
         damage: Rect<i32, Physical>,
     ) -> io::Result<()> {
         self.draw_scaled(frame, nodes, origin, [1.0; 2], damage)
+    }
+
+    fn prune_views(&mut self) {
+        let mut retained = self.touched.clone();
+        for node in self
+            .layers
+            .values()
+            .flat_map(|layer| &layer.nodes)
+            .chain(self.popups.values().flat_map(|popup| &popup.nodes))
+        {
+            retained.insert((node.surface.clone(), node.content.version));
+        }
+        self.views
+            .retain(|key, _| retained.contains(key) && key.0.is_alive());
+        self.acquiring.retain(|key, _| retained.contains(key) && key.0.is_alive());
+        self.imports.retain(|surface, _| surface.is_alive() && retained.iter().any(|(existing, _)| existing == surface));
+        self.copies.retain(|key, copy| !copy.fence.is_reached() || retained.contains(key) && key.0.is_alive());
     }
 
     fn draw_popup(
@@ -566,7 +748,10 @@ impl Composition {
         damage: Rect<i32, Physical>,
     ) -> io::Result<()> {
         for node in nodes.iter().rev() {
-            let Some(view) = self.views.get(&node.surface) else {
+            let Some(view) = self
+                .views
+                .get(&(node.surface.clone(), node.content.version))
+            else {
                 continue;
             };
             let location = std::array::from_fn::<_, 2, _>(|axis| {
@@ -623,13 +808,18 @@ impl Composition {
                 )
                     .into(),
             );
+            let opaque: Vec<Rect<i32, Physical>> = node.opaque_rectangles().into_iter().filter_map(|rectangle| {
+                let low = [(rectangle.loc.x * scale[0]).ceil() as i32, (rectangle.loc.y * scale[1]).ceil() as i32];
+                let high = [((rectangle.loc.x + rectangle.size.w) * scale[0]).floor() as i32, ((rectangle.loc.y + rectangle.size.h) * scale[1]).floor() as i32];
+                (high[0] > low[0] && high[1] > low[1]).then(|| Rect::new((low[0], low[1]).into(), (high[0] - low[0], high[1] - low[1]).into()))
+            }).collect();
             smithay::backend::renderer::Frame::render_texture_from_to(
                 frame,
                 &view.texture,
                 source,
                 destination,
                 &[damage],
-                &[],
+                &opaque,
                 node.transform,
                 1.0,
             )

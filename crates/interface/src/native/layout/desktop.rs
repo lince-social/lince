@@ -14,6 +14,7 @@ use bevy::prelude::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 mod commands;
+mod transients;
 pub use commands::COMMANDS;
 
 #[derive(Resource)]
@@ -33,6 +34,9 @@ pub struct ApplicationWindow {
     pub surface: SurfaceId,
     pub content_size: [u32; 2],
 }
+
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TransientParent(pub Entity);
 
 #[derive(Component, Clone, Copy)]
 pub struct Output(pub OutputId);
@@ -174,6 +178,15 @@ pub fn focus_item(world: &mut World, entity: Entity) {
     let Some(id) = world.get::<Managed>(entity).map(|managed| managed.id) else {
         return;
     };
+    let transient = world.get::<TransientParent>(entity).is_some();
+    let mut ancestors = Vec::new();
+    let mut ancestor = entity;
+    for _ in 0..32 {
+        let Some(parent) = world.get::<TransientParent>(ancestor) else { break };
+        if parent.0 == ancestor { break; }
+        ancestor = parent.0;
+        if let Some(layout) = world.get::<LayoutBox>(ancestor) { ancestors.push(PlacementId(layout.id)); }
+    }
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
     let active = spaces.active;
     if let Some(workspace) = spaces
@@ -181,7 +194,19 @@ pub fn focus_item(world: &mut World, entity: Entity) {
         .iter_mut()
         .find(|workspace| workspace.id == active)
     {
+        for ancestor in ancestors { workspace.desktop.set_minimized(ancestor, false); }
+        let fullscreen = workspace.desktop.fullscreen().filter(|_| transient);
         let _ = workspace.desktop.focus(id, bounds);
+        if let Some(id) = fullscreen {
+            workspace.desktop.request_state(
+                id,
+                crate::host::WindowRequest {
+                    minimized: None,
+                    fullscreen: Some(true),
+                    maximized: None,
+                },
+            );
+        }
     }
 }
 
@@ -257,6 +282,7 @@ fn candidate(world: &World, entity: Entity) -> bool {
 }
 
 pub(crate) fn resolve(world: &mut World) {
+    transients::inherit(world);
     world.init_resource::<Runtime>();
     world.init_resource::<PublishedGeometry>();
     let roots: Vec<_> = world
@@ -392,10 +418,20 @@ pub(crate) fn resolve(world: &mut World) {
             if entities.insert(id, entity).is_some() {
                 continue;
             }
-            let floating = model
+            let mut floating = model
                 .items()
                 .iter()
                 .any(|item| item.id == id && item.floating);
+            if !floating
+                && world.get::<TransientParent>(entity).is_some()
+                && model.items().iter().any(|item| item.id == id)
+                && let Some(rectangle) = Rectangle::new(
+                    (item.position - item.size.as_dvec2() * 0.5).to_array(),
+                    item.size.as_dvec2().to_array(),
+                )
+            {
+                floating = model.toggle_floating(id, rectangle).is_ok();
+            }
             let origin = item.position
                 - item.size.as_dvec2() * 0.5
                 - if floating {
@@ -431,13 +467,28 @@ pub(crate) fn resolve(world: &mut World) {
                         },
                         rules: layout.rules,
                         free: geometry,
-                        floating: false,
+                        floating: world.get::<TransientParent>(entity).is_some(),
                     })
                     .is_ok();
             }
         }
         if inserted && let Some(id) = model.focused() {
+            let fullscreen = model.fullscreen().filter(|_| {
+                entities
+                    .get(&id)
+                    .is_some_and(|entity| world.get::<TransientParent>(*entity).is_some())
+            });
             let _ = model.focus(id, usable);
+            if let Some(id) = fullscreen {
+                model.request_state(
+                    id,
+                    crate::host::WindowRequest {
+                        minimized: None,
+                        fullscreen: Some(true),
+                        maximized: None,
+                    },
+                );
+            }
         }
         if let Some(previous) = previous {
             for id in previous.difference(&entities.keys().copied().collect()) {
@@ -494,7 +545,13 @@ pub(crate) fn resolve(world: &mut World) {
                 .insert((root, active), stamp);
         }
         match model.solve(usable, bounds) {
-            Ok(solution) => {
+            Ok(mut solution) => {
+                transients::place(world, &entities, &mut model, &mut solution, usable);
+                if solution.focused.and_then(|id| entities.get(&id)).is_some_and(|entity| transients::minimized(world, *entity, &model)) {
+                    if let Some(id) = solution.items.first().map(|item| item.id) { let _ = model.focus(id, usable); }
+                    else { model.clear_focus(); }
+                    solution.focused = model.focused();
+                }
                 let fullscreen = model.fullscreen().and_then(|id| entities.get(&id).copied());
                 let members: Vec<_> = world
                     .query::<(Entity, &ChildOf, &WorkspaceMember)>()
@@ -507,7 +564,9 @@ pub(crate) fn resolve(world: &mut World) {
                     .map(|(entity, _, _)| entity)
                     .collect();
                 for entity in members {
-                    if fullscreen.is_some_and(|focused| focused != entity) {
+                    if transients::minimized(world, entity, &model) || fullscreen.is_some_and(|focused| {
+                        focused != entity && !transients::descendant(world, entity, focused)
+                    }) {
                         if world.get::<Suppressed>(entity).is_none() {
                             world.entity_mut(entity).insert(Suppressed);
                         }
@@ -707,6 +766,8 @@ impl crate::native::actions::Action for DesktopAction {
                 | Self::MoveToOutput(_)
                 | Self::MoveWorkspaceToOutput(_)
                 | Self::InspectWindowRecord
+                | Self::OpenTerminal
+                | Self::OpenLauncher
                 | Self::Lock
                 | Self::Logout
         ) {
@@ -882,10 +943,65 @@ fn focused_entity(world: &mut World, root: Entity) -> Option<Entity> {
         .map(|(entity, _, _)| entity)
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(any(test, feature = "behavior-checks"))]
+pub(crate) mod tests {
     use super::*;
     use crate::native::actions::Action;
+
+    #[test]
+    fn minimizing_a_parent_hides_dialogs_and_activating_a_dialog_restores_its_parent() {
+        let (mut world, root, parent, dialog) = fixture();
+        world.entity_mut(dialog).insert(TransientParent(parent));
+        resolve(&mut world);
+        focus_item(&mut world, parent);
+        let parent_id = world.get::<Managed>(parent).unwrap().id;
+        world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_minimized(parent_id, true);
+        resolve(&mut world);
+        assert!(world.get::<Suppressed>(parent).is_some());
+        assert!(world.get::<Suppressed>(dialog).is_some());
+        assert!(world.resource::<PublishedGeometry>().0.as_ref().unwrap().items.is_empty());
+        focus_item(&mut world, dialog);
+        resolve(&mut world);
+        assert!(world.get::<Suppressed>(parent).is_none());
+        assert!(world.get::<Suppressed>(dialog).is_none());
+        assert!(!world.get::<Workspaces>(root).unwrap().entries[0].desktop.minimized(parent_id));
+        assert!(world.resource::<PublishedGeometry>().0.as_ref().unwrap().items.iter().any(|item| item.id == ItemId::Application(SurfaceId(7))));
+    }
+
+    #[cfg_attr(test, test)]
+    fn dialog_stays_above_its_parent_and_preserves_parent_fullscreen() {
+        let (mut world, root, parent, dialog) = fixture();
+        world.entity_mut(dialog).insert(TransientParent(parent));
+        resolve(&mut world);
+        assert!(world.get::<Managed>(dialog).unwrap().floating);
+        let parent_position = world.get::<CanvasItem>(parent).unwrap().position;
+        let dialog_position = world.get::<CanvasItem>(dialog).unwrap().position;
+        assert!((parent_position.x - dialog_position.x).abs() < 0.01);
+        focus_item(&mut world, parent);
+        DesktopAction::ToggleFullscreen.apply(&mut world, root);
+        resolve(&mut world);
+        let parent_id = world.get::<Managed>(parent).unwrap().id;
+        focus_item(&mut world, dialog);
+        resolve(&mut world);
+        assert_eq!(
+            world.get::<Workspaces>(root).unwrap().entries[0]
+                .desktop
+                .fullscreen(),
+            Some(parent_id)
+        );
+        assert!(world.get::<Suppressed>(dialog).is_none());
+        let geometry = world.resource::<PublishedGeometry>().0.as_ref().unwrap();
+        assert!(
+            geometry
+                .items
+                .iter()
+                .any(|item| item.id == ItemId::Application(SurfaceId(7)))
+        );
+        world.despawn(parent);
+        resolve(&mut world);
+        assert!(world.get::<TransientParent>(dialog).is_none());
+        assert!(world.get_entity(dialog).is_ok());
+    }
 
     #[test]
     fn two_outputs_resolve_one_canonical_root_without_reparenting_items() {
@@ -1262,6 +1378,7 @@ mod tests {
         assert_eq!(world.get::<CanvasItem>(native).unwrap().size.x, 492.0);
         assert_eq!(world.get::<CanvasItem>(application).unwrap().size.x, 492.0);
     }
+    crate::native::laboratory_cases! { dialog_stays_above_its_parent_and_preserves_parent_fullscreen, }
 }
 
 pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {

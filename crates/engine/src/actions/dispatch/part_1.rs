@@ -35,7 +35,10 @@ impl Engine {
                     if namespace == store::people::NAMESPACE {
                         return Err(EngineError::Forbidden("Use Person access controls to change standing or authentication metadata".into()));
                     }
-                    if namespace == nucleus::transfer::outcome::NAMESPACE {
+                    if namespace == nucleus::trust_analysis::contacts::NAMESPACE {
+                        return Err(EngineError::Forbidden("Use reviewed signed contact disclosures instead of editing their evidence".into()));
+                    }
+                    if namespace == nucleus::transfer::outcome::NAMESPACE || namespace == nucleus::transfer::receipt::NAMESPACE {
                         return Err(EngineError::Forbidden("Use signed outcome reports to change Transfer evidence".into()));
                     }
                     if matches!(namespace.as_str(), nucleus::record_extension::SCHEMA_NAMESPACE | nucleus::record_extension::VALUES_NAMESPACE) {
@@ -686,20 +689,16 @@ impl Engine {
                     self.rename_roster_cell(&root, &cell_uid, &label).await?;
                 }
                 Action::RosterEnrolToken => {
-                    if self.root_signer().await?.is_none() {
-                        return Err(EngineError::Consequence(
+                    let root=self.root_signer().await?.ok_or_else(||EngineError::Consequence(
                             "the root key is not on this Cell — bring it back to enrol a device"
                                 .into(),
-                        ));
-                    }
+                        ))?;
+                    if !self.key_chains(&root.actor_uid,&root.public_key_b64()).await? {return Err(EngineError::Forbidden("The configured owner key is not currently recognized".into()));}
                     let token = self.issue_enrolment_token().await?;
                     let organ = store::organs::local(&self.store.pool)
                         .await?
                         .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?;
-                    let root_key =
-                        crate::trust::key_of(&self.store, &organ.uid, crate::roster::ROOT_KEY_ID)
-                            .await?
-                            .unwrap_or_default();
+                    let root_key = root.public_key_b64();
                     let pairing =
                         self.current_pairing_invite()
                             .await?
@@ -813,8 +812,7 @@ impl Engine {
                     quota_bytes,
                 } => {
                     let root_key =
-                        crate::trust::key_of(&self.store, &organ_uid, crate::roster::ROOT_KEY_ID)
-                            .await?
+                        self.current_root_key(&organ_uid).await?
                             .ok_or_else(|| {
                                 EngineError::Consequence(
                         "no root key is held for that Organ: pair with them before offering to \

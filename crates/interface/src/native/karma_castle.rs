@@ -1,6 +1,6 @@
 use lince_interface::karma as model;
 pub(crate) mod commands_ui;
-mod embedded_ui;
+mod ailuros_ui;
 mod history_ui;
 mod persistence;
 mod preview_ui;
@@ -160,6 +160,7 @@ impl Plugin for KarmaCastlePlugin {
                     ui::hover_actions,
                     schedules_ui::maintain,
                     preview_ui::maintain,
+                    ailuros_ui::maintain,
                 )
                     .chain(),
             )
@@ -276,7 +277,7 @@ pub fn spawn(
     preview_ui::spawn(world, owner, scroll);
     history_ui::spawn(world, owner, scroll);
     commands_ui::spawn(world, owner, scroll);
-    embedded_ui::spawn(world, owner, scroll);
+    ailuros_ui::spawn(world, owner, scroll);
     ui::render_tools(world, owner);
     owner
 }
@@ -307,7 +308,7 @@ fn status(world: &mut World, owner: Entity, text: impl Into<String>) {
 }
 
 fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Saving is unavailable in the Laboratory".into());
     }
     crate::native::practice_cells::send(world, owner, message)
@@ -571,7 +572,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         if commands_ui::receive(world, &message) {
             continue;
         }
-        if embedded_ui::receive(world, &message) {
+        if ailuros_ui::receive(world, &message) {
             continue;
         }
         if history_ui::receive(world, &message) {

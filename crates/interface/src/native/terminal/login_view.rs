@@ -126,6 +126,7 @@ pub(super) fn poll(world: &mut World, owner: Entity) {
     };
     if let Err(error) = panel::send(
         world,
+        owner,
         ClientMessage::FioteTerminal {
             id: id.clone(),
             request,

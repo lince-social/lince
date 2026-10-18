@@ -209,7 +209,7 @@ impl Engine {
         reply.documents = retained;
         Ok(())
     }
-    pub(super) async fn social_ask_settings(&self) -> Result<Settings, EngineError> {
+    pub(crate) async fn social_ask_settings(&self) -> Result<Settings, EngineError> {
         let cell = store::cells::local(&self.store.pool)
             .await?
             .ok_or_else(|| invalid("No local Cell"))?;
@@ -281,7 +281,7 @@ impl Engine {
         self.social_ask_view(actor).await
     }
 
-    pub(super) async fn social_ask_peer(
+    pub(crate) async fn social_ask_peer(
         &self,
         endpoint: &str,
         outgoing: bool,
@@ -314,7 +314,7 @@ impl Engine {
         Ok(choice)
     }
 
-    pub(super) async fn social_ask_peer_on(
+    pub(crate) async fn social_ask_peer_on(
         &self,
         tx: &mut store::sqlx::Transaction<'_, store::sqlx::Sqlite>,
         endpoint: &str,

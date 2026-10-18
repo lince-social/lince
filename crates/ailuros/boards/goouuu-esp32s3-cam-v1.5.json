@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "name": "GOOUUU ESP32-S3-CAM V1.5",
+  "chip": "esp32s3",
+  "minimum_flash_bytes": 16777216,
+  "psram": {
+    "mode": "octal",
+    "speed_mhz": 80
+  },
+  "camera": {
+    "sensor": "ov2640",
+    "pins": {
+      "data": [11, 9, 8, 10, 12, 18, 17, 16],
+      "xclk": 15,
+      "pclk": 13,
+      "vsync": 6,
+      "href": 7,
+      "sda": 4,
+      "scl": 5,
+      "pwdn": -1,
+      "reset": -1
+    },
+    "xclk_hz": 8000000
+  },
+  "reference": "Verified on GOOUUU V1.5 N16R8 / OV2640: decoded 320x240 JPEG frames and viewer lifecycle, including wall USB power. XCLK 8 MHz; 20 MHz stalled transport on this board. Other revisions require checking their schematic. Compare https://github.com/Zhuwenqian/ESP32_S3_Camera_Monitor and https://github.com/espressif/arduino-esp32/issues/5834."
+}

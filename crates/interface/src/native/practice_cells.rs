@@ -59,6 +59,7 @@ pub(crate) fn sender(
     world: &World,
     owner: Entity,
 ) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+    if crate::native::laboratory::blocked(world, owner) { return None; }
     if let Some(source) = source(world, owner) {
         return crate::native::protein_area::auxiliary_sender(
             world,
@@ -71,6 +72,7 @@ pub(crate) fn sender(
 }
 
 pub(crate) fn source(world: &World, mut owner: Entity) -> Option<String> {
+    if let Some(source) = crate::native::laboratory::owner_source(world, owner) { return Some(source); }
     loop {
         if let Some(source) = world.get::<PracticeSource>(owner) {
             return Some(source.0.clone());
@@ -88,6 +90,8 @@ pub(crate) fn engine(
     source: &crate::native::protein_area::Source,
 ) -> Option<std::sync::Arc<engine::Engine>> {
     if let crate::native::protein_area::Source::Organ(source) = source
+        && crate::native::laboratory::reserved_source(source) { return None; }
+    if let crate::native::protein_area::Source::Organ(source) = source
         && let Some(cells) = world.get_resource::<PracticeCells>()
     {
         if let Some(cell) = cells.cells.get(source) {
@@ -103,7 +107,7 @@ pub(crate) fn engine(
 }
 
 pub(crate) fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
     sender(world, owner)
@@ -119,6 +123,7 @@ pub(crate) fn send(world: &World, owner: Entity, message: ClientMessage) -> Resu
 }
 
 pub(crate) fn runtime(world: &World, owner: Entity) -> Option<cell::CellRuntime> {
+    if crate::native::laboratory::blocked(world, owner) { return None; }
     if let Some(source) = source(world, owner) {
         return world
             .get_resource::<PracticeCells>()?
@@ -132,6 +137,7 @@ pub(crate) fn runtime(world: &World, owner: Entity) -> Option<cell::CellRuntime>
 }
 
 pub(crate) fn permits_area(world: &World, entity: Entity, uid: &str) -> bool {
+    if crate::native::laboratory::blocked(world, entity) { return false; }
     let Some(area) = world.get::<PracticeArea>(entity) else {
         return true;
     };

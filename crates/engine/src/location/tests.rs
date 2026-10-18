@@ -1,4 +1,12 @@
 use super::*;
+#[path = "tests/freshness.rs"]
+mod freshness;
+#[path = "tests/handover.rs"]
+mod handover;
+#[path = "tests/invitations.rs"]
+mod invitations;
+#[path = "tests/stopping.rs"]
+mod stopping;
 use crate::actions::Action;
 
 struct Offline;
@@ -8,6 +16,7 @@ struct Linked {
     organ: String,
     peer: Weak<Engine>,
     online: Arc<std::sync::atomic::AtomicBool>,
+    publish_clock: nucleus::execution::Execution,
 }
 
 #[async_trait::async_trait]
@@ -20,11 +29,11 @@ impl Network for Linked {
         if !self.online.load(std::sync::atomic::Ordering::SeqCst) {
             return Err(invalid("offline"));
         }
-        self.peer
+        let publish = matches!(&request,PeerRequest::Publish {..});
+        let peer = self.peer
             .upgrade()
-            .ok_or_else(|| invalid("disconnected"))?
-            .location_peer(&self.organ, &self.node, request)
-            .await
+            .ok_or_else(|| invalid("disconnected"))?;
+        if publish {self.publish_clock.scope(peer.location_peer(&self.organ,&self.node,request)).await} else {peer.location_peer(&self.organ,&self.node,request).await}
     }
 }
 
@@ -36,6 +45,10 @@ impl Network for Offline {
     async fn location_request(&self, _: &str, _: PeerRequest) -> Result<Value, EngineError> {
         Err(invalid("offline"))
     }
+}
+
+async fn approval_epoch(engine:&Engine,record:&str)->String {
+    engine.location_pending_sources().await.into_iter().find(|lease|lease.settings.record_uid==record).expect("Pending source approval").session_uid
 }
 
 struct Fixture {
@@ -50,7 +63,10 @@ struct Fixture {
 
 impl Fixture {
     async fn new() -> Self {
-        let engine = Engine::open_memory().await.unwrap();
+        Self::from_engine(Engine::open_memory().await.unwrap()).await
+    }
+
+    async fn from_engine(engine: Engine) -> Self {
         let network: Arc<dyn Network> = Arc::new(Offline);
         engine.attach_location_network(network.clone());
         let role = store::auth::ensure_role(&engine.store.pool, "location-test")
@@ -151,6 +167,7 @@ impl Fixture {
                 Command::Approve {
                     person: self.controller.clone(),
                     record_uid: self.record.clone(),
+                    expected_session_uid: approval_epoch(&self.engine,&self.record).await,
                 },
                 None,
             )
@@ -171,6 +188,7 @@ impl Fixture {
             longitude: -46.6333,
             accuracy_metres: Some(8.0),
             captured_at_ms: now_ms(),
+            capture_age_ms: 0,
         }
     }
 }
@@ -879,7 +897,7 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
         organ_uid: organ.clone(),
         root_key: signer.public_key_b64(),
         version: 1,
-        not_after: (nucleus::execution::now() + chrono::Duration::days(1)).to_rfc3339(),
+        not_after: (nucleus::execution::now() + chrono::Duration::days(3)).to_rfc3339(),
         cells: vec![
             CellEntry {
                 cell_uid: fixture.settings.source_cell_uid,
@@ -934,12 +952,14 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
         organ: organ.clone(),
         peer: Arc::downgrade(&source),
         online: online.clone(),
+        publish_clock: nucleus::execution::Execution::new([54;32],now_ms()-86_400_000).unwrap(),
     });
     let source_network: Arc<dyn Network> = Arc::new(Linked {
         node: "b".repeat(64),
         organ: organ.clone(),
         peer: Arc::downgrade(&authority),
         online: online.clone(),
+        publish_clock: nucleus::execution::Execution::new([55;32],now_ms()+86_400_000).unwrap(),
     });
     authority.attach_location_network(authority_network.clone());
     source.attach_location_network(source_network.clone());
@@ -973,7 +993,8 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
                 Action::Location {
                     request: Command::Approve {
                         person: stranger,
-                        record_uid: record.clone()
+                        record_uid: record.clone(),
+                        expected_session_uid: approval_epoch(&source,&record).await,
                     }
                 },
                 None
@@ -987,7 +1008,8 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
                 Action::Location {
                     request: Command::Approve {
                         person: controller.clone(),
-                        record_uid: record.clone()
+                        record_uid: record.clone(),
+                        expected_session_uid: approval_epoch(&source,&record).await,
                     }
                 },
                 None
@@ -1014,6 +1036,7 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
                 request: Command::Approve {
                     person: controller.clone(),
                     record_uid: record.clone(),
+                    expected_session_uid: approval_epoch(&source,&record).await,
                 },
             },
             None,
@@ -1022,7 +1045,7 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
         .unwrap();
     assert_eq!(source.location_sources().await.len(), 1);
     source
-        .publish_device_location(-23.5505, -46.6333, Some(8.0), now_ms(), 1)
+        .publish_device_location(-23.5505, -46.6333, Some(8.0), now_ms()-86_400_000, 0, 1)
         .await
         .unwrap();
     assert!(
@@ -1129,8 +1152,9 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
         .act(
             Action::Location {
                 request: Command::Approve {
-                    person: controller,
+                    person: controller.clone(),
                     record_uid: record.clone(),
+                    expected_session_uid: approval_epoch(&source,&record).await,
                 },
             },
             None,
@@ -1147,20 +1171,23 @@ async fn another_device_requires_local_approval_and_stops_acquiring_while_offlin
                 &organ,
                 &"b".repeat(64),
                 PeerRequest::Publish {
-                    record_uid: record,
+                    record_uid: record.clone(),
                     session_uid: first_session,
+                    challenge_uid: nucleus::new_uid("lc"),
                     fix: Fix {
                         sequence: 99,
                         latitude: 1.0,
                         longitude: 1.0,
                         accuracy_metres: None,
-                        captured_at_ms: now_ms()
+                        captured_at_ms: now_ms(),
+                        capture_age_ms: 0,
                     },
                 }
             )
             .await
             .is_err()
     );
+    handover::source_race(&authority,&source,&controller,&record,&organ).await;
 }
 
 #[tokio::test]
@@ -1303,7 +1330,8 @@ async fn approval_replay_and_source_identity_are_enforced() {
             .location_request(
                 Command::Approve {
                     person: fixture.stranger.clone(),
-                    record_uid: fixture.record.clone()
+                    record_uid: fixture.record.clone(),
+                    expected_session_uid: approval_epoch(&fixture.engine,&fixture.record).await,
                 },
                 None
             )
@@ -1316,6 +1344,7 @@ async fn approval_replay_and_source_identity_are_enforced() {
             Command::Approve {
                 person: fixture.controller.clone(),
                 record_uid: fixture.record.clone(),
+                expected_session_uid: approval_epoch(&fixture.engine,&fixture.record).await,
             },
             Some(&fixture.controller),
         )
@@ -1419,10 +1448,12 @@ async fn old_fixes_expire_without_being_refreshed_by_viewing() {
     );
     let mut future = fixture.fix(2);
     future.captured_at_ms += 1000;
-    assert!(future.validate(now_ms()).is_err());
+    assert!(future.validate().is_ok());
     let mut old = fixture.fix(2);
     old.captured_at_ms -= 60_001;
-    assert!(old.validate(now_ms()).is_err());
+    assert!(old.validate().is_ok());
+    old.capture_age_ms = 60_000;
+    assert!(old.validate().is_err());
 }
 
 #[tokio::test]
@@ -1641,6 +1672,7 @@ async fn concurrent_starts_keep_one_source_and_permission_loss_stops_it() {
                 request: Command::Approve {
                     person: fixture.controller.clone(),
                     record_uid: fixture.record.clone(),
+                    expected_session_uid: approval_epoch(&fixture.engine,&fixture.record).await,
                 },
             },
             None,
@@ -1702,10 +1734,10 @@ async fn invalid_native_fixes_cannot_replace_the_current_position() {
     fix.accuracy_metres = Some(-1.0);
     invalid.push(fix);
     let mut fix = fixture.fix(2);
-    fix.captured_at_ms += 60_000;
+    fix.capture_age_ms = 60_000;
     invalid.push(fix);
     let mut fix = fixture.fix(2);
-    fix.captured_at_ms -= 60_001;
+    fix.capture_age_ms = u64::MAX;
     invalid.push(fix);
     for fix in invalid {
         assert!(

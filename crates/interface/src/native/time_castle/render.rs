@@ -417,7 +417,7 @@ fn segment_distance(point: Vec2, a: Vec2, b: Vec2) -> f32 {
 }
 
 pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Instant>>) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     let now = chrono::Utc::now().timestamp_millis();

@@ -1091,6 +1091,7 @@ pub(crate) fn control(
             SandKind::WorkTimer => Icon::Play,
             SandKind::AccessControl => Icon::Person,
             SandKind::Visibility => Icon::Person,
+            SandKind::Trust => Icon::Person,
             SandKind::HandCamera => Icon::Person,
             SandKind::Video => Icon::Play,
             SandKind::Sync => Icon::Reset,

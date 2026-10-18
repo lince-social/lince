@@ -22,6 +22,18 @@ impl FromWorld for Fonts {
 }
 
 pub fn render(world: &mut World, parent: Entity, source: &str) {
+    if let Some(reference) = source
+        .lines()
+        .map(str::trim)
+        .find(|line| nucleus::location::Invitation::parse(line).is_ok())
+    {
+        crate::app::button(
+            world,
+            parent,
+            "Open location invitation",
+            crate::app::Intent::OpenLocationInvitation(reference.into()),
+        );
+    }
     world.init_resource::<Fonts>();
     let end = source
         .char_indices()

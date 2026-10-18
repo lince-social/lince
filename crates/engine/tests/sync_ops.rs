@@ -509,6 +509,8 @@ async fn the_executor_designation_survives_the_wire() {
     .await
     .unwrap();
 
+    assert_eq!(b.import_op_batch(&engine::sync::OpBatch {from_organ:a_organ.clone(),ops:Vec::new()}).await.unwrap_err().code(),Some("forbidden"));
+    store::organs::set_sync_policy(&b.store.pool,&a_organ,true,true).await.unwrap();
     let target = &b;
     a.drain_outbox(|_contact, root, batch| async move {
         match root {

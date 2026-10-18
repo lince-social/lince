@@ -6,6 +6,21 @@ use engine::{
 use p256::ecdsa::{Signature, SigningKey, signature::Signer};
 
 #[tokio::test]
+async fn ailuros_clock_uses_public_https_ingress_and_discloses_only_server_identity_and_time() {
+    let state = crate::tests::fixture().await;
+    let facade = crate::Facade::start_public(state.cell.clone(), "127.0.0.1:0", "https://lince.test").await.unwrap();
+    let url = format!("http://{}/ailuros/clock",facade.address);
+    let client = reqwest::Client::new();
+    assert_eq!(client.get(&url).send().await.unwrap().status(),StatusCode::FORBIDDEN);
+    let response = client.get(&url).header("host","lince.test").header("x-forwarded-proto","https").send().await.unwrap();
+    assert_eq!(response.status(),StatusCode::OK);
+    let body = response.json::<serde_json::Value>().await.unwrap();
+    assert_eq!(body.as_object().unwrap().len(),2);
+    assert_eq!(body["audience"].as_str().unwrap().len(),64);
+    assert!(body["server_time"].as_i64().unwrap() > 0);
+}
+
+#[tokio::test]
 async fn https_proxy_ingress_verifies_readings_and_enforces_body_and_origin_limits() {
     let state = crate::tests::fixture().await;
     let key = SigningKey::from_slice(&[1; 32]).unwrap();
@@ -66,10 +81,7 @@ async fn https_proxy_ingress_verifies_readings_and_enforces_body_and_origin_limi
         crate::Facade::start_public(state.cell.clone(), "127.0.0.1:0", "https://lince.test")
             .await
             .unwrap();
-    let url = format!(
-        "http://{}/signals/{}/readings",
-        facade.address, reading.signal
-    );
+    let url = format!("http://{}/ailuros/readings", facade.address);
     let client = reqwest::Client::new();
     let post = || {
         client
@@ -90,6 +102,10 @@ async fn https_proxy_ingress_verifies_readings_and_enforces_body_and_origin_limi
     let first = post().json(&reading).send().await.unwrap();
     assert_eq!(first.status(), StatusCode::OK);
     let receipt = first.json::<serde_json::Value>().await.unwrap();
+    assert_eq!(receipt["device"], reading.endpoint);
+    assert_eq!(receipt["key_epoch"], reading.credential_epoch);
+    assert!(receipt.get("endpoint").is_none());
+    assert_eq!(post().bearer_auth("unwanted").json(&reading).send().await.unwrap().status(), StatusCode::FORBIDDEN);
     assert_eq!(
         post()
             .json(&reading)

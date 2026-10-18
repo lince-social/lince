@@ -148,7 +148,7 @@ pub(crate) enum Command {
     Simulate,
     Schedules,
     Commands,
-    Embedded,
+    Ailuros,
     Select(String),
     SelectAll,
     DeleteSelected,
@@ -217,8 +217,8 @@ impl Action for Command {
                 super::commands_ui::toggle(world, owner);
                 return;
             }
-            Self::Embedded => {
-                super::embedded_ui::toggle(world, owner);
+            Self::Ailuros => {
+                super::ailuros_ui::toggle(world, owner);
                 return;
             }
             Self::Select(uid) => {
@@ -825,7 +825,7 @@ pub(super) fn render_tools(world: &mut World, owner: Entity) {
     for (command, label) in [
         (Command::Schedules, "Scheduled changes"),
         (Command::Commands, "Commands"),
-        (Command::Embedded, "Embedded"),
+        (Command::Ailuros, "Ailuros"),
         (Command::Simulate, "Simulation"),
     ] {
         button(world, tools, owner, command, label);

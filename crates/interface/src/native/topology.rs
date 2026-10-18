@@ -69,6 +69,7 @@ impl Plugin for TopologyPlugin {
                     .after(crate::native::physics::SimulateWorkspaces),
             );
         terrain::install(app);
+        app.add_plugins(crate::native::physical_workspace::PhysicalWorkspacePlugin);
         app.add_systems(
             Update,
             rooms::synchronize

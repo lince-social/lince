@@ -28,7 +28,7 @@ pub(super) fn update(world: &mut World) {
         .collect();
     watches(world, &owners);
     for owner in owners.iter().copied() {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             continue;
         }
         if world.get::<View>(owner).unwrap().restore {
@@ -363,7 +363,7 @@ fn flatten(view: &View, root: &PathBuf, path: &PathBuf, depth: usize, rows: &mut
 fn watches(world: &mut World, owners: &[Entity]) {
     let mut wanted = crate::native::ide::watched(world);
     for owner in owners {
-        if crate::native::laboratory::suspended(world, *owner) {
+        if crate::native::laboratory::blocked(world, *owner) {
             continue;
         }
         if let Some(view) = world.get::<View>(*owner) {

@@ -24,7 +24,7 @@ turn-client-rustls = { version = "=0.1.1", optional = true }
 rustls = { version = "=0.23.44", default-features = false, features = ["aws_lc_rs", "std", "tls12"], optional = true }
 webpki-roots = { version = "=1.0.9", optional = true }
 flexaudio = { git = "https://github.com/Studio-Sadola/flexaudio", rev = "e36ca9fe8151cd821a35a13aa8fbf55c999e64ce", optional = true }
-cpal = { version = "=0.16.0", optional = true }
+cpal = { workspace = true, optional = true }
 nokhwa = { version = "=0.10.11", default-features = false, features = ["input-native"], optional = true }
 tokio = { workspace = true, optional = true }
 

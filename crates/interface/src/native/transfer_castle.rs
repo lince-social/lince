@@ -4,9 +4,26 @@ mod karma;
 mod model;
 mod outcomes;
 mod persistence;
+mod receipts;
+mod receipt_delivery;
+mod receipt_history;
+mod receipt_browsing;
+mod receipt_files;
+mod receipt_identity;
 mod runtime;
 pub(crate) mod tests;
 mod ui;
+mod workflows;
+mod audience;
+mod stock;
+mod transport;
+
+pub(crate) fn laboratory_cases(cases:&mut Vec<crate::native::laboratory::Case>) {
+    tests::laboratory_cases(cases);
+    workflows::tests::laboratory_cases(cases);
+    audience::tests::laboratory_cases(cases);
+    stock::tests::laboratory_cases(cases);
+}
 
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
@@ -71,6 +88,11 @@ struct View {
     disclosure_preview: Option<Option<String>>,
     selected_occurrences: HashSet<String>,
     notice: Option<String>,
+    receipt: Option<Value>,
+    receipt_page: usize,
+    receipt_file_job: Option<String>,
+    receipt_list: Value,
+    receipt_export: Option<String>,
 }
 
 struct Pending {
@@ -208,6 +230,11 @@ pub fn spawn(
         disclosure_preview: None,
         selected_occurrences: HashSet::new(),
         notice: None,
+        receipt: None,
+        receipt_page: 0,
+        receipt_file_job: None,
+        receipt_list: Value::Null,
+        receipt_export: None,
     });
     ui::render(world, owner);
     forms::render(world, owner);

@@ -13,6 +13,10 @@ mod ui;
 
 use forms::{Field, Kind, form};
 
+pub(crate) fn profile_claim_laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
+    social::profile_claims::laboratory_cases(cases);
+}
+
 #[derive(Component)]
 pub struct OrganCastle {
     root: Entity,
@@ -35,6 +39,16 @@ struct Requests {
 
 pub(crate) fn social_delivery_label(stage: &str) -> String {
     social::delivery_label(stage, &Value::Null)
+}
+
+pub(crate) fn transport_discovery(world: &mut World, owner: Entity, parent: Entity, transfer: &str, activity: nucleus::transfer::transport::Activity) {
+    form(world, owner, parent, "Prepare public transport announcement", json!({"action":"social","request":{"command":"prepare-from-record","source":transfer}}), vec![], None);
+    form(world, owner, parent, "Find transport announcements", json!({"action":"social","request":{"command":"search","query":{"text":"","transport":{"activity":activity}},"services":[]}}), vec![
+        Field("/request/query/direction", "Need or offer", forms::choices(&["need", "contribution"]), json!("need")),
+        Field("/request/query/text", "Words to find", Kind::Text, json!("")),
+        Field("/request/query/area", "Declared city or region", Kind::Text, json!("")),
+        Field("/request/services", "Optional directory endpoints", Kind::TextList, json!([])),
+    ], None);
 }
 
 pub(crate) fn social_delivery_controls(
@@ -414,7 +428,7 @@ fn query(topic: &str) -> protein::Protein {
 }
 
 fn dispatch(world: &mut World, entity: Entity, payload: Value) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, entity) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
     let form = world
@@ -730,7 +744,7 @@ fn update(
         for topic in TOPICS {
             let id = subscription(owner, topic);
             if !world.resource::<Requests>().subscriptions.contains(&id)
-                && !crate::native::laboratory::active(world)
+                && !crate::native::laboratory::blocked(world, owner)
             {
                 if crate::native::practice_cells::send(
                     world,

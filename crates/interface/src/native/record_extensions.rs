@@ -208,6 +208,7 @@ fn key(settings: &Settings) -> String {
 }
 
 fn inspection(world: &World, owner: Entity) -> Option<&Inspection> {
+    if crate::native::laboratory::blocked(world, owner) { return None; }
     let view = world.get::<View>(owner)?;
     world
         .get_resource::<Runtime>()?
@@ -350,6 +351,9 @@ fn search_picker(world: &mut World, owner: Entity) -> Result<(), String> {
         aggregate: None,
         order: Vec::new(),
     };
+    if crate::native::laboratory::blocked(world, owner) {
+        return Err("Choices are unavailable in the Laboratory".into());
+    }
     let sender = sender(world, &settings.source).ok_or("Connect to the Organ first")?;
     world.init_resource::<Runtime>();
     if world.resource::<Runtime>().pending.len() >= 128 {
@@ -383,7 +387,7 @@ fn send_change(
     target: Option<String>,
     request: Request,
 ) -> Result<(), String> {
-    if crate::native::laboratory::suspended(world, owner) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
     let settings = world.get::<Settings>(owner).ok_or("Editor closed")?.clone();
@@ -1201,6 +1205,7 @@ fn update(
     let owners = world
         .query_filtered::<Entity, With<View>>()
         .iter(world)
+        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
         .collect::<Vec<_>>();
     for owner in &owners {
         capture(world, *owner);
@@ -1294,7 +1299,7 @@ fn update(
             }
         }
     }
-    if !crate::native::laboratory::active(world) {
+    if crate::native::laboratory::normal(world) {
         for (key, feed) in &mut runtime.feeds {
             if feed.pending.is_some() || feed.next > now || runtime.pending.len() >= 128 {
                 continue;

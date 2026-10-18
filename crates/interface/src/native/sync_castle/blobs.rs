@@ -158,7 +158,7 @@ impl Action for Command {
             return;
         };
         let status = view.status;
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, owner) {
             panel::status(world, status, "Blob Sync is unavailable in the Laboratory");
             return;
         }
@@ -384,7 +384,7 @@ pub(crate) fn accept_copy(world: &mut World, ancestor: Entity) {
 }
 
 pub(super) fn update(world: &mut World) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     let owners = world
@@ -392,6 +392,7 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect::<Vec<_>>();
     for owner in owners {
+        if crate::native::laboratory::blocked(world, owner) { continue; }
         if world.get::<Watch>(owner).is_none() {
             start_watch(world, owner);
         }

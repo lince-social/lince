@@ -180,6 +180,7 @@ async fn reserve_from_inherits_the_transfer_default() {
     let transfer = e
         .act(
             Action::CreateTransferDraft {
+                public_history: None,
                 request_id: "expiry:create".into(),
                 creator: Some(ana.clone()),
                 slug: Some("xfer.t".into()),

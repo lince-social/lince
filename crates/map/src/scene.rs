@@ -42,11 +42,18 @@ fn color(value: [u8; 4]) -> Color {
     Color::rgba(value[0], value[1], value[2], value[3])
 }
 
-struct Loader(Arc<TileStore>);
+struct Loader {
+    store: Arc<TileStore>,
+    stopped: tokio::sync::watch::Receiver<bool>,
+    counters: Arc<crate::diagnostics::Counters>,
+}
 
 #[async_trait::async_trait]
 impl VectorTileLoader for Loader {
     async fn load(&self, index: TileIndex) -> Result<MvtTile, TileLoadError> {
+        if *self.stopped.borrow() {
+            return Err(TileLoadError::Network);
+        }
         if index.z < 3 {
             return Ok(MvtTile { layers: Vec::new() });
         }
@@ -55,11 +62,16 @@ impl VectorTileLoader for Loader {
             x: index.x.try_into().map_err(|_| TileLoadError::Decoding)?,
             y: index.y.try_into().map_err(|_| TileLoadError::Decoding)?,
         };
-        let bytes = self
-            .0
-            .load(tile)
-            .await
-            .map_err(|_| TileLoadError::Network)?;
+        let _work = crate::diagnostics::Work::new(&self.counters.loads);
+        let mut stopped = self.stopped.clone();
+        let bytes = tokio::select! {
+            biased;
+            _ = stopped.changed() => return Err(TileLoadError::Network),
+            result = self.store.load(tile) => result.map_err(|_| TileLoadError::Network)?,
+        };
+        self.counters
+            .decoded_bytes
+            .fetch_add(bytes.len() as u64, Ordering::Relaxed);
         MvtTile::decode(bytes, false).map_err(|_| TileLoadError::Decoding)
     }
 }
@@ -79,6 +91,66 @@ pub struct Scene {
     pub map: Map,
     pub palette: Palette,
     pub revision: Arc<AtomicU64>,
+    pub counters: Arc<crate::diagnostics::Counters>,
+    stop: tokio::sync::watch::Sender<bool>,
+}
+
+impl Drop for Scene {
+    fn drop(&mut self) {
+        self.counters.alive.store(false, Ordering::Relaxed);
+        let _ = self.stop.send(true);
+    }
+}
+
+struct Processor {
+    inner: ThreadVtProcessor,
+    stopped: tokio::sync::watch::Receiver<bool>,
+    counters: Arc<crate::diagnostics::Counters>,
+}
+
+#[async_trait::async_trait]
+impl galileo::layer::vector_tile_layer::tile_provider::processor::VectorTileProcessor
+    for Processor
+{
+    fn has_style(&self, id: galileo::layer::vector_tile_layer::tile_provider::VtStyleId) -> bool {
+        self.inner.has_style(id)
+    }
+    fn get_style(
+        &self,
+        id: galileo::layer::vector_tile_layer::tile_provider::VtStyleId,
+    ) -> Option<Arc<VectorTileStyle>> {
+        self.inner.get_style(id)
+    }
+    fn add_style(
+        &self,
+        id: galileo::layer::vector_tile_layer::tile_provider::VtStyleId,
+        style: VectorTileStyle,
+    ) {
+        self.inner.add_style(id, style);
+    }
+    fn drop_style(&self, id: galileo::layer::vector_tile_layer::tile_provider::VtStyleId) {
+        self.inner.drop_style(id);
+    }
+    async fn process_tile(
+        &self,
+        tile: Arc<MvtTile>,
+        index: TileIndex,
+        id: galileo::layer::vector_tile_layer::tile_provider::VtStyleId,
+    ) -> Result<
+        galileo::render::render_bundle::RenderBundle,
+        galileo::layer::vector_tile_layer::tile_provider::processor::TileProcessingError,
+    > {
+        use galileo::layer::vector_tile_layer::tile_provider::processor::TileProcessingError;
+        if *self.stopped.borrow() {
+            return Err(TileProcessingError::Internal);
+        }
+        let _work = crate::diagnostics::Work::new(&self.counters.processors);
+        let result = self.inner.process_tile(tile, index, id).await;
+        if *self.stopped.borrow() {
+            return Err(TileProcessingError::Internal);
+        }
+        result
+    }
 }
 
 impl Scene {
@@ -90,6 +162,8 @@ impl Scene {
         wake: Option<Arc<dyn Fn() + Send + Sync>>,
     ) -> Result<Self, String> {
         let revision = Arc::new(AtomicU64::new(1));
+        let counters = crate::diagnostics::Counters::new();
+        let (stop, stopped) = tokio::sync::watch::channel(false);
         let mut collection: geojson::FeatureCollection =
             serde_json::from_str(include_str!("../data/world-land.geojson"))
                 .map_err(|error| error.to_string())?;
@@ -123,8 +197,16 @@ impl Scene {
             Crs::WGS84,
         );
         let provider = VectorTileProvider::new(
-            Arc::new(Loader(store)),
-            Arc::new(ThreadVtProcessor::new(schema.clone())),
+            Arc::new(Loader {
+                store,
+                stopped: stopped.clone(),
+                counters: counters.clone(),
+            }),
+            Arc::new(Processor {
+                inner: ThreadVtProcessor::new(schema.clone()),
+                stopped,
+                counters: counters.clone(),
+            }),
         );
         let details = VectorTileLayerBuilder::new_with_provider(provider)
             .with_tile_schema(schema)
@@ -142,6 +224,8 @@ impl Scene {
             map,
             palette,
             revision,
+            counters,
+            stop,
         })
     }
 

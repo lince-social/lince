@@ -97,7 +97,7 @@ fn set_enabled(world: &mut World, owner: Entity, enabled: bool) {
 }
 
 fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), &'static str> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Directory sync is unavailable in the Laboratory.");
     }
     crate::native::practice_cells::sender(world, owner)

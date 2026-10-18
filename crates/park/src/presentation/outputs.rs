@@ -57,7 +57,7 @@ impl Presentation {
             self.select_output_workspace()?;
             self.refresh_outputs()?;
         } else {
-            native::workspace::switch(self.app.world_mut(), root, workspace);
+            native::workspace::switch_output(self.app.world_mut(), root, workspace);
         }
         self.focus_application(surface);
         Ok(())
@@ -152,7 +152,7 @@ impl Presentation {
                 return Err(input_failure("could not create an output workspace"));
             }
         }
-        native::workspace::switch(self.app.world_mut(), root, active);
+        native::workspace::switch_output(self.app.world_mut(), root, active);
         let workspaces: BTreeSet<_> = self
             .app
             .world()
@@ -245,7 +245,6 @@ impl Presentation {
         if self.output_state.assignments.focused() == Some(output) {
             return Ok(());
         }
-        native::laboratory::close(self.app.world_mut());
         self.application_focus = None;
         self.focus(false)?;
         self.output_state
@@ -392,7 +391,7 @@ impl Presentation {
         let workspace = native::laboratory::scope(self.app.world())
             .filter(|(owner, current, _, _)| *owner == root && *current == output)
             .map_or(workspace, |(_, _, workspace, _)| workspace);
-        native::workspace::switch(self.app.world_mut(), root, workspace);
+        native::workspace::switch_output(self.app.world_mut(), root, workspace);
         Ok(())
     }
 
@@ -627,7 +626,7 @@ impl Presentation {
                 return Err(input_failure("could not create an output workspace"));
             }
         }
-        native::workspace::switch(self.app.world_mut(), root, previous);
+        native::workspace::switch_output(self.app.world_mut(), root, previous);
         let ids: BTreeSet<_> = self
             .app
             .world()
@@ -753,7 +752,7 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
     }
     let mut frame = None;
     for _ in 0..12 {
-        frame = Some(canvas.frame()?);
+        frame = Some(canvas.probe_frame()?);
     }
     let frame = frame.unwrap();
     let capture_cameras: Vec<_> = widgets
@@ -843,7 +842,7 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         .ok_or_else(|| input_failure("could not create the output workspace hole"))?;
     let mut hole_frame = None;
     for _ in 0..12 {
-        hole_frame = Some(canvas.frame()?);
+        hole_frame = Some(canvas.probe_frame()?);
     }
     let hole_frame = hole_frame.unwrap();
     let hole_pixels = super::probe_pixels(hole_frame.dmabuf())?;
@@ -946,9 +945,14 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
     }
     let mut laboratory_frame = None;
     for _ in 0..8 {
-        laboratory_frame = Some(canvas.frame()?);
+        laboratory_frame = Some(canvas.probe_frame()?);
     }
     let laboratory_frame = laboratory_frame.unwrap();
+    if laboratory_frame.input.workspaces.entries.iter().any(|entry| entry.id == temporary)
+        || laboratory_frame.input.workspaces.owner != root.to_bits()
+        || !laboratory_frame.input.workspaces.entries.iter().any(|entry| entry.id == previous) {
+        return Err(input_failure("the external workspace snapshot leaked temporary Laboratory state or lost ordinary ownership"));
+    }
     if colored(
         &super::probe_pixels(
             laboratory_frame
@@ -966,15 +970,31 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
             "entering the Laboratory disrupted another output or saved monitor associations",
         ));
     }
+    canvas.focus_output(OutputId(1))?;
+    if native::laboratory::scope(canvas.app.world()).is_none() {
+        return Err(input_failure("focusing another output closed the Laboratory"));
+    }
+    let ordinary_workspace = canvas.app.world()
+        .get::<native::workspace::Workspaces>(root).unwrap().active;
+    let other = lince_interface::host::SurfaceId(u64::MAX - 1);
+    canvas.open_window(other, "Ordinary output during Laboratory", "social.lince.probe")?;
+    let other_entity = canvas.windows[&other].entity;
+    if ordinary_workspace == temporary || canvas.app.world()
+        .get::<native::workspace::WorkspaceMember>(other_entity)
+        .is_none_or(|member| member.0 != ordinary_workspace)
+    {
+        return Err(input_failure("an ordinary output inherited the Laboratory workspace"));
+    }
     native::laboratory::close(canvas.app.world_mut());
-    canvas.frame()?;
+    canvas.probe_frame()?;
     if canvas.app.world().get_entity(entity).is_err()
+        || canvas.app.world().get_entity(other_entity).is_err()
         || canvas
             .app
             .world()
             .get::<native::workspace::Workspaces>(root)
             .is_none_or(|spaces| {
-                spaces.active != previous
+                spaces.active != ordinary_workspace
                     || spaces.entries.iter().any(|space| space.id == temporary)
             })
         || canvas.output_state.assignments.preferences() != preferences
@@ -983,9 +1003,10 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
             "closing the Laboratory lost an application or retained temporary workspace data",
         ));
     }
+    canvas.close_window(other);
     canvas.focus_output(OutputId(1))?;
     canvas.activate_application(fake)?;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     if canvas.output_state.assignments.focused() != Some(OutputId(2))
         || canvas.application_focus != Some(fake)
     {
@@ -1000,9 +1021,9 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         .get::<native::workspace::Workspaces>(root)
         .unwrap()
         .active;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     canvas.desktop_action(DesktopAction::Workspace(2))?;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     canvas
         .app
         .world_mut()
@@ -1010,7 +1031,7 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         .insert(native::workspace::WorkspaceMember(hidden));
     canvas.focus_output(OutputId(1))?;
     canvas.activate_application(fake)?;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     if canvas
         .app
         .world()
@@ -1034,7 +1055,7 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         .entries
         .retain(|entry| entry.id != hidden);
     canvas.focus_output(OutputId(2))?;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     for (command, action) in [
         ("/monitor/left", DesktopAction::FocusOutput(Direction::Left)),
         (
@@ -1062,11 +1083,11 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
     canvas.move_workspace_to_output(widgets[1].2, OutputId(1))?;
     canvas.outputs(vec![first.clone()])?;
     for _ in 0..3 {
-        canvas.frame()?;
+        canvas.probe_frame()?;
     }
     canvas.outputs(vec![first, output(8, "DP-1", 800.0, [640, 400])])?;
     for _ in 0..6 {
-        canvas.frame()?;
+        canvas.probe_frame()?;
     }
     let world = canvas.app.world();
     for ((entity, identity, workspace), capture) in widgets.into_iter().zip(capture_cameras) {
@@ -1100,11 +1121,11 @@ fn operation(
     canvas.focus(true)?;
     canvas.desktop_action(DesktopAction::OpenOperation)?;
     for _ in 0..3 {
-        canvas.frame()?;
+        canvas.probe_frame()?;
     }
     canvas.text(command.into())?;
     for _ in 0..2 {
-        canvas.frame()?;
+        canvas.probe_frame()?;
     }
     canvas.key(
         KeyCode::Enter,
@@ -1113,7 +1134,7 @@ fn operation(
         true,
         false,
     )?;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     canvas.key(
         KeyCode::Enter,
         bevy::input::keyboard::Key::Enter,
@@ -1121,7 +1142,7 @@ fn operation(
         false,
         false,
     )?;
-    canvas.frame()?;
+    canvas.probe_frame()?;
     match receiver.try_recv() {
         Ok(lince_interface::host::HostRequest::Action(action)) if action == expected => {
             canvas.desktop_action(action)

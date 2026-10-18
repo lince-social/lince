@@ -200,7 +200,7 @@ impl Engine {
         if forwarded > 0 {
             self.notify_query_changed();
         }
-        Ok(forwarded)
+        Ok(forwarded+self.forward_evidence_once(&peers,now).await?)
     }
 
     async fn social_queue_gossip(

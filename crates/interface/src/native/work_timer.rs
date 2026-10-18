@@ -339,6 +339,7 @@ pub(crate) fn receive(world: &mut World, message: &ServerMessage) {
     let timers: Vec<_> = world
         .query_filtered::<Entity, With<WorkTimer>>()
         .iter(world)
+        .filter(|entity| !crate::native::laboratory::blocked(world, *entity))
         .collect();
     for entity in timers {
         let timer = world.get::<WorkTimer>(entity).unwrap();
@@ -411,7 +412,7 @@ fn update(
     >,
 ) {
     subscriptions.retain(|entity, (id, sender)| {
-        world.get::<WorkTimer>(*entity).is_some()
+        (world.get::<WorkTimer>(*entity).is_some() && !crate::native::laboratory::blocked(world, *entity))
             || (!sender.is_closed()
                 && sender
                     .try_send(ClientMessage::Unsubscribe { id: id.clone() })

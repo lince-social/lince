@@ -66,6 +66,7 @@ pub enum FieldKind {
     OptionalText,
     TextList,
     Number,
+    DateTime,
     Filter,
     Scope,
     Choice(Vec<(String, Value)>),
@@ -93,6 +94,9 @@ impl FieldKind {
                     .parse::<u32>()
                     .map_err(|_| "Enter a non-negative whole number")?
             ),
+            Self::DateTime => if text.trim().is_empty() { Value::Null } else {
+                json!(chrono::DateTime::parse_from_rfc3339(text.trim()).map_err(|_| "Use a date, time and timezone, for example 2026-10-17T15:00:00-03:00")?.timestamp())
+            },
             Self::Choice(_) => value.clone(),
             Self::Scope => scope(value, text)?,
             Self::Filter => {

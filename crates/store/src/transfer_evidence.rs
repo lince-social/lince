@@ -119,7 +119,7 @@ pub async fn freeze_need_on(
     })
 }
 
-async fn check_measure_on(
+pub(crate) async fn check_measure_on(
     connection: &mut SqliteConnection,
     measure: &Measure,
 ) -> Result<(), StoreError> {

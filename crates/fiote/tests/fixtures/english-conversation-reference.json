@@ -1,0 +1,17 @@
+{
+  "source": "Kokoro af_heart with the pinned Lince English voice assets",
+  "model_revision": "5f9280c761a5c147bb682321f3f019482fab3e7b",
+  "model_weights_sha256": "b770fd2d35f56b9b95e95d99d9954746cdc4a435223a4f41842fa12160a2419f",
+  "model_license": "Apache-2.0; attribution and license retained under crates/fiote/assets/kokoro",
+  "conversion": "Rust synthesis at 24 kHz; linear interpolation to mono 16 kHz PCM; unchanged spoken content",
+  "scope": "Synthetic post-acoustic-boundary integration; does not establish human wake recognition or room-device accuracy",
+  "cases": {
+    "first": { "text": "Please remember the word sapphire.", "sha256": "eb1a1d6dc52448243907f1ef335e42d74eedca60f108ee4b4b9215d7c7f4fed0" },
+    "followup": { "text": "What word did I ask you to remember?", "sha256": "8a17f4bae84aa08f44b5fc18ce2ffb90239929cedb759483676ff0d5dcc79091" },
+    "ending": { "text": "Thanks, that is all for now. Goodbye.", "sha256": "3511c2a6a0f0c4b764dc12611270a8b0b877cf4b6a41ec08bf1836056c18c089" },
+    "background": { "text": "Maria, please pass me the salt at the dinner table.", "sha256": "7dcf6c306fab9fe19909158c34923e9990f1584e7e6c695c819dbb9177d34450" },
+    "wake-statement": { "text": "Hey Fiote.", "sha256": "e0a4f7eef7262c04785f1af3855f75ae990a424ced140d056f62202c65b07c0f" },
+    "wake-question": { "text": "Hey Fiote?", "sha256": "222f2cc0f31aa02db3d35baed8dc37c574da2c48754bb6322b64d6bc2e1a105f" },
+    "wake-exclamation": { "text": "Hey Fiote!", "sha256": "5726fd149583dc80deb300853380396fea08c8b267e3f86be792d8fcb7f7ce24" }
+  }
+}

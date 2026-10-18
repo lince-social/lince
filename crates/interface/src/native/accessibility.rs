@@ -6,6 +6,10 @@ struct LiveText;
 #[derive(Component)]
 struct AccessibleInput(bool);
 
+pub fn protected_text_input(world: &World, entity: Entity) -> bool {
+    world.get::<AccessibleInput>(entity).is_some_and(|input| input.0)
+}
+
 pub(crate) struct AccessibilityPlugin;
 
 impl Plugin for AccessibilityPlugin {
@@ -83,7 +87,7 @@ fn inputs(
     }
 }
 
-pub(crate) fn secret(world: &mut World, entity: Entity) {
+pub fn secret(world: &mut World, entity: Entity) {
     if let Some(mut node) = world.get_mut::<AccessibilityNode>(entity) {
         node.set_role(accesskit::Role::PasswordInput);
     }
@@ -112,6 +116,8 @@ mod tests {
         let protected = app.world().get::<AccessibilityNode>(password).unwrap();
         assert_eq!(protected.role(), accesskit::Role::PasswordInput);
         assert_eq!(protected.value(), Some("••"));
+        assert!(protected_text_input(app.world(), password));
+        assert!(!protected_text_input(app.world(), field));
         assert_eq!(
             app.world().get::<AccessibilityNode>(field).unwrap().label(),
             Some("Message")

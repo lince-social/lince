@@ -2,7 +2,7 @@ use super::*;
 use cell::{ClientMessage, ServerMessage};
 
 fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Transfers are read-only in the Laboratory".into());
     }
     crate::native::practice_cells::send(world, owner, message)
@@ -103,6 +103,7 @@ pub(super) fn maintain(world: &mut World) {
             }
         }
         karma::maintain(world, owner);
+        audience::maintain(world, owner);
     }
 }
 
@@ -163,7 +164,7 @@ pub(super) fn receive(
         .map(|message| message.0.clone())
         .collect();
     for message in messages {
-        if karma::receive(world, &message) {
+        if audience::receive(world, &message) || karma::receive(world, &message) {
             continue;
         }
         match message {
@@ -194,6 +195,22 @@ pub(super) fn receive(
                         }
                         let mut view = world.get_mut::<View>(owner).unwrap();
                         view.ready = context.is_some();
+                        let viewer_changed = context.as_ref().map(|context| &context["viewer"])
+                            != Some(&view.context["viewer"]);
+                        if viewer_changed {
+                            view.receipt = None;
+                            view.receipt_list = Value::Null;
+                            view.receipt_export = None;
+                            view.receipt_file_job = None;
+                            if view.pending.as_ref().is_some_and(|pending| {
+                                matches!(
+                                    pending.form.data["action"].as_str(),
+                                    Some("transfer-receipt" | "identity" | "surplus")
+                                )
+                            }) {
+                                view.pending = None;
+                            }
+                        }
                         view.context = context.unwrap_or(Value::Null);
                         view.rows = fresh;
                         if !view.ready {
@@ -208,6 +225,10 @@ pub(super) fn receive(
                                 .clone()
                                 .unwrap_or_else(|| "Connected · live transfers".into());
                             status(world, owner, message);
+                        }
+                        if viewer_changed {
+                            super::receipts::clear_form(world, owner);
+                            stock::clear_form(world, owner);
                         }
                         ui::render(world, owner);
                     }
@@ -240,6 +261,7 @@ pub(super) fn receive(
                 id,
                 created,
                 warnings,
+                data,
                 ..
             } => {
                 let owner = world
@@ -259,12 +281,16 @@ pub(super) fn receive(
                     .pending
                     .take()
                     .unwrap();
-                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 let action = if pending.form.step.is_some() {
                     pending.form.mode.as_str()
                 } else {
                     pending.form.data["action"].as_str().unwrap_or_default()
                 };
+                if action == "surplus" && !stock::current(world, owner, &pending.form) {
+                    status(world, owner, "Stock inputs changed; inspect and review the current policy");
+                    continue;
+                }
+                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 if castle.form.as_ref() == Some(&pending.form) {
                     castle.form = None;
                 } else if let Some(form) = &mut castle.form {
@@ -289,6 +315,30 @@ pub(super) fn receive(
                 {
                     castle.selected = created;
                 }
+                if action == "transfer-receipt" {
+                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    view.receipt_export = data
+                        .as_ref()
+                        .and_then(|data| data["receipt_export"].as_str())
+                        .map(str::to_owned);
+                    if let Some(receipt) = data.as_ref().and_then(|data| data.get("receipt")) {
+                        view.receipt = Some(receipt.clone());
+                        view.receipt_page = 0;
+                    }
+                    if let Some(listing) = data.as_ref().and_then(|data| data.get("receipt_list")) {
+                        view.receipt_list = listing.clone();
+                    }
+                }
+                if action == "identity"
+                    && let Some(identity) = data.as_ref().and_then(|data| data.get("identity"))
+                {
+                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    view.receipt = Some(
+                        json!({"state":"identity","document":{"kind":"identity","value":identity}}),
+                    );
+                    view.receipt_export = None;
+                    view.receipt_page = 0;
+                }
                 cancel(world, owner, "preview");
                 refresh(world, owner);
                 if !warnings.is_empty() {
@@ -298,10 +348,14 @@ pub(super) fn receive(
                 } else {
                     world.get_mut::<View>(owner).unwrap().notice = None;
                 }
+                if action == "surplus" {
+                    stock::complete(world, owner, &pending.form, data.as_ref());
+                }
                 forms::render(world, owner);
                 ui::render(world, owner);
+                receipt_files::complete(world, owner, &pending.form, data.as_ref());
             }
-            ServerMessage::Error { id, message, .. } => {
+            ServerMessage::Error { id, message, code } => {
                 let owners: Vec<_> = world
                     .query::<(Entity, &View)>()
                     .iter(world)
@@ -326,6 +380,17 @@ pub(super) fn receive(
                         .get(&id)
                         .map(|(_, kind)| kind.clone());
                     let mut view = world.get_mut::<View>(owner).unwrap();
+                    let receipt_failure = view.pending.as_ref().is_some_and(|pending| {
+                        pending.id == id
+                            && matches!(
+                                pending.form.data["action"].as_str(),
+                                Some("transfer-receipt" | "identity")
+                            )
+                    });
+                    if receipt_failure {
+                        view.receipt = None;
+                        view.receipt_list = Value::Null;
+                    }
                     if view
                         .pending
                         .as_ref()
@@ -334,6 +399,7 @@ pub(super) fn receive(
                     {
                         view.pending = None;
                     }
+                    view.receipt_export = None;
                     if lane.as_deref() == Some("transfers")
                         || id == crate::native::cell_bridge::CONNECTION
                     {
@@ -342,7 +408,15 @@ pub(super) fn receive(
                     if lane.as_deref() == Some("preview") {
                         view.preview = None;
                     }
+                    let message = if receipt_failure {
+                        receipts::verification_message(code.as_deref(), &message)
+                    } else {
+                        message.clone()
+                    };
                     status(world, owner, &message);
+                    if receipt_failure {
+                        ui::render(world, owner);
+                    }
                 }
             }
             _ => {}

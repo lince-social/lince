@@ -63,6 +63,21 @@ async fn relayed_facts_keep_original_signatures_and_correction_evidence() {
         from_organ: organ.clone(),
         ops: source.ops_after(0, 10_000).await.unwrap().0,
     };
+    assert!(matches!(
+        relay.import_op_batch(&batch).await,
+        Err(engine::EngineError::Forbidden(_))
+    ));
+    assert!(
+        store::records::get(&relay.store.pool, &record)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    for node in [&relay, &recipient] {
+        store::organs::set_sync_policy(&node.store.pool, &organ, true, true)
+            .await
+            .unwrap();
+    }
     relay.import_op_batch(&batch).await.unwrap();
     for original in [&credit, &correction] {
         let retained = store::facts::get(&relay.store.pool, &original.uid)
@@ -87,7 +102,11 @@ async fn relayed_facts_keep_original_signatures_and_correction_evidence() {
         .filter(|fact| fact.uid == credit.uid || fact.uid == correction.uid)
         .collect();
     assert_eq!(imported.len(), 2);
-    assert!(imported.iter().all(|fact| fact.cause.kind == CauseKind::Sync));
+    assert!(
+        imported
+            .iter()
+            .all(|fact| fact.cause.kind == CauseKind::Sync)
+    );
     assert!(imported.iter().all(|fact| fact.signature.is_none()));
     assert!(ledger.iter().all(nucleus::fact::verify_chain_step));
     let rows = store::sync_ops::after(&relay.store.pool, &organ, 0, 10_000)

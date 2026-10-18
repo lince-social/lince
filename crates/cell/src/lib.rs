@@ -10,6 +10,7 @@ pub mod speech;
 pub mod information;
 pub mod sync_runner;
 pub mod location;
+mod claim_recipes;
 pub mod social_host;
 pub mod owner_backup;
 pub mod isolated;
@@ -31,6 +32,9 @@ pub use ::fiote::adapters::{Descriptor as FioteProvider, AuthKind as FioteAuthKi
 pub use ::fiote::tools::Registry as FioteTools;
 pub use ::fiote::connection as fiote_connection;
 pub use ::fiote::communication as fiote_communication;
+pub use ::fiote::assistant as fiote_assistant;
+pub use ::fiote::provider as fiote_provider;
+pub use transport::fiote::Service as FioteService;
 pub use ::fiote::acp::Config as FioteAgentConfig;
 pub use ::fiote::acp::terminal::TerminalRequest as FioteTerminalRequest;
 pub use transport::mcp::bridge_stdio;
@@ -193,7 +197,7 @@ impl Cell {
         let wire = bind_wire(&engine, &store, &local_organ, &key_dir, &lanes, &mut tasks).await;
         let fiote = if services { Some(Arc::new(fiote::Host::open(engine.clone(), key_dir.join("fiote")).await.map_err(IoError::other)?)) } else { None };
         let runtime = CellRuntime {
-            speech: if services { Some(Arc::new(speech::Host::open_with_vault(key_dir.join("speech.json"), fiote.as_ref().map(|host| host.shared_vault())).map_err(IoError::other)?)) } else { None },
+            speech: if services { Some(Arc::new(speech::Host::open_with_vault(key_dir.join("speech.json"), fiote.as_ref().map(|host| host.shared_vault())).map_err(IoError::other)?.with_fiote(fiote.clone()))) } else { None },
             commands: Default::default(),
             engine: engine.clone(),
             store: store.clone(),
@@ -238,6 +242,7 @@ impl Cell {
         tasks.push(sync_runner::spawn_subscriptions(runtime.clone()));
         tasks.push(sync_runner::spawn_presence(runtime.clone()));
         tasks.push(sync_runner::spawn_location(runtime.clone()));
+        tasks.push(claim_recipes::spawn(runtime.engine.clone()));
         tasks.push(wire_supervisor::spawn(runtime.clone(), key_dir));
 
         Ok(Cell {
@@ -248,16 +253,25 @@ impl Cell {
     }
 
     pub async fn shutdown(mut self) {
-        self.runtime.commands.shutdown().await;
-        for handle in self.supervisors.iter().chain(self.tasks.iter()) {
-            handle.abort();
-        }
-        for handle in self.supervisors.drain(..).chain(self.tasks.drain(..)) {
-            let _ = handle.await;
-        }
-        if let Some(fiote) = &self.runtime.fiote {
-            fiote.stop_all().await;
-        }
+        let speech = self.runtime.speech.clone();
+        let speech_shutdown = async {
+            if let Some(speech) = speech {
+                speech.shutdown().await;
+            }
+        };
+        let workers_shutdown = async {
+            self.runtime.commands.shutdown().await;
+            for handle in self.supervisors.iter().chain(self.tasks.iter()) {
+                handle.abort();
+            }
+            for handle in self.supervisors.drain(..).chain(self.tasks.drain(..)) {
+                let _ = handle.await;
+            }
+            if let Some(fiote) = &self.runtime.fiote {
+                fiote.stop_all().await;
+            }
+        };
+        tokio::join!(speech_shutdown, workers_shutdown);
         if let Some(wire) = self.runtime.wire.write().await.take() {
             wire.shutdown().await;
         }

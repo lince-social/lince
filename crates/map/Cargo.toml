@@ -19,6 +19,10 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 tokio = { workspace = true, features = ["fs", "net"] }
+wgpu = { version = "=29.0.4", default-features = false, features = ["counters"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+galileo = { git = "https://github.com/galileo-map/galileo", rev = "42550766d38faca071805f57e7317c5addf1efc3", default-features = false, features = ["fontconfig-dlopen"] }
 
 [dev-dependencies]
 pmtiles = { version = "=0.24.1", default-features = false, features = ["write"] }

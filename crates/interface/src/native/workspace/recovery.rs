@@ -408,6 +408,7 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         None => None,
     };
     let document = Document {
+        physical_workspaces: entries(&mut values, "physical_workspaces", "Physical workspaces", &mut report, |saved: &crate::native::physical_workspace::Saved| ids.contains(&saved.workspace) && saved.valid()),
         shader_editors,
         shader_settings: values
             .remove("shader_settings")

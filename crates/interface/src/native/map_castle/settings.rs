@@ -59,7 +59,7 @@ pub(super) fn initialize(world: &mut World) {
     };
     let mut sources = world.resource_mut::<Sources>();
     sources.path = Some(path);
-    sources.cache = base.join("maps/tiles");
+    sources.cache = base.join("maps");
     match loaded.and_then(|settings| {
         TileStore::new(settings.clone(), &sources.cache).map(|store| (settings, store))
     }) {
@@ -75,15 +75,7 @@ pub(super) fn initialize(world: &mut World) {
             sources.revision += 1;
         }
     }
-    let service = lince_map::galileo::render::text::text_service::TextService::initialize(
-        lince_map::galileo::render::text::RustybuzzRasterizer::default(),
-    );
-    service.load_font(Arc::new(
-        include_bytes!("../../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
-    ));
-    service.load_font(Arc::new(
-        include_bytes!("../../../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf").to_vec(),
-    ));
+    crate::map_view::initialize_fonts();
 }
 
 #[derive(Component)]
@@ -91,6 +83,7 @@ struct Form {
     local: Entity,
     archives: Entity,
     server: Entity,
+    version: Entity,
     storage: Entity,
     zoom: Entity,
     online: bool,
@@ -104,10 +97,15 @@ enum Change {
     Toggle,
     Save,
     Preset,
+    Cancel,
 }
 
 impl crate::native::actions::Action for Change {
     fn apply(&self, world: &mut World, target: Entity) {
+        if matches!(self, Self::Cancel) {
+            world.entity_mut(target).remove::<SaveJob>();
+            return;
+        }
         if matches!(self, Self::Open) {
             let existing = world.get::<Children>(target).and_then(|children| {
                 children
@@ -155,12 +153,12 @@ impl crate::native::actions::Action for Change {
                     world,
                     status,
                     match result {
-                        Ok(()) => "Map Settings saved".into(),
+                        Ok(()) => "Checking and staging map sources…".into(),
                         Err(error) => error,
                     },
                 );
             }
-            Self::Open => {}
+            Self::Open | Self::Cancel => {}
         }
     }
 }
@@ -214,6 +212,12 @@ fn mount(world: &mut World, parent: Entity) {
         "Supporting HTTPS tile server with {z}/{x}/{y}",
         &settings.server,
     );
+    let version = crate::native::sand_panel::field(
+        world,
+        body,
+        "External dataset version",
+        &settings.dataset_version,
+    );
     let zoom = crate::native::sand_panel::field(
         world,
         body,
@@ -227,6 +231,7 @@ fn mount(world: &mut World, parent: Entity) {
         &settings.storage_megabytes.to_string(),
     );
     let controls = crate::native::sand_panel::row(world, body);
+    crate::native::sand_panel::button(world, controls, body, "Cancel import", Change::Cancel);
     let toggle = crate::native::sand_panel::button(
         world,
         controls,
@@ -256,6 +261,7 @@ fn mount(world: &mut World, parent: Entity) {
         local,
         archives,
         server,
+        version,
         storage,
         zoom,
         online: settings.online,
@@ -264,7 +270,7 @@ fn mount(world: &mut World, parent: Entity) {
     });
 }
 
-fn save_form(world: &mut World, target: Entity) -> Result<(), String> {
+fn form_settings(world: &World, target: Entity) -> Result<Settings, String> {
     let form = world.get::<Form>(target).ok_or("Map Settings closed")?;
     let value = |entity| {
         crate::native::sand_panel::value(world, entity).map(|value| value.trim().to_string())
@@ -278,6 +284,7 @@ fn save_form(world: &mut World, target: Entity) -> Result<(), String> {
             .map(PathBuf::from)
             .collect(),
         server: value(form.server)?,
+        dataset_version: value(form.version)?,
         online: form.online,
         max_zoom: value(form.zoom)?
             .parse()
@@ -287,19 +294,193 @@ fn save_form(world: &mut World, target: Entity) -> Result<(), String> {
             .map_err(|_| "Enter a map storage limit in MB")?,
     };
     settings.validate()?;
+    Ok(settings)
+}
+
+#[derive(Component)]
+struct SaveJob {
+    original: Settings,
+    cancelled: Arc<AtomicBool>,
+    progress: Arc<lince_map::pack::InstallProgress>,
+    receiver: tokio::sync::oneshot::Receiver<Result<(Settings, Arc<TileStore>), String>>,
+    task: tokio::task::JoinHandle<()>,
+}
+
+impl Drop for SaveJob {
+    fn drop(&mut self) {
+        self.cancelled.store(true, Ordering::Relaxed);
+        self.task.abort();
+    }
+}
+
+fn save_form(world: &mut World, target: Entity) -> Result<(), String> {
+    let settings = form_settings(world, target)?;
+    let original = settings.clone();
+    let sources = world.resource::<Sources>();
+    let cache = sources.cache.clone();
+    let managed = cache.join("packs");
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let progress = Arc::new(lince_map::pack::InstallProgress::default());
+    let cancellation = cancelled.clone();
+    let bytes = progress.clone();
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let runtime =
+        tokio::runtime::Handle::try_current().map_err(|_| "Map import runtime is unavailable")?;
+    let wake = world
+        .get_resource::<crate::native::wake::WakeSignal>()
+        .cloned();
+    let task = runtime.spawn(async move {
+        let result = async {
+            let mut settings = settings;
+            let quota = settings.storage_megabytes * 1024 * 1024;
+            if !settings.local_directory.as_os_str().is_empty() {
+                settings.local_directory = lince_map::pack::install(
+                    settings.local_directory.clone(),
+                    managed.clone(),
+                    quota,
+                    cancellation.clone(),
+                    bytes.clone(),
+                )
+                .await?;
+            }
+            for archive in &mut settings.archives {
+                let root = archive
+                    .parent()
+                    .ok_or("Choose an archive inside a pack directory")?
+                    .to_path_buf();
+                let name = archive
+                    .file_name()
+                    .ok_or("Invalid archive name")?
+                    .to_os_string();
+                let installed = lince_map::pack::install(
+                    root,
+                    managed.clone(),
+                    quota,
+                    cancellation.clone(),
+                    bytes.clone(),
+                )
+                .await?;
+                *archive = installed.join(name);
+            }
+            let store = TileStore::new(settings.clone(), &cache)?;
+            store.validate_sources().await?;
+            if cancellation.load(Ordering::Relaxed) {
+                return Err("Map import cancelled".into());
+            }
+            Ok((settings, store))
+        }
+        .await;
+        let _ = sender.send(result);
+        if let Some(wake) = wake {
+            wake.ring();
+        }
+    });
+    world.entity_mut(target).insert(SaveJob {
+        original,
+        cancelled,
+        progress,
+        receiver,
+        task,
+    });
+    Ok(())
+}
+
+pub(super) fn cancel_pending(world: &mut World) {
+    let jobs: Vec<_> = world
+        .query_filtered::<Entity, With<SaveJob>>()
+        .iter(world)
+        .collect();
+    for job in jobs {
+        world.entity_mut(job).remove::<SaveJob>();
+    }
+}
+
+pub(super) fn poll(world: &mut World) {
+    let jobs: Vec<_> = world
+        .query_filtered::<Entity, With<SaveJob>>()
+        .iter(world)
+        .collect();
+    for entity in jobs {
+        let status = world.get::<Form>(entity).unwrap().status;
+        if form_settings(world, entity).ok().as_ref()
+            != Some(&world.get::<SaveJob>(entity).unwrap().original)
+        {
+            world.entity_mut(entity).remove::<SaveJob>();
+            crate::native::sand_panel::status(
+                world,
+                status,
+                "Map inputs changed; review and save them again",
+            );
+            continue;
+        }
+        let result = world
+            .get_mut::<SaveJob>(entity)
+            .unwrap()
+            .receiver
+            .try_recv();
+        match result {
+            Ok(result) => {
+                world.entity_mut(entity).remove::<SaveJob>();
+                let result = result.and_then(|(settings, store)| commit(world, settings, store));
+                crate::native::sand_panel::status(
+                    world,
+                    status,
+                    result.map_or_else(|error| error, |()| "Map sources verified and saved".into()),
+                );
+            }
+            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {
+                let job = world.get::<SaveJob>(entity).unwrap();
+                crate::native::sand_panel::status(
+                    world,
+                    status,
+                    format!(
+                        "Checking map sources · {} / {} bytes",
+                        job.progress.copied.load(Ordering::Relaxed),
+                        job.progress.total.load(Ordering::Relaxed)
+                    ),
+                );
+                if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+                    wake.after(std::time::Duration::from_millis(100));
+                }
+            }
+            Err(_) => {
+                world.entity_mut(entity).remove::<SaveJob>();
+                crate::native::sand_panel::status(
+                    world,
+                    status,
+                    "Map import ended; previous sources were kept",
+                );
+            }
+        }
+    }
+}
+
+fn commit(world: &mut World, settings: Settings, store: Arc<TileStore>) -> Result<(), String> {
     let sources = world.resource::<Sources>();
     let path = sources
         .path
         .as_ref()
         .ok_or("Map storage is not ready")?
         .clone();
-    let store = TileStore::new(settings.clone(), &sources.cache)?;
     let bytes = serde_json::to_vec_pretty(&settings).map_err(|error| error.to_string())?;
     fs::create_dir_all(path.parent().ok_or("Invalid Settings path")?)
         .map_err(|error| error.to_string())?;
     let temporary = path.with_extension(format!("{}.tmp", nucleus::new_uid("map")));
-    fs::write(&temporary, bytes).map_err(|error| error.to_string())?;
-    fs::rename(temporary, path).map_err(|error| error.to_string())?;
+    {
+        use std::io::Write;
+        let mut file = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&temporary)
+            .map_err(|error| error.to_string())?;
+        file.write_all(&bytes).map_err(|error| error.to_string())?;
+        file.sync_all().map_err(|error| error.to_string())?;
+    }
+    fs::rename(&temporary, &path).map_err(|error| error.to_string())?;
+    #[cfg(unix)]
+    fs::File::open(path.parent().ok_or("Invalid Settings directory")?)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|error| error.to_string())?;
     let mut sources = world.resource_mut::<Sources>();
     sources.settings = settings;
     sources.store = Some(store);
@@ -312,8 +493,8 @@ pub(super) mod tests {
     use super::*;
     use crate::native::actions::Action;
 
-    #[cfg_attr(test, test)]
-    fn settings_reject_invalid_edits_and_replace_the_source_after_a_saved_change() {
+    #[cfg_attr(test, tokio::test)]
+    async fn settings_reject_invalid_edits_and_replace_the_source_after_a_saved_change() {
         let directory = tempfile::tempdir().unwrap();
         let mut app = crate::native::sand_panel::tests::app();
         app.insert_resource(Sources {
@@ -341,7 +522,17 @@ pub(super) mod tests {
         assert!(!directory.path().join("maps/settings.json").exists());
         Change::Preset.apply(app.world_mut(), body);
         Change::Toggle.apply(app.world_mut(), body);
+        assert!(save_form(app.world_mut(), body).is_err());
+        Change::Toggle.apply(app.world_mut(), body);
         save_form(app.world_mut(), body).unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            while app.world().get::<SaveJob>(body).is_some() {
+                poll(app.world_mut());
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
         let settings: Settings = serde_json::from_slice(
             &std::fs::read(directory.path().join("maps/settings.json")).unwrap(),
         )
@@ -363,6 +554,6 @@ pub(super) mod tests {
     }
 
     crate::native::laboratory_cases! {
-        settings_reject_invalid_edits_and_replace_the_source_after_a_saved_change,
+        async settings_reject_invalid_edits_and_replace_the_source_after_a_saved_change,
     }
 }

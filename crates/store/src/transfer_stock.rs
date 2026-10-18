@@ -281,5 +281,6 @@ pub async fn validate_all_on(connection: &mut SqliteConnection) -> Result<(), St
     for record in records {
         validate_record_on(connection, &record, None).await?;
     }
+    crate::transport::validate_all_on(connection).await?;
     Ok(())
 }

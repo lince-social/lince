@@ -5,7 +5,7 @@ use pkarr::dns::rdata::{RData, TXT};
 use pkarr::{Keypair, PublicKey, SignedPacket};
 
 use crate::error::EngineError;
-use crate::roster::{ROOT_KEY_ID, SignedRoster};
+use crate::roster::SignedRoster;
 use crate::trust::Signer;
 
 const RECORD_NAME: &str = "_lince";
@@ -256,7 +256,7 @@ impl crate::Engine {
         &self,
         organ_uid: &str,
     ) -> Result<Option<PublicRecord>, EngineError> {
-        let Some(root_key) = crate::trust::key_of(&self.store, organ_uid, ROOT_KEY_ID).await?
+        let Some(root_key) = self.current_root_key(organ_uid).await?
         else {
             return Ok(None);
         };

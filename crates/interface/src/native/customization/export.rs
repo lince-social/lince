@@ -65,7 +65,7 @@ fn status(world: &mut World, root: Entity, message: String) {
 }
 
 fn document(world: &World) -> Result<String, String> {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return Err("Theme export is unavailable in the Laboratory".into());
     }
     ThemeDocument::export(world.resource::<ThemeSettings>())

@@ -1024,6 +1024,7 @@ async fn persist_command_result(
     )
     .await
     .map_err(|error| error.to_string())?;
+    state.engine.complete_journey_location_stop(&row.command_uid, result.accepted).await;
     if store::karma_commands::get(&state.store.pool, &row.command_uid).await.map_err(|error| error.to_string())?.is_some() {
         state.engine.refresh_karma_transfer_command_outcomes().await.map_err(|error| error.to_string())?;
     }

@@ -12,13 +12,22 @@ impl VulkanRenderer {
         buffer: &Dmabuf,
         target: Option<&wgpu::Texture>,
     ) -> Result<wgpu::Texture> {
+        self.import_dmabuf_regions(buffer, target, None)
+    }
+
+    pub(super) fn import_dmabuf_regions(
+        &self,
+        buffer: &Dmabuf,
+        target: Option<&wgpu::Texture>,
+        damage: Option<&[smithay::utils::Rectangle<i32, smithay::utils::Buffer>]>,
+    ) -> Result<wgpu::Texture> {
         for fd in buffer.handles() {
             let mut poll = [rustix::event::PollFd::new(
                 &fd,
                 rustix::event::PollFlags::IN,
             )];
             let timeout = rustix::time::Timespec {
-                tv_sec: 5,
+                tv_sec: 0,
                 tv_nsec: 0,
             };
             rustix::event::poll(&mut poll, Some(&timeout))
@@ -146,16 +155,14 @@ impl VulkanRenderer {
             | wgpu::TextureUsages::COPY_DST
             | wgpu::TextureUsages::COPY_SRC
             | wgpu::TextureUsages::TEXTURE_BINDING;
-        let texture = target
+        let previous = target.filter(|_| damage.is_some())
             .filter(|texture| {
                 texture.width() == size.w as u32
                     && texture.height() == size.h as u32
                     && texture.format() == wgpu::TextureFormat::Bgra8Unorm
                     && texture.usage().contains(usage)
-            })
-            .cloned()
-            .unwrap_or_else(|| {
-                self.device.create_texture(&wgpu::TextureDescriptor {
+            });
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some("park_client_content"),
                     size: wgpu::Extent3d {
                         width: size.w as u32,
@@ -168,10 +175,12 @@ impl VulkanRenderer {
                     format: wgpu::TextureFormat::Bgra8Unorm,
                     usage,
                     view_formats: &[],
-                })
-            });
+                });
         let view = texture.create_view(&Default::default());
         let mut encoder = self.device.create_command_encoder(&Default::default());
+        if let Some(previous) = previous {
+            encoder.copy_texture_to_texture(previous.as_image_copy(), texture.as_image_copy(), texture.size());
+        }
         {
             let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -179,20 +188,14 @@ impl VulkanRenderer {
                     depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        load: if previous.is_some() { wgpu::LoadOp::Load } else { wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT) },
                         store: wgpu::StoreOp::Store,
                     },
                 })],
                 ..Default::default()
             });
         }
-        let submission = self.queue.submit([encoder.finish()]);
-        self.device
-            .poll(wgpu::PollType::Wait {
-                submission_index: Some(submission),
-                timeout: None,
-            })
-            .map_err(|error| ProbeFailure::at("vulkan_import_initialize", error))?;
+        self.queue.submit([encoder.finish()]);
         let destination = unsafe { texture.as_hal::<Vulkan>() }
             .ok_or_else(|| ProbeFailure::at("vulkan_import_copy", "Vulkan HAL unavailable"))?;
         let destination = unsafe { destination.raw_handle() };
@@ -221,14 +224,18 @@ impl VulkanRenderer {
             let layers = vk::ImageSubresourceLayers::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .layer_count(1);
-            let region = vk::ImageCopy::default()
+            let bounds = smithay::utils::Rectangle::from_size((size.w, size.h).into());
+            let changed = if previous.is_some() { damage.unwrap_or(&[]) } else { std::slice::from_ref(&bounds) };
+            let regions: Vec<_> = changed.iter().filter_map(|region| region.intersection(bounds)).map(|region| vk::ImageCopy::default()
                 .src_subresource(layers)
                 .dst_subresource(layers)
+                .src_offset(vk::Offset3D { x: region.loc.x, y: region.loc.y, z: 0 })
+                .dst_offset(vk::Offset3D { x: region.loc.x, y: region.loc.y, z: 0 })
                 .extent(vk::Extent3D {
-                    width: size.w as u32,
-                    height: size.h as u32,
+                    width: region.size.w as u32,
+                    height: region.size.h as u32,
                     depth: 1,
-                });
+                })).collect();
             let release = vk::ImageMemoryBarrier::default()
                 .image(image)
                 .subresource_range(range)
@@ -256,14 +263,14 @@ impl VulkanRenderer {
                     &[],
                     &[acquire, destination_barrier],
                 );
-                self.raw_device.cmd_copy_image(
+                if !regions.is_empty() { self.raw_device.cmd_copy_image(
                     command,
                     image,
                     vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
                     destination,
                     vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                    &[region],
-                );
+                    &regions,
+                ); }
                 self.raw_device.cmd_pipeline_barrier(
                     command,
                     vk::PipelineStageFlags::TRANSFER,
@@ -275,7 +282,7 @@ impl VulkanRenderer {
                 );
             }
         })?;
-        drop(allocation);
+        self.retain((allocation, texture.clone()));
         Ok(texture)
     }
 
@@ -287,20 +294,16 @@ impl VulkanRenderer {
             target.texture.as_image_copy(),
             source.size(),
         );
-        let submission = self.queue.submit([encoder.finish()]);
-        self.device
-            .poll(wgpu::PollType::Wait {
-                submission_index: Some(submission),
-                timeout: None,
-            })
-            .map_err(|error| ProbeFailure::at("export_copy", error))?;
-        self.release(
-            target.allocation.image,
+        self.queue.submit([encoder.finish()]);
+        let submission = self.release(
+            target.allocation.clone(),
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
             vk::AccessFlags::TRANSFER_WRITE,
             vk::PipelineStageFlags::TRANSFER,
         )?;
+        self.retain((source.clone(), target.texture.clone()));
         Ok(ExportedImage {
+            completion: self.completion.track(submission)?,
             dmabuf: target.dmabuf,
             _allocation: target.allocation,
         })

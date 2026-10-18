@@ -11,15 +11,40 @@ fn message(error: impl ToString) -> String {
     error.to_string()
 }
 
-async fn needed(engine: &engine::Engine) -> bool {
-    engine
+async fn needed(engine: &engine::Engine, expected: &[nucleus::location::SourceLease]) -> bool {
+    let current = engine
         .location_sources()
         .await
-        .iter()
-        .any(|source| source.settings.source_kind == nucleus::location::SourceKind::Device)
+        .into_iter()
+        .filter(|source| source.settings.source_kind == nucleus::location::SourceKind::Device)
+        .collect::<Vec<_>>();
+    !current.is_empty()
+        && current.len() == expected.len()
+        && current.iter().all(|source| {
+            expected.iter().any(|previous| {
+                previous.settings.record_uid == source.settings.record_uid
+                    && previous.session_uid == source.session_uid
+            })
+        })
 }
 
-pub(super) async fn capture(engine: &Arc<engine::Engine>) -> Result<(), String> {
+pub(super) async fn capture(
+    engine: &Arc<engine::Engine>,
+    sources: &[nucleus::location::SourceLease],
+) -> Result<(), String> {
+    session(Some(engine), sources).await.map(|_| ())
+}
+
+pub(super) async fn locate_once() -> Result<nucleus::location::Fix, String> {
+    session(None, &[])
+        .await?
+        .ok_or_else(|| "No current device position is available".into())
+}
+
+async fn session(
+    engine: Option<&Arc<engine::Engine>>,
+    sources: &[nucleus::location::SourceLease],
+) -> Result<Option<nucleus::location::Fix>, String> {
     let connection = Connection::session().await.map_err(message)?;
     let proxy = Proxy::new(
         &connection,
@@ -40,7 +65,7 @@ pub(super) async fn capture(engine: &Arc<engine::Engine>) -> Result<(), String> 
         .call("CreateSession", &(options,))
         .await
         .map_err(message)?;
-    let result = run(engine, &connection, &proxy, &session, &token).await;
+    let result = run(engine, &connection, &proxy, &session, &token, sources).await;
     if let Ok(proxy) = Proxy::new(
         &connection,
         DESTINATION,
@@ -55,12 +80,13 @@ pub(super) async fn capture(engine: &Arc<engine::Engine>) -> Result<(), String> 
 }
 
 async fn run(
-    engine: &Arc<engine::Engine>,
+    engine: Option<&Arc<engine::Engine>>,
     connection: &Connection,
     proxy: &Proxy<'_>,
     session: &OwnedObjectPath,
     token: &str,
-) -> Result<(), String> {
+    sources: &[nucleus::location::SourceLease],
+) -> Result<Option<nucleus::location::Fix>, String> {
     let sender = connection
         .unique_name()
         .ok_or("Portal connection has no identity")?
@@ -97,7 +123,7 @@ async fn run(
                 if status != 0 { return Err("Location permission was denied".into()); }
                 break;
             }
-            _ = interval.tick() => { if !needed(engine).await { return Ok(()); } }
+            _ = interval.tick() => { if let Some(engine) = engine && !needed(engine,sources).await { return Ok(None); } }
             _ = tokio::time::sleep_until(deadline) => return Err("Location permission request timed out".into()),
         }
     }
@@ -113,10 +139,17 @@ async fn run(
                 let accuracy = values.get("Accuracy").and_then(|value| f64::try_from(value).ok()).filter(|value| *value >= 0.0);
                 let (seconds, micros) = values.get("Timestamp").ok_or("Portal capture time is missing")?.downcast_ref::<(u64,u64)>().map_err(message)?;
                 let captured_at_ms = seconds.checked_mul(1000).and_then(|value| value.checked_add(micros / 1000)).and_then(|value| i64::try_from(value).ok()).ok_or("Invalid portal capture time")?;
+                let capture_age_ms = chrono::Utc::now().timestamp_millis().saturating_sub(captured_at_ms);
+                if !(0..60_000).contains(&capture_age_ms) {continue;}
                 sequence = sequence.saturating_add(1);
-                let _ = engine.publish_device_location(latitude, longitude, accuracy, captured_at_ms, sequence).await;
+                let fix = nucleus::location::Fix {latitude,longitude,accuracy_metres:accuracy,captured_at_ms,capture_age_ms:capture_age_ms as u64,sequence};
+                if let Some(engine) = engine { let _ = engine.publish_device_fix_for(sources,fix).await; }
+                else { return Ok(Some(fix)); }
             }
-            _ = interval.tick() => { if !needed(engine).await { return Ok(()); } }
+            _ = interval.tick() => {
+                if let Some(engine) = engine { if !needed(engine,sources).await { return Ok(None); } }
+                else if tokio::time::Instant::now() >= deadline { return Err("A current device position was not received in time".into()); }
+            }
         }
     }
 }

@@ -75,6 +75,23 @@ async fn a_trusted_roster_verifies_sibling_facts_without_a_separate_introduction
     let mut forged = fact.clone();
     forged.signature = Some(root.sign_bytes(b"a different fact"));
     assert!(!verify_fact(&destination.store, &forged).await.unwrap());
+    adopt_key(
+        &destination.store,
+        &organ.uid,
+        &operational.key_id,
+        &operational.public_key_b64(),
+    )
+    .await
+    .unwrap();
+    let (revoked_key, signature) = destination.revocation_certificate(&operational);
+    assert!(
+        destination
+            .adopt_revocation(&organ.uid, &revoked_key, &signature)
+            .await
+            .unwrap()
+    );
+    assert!(!verify_fact(&destination.store, &fact).await.unwrap());
+    assert!(verify_fact(&source.store, &fact).await.unwrap());
     let mut other_actor = fact;
     other_actor.actor_uid = Some(nucleus::new_uid("r"));
     assert!(!verify_fact(&destination.store, &other_actor).await.unwrap());

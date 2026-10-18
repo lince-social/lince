@@ -83,6 +83,7 @@ impl Host {
             Err(error) => return Err(error.to_string()),
         };
         let rows: Vec<(String, String)> = store::sqlx::query_as("SELECT r.uid, e.fds FROM record_extension e JOIN record r ON r.uid = e.record_uid WHERE e.namespace = 'lince.fiote-child' AND json_extract(e.fds, '$.parent') = ? AND r.deleted_at IS NULL ORDER BY r.uid LIMIT 128").bind(thread).fetch_all(&self.engine.store.pool).await.map_err(|e| e.to_string())?;
+        let receipts = self.handoff_receipts(Some(thread), None).await?;
         let running = self.running.lock().await;
         let mut children = Vec::new();
         for (uid, value) in rows {
@@ -92,6 +93,10 @@ impl Host {
             child["source"] = serde_json::json!("reported child session");
             child["context_available"] =
                 serde_json::json!(self.directory.join(format!("context-{uid}.json")).is_file());
+            if let Some(receipt) = receipts.iter().find(|receipt| receipt.thread.as_deref() == Some(&uid)) {
+                child["state"] = serde_json::json!(receipt.state);
+                child["source"] = serde_json::json!("Lince handoff receipt");
+            }
             if running.contains_key(&uid) {
                 child["state"] = serde_json::json!("working");
                 child["source"] = serde_json::json!("Lince runtime");

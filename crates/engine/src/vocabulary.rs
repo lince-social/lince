@@ -10,19 +10,7 @@ impl Engine {
         actor: Option<&str>,
     ) -> Result<ActionOutcome, EngineError> {
         use store::sqlx::Row;
-        if matches!(
-            command,
-            Command::InspectPublication { .. }
-                | Command::PreviewPackage { .. }
-                | Command::RecordHistory { .. }
-                | Command::InspectTerminology
-                | Command::BindQuery { .. }
-                | Command::InspectMeaning { .. }
-                | Command::ExportTranslations { .. }
-                | Command::PreviewTranslations { .. }
-                | Command::InspectFeature { .. }
-                | Command::PreviewFeature { .. }
-        ) {
+        if !command.is_mutation() {
             self.require_permission(actor, "record:read").await?;
             if let Command::BindQuery { query } = &command {
                 if query.len() > 131072 {
@@ -59,6 +47,16 @@ impl Engine {
                 }
                 Command::InspectMeaning { concept, offset } => {
                     json!({"meaning":self.inspect_meaning_on(&mut tx,&concept,actor,offset).await?})
+                }
+                Command::InspectMeasurement { concept, unit } => {
+                    let meaning =
+                        store::vocabulary::current_meaning_reference_on(&mut tx, &concept).await?;
+                    let unit = if let Some(unit) = unit {
+                        Some(store::vocabulary::current_meaning_reference_on(&mut tx, &unit).await?)
+                    } else {
+                        None
+                    };
+                    json!({"measurement":nucleus::transfer::receipt::Measurement { meaning, unit, object_commitment: None }})
                 }
                 Command::InspectFeature { feature } => {
                     json!({"feature_binding":store::vocabulary::feature_binding_on(&mut tx,&feature).await?})
@@ -289,6 +287,7 @@ impl Engine {
             }
             Command::InspectTerminology => unreachable!(),
             Command::InspectMeaning { .. } => unreachable!(),
+            Command::InspectMeasurement { .. } => unreachable!(),
             Command::BindQuery { .. } => unreachable!(),
             Command::CreateVocabulary { name, organ } => {
                 self.refuse_unreadable(actor, std::slice::from_ref(&organ))

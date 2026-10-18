@@ -5,6 +5,7 @@ pub(crate) mod credits;
 mod editing;
 mod file_changes;
 mod highlight;
+mod info;
 mod persistence;
 mod project;
 mod recovery;
@@ -217,6 +218,7 @@ pub fn spawn(
     ] {
         crate::native::sand_panel::button(world, controls, owner, caption, control);
     }
+    info::panel(world, controls, owner);
     crate::native::sand_panel::credits(world, controls, owner, credits::CREDITS);
     let (settings_panel, settings_labels) = settings::panel(world, owner);
     let close_panel = closing::panel(world, owner);
@@ -715,6 +717,10 @@ pub(crate) fn disk_changed(world: &mut World, changes: lince_editor::watch::Chan
             document.error = Some(format!("File watching failed: {error}. Use Refresh."));
         }
     }
+}
+
+pub(crate) fn cancel_exit(world: &mut World) {
+    recovery::cancel_exit(world);
 }
 
 pub(crate) fn protect(world: &mut World, ancestor: Option<Entity>) -> bool {

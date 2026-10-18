@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-exclude = ["vendor/parley"]
+exclude = ["crates/vendor/parley"]
 members = [
     "crates/lince",
     "crates/utils",
@@ -25,6 +25,7 @@ members = [
     "crates/facade",
     "crates/media",
     "crates/xtask",
+    "crates/ailuros",
     "crates/plugins",
     "crates/plugin-nostr",
     "crates/plugin-activitypub",
@@ -32,6 +33,10 @@ members = [
     "crates/plugin-files",
     "crates/map",
     "crates/hand-input",
+    "crates/vendor/laya",
+    "crates/vendor/flexaudio-mic",
+    "crates/vendor/wake-reference",
+    "crates/vendor/smithay-capture",
 ]
 
 # `cargo build` / `cargo run` operate on `default-members` (the lince binary),
@@ -67,6 +72,7 @@ engine = { version = "=0.8.0", path = "crates/engine" }
 protein = { version = "=0.8.0", path = "crates/protein" }
 transport = { version = "=0.8.0", path = "crates/transport" }
 fiote = { version = "=0.8.0", path = "crates/fiote", package = "lince-fiote" }
+lince-ailuros = { version = "=0.8.0", path = "crates/ailuros" }
 
 argon2 = "0.6.0"
 async-stream = "0.3.6"
@@ -79,6 +85,7 @@ base64 = "0.23.1"
 chacha20poly1305 = "0.11.0"
 chrono = "0.4.45"
 color-eyre = "0.6.5"
+cpal = { version = "=0.18.2", features = ["pulseaudio"] }
 crossterm = "0.29.0"
 dirs = "7.0.0"
 dotenvy = "0.15.7"
@@ -148,7 +155,10 @@ zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
-parley = { path = "vendor/parley" }
+parley = { path = "crates/vendor/parley" }
+
+[patch."https://github.com/Studio-Sadola/flexaudio"]
+flexaudio-mic = { path = "crates/vendor/flexaudio-mic" }
 
 [workspace.lints.rust]
 warnings = "deny"
@@ -177,6 +187,42 @@ incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism
 
 [profile.dev.package.lince-hand-input]
+opt-level = 2
+
+[profile.dev.package.phonon-rs]
+opt-level = 2
+
+[profile.dev.package.best-tts]
+opt-level = 2
+
+[profile.dev.package.lince-wake-reference]
+opt-level = 2
+
+[profile.dev.package.rustfft]
+opt-level = 2
+
+[profile.dev.package.candle-core]
+opt-level = 2
+
+[profile.dev.package.candle-nn]
+opt-level = 2
+
+[profile.dev.package.candle-transformers]
+opt-level = 2
+
+[profile.dev.package.gemm]
+opt-level = 2
+
+[profile.dev.package.gemm-f32]
+opt-level = 2
+
+[profile.dev.package.gemm-common]
+opt-level = 2
+
+[profile.dev.package.ruzstd]
+opt-level = 2
+
+[profile.dev.package.lince-laya]
 opt-level = 2
 
 [profile.dev.package.tract-core]

@@ -193,6 +193,25 @@ pub fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
     body
 }
 
+pub(crate) fn open_signal(world: &mut World, sand: Entity, source: String) {
+    let views: Vec<_> = world
+        .query::<(Entity, &View)>()
+        .iter(world)
+        .filter(|(_, view)| view.sand == sand)
+        .map(|(owner, view)| (owner, view.source))
+        .collect();
+    for (owner, field) in views {
+        stop(world, owner);
+        if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(field) {
+            text.editor.set_text(&source);
+        }
+    }
+    world.entity_mut(sand).insert(Settings {
+        source,
+        ..Default::default()
+    });
+}
+
 #[derive(Clone)]
 enum Control {
     Open(bool),
@@ -208,7 +227,7 @@ impl crate::native::actions::Action for Control {
         };
         let (sand, source, url, seek, status) =
             (view.sand, view.source, view.url, view.seek, view.status);
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         let source = match panel::value(world, source) {
@@ -356,7 +375,7 @@ fn clear_image(world: &mut World, owner: Entity) {
 }
 
 fn visible(world: &mut World, root: Entity, sand: Entity) -> bool {
-    if crate::native::laboratory::active(world) || crate::native::laboratory::suspended(world, sand)
+    if crate::native::laboratory::blocked(world, sand)
     {
         return false;
     }
@@ -365,6 +384,13 @@ fn visible(world: &mut World, root: Entity, sand: Entity) -> bool {
         .is_some_and(|node| node.display == Display::None)
     {
         return false;
+    }
+    if let Some(member) = world.get::<crate::native::workspace::WorkspaceMember>(sand)
+        && let Some(views) = world.get_resource::<crate::native::output_views::OutputViews>().filter(|views| views.applies_to(root)) {
+        let Some(output) = views.outputs.iter().find(|output| output.workspace == member.0 && output.usable.is_some()) else { return false };
+        let Some(item) = world.get::<crate::native::canvas::CanvasItem>(sand) else { return false };
+        let canvas = crate::native::output_views::canvas(world, root, member.0);
+        return canvas.screen_position(item, Vec2::new(output.bounds.size()[0] as f32, output.bounds.size()[1] as f32)).is_some();
     }
     if world
         .get::<crate::native::workspace::WorkspaceMember>(sand)

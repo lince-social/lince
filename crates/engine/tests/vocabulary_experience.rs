@@ -58,6 +58,124 @@ async fn record(engine: &Engine, kind: RecordKind, head: &str) -> String {
 }
 
 #[tokio::test]
+async fn measurement_selection_pins_definition_versions_without_transfer_history_or_writes() {
+    let engine = Engine::open_memory().await.unwrap();
+    let (vocabulary, concept) = meaning(&engine).await;
+    let unit = command(
+        &engine,
+        Command::CreateConcept {
+            vocabulary: vocabulary.clone(),
+            name: "work unit".into(),
+            language: "en".into(),
+            definition: "One measured work item".into(),
+            derived_from: None,
+        },
+    )
+    .await
+    .created
+    .unwrap();
+    let before: (i64, i64) =
+        store::sqlx::query_as("SELECT (SELECT COUNT(*) FROM record),(SELECT COUNT(*) FROM fact)")
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+    let changes = engine.watch_query_changes();
+    let selected = command(
+        &engine,
+        Command::InspectMeasurement {
+            concept: concept.clone(),
+            unit: Some(unit.clone()),
+        },
+    )
+    .await;
+    assert!(selected.created.is_none());
+    assert!(selected.facts.is_empty());
+    assert!(!changes.has_changed().unwrap());
+    let measurement: nucleus::transfer::receipt::Measurement =
+        serde_json::from_value(selected.data.unwrap()["measurement"].clone()).unwrap();
+    measurement.validate().unwrap();
+    assert_eq!(measurement.meaning.vocabulary_uid, vocabulary);
+    assert_eq!(measurement.meaning.concept_uid, concept);
+    assert_eq!(measurement.meaning.revision, 1);
+    assert_eq!(measurement.unit.as_ref().unwrap().concept_uid, unit);
+    let after: (i64, i64) =
+        store::sqlx::query_as("SELECT (SELECT COUNT(*) FROM record),(SELECT COUNT(*) FROM fact)")
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+    assert_eq!(before, after);
+    command(
+        &engine,
+        Command::ReviseDefinition {
+            concept: concept.clone(),
+            expected_revision: 1,
+            definition: "A revised activity".into(),
+        },
+    )
+    .await;
+    let selected = command(
+        &engine,
+        Command::InspectMeasurement {
+            concept: concept.clone(),
+            unit: None,
+        },
+    )
+    .await
+    .data
+    .unwrap();
+    let newer: nucleus::transfer::receipt::Measurement =
+        serde_json::from_value(selected["measurement"].clone()).unwrap();
+    assert_eq!(newer.meaning.revision, 2);
+    assert_ne!(
+        newer.meaning.definition_hash,
+        measurement.meaning.definition_hash
+    );
+    assert_eq!(measurement.meaning.revision, 1);
+    assert!(
+        engine
+            .act(
+                Action::Vocabulary {
+                    request: Command::InspectMeasurement {
+                        concept: concept.clone(),
+                        unit: None
+                    }
+                },
+                Some(nucleus::new_uid("r"))
+            )
+            .await
+            .is_err()
+    );
+    assert!(
+        engine
+            .act(
+                Action::Vocabulary {
+                    request: Command::InspectMeasurement {
+                        concept: "unknown meaning".into(),
+                        unit: None
+                    }
+                },
+                None
+            )
+            .await
+            .is_err()
+    );
+    assert!(
+        engine
+            .act(
+                Action::Vocabulary {
+                    request: Command::InspectMeasurement {
+                        concept,
+                        unit: Some(nucleus::new_uid("c"))
+                    }
+                },
+                None
+            )
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
 async fn saved_queries_keep_selected_concepts_after_wording_changes_and_ambiguity() {
     let engine = Engine::open_memory().await.unwrap();
     let (vocabulary, concept) = meaning(&engine).await;

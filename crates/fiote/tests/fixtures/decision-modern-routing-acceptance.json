@@ -1,0 +1,752 @@
+[
+  {
+    "request_id": "modern-route-01",
+    "generation": 1,
+    "text": "Fix the borrow checker error in my Rust project.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-02",
+    "generation": 1,
+    "text": "Add a unit test for this function's empty input case.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-03",
+    "generation": 1,
+    "text": "Find the bug that makes the application crash during startup.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-04",
+    "generation": 1,
+    "text": "Refactor the repeated database access code into a helper.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-05",
+    "generation": 1,
+    "text": "Run the test suite and explain the failing assertions.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-06",
+    "generation": 1,
+    "text": "Implement sorting in this Rust library.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-07",
+    "generation": 1,
+    "text": "Book an appointment for Thursday afternoon.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-08",
+    "generation": 1,
+    "text": "Find a free time for the team meeting next week.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-09",
+    "generation": 1,
+    "text": "Move my dentist appointment to Monday morning.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-10",
+    "generation": 1,
+    "text": "Show which events conflict on my calendar.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-11",
+    "generation": 1,
+    "text": "Add a deadline for submitting the application.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-12",
+    "generation": 1,
+    "text": "Reschedule tomorrow's appointment to next Friday.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-13",
+    "generation": 1,
+    "text": "Help me build a consistent bedtime routine.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-14",
+    "generation": 1,
+    "text": "Suggest a daily habit for drinking enough water.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-15",
+    "generation": 1,
+    "text": "Make a short morning exercise routine I can repeat.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-16",
+    "generation": 1,
+    "text": "Help me keep track of my stretching habit.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-17",
+    "generation": 1,
+    "text": "Suggest ways to make my evening routine calmer.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-18",
+    "generation": 1,
+    "text": "Help me maintain a regular sleep schedule.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-19",
+    "generation": 1,
+    "text": "Summarize the conclusions of the attached research report.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-20",
+    "generation": 1,
+    "text": "Organize these written notes by their research topic.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Time keeper",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Archivist",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Forge",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Wellbeing",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-ambiguous-1",
+    "generation": 1,
+    "text": "Help me with something.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-ambiguous-2",
+    "generation": 1,
+    "text": "Organize everything for me.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-ambiguous-3",
+    "generation": 1,
+    "text": "Plan a schedule for coding practice and better sleep habits.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-ambiguous-4",
+    "generation": 1,
+    "text": "Explain that thing we were discussing.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  },
+  {
+    "request_id": "modern-route-ambiguous-5",
+    "generation": 1,
+    "text": "Tell me whether my favorite color is popular.",
+    "context": "",
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000004",
+        "title": "Documents",
+        "purpose": "Reads documents, summarizes articles and reports, and organizes written research notes."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with sleep, exercise, hydration, daily routines, and maintaining personal habits."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Organizes appointments, calendars, meeting times, deadlines, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source code, diagnoses compiler failures, maintains software projects, and runs automated tests."
+      }
+    ],
+    "admission": false,
+    "routing": true
+  }
+]

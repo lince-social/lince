@@ -11,6 +11,8 @@ use tokio::{
     task::JoinHandle,
 };
 
+mod speech_scope;
+
 pub const RECORDS: &str = "interface-records";
 pub const CONNECTION: &str = "interface-connection";
 
@@ -42,15 +44,73 @@ pub fn records_subscription() -> ClientMessage {
 pub struct CellBridge {
     pub outgoing: mpsc::Sender<ClientMessage>,
     pub incoming: mpsc::Receiver<ServerMessage>,
+    pub(crate) speech_cancellation: SpeechCancellation,
     task: JoinHandle<()>,
     closed: Arc<AtomicBool>,
     reported_closed: bool,
     _sync_queue: engine::sync_service::QueueRegistration,
 }
 
+#[derive(Clone)]
+pub(crate) struct SpeechCancellation {
+    sender: mpsc::Sender<ClientMessage>,
+    runtime: tokio::runtime::Handle,
+}
+
+impl SpeechCancellation {
+    pub(crate) fn for_owner(world: &World, owner: Entity) -> Option<Self> {
+        let sender = crate::native::practice_cells::sender(world, owner)?;
+        let runtime = world
+            .get_non_send::<CellBridge>()?
+            .speech_cancellation
+            .runtime
+            .clone();
+        Some(Self { sender, runtime })
+    }
+
+    pub(crate) fn is_closed(&self) -> bool {
+        self.sender.is_closed()
+    }
+
+    pub(crate) fn new(sender: mpsc::Sender<ClientMessage>) -> Self {
+        Self {
+            sender,
+            runtime: tokio::runtime::Handle::current(),
+        }
+    }
+    pub(crate) fn send(&self, request: cell::speech::Request) -> Result<String, String> {
+        if !matches!(
+            &request,
+            cell::speech::Request::Cancel { .. } | cell::speech::Request::StopListening { .. } | cell::speech::Request::PauseListening { .. }
+                | cell::speech::Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { .. } }
+        ) {
+            return Err("This channel only cancels speech work.".into());
+        }
+        let id = nucleus::new_uid("speech-cancel");
+        let message = ClientMessage::Speech {
+            id: id.clone(),
+            request,
+        };
+        match self.sender.try_send(message) {
+            Ok(()) => {}
+            Err(mpsc::error::TrySendError::Closed(_)) => {
+                return Err("The speech connection closed.".into());
+            }
+            Err(mpsc::error::TrySendError::Full(message)) => {
+                let sender = self.sender.clone();
+                self.runtime.spawn(async move {
+                    let _ = sender.send(message).await;
+                });
+            }
+        }
+        Ok(id)
+    }
+}
+
 struct ConnectionEnded {
     closed: Arc<AtomicBool>,
     wake: WakeSignal,
+    _speech: speech_scope::Scope,
 }
 
 impl Drop for ConnectionEnded {
@@ -67,11 +127,20 @@ impl Drop for CellBridge {
 }
 
 pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
+    let session = runtime.local_session();
+    connect_session(runtime, wake, session)
+}
+
+fn connect_session(
+    runtime: cell::CellRuntime,
+    wake: WakeSignal,
+    mut session: cell::Session,
+) -> CellBridge {
     simulation::karma_preview::install(&runtime.engine).expect("Karma preview service");
     let (outgoing, mut requests) = mpsc::channel::<ClientMessage>(64);
+    let speech_cancellation = SpeechCancellation::new(outgoing.clone());
     let (responses, incoming) = mpsc::channel(64);
     let mut components = runtime.engine.subscribe_components();
-    let mut session = runtime.local_session();
     let queue_connection = session.connection_id().to_owned();
     let queued_requests = outgoing.downgrade();
     let queued_responses = responses.downgrade();
@@ -93,9 +162,10 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
     let ended = ConnectionEnded {
         closed: closed.clone(),
         wake: wake.clone(),
+        _speech: speech_scope::Scope::new(session.fork_call()),
     };
     let task = tokio::spawn(async move {
-        let _ended = ended;
+        let ended = ended;
         let mut lanes = HashMap::<String, tokio::task::AbortHandle>::new();
         let mut lane_tasks = tokio::task::JoinSet::new();
         let mut call_tasks = tokio::task::JoinSet::new();
@@ -124,12 +194,24 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                         }
                         continue;
                     }
-                    if let ClientMessage::Speech { id, .. } = &request {
-                        if speech_tasks.len() >= 8 {
+                    if let ClientMessage::Speech { id, request: speech } = &request {
+                        let cancellation = matches!(speech, cell::speech::Request::Cancel { .. } | cell::speech::Request::StopListening { .. } | cell::speech::Request::PauseListening { .. } | cell::speech::Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { .. } });
+                        if speech_tasks.len() >= 8 && !cancellation {
                             if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Speech controls are busy; try again".into(), code: Some("speech_busy".into()) }]).await { break; }
                         } else {
+                            let tracked = match ended._speech.begin(speech) {
+                                Ok(tracked) => tracked,
+                                Err(message) => {
+                                    if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message, code: Some("speech_busy".into()) }]).await { break; }
+                                    continue;
+                                }
+                            };
                             let mut speech = session.fork_call();
-                            speech_tasks.spawn(async move { speech.handle(request).await });
+                            speech_tasks.spawn(async move {
+                                let messages = speech.handle(request).await;
+                                if let Some(tracked) = tracked { tracked.complete(&messages); }
+                                messages
+                            });
                         }
                         continue;
                     }
@@ -240,6 +322,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
     CellBridge {
         outgoing,
         incoming,
+        speech_cancellation,
         task,
         closed,
         reported_closed: false,
@@ -325,6 +408,406 @@ pub(crate) mod tests {
         Arc,
         atomic::{AtomicUsize, Ordering},
     };
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn cancellation_waits_for_a_full_bounded_queue_even_outside_the_runtime_context() {
+        let (sender, mut receiver) = mpsc::channel(1);
+        sender
+            .try_send(ClientMessage::Speech {
+                id: "queued".into(),
+                request: cell::speech::Request::Inspect,
+            })
+            .unwrap();
+        let cancellation = SpeechCancellation::new(sender);
+        let job = nucleus::new_uid("speech");
+        let expected = job.clone();
+        let id = std::thread::spawn(move || {
+            cancellation
+                .send(cell::speech::Request::Cancel { job })
+                .unwrap()
+        })
+        .join()
+        .unwrap();
+        assert!(
+            matches!(receiver.recv().await, Some(ClientMessage::Speech { id, .. }) if id == "queued")
+        );
+        let request = tokio::time::timeout(std::time::Duration::from_secs(2), receiver.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(
+            matches!(request, ClientMessage::Speech { id: observed, request: cell::speech::Request::Cancel { job } } if observed == id && job == expected)
+        );
+        assert!(receiver.try_recv().is_err());
+    }
+
+    #[cfg(test)]
+    struct BusySpeech {
+        host: cell::speech::Host,
+        entered: Arc<AtomicUsize>,
+        release: Arc<tokio::sync::Notify>,
+    }
+
+    #[cfg(test)]
+    #[async_trait::async_trait]
+    impl cell::speech::Service for BusySpeech {
+        async fn handle(
+            &self,
+            request: cell::speech::Request,
+        ) -> Result<cell::speech::Status, String> {
+            if matches!(&request, cell::speech::Request::Inspect) {
+                self.entered.fetch_add(1, Ordering::SeqCst);
+                self.release.notified().await;
+            }
+            cell::speech::Service::handle(&self.host, request).await
+        }
+    }
+
+    #[cfg(test)]
+    struct OwnedSpeech {
+        host: cell::speech::Host,
+        listening: std::sync::Mutex<Option<String>>,
+        cancelled: std::sync::Mutex<Vec<String>>,
+        entered: tokio::sync::Notify,
+        delay: bool,
+    }
+
+    #[cfg(test)]
+    #[async_trait::async_trait]
+    impl cell::speech::Service for OwnedSpeech {
+        async fn handle(
+            &self,
+            request: cell::speech::Request,
+        ) -> Result<cell::speech::Status, String> {
+            match request {
+                cell::speech::Request::StartListening { owner, .. } => {
+                    *self.listening.lock().unwrap() = Some(owner.clone());
+                    self.entered.notify_one();
+                    if self.delay {
+                        std::future::pending::<()>().await;
+                    }
+                    let mut status =
+                        cell::speech::Service::handle(&self.host, cell::speech::Request::Inspect)
+                            .await?;
+                    status.listening.owner = Some(owner);
+                    status.listening.enabled = true;
+                    Ok(status)
+                }
+                cell::speech::Request::StopListening {
+                    owner,
+                    generation: 0,
+                } => {
+                    self.cancelled.lock().unwrap().push(owner.clone());
+                    {
+                        let mut listening = self.listening.lock().unwrap();
+                        if listening.as_ref() == Some(&owner) {
+                            *listening = None;
+                        }
+                    }
+                    cell::speech::Service::handle(&self.host, cell::speech::Request::Inspect).await
+                }
+                request => cell::speech::Service::handle(&self.host, request).await,
+            }
+        }
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn disconnect_cancels_accepted_and_unacknowledged_owned_listening_sessions() {
+        for delay in [false, true] {
+            let (runtime, _) = fixture().await;
+            let root = tempfile::tempdir().unwrap();
+            let service = Arc::new(OwnedSpeech {
+                host: cell::speech::Host::open(root.path().join("speech.json")).unwrap(),
+                listening: Default::default(),
+                cancelled: Default::default(),
+                entered: tokio::sync::Notify::new(),
+                delay,
+            });
+            let session = runtime.local_session().with_speech(service.clone());
+            let mut bridge = connect_session(runtime, WakeSignal::new(|| {}), session);
+            let owner = nucleus::new_uid("voice");
+            bridge
+                .outgoing
+                .send(ClientMessage::Speech {
+                    id: "own-start".into(),
+                    request: cell::speech::Request::StartListening {
+                        mode: cell::speech::ListeningMode::Model,
+                        owner: owner.clone(),
+                        target: None,
+                        routing: false,
+                    },
+                })
+                .await
+                .unwrap();
+            tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                service.entered.notified(),
+            )
+            .await
+            .unwrap();
+            if !delay {
+                assert!(matches!(
+                    next(&mut bridge).await,
+                    ServerMessage::Speech { .. }
+                ));
+            }
+            drop(bridge);
+            tokio::time::timeout(std::time::Duration::from_secs(3), async {
+                while !service.cancelled.lock().unwrap().contains(&owner) {
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .unwrap();
+            assert!(service.listening.lock().unwrap().is_none());
+        }
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn disconnect_of_an_old_view_does_not_cancel_another_listener_owner() {
+        let (runtime, _) = fixture().await;
+        let root = tempfile::tempdir().unwrap();
+        let service = Arc::new(OwnedSpeech {
+            host: cell::speech::Host::open(root.path().join("speech.json")).unwrap(),
+            listening: Default::default(),
+            cancelled: Default::default(),
+            entered: tokio::sync::Notify::new(),
+            delay: false,
+        });
+        let mut bridge = connect_session(
+            runtime.clone(),
+            WakeSignal::new(|| {}),
+            runtime.local_session().with_speech(service.clone()),
+        );
+        let owner = nucleus::new_uid("voice");
+        bridge
+            .outgoing
+            .send(ClientMessage::Speech {
+                id: "old-start".into(),
+                request: cell::speech::Request::StartListening {
+                    mode: cell::speech::ListeningMode::Model,
+                    owner: owner.clone(),
+                    target: None,
+                    routing: false,
+                },
+            })
+            .await
+            .unwrap();
+        assert!(matches!(
+            next(&mut bridge).await,
+            ServerMessage::Speech { .. }
+        ));
+        let other = nucleus::new_uid("voice");
+        *service.listening.lock().unwrap() = Some(other.clone());
+        drop(bridge);
+        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            while !service.cancelled.lock().unwrap().contains(&owner) {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(
+            service.listening.lock().unwrap().as_deref(),
+            Some(other.as_str())
+        );
+        assert!(!service.cancelled.lock().unwrap().contains(&other));
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    #[ignore = "Requires installed Phonon weights and the independently referenced goforward recording"]
+    async fn actual_disconnect_cancels_transcription_without_releasing_cpu_early_or_retaining_results()
+     {
+        use base64::Engine as _;
+        use cell::speech::{Request, Service};
+        let (mut runtime, _) = fixture().await;
+        let root = tempfile::tempdir().unwrap();
+        let host = Arc::new(cell::speech::Host::open(root.path().join("speech.json")).unwrap());
+        let model = host.handle(Request::Inspect).await.unwrap().local.unwrap();
+        let source = std::path::PathBuf::from(
+            std::env::var_os("LINCE_SPEECH_TEST_CACHE").expect("Choose installed model cache"),
+        )
+        .join(format!("{}-{}", model.model, model.revision))
+        .join("phonon-2.bps.tar.zst");
+        let setup = nucleus::new_uid("speech");
+        host.handle(Request::InstallLocal {
+            job: setup.clone(),
+            source: Some(source),
+        })
+        .await
+        .unwrap();
+        async fn finished(host: &cell::speech::Host, job: &str) -> cell::speech::Job {
+            tokio::time::timeout(std::time::Duration::from_secs(180), async {
+                loop {
+                    let result = host
+                        .handle(Request::Poll { job: job.into() })
+                        .await
+                        .unwrap()
+                        .job
+                        .unwrap();
+                    if !result.pending {
+                        return result;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                }
+            })
+            .await
+            .unwrap()
+        }
+        assert!(finished(&host, &setup).await.error.is_none());
+        runtime.speech = Some(host.clone());
+        let audio = cell::FioteSecret(
+            base64::engine::general_purpose::STANDARD.encode(
+                std::fs::read(
+                    std::env::var_os("LINCE_SPEECH_TEST_WAV").expect("Choose goforward WAV"),
+                )
+                .unwrap(),
+            ),
+        );
+        let mut bridge = connect(runtime, WakeSignal::new(|| {}));
+        let job = nucleus::new_uid("speech");
+        bridge
+            .outgoing
+            .send(ClientMessage::Speech {
+                id: "real-start".into(),
+                request: Request::StartLocal {
+                    job: job.clone(),
+                    audio: audio.clone(),
+                },
+            })
+            .await
+            .unwrap();
+        assert!(
+            matches!(next(&mut bridge).await, ServerMessage::Speech { status, .. } if status.job.as_ref().is_some_and(|result| result.id == job && result.pending))
+        );
+        tokio::time::timeout(std::time::Duration::from_secs(180), async {
+            loop {
+                let local = host.handle(Request::Inspect).await.unwrap().local.unwrap();
+                if local.loaded && local.busy {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+            }
+        })
+        .await
+        .unwrap();
+        drop(bridge);
+        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            while host
+                .handle(Request::Poll { job: job.clone() })
+                .await
+                .is_ok()
+            {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        if host
+            .handle(Request::Inspect)
+            .await
+            .unwrap()
+            .local
+            .unwrap()
+            .busy
+        {
+            let refused = host
+                .handle(Request::StartLocal {
+                    job: nucleus::new_uid("speech"),
+                    audio: audio.clone(),
+                })
+                .await
+                .unwrap_err();
+            assert!(refused.contains("finishing"), "{refused}");
+        }
+        tokio::time::timeout(std::time::Duration::from_secs(60), async {
+            while host
+                .handle(Request::Inspect)
+                .await
+                .unwrap()
+                .local
+                .unwrap()
+                .busy
+            {
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert!(host.handle(Request::Poll { job }).await.is_err());
+        let retry = nucleus::new_uid("speech");
+        host.handle(Request::StartLocal {
+            job: retry.clone(),
+            audio,
+        })
+        .await
+        .unwrap();
+        let result = finished(&host, &retry).await;
+        assert!(result.error.is_none(), "{result:?}");
+        assert_eq!(
+            result.text.unwrap().to_lowercase().trim_end_matches('.'),
+            "go forward ten meters"
+        );
+        host.handle(Request::Cancel { job: retry }).await.unwrap();
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn stop_listening_is_accepted_while_eight_other_speech_controls_are_busy() {
+        let (runtime, _) = fixture().await;
+        let root = tempfile::tempdir().unwrap();
+        let entered = Arc::new(AtomicUsize::new(0));
+        let release = Arc::new(tokio::sync::Notify::new());
+        let session = runtime.local_session().with_speech(Arc::new(BusySpeech {
+            host: cell::speech::Host::open(root.path().join("speech.json")).unwrap(),
+            entered: entered.clone(),
+            release: release.clone(),
+        }));
+        let mut bridge = connect_session(runtime, WakeSignal::new(|| {}), session);
+        for index in 0..8 {
+            bridge
+                .outgoing
+                .send(ClientMessage::Speech {
+                    id: format!("busy-{index}"),
+                    request: cell::speech::Request::Inspect,
+                })
+                .await
+                .unwrap();
+        }
+        tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            while entered.load(Ordering::SeqCst) != 8 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        bridge
+            .outgoing
+            .send(ClientMessage::Speech {
+                id: "ninth".into(),
+                request: cell::speech::Request::Inspect,
+            })
+            .await
+            .unwrap();
+        assert!(
+            matches!(next(&mut bridge).await, ServerMessage::Error { id, code, .. } if id == "ninth" && code.as_deref() == Some("speech_busy"))
+        );
+        let id = bridge
+            .speech_cancellation
+            .send(cell::speech::Request::StopListening {
+                owner: nucleus::new_uid("voice"),
+                generation: 0,
+            })
+            .unwrap();
+        assert!(
+            matches!(next(&mut bridge).await, ServerMessage::Speech { id: observed, status } if observed == id && !status.listening.enabled)
+        );
+        release.notify_waiters();
+    }
 
     async fn fixture() -> (cell::CellRuntime, String) {
         let engine = Arc::new(Engine::open_memory().await.unwrap());

@@ -348,6 +348,9 @@ struct Floating {
 pub(crate) struct EffectSlot(Entity);
 
 #[derive(Component)]
+pub(crate) struct ProjectionDemand;
+
+#[derive(Component)]
 pub struct RecordMesh(pub Entity);
 
 #[derive(Component)]
@@ -472,6 +475,13 @@ pub(crate) fn surface_image(world: &World, entity: Entity) -> Option<(Entity, Ha
     Some((shader::output(world, preview), image))
 }
 
+pub(crate) fn projection_image(world: &mut World, entity: Entity) -> Option<Handle<Image>> {
+    if let Some((_, image)) = surface_image(world, entity) { return Some(image); }
+    if disabled(world) { return None; }
+    let preview = world.query::<&Floating>().iter(world).find(|floating| floating.record == entity && !floating.distant).map(|floating| floating.preview)?;
+    shader::effect_image(world, preview)
+}
+
 #[derive(Clone, Debug)]
 pub struct SurfaceReading {
     pub quantity: Option<String>,
@@ -568,6 +578,7 @@ impl Action for ToggleRecords {
 pub(crate) struct OpenRecord(pub RecordBinding);
 impl Action for OpenRecord {
     fn apply(&self, world: &mut World, owner: Entity) {
+        if crate::native::laboratory::blocked(world, owner) { return; }
         let Some(root) = root(world, owner) else {
             return;
         };
@@ -1452,6 +1463,9 @@ impl Action for Command {
                     return;
                 }
                 let result = definition.validate().and_then(|()| {
+                    if crate::native::laboratory::blocked(world, owner) {
+                        return Err("Saving is unavailable in the Laboratory".into());
+                    }
                     if shader::working(world, preview) != Some(&definition) {
                         if world
                             .get::<shader::EffectPreview>(preview)
@@ -2237,17 +2251,20 @@ fn update(
     let editors: Vec<_> = world
         .query_filtered::<Entity, With<Editor>>()
         .iter(world)
+        .filter(|entity| !crate::native::laboratory::blocked(world, *entity))
         .collect();
     for editor in &editors {
         capture(world, *editor);
     }
     let mut bindings: HashMap<String, RecordBinding> = HashMap::new();
-    for (_, editor) in world.query::<(Entity, &Editor)>().iter(world) {
+    for (entity, editor) in world.query::<(Entity, &Editor)>().iter(world) {
+        if crate::native::laboratory::blocked(world, entity) { continue; }
         if let Target::Record(binding) = &editor.target {
             bindings.insert(feed_key(binding), binding.clone());
         }
     }
-    for surface in world.query::<&Surface>().iter(world) {
+    for (entity, surface) in world.query::<(Entity, &Surface)>().iter(world) {
+        if crate::native::laboratory::blocked(world, entity) { continue; }
         if let Some(uid) = &surface.record
             && nucleus::valid_uid(uid, "r")
         {
@@ -2278,7 +2295,7 @@ fn update(
         if !retiring
             && !feed.sent
             && feed.retry <= Instant::now()
-            && !crate::native::laboratory::active(world)
+            && crate::native::laboratory::normal(world)
             && let Some(sender) = sender(world, &feed.binding)
         {
             let protein = protein::Protein {

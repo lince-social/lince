@@ -1,6 +1,10 @@
 use cell::{ClientMessage, ServerMessage};
 use lince_interface::wake::WakeSignal;
-use std::{path::PathBuf, sync::mpsc, thread};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex, mpsc},
+    thread,
+};
 
 pub enum Event {
     Ready(String, bool, crate::session::Identity),
@@ -22,10 +26,13 @@ enum Request {
 pub struct Connection {
     outgoing: tokio::sync::mpsc::Sender<Request>,
     pub incoming: mpsc::Receiver<Event>,
+    runtime: Arc<Mutex<Option<tokio::runtime::Handle>>>,
 }
 
 impl Connection {
     pub fn open(directory: PathBuf, wake: WakeSignal) -> std::io::Result<Self> {
+        let runtime_handle = Arc::new(Mutex::new(None));
+        let publish_handle = runtime_handle.clone();
         let (outgoing, mut requests) = tokio::sync::mpsc::channel(64);
         let (responses, incoming) = mpsc::sync_channel(64);
         thread::Builder::new()
@@ -38,6 +45,7 @@ impl Connection {
                         .worker_threads(2)
                         .thread_stack_size(32 * 1024 * 1024)
                         .build()?;
+                    *publish_handle.lock().unwrap_or_else(|error| error.into_inner()) = Some(executor.handle().clone());
                     executor.block_on(async {
                         let cell = cell::Cell::open_mobile(cell::CellOptions {
                             data_dir: Some(directory),
@@ -98,6 +106,7 @@ impl Connection {
                                             Some(Request::Login(username, password)) => {
                                                 match crate::session::Signing::open(&runtime, &username, password).await {
                                                     Ok((next, credentials)) => {
+                                                        location.stop(&runtime.engine).await;
                                                         store::cells::set_config(&runtime.store.pool, "lince.mobile.auth", &serde_json::json!({"require_login": true})).await.map_err(std::io::Error::other)?;
                                                         let identity = crate::session::Identity::Person(credentials.login.person_uid().into());
                                                         session = Some(next);
@@ -154,6 +163,7 @@ impl Connection {
                                     })?;
                                 setup = runtime.engine.roster_of(&identity.uid).await.map_err(std::io::Error::other)?.is_none();
                                 if identity.uid != organ.uid {
+                                    location.stop(&runtime.engine).await;
                                     organ = identity;
                                     session = Some(runtime.local_session());
                                     signing = None;
@@ -179,7 +189,18 @@ impl Connection {
                     wake.ring();
                 }
             })?;
-        Ok(Self { outgoing, incoming })
+        Ok(Self {
+            outgoing,
+            incoming,
+            runtime: runtime_handle,
+        })
+    }
+
+    pub(crate) fn runtime(&self) -> Option<tokio::runtime::Handle> {
+        self.runtime
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
     }
 
     pub fn send(&self, request: ClientMessage) -> Result<(), String> {
@@ -195,8 +216,13 @@ impl Connection {
             })
     }
 
-    pub fn authenticate_location(&self, request: lince_interface::location::AuthenticationRequest) -> Result<(), String> {
-        self.outgoing.try_send(Request::LocationLogin(request)).map_err(|_| "Wait for this device to finish its current request".into())
+    pub fn authenticate_location(
+        &self,
+        request: lince_interface::location::AuthenticationRequest,
+    ) -> Result<(), String> {
+        self.outgoing
+            .try_send(Request::LocationLogin(request))
+            .map_err(|_| "Wait for this device to finish its current request".into())
     }
 
     pub fn login(&self, username: String, password: String) -> Result<(), String> {

@@ -2,12 +2,21 @@ use super::*;
 use crate::server::{SurfaceNode, WindowSnapshot};
 
 pub(super) struct SurfaceView {
+    layout: Option<crate::server::SurfaceLayout>,
+    commit: Option<smithay::backend::renderer::utils::CommitCounter>,
     entity: Entity,
     image: Handle<Image>,
     material: Handle<ClientMaterial>,
     texture: Option<wgpu::Texture>,
     version: Option<u64>,
     opaque: bool,
+}
+
+impl SurfaceView {
+    fn previous(&self, node: &SurfaceNode) -> Option<(&wgpu::Texture, smithay::backend::renderer::utils::CommitCounter)> {
+        if self.layout != Some(node.layout) { return None; }
+        Some((self.texture.as_ref()?, self.commit?))
+    }
 }
 
 pub(super) fn remove(world: &mut World, node: SurfaceView) {
@@ -23,6 +32,7 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
 
 impl Presentation {
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
+        self.renderer.retain_imports(windows);
         let live: HashSet<_> = windows.iter().map(|window| window.id).collect();
         self.window_requests.retain(|id, _| live.contains(id));
         let destroyed: Vec<_> = self
@@ -41,6 +51,7 @@ impl Presentation {
             }
             if !window.mapped {
                 self.hide_window(window.id);
+                self.painted_windows.insert(window.id, window.clone());
                 continue;
             }
             if !self.windows.contains_key(&window.id) {
@@ -50,8 +61,47 @@ impl Presentation {
                 current.parent = window.parent;
             }
             self.window_metadata(window.id, &window.title, &window.app_id)?;
+            let ready: Result<bool, ProbeFailure> =
+                window.nodes.iter().try_fold(true, |ready, node| {
+                    let current = self.windows[&window.id]
+                        .nodes
+                        .get(&node.surface)
+                        .is_some_and(|view| view.version == Some(node.content.version));
+                    if current {
+                        return Ok(ready);
+                    }
+                    let previous = self.windows[&window.id].nodes.get(&node.surface).and_then(|view| view.previous(node));
+                    match self.renderer.import_surface(node, previous)? {
+                        Some(_) => {
+                            self.uploads.push(node.content.clone());
+                            Ok(ready)
+                        }
+                        None => Ok(false),
+                    }
+                });
+            match ready {
+                Ok(false) => {
+                    pending = true;
+                    continue;
+                }
+                Err(error) => {
+                    self.rejected.insert(window.id);
+                    native::notifications::report(
+                        self.app.world(),
+                        "Park application",
+                        &error.to_string(),
+                    );
+                    continue;
+                }
+                Ok(true) => {}
+            }
             match self.window_tree(window) {
-                Ok(waiting) => pending |= waiting,
+                Ok(waiting) => {
+                    pending |= waiting;
+                    if !waiting {
+                        self.painted_windows.insert(window.id, window.clone());
+                    }
+                }
                 Err(error) => {
                     self.rejected.insert(window.id);
                     native::notifications::report(
@@ -62,7 +112,32 @@ impl Presentation {
                 }
             }
         }
+        for window in windows {
+            let Some(entity) = self.windows.get(&window.id).map(|window| window.entity) else {
+                continue;
+            };
+            if let Some(parent) = window
+                .parent
+                .and_then(|id| self.windows.get(&id))
+                .map(|parent| parent.entity)
+                .filter(|parent| *parent != entity)
+            {
+                self.app
+                    .world_mut()
+                    .entity_mut(entity)
+                    .insert(native::layout::desktop::TransientParent(parent));
+            } else {
+                self.app
+                    .world_mut()
+                    .entity_mut(entity)
+                    .remove::<native::layout::desktop::TransientParent>();
+            }
+        }
         Ok(pending)
+    }
+
+    pub(crate) fn painted_windows(&self) -> Vec<WindowSnapshot> {
+        self.painted_windows.values().cloned().collect()
     }
 
     fn window_tree(&mut self, snapshot: &WindowSnapshot) -> Result<bool, ProbeFailure> {
@@ -126,7 +201,7 @@ impl Presentation {
             if view.version != Some(node.content.version) {
                 if let Some((texture, opaque)) = self
                     .renderer
-                    .import_client(&node.content, view.texture.as_ref())?
+                    .import_surface(node, view.previous(node))?
                 {
                     if view.texture.as_ref() != Some(&texture) {
                         world
@@ -145,6 +220,8 @@ impl Presentation {
                         view.texture = Some(texture);
                     }
                     view.version = Some(node.content.version);
+                    view.layout = Some(node.layout);
+                    view.commit = Some(node.damage.current_commit());
                     view.opaque = opaque;
                     self.uploads.push(node.content.clone());
                 } else {
@@ -188,6 +265,8 @@ fn create(world: &mut World, parent: Entity) -> SurfaceView {
         ))
         .id();
     SurfaceView {
+        layout: None,
+        commit: None,
         entity,
         image,
         material,
@@ -222,7 +301,7 @@ fn place(
             source.layout.uv_origin[0],
             source.layout.uv_x[0],
             source.layout.uv_y[0],
-            if view.opaque { 1.0 } else { 0.0 },
+            if view.opaque || source.fully_opaque() { 1.0 } else { 0.0 },
         ),
         v: Vec4::new(
             source.layout.uv_origin[1],

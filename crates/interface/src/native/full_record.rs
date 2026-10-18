@@ -153,7 +153,7 @@ struct AddCommand;
 
 impl Action for AddCommand {
     fn apply(&self, world: &mut World, root: Entity) {
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, root) {
             return;
         }
         let Some(entity) = open(world, root, "pending", Source::Local) else {
@@ -170,6 +170,7 @@ impl Action for AddCommand {
         let id = nucleus::new_uid("create-command");
         let result = crate::native::sand_panel::send(
             world,
+            entity,
             cell::ClientMessage::Act {
                 id: id.clone(),
                 action: engine::actions::Action::CreateRecord {
@@ -200,7 +201,7 @@ impl Action for AddFiote {
 }
 
 fn create(world: &mut World, root: Entity) {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, root) {
         return;
     }
     let Some(area) = open_fiote(world, root, "pending") else {

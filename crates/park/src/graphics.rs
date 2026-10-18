@@ -16,6 +16,11 @@ mod buffers;
 #[cfg(feature = "graphics-gate")]
 mod canvas;
 mod import;
+mod completion;
+mod synchronization;
+pub use synchronization::probe as synchronization_probe;
+#[cfg(feature = "native-presentation")]
+pub(crate) mod wait;
 #[cfg(feature = "graphics-gate")]
 mod live;
 
@@ -91,6 +96,11 @@ pub fn gate() -> ProbeReport {
 }
 
 pub(crate) struct VulkanRenderer {
+    #[cfg(feature = "native-presentation")]
+    waits: std::cell::RefCell<std::collections::HashMap<(smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer, u64), wait::Watch>>,
+    #[cfg(feature = "native-presentation")]
+    reactor: wait::Reactor,
+    completion: completion::Driver,
     pub(crate) _instance: wgpu::Instance,
     pub(crate) adapter: wgpu::Adapter,
     pub(crate) device: wgpu::Device,
@@ -119,8 +129,14 @@ impl Drop for Allocation {
 }
 
 pub(crate) struct ExportedImage {
+    completion: completion::Completion,
     pub(crate) dmabuf: Dmabuf,
     _allocation: Arc<Allocation>,
+}
+
+impl ExportedImage {
+    pub(crate) fn ready(&self) -> Result<bool> { self.completion.ready() }
+    pub(crate) fn wait_for_probe(&self) -> Result<()> { self.completion.wait_for_probe() }
 }
 
 struct SharedImage {
@@ -197,7 +213,17 @@ impl VulkanRenderer {
             unsafe { adapter.create_device_from_hal::<Vulkan>(open, &descriptor) }
                 .map_err(|error| ProbeFailure::at("wgpu_device", error))?;
         drop(hal_adapter);
+        #[cfg(feature = "native-presentation")]
+        let reactor = {
+            let thread = std::thread::current();
+            wait::Reactor::new(move || thread.unpark()).map_err(|error| ProbeFailure::at("client_acquire_events", error))?
+        };
         Ok(Self {
+            #[cfg(feature = "native-presentation")]
+            waits: Default::default(),
+            #[cfg(feature = "native-presentation")]
+            reactor,
+            completion: completion::Driver::new(device.clone())?,
             _instance: instance,
             adapter,
             device,
@@ -283,7 +309,7 @@ impl VulkanRenderer {
         });
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("bind_image_memory", error))?;
-        self.initialize(image)?;
+        self.initialize(allocation.clone())?;
         let memory_fd = khr::external_memory_fd::Device::new(&self.raw_instance, &self.raw_device);
         let fd = unsafe {
             memory_fd.get_memory_fd(
@@ -374,56 +400,24 @@ impl VulkanRenderer {
         })
     }
 
-    fn submit_raw(&self, stage: &str, record: impl FnOnce(vk::CommandBuffer)) -> Result<()> {
-        let pool = unsafe {
-            self.raw_device.create_command_pool(
-                &vk::CommandPoolCreateInfo::default()
-                    .queue_family_index(self.queue_family)
-                    .flags(vk::CommandPoolCreateFlags::TRANSIENT),
-                None,
-            )
+    fn submit_raw(&self, stage: &str, record: impl FnOnce(vk::CommandBuffer)) -> Result<wgpu::SubmissionIndex> {
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(stage) });
+        unsafe {
+            encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
+                let encoder = encoder.ok_or_else(|| ProbeFailure::at(stage, "Vulkan HAL unavailable"))?;
+                record(encoder.raw_handle());
+                Ok::<_, ProbeFailure>(())
+            })?;
         }
-        .map_err(|error| ProbeFailure::at(stage, error))?;
-        let result = (|| {
-            let command = unsafe {
-                self.raw_device.allocate_command_buffers(
-                    &vk::CommandBufferAllocateInfo::default()
-                        .command_pool(pool)
-                        .level(vk::CommandBufferLevel::PRIMARY)
-                        .command_buffer_count(1),
-                )
-            }
-            .map_err(|error| ProbeFailure::at(stage, error))?[0];
-            unsafe {
-                self.raw_device.begin_command_buffer(
-                    command,
-                    &vk::CommandBufferBeginInfo::default()
-                        .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT),
-                )
-            }
-            .map_err(|error| ProbeFailure::at(stage, error))?;
-            record(command);
-            unsafe { self.raw_device.end_command_buffer(command) }
-                .map_err(|error| ProbeFailure::at(stage, error))?;
-            let hal_device = unsafe { self.device.as_hal::<Vulkan>() }
-                .ok_or_else(|| ProbeFailure::at(stage, "Vulkan HAL unavailable"))?;
-            let commands = [command];
-            unsafe {
-                self.raw_device.queue_submit(
-                    hal_device.raw_queue(),
-                    &[vk::SubmitInfo::default().command_buffers(&commands)],
-                    vk::Fence::null(),
-                )
-            }
-            .map_err(|error| ProbeFailure::at(stage, error))?;
-            unsafe { self.raw_device.queue_wait_idle(hal_device.raw_queue()) }
-                .map_err(|error| ProbeFailure::at(stage, error))
-        })();
-        unsafe { self.raw_device.destroy_command_pool(pool, None) };
-        result
+        Ok(self.queue.submit([encoder.finish()]))
     }
 
-    fn initialize(&self, image: vk::Image) -> Result<()> {
+    fn retain(&self, resources: impl Send + 'static) {
+        self.queue.on_submitted_work_done(move || drop(resources));
+    }
+
+    fn initialize(&self, allocation: Arc<Allocation>) -> Result<()> {
+        let image = allocation.image;
         self.submit_raw("initialize_image", |command| {
             let range = vk::ImageSubresourceRange::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
@@ -455,17 +449,20 @@ impl VulkanRenderer {
                     &[range],
                 );
             }
-        })
+        })?;
+        self.retain(allocation);
+        Ok(())
     }
 
     fn release(
         &self,
-        image: vk::Image,
+        allocation: Arc<Allocation>,
         layout: vk::ImageLayout,
         access: vk::AccessFlags,
         stage: vk::PipelineStageFlags,
-    ) -> Result<()> {
-        self.submit_raw("release_to_egl", |command| {
+    ) -> Result<wgpu::SubmissionIndex> {
+        let image = allocation.image;
+        let submission = self.submit_raw("release_to_egl", |command| {
             let range = vk::ImageSubresourceRange::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .level_count(1)
@@ -489,7 +486,9 @@ impl VulkanRenderer {
                     &[barrier],
                 );
             }
-        })
+        })?;
+        self.retain(allocation);
+        Ok(submission)
     }
 
     fn clear(&self, image: SharedImage, color: wgpu::Color) -> Result<ExportedImage> {
@@ -510,20 +509,15 @@ impl VulkanRenderer {
                 ..Default::default()
             });
         }
-        let submission = self.queue.submit([encoder.finish()]);
-        self.device
-            .poll(wgpu::PollType::Wait {
-                submission_index: Some(submission),
-                timeout: Some(std::time::Duration::from_secs(5)),
-            })
-            .map_err(|error| ProbeFailure::at("wgpu_render", error))?;
-        self.release(
-            image.allocation.image,
+        self.queue.submit([encoder.finish()]);
+        let submission = self.release(
+            image.allocation.clone(),
             vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
             vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
         )?;
         Ok(ExportedImage {
+            completion: self.completion.track(submission)?,
             dmabuf: image.dmabuf,
             _allocation: image.allocation,
         })
@@ -565,8 +559,10 @@ fn run_probe(report: &mut ProbeReport) -> Result<()> {
                 a: 1.0,
             },
         )?;
+        image.wait_for_probe()?;
         let client_texture = vulkan.import_dmabuf(&image.dmabuf)?;
         let image = vulkan.export_copy(&client_texture)?;
+        image.wait_for_probe()?;
         let imported = renderer
             .import_dmabuf(&image.dmabuf, None)
             .map_err(|error| ProbeFailure::at("gles_import", error))?;

@@ -258,6 +258,7 @@ impl Engine {
 }
 
 fn matches_query(query: &Search, document: &Snippet) -> bool {
+    if query.transport.as_ref().is_some_and(|filter| !filter.matches(document.transport.as_ref())) { return false; }
     let content = format!("{} {}", document.title, document.text).to_lowercase();
     query
         .text

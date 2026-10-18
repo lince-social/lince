@@ -183,7 +183,7 @@ impl Action for Command {
             return;
         };
         let status = view.status;
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, owner) {
             panel::status(
                 world,
                 status,
@@ -741,7 +741,7 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if world.get::<Watch>(owner).is_none() && !crate::native::laboratory::active(world) {
+        if world.get::<Watch>(owner).is_none() && !crate::native::laboratory::blocked(world, owner) {
             if let (Some(runtime), Ok(handle)) = (
                 crate::native::practice_cells::runtime(world, owner),
                 tokio::runtime::Handle::try_current(),

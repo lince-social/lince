@@ -103,14 +103,15 @@ pub(crate) use ui::controls;
 pub(crate) use ui::{assign, enable, preview};
 
 fn update(world: &mut World) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     let areas: Vec<_> = world
         .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
         .iter(world)
         .filter(|(entity, area, parent, member)| {
-            crate::native::influence_report::activity(
+            !crate::native::laboratory::blocked(world, *entity)
+                && crate::native::influence_report::activity(
                 world,
                 *entity,
                 area,

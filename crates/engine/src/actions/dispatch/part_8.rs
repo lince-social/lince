@@ -240,6 +240,7 @@ impl Engine {
                     let created = store::transfers::create_draft(
                         &self.store.pool,
                         store::transfers::NewTransferDraft {
+                            public_history: None,
                             idempotency_key: request_id,
                             slug: None,
                             head: format!(
@@ -561,6 +562,7 @@ impl Engine {
                             creator_person_uid: acting.clone(),
                             proposal_author_person_uid: acting.clone(),
                             terms: store::transfers::TransferDraftTermsInput {
+                                public_history: store::transfers::public_history(&self.store.pool, &transfer).await?,
                                 slug: transfer_record.slug,
                                 head: transfer_record.head,
                                 agreement_type: transfer_row.agreement_type,

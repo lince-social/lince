@@ -34,7 +34,7 @@ fn scope_for(world: &World, owner: Entity, path: &Path) -> Result<Scope, String>
 
 impl Action for Control {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         if let Err(e) = apply(world, owner, *self) {

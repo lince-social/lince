@@ -33,6 +33,49 @@ pub async fn get(pool: &SqlitePool, intent: &str) -> Result<Option<Envelope>, St
         .map(map))
 }
 
+pub async fn scope(pool: &SqlitePool, uid: &str, to: &str) -> Result<Option<String>, StoreError> {
+    sqlx::query_scalar("SELECT s.scope_json FROM mailbox_outbox_scope s JOIN mailbox_outbox o ON o.uid=s.uid WHERE o.uid=? AND o.to_organ=?")
+        .bind(uid).bind(to).fetch_optional(pool).await
+}
+
+pub async fn remember_review(
+    pool: &SqlitePool,
+    uid: &str,
+    scope: &str,
+    policy: &str,
+) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    let previous: Option<String> =
+        sqlx::query_scalar("SELECT scope_json FROM mailbox_outbox_scope WHERE uid=?")
+            .bind(uid)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let authority: Option<String> =
+        sqlx::query_scalar("SELECT policy_hash FROM mailbox_outbox_authority WHERE uid=?")
+            .bind(uid)
+            .fetch_optional(&mut *tx)
+            .await?;
+    if previous.as_ref().is_some_and(|previous| previous != scope)
+        || authority
+            .as_ref()
+            .is_some_and(|previous| previous != policy)
+    {
+        return Err(sqlx::Error::Protocol(
+            "Saved mail has a different sharing review".into(),
+        ));
+    }
+    sqlx::query(
+        "INSERT INTO mailbox_outbox_scope(uid,scope_json) VALUES(?,?) ON CONFLICT(uid) DO NOTHING",
+    )
+    .bind(uid)
+    .bind(scope)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("INSERT INTO mailbox_outbox_authority(uid,policy_hash) VALUES(?,?) ON CONFLICT(uid) DO NOTHING").bind(uid).bind(policy).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
 pub async fn prepare(pool: &SqlitePool, candidate: &Envelope) -> Result<Envelope, StoreError> {
     let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query("SELECT * FROM mailbox_outbox WHERE intent=?")

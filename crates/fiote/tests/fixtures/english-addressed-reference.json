@@ -1,0 +1,13 @@
+{
+  "repository": "MycroftAI/Precise-Community-Data",
+  "revision": "4854e39b7f8c0e14d387d4e135aa10486f5158bf",
+  "file": "addressed-computer.wav",
+  "source": "computer/en/computer-en-099d6097-ce0f-403a-b30d-0ced99f1e44e.wav",
+  "sha256": "40515ffd8b22b5d25220fc1985299e22212508d55bf6891953854e27a515139e",
+  "reference": "computer/en/README.md",
+  "expected": "computer",
+  "license": "Public domain dedication by Kris Gesling; exact recording listed in contributor license",
+  "license_source": "licenses/license-20190814-krisgesling.txt",
+  "license_sha256": "b7052a9ab48196e6f0af161719d74362a73fa5e0680fd9ccab0f62baff320ed8",
+  "scope": "One human name-only address to a fixture Fiote named Computer while listening is explicitly active; not meaningful command accuracy, speaker identity or background wake detection"
+}

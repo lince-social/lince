@@ -4,6 +4,7 @@ use store::{Store, social};
 
 fn document(index: usize) -> Snippet {
     Snippet {
+        transport: None,
         protocol: "lince.snippet.1".into(),
         id: format!("post_{index:026}"),
         nonce: format!("fixture-{index}"),

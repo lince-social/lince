@@ -48,6 +48,7 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
             | SandKind::Operation
             | SandKind::AccessControl
             | SandKind::Visibility
+            | SandKind::Trust
             | SandKind::HandCamera
             | SandKind::Video
             | SandKind::Sync

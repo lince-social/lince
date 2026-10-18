@@ -100,13 +100,14 @@ fn handle_checked(
 }
 
 fn update(world: &mut World) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     crate::native::topology::rooms::synchronize(world);
     let roots: Vec<_> = world
         .query_filtered::<Entity, (With<crate::native::container::BoxRoot>, With<Workspaces>)>()
         .iter(world)
+        .filter(|root| !crate::native::laboratory::blocked(world, *root))
         .collect();
     for root in roots {
         if world

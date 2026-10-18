@@ -105,7 +105,7 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             continue;
         }
         refresh(world, owner);

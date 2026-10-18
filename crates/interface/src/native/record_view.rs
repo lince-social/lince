@@ -65,6 +65,7 @@ fn setup(world: &mut World) {
 fn save(
     mut editors: Query<
         (
+            Entity,
             &EditableText,
             &mut RecordEditor,
             &mut AutoSave,
@@ -76,8 +77,10 @@ fn save(
     mut view: ResMut<RecordsView>,
     bridge: NonSend<CellBridge>,
     wake: Option<Res<crate::native::wake::WakeSignal>>,
+    access: crate::native::laboratory::OwnerAccess,
 ) {
-    for (text, mut record, mut automatic, mut feedback) in &mut editors {
+    for (entity, text, mut record, mut automatic, mut feedback) in &mut editors {
+        if access.blocked(entity) { continue; }
         if text.is_composing() || pending_text(text) {
             continue;
         }

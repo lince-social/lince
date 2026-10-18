@@ -65,6 +65,7 @@ pub(super) fn form(
                 ))
             }
             Kind::TextList => Some(panel::field(world, field, caption, &scope_text(&value))),
+            Kind::DateTime => Some(panel::field(world, field, caption, &value.as_i64().and_then(|time| chrono::DateTime::from_timestamp(time, 0)).map(|time| time.to_rfc3339()).unwrap_or_default())),
             Kind::OptionalText => Some(panel::field(
                 world,
                 field,

@@ -19,7 +19,7 @@ pub(crate) struct SavedMap {
 impl SavedMap {
     pub(crate) fn valid(&self) -> bool {
         self.camera.valid()
-            && self.records.len() <= 32
+            && self.records.len() <= 10_000
             && self
                 .records
                 .iter()
@@ -78,15 +78,27 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMap> {
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
         .map(|(entity, _, member, item, sand)| SavedMap {
             workspace: member.0,
-            camera: if sand.records.is_empty() && sand.area.is_none() {
+            camera: if sand.records.is_empty()
+                && sand.area.is_none()
+                && !sand.device_centered
+                && sand.public_markers.is_empty()
+            {
                 sand.camera
             } else {
                 Camera::default()
             },
-            records: sand.records.clone(),
+            records: if sand.invitation.is_some() {
+                Vec::new()
+            } else {
+                sand.records.clone()
+            },
             person: sand.person.clone(),
             area: sand.area.clone(),
-            authority_node_id: sand.authority_node_id.clone(),
+            authority_node_id: if sand.invitation.is_some() {
+                None
+            } else {
+                sand.authority_node_id.clone()
+            },
             position: item.position.to_array(),
             size: item.size.to_array(),
             placement: crate::native::sand_placement::Placement::capture(world, entity),

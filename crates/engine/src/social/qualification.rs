@@ -26,6 +26,7 @@ pub(super) fn publication(index: u32, endpoint: &str) -> (Snippet, Signer) {
     let nonce = B64.encode(index.to_le_bytes().repeat(4));
     let destinations = vec![endpoint.to_owned()];
     let mut document = Snippet {
+        transport: None,
         protocol: "lince.snippet.1".into(),
         id: post_id::post_id(
             &owner.public_key_b64(),

@@ -10,6 +10,25 @@ struct DirectoryEditor {
     original: String,
 }
 
+#[derive(Clone)]
+struct StopChild {
+    record: String,
+    thread: String,
+}
+
+impl Action for StopChild {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        request(
+            world,
+            owner,
+            FioteRequest::StopChild {
+                record: self.record.clone(),
+                thread: self.thread.clone(),
+            },
+        );
+    }
+}
+
 pub(super) fn directory_editing(world: &World, owner: Entity) -> bool {
     world.get::<DirectoryEditor>(owner).is_some_and(|editor| {
         value(world, editor.field).is_ok_and(|value| value != editor.original)
@@ -65,6 +84,32 @@ impl Action for Open {
 pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Option<&FioteStatus>) {
     let Some(saved) = saved else { return };
     crate::native::edit_mode::label(world, content, "Fiotes", 22.0);
+    crate::native::description::button(world, content, owner, "Ask Fiote", super::assistant::Open);
+    if let Some(intake) = &saved.intake {
+        crate::native::edit_mode::label(
+            world,
+            content,
+            &format!(
+                "Automatic assistant: {} · {} direct children · created {}{}",
+                intake.title,
+                intake.children,
+                intake.created_at,
+                if intake.enabled {
+                    ""
+                } else {
+                    " · connection needs setup"
+                },
+            ),
+            13.0,
+        );
+        crate::native::description::button(
+            world,
+            content,
+            owner,
+            "Open automatic assistant",
+            Select(intake.record.clone()),
+        );
+    }
     let list = section(world, content);
     for choice in &saved.fiotes {
         crate::native::description::button(
@@ -76,6 +121,40 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         );
     }
     crate::native::description::button(world, content, owner, "Create Fiote", Create);
+    let handoffs = collapsed(world, content, "Show delegated work");
+    for handoff in &saved.handoffs {
+        crate::native::edit_mode::label(
+            world,
+            handoffs,
+            &format!(
+                "{} · to {} · {}\n{}",
+                handoff.request_id, handoff.target, handoff.state, handoff.detail,
+            ),
+            13.0,
+        );
+        if let Some(thread) = &handoff.thread {
+            crate::native::description::button(
+                world,
+                handoffs,
+                owner,
+                "Open delegated conversation",
+                OpenConversation {
+                    target: handoff.target.clone(),
+                    thread: thread.clone(),
+                },
+            );
+            crate::native::description::button(
+                world,
+                handoffs,
+                owner,
+                "Stop delegated Fiote",
+                StopChild {
+                    record: saved.record.clone(),
+                    thread: thread.clone(),
+                },
+            );
+        }
+    }
     crate::native::description::button(world, content, owner, "Run now", RunNow);
     crate::native::description::button(
         world,
@@ -448,7 +527,7 @@ impl Action for Connection {
 }
 
 #[derive(Clone)]
-struct OpenTask(String);
+pub(super) struct OpenTask(pub(super) String);
 impl Action for OpenTask {
     fn apply(&self, world: &mut World, owner: Entity) {
         let panel = world.get::<Panel>(owner).unwrap();
@@ -458,6 +537,89 @@ impl Action for OpenTask {
         };
         super::show(world, owner, Step::Closed);
         crate::native::thread_castle::select_thread(world, &binding, &self.0);
+    }
+}
+
+#[derive(Clone)]
+pub(super) struct OpenConversation {
+    pub(super) target: String,
+    pub(super) thread: String,
+}
+
+impl Action for OpenConversation {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(panel) = world.get::<Panel>(owner) else {
+            return;
+        };
+        let label = panel.status;
+        if !nucleus::valid_uid(&self.target, "r") || !nucleus::valid_uid(&self.thread, "r") {
+            if let Some(mut text) = world.get_mut::<Text>(label) {
+                text.0 = "Inspect the request before opening its conversation.".into();
+            }
+            return;
+        }
+        let mut ancestor = Some(panel.binding.area);
+        let root = loop {
+            let Some(entity) = ancestor else {
+                if let Some(mut text) = world.get_mut::<Text>(label) {
+                    text.0 = "Open this conversation from an active workspace.".into();
+                }
+                return;
+            };
+            if world
+                .get::<crate::native::workspace::Workspaces>(entity)
+                .is_some()
+            {
+                break entity;
+            }
+            ancestor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        };
+        let active = world
+            .get::<crate::native::workspace::Workspaces>(root)
+            .unwrap()
+            .active;
+        let existing = world
+            .query::<(
+                Entity,
+                &crate::native::area::InfluenceArea,
+                &crate::native::workspace::WorkspaceMember,
+                &ChildOf,
+            )>()
+            .iter(world)
+            .filter(|(_, area, workspace, parent)| {
+                parent.parent() == root
+                    && workspace.0 == active
+                    && area.protein.as_ref().is_some_and(|config| {
+                        config.fiote
+                            && config.source == Source::Local
+                            && config.draft.query["where"][0]["all"][0]["uid_eq"].as_str()
+                                == Some(self.target.as_str())
+                    })
+            })
+            .map(|(entity, _, _, _)| entity)
+            .min_by_key(|entity| entity.to_bits());
+        let area =
+            existing.or_else(|| crate::native::full_record::open_fiote(world, root, &self.target));
+        let Some(area) = area else {
+            if let Some(mut text) = world.get_mut::<Text>(label) {
+                text.0 = "The requested conversation could not be opened.".into();
+            }
+            return;
+        };
+        world
+            .entity_mut(area)
+            .insert(crate::native::thread_castle::RequestedThread(
+                self.thread.clone(),
+            ));
+        let binding = RecordBinding {
+            area,
+            uid: self.target.clone(),
+            source: Source::Local,
+        };
+        crate::native::thread_castle::select_thread(world, &binding, &self.thread);
+        if let Some(mut text) = world.get_mut::<Text>(label) {
+            text.0 = "Opening the requested Fiote conversation in this workspace…".into();
+        }
     }
 }
 
@@ -562,7 +724,7 @@ pub(super) fn instructions(world: &mut World, saved: &FioteStatus) {
 }
 
 #[derive(Clone)]
-struct Select(String);
+pub(super) struct Select(pub(super) String);
 impl Action for Select {
     fn apply(&self, world: &mut World, owner: Entity) {
         world.entity_mut(owner).remove::<DirectoryEditor>();

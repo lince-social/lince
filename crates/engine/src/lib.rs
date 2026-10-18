@@ -9,6 +9,8 @@ pub mod access;
 mod record_policy;
 pub mod workspace_sync;
 pub mod action_intent;
+pub mod identity;
+pub mod trust_analysis;
 pub mod actions;
 pub mod append;
 pub mod area_transition;
@@ -24,6 +26,9 @@ pub mod vocabulary;
 pub mod knowledge;
 pub mod saved_location;
 pub mod visibility;
+mod audience;
+mod stock_policy;
+mod transport;
 pub mod record_change;
 pub mod record_extensions;
 pub mod record_creation;
@@ -34,6 +39,7 @@ pub mod effects;
 pub mod commands;
 pub mod signal_endpoints;
 pub mod signal_streams;
+pub mod ailuros;
 pub mod enrolment;
 pub mod error;
 pub mod expiry;
@@ -96,6 +102,8 @@ pub mod calls;
 pub mod transfer;
 pub mod transfer_delivery;
 mod transfer_evidence;
+pub mod transfer_receipts;
+mod read_cursor;
 mod transfer_counterparty;
 pub mod trust;
 pub mod wire;
@@ -138,6 +146,9 @@ pub struct Engine {
     fiote_config_lock: Mutex<()>,
     thread_creation_lock: Mutex<()>,
     mailbox_delivery_lock: Mutex<()>,
+    evidence_serving_slots: tokio::sync::Semaphore,
+    pub(crate) trust_remote: trust_analysis::remote::Runtime,
+    pub(crate) evidence_custody: trust_analysis::custody::Runtime,
     calls: Mutex<calls::Calls>,
     login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
     pub sync_service: sync_service::SyncService,
@@ -164,6 +175,7 @@ pub struct Engine {
     karma_preview_runner: RwLock<Option<std::sync::Arc<dyn karma_preview::Runner>>>,
     pub(crate) rule_index: Mutex<Option<(u64, std::sync::Arc<rule_runtime::RuleIndex>)>>,
     pub(crate) rule_execution: Mutex<()>,
+    pub(crate) stock_policy_execution: Mutex<()>,
     pub(crate) roster_execution: Mutex<()>,
     pub(crate) command_authoring: Mutex<()>,
     pub(crate) command_capacity: tokio::sync::Semaphore,
@@ -199,6 +211,10 @@ impl Engine {
     }
 
     pub async fn new(store: Store) -> Result<Engine, EngineError> {
+        let mut custody_cleanup = store.pool.begin().await?;
+        store::evidence_forwarding::interrupted_on(&mut custody_cleanup, nucleus::execution::now().timestamp()).await?;
+        store::evidence_custody::cleanup_on(&mut custody_cleanup, nucleus::execution::now().timestamp()).await?;
+        custody_cleanup.commit().await?;
         if let Some(max) = store::sync_ops::max_hlc(&store.pool).await? {
             nucleus::hlc::observe(max);
         }
@@ -220,6 +236,9 @@ impl Engine {
             fiote_config_lock: Mutex::new(()),
             thread_creation_lock: Mutex::new(()),
             mailbox_delivery_lock: Mutex::new(()),
+            evidence_serving_slots: tokio::sync::Semaphore::new(4),
+            trust_remote: trust_analysis::remote::Runtime::default(),
+            evidence_custody: Default::default(),
             calls: Mutex::new(calls::Calls::default()),
             access_gate: tokio::sync::RwLock::new(()),
             login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
@@ -247,6 +266,7 @@ impl Engine {
             karma_preview_runner: RwLock::new(None),
             rule_index: Mutex::new(None),
             rule_execution: Mutex::new(()),
+            stock_policy_execution: Mutex::new(()),
             roster_execution: Mutex::new(()),
             command_authoring: Mutex::new(()),
             command_capacity: tokio::sync::Semaphore::new(8),

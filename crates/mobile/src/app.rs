@@ -83,6 +83,9 @@ struct Pending {
 struct DraftRecovery(BTreeMap<String, crate::storage::Saved>);
 
 impl Mobile {
+    pub(crate) fn data_directory(&self) -> &std::path::Path {
+        &self.directory
+    }
     pub(crate) fn organ_uid(&self) -> Option<String> {
         self.organ.clone()
     }
@@ -184,6 +187,11 @@ pub struct ButtonIntent(pub Intent);
 
 #[derive(Clone)]
 pub enum Intent {
+    Workflow(crate::workflows::Intent),
+    Map(crate::map::Intent),
+    MapRecords(Vec<String>),
+    OpenLocationInvitation(String),
+    ViewLocationMap(nucleus::location::Invitation),
     Knowledge(crate::knowledge::Intent),
     OpenLink(String),
     Nothing,
@@ -280,7 +288,16 @@ impl Plugin for MobilePlugin {
             )
             .add_systems(
                 PostUpdate,
-                (capture, flush_on_suspend, apply, persist, render)
+                (
+                    capture,
+                    crate::workflows::persist_draft,
+                    flush_on_suspend,
+                    apply,
+                    crate::workflows::ensure_scope,
+                    crate::map::maintain,
+                    persist,
+                    render,
+                )
                     .chain()
                     .after(bevy::text::EditableTextSystems)
                     .before(bevy::ui::UiSystems::Layout),
@@ -329,6 +346,7 @@ fn connect(world: &mut World) {
     let wake = lince_interface::wake::WakeSignal::new(move || {
         let _ = proxy.send_event(bevy::winit::WinitUserEvent::WakeUp);
     });
+    world.insert_resource(wake.clone());
     #[cfg(target_os = "android")]
     crate::android::wake(wake.clone());
     let directory = world.resource::<Mobile>().directory.clone();
@@ -591,6 +609,9 @@ pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
     let page = state.navigation.current.clone();
     let previous = state.active_record.clone();
     let desired: &[&str] = match &page {
+        Page::Transfers => &["records", "transfer_context"],
+        Page::Transfer(_) => &["transfer"],
+        Page::Trust(_, _) | Page::Map => &[],
         Page::Records => &["records", "saved_views"],
         Page::Kanban => &["records", "task_concept", "saved_views"],
         Page::Record(_) => &["record"],
@@ -701,6 +722,26 @@ pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
                 subscribe(world, topic, query)?;
             }
         }
+        Page::Transfers => {
+            let mut query = crate::record::query(None, crate::views::PAGE_SIZE + 1, "");
+            query
+                .filter
+                .push(protein::Predicate::KindEq("transfer".into()));
+            query.include.record_after = world.resource::<Mobile>().record_pages.last().cloned();
+            subscribe(world, "records", query)?;
+            let mut context = source_query(protein::Source::Transfer);
+            context
+                .filter
+                .push(protein::Predicate::UidEq(nucleus::new_uid("r")));
+            context.limit = Some(1);
+            subscribe(world, "transfer_context", context)?;
+        }
+        Page::Transfer(uid) => {
+            let mut query = source_query(protein::Source::Transfer);
+            query.filter.push(protein::Predicate::UidEq(uid));
+            subscribe(world, "transfer", query)?;
+        }
+        Page::Trust(_, _) | Page::Map => {}
         Page::Credits => {}
         Page::Knowledge => {
             subscribe(world, "records", crate::record::query(None, 50, ""))?;
@@ -744,7 +785,9 @@ fn receive(world: &mut World) {
     }
     for event in events {
         match event {
-            Event::LocationAuthenticated(id, result) => { lince_interface::location::authentication_reply(world, &id, result); }
+            Event::LocationAuthenticated(id, result) => {
+                lince_interface::location::authentication_reply(world, &id, result);
+            }
             Event::Stopped => {
                 let next = world.resource_mut::<Mobile>().next_profile.take();
                 if let Some(next) = next {
@@ -981,6 +1024,9 @@ fn draft_directory(state: &Mobile) -> PathBuf {
 }
 
 fn receive_message(world: &mut World, message: ServerMessage) {
+    if crate::workflows::receive(world, &message) || crate::map::receive(world, &message) {
+        return;
+    }
     match &message {
         ServerMessage::ActionOk { id, data, .. } if id.starts_with("location-ui_") => {
             lince_interface::location::receive(world, id, Ok(data.clone().unwrap_or(Value::Null)));
@@ -1347,6 +1393,9 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
         Intent::Knowledge(intent) => crate::knowledge::apply(world, intent)?,
         Intent::LoadImage(source) => crate::images::request(world, source)?,
         Intent::OpenLink(reference) => {
+            if nucleus::location::Invitation::parse(&reference).is_ok() {
+                return crate::location::open_reference(world, &reference);
+            }
             if reference.starts_with("https://") || reference.starts_with("http://") {
                 #[cfg(target_os = "android")]
                 return crate::android::open_link(&reference);
@@ -1543,7 +1592,9 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             state.status = "Saving and closing this profile…".into();
         }
         Intent::Back => {
-            if crate::location::close(world) { return Ok(()); }
+            if crate::location::close(world) {
+                return Ok(());
+            }
             back(world);
             subscriptions(world)?;
         }
@@ -1760,9 +1811,27 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             }
         }
         Intent::CancelDelete => world.resource_mut::<Mobile>().deleting = None,
+        Intent::Workflow(intent) => crate::workflows::apply(world, intent)?,
+        Intent::Map(intent) => crate::map::apply(world, intent)?,
+        Intent::MapRecords(records) => {
+            crate::map::open(world, records);
+            world.resource_mut::<Mobile>().navigation.open(Page::Map);
+        }
+        Intent::OpenLocationInvitation(reference) => {
+            crate::location::open_reference(world, &reference)?
+        }
+        Intent::ViewLocationMap(invitation) => {
+            crate::location::close(world);
+            crate::map::observe(world, invitation)?;
+            world.resource_mut::<Mobile>().navigation.open(Page::Map);
+        }
         Intent::Act(action) => act(world, action, None)?,
-        Intent::OpenLocation(record, transfer) => crate::location::open(world, &record, transfer.as_deref()),
-        Intent::CloseLocation => { crate::location::close(world); }
+        Intent::OpenLocation(record, transfer) => {
+            crate::location::open(world, &record, transfer.as_deref())
+        }
+        Intent::CloseLocation => {
+            crate::location::close(world);
+        }
         Intent::ObserveLocation => crate::location::open_observer(world),
         Intent::Ask(action) => world.resource_mut::<Mobile>().deleting = Some(Intent::Act(action)),
         Intent::MoveMenu(uid) => {

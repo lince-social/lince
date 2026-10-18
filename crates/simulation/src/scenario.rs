@@ -556,7 +556,9 @@ pub fn validate_action(action: &Action) -> crate::Result<()> {
         | Action::InspectKarmaCommands
         | Action::DesignateKarmaExecutor { .. }
         | Action::RespondKarmaCandidate { .. } => Ok(()),
-        Action::CreateTransferDraft { .. }
+        Action::SetPlace { .. }
+        | Action::RecordJourneyProgress { .. }
+        | Action::CreateTransferDraft { .. }
         | Action::CreateTransferThread { .. }
         | Action::CreateTransferMessage { .. }
         | Action::ReviseTransferDraft { .. }

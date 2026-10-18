@@ -29,6 +29,16 @@ fn item_disclosure_applies_to_reads_filters_history_and_revisions() {
         let ana = person(&engine, "disclosure.ana").await;
         let beto = person(&engine, "disclosure.beto").await;
         let source = plain(&engine, "secret.inventory", 99.0).await;
+        let mut audience = store::write_tx(&engine.store.pool).await.unwrap();
+        store::data_visibility::ensure_private_for_person_on(
+            &mut audience,
+            &source,
+            nucleus::visibility::Data::Record,
+            Some(&ana.uid),
+        )
+        .await
+        .unwrap();
+        audience.commit().await.unwrap();
         let role = store::auth::ensure_role(&engine.store.pool, "Disclosure reader")
             .await
             .unwrap();
@@ -100,6 +110,17 @@ fn item_disclosure_applies_to_reads_filters_history_and_revisions() {
         for secret in [&source, &ana.uid, "secret.inventory"] {
             assert!(!row.to_string().contains(secret), "{row}");
         }
+        assert!(matches!(
+            engine
+                .prepare_transfer_participation(
+                    &fixture.transfer,
+                    fixture.revision,
+                    Some(&ana.uid),
+                    Some(&beto.uid)
+                )
+                .await,
+            Err(engine::EngineError::Forbidden(_))
+        ));
         for predicate in [
             Predicate::RecordEq(source.clone()),
             Predicate::PersonEq(ana.uid.clone()),
@@ -165,6 +186,7 @@ fn item_disclosure_applies_to_reads_filters_history_and_revisions() {
                     expected_revision: fixture.revision,
                     request_id: "disclosure:revise".into(),
                     draft: TransferDraftRevisionInput {
+                        public_history: None,
                         creator: ana.uid.clone(),
                         slug: Some("disclosure.transfer".into()),
                         head: "Bike".into(),
@@ -264,6 +286,7 @@ fn counteroffer_preserves_private_bindings_hidden_terms_and_disclosure() {
                     request_id: "private:counteroffer".into(),
                     person: Some(beto.uid.clone()),
                     draft: TransferDraftRevisionInput {
+                        public_history: None,
                         creator: ana.uid.clone(),
                         slug: Some("private.counteroffer".into()),
                         head: "Apples".into(),

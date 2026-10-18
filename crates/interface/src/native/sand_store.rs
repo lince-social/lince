@@ -18,6 +18,7 @@ pub enum SandKind {
     WorkTimer,
     AccessControl,
     Visibility,
+    Trust,
     HandCamera,
     Video,
     Sync,
@@ -31,7 +32,7 @@ pub enum SandKind {
 }
 
 impl SandKind {
-    pub const ALL: [Self; 15 + cfg!(feature = "stuff") as usize] = [
+    pub const ALL: [Self; 16 + cfg!(feature = "stuff") as usize] = [
         Self::Square,
         Self::Text,
         Self::EditableText,
@@ -39,6 +40,7 @@ impl SandKind {
         Self::WorkTimer,
         Self::AccessControl,
         Self::Visibility,
+        Self::Trust,
         Self::HandCamera,
         Self::Video,
         Self::Sync,
@@ -59,6 +61,7 @@ impl SandKind {
             Self::WorkTimer => "Time Castle",
             Self::AccessControl => "Access Control",
             Self::Visibility => "Visibility",
+            Self::Trust => "Trust",
             Self::HandCamera => "Hand Camera Castle",
             Self::Video => "Video Castle",
             Self::Sync => "Sync",
@@ -84,6 +87,7 @@ impl SandKind {
             Self::Visibility => {
                 "Compose Organ and proximity rules for Record data, saved places, and live locations."
             }
+            Self::Trust => "Review signed contact disclosures and permitted paths for transfer evidence analysis.",
             Self::HandCamera => "Move the 2D camera with an open hand using your webcam.",
             Self::Video => "Watch live memory-only Signals and play GIF videos.",
             Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
@@ -103,6 +107,7 @@ impl SandKind {
             Self::Freedoom => true,
             Self::AccessControl
             | Self::Visibility
+            | Self::Trust
             | Self::HandCamera
             | Self::Video
             | Self::Sync
@@ -210,6 +215,7 @@ pub(crate) fn entry(
         | SandKind::Operation
         | SandKind::AccessControl
         | SandKind::Visibility
+        | SandKind::Trust
         | SandKind::HandCamera
         | SandKind::Video
         | SandKind::Sync
@@ -352,8 +358,8 @@ pub(crate) fn entry(
             input,
         );
         if let Some((viewport, image)) = crate::native::time_castle::preview(&scene, source) {
-            world.init_resource::<Assets<Image>>();
-            let handle = world.resource_mut::<Assets<Image>>().add(image);
+            scene.init_resource::<Assets<Image>>();
+            let handle = scene.resource_mut::<Assets<Image>>().add(image);
             scene.entity_mut(viewport).insert(ImageNode::new(handle));
         }
     }
@@ -600,6 +606,9 @@ fn spawn_with_source(
             }),
         ))
         .id();
+    if crate::native::laboratory::temporary(world, root, workspace) {
+        world.entity_mut(sand).insert(crate::native::laboratory::LaboratoryOwner);
+    }
     if let Some(source) = source {
         world
             .entity_mut(sand)
@@ -608,6 +617,7 @@ fn spawn_with_source(
     let content = match kind {
         SandKind::Operation => Some(crate::native::operation::populate(world, root, sand)),
         SandKind::AccessControl => Some(crate::native::access_control::populate(world, root, sand)),
+        SandKind::Trust => Some(crate::native::trust_castle::populate(world, root, sand)),
         SandKind::Visibility => Some(crate::native::visibility_castle::populate(
             world, root, sand,
         )),

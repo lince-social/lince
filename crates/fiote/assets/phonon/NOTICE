@@ -1,0 +1,58 @@
+Phonon-2
+Copyright 2026 Fermion Research
+
+This product includes software and models developed by Fermion Research.
+
+================================================================================
+BASE MODEL
+================================================================================
+
+This model is derived from NVIDIA's Parakeet TDT 0.6B v3
+(nvidia/parakeet-tdt-0.6b-v3), (c) NVIDIA Corporation, licensed under the
+Creative Commons Attribution 4.0 International licence (CC-BY-4.0).
+
+    https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+    https://creativecommons.org/licenses/by/4.0/
+
+Changes: the encoder's linear weights were re-trained and quantised to a
+five-value alphabet by Fermion Research; the remaining parameters were
+quantised to 6-bit integer tables. The FastConformer encoder architecture,
+the TDT decoder, the tokenizer and the feature-extractor configuration derive
+from that model and remain under CC-BY-4.0.
+
+These weights are therefore distributed under CC-BY-4.0. The Fermion code in
+this repository remains under the Apache License, Version 2.0.
+
+================================================================================
+TRAINING DATA
+================================================================================
+
+Training audio includes CHiME-6, distributed under the Creative Commons
+Attribution-ShareAlike 4.0 International licence (CC-BY-SA-4.0)
+
+    https://chimechallenge.github.io/chime6/
+    https://creativecommons.org/licenses/by-sa/4.0/
+
+and SPGISpeech, used under Kensho's public terms
+
+    https://datasets.kensho.com/datasets/spgispeech
+
+================================================================================
+RUNTIME DEPENDENCIES
+================================================================================
+
+MLX ......................... MIT License ......... https://github.com/ml-explore/mlx
+mlx-audio ................... MIT License ......... https://github.com/Blaizzy/mlx-audio
+    The Parakeet model graph (feature extraction, FastConformer encoder,
+    TDT decoder and greedy search) is mlx-audio's implementation.
+NumPy ....................... BSD-3-Clause ........ https://numpy.org
+soundfile ................... BSD-3-Clause ........ https://github.com/bastibe/python-soundfile
+    soundfile links libsndfile (LGPL-2.1), dynamically and unmodified, as
+    distributed in the standard soundfile wheel.
+
+================================================================================
+REFERENCE RUNTIME (optional)
+================================================================================
+
+PyTorch ..................... BSD-3-Clause ........ https://pytorch.org
+transformers ................ Apache-2.0 .......... https://github.com/huggingface/transformers

@@ -508,6 +508,7 @@ fn render(world: &mut World, owner: Entity) {
 }
 
 fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
+    if crate::native::laboratory::blocked(world, owner) { return; }
     let view = world.get::<TodoSand>(owner).unwrap();
     let status = view.status;
     match message {
@@ -646,7 +647,7 @@ fn update(
             receive(world, owner, message);
         }
         let view = world.get::<TodoSand>(owner).unwrap();
-        if !view.requested && !crate::native::laboratory::active(world) {
+        if !view.requested && !crate::native::laboratory::blocked(world, owner) {
             let id = view.subscription.clone();
             let message = if view.protein.is_empty() {
                 ClientMessage::Subscribe {

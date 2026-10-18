@@ -1090,6 +1090,7 @@ pub(crate) fn controls(world: &mut World, parent: Entity, owner: Entity) {
 
 pub(crate) fn store_controls(world: &mut World, root: Entity, parent: Entity) {
     button(world, parent, root, "Create room", Control::Create);
+    crate::native::physical_workspace::populate_controls(world, root, parent);
 }
 
 pub(crate) fn update_controls(world: &mut World) {

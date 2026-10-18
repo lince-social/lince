@@ -63,6 +63,16 @@ impl Action for RetryRestart {
 
 impl Action for UpdateAction {
     fn apply(&self, world: &mut World, _: Entity) {
+        if matches!(self.0, UpdateCommand::DownloadAndRestart)
+            && world.contains_resource::<crate::native::layout::desktop::HostRequests>()
+        {
+            crate::native::notifications::report(
+                world,
+                "Park",
+                "Log out of Park before installing an update that restarts Lince.",
+            );
+            return;
+        }
         let result = world
             .get_resource::<Connection>()
             .ok_or_else(|| "The update service is not connected.".to_string())
@@ -143,6 +153,9 @@ fn receive(world: &mut World) {
 }
 
 fn restart(world: &mut World) {
+    if world.contains_resource::<crate::native::layout::desktop::HostRequests>() {
+        return;
+    }
     let state = world.resource::<InformationState>();
     if state.restart_requested
         || !state
@@ -152,26 +165,7 @@ fn restart(world: &mut World) {
     {
         return;
     }
-    if world
-        .query::<&bevy::text::EditableText>()
-        .iter(world)
-        .any(|text| text.is_composing() || crate::native::record_view::pending_text(text))
-    {
-        return;
-    }
-    if world
-        .query::<(
-            &crate::native::record_view::RecordEditor,
-            &bevy::text::EditableText,
-        )>()
-        .iter(world)
-        .any(|(record, text)| {
-            record.pending.is_some()
-                || text.is_composing()
-                || crate::native::record_view::pending_text(text)
-                || text.value().to_string() != record.confirmed
-        })
-    {
+    if !crate::native::app::text_ready_to_close(world) {
         return;
     }
     world.resource_mut::<InformationState>().restart_requested = true;
@@ -318,6 +312,11 @@ fn render(world: &mut World) {
         let status = match state.phase {
             UpdatePhase::Checking => "Checking for updates…",
             UpdatePhase::Downloading => "Downloading and verifying the update…",
+            UpdatePhase::ReadyToRestart
+                if world.contains_resource::<crate::native::layout::desktop::HostRequests>() =>
+            {
+                "Update installed. Log out of Park to use it in your next session."
+            }
             UpdatePhase::ReadyToRestart => "Update installed. Restarting after your work is saved…",
             UpdatePhase::Idle => match state.update.as_ref().map(|update| update.availability) {
                 Some(Availability::UpToDate) => "Lince is up to date.",
@@ -329,7 +328,8 @@ fn render(world: &mut World) {
             },
         };
         label(world, panel, status, 15.0);
-        if state.phase == UpdatePhase::ReadyToRestart {
+        let desktop = world.contains_resource::<crate::native::layout::desktop::HostRequests>();
+        if state.phase == UpdatePhase::ReadyToRestart && !desktop {
             action_button(
                 world,
                 panel,
@@ -348,13 +348,25 @@ fn render(world: &mut World) {
                 );
             }
             label(world, panel, &update.self_apply_note, 14.0);
-            if update.can_self_apply && !busy && state.phase != UpdatePhase::ReadyToRestart {
+            if update.can_self_apply
+                && !busy
+                && state.phase != UpdatePhase::ReadyToRestart
+                && !desktop
+            {
                 action_button(
                     world,
                     panel,
                     root,
                     "Download and restart",
                     crate::native::actions![UpdateAction(UpdateCommand::DownloadAndRestart)],
+                );
+            }
+            if update.can_self_apply && desktop {
+                label(
+                    world,
+                    panel,
+                    "Log out of Park before installing an update that restarts Lince.",
+                    14.0,
                 );
             }
         } else {
@@ -583,9 +595,26 @@ pub(crate) mod tests {
         assert_eq!(app.world().resource::<Messages<AppExit>>().len(), 1);
     }
 
+    #[cfg_attr(test, test)]
+    fn desktop_updates_wait_for_logout_instead_of_exiting_the_canvas() {
+        let (mut app, _) = fixture();
+        let (sender, _receiver) = std::sync::mpsc::sync_channel(1);
+        app.insert_resource(crate::native::layout::desktop::HostRequests(sender));
+        app.world_mut()
+            .resource_mut::<InformationState>()
+            .current
+            .as_mut()
+            .unwrap()
+            .phase = UpdatePhase::ReadyToRestart;
+        restart(app.world_mut());
+        assert!(!app.world().resource::<InformationState>().restart_requested);
+        assert!(app.world().resource::<Messages<AppExit>>().is_empty());
+    }
+
     crate::native::laboratory_cases! {
         information_shows_runtime_details_and_preserves_its_nodes_while_idle,
         update_notification_opens_information_and_shows_only_supported_actions,
         restart_waits_for_record_confirmation_then_uses_the_normal_exit_path,
+        desktop_updates_wait_for_logout_instead_of_exiting_the_canvas,
     }
 }

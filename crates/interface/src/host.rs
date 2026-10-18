@@ -44,12 +44,14 @@ pub struct SurfaceId(pub u64);
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WindowState {
+    pub minimized: bool,
     pub fullscreen: bool,
     pub maximized: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WindowRequest {
+    pub minimized: Option<bool>,
     pub fullscreen: Option<bool>,
     pub maximized: Option<bool>,
 }
@@ -97,6 +99,8 @@ pub enum DesktopAction {
     ToggleMaximized,
     Close,
     OpenOperation,
+    OpenTerminal,
+    OpenLauncher,
     Workspace(u32),
     MoveToWorkspace(u32),
     FocusOutput(Direction),
@@ -236,8 +240,10 @@ pub struct ActionRequest {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum HostRequest {
+    DropFinished { token: u64, accepted: bool },
     Close(SurfaceId),
     Action(DesktopAction),
+    Exit,
 }
 
 pub struct PresentedFrame<T> {

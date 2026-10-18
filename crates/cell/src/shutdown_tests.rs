@@ -127,3 +127,97 @@ async fn shutdown_awaits_owned_work_before_network_close_and_closes_cloned_datab
     .await
     .unwrap();
 }
+
+#[tokio::test]
+async fn shutdown_closes_pending_transcription_and_prevents_cloned_speech_from_reopening() {
+    use base64::Engine as _;
+    use speech::{Request, Service};
+    use tokio::io::AsyncReadExt;
+    let root = tempfile::tempdir().unwrap();
+    let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
+    let speech = Arc::new(speech::Host::open(root.path().join("speech.json")).unwrap());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let settings = speech::endpoint::Settings {
+        url: format!("http://{}/transcribe", listener.local_addr().unwrap()),
+        model: "owned-shutdown-test".into(),
+        requires_key: false,
+        allow_cloud: false,
+    };
+    speech
+        .handle(Request::ConfigureEndpoint {
+            settings: settings.clone(),
+            credential: None,
+            password: None,
+        })
+        .await
+        .unwrap();
+    speech
+        .handle(Request::SelectMode {
+            mode: speech::Mode::Endpoint,
+        })
+        .await
+        .unwrap();
+    let (entered, ready) = tokio::sync::oneshot::channel();
+    let server = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut bytes = [0; 4096];
+        assert!(stream.read(&mut bytes).await.unwrap() > 0);
+        entered.send(()).unwrap();
+        while stream.read(&mut bytes).await.unwrap() != 0 {}
+    });
+    let job = nucleus::new_uid("speech");
+    let audio = ::fiote::config::Secret(base64::engine::general_purpose::STANDARD.encode(
+        include_bytes!("../../interface/tests/fixtures/fiote/audio.wav"),
+    ));
+    speech
+        .handle(Request::StartEndpoint {
+            job: job.clone(),
+            settings: settings.clone(),
+            audio: audio.clone(),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(2), ready)
+        .await
+        .unwrap()
+        .unwrap();
+    let runtime = CellRuntime {
+        store: engine.store.clone(),
+        engine,
+        lanes: Arc::new(LaneHub::new()),
+        wire: Default::default(),
+        speech: Some(speech.clone()),
+        commands: Default::default(),
+        information: None,
+        fiote: None,
+    };
+    tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        Cell {
+            runtime: runtime.clone(),
+            supervisors: Vec::new(),
+            tasks: Vec::new(),
+        }
+        .shutdown(),
+    )
+    .await
+    .unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(2), server)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(runtime.store.pool.is_closed());
+    assert!(speech.handle(Request::Poll { job }).await.is_err());
+    assert!(!speech.handle(Request::Inspect).await.unwrap().ready);
+    assert!(
+        speech
+            .handle(Request::StartEndpoint {
+                job: nucleus::new_uid("speech"),
+                settings,
+                audio
+            })
+            .await
+            .unwrap_err()
+            .contains("shutting down")
+    );
+}

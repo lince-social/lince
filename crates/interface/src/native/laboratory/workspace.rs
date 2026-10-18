@@ -24,7 +24,6 @@ struct Scope {
     output: crate::host::OutputId,
     workspace: u64,
     previous: u64,
-    children: std::collections::HashSet<Entity>,
 }
 
 #[derive(Resource, Default)]
@@ -51,6 +50,27 @@ pub struct Laboratory {
     rendered: bool,
     refresh: Option<Instant>,
     scope: Option<Scope>,
+}
+
+impl Laboratory {
+    pub(crate) fn global_pause(&self) -> bool { self.root.is_some() && self.scope.is_none() }
+    pub(crate) fn owner_scope(&self) -> Option<(Entity, u64)> {
+        self.scope.as_ref().map(|scope| (scope.root, scope.workspace))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn scoped_for_test(root: Entity, workspace: u64, previous: u64) -> Self {
+        Self {
+            root: Some(root),
+            scope: Some(Scope {
+                root,
+                output: crate::host::OutputId(1),
+                workspace,
+                previous,
+            }),
+            ..Default::default()
+        }
+    }
 }
 
 pub fn scope(world: &World) -> Option<(Entity, crate::host::OutputId, u64, u64)> {
@@ -89,17 +109,12 @@ fn output_scope(world: &mut World) -> Option<Scope> {
     entry.zoom = 1.0;
     entry.topology = Default::default();
     entry.desktop = crate::layout::desktop::Workspace::new(crate::host::WorkspaceLayout::Free);
-    let children = world
-        .get::<Children>(root)
-        .map(|children| children.iter().collect())
-        .unwrap_or_default();
     world.get_mut::<Workspaces>(root)?.entries.push(entry);
     Some(Scope {
         root,
         output,
         workspace,
         previous,
-        children,
     })
 }
 
@@ -110,7 +125,7 @@ pub fn active(world: &World) -> bool {
 }
 
 pub fn normal(world: &World) -> bool {
-    !active(world)
+    world.get_resource::<Laboratory>().is_none_or(|laboratory| !laboratory.global_pause())
 }
 
 pub(crate) fn resources_visible(world: &World) -> bool {
@@ -348,6 +363,9 @@ pub fn close(world: &mut World) {
     if !active(world) {
         return;
     }
+    let restore_focus = scope(world).is_none()
+        || world.get_resource::<InputFocus>().and_then(InputFocus::get)
+            .is_some_and(|entity| super::temporary_owner(world, entity));
     crate::native::instinct::practice::laboratory_closed(world);
     stop(world);
     let mut lab = world.remove_resource::<Laboratory>().unwrap();
@@ -358,15 +376,17 @@ pub fn close(world: &mut World) {
             .map(|children| children.iter().collect())
             .unwrap_or_default();
         for entity in children {
-            if !scope.children.contains(&entity)
-                && world
+            if world.get::<super::LaboratoryOwner>(entity).is_some()
+                || world
                     .get::<crate::native::workspace::WorkspaceMember>(entity)
-                    .is_none_or(|member| member.0 == scope.workspace)
+                    .is_some_and(|member| member.0 == scope.workspace)
             {
                 world.despawn(entity);
             }
         }
-        crate::native::workspace::switch(world, scope.root, scope.previous);
+        if world.get::<Workspaces>(scope.root).is_some_and(|spaces| spaces.active == scope.workspace) {
+            crate::native::workspace::switch(world, scope.root, scope.previous);
+        }
         if let Some(mut views) =
             world.get_resource_mut::<crate::native::output_views::OutputViews>()
             && let Some(output) = views
@@ -408,6 +428,7 @@ pub fn close(world: &mut World) {
         crate::native::time_limit::resume(world, opened.elapsed());
     }
     if let Some(entity) = lab.focus.take()
+        && restore_focus
         && world.get_entity(entity).is_ok()
         && let Some(mut focus) = world.get_resource_mut::<InputFocus>()
     {
@@ -452,6 +473,7 @@ fn stop(world: &mut World) {
         let workspace = world
             .get::<Workspaces>(root)
             .map_or(1, |spaces| spaces.active);
+        let workspace = scope(world).filter(|(owner, _, _, _)| *owner == root).map_or(workspace, |(_, _, workspace, _)| workspace);
         crate::native::workspace_config::set_physics(world, root, workspace, false);
     }
 }
@@ -640,6 +662,7 @@ fn render(world: &mut World) {
         let panel = world
             .spawn((
                 LaboratoryPanel,
+                super::LaboratoryOwner,
                 ChildOf(root),
                 GlobalZIndex(50),
                 crate::native::token_style::background(crate::native::tokens::Token::Surface),
@@ -672,6 +695,9 @@ fn render(world: &mut World) {
                 },
             )
             .id();
+        if let Some((_, _, workspace, _)) = scope(world).filter(|(owner, _, _, _)| *owner == root) {
+            world.entity_mut(panel).insert(crate::native::workspace::WorkspaceMember(workspace));
+        }
         label(world, panel, "Performance & Behavior", 22.0);
         let buttons = world
             .spawn((

@@ -174,6 +174,90 @@ pub(crate) fn receives(world: &mut World, window: Entity) -> bool {
     world.contains_resource::<Sessions>() && target(world, window).is_some()
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct NativeTarget {
+    root: Entity,
+    canvas: String,
+    focus: Option<Entity>,
+    workspace: u64,
+    position: DVec2,
+    elevation: f64,
+}
+
+impl NativeTarget {
+    pub fn same_owner(&self, other: &Self) -> bool {
+        self.root == other.root && self.canvas == other.canvas && self.workspace == other.workspace && self.focus == other.focus
+    }
+}
+
+pub fn capture_native_target(world: &mut World, window: Entity) -> Option<NativeTarget> {
+    if !world.contains_resource::<Sessions>() { return None; }
+    let (root, position, elevation) = target(world, window)?;
+    if world.resource::<Sessions>().entries.contains_key(&root) { return None; }
+    let spaces = world.get::<crate::native::workspace::Workspaces>(root)?;
+    let workspace = spaces.active;
+    let canvas = spaces.canvas_id.clone();
+    let focus = world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get());
+    if crate::native::laboratory::temporary(world, root, workspace) { return None; }
+    Some(NativeTarget { root, canvas, focus, workspace, position, elevation })
+}
+
+fn check_native_target(world: &World, target: &NativeTarget) -> Result<(), String> {
+    if !world.contains_resource::<Sessions>()
+        || crate::native::laboratory::blocked(world, target.root)
+        || crate::native::laboratory::temporary(world, target.root, target.workspace)
+        || world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get()) != target.focus
+        || world.get::<crate::native::workspace::Workspaces>(target.root).is_none_or(|spaces| spaces.active != target.workspace || spaces.canvas_id != target.canvas)
+    {
+        return Err("The drop target changed before the transfer finished.".into());
+    }
+    if world.resource::<Sessions>().entries.contains_key(&target.root) {
+        return Err("Finish or cancel the current file choice before dropping another file.".into());
+    }
+    Ok(())
+}
+
+pub fn receive_native_text(world: &mut World, target: &NativeTarget, text: &str) -> Result<(), String> {
+    check_native_target(world, target)?;
+    if text.is_empty() || text.len() > 16 * 1024 || text.contains('\0') {
+        return Err("Drop nonempty UTF-8 text of at most 16 KiB.".into());
+    }
+    let owner = ui::text_sand(world, target.root, target.workspace, target.position, text, true);
+    let mut placement = crate::native::topology::spatial(world, owner);
+    placement.elevation = target.elevation;
+    world.entity_mut(owner).insert(placement);
+    Ok(())
+}
+
+pub fn receive_native_uri(world: &mut World, target: &NativeTarget, uri: &str) -> Result<(), String> {
+    check_native_target(world, target)?;
+    if uri.is_empty() || uri.len() > 16384 || uri.contains('\0') {
+        return Err("The dropped URI exceeds the supported bounds.".into());
+    }
+    let url = reqwest::Url::parse(uri).map_err(|_| "Drop a local file or an HTTP(S) link.")?;
+    if !matches!(url.scheme(), "file" | "http" | "https")
+        || !url.username().is_empty() || url.password().is_some()
+        || url.scheme() == "file" && (url.query().is_some() || url.fragment().is_some()
+            || url.host_str().is_some_and(|host| !host.is_empty() && host != "localhost"))
+    {
+        return Err("Drop a local file or an HTTP(S) link without credentials.".into());
+    }
+    let source = source::Source::parse(uri);
+    if let source::Source::Invalid(message) = &source { return Err(message.clone()); }
+    world.entity_mut(target.root).remove::<CancelledChoice>();
+    begin(world, target.root, None, source, target.position, target.elevation, false);
+    Ok(())
+}
+
+fn workspace_available(world: &World, root: Entity, workspace: u64) -> bool {
+    if crate::native::laboratory::blocked(world, root)
+        || crate::native::laboratory::temporary(world, root, workspace) { return false; }
+    let Some(spaces) = world.get::<crate::native::workspace::Workspaces>(root) else { return false };
+    if !spaces.entries.iter().any(|space| space.id == workspace) { return false; }
+    world.get_resource::<crate::native::output_views::OutputViews>().filter(|views| views.applies_to(root))
+        .map_or(spaces.active == workspace, |views| views.outputs.iter().any(|output| output.workspace == workspace && output.usable.is_some()))
+}
+
 fn target(world: &mut World, window: Entity) -> Option<(Entity, DVec2, f64)> {
     #[cfg(target_os = "linux")]
     let point = native::position(world, window).unwrap_or_else(|| {
@@ -195,7 +279,9 @@ fn target(world: &mut World, window: Entity) -> Option<(Entity, DVec2, f64)> {
         .iter(world)
         .collect();
     for root in roots {
-        if crate::native::laboratory::suspended(world, root) {
+        if crate::native::laboratory::blocked(world, root)
+            || world.get::<crate::native::workspace::Workspaces>(root).is_some_and(|spaces|
+                crate::native::laboratory::temporary(world, root, spaces.active)) {
             continue;
         }
         let Some(bounds) = crate::native::inspection::bounds(world, root) else {
@@ -467,10 +553,7 @@ fn update(world: &mut World) {
         .entries
         .iter()
         .filter(|(root, session)| {
-            world
-                .get::<crate::native::workspace::Workspaces>(**root)
-                .is_none_or(|spaces| spaces.active != session.workspace)
-                || crate::native::laboratory::suspended(world, **root)
+            !workspace_available(world, **root, session.workspace)
         })
         .map(|(root, _)| *root)
         .collect();

@@ -336,12 +336,17 @@ impl Engine {
         if store::roster::is_revoked(&self.store.pool, organ_uid, key).await? {
             return Ok(false);
         }
-        let held: HashSet<String> = crate::trust::keys_of(&self.store, organ_uid)
+        let mut held: HashSet<String> = crate::trust::keys_of(&self.store, organ_uid)
             .await?
             .into_iter()
             .filter(|(key_id, _)| is_root_key_id(key_id))
             .map(|(_, public_key)| public_key)
             .collect();
+        let state=store::identity_roots::state_on(&mut *self.store.pool.acquire().await?,organ_uid).await?;
+        if state.revision>0 {
+            held.clear();
+            if state.available && let Some(root)=state.current && !root.revoked {held.insert(root.public_key);}
+        }
         if held.contains(key) {
             return Ok(true);
         }
@@ -720,6 +725,9 @@ impl Engine {
     ) -> Result<(), EngineError> {
         let organ_uid = old_root.actor_uid.clone();
         let old_key = old_root.public_key_b64();
+        if store::roster::is_revoked(&self.store.pool, &organ_uid, &old_key).await? {
+            return Err(EngineError::Forbidden("A revoked root cannot authorize another succession".into()));
+        }
         let created_at = nucleus::execution::now().to_rfc3339();
         let payload = succession_signing_payload(&organ_uid, &old_key, new_key_b64, &created_at);
         let signature = old_root.sign_bytes(&payload);

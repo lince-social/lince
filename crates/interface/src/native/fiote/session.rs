@@ -15,6 +15,7 @@ use cell::{
 #[derive(Clone, Copy, PartialEq)]
 enum Step {
     Manage,
+    Assistant,
     Connections,
     Agent,
     Closed,
@@ -84,6 +85,10 @@ impl bevy::prelude::Plugin for Plugin {
                     keyboard,
                     poll,
                     poll_threads,
+                    assistant::update.after(crate::native::cell_bridge::ReceiveCell),
+                    assistant::models_update.after(crate::native::cell_bridge::ReceiveCell),
+                    assistant::listening_update.after(crate::native::cell_bridge::ReceiveCell),
+                    assistant::spoken_update.after(crate::native::cell_bridge::ReceiveCell),
                 ),
             )
             .add_systems(
@@ -446,6 +451,7 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             }
         }
         Step::Manage => management::show(world, owner, content, saved.as_ref()),
+        Step::Assistant => assistant::show(world, owner, content, saved.as_ref()),
         Step::Connections => connections::show(world, owner, content, saved.as_ref()),
         Step::Agent => {
             agent::show(world, owner, content, &mut fields, saved.as_ref());
@@ -632,7 +638,7 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             world,
             content,
             owner,
-            if matches!(step, Step::Agent | Step::Manage | Step::Connections) {
+            if matches!(step, Step::Agent | Step::Manage | Step::Connections | Step::Assistant) {
                 "Close"
             } else {
                 "Cancel"
@@ -1264,7 +1270,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         .as_ref()
         .is_none_or(|previous| previous.agent_info != saved.agent_info);
     let label = panel.status;
-    let next = if matches!(step, Step::Agent | Step::Manage | Step::Connections) {
+    let next = if matches!(step, Step::Agent | Step::Manage | Step::Connections | Step::Assistant) {
         step
     } else if saved.login_pending {
         Step::Browser
@@ -1601,6 +1607,7 @@ mod agent;
 mod connections;
 mod live;
 mod management;
+mod assistant;
 mod questions;
 #[cfg(test)]
 mod tests;

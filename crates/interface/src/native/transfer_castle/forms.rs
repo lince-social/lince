@@ -2,328 +2,8 @@ use super::*;
 use model::FieldKind;
 use ui::{Command, button, input, row};
 
-fn choice(values: &[&str]) -> FieldKind {
-    FieldKind::Choice(values.iter().map(|value| value.to_string()).collect())
-}
-fn reference(kind: &str) -> FieldKind {
-    FieldKind::Reference(kind.into())
-}
-
-fn place_fields(form: &mut Form, prefix: &str) {
-    if form.data.pointer(prefix).is_none_or(Value::is_null)
-        && let Some(place) = form.data.pointer_mut(prefix)
-    {
-        *place = model::place();
-    }
-    form.field(
-        &format!("{prefix}/address"),
-        "Place / address",
-        FieldKind::Optional,
-    );
-    form.field(
-        &format!("{prefix}/lat"),
-        "Latitude",
-        FieldKind::OptionalNumber,
-    );
-    form.field(
-        &format!("{prefix}/lon"),
-        "Longitude",
-        FieldKind::OptionalNumber,
-    );
-}
-
-pub(super) fn composer_fields(form: &mut Form) {
-    form.fields.clear();
-    match form.step.unwrap_or(0) {
-        0 => {
-            form.field("/head", "Title", FieldKind::Text);
-            form.field("/slug", "Slug (optional)", FieldKind::Optional);
-            form.field(
-                "/agreement",
-                "Agreement",
-                choice(&["full", "individual", "percentage", "dependency"]),
-            );
-            if form.data["agreement"] == "percentage" {
-                form.field("/agreement_pct", "Required percentage", FieldKind::Number);
-            }
-        }
-        1 => {
-            form.field("/creator", "Creator", reference("person"));
-            form.field(
-                "/invitees",
-                "Invited People (comma-separated references)",
-                FieldKind::People,
-            );
-        }
-        2 => {
-            for index in 0..array(&form.data, "promises").len() {
-                let prefix = format!("/promises/{index}");
-                if form.data["promises"][index]["item"].is_null() {
-                    form.data["promises"][index]["item"] =
-                        json!(nucleus::transfer::disclosure::TransferItem {
-                            title: "Item".into(),
-                            ..Default::default()
-                        });
-                }
-                form.field(
-                    &format!("{prefix}/item/title"),
-                    "Item title",
-                    FieldKind::Text,
-                );
-                form.field(
-                    &format!("{prefix}/item/description"),
-                    "Item description",
-                    FieldKind::Text,
-                );
-                form.field(
-                    &format!("{prefix}/record"),
-                    &format!("Promise {} · Private source Record (optional)", index + 1),
-                    reference("record"),
-                );
-                form.field(
-                    &format!("{prefix}/open"),
-                    "OPEN offer",
-                    choice(&["false", "true"]),
-                );
-                if form.data["promises"][index]["open"] != true {
-                    let private_commitment = form.data["agreement"] == "dependency"
-                        && form.data["promises"][index]["item"]["exchange"].is_null();
-                    let responsible = text(&form.data["promises"][index], "party");
-                    let others = std::iter::once(&form.data["creator"])
-                        .chain(array(&form.data, "invitees"))
-                        .filter_map(Value::as_str)
-                        .filter(|person| !person.is_empty() && *person != responsible)
-                        .collect::<std::collections::BTreeSet<_>>();
-                    let counterparty = if others.len() == 1 {
-                        others.into_iter().next().unwrap().to_owned()
-                    } else {
-                        String::new()
-                    };
-                    let promise = &mut form.data["promises"][index];
-                    if !private_commitment
-                        && promise.pointer("/disclosed/parties") != Some(&Value::Bool(false))
-                    {
-                        if promise["item"]["exchange"].is_null() {
-                            let outgoing = promise["delta"].as_f64().unwrap_or(-1.0) < 0.0;
-                            let person = text(promise, "party");
-                            promise["item"]["exchange"] = json!({"uid":nucleus::new_uid("exchange"),
-                                "giver":if outgoing {person.as_str()} else {&counterparty}, "receiver":if outgoing {&counterparty} else {person.as_str()}});
-                        }
-                        form.field(
-                            &format!("{prefix}/item/exchange/giver"),
-                            "From",
-                            reference("person"),
-                        );
-                        form.field(
-                            &format!("{prefix}/item/exchange/receiver"),
-                            "To",
-                            reference("person"),
-                        );
-                    }
-                    if private_commitment {
-                        form.field(
-                            &format!("{prefix}/party"),
-                            "Responsible Person",
-                            reference("person"),
-                        );
-                    }
-                }
-                let routed = form.data["promises"][index]
-                    .pointer("/item/exchange")
-                    .is_some_and(Value::is_object)
-                    && form.data["promises"][index]["open"] != true;
-                if routed && form.data["promises"][index]["amount"].is_null() {
-                    form.data["promises"][index]["amount"] = json!(
-                        form.data["promises"][index]["delta"]
-                            .as_f64()
-                            .unwrap_or(-1.0)
-                            .abs()
-                    );
-                }
-                form.field(
-                    &format!("{prefix}/{}", if routed { "amount" } else { "delta" }),
-                    if routed {
-                        "Amount"
-                    } else {
-                        "Quantity (negative gives, positive receives)"
-                    },
-                    FieldKind::Number,
-                );
-                form.field(
-                    &format!("{prefix}/unit"),
-                    "Unit (optional)",
-                    reference("unit"),
-                );
-                if form.data["promises"][index]["temporary"].is_null() {
-                    form.data["promises"][index]["temporary"] =
-                        json!(form.data["promises"][index]["item"]["loan"].is_object());
-                }
-                if form.data["promises"][index]["item"]["return_of"].is_null()
-                    && form.data["promises"][index]["item"]["future_need_for"].is_null()
-                {
-                    form.field(
-                        &format!("{prefix}/temporary"),
-                        "Temporary loan",
-                        choice(&["false", "true"]),
-                    );
-                    if form.data["promises"][index]["temporary"] == true {
-                        if form.data["promises"][index]["item"]["loan"].is_null() {
-                            form.data["promises"][index]["item"]["loan"] =
-                                json!({"from":"", "until":""});
-                        }
-                        form.field(
-                            &format!("{prefix}/item/loan/from"),
-                            "Loan starts (date, time, timezone)",
-                            FieldKind::Text,
-                        );
-                        form.field(
-                            &format!("{prefix}/item/loan/until"),
-                            "Loan ends (exclusive, with timezone)",
-                            FieldKind::Text,
-                        );
-                    } else {
-                        form.data["promises"][index]["item"]["loan"] = Value::Null;
-                    }
-                }
-                form.field(
-                    &format!("{prefix}/window_start"),
-                    "Start (date, time, timezone)",
-                    FieldKind::Optional,
-                );
-                form.field(
-                    &format!("{prefix}/window_end"),
-                    "Deadline (date, time, timezone)",
-                    FieldKind::Optional,
-                );
-                form.field(
-                    &format!("{prefix}/condition"),
-                    "Condition",
-                    FieldKind::Optional,
-                );
-                form.field(
-                    &format!("{prefix}/reserve_from"),
-                    "Reserve from",
-                    choice(&["inherit", "none", "proposed", "agreed", "active"]),
-                );
-                form.field(
-                    &format!("{prefix}/reuse_policy"),
-                    "OPEN reuse",
-                    choice(&["duplicate", "consume"]),
-                );
-                place_fields(form, &format!("{prefix}/place"));
-            }
-        }
-        3 => {
-            for index in 0..array(&form.data, "promises").len() {
-                for field in [
-                    "title",
-                    "description",
-                    "source",
-                    "parties",
-                    "quantity",
-                    "location",
-                ] {
-                    let path = format!("/promises/{index}/item/disclosure/{field}");
-                    if form.data.pointer(&path).is_none() {
-                        continue;
-                    }
-                    form.field(
-                        &format!("{path}/scope"),
-                        &format!("Item {} · Who can see {field}", index + 1),
-                        choice(&["everyone", "participants", "owner", "selected"]),
-                    );
-                    if form
-                        .data
-                        .pointer(&format!("{path}/scope"))
-                        .and_then(Value::as_str)
-                        == Some("selected")
-                    {
-                        form.field(
-                            &format!("{path}/people"),
-                            "Allowed People (comma-separated references)",
-                            FieldKind::People,
-                        );
-                    } else if let Some(people) = form.data.pointer_mut(&format!("{path}/people")) {
-                        *people = json!([]);
-                    }
-                }
-            }
-            form.field(
-                "/visibility",
-                "Who can discover this transfer",
-                choice(&["hidden", "public", "proximity"]),
-            );
-            if form.data["visibility"] == "proximity" {
-                form.field("/max_proximity", "Maximum proximity", FieldKind::Number);
-            }
-            form.field(
-                "/reserve_default",
-                "Default reservation",
-                choice(&["inherit", "none", "proposed", "agreed", "active"]),
-            );
-            form.field(
-                "/require_confirmation",
-                "Require delivery and receipt confirmation",
-                choice(&["true", "false"]),
-            );
-            form.field(
-                "/satiation",
-                "Completion policy",
-                choice(&["none", "first_completes"]),
-            );
-            form.field("/parent", "Parent transfer", reference("transfer"));
-            form.field("/source", "Shared source", reference("record"));
-            place_fields(form, "/default_place");
-            for index in 0..array(&form.data, "dependencies").len() {
-                let prefix = format!("/dependencies/{index}");
-                form.field(
-                    &format!("{prefix}/scope"),
-                    &format!("Dependency {} · Scope", index + 1),
-                    choice(&["transfer", "promise"]),
-                );
-                form.field(
-                    &format!("{prefix}/promise"),
-                    "Dependent promise (for promise scope)",
-                    FieldKind::Optional,
-                );
-                form.field(
-                    &format!("{prefix}/upstream_kind"),
-                    "Upstream kind",
-                    choice(&["transfer", "promise"]),
-                );
-                form.field(
-                    &format!("{prefix}/upstream"),
-                    "Upstream transfer or promise",
-                    reference("transfer"),
-                );
-                let transfer_outcome =
-                    form.data["dependencies"][index]["upstream_kind"] == "transfer";
-                if transfer_outcome && form.data["dependencies"][index]["required_state"] == "kept"
-                {
-                    form.data["dependencies"][index]["required_state"] = json!("settled");
-                }
-                form.field(
-                    &format!("{prefix}/required_state"),
-                    "Required outcome",
-                    if transfer_outcome {
-                        choice(&["agreed", "settled"])
-                    } else {
-                        choice(&[
-                            "kept",
-                            "active",
-                            "agreed",
-                            "open",
-                            "proposed",
-                            "broken",
-                            "withdrawn",
-                        ])
-                    },
-                );
-            }
-        }
-        _ => {}
-    }
-}
+pub(super) use crate::transfers::fields::{audience_fields, composer_fields};
+use crate::transfers::fields::{choice, reference};
 
 pub(super) fn render(world: &mut World, owner: Entity) {
     let view = world.get::<View>(owner).unwrap();
@@ -348,6 +28,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 composer_fields(&mut form);
             } else if form.data["action"] == "set-transfer-private-application-policy" {
                 effect_fields(&mut form);
+            } else if form.data["action"] == "transfer-receipt"
+                && form.data["request"]["kind"] == "prepare"
+            {
+                form.fields
+                    .retain(|field| !field.path.starts_with("/request/scope/audience/"));
+                audience_fields(&mut form, "/request/scope/audience");
             }
         }
         Err(error) => status(world, owner, error),
@@ -355,6 +41,14 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form.clone());
     let heading = row(world, container);
     crate::native::edit_mode::label(world, heading, &form.title, 20.0);
+    if super::workflows::ACTIVITIES.contains(&form.preset.as_str()) {
+        crate::native::edit_mode::label(
+            world,
+            container,
+            "Choose the contribution, its unit and who provides it. A Need may request attention or participation so you can contribute. Private Record effects are reviewed separately; this draft grants no agreement, delivery or sharing.",
+            13.0,
+        );
+    }
     if form.mode == "counteroffer-transfer" {
         crate::native::edit_mode::label(
             world,
@@ -381,6 +75,31 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         }
     }
     let records = world.get::<View>(owner).unwrap().records.clone();
+    if form.step == Some(3) {
+        crate::native::edit_mode::label(
+            world,
+            container,
+            "Public-history terms are optional and require agreement. They cover receipt fields and retention; live location and private bookkeeping stay separate.",
+            13.0,
+        );
+        if form.data["public_history"].is_object() {
+            button(
+                world,
+                container,
+                owner,
+                "Remove proposed public-history terms",
+                Command::Remove("public_history".into(), 0),
+            );
+        } else {
+            button(
+                world,
+                container,
+                owner,
+                "Add optional public-history terms",
+                Command::Add("public_history".into()),
+            );
+        }
+    }
     if form.data["action"] == "set-transfer-private-application-policy" {
         crate::native::edit_mode::label(world, container, "This outcome meets…", 16.0);
         crate::native::edit_mode::label(
@@ -412,6 +131,21 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         .map(str::to_owned);
     for (index, field) in form.fields.iter().enumerate() {
         match &field.kind {
+            FieldKind::OptionalChoice(choices) => {
+                crate::native::edit_mode::label(world, container, &field.label, 12.0);
+                let selected = choices
+                    .iter()
+                    .find(|(value, _)| value == &field.value)
+                    .map(|(_, label)| label.as_str())
+                    .unwrap_or("None");
+                let mut options = vec![("None".into(), Command::Set(index, String::new()))];
+                options.extend(
+                    choices
+                        .iter()
+                        .map(|(value, label)| (label.clone(), Command::Set(index, value.clone()))),
+                );
+                ui::picker(world, container, owner, selected, options);
+            }
             FieldKind::Choice(choices) => {
                 crate::native::edit_mode::label(world, container, &field.label, 12.0);
                 ui::picker(
@@ -468,6 +202,33 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                         "Find matching names",
                         Command::Find,
                     );
+                }
+                if let FieldKind::Selections(options) = &field.kind {
+                    let selected: Vec<_> = field
+                        .value
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .collect();
+                    let choices = options
+                        .iter()
+                        .map(|(uid, label)| {
+                            let included = selected.contains(&uid.as_str());
+                            let mut values: Vec<_> = selected
+                                .iter()
+                                .copied()
+                                .filter(|value| *value != uid)
+                                .collect();
+                            if !included {
+                                values.push(uid);
+                            }
+                            (
+                                format!("{} {label}", if included { "●" } else { "○" }),
+                                Command::Set(index, values.join(", ")),
+                            )
+                        })
+                        .collect();
+                    ui::picker(world, container, owner, "Choose included items", choices);
                 }
                 if matches!(field.kind, FieldKind::People) {
                     let existing: HashSet<_> = field.value.split(',').map(str::trim).collect();
@@ -584,6 +345,50 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             "Apply all reviewed changes",
             Command::Submit,
         );
+    } else if form.data["action"] == "record-journey-progress" {
+        review(world, container, &form.review, 0);
+        button(world, container, owner, &form.title, Command::Submit);
+    } else if form.data["action"] == "surplus" {
+        let mut visible_review = form.review.clone();
+        if let Some(object) = visible_review.as_object_mut() {
+            object.remove("Saved stock policy");
+        }
+        review(world, container, &visible_review, 0);
+        stock::extra_controls(world, owner, container, &form);
+        let caption = match form.data["request"]["kind"].as_str() {
+            Some("inspect") => "Load stock planning",
+            Some("review") => "Review stock policy",
+            Some("enable") => "Enable reviewed stock policy",
+            Some("pause") => "Pause this stock policy",
+            _ => "Confirm stock policy",
+        };
+        button(world, container, owner, caption, Command::Submit);
+    } else if form.data["action"] == "transfer-receipt" {
+        let mut visible_review = form.review.clone();
+        if let Some(object) = visible_review.as_object_mut() {
+            object.remove("Reviewed request");
+        }
+        review(world, container, &visible_review, 0);
+        if form.data["request"]["kind"] == "authorize_participation" {
+            button(
+                world,
+                container,
+                owner,
+                "Review current request",
+                Command::ReviewParticipation,
+            );
+            if form.mode == "participation-reviewed" {
+                button(
+                    world,
+                    container,
+                    owner,
+                    "Approve this participation",
+                    Command::Submit,
+                );
+            }
+        } else {
+            button(world, container, owner, "Confirm", Command::Submit);
+        }
     } else {
         let review_data: Value = form
             .data
@@ -691,6 +496,17 @@ pub(super) fn review(world: &mut World, parent: Entity, value: &Value, depth: us
             }
         }
         Value::Array(values) => {
+            if values.len() > 150 {
+                crate::native::edit_mode::label(
+                    world,
+                    parent,
+                    &format!(
+                        "Showing the first 150 of {} entries in this summary. The complete artifact remains unchanged.",
+                        values.len()
+                    ),
+                    12.0,
+                );
+            }
             for (index, value) in values.iter().enumerate().take(150) {
                 if value.is_object() {
                     crate::native::edit_mode::label(world, parent, &format!("{}", index + 1), 12.0);
@@ -802,64 +618,7 @@ pub(super) fn render_preview(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn reviewed_payload(form: &Form, preview: &Value, actor: &str) -> Result<Value, String> {
-    let mut action = form.data.clone();
-    if text(preview, "person") != actor || actor.is_empty() {
-        return Err("This review belongs to a different Person. Choose the Person whose signer is installed.".into());
-    }
-    if action["action"] == "complete-transfer-occurrence-claims-bulk" {
-        let items: Vec<_> = array(preview, "items")
-            .iter()
-            .filter_map(|item| {
-                item["action"]
-                    .as_object()
-                    .map(|action| Value::Object(action.clone()))
-            })
-            .collect();
-        if preview["eligible"] != true
-            || items.is_empty()
-            || items.len() != array(preview, "items").len()
-            || text(preview, "review_token").is_empty()
-        {
-            return Err("The selection contains blocked or missing claims".into());
-        }
-        action["review_token"] = preview["review_token"].clone();
-        action["items"] = json!(items);
-    } else {
-        if !capability(preview, "settle")
-            || preview["canonical_quantity"].as_f64() != action["canonical_quantity"].as_f64()
-            || preview["occurrence"] != action["occurrence"]
-        {
-            return Err("The quantity or occurrence changed. Request a fresh review.".into());
-        }
-        for (expected, actual) in [
-            ("expected_remaining_quantity", "remaining_quantity"),
-            ("expected_local_delta", "local_delta"),
-            (
-                "expected_application_formula_hash",
-                "application_formula_hash",
-            ),
-            (
-                "expected_application_formula_version",
-                "application_formula_version",
-            ),
-            ("expected_remainder_policy", "remainder_policy"),
-        ] {
-            if preview[expected].is_null() || preview[expected] != preview[actual] {
-                return Err("The Cell returned an incomplete settlement review".into());
-            }
-            action[expected] = preview[expected].clone();
-        }
-        action["expected_effects_hash"] = preview["expected_effects_hash"].clone();
-        if preview["effects"]
-            .as_array()
-            .is_some_and(|effects| !effects.is_empty())
-            && preview["expected_effects_hash"]
-                .as_str()
-                .is_none_or(str::is_empty)
-        {
-            return Err("The Cell returned an incomplete group review".into());
-        }
-    }
+    let action = crate::transfers::actions::reviewed_payload(form, preview, actor)?;
     serde_json::from_value::<engine::actions::Action>(action.clone())
         .map_err(|error| format!("Incomplete review: {error}"))?;
     Ok(action)

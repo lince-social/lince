@@ -1,3 +1,6 @@
+#[path = "offline_map/packs.rs"]
+mod packs;
+
 use geozero::mvt::{Message, Tile as VectorTile, tile::Layer};
 use lince_map::{Bounds, Camera, Coordinate, Settings, Tile, TileStore};
 use std::sync::{
@@ -181,6 +184,8 @@ async fn concurrent_castles_share_one_download_and_reopen_offline() {
     let (url, server) = server(fixture(), count.clone()).await;
     let settings = Settings {
         server: url,
+        dataset_version: "test-v1".into(),
+        online: true,
         ..Default::default()
     };
     let store = TileStore::new(settings.clone(), directory.path()).unwrap();
@@ -218,6 +223,12 @@ async fn local_tiles_win_and_cancelled_area_download_does_not_fetch() {
     let local = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(local.path().join("4/2")).unwrap();
     std::fs::write(local.path().join("4/2/3.pbf"), fixture()).unwrap();
+    packs::manifest(
+        local.path(),
+        lince_map::pack::Format::Directory,
+        &["4/2/3.pbf"],
+        "local-v1",
+    );
     let store = TileStore::new(
         Settings {
             local_directory: local.path().into(),
@@ -291,6 +302,12 @@ async fn packaged_pmtiles_works_offline_and_rejects_malformed_sections() {
         .add_tile(pmtiles::TileCoord::new(5, 10, 10).unwrap(), &fixture())
         .unwrap();
     writer.finalize().unwrap();
+    packs::manifest(
+        directory.path(),
+        lince_map::pack::Format::Pmtiles,
+        &["region.pmtiles"],
+        "pmtiles-v1",
+    );
     let settings = Settings {
         archives: vec![path.clone()],
         online: false,
@@ -304,6 +321,12 @@ async fn packaged_pmtiles_works_offline_and_rejects_malformed_sections() {
     let mut bytes = std::fs::read(&path).unwrap();
     bytes[8..16].copy_from_slice(&u64::MAX.to_le_bytes());
     std::fs::write(&path, bytes).unwrap();
+    packs::manifest(
+        directory.path(),
+        lince_map::pack::Format::Pmtiles,
+        &["region.pmtiles"],
+        "pmtiles-bad-sections",
+    );
     let store = TileStore::new(settings, directory.path().join("cache")).unwrap();
     assert!(store.load(tile).await.unwrap_err().contains("sections"));
 }
@@ -316,6 +339,8 @@ async fn invalid_server_payload_is_not_cached_or_reported_as_complete() {
     let store = TileStore::new(
         Settings {
             server: url,
+            dataset_version: "test-v1".into(),
+            online: true,
             ..Default::default()
         },
         directory.path(),
@@ -344,6 +369,8 @@ async fn cancelling_a_running_area_keeps_completed_tiles_and_stops_more_requests
     let store = TileStore::new(
         Settings {
             server: url,
+            dataset_version: "test-v1".into(),
+            online: true,
             ..Default::default()
         },
         directory.path(),

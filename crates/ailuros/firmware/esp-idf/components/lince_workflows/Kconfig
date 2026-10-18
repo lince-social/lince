@@ -1,0 +1,11 @@
+menu "Ailuros camera"
+
+config LINCE_CAMERA_XCLK_HZ
+    int "Camera external clock frequency (Hz)"
+    range 0 24000000
+    default 0
+    help
+        The selected board.json supplies the verified sensor clock.
+        Zero disables the camera workflow until hardware is configured.
+
+endmenu

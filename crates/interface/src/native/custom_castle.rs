@@ -508,6 +508,7 @@ impl CustomCastle {
                             | SandKind::WorkTimer
                             | SandKind::AccessControl
                             | SandKind::Visibility
+                            | SandKind::Trust
                             | SandKind::HandCamera
                             | SandKind::Video
                     ) {

@@ -1,0 +1,41 @@
+{
+  "noise_source": "https://raw.githubusercontent.com/LCAV/pyroomacoustics/ff7d61f219e4eb41489963c4bb5f57bea5bc2c69/examples/input_samples/doing_the_dishes.wav",
+  "noise_sha256": "099eafcd7c4c266612012b5622b97157042e5288acaf4cbf3dc475814bfcdaa8",
+  "noise_repository_revision": "ff7d61f219e4eb41489963c4bb5f57bea5bc2c69",
+  "noise_origin": "Google Speech Commands Dataset; source attribution in NOISE-PROVENANCE.txt",
+  "noise_license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "dataset_origin": "https://research.google/blog/launching-the-speech-commands-dataset/",
+  "speech_source": "https://github.com/cmusphinx/pocketsphinx/blob/f20ff1b7a5db64c5e892a798479e20df86e79a35/test/data/goforward.raw",
+  "speech_reference": "https://github.com/cmusphinx/pocketsphinx/blob/f20ff1b7a5db64c5e892a798479e20df86e79a35/test/unit/test_fsg/test_fsg.c",
+  "speech_license": "See LICENSE-PocketSphinx.txt",
+  "conversion": "Rust hound; crop recorded noise, mix independently recorded speech/noise at stated power ratio, common scaling only to avoid clipping; no synthetic noise, denoising or transcript changes",
+  "sample_rate": 16000,
+  "cases": [
+    {
+      "file": "recorded-noise-only.wav",
+      "sha256": "f53d1e5a2ceb8117d93018feee9dafeddb1361b0d476766fa6ecc709eb72c3bd",
+      "expected": null,
+      "samples": 160000,
+      "noise_gain": 1.0
+    },
+    {
+      "file": "goforward-recorded-noise-10db.wav",
+      "sha256": "ff3c708d251565e3fbb735f9c84fb0c949846e98745cb8803304183ec7b3e20f",
+      "expected": "go forward ten meters",
+      "samples": 44580,
+      "snr_db": 10.0,
+      "noise_gain": 0.2594918051206827,
+      "common_scale": 1.0
+    },
+    {
+      "file": "goforward-recorded-noise-0db.wav",
+      "sha256": "dd0ec3da6853d999461190513f4c895b9d16c6a87ff38aacff60248249338662",
+      "expected": "go forward ten meters",
+      "samples": 44580,
+      "snr_db": 0.0,
+      "noise_gain": 0.8205851383299017,
+      "common_scale": 1.0
+    }
+  ]
+}

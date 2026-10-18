@@ -6,20 +6,38 @@ use std::{
     process::{Child, Command},
 };
 
+#[cfg_attr(feature = "native-presentation", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "native-presentation", serde(rename_all = "kebab-case"))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Capability {
+    Clipboard,
+    WindowList,
+    WindowControl,
+    OutputControl,
+    Capture,
+    InputMethod,
+}
+
 #[cfg_attr(
     feature = "native-presentation",
     derive(serde::Serialize, serde::Deserialize)
 )]
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "native-presentation", serde(deny_unknown_fields))]
 pub struct Description {
     pub program: String,
+    #[cfg_attr(feature = "native-presentation", serde(default))]
     pub arguments: Vec<String>,
+    #[cfg_attr(feature = "native-presentation", serde(default))]
     pub directory: Option<PathBuf>,
+    #[cfg_attr(feature = "native-presentation", serde(default))]
+    pub capabilities: Vec<Capability>,
 }
 
 impl Description {
     pub fn valid(&self) -> bool {
         !self.program.is_empty()
+            && self.capabilities.len() <= 6
             && self.program.len() <= 4096
             && !self.program.contains('\0')
             && self.arguments.len() <= 4096
@@ -96,8 +114,10 @@ impl Application {
             .env("SDL_VIDEODRIVER", "wayland")
             .env("SDL_VIDEO_DRIVER", "wayland")
             .env("XDG_SESSION_TYPE", "wayland")
+            .env("XDG_CURRENT_DESKTOP", "Lince")
             .env_remove("DISPLAY")
             .env_remove("XAUTHORITY")
+            .env_remove("XDG_ACTIVATION_TOKEN")
             .env_remove("WAYLAND_SOCKET");
         Ok(command)
     }
@@ -109,6 +129,24 @@ impl Application {
                 io::ErrorKind::InvalidInput,
                 "Park display path is not a Unix socket",
             ));
+        }
+        command.spawn()
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn spawn_connected(
+        &self,
+        socket: &Path,
+        connection: std::os::unix::net::UnixStream,
+    ) -> io::Result<Child> {
+        use std::os::{fd::AsRawFd, unix::process::CommandExt};
+        let mut command = self.command(socket)?;
+        command.env("WAYLAND_SOCKET", connection.as_raw_fd().to_string());
+        unsafe {
+            command.pre_exec(move || {
+                rustix::io::fcntl_setfd(&connection, rustix::io::FdFlags::empty())?;
+                Ok(())
+            });
         }
         command.spawn()
     }

@@ -1,0 +1,16 @@
+[package]
+name = "flexaudio-mic"
+version = "0.3.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+authors = ["tubome (Studio Sadola)"]
+repository = "https://github.com/Studio-Sadola/flexaudio"
+description = "Flexaudio microphone adapter updated for Lince's shared CPAL."
+
+[dependencies]
+flexaudio-core = { git = "https://github.com/Studio-Sadola/flexaudio", rev = "e36ca9fe8151cd821a35a13aa8fbf55c999e64ce", version = "=0.3.0" }
+cpal.workspace = true
+
+[lints]
+workspace = true

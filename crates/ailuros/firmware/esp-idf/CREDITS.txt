@@ -1,0 +1,7 @@
+Ailuros shared firmware and workflow starters: Lince contributors, MIT (LICENSE).
+ESP-IDF 5.5.2: Espressif Systems and contributors, Apache-2.0 (licenses/esp-idf-Apache-2.0.txt).
+ESP32 camera driver 2.1.0: Espressif Systems and contributors, Apache-2.0 (licenses/esp32-camera-Apache-2.0.txt).
+ESP WebSocket Client 1.6.1: Espressif Systems and contributors, Apache-2.0 (licenses/esp-websocket-client-Apache-2.0.txt).
+ESP JPEG 1.3.1: Espressif Systems and contributors, Apache-2.0 (licenses/esp-jpeg-Apache-2.0.txt).
+TJpgDec R0.03 (included by ESP JPEG): ChaN, 2021 (licenses/TJpgDec.txt).
+The SDK and resolved managed_components contain their additional dependency source, licenses and notices. Keep those notices with redistributed source and firmware artifacts.

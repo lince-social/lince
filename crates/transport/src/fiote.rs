@@ -2,6 +2,15 @@ use async_trait::async_trait;
 
 #[async_trait]
 pub trait Service: Send + Sync {
+    async fn discover(&self, _offset: usize, _limit: usize) -> Result<fiote::assistant::Directory, String> {
+        Err("Fiote discovery is unavailable for this connection.".into())
+    }
+    async fn delegate(&self, _source: fiote::assistant::Source, _request: fiote::assistant::Delegate) -> Result<fiote::assistant::Handoff, String> {
+        Err("Fiote handoff is unavailable for this connection.".into())
+    }
+    async fn handoffs(&self, _thread: &str) -> Result<Vec<fiote::assistant::Handoff>, String> {
+        Err("Fiote handoff inspection is unavailable for this connection.".into())
+    }
     async fn terminal(
         &self,
         _request: fiote::acp::terminal::TerminalRequest,

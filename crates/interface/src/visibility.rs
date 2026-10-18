@@ -4,6 +4,7 @@ use nucleus::visibility::{Bound, Command, Condition, Context, Data, Policy};
 
 #[derive(Message, Clone)]
 pub struct Request {
+    pub owner: Entity,
     pub id: String,
     pub command: Command,
 }
@@ -94,6 +95,8 @@ impl Rule {
 
 #[derive(Component)]
 pub struct Panel {
+    draft: Option<bool>,
+    owner: Entity,
     record: String,
     data: Data,
     context: Option<Context>,
@@ -152,6 +155,8 @@ pub fn mount(world: &mut World, parent: Entity, record: &str, data: Data) -> Ent
         ))
         .id();
     let mut state = Panel {
+        draft: None,
+        owner: panel,
         record: record.into(),
         data,
         context: None,
@@ -178,12 +183,35 @@ pub fn mount(world: &mut World, parent: Entity, record: &str, data: Data) -> Ent
     panel
 }
 
+pub fn mount_policy_draft(world: &mut World, parent: Entity, mut context: Context, policy: Policy, exclusions: bool) -> Entity {
+    context.saved = None;
+    context.data = Data::Record;
+    let entity = world.spawn((ChildOf(parent), Node { width: percent(100), flex_direction: FlexDirection::Column, row_gap: px(8), ..default() })).id();
+    world.entity_mut(entity).insert(Panel {
+        draft: Some(exclusions), owner: entity, record: context.record_uid.clone(), data: Data::Record,
+        context: Some(context), include: policy.include.iter().map(Rule::from).collect(), exclude: policy.exclude.iter().map(Rule::from).collect(),
+        fields: vec![], radius_fields: vec![], pending: None, notice: "Draft only; review all stages before enabling".into(),
+        choosing_record: false, choosing_organs: None, show_credits: false,
+    });
+    draw(world, entity);
+    entity
+}
+
+pub fn edited_policy(world: &mut World, entity: Entity) -> Result<Policy, String> {
+    let mut panel = world.entity_mut(entity).take::<Panel>().ok_or("Visibility draft unavailable")?;
+    read_fields(world, &mut panel);
+    let result = policy(&panel);
+    world.entity_mut(entity).insert(panel);
+    result
+}
+
 fn request(world: &mut World, panel: &mut Panel, command: Command) {
     if !world.contains_resource::<Messages<Request>>() {
         return;
     }
     let id = nucleus::new_uid("visibility-ui");
     world.write_message(Request {
+        owner: panel.owner,
         id: id.clone(),
         command,
     });
@@ -330,6 +358,7 @@ fn draw(world: &mut World, entity: Entity) {
         entity,
         "Any matching include allows access. Any matching exclusion denies it. Lower proximity means a closer Organ.",
     );
+    if panel.draft.is_none() {
     button(world, entity, entity, "Choose Record", Intent::ChooseRecord);
     if let Some(context) = &panel.context {
         if let Some(record) = context
@@ -365,6 +394,7 @@ fn draw(world: &mut World, entity: Entity) {
             Intent::Data(data),
         );
     }
+    }
     label(
         world,
         entity,
@@ -381,6 +411,7 @@ fn draw(world: &mut World, entity: Entity) {
         },
     );
     for exclude in [false, true] {
+        if panel.draft.is_some_and(|side| side != exclude) { continue; }
         label(
             world,
             entity,
@@ -562,8 +593,10 @@ fn draw(world: &mut World, entity: Entity) {
     }
     let row = controls::row(world, entity);
     button(world, row, entity, "Preview rules", Intent::Preview);
-    button(world, row, entity, "Save visibility", Intent::Save);
-    button(world, row, entity, "Reload saved rules", Intent::Refresh);
+    if panel.draft.is_none() {
+        button(world, row, entity, "Save visibility", Intent::Save);
+        button(world, row, entity, "Reload saved rules", Intent::Refresh);
+    }
     label(
         world,
         entity,
@@ -678,7 +711,7 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
         return;
     };
     read_fields(world, &mut panel);
-    if panel.pending.is_some() {
+    if panel.pending.is_some() || panel.draft.is_some() && matches!(&intent, Intent::Save | Intent::Refresh | Intent::ChooseRecord | Intent::Record(_) | Intent::Data(_)) {
         world.entity_mut(entity).insert(panel);
         return;
     }

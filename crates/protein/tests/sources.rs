@@ -330,6 +330,7 @@ fn transfer_source_derives_the_occurrence_status_ladder() {
                         let occurrence = e
                             .act(
                                 Action::ActivateTransferOccurrence {
+                                    original_authorities: Vec::new(),
                                     transfer: transfer.clone(),
                                     promise: promise_uid.into(),
                                     expected_revision: revision,

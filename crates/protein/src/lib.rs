@@ -1406,14 +1406,39 @@ async fn matching_records_for(
             "protein_record_unsupported_predicate:predicate is not defined for Records".into(),
         ));
     }
-    let all = match protein.filter.as_slice() {
-        [Predicate::UidEq(uid)] => store::records::get(&store.pool, uid).await?.into_iter().collect(),
-        [Predicate::SlugEq(slug)] => store::records::resolve(&store.pool, slug).await?.into_iter().collect(),
-        _ => store::records::list_all(&store.pool).await?,
+    let required_uids = protein.filter.iter().find_map(|predicate| match predicate {
+        Predicate::UidEq(uid) => Some(HashSet::from([uid.as_str()])),
+        Predicate::Any(children)
+            if children.iter().all(|child| matches!(child, Predicate::UidEq(_))) =>
+        {
+            Some(children.iter().filter_map(|child| {
+                if let Predicate::UidEq(uid) = child {
+                    Some(uid.as_str())
+                } else {
+                    None
+                }
+            }).collect::<HashSet<_>>())
+        }
+        _ => None,
+    });
+    let all = match (protein.filter.as_slice(), required_uids.as_ref()) {
+        ([Predicate::UidEq(uid)], _) => {
+            store::records::get(&store.pool, uid).await?.into_iter().collect()
+        }
+        ([Predicate::SlugEq(slug)], _) => {
+            store::records::resolve(&store.pool, slug).await?.into_iter().collect()
+        }
+        (_, Some(uids)) => {
+            store::records::get_many(&store.pool, &uids.iter().copied().collect::<Vec<_>>()).await?
+        }
+        (_, None) => store::records::list_all(&store.pool).await?,
     };
     let ctx = PredicateCtx::prepare(store, &protein.filter, visible, subject).await?;
     let mut rows: Vec<store::records::RecordRow> = Vec::new();
     for r in all {
+        if required_uids.as_ref().is_some_and(|uids| !uids.contains(r.uid.as_str())) {
+            continue;
+        }
         if visible.is_some_and(|v| !v.contains(&r.uid)) {
             continue;
         }
@@ -8667,6 +8692,10 @@ async fn execute_transfers(
                 let exchange = promise["item"]["exchange"]["uid"].as_str().or(promise["exchange"].as_str());
                 promise["accepted_loan"] = json!(accepted_loans.iter().find(|loan| Some(loan.exchange.as_str()) == exchange));
             }
+        }
+        if value["promises"].as_array().is_some_and(|promises|promises.iter().any(|promise|promise["item"]["transport"].is_object())) {
+            value["journey"] = json!(store::transport::journey(&store.pool, uid).await?);
+            value["transport_capacity"] = json!(store::transport::capacity(&store.pool, uid).await?);
         }
         nucleus::transfer::disclosure::project_transfer(
             &mut value,

@@ -1,0 +1,12 @@
+MFCC extraction, cosine comparison, normalization and dynamic time warping
+adapted from Rustpotter by Miguel Álvarez Díez and contributors.
+https://github.com/GiviMAD/rustpotter
+Revision: 46bbc73223afe5fc7b90f30455046432fc3c9432
+License: Apache-2.0, included in LICENSE.
+
+Lince retains only the Rust reference-comparison primitives. Neural model,
+training, file-loader and audio-device dependencies are excluded. Source
+documentation was omitted to follow this repository's source conventions.
+Fiote owns bounded enrollment, validation, detection and native controls.
+The FFT plan is cached, and the windowed DTW terminal-cost index is corrected.
+Reference comparison uses two rolling DP rows to bound scratch allocation.

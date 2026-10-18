@@ -21,7 +21,7 @@ android-smoke = []
 
 [dependencies]
 bevy = { version = "=0.19.1", default-features = false, features = ["std", "async_executor", "multi_threaded", "bevy_asset", "bevy_log", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_ui", "bevy_ui_render", "bevy_ui_widgets", "bevy_input_focus", "bevy_picking", "ui_picking", "keyboard", "mouse", "touch", "bevy_window"] }
-lince-interface = { workspace = true, features = ["ui", "models", "images"] }
+lince-interface = { workspace = true, features = ["ui", "models", "images", "map-presentation"] }
 cell = { workspace = true }
 engine = { workspace = true }
 nucleus = { workspace = true }
@@ -45,6 +45,7 @@ rustls-platform-verifier = "=0.7.1"
 sensei = { workspace = true }
 
 [dev-dependencies]
+async-trait.workspace = true
 tempfile = "=3.27.0"
 
 [lints]

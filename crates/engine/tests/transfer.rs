@@ -46,6 +46,7 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
             engine
                 .act(
                     Action::ActivateTransferOccurrence {
+                        original_authorities: Vec::new(),
                         transfer: fixture.transfer.clone(),
                         promise: "sale-bike-give".into(),
                         expected_revision: fixture.revision,
@@ -199,6 +200,7 @@ fn revising_a_signed_promise_invalidates_current_agreement() {
                     expected_revision: fixture.revision,
                     request_id: "revision:change-quantity".into(),
                     draft: TransferDraftRevisionInput {
+                        public_history: None,
                         creator: ana.uid.clone(),
                         slug: Some("revision.transfer".into()),
                         head: "revision.transfer".into(),

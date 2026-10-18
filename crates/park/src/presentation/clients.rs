@@ -152,7 +152,7 @@ impl Presentation {
         let root = self.canvas_root()?;
         let world = self.app.world_mut();
         let workspace = native::laboratory::scope(world)
-            .filter(|(owner, _, _, _)| *owner == root)
+            .filter(|(owner, _, temporary, _)| *owner == root && world.get::<native::workspace::Workspaces>(root).is_some_and(|spaces| spaces.active == *temporary))
             .map(|(_, _, _, previous)| previous)
             .unwrap_or(
                 world
@@ -290,6 +290,7 @@ impl Presentation {
     }
 
     fn hide_window(&mut self, surface: SurfaceId) {
+        self.painted_windows.remove(&surface);
         let Some(window) = self.windows.remove(&surface) else {
             return;
         };

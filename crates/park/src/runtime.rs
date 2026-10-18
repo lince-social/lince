@@ -26,8 +26,10 @@ use std::{
         mpsc::{Receiver, SyncSender, TrySendError, sync_channel},
     },
     thread::{JoinHandle, Thread},
-    time::Duration,
 };
+
+#[cfg(feature = "worker-gate")]
+use std::time::Duration;
 
 #[cfg(feature = "worker-gate")]
 mod probe;
@@ -43,11 +45,14 @@ pub struct Configuration {
 
 #[derive(Clone)]
 pub struct Scene {
+    pub revision: u64,
     pub outputs: Vec<crate::presentation::Output>,
     pub windows: Arc<Vec<WindowSnapshot>>,
 }
 
 pub enum Input {
+    NativeDrop(crate::native_input::transfer::Request),
+    NativeEdit(crate::native_input::Edit),
     Pointer([f32; 2]),
     Button(MouseButton, bool, [f32; 2], u64),
     Key {
@@ -60,13 +65,17 @@ pub enum Input {
     Scroll([f32; 2], MouseScrollUnit, TouchPhase, [f32; 2], u64),
     Focus(bool),
     Action(DesktopAction),
+    Logout,
+    Feedback(String),
     Application(SurfaceId),
     Activate(SurfaceId),
+    Workspace { owner: u64, id: u64 },
     Window(SurfaceId, lince_interface::host::WindowRequest),
     Output(lince_interface::host::OutputId),
 }
 
 pub struct Completed {
+    pub scene_revision: u64,
     pub frame: Frame,
     pub windows: Arc<Vec<WindowSnapshot>>,
     pub rejected: Vec<SurfaceId>,
@@ -98,6 +107,13 @@ impl Drop for Active {
 
 impl CanvasWorker {
     pub fn spawn(configuration: Configuration) -> std::io::Result<Self> {
+        Self::spawn_notifying(configuration, None)
+    }
+
+    pub fn spawn_notifying(
+        configuration: Configuration,
+        notify: Option<WakeSignal>,
+    ) -> std::io::Result<Self> {
         let (scene, scenes) = latest_channel();
         let (images, frames) = latest_channel();
         let (inputs, events) = sync_channel(128);
@@ -122,8 +138,12 @@ impl CanvasWorker {
                     commands,
                     &active.0,
                     &changed,
+                    notify.as_ref(),
                 ) {
                     let _ = failed.try_send(error);
+                    if let Some(notify) = &notify {
+                        notify.ring();
+                    }
                 }
             })?;
         let thread = join.thread().clone();
@@ -213,6 +233,9 @@ impl CanvasWorker {
             join.join()
                 .map_err(|_| std::io::Error::other("the Park canvas thread panicked"))?;
         }
+        if let Some(failure) = self.failure() {
+            return Err(std::io::Error::other(failure.to_string()));
+        }
         Ok(())
     }
 }
@@ -232,6 +255,7 @@ fn run(
     commands: SyncSender<HostRequest>,
     running: &AtomicBool,
     dirty: &Arc<AtomicBool>,
+    notify: Option<&WakeSignal>,
 ) -> Result<(), ProbeFailure> {
     let runtime = configuration.runtime.clone();
     let _entered = runtime.enter();
@@ -246,7 +270,7 @@ fn run(
         configuration.directory.join("assets"),
         wake,
     )?;
-    canvas.host_requests(commands);
+    canvas.host_requests(commands.clone());
     canvas
         .output_preferences(configuration.directory.join("park-outputs.json"))
         .map_err(|error| failure(error.to_string()))?;
@@ -262,17 +286,21 @@ fn run(
             ));
     }
     let mut windows = Arc::new(Vec::new());
+    let mut scene_revision = 0;
     let mut started = false;
     let mut pending = false;
     let mut settle = 8;
     let mut input_serial = 0;
-    while running.load(Ordering::Acquire) {
+    let mut awaiting: Option<Completed> = None;
+    loop {
+        let stopping = !running.load(Ordering::Acquire);
         let changed = dirty.swap(false, Ordering::AcqRel);
         if !started {
             canvas.frame()?;
             started = true;
         }
         if let Some(scene) = scenes.take() {
+            scene_revision = scene.revision;
             canvas.outputs(scene.outputs)?;
             pending = canvas.sync_windows(&scene.windows)?;
             windows = scene.windows;
@@ -309,8 +337,38 @@ fn run(
                 }
                 Input::Focus(focused) => canvas.focus(focused)?,
                 Input::Action(action) => canvas.desktop_action(action)?,
+                Input::Logout => match canvas.finish() {
+                    Ok(()) => {
+                        commands
+                            .try_send(HostRequest::Exit)
+                            .map_err(|_| failure("Could not confirm Park logout".into()))?;
+                        if let Some(notify) = notify {
+                            notify.ring();
+                        }
+                        while running.load(Ordering::Acquire) {
+                            std::thread::park();
+                        }
+                        return Ok(());
+                    }
+                    Err(error) => {
+                        eprintln!("Park logout: {error}");
+                        lince_interface::native::notifications::report(
+                            canvas.world_mut(),
+                            "Park",
+                            &error.detail,
+                        );
+                    }
+                },
+                Input::Feedback(message) => lince_interface::native::notifications::report(
+                    canvas.world_mut(),
+                    "park",
+                    &message,
+                ),
+                Input::NativeEdit(edit) => crate::native_input::enqueue(canvas.world_mut(), edit),
+                Input::NativeDrop(request) => crate::native_input::transfer::enqueue(canvas.world_mut(), request),
                 Input::Application(surface) => canvas.focus_application(surface),
                 Input::Activate(surface) => canvas.activate_application(surface)?,
+                Input::Workspace { owner, id } => canvas.activate_workspace(owner, id)?,
                 Input::Window(surface, request) => canvas.window_request(surface, request),
                 Input::Output(output) => canvas.focus_output(output)?,
             }
@@ -320,34 +378,41 @@ fn run(
         {
             canvas.pointer(point)?;
         }
+        if stopping {
+            break;
+        }
         if input || changed {
             settle = settle.max(3);
         }
+        if pending && canvas.imports_ready() { settle = settle.max(1); }
+        if let Some(completed) = awaiting.take() {
+            if completed.frame.ready()? {
+                if images.publish(completed).is_err() { break; }
+                if let Some(notify) = notify { notify.ring(); }
+            } else {
+                awaiting = Some(completed);
+                std::thread::park();
+                continue;
+            }
+        }
         if settle == 0 {
-            std::thread::park_timeout(Duration::from_secs(1));
+            std::thread::park();
             continue;
         }
         if pending {
             pending = canvas.sync_windows(&windows)?;
         }
-        if pending {
-            settle = settle.max(2);
-        }
         let frame = canvas.frame()?;
-        if images
-            .publish(Completed {
+        awaiting = Some(Completed {
+                scene_revision,
                 frame,
-                windows: windows.clone(),
+                windows: Arc::new(canvas.painted_windows()),
                 rejected: canvas.rejected_windows(),
                 input_serial,
-            })
-            .is_err()
-        {
-            break;
-        }
+            });
         settle -= 1;
     }
-    Ok(())
+    canvas.finish()
 }
 
 fn failure(detail: String) -> ProbeFailure {

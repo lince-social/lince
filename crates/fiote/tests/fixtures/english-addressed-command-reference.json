@@ -1,0 +1,30 @@
+{
+  "file": "addressed-command.wav",
+  "sha256": "7466aadb55db274816ebc36a33228e0f894105bde78829f08524dcbe6b387a39",
+  "audio_ms": 4240,
+  "expected": "hey computer go forward ten meters",
+  "license_file": "LICENSE-Hey-Computer-el-tocino.txt",
+  "license_sha256": "09ef5d03922bfb6357b699a16140f01ceab2b16dcc8dbb3f96efa6f74d29f64f",
+  "prefix": {
+    "repository": "MycroftAI/Precise-Community-Data",
+    "revision": "4854e39b7f8c0e14d387d4e135aa10486f5158bf",
+    "source": "heycomputer/en/heycomputer-en-258d487d-a2bb-4619-a636-cff032b5c5d0.wav",
+    "sha256": "5f0f183661969f2edfc88457aa9db293269c4157201824ca8a1b436270b3ec3c",
+    "reference": "heycomputer/en/README.md",
+    "expected": "hey computer",
+    "license_source": "licenses/license-20190813-el-tocino.txt",
+    "license": "Public-domain dedication by el-tocino; exact recording listed"
+  },
+  "command": {
+    "file": "goforward.wav",
+    "wav_sha256": "97ec638609b9c7eeb616764b4e5713d7ed2d0a8e1a2f8246631d9074d47aaf11",
+    "repository": "cmusphinx/pocketsphinx",
+    "revision": "f20ff1b7a5db64c5e892a798479e20df86e79a35",
+    "source": "test/data/goforward.raw",
+    "reference": "test/unit/test_fsg/test_fsg.c",
+    "expected": "go forward ten meters",
+    "license": "LICENSE-PocketSphinx.txt saved by base fixture preparation"
+  },
+  "conversion": "Composite of two independently labeled human recordings, not one natural utterance or synthesized speech. Retain from 100 ms before first 20 ms frame with RMS above 0.003 through 100 ms after last such frame, join the two clips and encode mono 16 kHz PCM16 with Rust hound. No transcript rewriting.",
+  "comparison": "Ignore punctuation and case; retain word order and every word"
+}

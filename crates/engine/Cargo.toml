@@ -10,6 +10,7 @@ description = "Lince engine: the single fact write path, the reactive Karma sche
 [features]
 default = []
 instinct = []
+trust-test-hooks = []
 
 [dependencies]
 futures = { workspace = true }
@@ -57,8 +58,8 @@ pkarr = { version = "8.0.1", default-features = false, features = ["relays"] }
 tokio = { workspace = true, features = ["macros", "rt"] }
 iroh-relay = { version = "=1.2.0", features = ["server"] }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-rustix = { version = "=1.1.4", features = ["fs", "process"] }
+[target.'cfg(any(target_os = "linux", target_os = "android"))'.dependencies]
+rustix = { version = "=1.1.4", features = ["fs", "process", "time"] }
 
 [build-dependencies]
 sensei = { workspace = true }

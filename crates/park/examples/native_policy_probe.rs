@@ -24,6 +24,7 @@ fn run() -> Result<(), String> {
                 "native::laboratory::tests::",
                 "native::layout::desktop::tests::",
                 "native::shortcuts::tests::",
+                "native::information::tests::",
                 "native::topology::holes::tests::",
             ]
             .iter()

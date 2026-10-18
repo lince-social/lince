@@ -414,6 +414,7 @@ impl Host {
         thread: &str,
         body: &str,
         content: &[nucleus::message::MessagePart],
+        forwarded: Option<handoff::Forwarded>,
         running: &mut HashMap<String, Running>,
     ) -> Result<ActionOutcome, String> {
         let config = self.agent_working_directory(&record.uid, config).await?;
@@ -478,13 +479,13 @@ impl Host {
             .engine
             .act(
                 Action::CreateMessage {
-                    content: content.to_vec(),
+                    content: forwarded.as_ref().map(|source| source.content(content)).unwrap_or_else(|| content.to_vec()),
                     thread: thread.into(),
                     body: body.into(),
-                    author: None,
+                    author: forwarded.as_ref().map(|source| source.author.clone()),
                     state: MessageState::Finished,
                     parent: None,
-                    references: vec![],
+                    references: Vec::new(),
                 },
                 None,
             )

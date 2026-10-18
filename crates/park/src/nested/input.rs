@@ -19,21 +19,67 @@ use smithay::{
 };
 
 #[derive(Clone)]
-pub(super) enum Target {
+pub(crate) enum Target {
+    Popup(WlSurface),
     Empty,
     Native,
     Application(SurfaceId, WlSurface, OutputId),
     Layer(WlSurface, WlSurface),
 }
 
-pub(super) enum Deferred {
+pub(crate) enum Deferred {
     Button(u32, bool, u32, [f64; 2]),
     Key(u32, bool, u32),
     Axis([f64; 2], AxisFrame, [f64; 2]),
 }
 
 impl Desktop {
-    pub(super) fn event(&mut self, event: WinitEvent) -> io::Result<()> {
+    pub(crate) fn move_pointer(&mut self, proposed: [f64; 2], time: u32) -> io::Result<()> {
+        let constrained = self.pointer_target.as_ref().and_then(|(surface, local)| {
+            let popup = self.popups.iter().find_map(|popup| {
+                let node = popup.nodes.iter().find(|node| &node.surface == surface)?;
+                Some((&popup.mapping, node.layout.size))
+            });
+            let (mapping, size) = popup.or_else(|| {
+                let current = self.frame_at(self.pointer)?;
+                let (window, node) = current.windows.iter().find_map(|window| {
+                    window.nodes.iter().find(|node| &node.surface == surface).map(|node| (window, node))
+                })?;
+                let item = current.frame.geometry.as_ref()?.items.iter().find(|item| item.id == ItemId::Application(window.id))?;
+                Some((&item.mapping, node.layout.size))
+            })?;
+            let scale: [f64; 2] = std::array::from_fn(|axis| mapping.surface.size()[axis] / mapping.canvas.size()[axis]);
+            if scale.iter().any(|scale| !scale.is_finite() || *scale <= 0.0) { return None; }
+            let position = std::array::from_fn(|axis| local[axis] + (proposed[axis] - self.pointer[axis]) * scale[axis]);
+            let position = self.server.constrain_pointer(surface, *local, position, size);
+            Some(std::array::from_fn(|axis| self.pointer[axis] + (position[axis] - local[axis]) / scale[axis]))
+        });
+        self.pointer = constrained.unwrap_or(proposed);
+        self.motion(time)
+    }
+
+    #[cfg(feature = "session")]
+    pub(crate) fn relative_motion(&mut self, delta: [f64; 2], unaccelerated: [f64; 2], time: u64) {
+        let Some((surface, _)) = &self.pointer_target else { return };
+        let mapping = self.popups.iter().find(|popup| popup.nodes.iter().any(|node| &node.surface == surface))
+            .map(|popup| &popup.mapping)
+            .or_else(|| {
+                let current = self.frame_at(self.pointer)?;
+                let window = current.windows.iter().find(|window| window.nodes.iter().any(|node| &node.surface == surface))?;
+                current.frame.geometry.as_ref()?.items.iter()
+                    .find(|item| item.id == ItemId::Application(window.id))
+                    .map(|item| &item.mapping)
+            });
+        let Some(mapping) = mapping else { return };
+        let scale: [f64; 2] = std::array::from_fn(|axis| mapping.surface.size()[axis] / mapping.canvas.size()[axis]);
+        self.server.relative_motion(
+            std::array::from_fn(|axis| delta[axis] * scale[axis]),
+            std::array::from_fn(|axis| unaccelerated[axis] * scale[axis]), time,
+        );
+    }
+
+    pub(crate) fn event(&mut self, event: WinitEvent) -> io::Result<()> {
+        if matches!(&event, WinitEvent::Input(_)) { self.server.activity(); }
         match event {
             WinitEvent::CloseRequested => self.running = false,
             WinitEvent::Redraw => self.redraw = true,
@@ -44,9 +90,15 @@ impl Desktop {
                 self.redraw = true;
             }
             WinitEvent::Focus(false) => {
+                self.server.suspend_native_drop();
                 self.focused = false;
                 self.server.clear_input(0);
                 self.keys.clear();
+                self.compose.reset();
+                #[cfg(feature = "session")]
+                {
+                    self.repeat = None;
+                }
                 self.buttons.clear();
                 self.consumed.clear();
                 self.grabbed = None;
@@ -67,8 +119,7 @@ impl Desktop {
             WinitEvent::Input(InputEvent::PointerMotionAbsolute { event }) => {
                 let point =
                     event.position_transformed((self.size[0] as i32, self.size[1] as i32).into());
-                self.pointer = [point.x, point.y];
-                self.motion(event.time_msec())?;
+                self.move_pointer([point.x, point.y], event.time_msec())?;
                 self.redraw = true;
             }
             WinitEvent::Input(InputEvent::PointerButton { event }) => {
@@ -107,10 +158,9 @@ impl Desktop {
         Ok(())
     }
 
-    pub(super) fn target(&self) -> Target {
+    pub(crate) fn target(&self) -> Target {
         let fullscreen = self
-            .current
-            .as_ref()
+            .frame_at(self.pointer)
             .and_then(|current| current.frame.geometry.as_ref())
             .and_then(|geometry| {
                 geometry
@@ -150,6 +200,11 @@ impl Desktop {
         {
             return target;
         }
+        if let Some(surface) = self.popups.iter().rev()
+            .filter(|popup| popup.owner == renderer::PopupOwner::Native)
+            .find_map(|popup| popup.hit(self.pointer)) {
+            return Target::Popup(surface);
+        }
         let canvas = self
             .clips
             .iter()
@@ -163,7 +218,7 @@ impl Desktop {
                 .find_map(layer_hit)
                 .unwrap_or(Target::Empty);
         }
-        let Some(current) = &self.current else {
+        let Some(current) = self.frame_at(self.pointer) else {
             return Target::Native;
         };
         if current.frame.input.modal
@@ -219,7 +274,11 @@ impl Desktop {
         Target::Native
     }
 
-    pub(super) fn motion(&mut self, time: u32) -> io::Result<()> {
+    pub(crate) fn motion(&mut self, time: u32) -> io::Result<()> {
+        if self.server.locked() {
+            self.focus()?;
+            return self.server.lock_motion(self.pointer, time);
+        }
         let native_position = self.native_position();
         if self.pointer_sent != Some(native_position) {
             self.pointer_stamp = self
@@ -227,10 +286,21 @@ impl Desktop {
                 .pointer(native_position.map(|value| value as f32))?;
             self.pointer_sent = Some(native_position);
         }
-        let target = self.grabbed.clone().unwrap_or_else(|| self.target());
+        let target = if self.server.dragging() {
+            self.target()
+        } else {
+            self.grabbed.clone().unwrap_or_else(|| self.target())
+        };
         let position = match target {
+            Target::Popup(surface) => self.popups.iter().find(|popup|
+                popup.owner == renderer::PopupOwner::Native && popup.nodes.iter().any(|node| node.surface == surface))
+                .and_then(|popup| {
+                    let node = popup.nodes.iter().find(|node| node.surface == surface)?;
+                    let point = popup.point(self.pointer);
+                    Some((surface, std::array::from_fn(|axis| point[axis] - f64::from(node.origin[axis]))))
+                }),
             Target::Application(id, surface, output) => {
-                self.current.as_ref().and_then(|current| {
+                self.frame_at(self.pointer).and_then(|current| {
                     if let Some(popup) = self.popups.iter().find(|popup| {
                         popup.owner == renderer::PopupOwner::Application(id)
                             && popup.output == output
@@ -294,21 +364,52 @@ impl Desktop {
                         ],
                     ))
                 }),
-            Target::Native | Target::Empty => None,
+            Target::Native => self.server.native_surface().map(|surface| (surface, self.pointer)),
+            Target::Empty => None,
         };
         let position = position.filter(|(surface, _)| surface.is_alive());
         if self.pointer_target != position {
             self.server.pointer_motion(position.clone(), time)?;
             self.pointer_target = position;
         }
+        self.refresh_native_drop()?;
         Ok(())
     }
 
-    pub(super) fn button(&mut self, button: u32, pressed: bool, time: u32) -> io::Result<()> {
+    fn refresh_native_drop(&mut self) -> io::Result<()> {
+        if !self.focused || self.server.locked() {
+            self.server.suspend_native_drop();
+            return Ok(());
+        }
+        let native = matches!(self.target(), Target::Native);
+        let output = self.frame_at(self.pointer).and_then(|current| current.frame.geometry.as_ref())
+            .and_then(|geometry| geometry.outputs.iter().find(|output| output.bounds.contains(self.pointer)))
+            .map(|output| output.id);
+        if native && self.server.dragging() && self.pending_output.is_none()
+            && let Some(output) = output
+            && self.current.as_ref().and_then(|current| current.frame.output).is_some_and(|current| current != output)
+        {
+            let serial = self.send_tracked(Input::Output(output))?;
+            self.pending_output = Some((serial, Some(output)));
+            self.server.suspend_native_drop();
+        }
+        let target = (native && self.pending_output.is_none()).then(|| {
+            self.frame_at(self.pointer)?.frame.input.drop_target.clone()
+        }).flatten().filter(|target| Some(target.output) == output
+            && target.pointer.iter().zip(self.pointer).all(|(target, actual)| (target - actual).abs() < 2.0));
+        self.server.native_drop_target(target);
+        Ok(())
+    }
+
+    pub(crate) fn button(&mut self, button: u32, pressed: bool, time: u32) -> io::Result<()> {
+        if self.server.locked() {
+            self.motion(time)?;
+            self.server.pointer_button(button, pressed, time);
+            return Ok(());
+        }
         if self.pending_output.is_none() && pressed && self.buttons.is_empty() {
             let output = self
-                .current
-                .as_ref()
+                .frame_at(self.pointer)
                 .and_then(|current| current.frame.geometry.as_ref())
                 .and_then(|geometry| {
                     geometry
@@ -331,10 +432,10 @@ impl Desktop {
         if self.pending_output.is_some() {
             return self.defer(Deferred::Button(button, pressed, time, self.pointer));
         }
-        let target = self.grabbed.clone().unwrap_or_else(|| self.target());
+        let target = if self.server.dragging() { self.target() } else { self.grabbed.clone().unwrap_or_else(|| self.target()) };
         if pressed && self.server.popup_grab_active() {
             let surface = match &target {
-                Target::Application(_, surface, _) | Target::Layer(_, surface) => Some(surface),
+                Target::Application(_, surface, _) | Target::Layer(_, surface) | Target::Popup(surface) => Some(surface),
                 _ => None,
             };
             if surface.is_none_or(|surface| !self.server.popup_target(surface)) {
@@ -352,7 +453,12 @@ impl Desktop {
         }
         self.motion(time)?;
         match target {
+            Target::Popup(_) => self.server.pointer_button(button, pressed, time),
             Target::Native => {
+                if self.server.dragging() {
+                    self.server.dispatch()?;
+                    self.server.pointer_button(button, pressed, time);
+                }
                 if pressed {
                     self.layer_focus = None;
                 }
@@ -418,7 +524,12 @@ impl Desktop {
         std::array::from_fn(|axis| self.pointer[axis] - origin[axis])
     }
 
-    pub(super) fn key(&mut self, code: u32, pressed: bool, time: u32) -> io::Result<()> {
+    pub(crate) fn key(&mut self, code: u32, pressed: bool, time: u32) -> io::Result<()> {
+        if self.server.locked() {
+            self.focus()?;
+            self.server.keyboard(code, pressed, time, |_| false)?;
+            return Ok(());
+        }
         if self.pending_output.is_some() {
             return self.defer(Deferred::Key(code, pressed, time));
         }
@@ -427,59 +538,131 @@ impl Desktop {
         let repeat = pressed && self.keys.contains_key(&code);
         let mut action = None;
         let consumed = self.consumed.contains(&code);
+        let inhibited = self.server.shortcuts_inhibited();
+        let bindings = self
+            .current
+            .as_ref()
+            .map(|current| &current.frame.input.bindings);
+        let binding = |event: &crate::server::KeyEvent| {
+            bindings
+                .into_iter()
+                .flatten()
+                .find(|binding| {
+                    binding.key == physical
+                        && binding.modifiers
+                            == Modifiers {
+                                alt: event.modifiers.alt,
+                                control: event.modifiers.ctrl,
+                                shift: event.modifiers.shift,
+                                super_key: event.modifiers.logo,
+                            }
+                })
+                .map(|binding| binding.action)
+                .filter(|action| !inhibited || matches!(action, DesktopAction::Lock | DesktopAction::Logout | DesktopAction::OpenOperation))
+        };
         let event = if repeat {
-            self.server.key_symbol(code)?
+            let event = self.server.key_symbol(code)?;
+            action = binding(&event).filter(|action| {
+                matches!(
+                    action,
+                    DesktopAction::Focus(_)
+                        | DesktopAction::Move(_)
+                        | DesktopAction::ResizeColumn(_)
+                        | DesktopAction::ResizeItem(_)
+                )
+            });
+            event
         } else {
-            let bindings = self
-                .current
-                .as_ref()
-                .map(|current| &current.frame.input.bindings);
             self.server.keyboard(code, pressed, time, |event| {
-                if pressed
-                    && let Some(binding) = bindings.into_iter().flatten().find(|binding| {
-                        binding.key == physical
-                            && binding.modifiers
-                                == Modifiers {
-                                    alt: event.modifiers.alt,
-                                    control: event.modifiers.ctrl,
-                                    shift: event.modifiers.shift,
-                                    super_key: event.modifiers.logo,
-                                }
-                    })
-                {
-                    action = Some(binding.action);
+                if pressed {
+                    action = binding(event);
                 }
                 consumed || action.is_some()
             })?
         };
         if let Some(action) = action {
+            self.server.release_client_controls();
+            self.compose.reset();
             self.consumed.insert(code);
-            let serial = self.send_tracked(Input::Action(action))?;
-            if matches!(
-                action,
-                DesktopAction::FocusOutput(_)
-                    | DesktopAction::MoveToOutput(_)
-                    | DesktopAction::MoveWorkspaceToOutput(_)
-                    | DesktopAction::Workspace(_)
-            ) {
-                self.pending_output = Some((serial, None));
-                self.native_keyboard = false;
+            match action {
+                DesktopAction::OpenTerminal | DesktopAction::OpenLauncher | DesktopAction::Lock => {
+                    self.command(action)
+                }
+                DesktopAction::Logout => self.send(Input::Logout)?,
+                _ => {
+                    let serial = self.send_tracked(Input::Action(action))?;
+                    if matches!(
+                        action,
+                        DesktopAction::FocusOutput(_)
+                            | DesktopAction::MoveToOutput(_)
+                            | DesktopAction::MoveWorkspaceToOutput(_)
+                            | DesktopAction::Workspace(_)
+                    ) {
+                        self.pending_output = Some((serial, None));
+                        self.native_keyboard = false;
+                    }
+                }
             }
-        } else if self.native_keyboard && !consumed {
-            let logical = logical(physical, event.text.as_deref());
-            self.send(Input::Key {
-                physical,
-                logical,
-                text: event.text.clone(),
-                pressed,
-                repeat,
-            })?;
+        } else if self.native_keyboard && !consumed
+            && self.server.native_ready() && repeat && !self.server.input_method_grabbed() {
+            self.native_key(code, pressed, repeat, &event)?;
         }
         if pressed {
             self.keys.insert(code, event);
         } else {
             self.keys.remove(&code);
             self.consumed.remove(&code);
+        }
+        #[cfg(feature = "session")]
+        {
+            if pressed && !repeat && self.keyboard.repeat_rate > 0 && self.server.key_repeats(code)
+            {
+                self.repeat = Some((
+                    code,
+                    Instant::now()
+                        + Duration::from_millis(u64::from(self.keyboard.repeat_delay_ms)),
+                ));
+            } else if !pressed && self.repeat.is_some_and(|(key, _)| key == code) {
+                self.repeat = None;
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn native_key(&mut self, code: u32, pressed: bool, repeat: bool, event: &crate::server::KeyEvent) -> io::Result<()> {
+        if !self.native_keyboard || !self.focused || self.server.locked()
+            || self.consumed.contains(&code) || self.pending_output.is_some() { return Ok(()); }
+        let physical = bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
+        let text = self.compose.text(event, pressed, repeat);
+        self.send(Input::Key { physical, logical: logical(physical, text.as_deref()), text, pressed, repeat })
+    }
+
+    #[cfg(feature = "session")]
+    pub(crate) fn repeat_timeout(&self) -> Option<Duration> {
+        self.repeat.map(|(_, deadline)| deadline.saturating_duration_since(Instant::now()))
+            .into_iter().chain(self.server.idle_timeout()).chain(self.server.native_timeout()).min()
+    }
+
+    #[cfg(feature = "session")]
+    pub(crate) fn repeat_key(&mut self, time: u32) -> io::Result<()> {
+        let Some((code, deadline)) = self.repeat else {
+            return Ok(());
+        };
+        if deadline > Instant::now() {
+            return Ok(());
+        }
+        if !self.focused || self.server.locked() || !self.keys.contains_key(&code) {
+            self.repeat = None;
+            return Ok(());
+        }
+        self.repeat = Some((
+            code,
+            Instant::now()
+                + Duration::from_secs_f64(1.0 / f64::from(self.keyboard.repeat_rate.max(1))),
+        ));
+        if self.pending_output.is_none() && (self.native_keyboard || self.consumed.contains(&code))
+        {
+            self.key(code, true, time)?;
         }
         Ok(())
     }
@@ -492,7 +675,7 @@ impl Desktop {
         Ok(())
     }
 
-    pub(super) fn restore_modifiers(&self) -> io::Result<()> {
+    pub(crate) fn restore_modifiers(&self) -> io::Result<()> {
         for code in self
             .keys
             .keys()
@@ -524,7 +707,11 @@ impl Desktop {
         Ok(())
     }
 
-    fn axis(&mut self, delta: [f64; 2], frame: AxisFrame) -> io::Result<()> {
+    pub(crate) fn axis(&mut self, delta: [f64; 2], frame: AxisFrame) -> io::Result<()> {
+        if self.server.locked() {
+            self.server.pointer_axis(frame);
+            return Ok(());
+        }
         if self.pending_output.is_some() {
             return self.defer(Deferred::Axis(delta, frame, self.pointer));
         }
@@ -536,13 +723,13 @@ impl Desktop {
                 self.native_position().map(|value| value as f32),
                 self.pointer_stamp,
             ))?,
-            Target::Application(..) | Target::Layer(..) => self.server.pointer_axis(frame),
+            Target::Application(..) | Target::Layer(..) | Target::Popup(..) => self.server.pointer_axis(frame),
             Target::Empty => {}
         }
         Ok(())
     }
 
-    pub(super) fn replay(&mut self) -> io::Result<()> {
+    pub(crate) fn replay(&mut self) -> io::Result<()> {
         let ready = self.pending_output.is_some_and(|(serial, output)| {
             self.current.as_ref().is_some_and(|current| {
                 current.input_serial >= serial

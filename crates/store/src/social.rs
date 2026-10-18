@@ -324,6 +324,30 @@ async fn search_scoped(
     now: i64,
     host: Option<&str>,
 ) -> Result<Vec<serde_json::Value>, StoreError> {
+    if let Some(filter) = &query.transport {
+        filter.validate().map_err(StoreError::Protocol)?;
+        let mut page = query.clone();
+        page.transport = None;
+        let mut result = Vec::new();
+        let mut bytes = 0;
+        for _ in 0..100 {
+            let rows = Box::pin(search_scoped(pool, &page, now, host)).await?;
+            let last = rows.last().and_then(|row| row["document"]["id"].as_str()).map(str::to_owned);
+            let exhausted = rows.len() < 50;
+            for row in rows {
+                let announcement = serde_json::from_value::<nucleus::social::transport::Announcement>(row["document"]["transport"].clone()).ok();
+                if filter.matches(announcement.as_ref()) {
+                    bytes += serde_json::to_vec(&row).map_err(|error| StoreError::Protocol(error.to_string()))?.len();
+                    if bytes > nucleus::social::MAX_FRAME_BYTES - 1024 { return Ok(result); }
+                    result.push(row);
+                    if result.len() == 50 { return Ok(result); }
+                }
+            }
+            if exhausted || last.is_none() || last == page.after { return Ok(result); }
+            page.after = last;
+        }
+        return Err(StoreError::Protocol("Narrow the transport search by area, words or time; its 5000-announcement scan limit was reached".into()));
+    }
     let words = query
         .text
         .split_whitespace()
@@ -808,6 +832,7 @@ pub async fn fail_publication_on(
 
 pub async fn prune(pool: &SqlitePool, now: i64) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
+    crate::evidence_custody::cleanup_on(&mut tx, now).await?;
     sqlx::query("DELETE FROM social_search WHERE rowid IN (SELECT f.rowid FROM social_document d INDEXED BY social_document_expiry CROSS JOIN social_search f WHERE d.kind='snippet' AND d.expires_at<=? AND f.id MATCH ('\"' || replace(substr(d.id,6),'\"','\"\"') || '\"') AND f.id=d.id)")
         .bind(now).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM social_revision WHERE expires_at<? AND hash NOT IN (SELECT hash FROM social_document)")

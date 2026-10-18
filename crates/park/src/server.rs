@@ -65,10 +65,26 @@ pub use layers::LayerSnapshot;
 mod decorations;
 mod outputs;
 pub use outputs::Monitor;
+mod lock;
 mod popups;
 mod positioner;
 pub use popups::PopupSnapshot;
 mod activation;
+mod foreign;
+mod management;
+mod workspaces;
+pub use workspaces::{WorkspaceEntry, WorkspaceSnapshot};
+mod output_control;
+mod capture;
+pub use capture::{CaptureJob, CaptureTarget};
+pub use output_control::{OutputHead, OutputMode, OutputSettings, OutputRequest};
+#[cfg(feature = "session")]
+pub(crate) use output_control::validate_catalog as validate_output_catalog;
+mod extensions;
+mod constraints;
+mod damage;
+mod idle;
+mod ime;
 
 pub struct ClientBuffer {
     backing: Arc<BufferBacking>,
@@ -132,6 +148,8 @@ impl Drop for ClientBuffer {
 
 #[derive(Clone)]
 pub struct SurfaceNode {
+    pub damage: smithay::backend::renderer::utils::DamageSnapshot<i32, smithay::utils::Buffer>,
+    pub opaque: Option<RegionAttributes>,
     pub surface: WlSurface,
     pub content: Arc<ClientBuffer>,
     pub origin: [i32; 2],
@@ -292,6 +310,7 @@ fn input_contains(region: &RegionAttributes, point: [f64; 2]) -> bool {
 }
 
 struct Window {
+    minimized: bool,
     role: ToplevelSurface,
     mapped: bool,
     needs_initial: bool,
@@ -300,7 +319,10 @@ struct Window {
 }
 
 struct ClientState {
+    native_canvas: bool,
     compositor: CompositorClientState,
+    native_clipboard: bool,
+    capabilities: Vec<crate::launch::Capability>,
     count: Arc<AtomicUsize>,
     counted: AtomicBool,
 }
@@ -327,6 +349,14 @@ impl Drop for ClientState {
 }
 
 struct State {
+    capture: capture::Capture,
+    output_control: output_control::Control,
+    workspaces: workspaces::Workspaces,
+    management: management::Management,
+    ime: ime::Ime,
+    native_surface: Option<WlSurface>,
+    idle: idle::Idle,
+    damage: HashMap<WlSurface, damage::Tracked>,
     handle: DisplayHandle,
     compositor: CompositorState,
     shell: XdgShellState,
@@ -361,9 +391,23 @@ struct State {
     activation: smithay::wayland::xdg_activation::XdgActivationState,
     activations: VecDeque<(SurfaceId, Instant, u64)>,
     input_epoch: u64,
+    lock: lock::Lock,
+    drag_icon: Option<WlSurface>,
+    dragging: bool,
+    data_control: smithay::wayland::selection::wlr_data_control::DataControlState,
+    foreign: smithay::wayland::foreign_toplevel_list::ForeignToplevelListState,
+    foreign_handles: BTreeMap<SurfaceId, smithay::wayland::foreign_toplevel_list::ForeignToplevelHandle>,
+    _relative_pointer: smithay::wayland::relative_pointer::RelativePointerManagerState,
+    shortcuts: smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState,
+    shortcut_inhibitors: Vec<smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitor>,
+    _pointer_constraints: smithay::wayland::pointer_constraints::PointerConstraintsState,
+    controls_suppressed: Option<WlSurface>,
+    _fractional: smithay::wayland::fractional_scale::FractionalScaleManagerState,
 }
 
 pub struct Server {
+    #[cfg(feature = "nested")]
+    native_client: Option<crate::native_input::client::Client>,
     display: Display<State>,
     state: State,
     listener: Option<ListeningSocket>,
@@ -372,11 +416,37 @@ pub struct Server {
 }
 
 impl Server {
+    #[cfg(feature = "nested")]
+    pub(crate) fn event_fds(&mut self) -> io::Result<Vec<OwnedFd>> {
+        use std::os::fd::AsFd;
+        let mut fds = vec![self.display.backend().poll_fd().try_clone_to_owned()?];
+        if let Some(listener) = &self.listener {
+            fds.push(listener.as_fd().try_clone_to_owned()?);
+        }
+        if let Some(client) = &self.native_client { fds.extend(client.descriptors()?); }
+        Ok(fds)
+    }
+
+    pub fn output(&self, id: OutputId) -> Option<Output> {
+        self.state
+            .outputs
+            .get(&id)
+            .map(|registered| registered.output.clone())
+    }
+
     pub fn new(size: [i32; 2]) -> io::Result<Self> {
         validate_size(size)?;
         let display =
             Display::<State>::new().map_err(|error| io::Error::other(error.to_string()))?;
         let handle = display.handle();
+        let data_control = smithay::wayland::selection::wlr_data_control::DataControlState::new::<
+            State,
+            _,
+        >(&handle, None, |client| {
+            client
+                .get_data::<ClientState>()
+                .is_some_and(|data| data.native_clipboard || data.capabilities.contains(&crate::launch::Capability::Clipboard))
+        });
         let mut seats = SeatState::new();
         let mut seat = seats.new_wl_seat(&handle, "park");
         seat.add_keyboard(Default::default(), 25, 500)
@@ -411,6 +481,11 @@ impl Server {
             },
         )]);
         let state = State {
+            capture: capture::Capture::new(&display.handle()),
+            output_control: output_control::Control::new(&display.handle()),
+            workspaces: workspaces::Workspaces::new(&display.handle()),
+            management: management::Management::new(&display.handle()),
+            damage: HashMap::new(),
             compositor: CompositorState::new::<State>(&handle),
             shell: XdgShellState::new::<State>(&handle),
             _decorations: smithay::wayland::shell::xdg::decoration::XdgDecorationState::new::<State>(
@@ -451,17 +526,68 @@ impl Server {
             ),
             activations: VecDeque::new(),
             input_epoch: 0,
+            lock: lock::Lock::new(&display.handle()),
+            drag_icon: None,
+            dragging: false,
+            data_control,
+            foreign: smithay::wayland::foreign_toplevel_list::ForeignToplevelListState::new_with_filter::<State>(
+                &display.handle(),
+                |client| client.get_data::<ClientState>().is_some_and(|data| data.capabilities.contains(&crate::launch::Capability::WindowList)),
+            ),
+            foreign_handles: BTreeMap::new(),
+            _relative_pointer: smithay::wayland::relative_pointer::RelativePointerManagerState::new::<State>(&display.handle()),
+            shortcuts: smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState::new::<State>(&display.handle()),
+            shortcut_inhibitors: Vec::new(),
+            _pointer_constraints: smithay::wayland::pointer_constraints::PointerConstraintsState::new::<State>(&display.handle()),
+            controls_suppressed: None,
+            _fractional: smithay::wayland::fractional_scale::FractionalScaleManagerState::new::<State>(&display.handle()),
+            idle: idle::Idle::new(&display.handle()),
+            ime: ime::Ime::new(&display.handle()),
+            native_surface: None,
         };
-        Ok(Self {
+        let server = Self {
+            #[cfg(feature = "nested")]
+            native_client: None,
             display,
             state,
             listener: None,
             clients: Arc::new(AtomicUsize::new(0)),
             started: Instant::now(),
-        })
+        };
+        #[cfg(feature = "nested")]
+        {
+            let mut server = server;
+            let (stream, client) = UnixStream::pair()?;
+            server.display.handle().insert_client(stream, Arc::new(ClientState {
+                native_canvas: true, native_clipboard: false, capabilities: Vec::new(),
+                compositor: CompositorClientState::default(), count: server.clients.clone(),
+                counted: AtomicBool::new(false),
+            }))?;
+            server.native_client = Some(crate::native_input::client::Client::new(client)?);
+            Ok(server)
+        }
+        #[cfg(not(feature = "nested"))]
+        Ok(server)
     }
 
     pub fn listen(&mut self) -> io::Result<PathBuf> {
+        self.listen_on(None)
+    }
+
+    #[cfg(any(feature = "session", feature = "clipboard-gate"))]
+    pub(crate) fn listen_named(&mut self, name: &str) -> io::Result<PathBuf> {
+        if name.is_empty()
+            || name.len() > 100
+            || !name
+                .bytes()
+                .all(|value| value.is_ascii_alphanumeric() || value == b'-')
+        {
+            return Err(io::Error::other("Invalid Park display name"));
+        }
+        self.listen_on(Some(name))
+    }
+
+    fn listen_on(&mut self, name: Option<&str>) -> io::Result<PathBuf> {
         if self.listener.is_some() {
             return Err(io::Error::other("Park is already listening"));
         }
@@ -480,8 +606,11 @@ impl Server {
                 "XDG_RUNTIME_DIR must be owned by this user with mode 0700",
             ));
         }
-        let listener = ListeningSocket::bind_auto("wayland-park", 0..64)
-            .map_err(|error| io::Error::other(error.to_string()))?;
+        let listener = match name {
+            Some(name) => ListeningSocket::bind(name),
+            None => ListeningSocket::bind_auto("wayland-park", 0..64),
+        }
+        .map_err(|error| io::Error::other(error.to_string()))?;
         let path = directory.join(
             listener
                 .socket_name()
@@ -496,19 +625,59 @@ impl Server {
     }
 
     pub fn insert_client(&mut self, stream: UnixStream) -> io::Result<Client> {
+        let native_clipboard = rustix::net::sockopt::socket_peercred(&stream).is_ok_and(
+            |credentials| credentials.pid.as_raw_nonzero().get() == std::process::id() as i32,
+        );
+        self.insert_authorized_client(stream, Vec::new(), native_clipboard)
+    }
+
+    fn insert_authorized_client(
+        &mut self,
+        stream: UnixStream,
+        capabilities: Vec<crate::launch::Capability>,
+        native_clipboard: bool,
+    ) -> io::Result<Client> {
         if self.clients.load(Ordering::Acquire) >= MAX_CLIENTS {
             return Err(io::Error::other("Park client limit reached"));
         }
         self.clients.fetch_add(1, Ordering::AcqRel);
         let data = Arc::new(ClientState {
+            native_canvas: false,
             compositor: CompositorClientState::default(),
+            native_clipboard,
+            capabilities,
             count: self.clients.clone(),
             counted: AtomicBool::new(true),
         });
         self.display.handle().insert_client(stream, data)
     }
 
+    pub fn spawn_helper(
+        &mut self,
+        description: &crate::launch::Description,
+        socket: &std::path::Path,
+    ) -> io::Result<std::process::Child> {
+        let application = description.application()?;
+        if description.capabilities.is_empty() {
+            return application.spawn(socket);
+        }
+        let (server, child) = UnixStream::pair()?;
+        let client = self.insert_authorized_client(server, description.capabilities.clone(), false)?;
+        match application.spawn_connected(socket, child) {
+            Ok(child) => Ok(child),
+            Err(error) => {
+                client.kill(&self.state.handle, ProtocolError {
+                    code: 1, object_id: 1, object_interface: "wl_display".into(),
+                    message: "Authorized helper failed to start".into(),
+                });
+                Err(error)
+            }
+        }
+    }
+
     pub fn dispatch(&mut self) -> io::Result<()> {
+        #[cfg(feature = "nested")]
+        if let Some(client) = &mut self.native_client { client.dispatch()?; }
         for _ in 0..16 {
             let stream = match &self.listener {
                 Some(listener) => listener.accept()?,
@@ -522,12 +691,20 @@ impl Server {
             }
         }
         self.display.dispatch_clients(&mut self.state)?;
+        self.state.sync_foreign();
+        self.state.refresh_capture();
+        self.state.refresh_shortcut_inhibitors();
+        self.state.refresh_constraints();
+        self.state.refresh_idle();
         self.state.popups.manager.cleanup();
         self.state.reconstrain_popups();
         for output in self.state.outputs.values() {
             smithay::desktop::layer_map_for_output(&output.output).cleanup();
         }
-        self.display.flush_clients()
+        self.display.flush_clients()?;
+        #[cfg(feature = "nested")]
+        if let Some(client) = &mut self.native_client { client.dispatch()?; }
+        Ok(())
     }
 
     pub fn revision(&self) -> u64 {
@@ -640,6 +817,7 @@ impl Server {
             .get_mut(&id)
             .ok_or_else(|| io::Error::other("the application window is unavailable"))?;
         window.configured_size = size;
+        window.minimized = state.minimized;
         window.role.with_pending_state(|pending| {
             pending.size = Some((size[0], size[1]).into());
             for (flag, enabled) in [
@@ -686,6 +864,7 @@ impl Server {
     }
 
     pub fn focus_surface(&mut self, surface: Option<WlSurface>, serial: Serial) {
+        let surface = surface.filter(|surface| !self.locked() || self.state.lock_allows(surface));
         if self.popup_grab_active() {
             if surface.as_ref() == self.state.popups.root.as_ref() {
                 return;
@@ -697,7 +876,10 @@ impl Server {
             if keyboard.current_focus() == surface {
                 return;
             }
-            keyboard.set_focus(&mut self.state, surface, serial);
+            #[cfg(feature = "nested")]
+            self.suspend_native_drop();
+            keyboard.set_focus(&mut self.state, surface.clone(), serial);
+            self.state.update_shortcut_focus(surface.as_ref());
             for (window_id, window) in &self.state.windows {
                 window.role.with_pending_state(|state| {
                     if Some(*window_id) == id && window.mapped { state.states.set(smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::State::Activated); }
@@ -742,6 +924,9 @@ impl Server {
     }
 
     pub fn cursor(&self) -> &CursorImageStatus {
+        if self.pointer_locked() {
+            return &CursorImageStatus::Hidden;
+        }
         &self.state.cursor
     }
 
@@ -797,6 +982,8 @@ impl State {
                         return;
                     };
                     nodes.push(SurfaceNode {
+                        damage: self.damage.get(surface).map(|tracked| tracked.damage.snapshot()).unwrap_or_else(|| smithay::backend::renderer::utils::DamageBag::new(16).snapshot()),
+                        opaque: attributes.opaque_region.clone(),
                         surface: surface.clone(),
                         content: content.clone(),
                         origin: [
@@ -894,10 +1081,18 @@ impl CompositorHandler for State {
     }
 
     fn new_surface(&mut self, surface: &WlSurface) {
+        if surface.client().and_then(|client| client.get_data::<ClientState>().map(|data| data.native_canvas)).unwrap_or(false) {
+            if self.native_surface.as_ref().is_some_and(Resource::is_alive) {
+                self.reject(surface, "The Park native canvas already has a surface");
+                return;
+            }
+            self.native_surface = Some(surface.clone());
+        }
         if self.surfaces.len() >= MAX_SURFACES {
             self.reject(surface, "Park surface limit reached");
         } else {
             self.surfaces.insert(surface.clone());
+            self.update_surface_scale(surface);
         }
     }
 
@@ -926,6 +1121,7 @@ impl CompositorHandler for State {
         let mut assignments = Vec::new();
         let mut invalid = Vec::new();
         let mut callbacks = Vec::new();
+        let mut damages = Vec::new();
         with_surface_tree_downward(
             &root,
             (),
@@ -933,8 +1129,7 @@ impl CompositorHandler for State {
             |surface, states, _| {
                 let mut cached = states.cached_state.get::<SurfaceAttributes>();
                 let attributes = cached.current();
-                attributes.damage.clear();
-                if attributes.frame_callbacks.len() > 256
+                if attributes.damage.len() > 4096 || attributes.frame_callbacks.len() > 256
                     || attributes
                         .input_region
                         .as_ref()
@@ -946,6 +1141,9 @@ impl CompositorHandler for State {
                 {
                     invalid.push(surface.clone());
                 }
+                let mut damage = std::mem::take(&mut attributes.damage);
+                damage.truncate(4096);
+                damages.push((surface.clone(), damage));
                 if let Some(buffer) = attributes.buffer.take() {
                     assignments.push((surface.clone(), buffer));
                 }
@@ -1067,7 +1265,9 @@ impl CompositorHandler for State {
                         let window = self.windows.get_mut(&id).unwrap();
                         window.mapped = true;
                         window.needs_initial = false;
-                        self.output.enter(&root);
+                        if !self.outputs.is_empty() {
+                            self.output.enter(&root);
+                        }
                     }
                 }
                 BufferAssignment::Removed => {
@@ -1082,6 +1282,7 @@ impl CompositorHandler for State {
                     {
                         let window = self.windows.get_mut(&id).unwrap();
                         window.mapped = false;
+                        window.minimized = false;
                         window.reply_requested = false;
                         self.requests.remove(&id);
                         window.needs_initial = true;
@@ -1109,6 +1310,7 @@ impl CompositorHandler for State {
                 }
             }
         }
+        for (surface, damage) in damages { self.update_damage(&surface, damage); }
         for surface in committed {
             if let Some(buffer) = self.buffers.get(&surface) {
                 self.valid_surface(&surface, buffer.size);
@@ -1134,9 +1336,12 @@ impl CompositorHandler for State {
     }
 
     fn destroyed(&mut self, surface: &WlSurface) {
+        if self.native_surface.as_ref() == Some(surface) { self.native_surface = None; }
+        self.ime.popups.retain(|popup| popup.wl_surface() != surface && popup.alive());
         self.dismiss_children(surface);
         self.surfaces.remove(surface);
         self.buffers.remove(surface);
+        self.damage.remove(surface);
         self.generations.remove(surface);
         self.callbacks.remove(surface);
         self.remove_layer(surface);
@@ -1169,6 +1374,7 @@ impl XdgShellHandler for State {
         self.windows.insert(
             id,
             Window {
+                minimized: false,
                 role: surface,
                 mapped: false,
                 needs_initial: true,
@@ -1219,7 +1425,21 @@ impl XdgShellHandler for State {
     fn title_changed(&mut self, _: ToplevelSurface) {
         self.changed();
     }
-    fn parent_changed(&mut self, _: ToplevelSurface) {
+    fn parent_changed(&mut self, surface: ToplevelSurface) {
+        let parent_size = surface
+            .parent()
+            .and_then(|parent| self.id(&parent))
+            .and_then(|id| self.windows.get(&id))
+            .map(|window| window.configured_size);
+        if let Some(size) = parent_size
+            && let Some(window) = self
+                .id(surface.wl_surface())
+                .and_then(|id| self.windows.get_mut(&id))
+            && window.needs_initial
+        {
+            window.configured_size = [size[0].saturating_mul(3) / 4, size[1].saturating_mul(3) / 4]
+                .map(|size| size.max(1));
+        }
         self.changed();
     }
 
@@ -1228,6 +1448,10 @@ impl XdgShellHandler for State {
             self.windows.get_mut(&id).unwrap().reply_requested = true;
             self.requests.entry(id).or_default().maximized = Some(true);
         }
+    }
+
+    fn minimize_request(&mut self, surface: ToplevelSurface) {
+        if let Some(id) = self.id(surface.wl_surface()) { self.requests.entry(id).or_default().minimized = Some(true); }
     }
 
     fn unmaximize_request(&mut self, surface: ToplevelSurface) {
@@ -1271,7 +1495,32 @@ impl DataDeviceHandler for State {
         &self.data
     }
 }
-impl ClientDndGrabHandler for State {}
+impl smithay::wayland::selection::wlr_data_control::DataControlHandler for State {
+    fn data_control_state(
+        &self,
+    ) -> &smithay::wayland::selection::wlr_data_control::DataControlState {
+        &self.data_control
+    }
+}
+smithay::delegate_data_control!(State);
+impl ClientDndGrabHandler for State {
+    fn started(
+        &mut self,
+        _: Option<smithay::reexports::wayland_server::protocol::wl_data_source::WlDataSource>,
+        icon: Option<WlSurface>,
+        _: Seat<Self>,
+    ) {
+        self.drag_icon = icon;
+        self.dragging = true;
+        self.presentation_changed();
+    }
+
+    fn dropped(&mut self, _: Option<WlSurface>, _: bool, _: Seat<Self>) {
+        self.drag_icon = None;
+        self.dragging = false;
+        self.presentation_changed();
+    }
+}
 impl ServerDndGrabHandler for State {
     fn send(&mut self, _: String, _: OwnedFd, _: Seat<Self>) {}
 }
@@ -1285,6 +1534,7 @@ impl SeatHandler for State {
     }
     fn focus_changed(&mut self, seat: &Seat<Self>, surface: Option<&WlSurface>) {
         set_data_device_focus(&self.handle, seat, surface.and_then(Resource::client));
+        self.update_shortcut_focus(surface);
     }
     fn cursor_image(&mut self, _: &Seat<Self>, image: CursorImageStatus) {
         self.cursor = image;

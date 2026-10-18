@@ -6,6 +6,74 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[test]
+fn native_uri_handoff_uses_the_existing_choice_without_implicit_downloads() {
+    let (mut app, root, window, _directory) = fixture();
+    let target = capture_native_target(app.world_mut(), window).unwrap();
+    for uri in ["javascript:alert(1)", "data:text/plain,hello", "file://remote.example/tmp/file.txt",
+        "file:///tmp/file.txt?ignored=true", "https://name:password@example.com/file.txt"] {
+        assert!(receive_native_uri(app.world_mut(), &target, uri).is_err());
+        assert!(app.world().resource::<Sessions>().entries.is_empty());
+    }
+    receive_native_uri(app.world_mut(), &target, "https://example.com/file.txt").unwrap();
+    let session = &app.world().resource::<Sessions>().entries[&root];
+    assert!(matches!(session.source, source::Source::Url(_)));
+    assert!(!session.busy);
+    assert!(session.prepared.is_none());
+    assert!(capture_native_target(app.world_mut(), window).is_none());
+    ui::Control::Cancel.apply(app.world_mut(), root);
+    assert!(app.world().resource::<Sessions>().entries.is_empty());
+    crate::native::workspace::create(app.world_mut(), root);
+    assert!(receive_native_uri(app.world_mut(), &target, "file:///tmp/file.txt").is_err());
+}
+
+#[test]
+fn native_plain_text_creates_only_a_local_editable_sand_at_the_recorded_target() {
+    let (mut app, root, window, _directory) = fixture();
+    let target = capture_native_target(app.world_mut(), window).unwrap();
+    let before: std::collections::HashSet<_> = app.world_mut().query::<(Entity, &crate::native::sand_store::StoredSand)>()
+        .iter(app.world()).map(|(entity, _)| entity).collect();
+    receive_native_text(app.world_mut(), &target, "Olá 世界\nDropped text").unwrap();
+    let sands: Vec<_> = app.world_mut().query::<(Entity, &crate::native::sand_store::StoredSand, &crate::native::workspace::WorkspaceMember)>()
+        .iter(app.world()).map(|(entity, sand, member)| (entity, sand.kind, member.0)).collect();
+    assert_eq!(sands.len(), before.len() + 1);
+    let sand = sands.iter().find(|(entity, kind, _)| !before.contains(entity)
+        && *kind == crate::native::sand_store::SandKind::EditableText).unwrap();
+    assert_eq!(sand.2, 1);
+    assert_eq!(app.world().get::<crate::native::canvas::CanvasItem>(sand.0).unwrap().position, target.position);
+    assert!(crate::native::sand_text::snapshot(app.world(), sand.0).iter()
+        .any(|saved| saved.text == "Olá 世界\nDropped text"));
+    assert!(app.world().resource::<Sessions>().entries.is_empty());
+    assert_eq!(app.world_mut().query::<&crate::native::protein_area::RecordBinding>().iter(app.world()).count(), 0);
+    assert!(receive_native_text(app.world_mut(), &target, "").is_err());
+    crate::native::workspace::create(app.world_mut(), root);
+    assert!(receive_native_text(app.world_mut(), &target, "wrong workspace").is_err());
+}
+
+#[test]
+fn native_drop_rejects_temporary_workspaces_and_keeps_ordinary_choices_on_other_outputs() {
+    let (mut app, root, window, _directory) = fixture();
+    let target = capture_native_target(app.world_mut(), window).unwrap();
+    receive_native_uri(app.world_mut(), &target, "https://example.com/file.txt").unwrap();
+    crate::native::workspace::create(app.world_mut(), root);
+    let temporary = app.world().get::<crate::native::workspace::Workspaces>(root).unwrap().active;
+    let bounds = crate::host::Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
+    let second = crate::host::Rectangle::new([800.0, 0.0], [800.0, 600.0]).unwrap();
+    let mut views = crate::native::output_views::OutputViews::new(vec![
+        crate::host::OutputViewport { id: crate::host::OutputId(1), workspace: 1, bounds, usable: Some(bounds), physical_size: [800, 600] },
+        crate::host::OutputViewport { id: crate::host::OutputId(2), workspace: temporary,
+            bounds: second, usable: Some(second), physical_size: [800, 600] },
+    ], crate::host::OutputId(2)).unwrap();
+    views.canvas = Some(root);
+    app.insert_resource(views);
+    app.insert_resource(crate::native::laboratory::Laboratory::scoped_for_test(root, temporary, 1));
+    app.update();
+    assert!(app.world().resource::<Sessions>().entries.contains_key(&root));
+    assert!(capture_native_target(app.world_mut(), window).is_none());
+    assert!(workspace_available(app.world(), root, 1));
+    assert!(!workspace_available(app.world(), root, temporary));
+}
+
 fn fixture() -> (App, Entity, Entity, tempfile::TempDir) {
     let directory = tempfile::tempdir().unwrap();
     let mut app = App::new();

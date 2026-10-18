@@ -19,13 +19,25 @@ impl Engine {
 
     pub(super) async fn social_save_server(
         &self,
-        choice: Option<ServerChoice>,
+        mut choice: Option<ServerChoice>,
         endpoint: &str,
     ) -> Result<Value, EngineError> {
         let endpoint = endpoint
             .parse::<iroh::EndpointId>()
             .map_err(|_| invalid("Choose a valid pinned server endpoint ID"))?
             .to_string();
+        if let Some(choice) = &mut choice {
+            if choice.organ.as_ref().is_some_and(|organ| organ.is_empty()) {
+                choice.organ = None;
+            }
+            choice.endpoint = endpoint.clone();
+            validate(std::slice::from_ref(choice))?;
+            if let Some(organ) = &choice.organ {
+                if choice.query || choice.publication || choice.mailbox {
+                    self.require_known_server_endpoint(organ, &endpoint).await?;
+                }
+            }
+        }
         let cell = store::cells::local(&self.store.pool)
             .await?
             .ok_or_else(|| invalid("No local Cell"))?;
@@ -79,6 +91,19 @@ fn validate(choices: &[ServerChoice]) -> Result<(), EngineError> {
     }
     let mut seen = std::collections::BTreeSet::new();
     for choice in choices {
+        if choice
+            .organ
+            .as_ref()
+            .is_some_and(|organ| !nucleus::valid_uid(organ, "r"))
+            || (choice.preset.is_some()
+                && (choice.publication
+                    || choice.mailbox
+                    || (choice.query && choice.organ.is_none())))
+        {
+            return Err(invalid(
+                "A discovery-helper preset needs a recognized Organ for search and separate choices for other roles",
+            ));
+        }
         text(&choice.label, 80, true).map_err(invalid)?;
         text(&choice.operator, 160, true).map_err(invalid)?;
         let endpoint = choice

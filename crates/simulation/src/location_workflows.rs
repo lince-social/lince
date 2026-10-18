@@ -107,11 +107,15 @@ pub struct Evidence {
 }
 
 pub async fn visibility_handoff() {
-    run(false).await;
+    run(false, false, None).await;
 }
 
 pub async fn transport_with_address() -> Evidence {
-    run(true).await
+    run(true, false, None).await
+}
+
+pub async fn transport_journey_from_draft(draft: Action) -> Evidence {
+    run(true, true, Some(draft)).await
 }
 
 async fn address_context(
@@ -310,7 +314,7 @@ async fn address_context(
     );
 }
 
-async fn run(transport: bool) -> Evidence {
+async fn run(transport: bool, finish: bool, prepared: Option<Action>) -> Evidence {
     let directory = tempfile::tempdir().unwrap();
     let mut case = simulation::fixtures::transfer::sale();
     case.name = if transport {
@@ -319,6 +323,38 @@ async fn run(transport: bool) -> Evidence {
         "location-visibility-handoff"
     }
     .into();
+    if finish {
+        for (id, latitude) in [("journey-origin", -23.5), ("journey-destination", -23.6)] {
+            case.cells[0].seed.push(simulation::scenario::Invocation {
+                id: id.into(),
+                actor: None,
+                action: Action::CreateRecord {
+                    slug: Some(id.into()),
+                    kind: nucleus::RecordKind::Plain,
+                    head: id.into(),
+                    body: String::new(),
+                    quantity: 0.0,
+                },
+            });
+            case.cells[0].seed.push(simulation::scenario::Invocation {
+                id: format!("{id}-coordinates"),
+                actor: None,
+                action: Action::SetPlace {
+                    target: format!("${id}"),
+                    lat: latitude,
+                    lon: -46.6,
+                    address: None,
+                },
+            });
+        }
+        for input in &mut case.inputs {
+            if let simulation::scenario::Event::Action { invocation } = &mut input.event
+                && matches!(invocation.action, Action::CreateTransferDraft { .. })
+            {
+                invocation.action = prepared.clone().expect("Journey control draft");
+            }
+        }
+    }
     let mut projections = BTreeMap::new();
     let mut family_live_denial = String::new();
     if transport {
@@ -379,6 +415,21 @@ async fn run(transport: bool) -> Evidence {
         .unwrap()
         .at_ms;
     let mut world = World::open(case, directory.path()).await.unwrap();
+    if finish {
+        let source = &world.nodes["a"];
+        let person = world.resolve_reference("$ana");
+        for name in ["$journey-origin", "$journey-destination"] {
+            let record = world.resolve_reference(name);
+            for data in [Data::Record, Data::Place] {
+                let revision = store::data_visibility::policy(&source.engine().store.pool, &record, data)
+                    .await.unwrap().map_or(0, |policy| policy.revision);
+                source.execution.scope(save(source.engine(), &record, data, Policy {
+                    include: vec![Condition { persons: vec![person.clone()], ..Default::default() }],
+                    exclude: vec![],
+                }, revision)).await;
+            }
+        }
+    }
     let send_at = world
         .scenario
         .inputs
@@ -550,13 +601,27 @@ async fn run(transport: bool) -> Evidence {
                     person: person.clone(),
                     record_uid: record.clone(),
                 },
-                Command::Approve {
-                    person: person.clone(),
-                    record_uid: record.clone(),
-                },
             ] {
                 engine.location_request(command, None).await.unwrap();
             }
+            let epoch = engine
+                .location_pending_sources()
+                .await
+                .into_iter()
+                .find(|source| source.settings.record_uid == record)
+                .unwrap()
+                .session_uid;
+            engine
+                .location_request(
+                    Command::Approve {
+                        person: person.clone(),
+                        record_uid: record.clone(),
+                        expected_session_uid: epoch,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
             let facts: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM fact")
                 .fetch_one(&engine.store.pool)
                 .await
@@ -568,6 +633,7 @@ async fn run(transport: bool) -> Evidence {
                         -46.63,
                         Some(8.0),
                         nucleus::execution::now().timestamp_millis(),
+                        0,
                         u64::from(index) + 1,
                     )
                     .await
@@ -684,6 +750,10 @@ async fn run(transport: bool) -> Evidence {
                     let radius = (name == "family").then_some(3000);
                     assert_eq!(saved.selected.as_ref().unwrap().radius_metres, radius);
                     assert_eq!(live.radius_metres, radius);
+                    assert!(
+                        live.age_ms
+                            .is_some_and(|age| age < nucleus::location::MAX_FIX_AGE_MS as u64)
+                    );
                     let fix = live.fix.as_ref().unwrap();
                     if name == "family" {
                         assert_ne!(fix.latitude, -23.54501);
@@ -691,6 +761,7 @@ async fn run(transport: bool) -> Evidence {
                         assert_eq!(saved.selected.as_ref().unwrap().head, "Approximate area");
                         assert!(saved.selected.as_ref().unwrap().slug.is_none());
                     } else {
+                        assert_eq!(fix.accuracy_metres, Some(8.0));
                         assert_eq!(fix.latitude, -23.55 + 499.0 / 100_000.0);
                         assert_eq!(saved.selected.as_ref().unwrap().latitude, -23.5);
                     }
@@ -877,19 +948,34 @@ async fn run(transport: bool) -> Evidence {
                     person: controller.clone(),
                     record_uid: record.clone(),
                 },
-                Command::Approve {
-                    person: controller,
-                    record_uid: record.clone(),
-                },
             ] {
                 engine.location_request(command, None).await.unwrap();
             }
+            let epoch = engine
+                .location_pending_sources()
+                .await
+                .into_iter()
+                .find(|source| source.settings.record_uid == record)
+                .unwrap()
+                .session_uid;
+            engine
+                .location_request(
+                    Command::Approve {
+                        person: controller,
+                        record_uid: record.clone(),
+                        expected_session_uid: epoch,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
             engine
                 .publish_device_location(
                     -23.56,
                     -46.64,
                     None,
                     nucleus::execution::now().timestamp_millis(),
+                    0,
                     1,
                 )
                 .await
@@ -933,6 +1019,167 @@ async fn run(transport: bool) -> Evidence {
             record
         })
         .await;
+    let mut unrelated_source = None;
+    if finish {
+        let source = &world.nodes["a"];
+        source
+            .execution
+            .scope(async {
+                let engine = source.engine();
+                let local = store::cells::local(&engine.store.pool)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let manual = engine
+                    .act(
+                        Action::CreateRecord {
+                            slug: None,
+                            kind: nucleus::RecordKind::Plain,
+                            head: "Independent manual share".into(),
+                            body: String::new(),
+                            quantity: 0.0,
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap()
+                    .created
+                    .unwrap();
+                engine
+                    .location_request(
+                        Command::Configure {
+                            settings: Settings {
+                                record_uid: manual.clone(),
+                                controller_uid: person.clone(),
+                                source_cell_uid: local.uid,
+                                source_node_id: authority.clone(),
+                                source_kind: SourceKind::Manual,
+                                duration_seconds: 3600,
+                                recipients: vec![],
+                                transfer_uid: None,
+                            },
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                engine
+                    .location_request(
+                        Command::Start {
+                            person: person.clone(),
+                            record_uid: manual.clone(),
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                let epoch = engine
+                    .location_pending_sources()
+                    .await
+                    .into_iter()
+                    .find(|source| source.settings.record_uid == manual)
+                    .unwrap()
+                    .session_uid;
+                engine
+                    .location_request(
+                        Command::Approve {
+                            person: person.clone(),
+                            record_uid: manual.clone(),
+                            expected_session_uid: epoch,
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                let old = engine
+                    .location_sources()
+                    .await
+                    .into_iter()
+                    .find(|source| source.settings.record_uid == record)
+                    .unwrap();
+                let revision = store::transfers::get(&engine.store.pool, &transfer)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .revision as u64;
+                let before: i64 = store::sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM transfer_occurrence_settlement_slice",
+                )
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap();
+                let finish_action = Action::RecordJourneyProgress {
+                    transfer: transfer.clone(),
+                    expected_revision: revision,
+                    person: person.clone(),
+                    request_id: "finish-before-settlement".into(),
+                    step: nucleus::transfer::transport::Step::Finished,
+                };
+                let completed = engine.act(finish_action.clone(), None).await.unwrap();
+                assert_eq!(
+                    engine.act(finish_action, None).await.unwrap().created,
+                    completed.created
+                );
+                assert_eq!(
+                    store::sqlx::query_scalar::<_, i64>(
+                        "SELECT COUNT(*) FROM transfer_occurrence_settlement_slice"
+                    )
+                    .fetch_one(&engine.store.pool)
+                    .await
+                    .unwrap(),
+                    before
+                );
+                let sources = engine.location_sources().await;
+                assert_eq!(sources.len(), 1);
+                assert_eq!(sources[0].settings.record_uid, manual);
+                assert!(
+                    store::transport::journey(&engine.store.pool, &transfer)
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .capacity_released
+                );
+                assert_eq!(
+                    store::transport::capacity(&engine.store.pool, &transfer)
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .reserved,
+                    0
+                );
+                assert!(
+                    engine
+                        .location_request(
+                            Command::Approve {
+                                person: person.clone(),
+                                record_uid: record.clone(),
+                                expected_session_uid: old.session_uid.clone()
+                            },
+                            None
+                        )
+                        .await
+                        .is_err()
+                );
+                engine
+                    .publish_device_fix_for(
+                        std::slice::from_ref(&old),
+                        nucleus::location::Fix {
+                            latitude: 0.0,
+                            longitude: 0.0,
+                            accuracy_metres: None,
+                            captured_at_ms: nucleus::execution::now().timestamp_millis(),
+                            capture_age_ms: 0,
+                            sequence: 9999,
+                        },
+                    )
+                    .await
+                    .unwrap();
+                assert_eq!(engine.location_sources().await.len(), 1);
+                unrelated_source = Some(manual);
+            })
+            .await;
+        assert_eq!(world.nodes["b"].engine().location_sources().await.len(), 1);
+    }
     while world.next_ms().is_some_and(|time| time < send_at) {
         assert!(world.step().await.unwrap());
     }
@@ -1004,7 +1251,18 @@ async fn run(transport: bool) -> Evidence {
         .execution
         .scope(async {
             source.engine().location_tick().await.unwrap();
-            assert!(source.engine().location_sources().await.is_empty());
+            assert_eq!(
+                source.engine().location_sources().await.len(),
+                usize::from(finish)
+            );
+            if let Some(manual) = &unrelated_source {
+                assert_eq!(
+                    &source.engine().location_sources().await[0]
+                        .settings
+                        .record_uid,
+                    manual
+                );
+            }
             let view: View = serde_json::from_value(
                 read(&links["b"], &authority, &record, Data::LiveLocation)
                     .await
@@ -1027,6 +1285,40 @@ async fn run(transport: bool) -> Evidence {
                     .to_f64(),
                 0.0
             );
+            if finish {
+                let before: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM fact")
+                    .fetch_one(&source.engine().store.pool)
+                    .await
+                    .unwrap();
+                let mut query = nucleus::trust_analysis::query::Query::for_subject(
+                    nucleus::trust_analysis::Identity::Person(person.clone()),
+                );
+                query.rely_on_all_visible = true;
+                let analysis = source
+                    .engine()
+                    .act(
+                        Action::TrustAnalysis {
+                            person: Some(person.clone()),
+                            request_id: "journey-local-analysis".into(),
+                            request: nucleus::trust_analysis::commands::Command::AnalyzeQuery {
+                                query,
+                                as_organ: false,
+                            },
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                assert!(analysis.data.is_some());
+                assert_eq!(
+                    store::sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM fact")
+                        .fetch_one(&source.engine().store.pool)
+                        .await
+                        .unwrap(),
+                    before
+                );
+                assert_eq!(source.engine().location_sources().await.len(), 1);
+            }
         })
         .await;
     assert_eq!(world.nodes["b"].engine().location_sources().await.len(), 1);

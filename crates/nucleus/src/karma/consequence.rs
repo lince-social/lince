@@ -77,6 +77,14 @@ pub enum Consequence {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         subject: Option<String>,
     },
+    AdvanceAudience {
+        plan: String,
+        commitment: String,
+    },
+    RefreshStockPolicy {
+        policy: String,
+        commitment: String,
+    },
     SetTransferAgreement {
         transfer: String,
         person: String,
@@ -121,6 +129,8 @@ impl Consequence {
             Self::RunQuery { .. } => "run-query",
             Self::RunAction { .. } => "run-action",
             Self::SetVisibility { .. } => "set-visibility",
+            Self::AdvanceAudience { .. } => "advance-audience",
+            Self::RefreshStockPolicy { .. } => "refresh-stock-policy",
             Self::SetTransferAgreement { .. } => "set-transfer-agreement",
             Self::PublishTransfer { .. } => "publish-transfer",
             Self::ActivateTransferFulfillment { .. } => "activate-transfer-fulfillment",
@@ -140,6 +150,8 @@ impl Consequence {
                 | Self::RunQuery { .. }
                 | Self::RunAction { .. }
                 | Self::SetVisibility { .. }
+                | Self::AdvanceAudience { .. }
+                | Self::RefreshStockPolicy { .. }
         )
     }
 
@@ -197,6 +209,16 @@ impl Consequence {
     }
 
     fn validate(&self) -> Result<(), NucleusError> {
+        if let Self::RefreshStockPolicy { policy, commitment } = self
+            && (!crate::valid_uid(policy,"r") || commitment.len()!=64 || !commitment.bytes().all(|byte|byte.is_ascii_hexdigit())) {
+            return Err(NucleusError::Parse("Choose a reviewed stock policy".into()));
+        }
+        if let Self::AdvanceAudience { plan, commitment } = self
+            && (!crate::valid_uid(plan, "r")
+                || super::CanonicalHash::parse(commitment.clone()).is_err())
+        {
+            return Err(NucleusError::Parse("Choose a reviewed audience plan".into()));
+        }
         if let Self::ShowComponent { component } = self {
             component.validate().map_err(NucleusError::Parse)?;
         }

@@ -112,6 +112,7 @@ pub(super) fn detail(world: &mut World, owner: Entity) {
     };
     let uid = text(&row, "uid");
     label(world, parent, &format!("{} · {uid}", text(&row, "head")));
+    crate::native::trust_castle::organ_root_controls(world,parent,&uid);
     let pairing = panel::column(world, parent);
     world.entity_mut(pairing).insert(PairingPanel {
         owner,

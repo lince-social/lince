@@ -118,6 +118,7 @@ fn draft(
     dependencies: Vec<TransferDependencyInput>,
 ) -> TransferDraftRevisionInput {
     TransferDraftRevisionInput {
+        public_history: None,
         creator: creator.uid.clone(),
         slug: Some(slug.into()),
         head: slug.into(),
@@ -161,6 +162,7 @@ async fn create_fixture(
         dependencies,
     );
     let create = Action::CreateTransferDraft {
+        public_history: None,
         request_id: format!("create:{slug}"),
         creator: Some(creator.uid.clone()),
         slug: input.slug,
@@ -714,6 +716,7 @@ fn structured_dependencies_and_public_private_changes_have_distinct_effects() {
         let occurrence = engine
             .act(
                 Action::ActivateTransferOccurrence {
+                    original_authorities: Vec::new(),
                     transfer: private.transfer.clone(),
                     promise: "sensitivity-private-ana".into(),
                     expected_revision: private.revision,

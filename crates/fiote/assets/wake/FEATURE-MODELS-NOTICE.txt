@@ -1,0 +1,22 @@
+Google Research speech embeddings and the openWakeWord mel frontend.
+
+Feature assets exported by openWakeWord, release v0.5.1:
+https://github.com/dscripka/openWakeWord/releases/tag/v0.5.1
+https://github.com/dscripka/openWakeWord/tree/v0.5.1
+https://tfhub.dev/google/speech_embedding/1
+
+The upstream architecture documentation identifies Google's speech feature
+backbone as Apache-2.0. openWakeWord code, including its mel frontend and
+preprocessing, is Apache-2.0, copyright David Scripka and contributors.
+https://github.com/dscripka/openWakeWord/blob/v0.5.1/README.md#model-architecture
+https://github.com/dscripka/openWakeWord/blob/v0.5.1/LICENSE
+The Apache-2.0 license is included in LICENSE-Feature-Models-Apache-2.0.txt.
+
+embedding-model.onnx: 70d164290c1d095d1d4ee149bc5e00543250a7316b59f31d056cff7bd3075c1f
+melspectrogram.onnx: ba2b0e0f8b7b875369a2c89cb13360ff53bac436f2895cced9f479fa65eb176f
+
+These are feature extraction assets, not the separately trained openWakeWord
+wake classifiers. Those classifiers have a separate noncommercial model
+license and are not included.
+Lince performs reference enrollment, matching, peak selection, timing, validation
+and bounded streaming in Rust using tract. Python and ONNX Runtime are not used.

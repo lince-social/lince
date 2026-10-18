@@ -616,6 +616,7 @@ impl Engine {
                     expected_revision,
                     request_id,
                     person,
+                    original_authorities,
                 } => {
                     let transfer = self.resolve(&transfer).await?;
                     self.require_permission(actor.as_deref(), "transfer:update")
@@ -624,23 +625,31 @@ impl Engine {
                         .transfer_action_person(actor.as_deref(), person.as_deref(), None)
                         .await?;
                     let promise = promise.trim().to_string();
+                    let original_authority_records = nucleus::transfer::receipt::original_authority_records(
+                        &original_authorities,
+                    ).map_err(EngineError::Consequence)?;
                     if let Some(replayed) = store::transfers::occurrences_for_activation_request(
                         &self.store.pool,
                         &request_id,
                     )
                     .await?
                     {
+                        let original: nucleus::transfer::TransferActivationEvidence = serde_json::from_str(
+                            replayed.fact.payload.as_deref().ok_or_else(|| EngineError::Consequence("Original activation evidence is unavailable".into()))?
+                        )?;
                         if replayed.transfer_uid != transfer
                             || replayed.revision != expected_revision
                             || replayed.actor_person_uid != acting
                             || replayed.occurrences.len() != 1
                             || replayed.occurrences[0].promise_uid != promise
+                            || original.original_authority_records != original_authority_records
                         {
                             return Err(transfer_request_id_conflict());
                         }
                         outcome.created = Some(replayed.occurrences[0].uid.clone());
                         return Ok(ControlFlow::Break(outcome));
                     }
+                    self.check_transfer_participation_records(&original_authority_records, actor.as_deref(), now).await?;
                     if store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
                         .await?
                         .is_some()
@@ -716,6 +725,7 @@ impl Engine {
                     let commit = store::transfers::activate_occurrences_guarded(
                         &self.store.pool,
                         store::transfers::ActivateOccurrencesInput {
+                            original_authority_records,
                             transfer_uid: transfer,
                             expected_revision,
                             idempotency_key: request_id,
@@ -1138,7 +1148,7 @@ impl Engine {
                     let result = store::transfer_cancellations::apply(
                         &self.store.pool,
                         store::transfer_cancellations::Application {
-                            transfer,
+                            transfer: transfer.clone(),
                             cancellation,
                             expected_revision,
                             person: acting,
@@ -1154,6 +1164,9 @@ impl Engine {
                     outcome.created = Some(result.uid);
                     if let Some(fact) = result.fact {
                         outcome.facts = self.publish_committed_fact(fact);
+                    }
+                    if let Err(error) = self.location_stop_ended_transfer(&transfer).await {
+                        tracing::debug!(%error,"Location stop will be retried by the location worker");
                     }
                 }
                 Action::SetRecordStockLimit {

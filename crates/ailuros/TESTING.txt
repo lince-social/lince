@@ -1,0 +1,120 @@
+Ailuros firmware organization and validation
+
+Repository ownership
+
+boards/ contains public, versioned hardware profiles. firmware/esp-idf/ contains
+shared provisioning, identity, networking and lifecycle code in lince_core, and
+camera/scalar/custom producers in lince_workflows. ESP-IDF and component versions
+are pinned. Driver dependencies, licenses and upstream references are included.
+src/ contains the host validation, project, serial and installation pipeline.
+
+Only ESP32-S3 is currently supported. The esp32s3 base profile assumes no PSRAM
+or camera. The goouuu-esp32s3-cam-v1.5 profile describes the tested N16R8/OV2640
+board, including its 8 MHz clock workaround. Other boards need verified profiles;
+support for other ESP SoCs needs an adapter and tests, not just another chip name.
+
+An export is an editable workspace, not the only authoritative firmware source.
+Keep public customizations in this repository or a separately versioned project.
+Never copy Wi-Fi credentials, device private keys, TLS private keys, enrollment
+records, Cell snapshots or raw flash backups into the firmware source tree.
+Keep generated build/ and managed_components/ out of Git. Firmware release
+artifacts should record source revision, board profile, SDK and image hashes.
+
+board.json selects hardware. cmake/board.cmake derives memory and camera SDK
+settings at configuration time. Shared settings live in sdkconfig.defaults.
+Generated SDK settings stay under build/; their filename depends on the profile,
+defaults and dependency inputs. Edit the source inputs instead of generated
+sdkconfig files. Camera pins are loaded into the native provisioning form and
+must be confirmed separately. Destination/credentials remain provisioning data.
+
+Validation order
+
+The commands below are instructions, not an automatically executed setup.
+Do not launch Lince, start/change services, install firmware or alter an enrolled
+device until the owner authorizes that runtime stage. The existing wall-powered
+ESP and private exported project were not modified by this source refactor.
+
+1. Static Rust checks and host tests
+
+   nix develop .#interface --command cargo check -p lince-ailuros -p xtask --tests
+   nix develop .#interface --command cargo test -p lince-ailuros
+
+   Check profile validation, unknown profile rejection, source-preserving profile
+   selection, symlink refusal, capacity/MAC checks, stale artifacts, mode-bound
+   fingerprints, protected NVS ranges, cancellation and redacted serial errors.
+
+2. CMake configuration tests, without ESP-IDF or hardware
+
+   nix develop .#interface --command cargo test -p lince-ailuros --test board_configuration -- --ignored
+
+   Requires CMake 3.19+. Check base -> GOOUUU -> custom quad-memory/clock -> base
+   in the same workspace. SDK settings and configuration filename must follow
+   each selection, including shared-default changes. Invalid clocks must fail.
+
+3. Compile the real ESP-IDF matrix, without installing it
+
+   nix develop .#interface --command cargo xtask ailuros profiles
+   nix develop .#interface --command cargo xtask ailuros export /tmp/ailuros-validation/base esp32s3
+   nix develop .#interface --command cargo xtask ailuros export /tmp/ailuros-validation/camera goouuu-esp32s3-cam-v1.5
+
+   For each exported project:
+
+   nix develop .#interface --command cargo xtask ailuros compile <project>
+   nix develop .#interface --command cargo xtask ailuros compile-tests <project>
+   nix develop .#interface --command cargo xtask ailuros compile <project>
+
+   All SDK warnings are errors. Verify artifact.mode is workflow/tests/workflow.
+   Verify LINCE_RUN_TESTS and LINCE_COMPILE_TESTS in build/CMakeCache.txt agree
+   with each mode. In particular, a final normal compile must turn both OFF.
+   Check generic firmware has PSRAM disabled and camera clock zero, while the
+   GOOUUU profile enables octal PSRAM at 80 MHz and an 8 MHz camera clock.
+
+   Switch one project through camera -> base -> camera using:
+
+   nix develop .#interface --command cargo xtask ailuros select-profile <project> <profile-id>
+
+   Compile each selection in the same build directory. Check the correct SDK
+   file is selected and no previous memory/clock choices carry over. Compilation
+   creates new source/image fingerprints; old artifact approval is invalid.
+   This matrix has not yet been repeated after the source reorganization.
+
+4. Native/backend checks, without opening the desktop app
+
+   nix develop .#interface --command cargo check -p lince --features facade
+   nix develop .#interface --command cargo test -p lince-interface --features native-media --lib -- ailuros_ui video_castle::tests
+   nix develop .#interface --command cargo test -p engine --test signal_endpoints
+   nix develop .#interface --command cargo test -p lince-facade --lib signal_streams
+
+   Verify each native Create project button exports the selected profile. Loading
+   a base profile after a camera profile must clear camera pins, confirmation and
+   any previously compiled artifact. Confirm credentials remain transient.
+
+5. Actual hardware stage, only after separate authorization
+
+   Use a recoverable board with confirmed wiring and matching memory. Keep the
+   expected MAC and public key explicit. Compile/install the tests artifact,
+   read the ailuros-tests JSON result on UART at 115200 baud, then compile/install
+   a workflow artifact. Confirm the public identity and provisioned connectivity
+   survive ordinary updates. Do not erase NVS or regenerate identity to fix errors.
+   Test base-profile refusal of camera provisioning on a spare/unconfigured board.
+
+   With a separately authorized receiver running, use the lince-facade example
+   ailuros_camera_check with explicit Cell directory, Signal UID and HTTPS origin.
+   It starts a temporary headless Cell, so no other instance may own that directory.
+   Check 150 decoded JPEG frames with two viewers, ten with one remaining viewer,
+   final-viewer frame release/epoch change, then ten after reopening. Repeat after
+   reboot and wall USB power. Validate actual Video Castle rendering separately.
+
+6. Qualification beyond the first short stream
+
+   Measure a long soak, memory use, frame age, bandwidth, dropped frames and power
+   stability. Exercise receiver/network loss, invalid certificates and clocks.
+   Design storage-write interruption tests on a spare board before deliberately
+   corrupting storage or cutting power mid-write. Qualify every new sensor/profile.
+
+Historical baseline
+
+Before this refactor, the attached GOOUUU N16R8/OV2640 passed 15 device Unity
+cases and 170 decoded 320x240 frames with viewer lifecycle on both computer USB
+and wall power. That evidence establishes the profile's provenance; it does not
+replace compilation, tests or hardware validation of the reorganized firmware.

@@ -100,6 +100,7 @@ pub fn signing_bytes<T: serde::Serialize>(
 }
 
 fn validate_search(query: &Search) -> Result<(), EngineError> {
+    if let Some(filter) = &query.transport { filter.validate().map_err(invalid)?; }
     for value in [
         &query.text,
         &query.area,
@@ -230,6 +231,7 @@ pub fn validate_snippet(doc: &Snippet, now: i64) -> Result<(), EngineError> {
         return Err(invalid("Expired or invalid publication lifetime"));
     }
     let draft = PostDraft {
+        transport: doc.transport.clone(),
         title: doc.title.clone(),
         text: doc.text.clone(),
         direction: doc.direction,
@@ -246,6 +248,9 @@ pub fn validate_snippet(doc: &Snippet, now: i64) -> Result<(), EngineError> {
         lifetime_days: None,
     };
     draft.validate().map_err(invalid)?;
+    if doc.transport.as_ref().is_some_and(|transport| doc.expires_at > transport.expires_at(doc.issued_at)) {
+        return Err(invalid("The transport announcement outlives its pickup window"));
+    }
     if let Some(reply) = &doc.reply {
         request_auth::validate_route(reply, now)?;
         if doc.expires_at > reply.control.expires_at || doc.expires_at > reply.expires_at {
@@ -310,7 +315,7 @@ pub fn validate_snippet(doc: &Snippet, now: i64) -> Result<(), EngineError> {
 }
 
 impl Engine {
-    async fn social_own_record(&self, uid: &str, actor: Option<&str>) -> Result<(), EngineError> {
+    pub(crate) async fn social_own_record(&self, uid: &str, actor: Option<&str>) -> Result<(), EngineError> {
         let row = store::records::get(&self.store.pool, uid)
             .await?
             .ok_or_else(|| invalid("This Record is missing"))?;
@@ -545,6 +550,7 @@ impl Engine {
             }
         };
         let mut doc = Snippet {
+            transport: draft.transport.clone(),
             protocol: "lince.snippet.1".into(),
             id: post_id::post_id(
                 anonymous
@@ -573,7 +579,7 @@ impl Engine {
             resolves: heads,
             created_at: previous.as_ref().map_or(issued_at, |doc| doc.created_at),
             issued_at,
-            expires_at: issued_at + i64::from(draft.lifetime_days.unwrap_or(7)) * 86400,
+            expires_at: draft.transport.as_ref().map_or(issued_at + i64::from(draft.lifetime_days.unwrap_or(7)) * 86400, |transport| transport.expires_at(issued_at)),
             mode: draft.mode,
             signing_key: signer.public_key_b64(),
             profile,
@@ -972,6 +978,7 @@ impl Engine {
                             }
                         }
                         state["editor"] = profile::profile_editor(state);
+                        state["editor"]["organ"] = json!(organ.uid);
                         let cell = store::cells::local(&self.store.pool)
                             .await?
                             .ok_or_else(|| invalid("No local Cell"))?;

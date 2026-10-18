@@ -31,7 +31,7 @@ impl Default for Ingress {
 }
 
 impl Ingress {
-    async fn admit(&self) -> Result<tokio::sync::OwnedSemaphorePermit, Failure> {
+    pub(crate) async fn admit(&self) -> Result<tokio::sync::OwnedSemaphorePermit, Failure> {
         let mut window = self.window.lock().await;
         if window.0.elapsed() >= Duration::from_secs(60) {
             *window = (Instant::now(), 0);
@@ -121,6 +121,32 @@ pub(crate) async fn reading(
             .accept_signal_endpoint_reading(reading)
             .await
     };
+    receipt_response(result)
+}
+
+pub(crate) async fn ailuros_reading(
+    Extract(state): Extract<State>,
+    headers: HeaderMap,
+    Json(reading): Json<Reading>,
+) -> Response {
+    if headers.contains_key(header::AUTHORIZATION) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    receipt_response(state.cell.engine.accept_signal_endpoint_reading(reading).await)
+}
+
+pub(crate) async fn ailuros_clock(Extract(state): Extract<State>) -> Response {
+    let audience = async {
+        let mut connection = state.cell.store.pool.acquire().await?;
+        store::signal_endpoints::audience_on(&mut connection).await
+    }.await;
+    match audience {
+        Ok(audience) => Json(json!({"audience":audience,"server_time":nucleus::execution::now().timestamp()})).into_response(),
+        Err(error) => crate::auth::internal(error).into_response(),
+    }
+}
+
+fn receipt_response(result: Result<engine::signal_endpoints::Receipt, engine::EngineError>) -> Response {
     match result {
         Ok(receipt) => Json(receipt).into_response(),
         Err(error) => {

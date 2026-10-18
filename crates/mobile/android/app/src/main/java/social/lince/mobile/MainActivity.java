@@ -29,8 +29,16 @@ public final class MainActivity extends NativeActivity {
     static native void nativeLocationFix(long epoch, double latitude, double longitude, double accuracy, long ageMilliseconds);
     static native void nativeLocationStatus(long epoch, String message);
     static native void nativeLocationStop(long epoch);
+    static native void nativeOnceFix(long epoch, double latitude, double longitude, double accuracy, long ageMilliseconds);
+    static native void nativeOnceStatus(long epoch, String message);
     private long locationEpoch;
     private long locationDuration;
+    private long permissionLocationEpoch;
+    private long onceEpoch;
+    private long permissionOnceEpoch;
+    private OneShotLocation once;
+    static native void nativeMapPack(long epoch, String path, String error);
+    private MapPackPicker mapPacks;
     private AccessiblePage accessible;
     private android.view.accessibility.AccessibilityManager accessibilityManager;
     private android.view.accessibility.AccessibilityManager.AccessibilityStateChangeListener accessibilityListener;
@@ -47,6 +55,7 @@ public final class MainActivity extends NativeActivity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        mapPacks = new MapPackPicker(this);
         if (android.os.Build.VERSION.SDK_INT >= 33) { setRecentsScreenshotEnabled(false); }
         accessibilityManager = (android.view.accessibility.AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
         accessible = new AccessiblePage(this);
@@ -98,10 +107,12 @@ public final class MainActivity extends NativeActivity {
 
     @Override
     protected void onDestroy() {
+        if (mapPacks != null) { mapPacks.close(); }
         if (accessibilityManager != null && accessibilityListener != null) {
             accessibilityManager.removeAccessibilityStateChangeListener(accessibilityListener);
         }
         nativeAccessibility(false);
+        if (once != null) { once.fail("Device positioning ended with the Activity"); once = null; }
         closeScanner();
         if (multicast != null && multicast.isHeld()) { multicast.release(); }
         super.onDestroy();
@@ -135,6 +146,7 @@ public final class MainActivity extends NativeActivity {
     @Override
     protected void onPause() {
         resumed = false;
+        if (once != null) { once.suspend(); }
         updateMulticast();
         closeScanner();
         if (editor != null && editor.isShowing() && editing != null) {
@@ -187,7 +199,15 @@ public final class MainActivity extends NativeActivity {
     public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(request, permissions, results);
         if (request == 42) {
-            if (locationEpoch != 0) { startLocation(); }
+            long approved = permissionLocationEpoch;
+            permissionLocationEpoch = 0;
+            if (locationEpoch != 0 && locationEpoch == approved) { startLocation(); }
+            return;
+        }
+        if (request == 43) {
+            long approved = permissionOnceEpoch;
+            permissionOnceEpoch = 0;
+            if (onceEpoch != 0 && onceEpoch == approved && once != null) { once.start(); }
             return;
         }
         if (request != 41) { return; }
@@ -201,15 +221,22 @@ public final class MainActivity extends NativeActivity {
     public void location(boolean enabled, long milliseconds, long epoch) {
         runOnUiThread(() -> {
             if (!enabled) {
-                locationEpoch = 0;
-                stopService(new android.content.Intent(this, LocationService.class));
+                if (locationEpoch == epoch) { locationEpoch = 0; }
+                android.content.Intent stop = new android.content.Intent(this, LocationService.class).setAction("stop").putExtra("epoch", epoch);
+                try { startService(stop); } catch (RuntimeException error) { nativeLocationStop(epoch); }
                 return;
             }
             locationEpoch = epoch;
             locationDuration = Math.max(1, Math.min(milliseconds, 86400000));
-            if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED
-                    && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            if ((checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                    || (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)) {
                 if (!resumed) { nativeLocationStatus(epoch, "Open Lince to approve device location"); return; }
+                if (permissionLocationEpoch != 0 && permissionLocationEpoch != epoch) {
+                    nativeLocationStatus(epoch, "Finish the current permission request, then start this source again");
+                    return;
+                }
+                permissionLocationEpoch = epoch;
                 String[] permissions = android.os.Build.VERSION.SDK_INT >= 33
                         ? new String[] {android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.POST_NOTIFICATIONS}
                         : new String[] {android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION};
@@ -220,6 +247,10 @@ public final class MainActivity extends NativeActivity {
 
     private void startLocation() {
         if (locationEpoch == 0) { return; }
+        if (!getSystemService(android.app.NotificationManager.class).areNotificationsEnabled()) {
+            nativeLocationStatus(locationEpoch, "Enable Lince notifications so background location has a visible Stop control");
+            return;
+        }
         if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED
                 && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             nativeLocationStatus(locationEpoch, "Location permission denied. Choose a manual source if desired.");
@@ -230,6 +261,28 @@ public final class MainActivity extends NativeActivity {
         service.putExtra("duration", locationDuration);
         try { startForegroundService(service); }
         catch (RuntimeException error) { nativeLocationStatus(locationEpoch, "Open Lince to start device location"); }
+    }
+
+    public void locateOnce(boolean enabled, long epoch) {
+        runOnUiThread(() -> {
+            if (!enabled) {
+                if (onceEpoch == epoch) {
+                    if (once != null) { once.close(); once = null; }
+                    onceEpoch = 0;
+                }
+                return;
+            }
+            if (once != null) { once.close(); }
+            onceEpoch = epoch;
+            once = new OneShotLocation(this, epoch);
+            if (!resumed) { once.fail("Open Lince to position this map"); return; }
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                if (permissionOnceEpoch != 0) { once.fail("Finish the current permission request, then locate again"); return; }
+                permissionOnceEpoch = epoch;
+                requestPermissions(new String[] {android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION}, 43);
+            } else { once.start(); }
+        });
     }
 
     private void openScanner() {
@@ -349,6 +402,14 @@ public final class MainActivity extends NativeActivity {
         });
     }
 
+    public void chooseMapPack(long epoch, long quota) {
+        runOnUiThread(() -> mapPacks.choose(epoch, quota));
+    }
+
+    public void cancelMapPack(long epoch) {
+        runOnUiThread(() -> mapPacks.cancel(epoch));
+    }
+
     public void saveFile(String name, String mime, byte[] bytes) {
         runOnUiThread(() -> {
             if (savingFile != null) { nativeFileNotice("Finish the current save first"); return; }
@@ -366,6 +427,7 @@ public final class MainActivity extends NativeActivity {
     @Override
     protected void onActivityResult(int request, int result, android.content.Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == 403) { mapPacks.result(result, data); return; }
         if (request == 401) {
             long id = choosingFile;
             choosingFile = 0;

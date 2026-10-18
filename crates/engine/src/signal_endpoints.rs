@@ -55,7 +55,9 @@ pub struct Submission {
 #[serde(deny_unknown_fields)]
 pub struct Reading {
     pub audience: String,
+    #[serde(rename = "device")]
     pub endpoint: String,
+    #[serde(rename = "key_epoch")]
     pub credential_epoch: i64,
     pub signal: String,
     pub sequence: i64,
@@ -66,7 +68,9 @@ pub struct Reading {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Receipt {
+    #[serde(rename = "device")]
     pub endpoint: String,
+    #[serde(rename = "key_epoch")]
     pub credential_epoch: i64,
     pub sequence: i64,
     pub fact: String,
@@ -123,6 +127,11 @@ fn key(text: &str) -> Result<VerifyingKey, EngineError> {
         .map_err(|_| invalid("Use a compressed SEC1 P-256 public key (33 bytes)"))
 }
 
+pub(crate) fn verify_proof(public_key: &str, payload: &[u8], signature: &str) -> Result<(), EngineError> {
+    let signature = Signature::from_slice(&unhex(signature, 64)?).map_err(|_| refused())?;
+    key(public_key)?.verify(payload, &signature).map_err(|_| refused())
+}
+
 fn decimal(text: &str) -> Result<DecimalValue, EngineError> {
     if text.len() > 64 {
         return Err(invalid("Reading is too long"));
@@ -146,7 +155,7 @@ impl Reading {
         }
         decimal(&self.value)?;
         Ok(format!(
-            "lince-signal-endpoint-v1\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
+            "lince-ailuros-v1\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
             self.audience,
             self.endpoint,
             self.credential_epoch,
@@ -401,10 +410,16 @@ impl Engine {
             let readable = self.readable_on(&mut tx, actor, &graph).await?;
             endpoints.retain(|endpoint| readable.contains(&endpoint.signal_uid));
         }
+        let mut streams = Vec::new();
+        for endpoint in &endpoints {
+            if let Some(stream) = store::signal_streams::get_on(&mut tx, &endpoint.signal_uid).await? {
+                if !streams.iter().any(|entry: &store::signal_streams::Configuration| entry.signal_uid == stream.signal_uid) { streams.push(stream); }
+            }
+        }
         tx.commit().await?;
         self.notify_query_changed();
         Ok(
-            json!({"audience": audience, "endpoints": endpoints, "saved": saved, "issued_token": issued_token}),
+            json!({"audience": audience, "endpoints": endpoints, "streams": streams, "saved": saved, "issued_token": issued_token}),
         )
     }
 
@@ -498,11 +513,7 @@ impl Engine {
             }
             json!({"algorithm": "bearer-token-sha256", "audience": reading.audience})
         } else {
-            let signature =
-                Signature::from_slice(&unhex(&reading.signature, 64)?).map_err(|_| refused())?;
-            key(&endpoint.public_key)?
-                .verify(&payload, &signature)
-                .map_err(|_| refused())?;
+            verify_proof(&endpoint.public_key, &payload, &reading.signature)?;
             json!({"algorithm": "ecdsa-p256-sha256", "public_key": endpoint.public_key, "audience": reading.audience, "signature": reading.signature})
         };
         if !signal_endpoints::signal_available_on(&mut tx, &reading.signal).await? {

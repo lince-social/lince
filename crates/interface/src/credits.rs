@@ -42,9 +42,9 @@ pub const PARLEY: Attribution = Attribution {
     name: "Parley",
     author: "The Parley Authors; Lince dictionary segmentation backport",
     license: concat!(
-        include_str!("../../../vendor/parley/CREDITS.txt"),
+        include_str!("../../vendor/parley/CREDITS.txt"),
         "\n",
-        include_str!("../../../vendor/parley/LICENSE-MIT"),
+        include_str!("../../vendor/parley/LICENSE-MIT"),
     ),
 };
 

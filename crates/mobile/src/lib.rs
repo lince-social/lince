@@ -12,6 +12,7 @@ mod images;
 mod kanban;
 mod knowledge;
 mod location;
+mod map;
 pub mod navigation;
 mod organ;
 mod pages;
@@ -25,6 +26,7 @@ pub mod session;
 mod smoke;
 pub mod storage;
 pub mod views;
+pub mod workflows;
 
 pub fn run(directory: std::path::PathBuf) {
     use bevy::prelude::*;
@@ -53,6 +55,8 @@ pub fn run(directory: std::path::PathBuf) {
             location::LocationPlugin,
             scroll::ScrollPlugin,
             kanban::KanbanPlugin,
+            lince_interface::map_view::MapRendererPlugin,
+            map::MapPlugin,
         ))
         .run();
 }

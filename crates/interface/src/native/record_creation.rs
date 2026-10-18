@@ -159,7 +159,7 @@ fn button(world: &mut World, parent: Entity, owner: Entity, title: &str, action:
 }
 
 pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
-    if crate::native::laboratory::active(world)
+    if crate::native::laboratory::blocked(world, target)
         || !world.contains_resource::<crate::native::theme::Typography>()
     {
         return None;

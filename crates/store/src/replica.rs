@@ -21,6 +21,8 @@ pub async fn offer(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), S
 }
 
 pub async fn accept(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), StoreError> {
+    let mut tx=crate::write_tx(pool).await?;
+    let now=nucleus::execution::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO replica_grant (root_record, contact_organ, state, created_at)
          VALUES (?, ?, ?, ?)
@@ -29,27 +31,32 @@ pub async fn accept(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), 
     .bind(root)
     .bind(contact)
     .bind(ACCEPTED)
-    .bind(nucleus::execution::now().to_rfc3339())
-    .execute(pool)
+    .bind(&now)
+    .execute(&mut *tx)
     .await?;
+    sqlx::query("INSERT INTO sync_outbox(contact_organ,tbl,uid,field,kind,seq,queued_at) SELECT ?,o.tbl,o.uid,o.field,o.kind,o.seq,? FROM sync_op o WHERE o.replica_root=? AND o.organ_uid=(SELECT uid FROM record WHERE slug=? AND kind='organ' AND deleted_at IS NULL) AND o.kind!='snapshot' AND EXISTS(SELECT 1 FROM organ_contact WHERE record_uid=? AND trust!='blocked') ORDER BY o.seq ON CONFLICT(contact_organ,tbl,uid,field,kind) DO UPDATE SET seq=MAX(sync_outbox.seq,excluded.seq),queued_at=excluded.queued_at")
+        .bind(contact).bind(&now).bind(root).bind(crate::organs::LOCAL_ORGAN_SLUG).bind(contact).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 
 pub async fn revoke(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), StoreError> {
+    let mut tx=crate::write_tx(pool).await?;
     sqlx::query("DELETE FROM replica_grant WHERE root_record = ? AND contact_organ = ?")
         .bind(root)
         .bind(contact)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
     sqlx::query(
         "DELETE FROM sync_outbox
           WHERE contact_organ = ?
-            AND uid IN (SELECT uid FROM record WHERE replica_root = ?)",
+            AND seq IN (SELECT seq FROM sync_op WHERE replica_root = ?)",
     )
     .bind(contact)
     .bind(root)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(())
 }
 

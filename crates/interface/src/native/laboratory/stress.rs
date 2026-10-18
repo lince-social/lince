@@ -164,6 +164,8 @@ impl StressRun {
         let workspace = world
             .get::<crate::native::workspace::Workspaces>(root)
             .map_or(1, |spaces| spaces.active);
+        let workspace = super::scope(world).filter(|(owner, _, _, _)| *owner == root)
+            .map_or(workspace, |(_, _, workspace, _)| workspace);
         if !self.initialized {
             self.report.graphics = super::GraphicsDevice::read(world);
             Self::clear(world, root);
@@ -213,6 +215,7 @@ impl StressRun {
                     SandKind::Operation
                     | SandKind::AccessControl
                     | SandKind::Visibility
+                    | SandKind::Trust
                     | SandKind::HandCamera
                     | SandKind::Video
                     | SandKind::Sync

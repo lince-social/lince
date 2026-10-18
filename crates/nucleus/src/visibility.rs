@@ -1,6 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+pub mod plan;
+
 pub const MAX_CONDITIONS: usize = 64;
 pub const MAX_ORGANS_PER_CONDITION: usize = 64;
 pub const MAX_POLICY_BYTES: usize = 12 * 1024;

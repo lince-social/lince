@@ -1,0 +1,30 @@
+### IDE
+
+A local text editor with a reusable File Explorer Castle. Rust handles directory listing and file operations directly. Loro retains edits and merges independent changes made on disk; competing changes require review. This is separate from Record sync and blob transfers. Opening a folder creates no File Records or database copies. Unsaved recovery drafts are stored locally beside the workspace.
+
+Add the project folder, open a file, then open **Language tools**. Lince uses installed programs; connecting is manual and downloads nothing.
+
+Install the tools you use:
+
+- **NixOS or Linux with Nix:** `nix shell nixpkgs#bash-language-server nixpkgs#shfmt nixpkgs#shellcheck --command lince`. For permanent installation, add those packages to `environment.systemPackages` or Home Manager's `home.packages`. For Nix files, install `nixd nixfmt statix` instead. [Nix setup](https://wiki.nixos.org/wiki/Adding_programs_to_PATH)
+- **Arch:** `sudo pacman -Syu bash-language-server shfmt shellcheck`.
+- **Debian/Ubuntu:** `sudo apt install shfmt shellcheck`; with Node.js 20+ and npm, run `npm install --global --prefix "$HOME/.local" bash-language-server`, then `export PATH="$HOME/.local/bin:$PATH"`. [Server installation](https://github.com/bash-lsp/bash-language-server#installation)
+
+Launch Lince from that terminal. From a configured checkout, use `cargo run -p lince`. With Nix, first enter `nix develop .#interface`, then use the tooling shell above with `--command cargo run -p lince`.
+
+Check the prefilled fields for the open file's language:
+
+| Language | Server | Formatter | Linter |
+| --- | --- | --- | --- |
+| Bash (`.sh`) | `["bash-language-server","start"]` | `["shfmt"]` | `["shellcheck","-"]` |
+| Nix (`.nix`) | `["nixd"]` | `["nixfmt"]` | `["statix","check","--stdin"]` |
+
+Fields are JSON lists: executable, then arguments. Use PATH names or full paths; `~`, `$HOME`, aliases and pipes are not expanded. `[]` disables a command. Connecting or running saves the settings. The deepest selected folder containing the file is its project root; otherwise its parent is used.
+
+Click **Connect / Restart** and wait for Connected. **Ctrl+Space** requests completion; click a diagnostic to visit it. **Ctrl+Shift+I / Format** uses the server when supported, otherwise the formatter. **Format with command** always uses the formatter; **Run linter** shows its output. Formatting is one undo step and reaches disk through Save or autosave. **Disconnect** leaves normal editing and highlighting available.
+
+Test with a small Bash file: expect a warning for unquoted `$1`, completion of a function name, and undoable formatting. Keep autosave off to check that only Save changes disk contents.
+
+If a tool is missing, run `command -v bash-language-server shfmt shellcheck`, then restart Lince from that environment or enter the full path. An already running Lince does not inherit later environment changes.
+
+Tools handle files up to 2 MiB, with four shared servers. Completion is plain text. Server settings currently use defaults; custom NixOS/Home Manager option completion may need settings the UI does not expose. [nixd settings](https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md)

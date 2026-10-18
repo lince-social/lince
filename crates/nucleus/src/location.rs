@@ -7,11 +7,23 @@ pub const MAX_RECIPIENTS: usize = 32;
 pub const MAX_SESSIONS: usize = 64;
 pub const MAX_FIX_AGE_MS: i64 = 60_000;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Invitation {
     pub record_uid: String,
     pub authority_node_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grant: Option<InvitationGrant>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct InvitationGrant {
+    pub uid: String,
+    pub issuer: String,
+    pub recipient: String,
+    pub expires_at_ms: i64,
+    pub radius_metres: Option<u32>,
 }
 
 impl Invitation {
@@ -35,7 +47,7 @@ impl Invitation {
         Ok(value)
     }
 
-    fn validate(&self) -> Result<(), &'static str> {
+    pub fn validate(&self) -> Result<(), &'static str> {
         if !crate::valid_uid(&self.record_uid, "r")
             || self.authority_node_id.len() != 64
             || !self
@@ -44,6 +56,11 @@ impl Invitation {
                 .all(|byte| byte.is_ascii_hexdigit())
         {
             return Err("Invalid location Record or authority endpoint");
+        }
+        if let Some(grant) = &self.grant {
+            if !crate::valid_uid(&grant.uid,"li") || !crate::valid_uid(&grant.issuer,"r") || !crate::valid_uid(&grant.recipient,"r") || chrono::DateTime::from_timestamp_millis(grant.expires_at_ms).is_none() || grant.radius_metres.is_some_and(|radius|!crate::place::valid_area_radius(radius)) {
+                return Err("Invalid private location invitation scope");
+            }
         }
         Ok(())
     }
@@ -115,10 +132,11 @@ pub struct Fix {
     pub longitude: f64,
     pub accuracy_metres: Option<f64>,
     pub captured_at_ms: i64,
+    pub capture_age_ms: u64,
 }
 
 impl Fix {
-    pub fn validate(&self, now_ms: i64) -> Result<(), &'static str> {
+    pub fn validate(&self) -> Result<(), &'static str> {
         if self.sequence == 0 || self.sequence > i64::MAX as u64 {
             return Err("Invalid location sequence");
         }
@@ -132,9 +150,8 @@ impl Fix {
         {
             return Err("Invalid location coordinates or accuracy");
         }
-        let age = now_ms.saturating_sub(self.captured_at_ms);
-        if !(0..MAX_FIX_AGE_MS).contains(&age) {
-            return Err("Location fix is expired or has a future capture time");
+        if self.capture_age_ms >= MAX_FIX_AGE_MS as u64 {
+            return Err("Location capture age exceeds the freshness limit");
         }
         Ok(())
     }
@@ -150,6 +167,30 @@ pub enum Command {
     Configure {
         settings: Settings,
     },
+    Handover {
+        settings: Settings,
+        expected_session_uid: String,
+    },
+    PrepareInvitation {
+        person: String,
+        record_uid: String,
+        recipient: String,
+        duration_seconds: u32,
+        radius_metres: Option<u32>,
+    },
+    ObserveInvitation {
+        person: String,
+        invitation: Invitation,
+    },
+    ReadInvitation {
+        person: String,
+        invitation: Invitation,
+    },
+    SendInvitation {
+        person: String,
+        conversation: String,
+        invitation: Invitation,
+    },
     Start {
         person: String,
         record_uid: String,
@@ -157,6 +198,7 @@ pub enum Command {
     Approve {
         person: String,
         record_uid: String,
+        expected_session_uid: String,
     },
     View {
         person: String,
@@ -174,6 +216,10 @@ pub enum Command {
     StopAll {
         person: String,
     },
+    StopTransfer {
+        person: String,
+        transfer_uid: String,
+    },
     Publish {
         person: String,
         record_uid: String,
@@ -185,7 +231,7 @@ pub enum Command {
 impl Command {
     pub fn person(&self) -> &str {
         match self {
-            Self::Configure { settings } => &settings.controller_uid,
+            Self::Configure { settings } | Self::Handover { settings, .. } => &settings.controller_uid,
             Self::Context { person, .. }
             | Self::Start { person, .. }
             | Self::Approve { person, .. }
@@ -193,7 +239,9 @@ impl Command {
             | Self::Observe { person, .. }
             | Self::Stop { person, .. }
             | Self::StopAll { person }
+            | Self::StopTransfer { person, .. }
             | Self::Publish { person, .. } => person,
+            Self::PrepareInvitation {person,..} | Self::ObserveInvitation {person,..} | Self::ReadInvitation {person,..} | Self::SendInvitation {person,..} => person,
         }
     }
 }
@@ -225,8 +273,30 @@ pub struct View {
     pub source_kind: Option<SourceKind>,
     pub fix: Option<Fix>,
     pub age_ms: Option<u64>,
+    pub remaining_millis: Option<u64>,
+    pub next_sequence: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub radius_metres: Option<u32>,
+}
+
+impl View {
+    pub fn elapse(&mut self, millis: u64) {
+        if let Some(remaining) = &mut self.remaining_millis {*remaining = remaining.saturating_sub(millis);}
+        if let Some(age) = &mut self.age_ms {*age = age.saturating_add(millis);}
+        if self.remaining_millis == Some(0) {
+            self.status = Status::Stopped;
+            self.session_uid = None;
+            self.next_sequence = None;
+            self.fix = None;
+            self.age_ms = None;
+            self.radius_metres = None;
+        } else if self.age_ms.is_some_and(|age|age >= MAX_FIX_AGE_MS as u64) {
+            self.status = Status::Unavailable;
+            self.fix = None;
+            self.age_ms = None;
+            self.radius_metres = None;
+        } else if self.age_ms.is_some_and(|age|age > 15_000) && self.status == Status::Live {self.status = Status::Stale;}
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -248,6 +318,8 @@ pub struct SourceLease {
     pub session_uid: String,
     pub expires_at_ms: i64,
     pub approved: bool,
+    pub challenge_uid: String,
+    pub lease_millis: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -288,6 +360,7 @@ pub enum PeerRequest {
     Publish {
         record_uid: String,
         session_uid: String,
+        challenge_uid: String,
         fix: Fix,
     },
     Unavailable {

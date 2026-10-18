@@ -259,7 +259,7 @@ pub async fn open_feed(
     };
     Ok(Feed {
         selection,
-        hidden: store::visibility::hidden_from_organ(pool, &contact.record_uid).await?,
+        hidden: engine.outgoing_hidden_from_organ(&contact.record_uid).await?,
         held: store::contact_share::held(pool, &contact.record_uid).await?,
         moving_to_them: store::record_move::to_contact(pool, &contact.record_uid).await?,
         awaiting_moves: store::record_move::waiting_for_contact(pool, &contact.record_uid).await?,

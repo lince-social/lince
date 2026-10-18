@@ -55,7 +55,16 @@ pub(crate) fn snapshot(source: &World, from: Entity, world: &mut World, parent: 
     copy::<TextLayout>(source, from, world, to);
     copy::<BackgroundColor>(source, from, world, to);
     copy::<BorderColor>(source, from, world, to);
-    copy::<ImageNode>(source, from, world, to);
+    if let Some(mut image) = source.get::<ImageNode>(from).cloned() {
+        if let Some(asset) = source
+            .get_resource::<Assets<Image>>()
+            .and_then(|images| images.get(&image.image))
+        {
+            world.init_resource::<Assets<Image>>();
+            image.image = world.resource_mut::<Assets<Image>>().add(asset.clone());
+        }
+        world.entity_mut(to).insert(image);
+    }
     copy::<UiTransform>(source, from, world, to);
     copy::<crate::native::tokens::TokenOverrides>(source, from, world, to);
     copy::<crate::native::token_style::BackgroundToken>(source, from, world, to);
@@ -209,4 +218,56 @@ pub(crate) fn compose(world: &mut World, root: Entity) -> Entity {
         }
     }
     container
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::{
+        asset::RenderAssetUsages,
+        render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+    };
+
+    #[test]
+    fn preview_images_keep_source_pixels_when_asset_ids_collide_with_main_world_textures() {
+        let mut source = World::new();
+        source.init_resource::<Assets<Image>>();
+        let pixels = [64, 128, 192, 255];
+        let size = Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        };
+        let source_image = source.resource_mut::<Assets<Image>>().add(Image::new_fill(
+            size,
+            TextureDimension::D2,
+            &pixels,
+            TextureFormat::Rgba8UnormSrgb,
+            RenderAssetUsages::default(),
+        ));
+        let from = source.spawn(ImageNode::new(source_image.clone())).id();
+        let mut world = World::new();
+        world.init_resource::<Assets<Image>>();
+        let unrelated = world.resource_mut::<Assets<Image>>().add(Image::new_fill(
+            size,
+            TextureDimension::D3,
+            &[255; 4],
+            TextureFormat::Rgba8UnormSrgb,
+            RenderAssetUsages::default(),
+        ));
+        assert_eq!(source_image.id(), unrelated.id());
+        let parent = world.spawn_empty().id();
+        let preview = snapshot(&source, from, &mut world, parent);
+        drop(source);
+        let handle = &world.get::<ImageNode>(preview).unwrap().image;
+        assert_ne!(handle.id(), unrelated.id());
+        let images = world.resource::<Assets<Image>>();
+        let copied = images.get(handle).unwrap();
+        assert_eq!(copied.texture_descriptor.dimension, TextureDimension::D2);
+        assert_eq!(copied.data.as_deref(), Some(pixels.as_slice()));
+        assert_eq!(
+            images.get(&unrelated).unwrap().texture_descriptor.dimension,
+            TextureDimension::D3,
+        );
+    }
 }

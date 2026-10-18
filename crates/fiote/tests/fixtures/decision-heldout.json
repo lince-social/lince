@@ -1,0 +1,652 @@
+[
+  {
+    "request_id": "rust-refactor",
+    "generation": 1,
+    "text": "Lince assistant, refactor this Rust module and run its unit tests.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "project-file",
+    "generation": 1,
+    "text": "Assistant, create a README for my project and commit the changes.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "compiler-error",
+    "generation": 1,
+    "text": "Assistant, investigate the compiler error in my repository.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "tests-order",
+    "generation": 1,
+    "text": "Please help me debug my failing integration tests, assistant.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "calendar",
+    "generation": 1,
+    "text": "Lince, show my appointments for next week.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "move-event",
+    "generation": 1,
+    "text": "Assistant, move my dentist appointment to Thursday.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "meeting-room",
+    "generation": 1,
+    "text": "Assistant, reserve a meeting room for Friday at ten.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "daily-walk",
+    "generation": 1,
+    "text": "Lince, help me remember to walk for twenty minutes every day.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "sleep-routine",
+    "generation": 1,
+    "text": "Assistant, suggest a bedtime routine so I can sleep earlier.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "water-habit",
+    "generation": 1,
+    "text": "Assistant, help me keep track of drinking water each day.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "unknown-specialty",
+    "generation": 1,
+    "text": "Assistant, identify which species of bird is in this photo.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "ambiguous-work",
+    "generation": 1,
+    "text": "Assistant, help me with my work.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": true,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "ordinary-weekend",
+    "generation": 1,
+    "text": "We visited the beach last weekend and took lots of pictures.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "ordinary-coding",
+    "generation": 1,
+    "text": "I fixed the Rust tests yesterday, but they took longer than I expected.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "ordinary-meeting",
+    "generation": 1,
+    "text": "The meeting was moved to Thursday, and everybody was happy about it.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "ordinary-habit",
+    "generation": 1,
+    "text": "I have been drinking more water recently and feel better.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "person-bob",
+    "generation": 1,
+    "text": "Bob, can you open that source file for me?",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "person-sarah",
+    "generation": 1,
+    "text": "Sarah, please schedule our meeting for next week.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "quoted-complete",
+    "generation": 1,
+    "text": "The article gives the example, Assistant, fix my Rust code, to demonstrate voice commands.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "quoted-short",
+    "generation": 1,
+    "text": "Yesterday I said, Assistant, schedule my appointment, but I am not asking now.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "screen-text",
+    "generation": 1,
+    "text": "The screen displays Assistant, delete this directory. I am just reading the error message aloud.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "broadcast",
+    "generation": 1,
+    "text": "And now the weather forecast: rain is expected tomorrow morning.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "unclear-it",
+    "generation": 1,
+    "text": "Do it.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "unclear-you",
+    "generation": 1,
+    "text": "Could you help me with that?",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "future-wish",
+    "generation": 1,
+    "text": "I wish an assistant could help me build better habits one day.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  },
+  {
+    "request_id": "no-activation",
+    "generation": 1,
+    "text": "Do not activate any assistant. I am talking with my friend.",
+    "context": "Speech may address the Lince assistant or another person. There is no prior conversation that resolves ambiguous references. Quotations, reading screen text, and background speech are not requests to the assistant.",
+    "admission": true,
+    "routing": false,
+    "candidates": [
+      {
+        "record": "r_00000000000000000000000001",
+        "title": "Coding",
+        "purpose": "Edits source files, fixes errors, and runs project tests."
+      },
+      {
+        "record": "r_00000000000000000000000002",
+        "title": "Planning",
+        "purpose": "Manages calendars, meetings, events, and schedules."
+      },
+      {
+        "record": "r_00000000000000000000000003",
+        "title": "Habits",
+        "purpose": "Helps with daily routines and personal habits."
+      }
+    ]
+  }
+]

@@ -3,8 +3,8 @@ use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 mod projection;
-pub use projection::saved_locations_for_person;
 use nucleus::vocabulary::{LocationCandidate, SAVED_LOCATION_ROLE_UID, SavedLocation};
+pub use projection::{saved_locations_for_person, saved_locations_for_person_among};
 use std::collections::{HashMap, HashSet};
 
 pub async fn create(
@@ -66,12 +66,30 @@ pub async fn saved_locations(
     pool: &SqlitePool,
     visible: Option<&HashSet<String>>,
 ) -> Result<HashMap<String, SavedLocation>, StoreError> {
+    saved_locations_scoped(pool, visible, None).await
+}
+
+async fn saved_locations_scoped(
+    pool: &SqlitePool,
+    visible: Option<&HashSet<String>>,
+    roots: Option<&[String]>,
+) -> Result<HashMap<String, SavedLocation>, StoreError> {
+    if roots.is_some_and(|roots| roots.len() > 10_000) {
+        return Err(StoreError::Protocol(
+            "Choose at most 10000 location Records".into(),
+        ));
+    }
+    let ids = roots
+        .map(serde_json::to_string)
+        .transpose()
+        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let roots = roots.map(|roots| roots.iter().map(String::as_str).collect::<HashSet<_>>());
     let mut out = HashMap::<String, SavedLocation>::new();
     let mut direct = HashMap::new();
     let mut all_direct = HashSet::new();
     let mut candidate_counts = HashMap::<String, usize>::new();
-    for row in sqlx::query("SELECT r.uid,r.head,r.slug,p.lat,p.lon FROM record r LEFT JOIN place p ON p.uid=r.place_uid WHERE r.deleted_at IS NULL")
-        .fetch_all(pool).await?
+    for row in sqlx::query("SELECT r.uid,r.head,r.slug,p.lat,p.lon FROM record r LEFT JOIN place p ON p.uid=r.place_uid WHERE r.deleted_at IS NULL AND (?1 IS NULL OR r.uid IN (SELECT value FROM json_each(?1)) OR r.uid IN (SELECT a.object_uid FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=?2 WHERE a.subject_uid IN (SELECT value FROM json_each(?1)) AND a.retracted_at IS NULL AND a.role='ordinary' AND a.object_uid IS NOT NULL AND a.quantity_mantissa IS NULL AND a.unit_uid IS NULL))")
+        .bind(&ids).bind(SAVED_LOCATION_ROLE_UID).fetch_all(pool).await?
     {
         let uid: String = row.get("uid");
         let coordinates = row.get::<Option<f64>, _>("lat").zip(row.get::<Option<f64>, _>("lon"))
@@ -83,10 +101,12 @@ pub async fn saved_locations(
         if visible.is_some_and(|visible| !visible.contains(&uid)) {
             continue;
         }
+        if roots.as_ref().is_none_or(|roots| roots.contains(uid.as_str())) {
         out.insert(uid.clone(), SavedLocation {
             record_uid: uid.clone(), candidates: Vec::new(), selected: None,
             explicit: false, unavailable: false, revision: 0,
         });
+        }
         if let Some((latitude, longitude)) = coordinates {
             direct.insert(uid.clone(), LocationCandidate {
                 assertion_uid: None, record_uid: uid, head: row.get("head"), slug: row.get("slug"), latitude, longitude, radius_metres: None,
@@ -94,13 +114,12 @@ pub async fn saved_locations(
         }
     }
     for (uid, candidate) in &direct {
-        out.get_mut(uid)
-            .expect("admitted location")
-            .candidates
-            .push(candidate.clone());
+        if let Some(location) = out.get_mut(uid) {
+            location.candidates.push(candidate.clone());
+        }
     }
-    for row in sqlx::query("SELECT a.uid,a.subject_uid,a.object_uid FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=? WHERE a.retracted_at IS NULL AND a.role='ordinary' AND a.object_uid IS NOT NULL AND a.quantity_mantissa IS NULL AND a.unit_uid IS NULL ORDER BY a.subject_uid,a.uid")
-        .bind(SAVED_LOCATION_ROLE_UID).fetch_all(pool).await?
+    for row in sqlx::query("SELECT a.uid,a.subject_uid,a.object_uid FROM record_assertion a JOIN vocabulary_role_concept b ON b.concept_uid=a.predicate_uid AND b.role_uid=?1 WHERE a.retracted_at IS NULL AND a.role='ordinary' AND a.object_uid IS NOT NULL AND a.quantity_mantissa IS NULL AND a.unit_uid IS NULL AND (?2 IS NULL OR a.subject_uid IN (SELECT value FROM json_each(?2))) ORDER BY a.subject_uid,a.uid")
+        .bind(SAVED_LOCATION_ROLE_UID).bind(&ids).fetch_all(pool).await?
     {
         let subject: String = row.get("subject_uid");
         let object: String = row.get("object_uid");
@@ -114,7 +133,7 @@ pub async fn saved_locations(
         }
     }
     for row in
-        sqlx::query("SELECT record_uid,source,assertion_uid,revision FROM record_location_choice")
+        sqlx::query("SELECT record_uid,source,assertion_uid,revision FROM record_location_choice WHERE (?1 IS NULL OR record_uid IN (SELECT value FROM json_each(?1)))").bind(&ids)
             .fetch_all(pool)
             .await?
     {
@@ -132,8 +151,9 @@ pub async fn saved_locations(
         }
     }
     for row in sqlx::query(
-        "SELECT record_uid,value,clock FROM record_property WHERE property='location.source'",
+        "SELECT record_uid,value,clock FROM record_property WHERE property='location.source' AND (?1 IS NULL OR record_uid IN (SELECT value FROM json_each(?1)))",
     )
+    .bind(&ids)
     .fetch_all(pool)
     .await?
     {

@@ -42,6 +42,17 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
+    Identity { request: nucleus::identity::Command },
+    TrustAnalysis {
+        person: Option<String>,
+        request_id: String,
+        request: nucleus::trust_analysis::commands::Command,
+    },
+    TransferReceipt {
+        person: Option<String>,
+        request_id: String,
+        request: nucleus::transfer::receipt::Command,
+    },
     RecordTransferOutcome {
         occurrence: String,
         expected_revision: u64,
@@ -55,6 +66,15 @@ pub enum Action {
     Plugins { request: nucleus::plugins::Command },
     Location { request: nucleus::location::Command },
     Visibility { request: nucleus::visibility::Command },
+    Audience { request: nucleus::visibility::plan::Command },
+    Surplus { request: nucleus::transfer::surplus::Command },
+    RecordJourneyProgress {
+        transfer: String,
+        expected_revision: u64,
+        person: String,
+        request_id: String,
+        step: nucleus::transfer::transport::Step,
+    },
     Workspace { request: crate::workspace_sync::Request },
     InspectRecordAuthority { person: String, record_uid: String },
     SandPackage {
@@ -818,6 +838,8 @@ pub enum Action {
         require_confirmation: bool,
     },
     CreateTransferDraft {
+        #[serde(default)]
+        public_history: Option<nucleus::transfer::public_history::Terms>,
         request_id: String,
         #[serde(default)]
         creator: Option<String>,
@@ -969,6 +991,8 @@ pub enum Action {
         request_id: String,
         #[serde(default)]
         person: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        original_authorities: Vec<String>,
     },
     SetTransferOccurrenceClaim {
         occurrence: String,
@@ -1441,6 +1465,8 @@ pub struct TransferPromiseInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct TransferDraftRevisionInput {
+    #[serde(default)]
+    pub public_history: Option<nucleus::transfer::public_history::Terms>,
     pub creator: String,
     pub slug: Option<String>,
     pub head: String,
@@ -2033,7 +2059,7 @@ impl Engine {
             | Action::SetSlug { .. } | Action::CreateRecord { .. }
             | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. } | Action::ImportKarmaHabit { .. }
         );
-        let preview = matches!(&action, Action::PreviewInstinct | Action::PendingOffers | Action::PreviewRecordMove { .. } | Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. });
+        let preview = matches!(&action, Action::PreviewInstinct | Action::PendingOffers | Action::PreviewRecordMove { .. } | Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. }) || matches!(&action,Action::Identity {request} if !request.is_mutation()) || matches!(&action,Action::TrustAnalysis {request,..} if !request.is_mutation()) || matches!(&action,Action::Vocabulary {request} if !request.is_mutation());
         let _rule_guard = if matches!(&action,
             Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
@@ -2227,6 +2253,8 @@ impl Engine {
                 vec![self.resolve(subject).await?]
             }
             Action::CreateThread { .. }
+            | Action::Identity {..}
+            | Action::TrustAnalysis {..}
             | Action::CreateMessage { .. }
             | Action::CreateMessageDraft { .. }
             | Action::PreviewAreaTransition { .. } => vec![],
@@ -2509,6 +2537,7 @@ impl Engine {
             | Action::RevokeTransferDelivery { transfer, .. }
             | Action::CreateTransferThread { transfer, .. }
             | Action::CreateTransferMessage { transfer, .. }
+            | Action::RecordJourneyProgress { transfer, .. }
             | Action::BeginTransferSettlement { transfer, .. }
             | Action::ConfirmTransfer { transfer, .. }
             | Action::AddParty { transfer, .. }
@@ -2593,7 +2622,7 @@ impl Engine {
         self.actor_person(actor).await
     }
 
-    async fn require_transfer_draft_creator(
+    pub(crate) async fn require_transfer_draft_creator(
         &self,
         transfer_uid: &str,
         actor: Option<&str>,
@@ -3575,6 +3604,13 @@ impl Engine {
                 );
                 let mut revised = input.item.unwrap_or_else(|| previous.clone());
                 revised.disclosure = previous.disclosure.clone();
+                if !access.location || !access.quantity {
+                    revised.transport = previous.transport.clone();
+                    if previous.transport.is_some() {
+                        input.window_start = existing.window_start.clone();
+                        input.window_end = existing.window_end.clone();
+                    }
+                }
                 if !access.title {
                     revised.title = previous.title;
                 }
@@ -3611,6 +3647,11 @@ impl Engine {
                     "every promise delta must be finite and non-zero".into(),
                 ));
             }
+            let preserve_transport = private_source.is_some() && if let Some(existing) = existing_promise {
+                store::transfers::item_of(&self.store.pool, &existing.uid).await?.and_then(|item| item.transport)
+                    == input.item.as_ref().and_then(|item| item.transport.clone())
+            } else { false };
+            self.normalize_transport_item(&mut input, &creator_person_uid, preserve_transport, actor).await?;
             let item = self.resolve_transfer_item(input.item, &proposal_author_person_uid).await?;
             let (record_uid, concept_uid) = match private_source {
                 Some(source) => source,
@@ -3775,6 +3816,7 @@ impl Engine {
             creator_person_uid,
             proposal_author_person_uid,
             terms: store::transfers::TransferDraftTermsInput {
+                public_history: draft.public_history,
                 slug,
                 head,
                 agreement_type: draft.agreement.as_str().into(),
@@ -4108,6 +4150,9 @@ impl Engine {
 
     pub(crate) fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
+            Action::Identity {request} => request.permission(),
+            Action::TrustAnalysis {request,..} => request.permission(),
+            Action::TransferReceipt { request, .. } => request.permission(),
             Action::SignalEndpoints { .. } => "permission:assign",
             Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Knowledge { .. } => "record:read",
             Action::Plugins { request } => request.permission(),
@@ -4345,6 +4390,9 @@ impl Engine {
             | Action::SetRoleReadRules { .. }
             | Action::Location { .. }
             | Action::Visibility { .. }
+            | Action::Audience { .. }
+            | Action::Surplus { .. }
+            | Action::RecordJourneyProgress { .. }
             | Action::Workspace { .. }
             | Action::InspectRecordAuthority { .. }
             | Action::SetRolePolicy { .. }

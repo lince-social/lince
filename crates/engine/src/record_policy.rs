@@ -681,6 +681,11 @@ impl Engine {
             Action::CreateRecord { .. }
                 | Action::CreateRecordDraft { .. }
                 | Action::CreateRecordWithTags { .. }
+                | Action::TrustAnalysis { request: nucleus::trust_analysis::commands::Command::PublishContact {..} | nucleus::trust_analysis::commands::Command::ImportContact {..} | nucleus::trust_analysis::commands::Command::SaveQuery {..}, .. }
+                | Action::Identity {request:nucleus::identity::Command::AcceptOrganRoot {..}}
+                | Action::TrustAnalysis {request:nucleus::trust_analysis::commands::Command::Serving {request:nucleus::trust_analysis::serving::Command::Publish {..}},..}
+                | Action::TrustAnalysis {request:nucleus::trust_analysis::commands::Command::Claims {request:nucleus::trust_analysis::claims::commands::Command::Publish {..} | nucleus::trust_analysis::claims::commands::Command::Import {..}},..}
+                | Action::TrustAnalysis {request:nucleus::trust_analysis::commands::Command::Claims {request:nucleus::trust_analysis::claims::commands::Command::Recipes {request:nucleus::trust_analysis::claims::recipes::commands::Command::Save {..} | nucleus::trust_analysis::claims::recipes::commands::Command::Recompute {..}}},..}
         ) {
             Operation::Create
         } else if matches!(action, Action::DeleteRecord { .. }) {
@@ -729,6 +734,8 @@ impl Engine {
                         | Action::ApplyAreaTransition { .. }
                         | Action::TransitionRecord { .. }
                         | Action::Workspace { .. }
+                        | Action::TransferReceipt { .. }
+                        | Action::TrustAnalysis { .. }
                 )
             {
                 return Err(denied(
@@ -784,7 +791,7 @@ impl Engine {
             | Action::PreviewAreaTransition { .. }
             | Action::ApplyAreaTransition { .. }
             | Action::TransitionRecord { .. }
-            | Action::Workspace { .. } => return Ok(()),
+            | Action::Workspace { .. } | Action::TransferReceipt { .. } | Action::TrustAnalysis { .. } => return Ok(()),
             _ => {
                 if matches!(
                     Self::generic_write_permission(action),

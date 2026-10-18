@@ -29,6 +29,21 @@ pub const ATTRIBUTIONS: &[Attribution] = &[
         author: "The CPAL contributors",
         license: include_str!("../../licenses/native/cpal-Apache-2.0.txt"),
     },
+    #[cfg(target_os = "linux")]
+    Attribution {
+        name: "pulseaudio-rs",
+        author: "Colin Marc and contributors",
+        license: include_str!("../../licenses/native/pulseaudio-MIT.txt"),
+    },
+    Attribution {
+        name: "Flexaudio microphone adapter",
+        author: "tubome / Studio Sadola and Flexaudio contributors; Lince CPAL update",
+        license: concat!(
+            include_str!("../../../vendor/flexaudio-mic/CREDITS.txt"),
+            "\n",
+            include_str!("../../../vendor/flexaudio-mic/LICENSE"),
+        ),
+    },
     Attribution {
         name: "Hound",
         author: "Ruud van Asseldonk and contributors",

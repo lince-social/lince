@@ -2,10 +2,17 @@ use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::location::*;
 use serde_json::{Value, json};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     sync::{Arc, Mutex, Weak},
-    time::{Duration, Instant},
+    time::Duration,
 };
+
+pub mod clock;
+mod sessions;
+mod invitations;
+mod stopping;
+mod capture;
+use clock::Instant;
 
 #[async_trait::async_trait]
 pub trait Network: Send + Sync {
@@ -29,6 +36,8 @@ pub(crate) struct Runtime {
 struct State {
     sessions: HashMap<String, Session>,
     sources: HashMap<String, Source>,
+    invitations: HashMap<String, invitations::Lease>,
+    journey_stops: HashMap<String, Vec<(String, String)>>,
 }
 
 struct Session {
@@ -37,7 +46,8 @@ struct Session {
     latest: Option<Observation>,
     sequence: u64,
     unavailable: bool,
-    approved_at_ms: Option<i64>,
+    approved_at: Option<Instant>,
+    challenges: VecDeque<(String, Instant)>,
 }
 
 struct Source {
@@ -45,10 +55,39 @@ struct Source {
     renewed: Instant,
 }
 
+impl Source {
+    fn renew(&mut self, lease: SourceLease, started: Instant, explicit_approval: bool) -> Result<(), EngineError> {
+        if lease.session_uid != self.lease.session_uid || lease.authority_node_id != self.lease.authority_node_id || lease.settings != self.lease.settings {
+            return Err(denied("Location renewal changed its reviewed scope"));
+        }
+        if !explicit_approval && (started < self.renewed || (self.lease.approved && !lease.approved)) {return Ok(());}
+        if !(1..=30_000).contains(&lease.lease_millis) || !nucleus::valid_uid(&lease.challenge_uid,"lc") || started.elapsed() >= Duration::from_millis(u64::from(lease.lease_millis)) || (lease.approved && !self.lease.approved && !explicit_approval) {
+            return Err(denied("Location renewal changed its reviewed scope, approval or elapsed lease"));
+        }
+        self.lease = lease;
+        self.renewed = started;
+        Ok(())
+    }
+}
+
 struct Observation {
     fix: Fix,
     received: Instant,
     initial_age_ms: u64,
+}
+
+impl Session {
+    fn renew(&mut self) -> SourceLease {
+        let now = Instant::now();
+        self.lease.lease_millis = (self.deadline - now).as_millis().min(30_000) as u32;
+        self.challenges.retain(|(_, issued)| issued.elapsed() < Duration::from_secs(30));
+        self.lease.challenge_uid = nucleus::new_uid("lc");
+        if self.lease.approved {
+            self.challenges.push_back((self.lease.challenge_uid.clone(), now));
+            while self.challenges.len() > 8 { self.challenges.pop_front(); }
+        }
+        self.lease.clone()
+    }
 }
 
 impl Observation {
@@ -224,6 +263,7 @@ impl Engine {
                 .lock()
                 .expect("location observers")
                 .contains_key(&(node_id.clone(), person.clone())),
+            Command::ObserveInvitation {person,invitation} if actor.is_none() => self.location.observers.lock().expect("location observers").contains_key(&(invitation.authority_node_id.clone(),person.clone())),
             _ => false,
         };
         let organ_observer = matches!(&command, Command::Observe { person, .. } if person.is_empty() && actor.is_none());
@@ -249,19 +289,23 @@ impl Engine {
                     .sources
                     .retain(|_, source| source.lease.settings.controller_uid != *person);
             }
+            Command::StopTransfer {person,transfer_uid} => {
+                self.location.state.lock().await.sources.retain(|_,source|source.lease.settings.controller_uid != *person || source.lease.settings.transfer_uid.as_ref() != Some(transfer_uid));
+            }
             _ => {}
         }
         let record = match &command {
-            Command::Configure { settings } => Some(settings.record_uid.as_str()),
+            Command::Configure { settings } | Command::Handover { settings, .. } => Some(settings.record_uid.as_str()),
             Command::Context { record_uid, .. }
             | Command::Start { record_uid, .. }
             | Command::View { record_uid, .. }
             | Command::Stop { record_uid, .. } => Some(record_uid.as_str()),
+            Command::PrepareInvitation {record_uid,..} => Some(record_uid.as_str()),
             _ => None,
         };
         let data = if bootstrap {
             self.location_local_command(command, actor).await?
-        } else if matches!(command, Command::StopAll { .. }) {
+        } else if matches!(command, Command::StopAll { .. } | Command::StopTransfer {..}) {
             let (node, devices) = self.location_devices().await?;
             let authority = devices
                 .into_iter()
@@ -275,12 +319,25 @@ impl Engine {
                     .location_request(&authority, PeerRequest::Control { command })
                     .await?
             }
+        } else if let Command::ObserveInvitation {person,invitation} = command {
+            invitation.validate().map_err(invalid)?;
+            let node = invitation.authority_node_id.clone();
+            let person = self.location.observers.lock().expect("location observers").get(&(node.clone(),person.clone())).cloned().unwrap_or(person);
+            let started = Instant::now();
+            let response = if node == self.location_node_id()? {
+                let organ = store::organs::local(&self.store.pool).await?.ok_or_else(||invalid("Local Organ unavailable"))?.uid;
+                self.location_read_invitation(&person,&organ,&invitation).await?
+            } else {
+                self.location_network()?.location_request(&node,PeerRequest::Control {command:Command::ReadInvitation {person,invitation}}).await?
+            };
+            age_response(response,started.elapsed())
         } else if let Command::Observe {
             person,
             record_uid,
             node_id,
         } = command
         {
+            let started = Instant::now();
             if let Ok(view) = self
                 .location_network()?
                 .location_request(
@@ -293,7 +350,7 @@ impl Engine {
                 .await
             {
                 return Ok(ActionOutcome {
-                    data: Some(view),
+                    data: Some(age_response(view, started.elapsed())),
                     ..Default::default()
                 });
             }
@@ -310,22 +367,26 @@ impl Engine {
                 .get(&(node_id.clone(), person.clone()))
                 .cloned()
                 .unwrap_or(person);
-            self.location_network()?
+            let started = Instant::now();
+            let result = self.location_network()?
                 .location_request(
                     &node_id,
                     PeerRequest::Control {
                         command: Command::View { person, record_uid },
                     },
                 )
-                .await?
+                .await?;
+            age_response(result, started.elapsed())
         } else if let Some(record) = record {
             let authority = self.location_authority(record).await?;
             if authority != self.location_node_id()? {
                 let context_request = matches!(command, Command::Context { .. });
+                let started = Instant::now();
                 let mut data = self
                     .location_network()?
                     .location_request(&authority, PeerRequest::Control { command })
                     .await?;
+                data = age_response(data, started.elapsed());
                 if context_request {
                     let (node, devices) = self.location_devices().await?;
                     let cell = store::cells::local(&self.store.pool)
@@ -355,6 +416,20 @@ impl Engine {
     ) -> Result<Value, EngineError> {
         self.location_expire().await?;
         match command {
+            Command::PrepareInvitation {person,record_uid,recipient,duration_seconds,radius_metres} => self.location_prepare_invitation(&person,&record_uid,&recipient,duration_seconds,radius_metres,actor).await,
+            Command::ReadInvitation {person,invitation} => {
+                let organ = store::organs::local(&self.store.pool).await?.ok_or_else(||invalid("Local Organ unavailable"))?.uid;
+                self.location_read_invitation(&person,&organ,&invitation).await
+            }
+            Command::SendInvitation {person,conversation,invitation} => {
+                invitation.validate().map_err(invalid)?;
+                let grant = invitation.grant.as_ref().ok_or_else(||invalid("Review a recipient-scoped invitation first"))?;
+                if grant.issuer != person {return Err(denied("Only the issuing Person can send this reviewed invitation"));}
+                let precision = grant.radius_metres.map_or("permitted precise position".into(),|radius|format!("an area of at least {radius} metres radius"));
+                let text = format!("Private location invitation for {}: {precision}. Opening requires current access and recipient authentication. The source enforces its expiry.\n{}",grant.recipient,invitation.reference().map_err(invalid)?);
+                let result = self.social_command(nucleus::social::Command::SendPrivate {conversation,text},actor,nucleus::execution::now()).await?;
+                Ok(json!({"invitation_message":result.data.unwrap_or_default()}))
+            }
             Command::Context { person, record_uid } => {
                 self.refuse_unreadable(actor, std::slice::from_ref(&record_uid))
                     .await?;
@@ -390,36 +465,7 @@ impl Engine {
             }
             Command::Configure { settings } => {
                 let _mutation = self.location.mutation.lock().await;
-                settings.validate().map_err(invalid)?;
-                self.location_manage(&settings.controller_uid, &settings.record_uid, actor)
-                    .await?;
-                if self.location_authority(&settings.record_uid).await?
-                    != self.location_node_id()?
-                {
-                    return Err(denied("Location authority changed"));
-                }
-                let (_, devices) = self.location_devices().await?;
-                if !devices.iter().any(|device| {
-                    device.uid == settings.source_cell_uid
-                        && device.node_id.as_deref() == Some(settings.source_node_id.as_str())
-                }) {
-                    return Err(denied("Choose an authorized device in this Organ"));
-                }
-                for recipient in &settings.recipients {
-                    self.location_identity(recipient, None).await?;
-                    self.refuse_unreadable(actor, std::slice::from_ref(recipient))
-                        .await?;
-                }
-                if let Some(transfer) = &settings.transfer_uid {
-                    self.refuse_unreadable(actor, std::slice::from_ref(transfer))
-                        .await?;
-                    if store::transfers::get(&self.store.pool, transfer)
-                        .await?
-                        .is_none()
-                    {
-                        return Err(invalid("Choose a Transfer for the end condition"));
-                    }
-                }
+                self.location_validate_configuration(&settings,actor).await?;
                 let mut tx = self.store.pool.begin().await?;
                 store::location::save_on(&mut tx, &settings).await?;
                 tx.commit().await?;
@@ -433,68 +479,14 @@ impl Engine {
                 }
                 self.location_manage(&person, &record_uid, actor).await?;
                 let settings = self.location_controller(&person, &record_uid).await?;
-                if let Some(transfer) = &settings.transfer_uid {
-                    if store::location::transfer_ended(&self.store.pool, transfer).await? {
-                        return Err(invalid("The linked Transfer has ended"));
-                    }
-                }
-                let node = self.location_node_id()?;
-                let lease = SourceLease {
-                    authority_node_id: node.clone(),
-                    session_uid: nucleus::new_uid("location"),
-                    expires_at_ms: now_ms() + i64::from(settings.duration_seconds) * 1000,
-                    approved: false,
-                    settings,
-                };
-                {
-                    let mut state = self.location.state.lock().await;
-                    if state.sessions.contains_key(&record_uid) {
-                        return Err(invalid(
-                            "Stop the existing location session before starting another",
-                        ));
-                    }
-                    if state.sessions.len() >= MAX_SESSIONS {
-                        return Err(invalid("Too many active location sessions"));
-                    }
-                    state.sessions.insert(
-                        record_uid.clone(),
-                        Session {
-                            deadline: Instant::now()
-                                + Duration::from_secs(u64::from(lease.settings.duration_seconds)),
-                            lease: lease.clone(),
-                            latest: None,
-                            sequence: 0,
-                            unavailable: false,
-                            approved_at_ms: None,
-                        },
-                    );
-                }
-                if lease.settings.source_node_id == node {
-                    self.location.state.lock().await.sources.insert(
-                        record_uid.clone(),
-                        Source {
-                            lease,
-                            renewed: Instant::now(),
-                        },
-                    );
-                } else if let Err(error) = self
-                    .location_network()?
-                    .location_request(
-                        &lease.settings.source_node_id,
-                        PeerRequest::RequestSource {
-                            lease: lease.clone(),
-                        },
-                    )
-                    .await
-                {
-                    self.location_stop_record(&record_uid).await;
-                    return Err(error);
-                }
-                Ok(serde_json::to_value(
-                    self.location_view(&person, &record_uid).await?,
-                )?)
+                self.location_begin(settings,None).await
             }
-            Command::Approve { person, record_uid } => {
+            Command::Handover { settings, expected_session_uid } => {
+                let _mutation = self.location.mutation.lock().await;
+                self.location_validate_configuration(&settings,actor).await?;
+                self.location_begin(settings,Some(&expected_session_uid)).await
+            }
+            Command::Approve { person, record_uid, expected_session_uid } => {
                 self.location_identity(&person, actor).await?;
                 let lease = self
                     .location
@@ -508,6 +500,8 @@ impl Engine {
                 if lease.settings.controller_uid != person {
                     return Err(denied("Only the starting Person can approve this device"));
                 }
+                if lease.session_uid != expected_session_uid {return Err(denied("The source session changed; review its approval again"));}
+                let started = Instant::now();
                 let data = if lease.authority_node_id == self.location_node_id()? {
                     self.location_approve(
                         &record_uid,
@@ -529,19 +523,13 @@ impl Engine {
                         .await?
                 };
                 let next: SourceLease = serde_json::from_value(data.clone())?;
-                if let Some(source) = self
+                let mut state = self
                     .location
                     .state
                     .lock()
-                    .await
-                    .sources
-                    .get_mut(&record_uid)
-                {
-                    if source.lease.session_uid == next.session_uid {
-                        source.lease = next;
-                        source.renewed = Instant::now();
-                    }
-                }
+                    .await;
+                let source = state.sources.get_mut(&record_uid).ok_or_else(|| denied("Location source request ended before approval"))?;
+                source.renew(next,started,true)?;
                 Ok(data)
             }
             Command::View { person, record_uid } => Ok(serde_json::to_value(
@@ -552,6 +540,7 @@ impl Engine {
                 self.location_stop_record(&record_uid).await;
                 Ok(serde_json::to_value(stopped(&record_uid))?)
             }
+            Command::StopTransfer {person,transfer_uid} => self.location_stop_transfer_sessions(&person,&transfer_uid).await,
             Command::StopAll { person } => {
                 let sources: Vec<_> = self
                     .location
@@ -645,7 +634,7 @@ impl Engine {
                 self.location_publish_source(&source, fix).await?;
                 Ok(json!({"published":true}))
             }
-            Command::Observe { .. } => Err(invalid("Use the selected observer endpoint")),
+            Command::Observe { .. } | Command::ObserveInvitation {..} => Err(invalid("Use the selected observer endpoint")),
         }
     }
 
@@ -668,8 +657,8 @@ impl Engine {
             return Err(denied("This device cannot approve that location source"));
         }
         active.lease.approved = true;
-        active.approved_at_ms = Some(now_ms());
-        Ok(serde_json::to_value(&active.lease)?)
+        active.approved_at = Some(Instant::now());
+        Ok(serde_json::to_value(active.renew())?)
     }
 
     async fn location_view(&self, person: &str, record: &str) -> Result<View, EngineError> {
@@ -686,6 +675,10 @@ impl Engine {
         record: &str,
         organ: &str,
     ) -> Result<View, EngineError> {
+        self.location_person_view_scoped(person,record,organ,None).await
+    }
+
+    async fn location_person_view_scoped(&self,person:&str,record:&str,organ:&str,scope:Option<&InvitationGrant>) -> Result<View,EngineError> {
         self.location_identity(person, Some(person)).await?;
         let selected = self
             .location
@@ -698,6 +691,7 @@ impl Engine {
         let Some(lease) = selected else {
             return Ok(stopped(record));
         };
+        if scope.is_some_and(|scope|scope.issuer != lease.settings.controller_uid) {return Ok(stopped(record));}
         let controller = lease.settings.controller_uid == person;
         let decision = self
             .principal_visibility(
@@ -740,8 +734,8 @@ impl Engine {
             record,
             &lease.session_uid,
             allowed,
-            controller,
-            decision.radius_metres,
+            controller && scope.is_none(),
+            [decision.radius_metres,scope.and_then(|scope|scope.radius_metres)].into_iter().flatten().max(),
         )
         .await
     }
@@ -800,7 +794,7 @@ impl Engine {
         let Some(session) = state.sessions.get(record) else {
             return Ok(stopped(record));
         };
-        if !allowed || session.lease.session_uid != session_uid {
+        if !allowed || session.lease.session_uid != session_uid || session.deadline <= Instant::now() {
             return Ok(stopped(record));
         }
         let age = session.latest.as_ref().map(Observation::age_ms);
@@ -827,6 +821,8 @@ impl Engine {
                 .filter(|_| fresh)
                 .map(|observation| observation.fix.clone()),
             age_ms: age.filter(|_| fresh),
+            remaining_millis: Some((session.deadline - Instant::now()).as_millis() as u64),
+            next_sequence: controller.then(||session.sequence.saturating_add(1)),
             radius_metres: None,
         };
         if !controller
@@ -849,15 +845,21 @@ impl Engine {
         Ok(view)
     }
 
-    async fn location_accept_fix(
+    #[cfg(test)]
+    async fn location_accept_fix(&self, peer: &str, record: &str, session_uid: &str, fix: Fix) -> Result<Value, EngineError> {
+        let challenge = self.location.state.lock().await.sessions.get(record).map(|session|session.lease.challenge_uid.clone()).unwrap_or_default();
+        self.location_accept_challenged_fix(peer,record,session_uid,&challenge,fix).await
+    }
+
+    async fn location_accept_challenged_fix(
         &self,
         peer: &str,
         record: &str,
         session_uid: &str,
+        challenge_uid: &str,
         fix: Fix,
     ) -> Result<Value, EngineError> {
-        let timestamp = now_ms();
-        fix.validate(timestamp).map_err(invalid)?;
+        fix.validate().map_err(invalid)?;
         let mut state = self.location.state.lock().await;
         let session = state
             .sessions
@@ -868,29 +870,23 @@ impl Engine {
             || session.lease.settings.source_node_id != peer
             || session.deadline <= Instant::now()
             || fix.sequence <= session.sequence
-            || session
-                .approved_at_ms
-                .is_none_or(|approved| fix.captured_at_ms < approved)
+            || session.approved_at.is_none_or(|approved| fix.capture_age_ms > approved.elapsed().as_millis() as u64)
         {
             return Err(denied(
                 "Expired, replayed, or unauthorized location observation",
             ));
         }
-        if session
-            .latest
-            .as_ref()
-            .is_some_and(|old| fix.captured_at_ms < old.fix.captured_at_ms)
-        {
-            return Err(invalid("Location capture time moved backwards"));
-        }
+        let issued = session.challenges.iter().find(|(challenge, issued)| challenge == challenge_uid && issued.elapsed() < Duration::from_secs(30)).map(|(_,issued)|*issued).ok_or_else(|| denied("Location challenge expired or belongs to another session"))?;
+        let initial_age_ms = fix.capture_age_ms.saturating_add(issued.elapsed().as_millis() as u64);
+        if initial_age_ms >= MAX_FIX_AGE_MS as u64 {return Err(denied("Location freshness cannot be established"));}
         session.sequence = fix.sequence;
         session.latest = Some(Observation {
-            initial_age_ms: timestamp.saturating_sub(fix.captured_at_ms) as u64,
+            initial_age_ms,
             fix,
             received: Instant::now(),
         });
         session.unavailable = false;
-        Ok(serde_json::to_value(&session.lease)?)
+        Ok(serde_json::to_value(session.renew())?)
     }
 
     pub async fn location_peer(
@@ -900,7 +896,7 @@ impl Engine {
         request: PeerRequest,
     ) -> Result<Value, EngineError> {
         let write = matches!(&request, PeerRequest::Visibility { .. })
-            || matches!(&request, PeerRequest::Control { command } if !matches!(command, Command::View { .. }));
+            || matches!(&request, PeerRequest::Control { command } if !matches!(command, Command::View { .. } | Command::ReadInvitation {..}));
         self.access_scope(write, self.location_peer_inner(organ, peer, request))
             .await
     }
@@ -973,10 +969,14 @@ impl Engine {
                     command,
                     Command::Context { .. }
                         | Command::Configure { .. }
+                        | Command::Handover { .. }
                         | Command::Start { .. }
                         | Command::Stop { .. }
                         | Command::StopAll { .. }
+                        | Command::StopTransfer {..}
                         | Command::View { .. }
+                        | Command::PrepareInvitation {..}
+                        | Command::ReadInvitation {..}
                 ) {
                     return Err(denied(
                         "Source approval and acquisition require a local device action",
@@ -992,6 +992,7 @@ impl Engine {
                     ));
                 }
                 drop(connection);
+                if let Command::ReadInvitation {person,invitation} = command {return self.location_read_invitation(&person,organ,&invitation).await;}
                 self.location_identity(&person, Some(&person)).await?;
                 if let Command::View { record_uid, .. } = command {
                     return Ok(serde_json::to_value(
@@ -1015,8 +1016,10 @@ impl Engine {
                     || lease.settings.source_cell_uid != cell.uid
                     || lease.settings.source_node_id != self.location_node_id()?
                     || lease.approved
-                    || lease.expires_at_ms <= now_ms()
-                    || lease.expires_at_ms > now_ms() + i64::from(MAX_DURATION_SECONDS) * 1000
+                    || lease.lease_millis == 0
+                    || lease.lease_millis > 30_000
+                    || !nucleus::valid_uid(&lease.challenge_uid,"lc")
+                    || !nucleus::valid_uid(&lease.session_uid,"location")
                 {
                     return Err(denied("Invalid location source request"));
                 }
@@ -1067,15 +1070,15 @@ impl Engine {
                 if organ != local.uid {
                     return Err(denied("Source belongs to another Organ"));
                 }
-                let state = self.location.state.lock().await;
+                let mut state = self.location.state.lock().await;
                 let lease = state
                     .sessions
-                    .get(&record_uid)
+                    .get_mut(&record_uid)
                     .filter(|session| {
                         session.lease.session_uid == session_uid
                             && session.lease.settings.source_node_id == peer
                     })
-                    .map(|session| &session.lease);
+                    .map(Session::renew);
                 Ok(serde_json::to_value(lease)?)
             }
             PeerRequest::StopSource {
@@ -1095,57 +1098,36 @@ impl Engine {
             PeerRequest::Publish {
                 record_uid,
                 session_uid,
+                challenge_uid,
                 fix,
             } => {
                 if organ != local.uid {
                     return Err(denied("Source belongs to another Organ"));
                 }
-                self.location_accept_fix(peer, &record_uid, &session_uid, fix)
+                self.location_accept_challenged_fix(peer, &record_uid, &session_uid, &challenge_uid, fix)
                     .await
             }
             PeerRequest::Unavailable {
                 record_uid,
                 session_uid,
             } => {
-                let mut state = self.location.state.lock().await;
-                if let Some(session) = state.sessions.get_mut(&record_uid) {
-                    if session.lease.session_uid == session_uid
+                let permitted = self.location.state.lock().await.sessions.get(&record_uid).is_some_and(|session|session.lease.session_uid == session_uid
                         && session.lease.settings.source_node_id == peer
                         && organ == local.uid
-                    {
-                        session.latest = None;
-                        session.unavailable = true;
-                    }
-                }
-                Ok(json!({"unavailable":true}))
+                );
+                if permitted {self.location_stop_record_if(&record_uid,Some(&session_uid)).await;}
+                Ok(json!({"stopped":permitted}))
             }
         }
     }
 
     async fn location_stop_record(&self, record: &str) {
-        let lease = {
-            let mut state = self.location.state.lock().await;
-            state.sources.remove(record);
-            state.sessions.remove(record).map(|session| session.lease)
-        };
-        if let Some(lease) = lease {
-            if self
-                .location_node_id()
-                .is_ok_and(|node| node != lease.settings.source_node_id)
-            {
-                if let Ok(network) = self.location_network() {
-                    let _ = network
-                        .location_request(
-                            &lease.settings.source_node_id,
-                            PeerRequest::StopSource {
-                                record_uid: record.into(),
-                                session_uid: lease.session_uid,
-                            },
-                        )
-                        .await;
-                }
-            }
-        }
+        self.location_stop_record_if(record,None).await;
+    }
+
+    async fn location_stop_record_if(&self, record: &str, expected: Option<&str>) {
+        let lease = self.location.state.lock().await.stop(record,expected);
+        if let Some(lease) = lease {self.location_end_remote_source(&lease).await;}
     }
 
     async fn location_expire(&self) -> Result<(), EngineError> {
@@ -1162,20 +1144,14 @@ impl Engine {
                     session.deadline,
                     session.lease.settings.clone(),
                     session.lease.approved,
+                    session.lease.session_uid.clone(),
+                    !session.lease.approved || session.challenges.back().is_some_and(|(_,issued)|issued.elapsed() < Duration::from_secs(30)),
                 )
             })
             .collect();
-        for (record, deadline, settings, approved) in sessions {
+        for (record, deadline, settings, approved, session_uid, source_live) in sessions {
             let live = deadline > Instant::now()
-                && now_ms()
-                    < self
-                        .location
-                        .state
-                        .lock()
-                        .await
-                        .sessions
-                        .get(&record)
-                        .map_or(0, |session| session.lease.expires_at_ms)
+                && source_live
                 && store::people::is_active(&self.store.pool, &settings.controller_uid).await?
                 && self
                     .require_permission(Some(&settings.controller_uid), "record:update")
@@ -1200,27 +1176,22 @@ impl Engine {
                         && device.node_id.as_deref() == Some(settings.source_node_id.as_str())
                 })
             });
-            let source_admitted = if !approved
-                || self
-                    .location_node_id()
-                    .is_ok_and(|node| node == settings.source_node_id)
-            {
-                true
-            } else {
+            let source_admitted = {
                 let mut connection = self.store.pool.acquire().await?;
-                store::session_access::device_on(
+                let device=store::session_access::device_on(
                     &mut connection,
                     &settings.controller_uid,
                     &settings.source_node_id,
                 )
-                .await?
-                .is_some_and(|device| !device.revoked)
+                .await?;
+                device.map_or(!approved || self.location_node_id().is_ok_and(|node|node==settings.source_node_id),|device|!device.revoked)
             };
             if !live || ended || !authority_valid || !source_valid || !source_admitted {
-                self.location_stop_record(&record).await;
+                self.location_stop_record_if(&record,Some(&session_uid)).await;
             }
         }
         let mut state = self.location.state.lock().await;
+        state.invitations.retain(|_,invitation|invitation.deadline > Instant::now());
         for session in state.sessions.values_mut() {
             if session
                 .latest
@@ -1230,10 +1201,7 @@ impl Engine {
                 session.latest = None;
             }
         }
-        state.sources.retain(|_, source| {
-            source.lease.expires_at_ms > now_ms()
-                && source.renewed.elapsed() < Duration::from_secs(30)
-        });
+        state.sources.retain(|_, source| source.renewed.elapsed() < Duration::from_millis(u64::from(source.lease.lease_millis)));
         Ok(())
     }
 
@@ -1250,6 +1218,7 @@ impl Engine {
             .map(|source| source.lease.clone())
             .collect();
         for lease in sources {
+            let started = Instant::now();
             let data = if lease.authority_node_id == self.location_node_id()? {
                 serde_json::to_value(
                     self.location
@@ -1257,8 +1226,8 @@ impl Engine {
                         .lock()
                         .await
                         .sessions
-                        .get(&lease.settings.record_uid)
-                        .map(|session| &session.lease),
+                        .get_mut(&lease.settings.record_uid)
+                        .map(Session::renew),
                 )?
             } else {
                 match self
@@ -1283,8 +1252,7 @@ impl Engine {
                     continue;
                 }
                 if let Some(renewed) = renewed {
-                    source.lease = renewed;
-                    source.renewed = Instant::now();
+                    if source.renew(renewed,started,false).is_err() {state.sources.remove(&lease.settings.record_uid);}
                 } else {
                     state.sources.remove(&lease.settings.record_uid);
                 }
@@ -1302,10 +1270,13 @@ impl Engine {
             .values()
             .filter(|source| {
                 source.lease.approved
-                    && source.lease.expires_at_ms > now_ms()
-                    && source.renewed.elapsed() < Duration::from_secs(30)
+                    && source.renewed.elapsed() < Duration::from_millis(u64::from(source.lease.lease_millis))
             })
-            .map(|source| source.lease.clone())
+            .map(|source| {
+                let mut lease = source.lease.clone();
+                lease.lease_millis = lease.lease_millis.saturating_sub(source.renewed.elapsed().as_millis().min(u128::from(u32::MAX)) as u32);
+                lease
+            })
             .collect()
     }
 
@@ -1329,12 +1300,14 @@ impl Engine {
         if !source.approved {
             return Err(denied("Approve location on this device first"));
         }
-        fix.validate(now_ms()).map_err(invalid)?;
+        fix.validate().map_err(invalid)?;
+        let started = Instant::now();
         let data = if source.authority_node_id == self.location_node_id()? {
-            self.location_accept_fix(
+            self.location_accept_challenged_fix(
                 &source.settings.source_node_id,
                 &source.settings.record_uid,
                 &source.session_uid,
+                &source.challenge_uid,
                 fix,
             )
             .await?
@@ -1345,24 +1318,20 @@ impl Engine {
                     PeerRequest::Publish {
                         record_uid: source.settings.record_uid.clone(),
                         session_uid: source.session_uid.clone(),
+                        challenge_uid: source.challenge_uid.clone(),
                         fix,
                     },
                 )
                 .await?
         };
         let renewed: SourceLease = serde_json::from_value(data)?;
-        if let Some(active) = self
+        let mut state = self
             .location
             .state
             .lock()
-            .await
-            .sources
-            .get_mut(&source.settings.record_uid)
-        {
-            if active.lease.session_uid == renewed.session_uid {
-                active.renewed = Instant::now();
-            }
-        }
+            .await;
+        let active = state.sources.get_mut(&source.settings.record_uid).ok_or_else(|| denied("Location source ended before acknowledgment"))?;
+        active.renew(renewed,started,false)?;
         Ok(())
     }
 
@@ -1372,65 +1341,26 @@ impl Engine {
         longitude: f64,
         accuracy_metres: Option<f64>,
         captured_at_ms: i64,
+        capture_age_ms: u64,
         sequence: u64,
     ) -> Result<(), EngineError> {
-        self.location_expire().await?;
-        for source in self
-            .location_sources()
-            .await
-            .into_iter()
-            .filter(|source| source.settings.source_kind == SourceKind::Device)
-        {
-            self.location_publish_source(
-                &source,
-                Fix {
-                    latitude,
-                    longitude,
-                    accuracy_metres,
-                    captured_at_ms,
-                    sequence,
-                },
-            )
-            .await?;
-        }
-        Ok(())
+        let sources=self.location_sources().await;
+        self.publish_device_fix_for(&sources,Fix {latitude,longitude,accuracy_metres,captured_at_ms,capture_age_ms,sequence}).await
     }
 
     pub async fn location_device_unavailable(&self) {
-        for source in self
-            .location_sources()
-            .await
-            .into_iter()
-            .filter(|source| source.settings.source_kind == SourceKind::Device)
-        {
-            if self
-                .location_node_id()
-                .is_ok_and(|node| node == source.authority_node_id)
-            {
-                if let Some(session) = self
-                    .location
-                    .state
-                    .lock()
-                    .await
-                    .sessions
-                    .get_mut(&source.settings.record_uid)
-                {
-                    session.latest = None;
-                    session.unavailable = true;
-                }
-            } else if let Ok(network) = self.location_network() {
-                let _ = network
-                    .location_request(
-                        &source.authority_node_id,
-                        PeerRequest::Unavailable {
-                            record_uid: source.settings.record_uid,
-                            session_uid: source.session_uid,
-                        },
-                    )
-                    .await;
-            }
-        }
+        let sources=self.location_sources().await;
+        self.location_device_unavailable_for(&sources).await;
     }
+}
+
+fn age_response(mut value: Value, elapsed: Duration) -> Value {
+    let target = if value.get("view").is_some() {&mut value["view"]} else {&mut value};
+    if let Ok(mut view) = serde_json::from_value::<View>(target.clone()) {
+        view.elapse(elapsed.as_millis() as u64);
+        *target = serde_json::to_value(view).expect("Location view serialization");
+    }
+    value
 }
 
 fn stopped(record: &str) -> View {
@@ -1443,6 +1373,8 @@ fn stopped(record: &str) -> View {
         fix: None,
         radius_metres: None,
         age_ms: None,
+        remaining_millis: None,
+        next_sequence: None,
     }
 }
 

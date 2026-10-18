@@ -323,6 +323,7 @@ fn readings_use_transfer_state_and_the_actual_change_time() {
         engine
             .act(
                 Action::ActivateTransferOccurrence {
+                    original_authorities: Vec::new(),
                     transfer: transfer.transfer.clone(),
                     promise: "promise-a".into(),
                     expected_revision: transfer.revision,
@@ -392,6 +393,7 @@ fn agreement_changes_wake_bound_rules_after_names_change() {
             request_id: "rename-transfer".into(),
             person: Some(a.uid.clone()),
             draft: engine::actions::TransferDraftRevisionInput {
+                        public_history: None,
                 creator: a.uid.clone(),
                 slug: Some("renamed-trade".into()),
                 head: "Renamed Trade".into(),

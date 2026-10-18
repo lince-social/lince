@@ -12,6 +12,10 @@ use serde_json::Value;
 
 pub fn render(world: &mut World, parent: Entity, page: Page) {
     match page {
+        Page::Transfers | Page::Transfer(_) | Page::Trust(_, _) => {
+            crate::workflows::render(world, parent)
+        }
+        Page::Map => crate::map::render(world, parent),
         Page::Knowledge => crate::knowledge::render(world, parent),
         Page::Records => records(world, parent, false),
         Page::Kanban => records(world, parent, true),
@@ -244,6 +248,12 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
     button(
         world,
         parent,
+        "Map permitted locations",
+        Intent::MapRecords(vec![uid.into()]),
+    );
+    button(
+        world,
+        parent,
         "Live location",
         Intent::OpenLocation(uid.into(), None),
     );
@@ -266,6 +276,25 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
         button(world, parent, "Refresh", Intent::Refresh);
         return;
     };
+    if matches!(record["kind"].as_str(), Some("person" | "organ")) {
+        button(
+            world,
+            parent,
+            "Visible transfer experience",
+            Intent::Open(Page::Trust(
+                record["kind"].as_str().unwrap().into(),
+                uid.into(),
+            )),
+        );
+    }
+    if record["kind"] == "transfer" {
+        button(
+            world,
+            parent,
+            "Open Transfer workflow",
+            Intent::Open(Page::Transfer(uid.into())),
+        );
+    }
     for field in protein::record_schema::fields() {
         let value = display(&record[field.key]);
         if field.key == "body" {

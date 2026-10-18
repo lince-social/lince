@@ -123,7 +123,7 @@ impl crate::native::actions::Action for Control {
             return;
         };
         let (root, sand) = (controls.root, controls.sand);
-        if crate::native::laboratory::active(world)
+        if crate::native::laboratory::blocked(world, sand)
             || crate::native::laboratory::suspended(world, sand)
         {
             world.resource_mut::<Runtime>().status = "Camera unavailable in the Laboratory".into();

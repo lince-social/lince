@@ -33,6 +33,8 @@ mod transport_faults;
 
 #[path = "late_delivery/preparation_faults.rs"]
 mod preparation_faults;
+#[path = "late_delivery/location.rs"]
+mod location;
 
 struct Accepted {
     sender: Arc<Engine>,

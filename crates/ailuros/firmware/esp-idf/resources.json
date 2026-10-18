@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "toolchain": "ESP-IDF 5.5.2; dependencies.lock selects camera 2.1.0 and WebSocket client 1.6.1",
+  "local_sources": {
+    "shared_authentication": "components/lince_core/identity.c",
+    "usb_setup": "components/lince_core/provisioning.c",
+    "network_and_trusted_time": "components/lince_core/network.c",
+    "camera_and_frame_transport": "components/lince_workflows/camera.c",
+    "capture_lifecycle_and_limits": "components/lince_core/stream.c",
+    "signed_scalar_example": "components/lince_workflows/scalar.c",
+    "durable_scalar_outbox": "components/lince_core/outbox.c",
+    "custom_workflow_entry": "components/lince_workflows/custom.c",
+    "board_wiring": "board.json",
+    "memory_and_sdk_options": "sdkconfig.defaults for shared options; board.json for hardware; cmake/board.cmake derives settings under build/",
+    "sdk_documentation": "$IDF_PATH/docs/en",
+    "camera_documentation": "managed_components/espressif__esp32-camera/README.md",
+    "websocket_api": "managed_components/espressif__esp_websocket_client/include/esp_websocket_client.h",
+    "camera_clock": "board.json camera.xclk_hz; null camera disables the built-in camera workflow",
+    "board_catalog": "boards/*.json (copied from crates/ailuros/boards on export)",
+    "validation_guide": "TESTING.txt"
+  },
+  "validation": {
+    "host": "nix develop .#interface --command cargo test -p lince-ailuros",
+    "device": "cargo xtask ailuros compile-tests <exported-project> produces an artifact marked tests. After separately authorized installation, read the ailuros-tests JSON result on UART at 115200 baud. Recompile with compile, then install the artifact marked workflow to resume normal operation.",
+    "test_configuration": "CONFIG_UNITY_ENABLE_64BIT=y is required; firmware configuration rejects tests without it. Test objects are retained with WHOLE_ARCHIVE.",
+    "camera": "The lince-facade example ailuros_camera_check exercises actual JPEG decoding, two viewers, final-viewer idle and resuming capture against an explicitly selected local Cell. Stop other instances using that Cell before running it.",
+    "verified_hardware": "Historical baseline before the board-profile/build-configuration refactor: GOOUUU V1.5 N16R8 / OV2640 passed 15 firmware cases and 170 decoded 320x240 JPEG frames with viewer lifecycle, including wall USB power. The refactored source has not yet repeated SDK compilation or hardware tests.",
+    "board_configuration": "nix develop .#interface --command cargo test -p lince-ailuros --test board_configuration -- --ignored (requires CMake 3.19+)",
+    "sdk_matrix": "Export fresh esp32s3 and goouuu-esp32s3-cam-v1.5 projects. Compile workflow and test images for both. Switch camera -> base -> camera in one build directory and confirm PSRAM/clock settings follow the profile. Then compile workflow after compile-tests and verify test mode is OFF."
+  },
+  "upstream": [
+    {
+      "topic": "Pinned camera driver and supported sensors",
+      "url": "https://components.espressif.com/components/espressif/esp32-camera/versions/2.1.0/readme"
+    },
+    {
+      "topic": "Pinned camera starter example; its board pins are examples, not a GOOUUU schematic",
+      "url": "https://components.espressif.com/components/espressif/esp32-camera/versions/2.1.0/examples/camera_example"
+    },
+    {
+      "topic": "Pinned WebSocket client",
+      "url": "https://components.espressif.com/components/espressif/esp_websocket_client/versions/1.6.1"
+    },
+    {
+      "topic": "WebSocket concepts and API; latest docs can differ from the pinned header",
+      "url": "https://docs.espressif.com/projects/esp-protocols/esp_websocket_client/docs/latest/index.html"
+    },
+    {
+      "topic": "ESP32-S3 installation, USB connection and recovery tools",
+      "url": "https://docs.espressif.com/projects/esptool/en/latest/esp32s3/index.html"
+    },
+    {
+      "topic": "Official hardware datasheets and reference documents",
+      "url": "https://www.espressif.com/support/documents/technical-documents"
+    },
+    {
+      "topic": "Camera-clock interference with Wi-Fi; firsthand reproduction and 8 MHz workaround, validate on each board",
+      "url": "https://github.com/espressif/arduino-esp32/issues/5834"
+    },
+    {
+      "topic": "Pinned ESP32-S3 PSRAM modes and clock configuration",
+      "url": "https://github.com/espressif/esp-idf/blob/v5.5.2/components/esp_psram/esp32s3/Kconfig.spiram"
+    },
+    {
+      "topic": "Maintained SDK configuration defaults and product profiles",
+      "url": "https://docs.espressif.com/projects/vscode-esp-idf-extension/en/latest/additionalfeatures/project-configuration.html"
+    }
+  ],
+  "sdk_reading_paths": [
+    "docs/en/security/secure-boot-v2.rst",
+    "docs/en/security/flash-encryption.rst",
+    "docs/en/api-reference/storage/nvs_flash.rst",
+    "docs/en/api-guides/wifi.rst",
+    "docs/en/api-guides/wifi-security.rst",
+    "docs/en/api-reference/provisioning/wifi_provisioning.rst",
+    "docs/en/api-reference/system/esp_https_ota.rst"
+  ],
+  "workflow_recipes": [
+    {
+      "name": "camera",
+      "edit": [
+        "board.json",
+        "components/lince_workflows/camera.c"
+      ],
+      "signal": "Memory-only JPEG; capture follows viewer demand"
+    },
+    {
+      "name": "scalar",
+      "edit": [
+        "components/lince_workflows/scalar.c"
+      ],
+      "signal": "Signed numeric readings; persist pending bytes before transmission and advance after matching receipt"
+    },
+    {
+      "name": "custom",
+      "edit": [
+        "components/lince_workflows/custom.c",
+        "components/lince_workflows/include/lince_workflows.h"
+      ],
+      "signal": "Choose scalar or JPEG output and reuse the shared identity, networking and lifecycle APIs"
+    }
+  ],
+  "setup_notes": [
+    "The default esp32s3 profile assumes at least 4 MiB flash and no PSRAM or camera. The verified goouuu-esp32s3-cam-v1.5 profile requires 16 MiB physical flash, octal PSRAM at 80 MHz and the measured OV2640 pin map. Flash installation retains the protected 4 MiB partition layout for both.",
+    "The GOOUUU profile selects an 8 MHz camera clock because 20 MHz stalled transport on the tested hardware. Other sensors/boards need an explicitly verified clock; it is not a global camera default.",
+    "cmake/board.cmake derives SDK defaults from board.json. SDK configuration lives under build/ and is selected by a digest of the board, default settings and dependency inputs, preventing stale memory/clock options after changing profiles. Persist intentional overrides in source, not generated SDK files.",
+    "Use the native IDE and Fiote to review editable firmware source, then compile and install through the same pipeline. Keep Wi-Fi credentials out of source and model context.",
+    "The ESP needs a reachable HTTPS/WSS Facade origin and trusted certificate; Cell identity is configured separately from its address.",
+    "USB is the supplied initial installation/provisioning path. Wireless provisioning and OTA are possible separate extensions, not implemented setup modes.",
+    "Wall USB power works independently of the setup computer; the selected Cell or gateway must remain available.",
+    "Keys currently use software storage. Secure boot, flash encryption and irreversible chip protections require a separate recovery design."
+  ],
+  "supported_targets": "ESP32-S3 only. Other ESP SoCs require a separately implemented and tested adapter; a different chip string is rejected.",
+  "source_ownership": {
+    "repository": "Shared firmware components, workflows, hardware profiles, manifests/lockfiles, default settings, tests, licenses and resources. Public improvements to exported workspaces belong back here or in a separately versioned custom project.",
+    "private_installation": "Wi-Fi credentials, device keys, destination Cell/Signal binding, TLS keys, raw flash backups and Cell snapshots stay outside source control. No installed-device identifiers or network credentials are needed to export or compile a starter.",
+    "generated": "SDK configuration, fetched managed_components and build outputs are generated locally. Keep reviewed images plus source revision/profile/toolchain/hash as release artifacts rather than committing caches.",
+    "customization": "Edit board.json for sensor wiring, PSRAM mode/clock and camera clock. Edit sdkconfig.defaults for common SDK options and workflow sources for behavior. Built-in profiles are selected through the native Create project buttons or xtask export/select-profile."
+  }
+}

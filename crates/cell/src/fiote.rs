@@ -25,14 +25,19 @@ mod behavior;
 mod connections;
 mod context;
 mod history;
+mod handoff;
+mod intake;
+mod entry;
 pub mod laboratory;
 mod mentions;
 mod output;
+pub mod physical_workspace;
 mod profiles;
 #[cfg(test)]
 mod tests;
 mod timeline;
 mod usage;
+mod voice;
 mod working_directory;
 pub(crate) mod vault;
 
@@ -63,21 +68,23 @@ struct Login {
     task: tokio::task::JoinHandle<Result<Secret, String>>,
 }
 
+#[derive(Clone)]
 pub struct Host {
-    agents: agents::Agents,
-    preparation: Mutex<()>,
-    profile_lock: Mutex<()>,
-    assignments: Mutex<assignments::Queue>,
-    activation_dispatch: Mutex<()>,
+    agents: Arc<agents::Agents>,
+    preparation: Arc<Mutex<()>>,
+    profile_lock: Arc<Mutex<()>>,
+    assignments: Arc<Mutex<assignments::Queue>>,
+    activation_dispatch: Arc<Mutex<()>>,
+    handoff_dispatch: Arc<Mutex<()>>,
     engine: Arc<Engine>,
     directory: PathBuf,
     running: Arc<Mutex<HashMap<String, Running>>>,
     provider: Option<Arc<dyn Provider>>,
     vault: Arc<vault::Vault>,
-    login: Mutex<Option<Login>>,
-    refresh_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
-    catalog: fiote::adapters::Catalog,
-    connections: Mutex<HashMap<String, connections::Opened>>,
+    login: Arc<Mutex<Option<Login>>>,
+    refresh_locks: Arc<Mutex<HashMap<String, Arc<Mutex<()>>>>>,
+    catalog: Arc<fiote::adapters::Catalog>,
+    connections: Arc<Mutex<HashMap<String, connections::Opened>>>,
 }
 
 impl Host {
@@ -100,14 +107,15 @@ impl Host {
         std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
         let host = Self {
             agents: Default::default(),
-            preparation: Mutex::new(()),
-            profile_lock: Mutex::new(()),
-            assignments: Mutex::new(assignments::Queue::load(&directory)?),
-            activation_dispatch: Mutex::new(()),
+            preparation: Arc::new(Mutex::new(())),
+            profile_lock: Arc::new(Mutex::new(())),
+            assignments: Arc::new(Mutex::new(assignments::Queue::load(&directory)?)),
+            activation_dispatch: Arc::new(Mutex::new(())),
+            handoff_dispatch: Arc::new(Mutex::new(())),
             vault: Arc::new(vault::Vault::new(engine.clone())),
-            login: Mutex::new(None),
+            login: Arc::new(Mutex::new(None)),
             refresh_locks: Default::default(),
-            catalog: fiote::adapters::Catalog::load(&directory).await?,
+            catalog: Arc::new(fiote::adapters::Catalog::load(&directory).await?),
             connections: Default::default(),
             engine,
             directory,
@@ -259,6 +267,11 @@ impl Host {
         });
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
+            assistant_reply: None,
+            assistant_directory: None,
+            assistant_request: None,
+            intake: self.intake_selection().await?,
+            handoffs: self.handoff_receipts(None, Some(record)).await?,
             working_directory: self.working_directory_status(record).await,
             connections: self.profile_status(record)?,
             activations: self
@@ -478,6 +491,18 @@ fn save(path: &Path, value: &impl Serialize) -> Result<(), String> {
 
 #[async_trait::async_trait]
 impl Service for Host {
+    async fn discover(&self, offset: usize, limit: usize) -> Result<fiote::assistant::Directory, String> {
+        self.assistant_directory(offset, limit).await
+    }
+
+    async fn delegate(&self, source: fiote::assistant::Source, request: fiote::assistant::Delegate) -> Result<fiote::assistant::Handoff, String> {
+        self.delegate_request(source, request).await
+    }
+
+    async fn handoffs(&self, thread: &str) -> Result<Vec<fiote::assistant::Handoff>, String> {
+        self.record(thread).await?;
+        self.handoff_receipts(Some(thread), None).await
+    }
     async fn terminal(
         &self,
         request: fiote::acp::terminal::TerminalRequest,
@@ -485,6 +510,31 @@ impl Service for Host {
         self.login_terminal(request).await
     }
     async fn handle(&self, request: Request) -> Result<Status, String> {
+        if let Request::AssistantSend { request } = request {
+            let receipt = self.assistant_send(request).await?;
+            let mut status = self.status(&receipt.target).await?;
+            status.assistant_request = Some(receipt);
+            return Ok(status);
+        }
+        if let Request::AssistantContinue { request, conversation } = request {
+            let receipt = self.assistant_continue(request, conversation).await?;
+            let mut status = self.status(&receipt.target).await?;
+            status.assistant_request = Some(receipt);
+            return Ok(status);
+        }
+        if let Request::AssistantInspect { request_id } = &request {
+            let receipt = self.assistant_receipt(request_id).await?;
+            let mut status = self.status(&receipt.target).await?;
+            if receipt.state == "completed"
+                && let Some(reply) = &receipt.reply
+            {
+                let message = self.record(reply).await?;
+                status.assistant_reply = Some(message.body.chars().take(65_536).collect());
+            }
+            status.assistant_request = Some(receipt);
+            return Ok(status);
+        }
+        let mut assistant_directory = None;
         let inspected = match &request {
             Request::InspectThread { thread }
             | Request::RefreshInstructions { thread, .. }
@@ -495,6 +545,11 @@ impl Service for Host {
             _ => None,
         };
         let record = match request {
+            Request::AssistantDirectory { record, offset, limit } => {
+                assistant_directory = Some(self.assistant_directory(offset, limit).await?);
+                record
+            }
+            Request::AssistantSend { .. } | Request::AssistantContinue { .. } | Request::AssistantInspect { .. } => unreachable!(),
             Request::Delete { record } => {
                 if !self
                     .running
@@ -852,8 +907,19 @@ impl Service for Host {
                 let _ = run.stop.send(true);
                 run.record.clone()
             }
+            Request::StopChild { record, thread } => {
+                if !self.handoff_receipts(None, Some(&record)).await?.iter()
+                    .any(|receipt| receipt.thread.as_deref() == Some(&thread)) {
+                    return Err("This child conversation was not delegated by the selected Fiote.".into());
+                }
+                let running = self.running.lock().await;
+                let run = running.get(&thread).ok_or("No turn is running in this child conversation.")?;
+                run.stop.send(true).map_err(|_| "The child conversation has already stopped.")?;
+                record
+            }
         };
         let mut status = self.status(&record).await?;
+        status.assistant_directory = assistant_directory;
         if let Some(thread) = inspected {
             status.agent_session = self.agent_session_status(&thread).await?;
             status.usage = usage::read(&usage::path(&self.directory, &thread))?;
@@ -906,6 +972,17 @@ impl Host {
         body: &str,
         content: &[nucleus::message::MessagePart],
     ) -> Result<Option<ActionOutcome>, String> {
+        Box::pin(self.start_input_turn(thread, body, content, None, None)).await
+    }
+
+    async fn start_input_turn(
+        &self,
+        thread: &str,
+        body: &str,
+        content: &[nucleus::message::MessagePart],
+        forwarded: Option<handoff::Forwarded>,
+        pin_recipient: Option<&str>,
+    ) -> Result<Option<ActionOutcome>, String> {
         if !nucleus::valid_uid(thread, "r") {
             return Err("Choose a valid thread identifier.".into());
         }
@@ -928,12 +1005,13 @@ impl Host {
             store::records::get_extension(&self.engine.store.pool, thread, "lince.fiote-task")
                 .await
                 .map_err(|e| e.to_string())?;
-        let mentioned = self.mentioned_fiote(body).await?;
+        let mentioned = if forwarded.is_some() || pin_recipient.is_some() { None } else { self.mentioned_fiote(body).await? };
         let laboratory = store::records::get_extension(&self.engine.store.pool, thread, laboratory::NAMESPACE)
             .await.map_err(|error| error.to_string())?;
         let is_mention = mentioned.is_some();
         let mut selected = mentioned;
         for record in parents {
+            if pin_recipient.is_some_and(|target| target != record.uid) { continue; }
             if is_mention {
                 break;
             }
@@ -994,6 +1072,7 @@ impl Host {
                 thread,
                 body,
                 content,
+                forwarded,
                 &mut running,
             ))
             .await
@@ -1008,11 +1087,10 @@ impl Host {
                 content: content.to_vec(),
             }
         });
-        let mut system = self.session_instructions(&record.uid, thread).await?;
+        let system = self.session_instructions(&record.uid, thread).await?;
         let mut tools = Registry::default();
         if laboratory.is_none() && let Some((directory, _)) = self.effective_working_directory(&record.uid).await? {
             tools.register_workspace(&directory)?;
-            system.push_str(&format!("\n\nWorking directory: {}\nFile tools use paths relative to this directory. run_command executes shell commands in this directory with the same operating-system permissions as Lince; the working directory is not a filesystem sandbox. Use these tools to inspect, edit and test the project when requested. Read project instructions such as AGENTS.md before changing project files. Commands may change files; report their actual results and failures.", directory.display()));
         }
         let native = transport::Session::local(
             self.engine.clone(),
@@ -1025,6 +1103,7 @@ impl Host {
             thread: thread.into(),
         })
         .with_instructions(system.clone());
+        let native = native.with_fiote_service(Arc::new(self.clone()));
         native.register(&mut tools);
         let laboratory_tools = laboratory.as_ref().map(|_| Registry::default());
         self.save_context(thread, &record.uid, &[], laboratory_tools.as_ref().unwrap_or(&tools)).await?;
@@ -1082,10 +1161,10 @@ impl Host {
             .engine
             .act(
                 Action::CreateMessage {
-                    content: content.to_vec(),
+                    content: forwarded.as_ref().map(|source| source.content(content)).unwrap_or_else(|| content.to_vec()),
                     thread: thread.into(),
                     body: body.into(),
-                    author: None,
+                    author: forwarded.as_ref().map(|source| source.author.clone()),
                     state: MessageState::Finished,
                     parent: None,
                     references: Vec::new(),

@@ -165,7 +165,7 @@ fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
 }
 
 fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
     crate::native::practice_cells::send(world, owner, message)

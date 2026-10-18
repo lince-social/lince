@@ -9,6 +9,8 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::native::instinct::import_ui::tests::laboratory_cases(&mut cases);
     crate::native::actions::tests::laboratory_cases(&mut cases);
     crate::native::shortcuts::tests::laboratory_cases(&mut cases);
+    #[cfg(any(test, feature = "behavior-checks"))]
+    crate::native::layout::desktop::tests::laboratory_cases(&mut cases);
     crate::native::area::tests::laboratory_cases(&mut cases);
     crate::native::area_effects::tests::laboratory_cases(&mut cases);
     crate::native::influence_report::tests::laboratory_cases(&mut cases);
@@ -68,7 +70,9 @@ pub fn catalogue() -> Vec<super::Case> {
     super::components::laboratory_cases(&mut cases);
     crate::native::command_castle::tests::laboratory_cases(&mut cases);
     crate::native::frequency_castle::tests::laboratory_cases(&mut cases);
-    crate::native::transfer_castle::tests::laboratory_cases(&mut cases);
+    crate::native::transfer_castle::laboratory_cases(&mut cases);
+    crate::native::trust_castle::tests::laboratory_cases(&mut cases);
+    crate::native::organ_castle::profile_claim_laboratory_cases(&mut cases);
     crate::native::karma_castle::tests::laboratory_cases(&mut cases);
     crate::native::sand_panel::tests::laboratory_cases(&mut cases);
     super::tests::laboratory_cases(&mut cases);

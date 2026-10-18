@@ -84,7 +84,7 @@ fn send(
     id: &str,
     action: engine::actions::Action,
 ) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, owner) {
         return Err("Automation is read-only in the Laboratory".into());
     }
     crate::native::practice_cells::send(

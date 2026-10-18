@@ -638,7 +638,7 @@ pub(super) fn update(world: &mut World) {
         .collect();
     let mut wanted: BTreeMap<Key, BTreeSet<PathBuf>> = BTreeMap::new();
     for owner in &owners {
-        if crate::native::laboratory::suspended(world, *owner) {
+        if crate::native::laboratory::blocked(world, *owner) {
             continue;
         }
         configure(world, *owner);

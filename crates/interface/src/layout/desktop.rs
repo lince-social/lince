@@ -110,6 +110,10 @@ impl Default for Influence {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Workspace {
+    #[serde(default)]
+    minimized: BTreeSet<PlacementId>,
+    #[serde(default)]
+    minimized_fullscreen: BTreeSet<PlacementId>,
     #[serde(skip)]
     influences: BTreeMap<PlacementId, Influence>,
     mode: WorkspaceLayout,
@@ -154,6 +158,8 @@ pub enum LayoutError {
 impl Workspace {
     pub fn new(mode: WorkspaceLayout) -> Self {
         Self {
+            minimized: BTreeSet::new(),
+            minimized_fullscreen: BTreeSet::new(),
             influences: BTreeMap::new(),
             mode,
             gap: 8.0,
@@ -191,10 +197,32 @@ impl Workspace {
             .is_some_and(|column| self.columns[column].maximized)
     }
 
+    pub fn minimized(&self, id: PlacementId) -> bool { self.minimized.contains(&id) }
+
+    pub fn clear_focus(&mut self) { self.focused = None; }
+
+    pub fn set_minimized(&mut self, id: PlacementId, minimized: bool) -> bool {
+        if !self.items.iter().any(|item| item.id == id) { return false; }
+        if minimized {
+            self.minimized.insert(id);
+            if self.fullscreen == Some(id) { self.minimized_fullscreen.insert(id); self.fullscreen = None; }
+            if self.focused == Some(id) {
+                self.focused = self.columns.iter().flat_map(|column| &column.items).copied()
+                    .chain(self.items.iter().map(|item| item.id)).find(|candidate| !self.minimized.contains(candidate));
+            }
+        } else {
+            self.minimized.remove(&id);
+            if self.minimized_fullscreen.remove(&id) && self.fullscreen.is_none() { self.fullscreen = Some(id); }
+        }
+        true
+    }
+
     pub fn request_state(&mut self, id: PlacementId, request: crate::host::WindowRequest) -> bool {
         if !self.items.iter().any(|item| item.id == id) {
             return false;
         }
+        if request.fullscreen == Some(true) || request.maximized == Some(true) { self.set_minimized(id, false); }
+        if request.fullscreen == Some(false) { self.minimized_fullscreen.remove(&id); }
         if let Some(enabled) = request.fullscreen {
             if enabled {
                 self.fullscreen = Some(id);
@@ -207,6 +235,7 @@ impl Workspace {
         {
             self.columns[column].maximized = enabled;
         }
+        if let Some(minimized) = request.minimized { self.set_minimized(id, minimized); }
         true
     }
 
@@ -258,6 +287,10 @@ impl Workspace {
             }
         }
         tiled == arranged
+            && self.minimized.iter().all(|id| all.contains(id))
+            && self.minimized_fullscreen.iter().all(|id| self.minimized.contains(id))
+            && self.focused.is_none_or(|id| !self.minimized.contains(&id))
+            && self.fullscreen.is_none_or(|id| !self.minimized.contains(&id))
             && self.influences.iter().all(|(id, influence)| {
                 all.contains(id)
                     && influence.scale.is_finite()
@@ -300,17 +333,16 @@ impl Workspace {
             .unwrap_or(0);
         self.remove_from_columns(id);
         let removed = self.items.remove(index);
+        self.minimized.remove(&id);
+        self.minimized_fullscreen.remove(&id);
         self.influences.remove(&id);
         if self.fullscreen == Some(id) {
             self.fullscreen = None;
         }
         if self.focused == Some(id) {
-            self.focused = self
-                .columns
-                .get(column.min(self.columns.len().saturating_sub(1)))
-                .and_then(|column| column.items.get(row.min(column.items.len() - 1)))
-                .copied()
-                .or_else(|| self.items.last().map(|item| item.id));
+            self.focused = self.columns.iter().skip(column.min(self.columns.len().saturating_sub(1)))
+                .flat_map(|column| &column.items).skip(row).copied()
+                .chain(self.items.iter().rev().map(|item| item.id)).find(|id| !self.minimized.contains(id));
         }
         Some(removed)
     }
@@ -350,6 +382,7 @@ impl Workspace {
 
     pub fn focus(&mut self, id: PlacementId, usable: Rectangle) -> Result<(), LayoutError> {
         self.item_mut(id)?;
+        self.set_minimized(id, false);
         self.focused = Some(id);
         if self.fullscreen.is_some() {
             self.fullscreen = Some(id);
@@ -394,6 +427,7 @@ impl Workspace {
             .iter()
             .find(|item| Some(item.id) == self.focused)
         else {
+            if let Some(id) = solution.items.first().map(|item| item.id) { self.focus(id, usable)?; return Ok(true); }
             return Ok(false);
         };
         let axis = match direction {
@@ -446,13 +480,54 @@ impl Workspace {
             .iter()
             .position(|item| *item == id)
             .unwrap();
+        if matches!(
+            self.mode,
+            WorkspaceLayout::Row | WorkspaceLayout::Column | WorkspaceLayout::Grid
+        ) {
+            let minimized = &self.minimized;
+            let positions: Vec<_> = self
+                .columns
+                .iter()
+                .enumerate()
+                .flat_map(|(column, entry)| {
+                    entry
+                        .items
+                        .iter()
+                        .enumerate()
+                        .filter(move |(_, id)| !minimized.contains(id))
+                        .map(move |(row, id)| (column, row, *id))
+                })
+                .collect();
+            let index = positions
+                .iter()
+                .position(|(_, _, current)| *current == id)
+                .unwrap();
+            let columns = match self.mode {
+                WorkspaceLayout::Column => 1,
+                WorkspaceLayout::Grid => (positions.len() as f64).sqrt().ceil() as usize,
+                _ => positions.len(),
+            };
+            let target = match direction {
+                Direction::Left => (index % columns > 0).then(|| index - 1),
+                Direction::Right => (index % columns + 1 < columns).then(|| index + 1),
+                Direction::Up => index.checked_sub(columns),
+                Direction::Down => index.checked_add(columns),
+            }
+            .filter(|target| *target < positions.len());
+            let Some(target) = target else {
+                return false;
+            };
+            let (other_column, other_row, other) = positions[target];
+            self.columns[column].items[row] = other;
+            self.columns[other_column].items[other_row] = id;
+            return true;
+        }
         match direction {
             Direction::Up | Direction::Down => {
                 let target = if direction == Direction::Up {
-                    row.checked_sub(1)
+                    (0..row).rev().find(|row| !self.minimized.contains(&self.columns[column].items[*row]))
                 } else {
-                    row.checked_add(1)
-                        .filter(|row| *row < self.columns[column].items.len())
+                    (row + 1..self.columns[column].items.len()).find(|row| !self.minimized.contains(&self.columns[column].items[*row]))
                 };
                 let Some(target) = target else {
                     return false;
@@ -460,19 +535,13 @@ impl Workspace {
                 self.columns[column].items.swap(row, target);
             }
             Direction::Left | Direction::Right => {
-                if self.columns[column].items.len() > 1 {
+                if self.columns[column].items.iter().filter(|id| !self.minimized.contains(id)).count() > 1 {
                     let width = self.columns[column].width;
                     self.columns[column].items.remove(row);
                     let target = column + usize::from(direction == Direction::Right);
                     self.columns.insert(target, new_column(id, width));
                 } else {
-                    let target = if direction == Direction::Left {
-                        column.checked_sub(1)
-                    } else {
-                        column
-                            .checked_add(1)
-                            .filter(|column| *column < self.columns.len())
-                    };
+                    let target = self.adjacent_column(column, direction);
                     let Some(target) = target else {
                         return false;
                     };
@@ -490,13 +559,7 @@ impl Workspace {
         let Some(column) = self.column(id) else {
             return false;
         };
-        let target = match direction {
-            Direction::Left => column.checked_sub(1),
-            Direction::Right => column
-                .checked_add(1)
-                .filter(|column| *column < self.columns.len()),
-            _ => return false,
-        };
+        let target = self.adjacent_column(column, direction);
         let Some(target) = target else {
             return false;
         };
@@ -596,12 +659,17 @@ impl Workspace {
         if self.mode == WorkspaceLayout::ScrollingColumns {
             self.split_overflow(inner[1], gap);
         }
-        let entries: BTreeMap<_, _> = self.items.iter().map(|item| (item.id, item)).collect();
+        let columns: Vec<_> = self.columns.iter().filter_map(|column| {
+            let mut column = column.clone();
+            column.items.retain(|id| !self.minimized.contains(id));
+            (!column.items.is_empty()).then_some(column)
+        }).collect();
+        let entries: BTreeMap<_, _> = self.items.iter().filter(|item| !self.minimized.contains(&item.id)).map(|item| (item.id, item)).collect();
         let mut solved = Vec::with_capacity(self.items.len());
         let mut extent = inner;
         match self.mode {
             WorkspaceLayout::Free => {
-                for item in self.items.iter().filter(|item| !item.floating) {
+                for item in self.items.iter().filter(|item| !item.floating && !self.minimized.contains(&item.id)) {
                     solved.push(SolvedItem {
                         id: item.id,
                         rectangle: free_rectangle(item),
@@ -611,7 +679,7 @@ impl Workspace {
             }
             WorkspaceLayout::ScrollingColumns => {
                 let mut x = gap;
-                for column in &self.columns {
+                for column in &columns {
                     let requested = if column.maximized {
                         inner[0]
                     } else {
@@ -660,8 +728,7 @@ impl Workspace {
                 extent[0] = extent[0].max(x);
             }
             WorkspaceLayout::Row | WorkspaceLayout::Column | WorkspaceLayout::Grid => {
-                let ids: Vec<_> = self
-                    .columns
+                let ids: Vec<_> = columns
                     .iter()
                     .flat_map(|column| &column.items)
                     .copied()
@@ -731,7 +798,7 @@ impl Workspace {
                 .unwrap();
             }
         }
-        for item in self.items.iter().filter(|item| item.floating) {
+        for item in self.items.iter().filter(|item| item.floating && !self.minimized.contains(&item.id)) {
             solved.push(SolvedItem {
                 id: item.id,
                 rectangle: free_rectangle(item),
@@ -770,6 +837,15 @@ impl Workspace {
             .position(|column| column.items.contains(&id))
     }
 
+    fn adjacent_column(&self, column: usize, direction: Direction) -> Option<usize> {
+        let visible = |column: &usize| self.columns[*column].items.iter().any(|id| !self.minimized.contains(id));
+        match direction {
+            Direction::Left => (0..column).rev().find(visible),
+            Direction::Right => (column + 1..self.columns.len()).find(visible),
+            _ => None,
+        }
+    }
+
     fn remove_from_columns(&mut self, id: PlacementId) {
         for column in &mut self.columns {
             column.items.retain(|item| *item != id);
@@ -787,9 +863,12 @@ impl Workspace {
         while index < self.columns.len() {
             let column = &self.columns[index];
             let mut used = 0.0;
+            let mut visible = 0;
             let split = column.items.iter().enumerate().find_map(|(row, id)| {
-                used += minimums[id] + if row == 0 { 0.0 } else { gap };
-                (row > 0 && used > height).then_some(row)
+                if self.minimized.contains(id) { return None; }
+                used += minimums[id] + if visible == 0 { 0.0 } else { gap };
+                visible += 1;
+                (visible > 1 && used > height).then_some(row)
             });
             if let Some(split) = split {
                 let items = self.columns[index].items.split_off(split);

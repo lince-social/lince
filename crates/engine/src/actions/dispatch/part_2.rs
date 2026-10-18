@@ -833,17 +833,6 @@ impl Engine {
                         .ok_or_else(|| EngineError::Consequence("Agent was not created".into()))?;
                     outcome.facts.extend(created.facts);
                     self.act(
-                        Action::AssertRecord {
-                            subject: uid.clone(),
-                            predicate: "agent".into(),
-                            object: None,
-                            quantity: None,
-                            unit: None,
-                        },
-                        actor.clone(),
-                    )
-                    .await?;
-                    self.act(
                         Action::SetIdentity {
                             subject: uid.clone(),
                             predicate: Some("agent".into()),

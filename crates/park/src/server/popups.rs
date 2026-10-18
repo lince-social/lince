@@ -168,8 +168,12 @@ impl State {
                 root = popup.get_parent_surface()?;
                 continue;
             }
+            if let Some(popup) = self.ime.popups.iter().find(|popup| popup.wl_surface() == &root) {
+                root = popup.get_parent()?.surface.clone();
+                continue;
+            }
             return (self.id(&root).is_some() || self.layers.surfaces.contains_key(&root))
-                .then_some(root);
+                .then_some(root.clone()).or_else(|| (self.native_surface.as_ref() == Some(&root)).then_some(root));
         }
         None
     }
@@ -274,7 +278,7 @@ impl State {
                 if let Some(geometry) = map.layer_geometry(layer) {
                     bounds = Rectangle::new(
                         (-geometry.loc.x, -geometry.loc.y).into(),
-                        output.output.current_mode().unwrap().size.to_logical(1),
+                        super::outputs::logical_size(&output.output).unwrap(),
                     );
                 }
             }
@@ -372,6 +376,7 @@ impl State {
                     nodes: self.nodes(popup.wl_surface()),
                 })
             })
+            .chain(self.ime_snapshots(root))
             .collect()
     }
 }

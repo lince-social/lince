@@ -376,7 +376,7 @@ impl Action for Command {
             return;
         };
         if !crate::native::area_panel::owns(world, root, target)
-            || crate::native::laboratory::active(world)
+            || crate::native::laboratory::blocked(world, target)
             || crate::native::laboratory::suspended(world, target)
             || config.source != Source::Organ(organ.clone())
             || (matches!(self, Self::Login) && !config.enabled)

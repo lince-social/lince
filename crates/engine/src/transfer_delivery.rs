@@ -1585,6 +1585,11 @@ impl Engine {
         command
             .validate_shape()
             .map_err(|message| delivery_conflict("transfer_remote_command_invalid", message))?;
+        if matches!(action, crate::actions::Action::RecordJourneyProgress { step, .. } if step.terminal())
+            && store::transfer_delivery::remote_command(&self.store.pool, &command.command_uid).await?.is_none()
+        {
+            self.location_bind_journey_stop(&command.command_uid, actor_person_uid, transfer_uid).await;
+        }
         let commit = store::transfer_delivery::persist_remote_command_with_karma(
             &self.store.pool,
             "outgoing",
@@ -1632,7 +1637,8 @@ pub(crate) fn remote_action_binding(
         | Action::CreateTransferMessage {
             request_id, person, ..
         } => Some((person, request_id, None)),
-        Action::ProposeTransferLoanExtension {
+        Action::RecordJourneyProgress { expected_revision, request_id, person, .. }
+        | Action::ProposeTransferLoanExtension {
             expected_revision, request_id, person, ..
         } => Some((person, request_id, Some(*expected_revision))),
         Action::BeginTransferSettlement {
@@ -1733,6 +1739,7 @@ fn remote_action_transfer_token(action: &crate::actions::Action) -> Option<&str>
     use crate::actions::Action;
     match action {
         Action::ReopenTransferPromise { transfer, .. }
+        | Action::RecordJourneyProgress { transfer, .. }
         | Action::CounterofferTransfer { transfer, .. }
         | Action::ClaimOpenTransferPromise { transfer, .. }
         | Action::SetTransferAgreementLevel { transfer, .. }

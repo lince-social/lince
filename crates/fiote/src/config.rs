@@ -116,6 +116,21 @@ pub enum Request {
         record: String,
     },
     Directory,
+    AssistantDirectory {
+        record: String,
+        offset: usize,
+        limit: usize,
+    },
+    AssistantSend {
+        request: crate::assistant::EntryRequest,
+    },
+    AssistantContinue {
+        conversation: crate::assistant::Conversation,
+        request: crate::assistant::EntryRequest,
+    },
+    AssistantInspect {
+        request_id: String,
+    },
     Delete {
         record: String,
     },
@@ -234,10 +249,22 @@ pub enum Request {
     Stop {
         thread: String,
     },
+    StopChild {
+        record: String,
+        thread: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Status {
+    #[serde(default)]
+    pub assistant_reply: Option<String>,
+    pub assistant_directory: Option<crate::assistant::Directory>,
+    pub assistant_request: Option<crate::assistant::EntryReceipt>,
+    #[serde(default)]
+    pub intake: Option<Intake>,
+    #[serde(default)]
+    pub handoffs: Vec<crate::assistant::Handoff>,
     #[serde(default)]
     pub working_directory: WorkingDirectory,
     #[serde(default)]
@@ -325,6 +352,15 @@ pub struct PromptSource {
 pub struct FioteChoice {
     pub record: String,
     pub title: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Intake {
+    pub record: String,
+    pub title: String,
+    pub children: usize,
+    pub created_at: String,
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

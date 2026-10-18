@@ -83,6 +83,11 @@ pub enum Command {
         #[serde(default)]
         offset: u32,
     },
+    InspectMeasurement {
+        concept: String,
+        #[serde(default)]
+        unit: Option<String>,
+    },
     ExportTranslations {
         vocabulary: String,
     },
@@ -167,6 +172,25 @@ pub enum Command {
     },
 }
 
+impl Command {
+    pub fn is_mutation(&self) -> bool {
+        !matches!(
+            self,
+            Self::InspectPublication { .. }
+                | Self::PreviewPackage { .. }
+                | Self::RecordHistory { .. }
+                | Self::InspectTerminology
+                | Self::BindQuery { .. }
+                | Self::InspectMeaning { .. }
+                | Self::InspectMeasurement { .. }
+                | Self::ExportTranslations { .. }
+                | Self::PreviewTranslations { .. }
+                | Self::InspectFeature { .. }
+                | Self::PreviewFeature { .. }
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Term {
@@ -249,6 +273,14 @@ pub struct TranslationPackage {
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
 pub enum SavedLocationCommand {
+    Page {
+        query: Option<serde_json::Value>,
+        #[serde(default)]
+        records: Vec<String>,
+        after: Option<String>,
+        generation: String,
+        bounds: [f64; 4],
+    },
     Inspect {
         record: String,
     },

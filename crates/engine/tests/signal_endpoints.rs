@@ -936,7 +936,7 @@ fn signing_format_is_unambiguous_and_rejects_noncanonical_numbers() {
     assert_eq!(
         String::from_utf8(bytes).unwrap(),
         format!(
-            "lince-signal-endpoint-v1\n{}\nr_00000000000000000000000001\n1\nr_00000000000000000000000002\n1\n1900000000\n12.5\n",
+            "lince-ailuros-v1\n{}\nr_00000000000000000000000001\n1\nr_00000000000000000000000002\n1\n1900000000\n12.5\n",
             "00".repeat(32)
         )
     );
@@ -945,4 +945,136 @@ fn signing_format_is_unambiguous_and_rejects_noncanonical_numbers() {
         reading.value = value.into();
         assert!(reading.signing_payload().is_err(), "{value}");
     }
+}
+
+fn stream_proof(audience: &str, endpoint: &Endpoint, key: &SigningKey, challenge: &str) -> engine::ailuros::StreamProof {
+    let mut proof = engine::ailuros::StreamProof {
+        audience: audience.into(),
+        device: endpoint.uid.clone(),
+        key_epoch: endpoint.credential_epoch,
+        signal: endpoint.signal_uid.clone(),
+        challenge: challenge.into(),
+        signature: String::new(),
+    };
+    let signature: Signature = key.sign(&proof.signing_payload().unwrap());
+    proof.signature = hex(&signature.to_bytes());
+    proof
+}
+
+#[test]
+fn ailuros_wire_uses_record_fields_and_separates_stream_signatures() {
+    let key = signing_key(1);
+    let reading = Reading {
+        audience: "00".repeat(32),
+        endpoint: "r_00000000000000000000000001".into(),
+        signal: "r_00000000000000000000000002".into(),
+        credential_epoch: 1,
+        sequence: 1,
+        issued_at: 1900000000,
+        value: "12.5".into(),
+        signature: String::new(),
+    };
+    let wire = serde_json::to_value(&reading).unwrap();
+    assert_eq!(wire["device"], reading.endpoint);
+    assert_eq!(wire["key_epoch"], 1);
+    assert!(wire.get("endpoint").is_none());
+    assert!(wire.get("credential_epoch").is_none());
+    let mut unknown = wire.clone();
+    unknown["endpoint"] = Value::String(reading.endpoint.clone());
+    assert!(serde_json::from_value::<Reading>(unknown).is_err());
+    let proof = engine::ailuros::StreamProof {
+        audience: reading.audience.clone(),
+        device: reading.endpoint.clone(),
+        signal: reading.signal.clone(),
+        key_epoch: 1,
+        challenge: "ab".repeat(32),
+        signature: String::new(),
+    };
+    assert_eq!(String::from_utf8(proof.signing_payload().unwrap()).unwrap(), format!(
+        "lince-ailuros-stream-v1\n{}\n{}\n1\n{}\n{}\npublish\n",
+        proof.audience, proof.device, proof.signal, proof.challenge
+    ));
+    let scalar_signature: Signature = key.sign(&reading.signing_payload().unwrap());
+    let stream_signature: Signature = key.sign(&proof.signing_payload().unwrap());
+    assert_ne!(scalar_signature, stream_signature);
+    let mut bad = proof.clone();
+    bad.challenge = "AB".repeat(32);
+    assert!(bad.signing_payload().is_err());
+    bad = proof.clone();
+    bad.device.push('\n');
+    assert!(bad.signing_payload().is_err());
+    bad = proof;
+    bad.key_epoch = 0;
+    assert!(bad.signing_payload().is_err());
+}
+
+#[test]
+fn ailuros_stream_budget_limits_frames_payload_and_bandwidth_and_resets_its_window() {
+    use engine::ailuros::{StreamBudget, STREAM_MAX_PAYLOAD, STREAM_MAX_FPS};
+    use std::time::{Duration, Instant};
+    let now = Instant::now();
+    let mut budget = StreamBudget::new(now);
+    for _ in 0..STREAM_MAX_FPS { budget.accept(1, now).unwrap(); }
+    assert!(budget.accept(1, now).is_err());
+    budget.accept(1, now + Duration::from_secs(1)).unwrap();
+    let mut budget = StreamBudget::new(now);
+    assert!(budget.accept(STREAM_MAX_PAYLOAD + 1, now).is_err());
+    let mut budget = StreamBudget::new(now);
+    for _ in 0..4 { budget.accept(STREAM_MAX_PAYLOAD, now).unwrap(); }
+    assert!(budget.accept(1, now).is_err());
+}
+
+#[test]
+fn firmware_decimal_fixtures_follow_the_server_canonicalization_contract() {
+    let cases: Vec<Value> = serde_json::from_str(include_str!("../../ailuros/firmware/esp-idf/fixtures/decimals.json")).unwrap();
+    for case in cases {
+        let value = case["value"].as_str().unwrap();
+        let accepted = nucleus::DecimalValue::parse_inferred(value).is_ok_and(|parsed| parsed.to_string() == value);
+        assert_eq!(accepted,case["accepted"].as_bool().unwrap(),"{case}");
+    }
+}
+
+#[tokio::test]
+async fn ailuros_stream_proof_binds_server_device_signal_key_and_connection_challenge() {
+    let engine = support::engine().await;
+    let key = signing_key(1);
+    let (audience, disabled) = enroll(&engine, &key, "ailuros-camera").await;
+    let endpoint = enable(&engine, &disabled, true).await;
+    let (server, challenge) = engine.ailuros_stream_challenge().await.unwrap();
+    assert_eq!(server, audience);
+    let (_, other_challenge) = engine.ailuros_stream_challenge().await.unwrap();
+    assert_ne!(challenge, other_challenge);
+    let proof = stream_proof(&audience, &endpoint, &key, &challenge);
+    let identity = engine.authenticate_ailuros_stream(&proof, &challenge, &endpoint.signal_uid).await.unwrap();
+    assert_eq!(engine.authorize_ailuros_stream(&identity).await.unwrap().uid, endpoint.uid);
+    assert!(engine.authenticate_ailuros_stream(&proof, &other_challenge, &endpoint.signal_uid).await.is_err());
+    let (_, other) = enroll(&engine, &key, "other-camera").await;
+    assert!(engine.authenticate_ailuros_stream(&proof, &challenge, &other.signal_uid).await.is_err());
+    let wrong_key = stream_proof(&audience, &endpoint, &signing_key(2), &challenge);
+    assert!(engine.authenticate_ailuros_stream(&wrong_key, &challenge, &endpoint.signal_uid).await.is_err());
+    let wrong_server = stream_proof(&"ff".repeat(32), &endpoint, &key, &challenge);
+    assert!(engine.authenticate_ailuros_stream(&wrong_server, &challenge, &endpoint.signal_uid).await.is_err());
+    let mut wrong_epoch_endpoint = endpoint.clone();
+    wrong_epoch_endpoint.credential_epoch += 1;
+    let wrong_epoch = stream_proof(&audience, &wrong_epoch_endpoint, &key, &challenge);
+    assert!(engine.authenticate_ailuros_stream(&wrong_epoch, &challenge, &endpoint.signal_uid).await.is_err());
+    let disabled = enable(&engine, &endpoint, false).await;
+    assert!(engine.authorize_ailuros_stream(&identity).await.is_err());
+    assert!(engine.authenticate_ailuros_stream(&proof, &challenge, &endpoint.signal_uid).await.is_err());
+    let replacement = engine.act(Action::SignalEndpoints { request: Request::Save {
+        endpoint: Some(disabled.uid.clone()),
+        expected_revision: Some(disabled.revision),
+        name: disabled.name.clone(),
+        public_key: public_key(&signing_key(2)),
+        signal_slug: disabled.signal_uid.clone(),
+        enabled: false,
+        cooldown_seconds: disabled.cooldown_seconds,
+        minimum: disabled.minimum.clone(),
+        maximum: disabled.maximum.clone(),
+        expires_at: (nucleus::execution::now() + chrono::Duration::days(1)).to_rfc3339(),
+    } }, None).await.unwrap().data.unwrap();
+    let changed: Endpoint = serde_json::from_value(replacement["endpoints"].as_array().unwrap().iter().find(|row| row["uid"] == disabled.uid).unwrap().clone()).unwrap();
+    enable(&engine, &changed, true).await;
+    assert!(engine.authorize_ailuros_stream(&identity).await.is_err());
+    assert!(engine.authenticate_ailuros_stream(&proof, &challenge, &endpoint.signal_uid).await.is_err());
 }

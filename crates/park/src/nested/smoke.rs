@@ -4,6 +4,7 @@ use smithay::backend::allocator::Buffer;
 #[derive(Default)]
 pub(super) struct Check {
     phase: u8,
+    previous: Option<(Arc<Completed>, Arc<renderer::Presented>)>,
 }
 
 impl Check {
@@ -11,23 +12,29 @@ impl Check {
         self.phase == 9
     }
 
-    pub(super) fn advance(&mut self, desktop: &mut Desktop) -> io::Result<bool> {
+    pub(super) fn advance(&mut self, desktop: &mut Desktop) -> io::Result<()> {
         if self.phase == 8 && desktop.server.windows().is_empty() {
+            for code in [125, 42, 1] {
+                desktop.key(code, true, 0)?;
+            }
+            for code in [1, 42, 125] {
+                desktop.key(code, false, 0)?;
+            }
             self.phase = 9;
-            return Ok(true);
+            return Ok(());
         }
         let Some(current) = &desktop.current else {
-            return Ok(false);
+            return Ok(());
         };
         let Some(geometry) = &current.frame.geometry else {
-            return Ok(false);
+            return Ok(());
         };
         let Some(item) = geometry
             .items
             .iter()
             .find(|item| matches!(item.id, ItemId::Application(_)))
         else {
-            return Ok(false);
+            return Ok(());
         };
         let ItemId::Application(id) = item.id else {
             unreachable!()
@@ -143,6 +150,7 @@ impl Check {
             }
             4 if !fullscreen && fitted => {
                 if desktop.output_count > 1 {
+                    self.previous = desktop.output_frames.get(&OutputId(1)).cloned();
                     desktop.send(Input::Action(DesktopAction::MoveToOutput(
                         lince_interface::host::Direction::Right,
                     )))?;
@@ -153,6 +161,55 @@ impl Check {
                 }
             }
             5 if item_output != OutputId(1) && focused_output == Some(item_output) => {
+                let previous = self
+                    .previous
+                    .take()
+                    .ok_or_else(|| io::Error::other("Missing the previous output snapshot"))?;
+                let latest = desktop
+                    .output_frames
+                    .get(&item_output)
+                    .cloned()
+                    .ok_or_else(|| io::Error::other("Missing the new output snapshot"))?;
+                let old_item = previous
+                    .0
+                    .frame
+                    .geometry
+                    .as_ref()
+                    .and_then(|geometry| {
+                        geometry.items.iter().find(|item| {
+                            item.id == ItemId::Application(id) && item.output == OutputId(1)
+                        })
+                    })
+                    .ok_or_else(|| io::Error::other("Missing the previous application position"))?;
+                let old_center = std::array::from_fn(|axis| {
+                    old_item.mapping.canvas.origin()[axis]
+                        + old_item.mapping.canvas.size()[axis] * 0.5
+                });
+                desktop.output_presented(OutputId(1), previous.0, previous.1, renderer::capture::monotonic(), 0)?;
+                desktop.output_presented(item_output, latest.0.clone(), latest.1.clone(), renderer::capture::monotonic(), 0)?;
+                desktop.pointer = old_center;
+                if !matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == OutputId(1))
+                {
+                    return Err(io::Error::other(
+                        "An output waiting for its page flip lost the input snapshot of its visible application",
+                    ));
+                }
+                desktop.pointer = center;
+                if !matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == item_output)
+                {
+                    return Err(io::Error::other(
+                        "The output that presented first did not adopt its new input snapshot",
+                    ));
+                }
+                desktop.output_presented(OutputId(1), latest.0, latest.1, renderer::capture::monotonic(), 0)?;
+                desktop.pointer = old_center;
+                if matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == OutputId(1))
+                {
+                    return Err(io::Error::other(
+                        "The output that finished its page flip retained an obsolete input target",
+                    ));
+                }
+                desktop.pointer = center;
                 desktop.send(Input::Action(DesktopAction::FocusOutput(
                     lince_interface::host::Direction::Left,
                 )))?;
@@ -177,6 +234,6 @@ impl Check {
             }
             _ => {}
         }
-        Ok(self.complete())
+        Ok(())
     }
 }

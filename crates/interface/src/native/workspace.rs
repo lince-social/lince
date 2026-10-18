@@ -131,6 +131,8 @@ struct SavedSand {
 #[derive(Serialize, Deserialize)]
 struct Document {
     #[serde(default)]
+    physical_workspaces: Vec<crate::native::physical_workspace::Saved>,
+    #[serde(default)]
     shader_editors: Vec<crate::native::shader_effects::SavedEditor>,
     #[serde(default)]
     shader_settings: crate::native::shader_effects::ShaderSettings,
@@ -203,6 +205,36 @@ struct Document {
 }
 
 impl Document {
+    fn exclude_workspace(&mut self, temporary: u64, previous: u64) {
+        if self.active == temporary {
+            self.active = previous;
+        }
+        self.workspaces.retain(|space| space.id != temporary);
+        self.deleted_workspaces.remove(&temporary);
+        macro_rules! retain {
+            ($($field:ident),* $(,)?) => {
+                $(self.$field.retain(|saved| saved.workspace != temporary);)*
+            };
+        }
+        retain!(
+            physical_workspaces, shader_editors, terrain_effects, layouts, imports,
+            sands, records, areas, proteins, karma_castles, simulations,
+            frequency_castles, transfer_castles, recorders, documents, media,
+            drawings, extension_sands, editors, explorers, calendars, maps,
+            kanbans, instincts,
+        );
+        self.assertions.retain(|saved| saved.frame.workspace != temporary);
+        self.shaders.retain(|saved| saved.workspace() != temporary);
+        if let Some(state) = &mut self.canvas_state {
+            let snapshot = &mut state.snapshot;
+            if snapshot.active_workspace == temporary {
+                snapshot.active_workspace = previous;
+            }
+            snapshot.workspaces.retain(|space| space.id != temporary);
+            snapshot.placements.retain(|placement| placement.workspace != temporary);
+        }
+    }
+
     fn validation_error(&self) -> Option<String> {
         if self.validate() {
             return None;
@@ -239,7 +271,10 @@ impl Document {
     fn validate(&self) -> bool {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
-        self.shader_editors
+        self.physical_workspaces.len() <= 64
+            && self.physical_workspaces.iter().map(|saved| saved.workspace).collect::<HashSet<_>>().len() == self.physical_workspaces.len()
+            && self.physical_workspaces.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self.shader_editors
             .iter()
             .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
@@ -564,6 +599,7 @@ fn initialize(world: &mut World) {
                     saved.restore(world, root);
                 }
                 world.insert_resource(document.shader_settings);
+                crate::native::physical_workspace::restore(world, root, document.physical_workspaces);
                 for saved in document.assertions {
                     saved.restore(world, root);
                 }
@@ -799,7 +835,15 @@ pub(crate) fn regroup_saved(
 }
 
 pub fn switch(world: &mut World, root: Entity, target: u64) -> bool {
-    if crate::native::laboratory::scope(world)
+    switch_inner(world, root, target, false)
+}
+
+pub fn switch_output(world: &mut World, root: Entity, target: u64) -> bool {
+    switch_inner(world, root, target, true)
+}
+
+fn switch_inner(world: &mut World, root: Entity, target: u64, preserve_laboratory: bool) -> bool {
+    if !preserve_laboratory && crate::native::laboratory::scope(world)
         .is_some_and(|(owner, _, workspace, _)| owner == root && target != workspace)
     {
         crate::native::laboratory::close(world);
@@ -1064,6 +1108,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     )>();
     for (entity, parent, item, member, sand, record) in items.iter(world) {
         if parent.parent() != root
+            || crate::native::laboratory::temporary_owner(world, entity)
             || world
                 .get::<crate::native::external_drop::Preview>(entity)
                 .is_some()
@@ -1126,7 +1171,8 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         })
         .collect();
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));
-    Document {
+    let mut document = Document {
+        physical_workspaces: crate::native::physical_workspace::snapshot(world, root),
         canvas_id: Some(canvas_id),
         hidden_records,
         canvas_state,
@@ -1174,7 +1220,13 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         maps: crate::native::map_castle::snapshot(world, root),
         kanbans: crate::native::kanban::snapshot(world, root),
         instincts: crate::native::instinct::snapshot(world, root),
+    };
+    if let Some((owner, _, temporary, previous)) = crate::native::laboratory::scope(world)
+        && owner == root
+    {
+        document.exclude_workspace(temporary, previous);
     }
+    document
 }
 
 pub fn validate_scene(world: &mut World, root: Entity) -> Result<(), String> {
@@ -1211,10 +1263,11 @@ pub(crate) fn persist(world: &mut World) {
         world.resource_mut::<Messages<AppExit>>().clear();
     }
     if crate::native::laboratory::active(world) {
-        if world.resource::<Messages<AppExit>>().is_empty() {
+        if !world.resource::<Messages<AppExit>>().is_empty() {
+            crate::native::laboratory::close(world);
+        } else if !crate::native::laboratory::normal(world) {
             return;
         }
-        crate::native::laboratory::close(world);
     }
     if world
         .get_resource::<WorkspaceFile>()
@@ -1353,6 +1406,38 @@ pub(crate) mod tests {
         app.update();
         flush(&mut app);
         (app, root)
+    }
+
+    #[test]
+    fn scoped_laboratory_is_excluded_from_both_saved_workspace_and_canvas_api() {
+        let (mut app, root) = fixture(None);
+        create(app.world_mut(), root);
+        let temporary = app.world().get::<Workspaces>(root).unwrap().active;
+        crate::native::area::spawn_area(
+            app.world_mut(), root, temporary,
+            crate::native::area::InfluenceArea::new(
+                crate::native::area::AreaShape::Circle,
+                DVec2::ZERO, DVec2::splat(200.0),
+            ),
+        ).unwrap();
+        app.world_mut().insert_resource(
+            crate::native::laboratory::Laboratory::scoped_for_test(root, temporary, 1),
+        );
+        app.world_mut().get_mut::<CanvasView>(root).unwrap().center = DVec2::splat(999.0);
+        let saved = snapshot(app.world_mut(), root);
+        assert_eq!(saved.active, 1);
+        assert!(saved.workspaces.iter().all(|space| space.id != temporary));
+        assert!(saved.areas.is_empty());
+        assert_ne!(saved.workspaces[0].center, [999.0; 2]);
+        let captured = crate::native::canvas_host::capture(app.world_mut(), root).unwrap();
+        assert_eq!(captured.active_workspace, 1);
+        assert!(captured.workspaces.iter().all(|space| space.id != temporary));
+        assert!(captured.placements.iter().all(|item| item.workspace != temporary));
+        switch_output(app.world_mut(), root, 1);
+        app.world_mut().get_mut::<CanvasView>(root).unwrap().center = DVec2::splat(123.0);
+        let saved = snapshot(app.world_mut(), root);
+        assert_eq!(saved.workspaces[0].center, [123.0; 2]);
+        assert!(crate::native::laboratory::active(app.world()));
     }
 
     #[test]

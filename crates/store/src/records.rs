@@ -390,6 +390,9 @@ pub async fn mark_deleted_on(
     uid: &str,
 ) -> Result<(), StoreError> {
     require_active_on(tx, uid).await?;
+    let active_plan: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_extension WHERE record_uid=? AND namespace=? AND CASE WHEN json_valid(fds) THEN COALESCE(json_extract(fds,'$.status'),'') ELSE '' END!='stopped')")
+        .bind(uid).bind(nucleus::visibility::plan::PRIVATE_NAMESPACE).fetch_one(&mut **tx).await?;
+    if active_plan { return Err(protocol("Stop the audience plan before deleting its Record")); }
     let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(
         "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ?
@@ -462,6 +465,27 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
                         AND a.retracted_at IS NULL) AS identity_predicate_uid
                FROM record r WHERE r.deleted_at IS NULL ORDER BY r.created_at, r.uid",
         )
+        .fetch_all(pool)
+        .await?,
+    )
+}
+
+pub async fn get_many(pool: &SqlitePool, uids: &[&str]) -> Result<Vec<RecordRow>, StoreError> {
+    if uids.len() > 10_000 {
+        return Err(protocol("Choose at most 10000 Record identities"));
+    }
+    let ids = serde_json::to_string(uids).map_err(|error| protocol(error.to_string()))?;
+    map_rows(
+        sqlx::query(
+            "SELECT r.*,
+                    (SELECT predicate_uid FROM record_assertion a
+                      WHERE a.subject_uid=r.uid AND a.role='identity'
+                        AND a.retracted_at IS NULL) AS identity_predicate_uid
+               FROM record r WHERE r.deleted_at IS NULL
+                AND r.uid IN (SELECT value FROM json_each(?))
+              ORDER BY r.created_at,r.uid",
+        )
+        .bind(ids)
         .fetch_all(pool)
         .await?,
     )
@@ -663,8 +687,66 @@ pub async fn set_extension_on(
     namespace: &str,
     fds: &Value,
 ) -> Result<Option<i64>, StoreError> {
+    if namespace == nucleus::transfer::surplus::NAMESPACE {
+        return Err(protocol("Change stock policies through their reviewed actions"));
+    }
+    if namespace == nucleus::visibility::plan::PRIVATE_NAMESPACE {
+        return Err(protocol("Change audience plans through reviewed visibility actions"));
+    }
     require_active_on(tx, record_uid).await?;
     validate_extension_name(namespace, "namespace", true)?;
+    if namespace == nucleus::transfer::public_history::NAMESPACE {
+        return Err(protocol("Change public-history terms through a reviewed Transfer revision"));
+    }
+    if namespace == nucleus::trust_analysis::serving::NAMESPACE {
+        let original:Option<String> = sqlx::query_scalar("SELECT review_json FROM record_evidence_serving WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {return Err(protocol("Review a new evidence serving permission instead of replacing it"));}
+    }
+    if namespace == nucleus::identity::roots::NAMESPACE {
+        let original:Option<String> = sqlx::query_scalar("SELECT review_json FROM organ_root_recognition WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {return Err(protocol("Append a reviewed root recognition instead of replacing its decision"));}
+    }
+    if namespace == nucleus::trust_analysis::query::NAMESPACE {
+        let original:Option<String> = sqlx::query_scalar("SELECT policy_json FROM trust_query_record WHERE record_uid=?")
+            .bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref() != Some(fds) {
+            return Err(protocol("Save a new reader policy instead of replacing its original fields"));
+        }
+    }
+    if namespace == nucleus::trust_analysis::claims::recipes::NAMESPACE {
+        let original:Option<String> = sqlx::query_scalar("SELECT recipe_json FROM profile_claim_recipe_record WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {
+            return Err(protocol("Review a new publication recipe instead of changing its authorization"));
+        }
+    }
+    if namespace == nucleus::trust_analysis::claims::NAMESPACE {
+        let original:Option<String> = sqlx::query_scalar("SELECT document_json FROM profile_claim_record WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {
+            return Err(protocol("Append a reviewed signed claim instead of replacing its fields"));
+        }
+    }
+    if namespace == nucleus::trust_analysis::contacts::NAMESPACE {
+        let original: Option<String> = sqlx::query_scalar("SELECT document_json FROM contact_disclosure_record WHERE record_uid=?")
+            .bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error| protocol(error.to_string()))?.as_ref() != Some(fds) {
+            return Err(protocol("Append a reviewed signed contact disclosure instead of rewriting evidence"));
+        }
+    }
+    if namespace=="lince.message-content" || namespace.starts_with("lince.message-data.") {
+        let saved:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_artifact_delivery WHERE message_uid=?)").bind(record_uid).fetch_one(&mut **tx).await?;
+        if saved { return Err(protocol("Send a new reviewed artifact instead of changing delivered attachments")); }
+    }
+    if namespace == nucleus::transfer::receipt::NAMESPACE {
+        let original: Option<String> = sqlx::query_scalar("SELECT document_json FROM transfer_receipt_version WHERE record_uid=? ORDER BY version DESC LIMIT 1")
+            .bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error| protocol(error.to_string()))?.as_ref() != Some(fds) {
+            return Err(protocol("Use verified receipt controls to append signed evidence"));
+        }
+    }
+    if namespace == nucleus::transfer::receipt_source::NAMESPACE {
+        let original:Option<String>=sqlx::query_scalar("SELECT payload_json FROM transfer_receipt_source_record WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
+        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error| protocol(error.to_string()))?.as_ref()!=Some(fds) { return Err(protocol("Use reviewed source controls to append signed snapshots")); }
+    }
     if namespace == nucleus::transfer::outcome::NAMESPACE {
         let original: Option<String> = sqlx::query_scalar("SELECT payload_json FROM transfer_outcome_record WHERE record_uid=?")
             .bind(record_uid).fetch_optional(&mut **tx).await?;
@@ -674,6 +756,46 @@ pub async fn set_extension_on(
             return Err(protocol("Append a signed outcome correction instead of rewriting evidence"));
         }
     }
+    write_extension_on(tx, record_uid, namespace, fds).await
+}
+
+pub async fn set_stock_policy_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    record: &str,
+    value: &nucleus::transfer::surplus::Saved,
+) -> Result<Option<i64>, StoreError> {
+    require_active_on(tx, record).await?;
+    write_extension_on(tx, record, nucleus::transfer::surplus::NAMESPACE,
+        &serde_json::to_value(value).map_err(|error|protocol(error.to_string()))?).await
+}
+
+pub async fn set_audience_plan_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    record: &str,
+    value: &nucleus::visibility::plan::Saved,
+) -> Result<Option<i64>, StoreError> {
+    require_active_on(tx, record).await?;
+    write_extension_on(tx, record, nucleus::visibility::plan::PRIVATE_NAMESPACE,
+        &serde_json::to_value(value).map_err(|error| protocol(error.to_string()))?).await
+}
+
+pub(crate) async fn set_transfer_public_history_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    record: &str,
+    terms: Option<&nucleus::transfer::public_history::Terms>,
+) -> Result<Option<i64>, StoreError> {
+    require_active_on(tx, record).await?;
+    if let Some(terms) = terms { terms.validate().map_err(protocol)?; }
+    let fields = terms.map_or_else(|| serde_json::json!({}), |terms| serde_json::json!({"terms":terms}));
+    write_extension_on(tx, record, nucleus::transfer::public_history::NAMESPACE, &fields).await
+}
+
+async fn write_extension_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    record_uid: &str,
+    namespace: &str,
+    fds: &Value,
+) -> Result<Option<i64>, StoreError> {
     let (encoded, new_fields) = extension_json(fds)?;
     let old = stored_extension_on(tx, record_uid, namespace).await?;
     let Some(old) = old else {
@@ -744,8 +866,34 @@ pub async fn delete_extension_on(
     record_uid: &str,
     namespace: &str,
 ) -> Result<bool, StoreError> {
+    if namespace == nucleus::visibility::plan::PRIVATE_NAMESPACE {
+        return Err(protocol("Stop an audience plan through its reviewed action"));
+    }
     require_active_on(tx, record_uid).await?;
     validate_extension_name(namespace, "namespace", true)?;
+    if namespace == nucleus::transfer::public_history::NAMESPACE { return Err(protocol("Remove public-history terms through a reviewed Transfer revision")); }
+    if namespace == nucleus::identity::roots::NAMESPACE { return Err(protocol("Root recognition retains its original reviewed decision")); }
+    if namespace == nucleus::trust_analysis::serving::NAMESPACE { return Err(protocol("Delete the serving permission Record to stop; retain its reviewed decision")); }
+    if namespace == nucleus::trust_analysis::query::NAMESPACE {
+        return Err(protocol("Retain the saved reader policy; delete its Record or save a new policy"));
+    }
+    if namespace == nucleus::trust_analysis::claims::NAMESPACE {
+        return Err(protocol("Retain the original signed claim and append a withdrawal"));
+    }
+    if namespace == nucleus::trust_analysis::claims::recipes::NAMESPACE {
+        return Err(protocol("Publication recipes retain their original authorization"));
+    }
+    if namespace == nucleus::trust_analysis::contacts::NAMESPACE {
+        return Err(protocol("Retain the original signed contact disclosure and append a withdrawal"));
+    }
+    if namespace=="lince.message-content" || namespace.starts_with("lince.message-data.") {
+        let saved:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_artifact_delivery WHERE message_uid=?)").bind(record_uid).fetch_one(&mut **tx).await?;
+        if saved { return Err(protocol("Retain the original delivery attachment")); }
+    }
+    if namespace == nucleus::transfer::receipt::NAMESPACE {
+        return Err(protocol("Receipt evidence is retained through its signed version history"));
+    }
+    if namespace == nucleus::transfer::receipt_source::NAMESPACE { return Err(protocol("Original source snapshots retain their signed payloads")); }
     if namespace == nucleus::transfer::outcome::NAMESPACE {
         let saved: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_outcome_record WHERE record_uid=?)")
             .bind(record_uid).fetch_one(&mut **tx).await?;

@@ -1,0 +1,297 @@
+{
+  "model": "english-modern-nli",
+  "revision": "d421c4545a438fd006fb43f8b981c5d908faa1e1",
+  "thresholds": {
+    "admission": 0.9,
+    "routing": 0.85,
+    "margin": 0.15
+  },
+  "gate": {
+    "positive_required": 18,
+    "positive_count": 20,
+    "negative_activation_limit": 0,
+    "negative_count": 50
+  },
+  "cases": [
+    {
+      "request_id": "modern-positive-01",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-02",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-03",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-04",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-05",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-06",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-07",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-08",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-09",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-10",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-11",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-12",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-13",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-14",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-15",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-16",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-17",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-18",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-19",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-positive-20",
+      "expected": "assistant_request"
+    },
+    {
+      "request_id": "modern-negative-01",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-02",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-03",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-04",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-05",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-06",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-07",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-08",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-09",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-10",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-11",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-12",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-13",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-14",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-15",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-16",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-17",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-18",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-19",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-20",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-21",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-22",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-23",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-24",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-25",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-26",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-27",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-28",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-29",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-30",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-31",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-32",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-33",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-34",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-35",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-36",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-37",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-38",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-39",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-40",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-41",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-42",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-43",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-44",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-45",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-46",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-47",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-48",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-49",
+      "expected": "no_activation"
+    },
+    {
+      "request_id": "modern-negative-50",
+      "expected": "no_activation"
+    }
+  ]
+}

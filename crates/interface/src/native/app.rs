@@ -16,6 +16,30 @@ pub struct CellHandle(pub cell::CellRuntime);
 #[derive(Resource, Clone)]
 pub struct OutputTarget(pub bevy::camera::RenderTarget);
 
+pub fn text_ready_to_close(world: &mut World) -> bool {
+    if world
+        .query::<&bevy::text::EditableText>()
+        .iter(world)
+        .any(|text| text.is_composing() || crate::native::record_view::pending_text(text))
+    {
+        return false;
+    }
+    !world
+        .query::<(
+            &crate::native::record_view::RecordEditor,
+            &bevy::text::EditableText,
+        )>()
+        .iter(world)
+        .any(|(record, text)| {
+            record.pending.is_some() || text.value().to_string() != record.confirmed
+        })
+}
+
+pub fn cancel_close(world: &mut World) {
+    world.resource_mut::<Messages<AppExit>>().clear();
+    crate::native::ide::cancel_exit(world);
+}
+
 pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup) -> App {
     use bevy::asset::{
         AssetApp,
@@ -68,6 +92,7 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
         .add_plugins(crate::native::location::LocationPlugin)
         .add_plugins(crate::native::map_castle::MapPlugin)
         .add_plugins(crate::native::visibility_castle::VisibilityCastlePlugin)
+        .add_plugins(crate::native::trust_castle::TrustCastlePlugin)
         .add_plugins(crate::native::hand_camera::HandCameraPlugin)
         .add_plugins(crate::native::video_castle::VideoCastlePlugin)
         .add_plugins(crate::native::tutorial::TutorialPlugin)

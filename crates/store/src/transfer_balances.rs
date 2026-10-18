@@ -80,6 +80,44 @@ impl Promise {
     }
 }
 
+pub fn reserved_for<'a>(commitments: impl IntoIterator<Item = &'a Commitment>) -> Result<DecimalValue, StoreError> {
+    let mut reservations = Vec::new();
+    let mut alternatives: BTreeMap<(String, String), BTreeMap<String, (DecimalValue, bool)>> =
+        BTreeMap::new();
+    for commitment in commitments {
+        if let Some(group) = &commitment.alternative_group {
+            let (amount, active) = alternatives
+                .entry((group.clone(), commitment.person.clone()))
+                .or_default()
+                .entry(commitment.transfer.clone())
+                .or_insert((exact::zero(), false));
+            *amount = exact::sum_exact([*amount, commitment.reserved])?;
+            *active |= matches!(commitment.state.as_str(), "active" | "kept");
+        } else {
+            reservations.push(commitment.reserved);
+        }
+    }
+    for choices in alternatives.into_values() {
+        if choices.values().any(|(_, active)| *active) {
+            reservations.extend(
+                choices
+                    .into_values()
+                    .filter(|(_, active)| *active)
+                    .map(|(amount, _)| amount),
+            );
+        } else {
+            reservations.push(
+                choices
+                    .into_values()
+                    .map(|(amount, _)| amount)
+                    .max_by(|left, right| left.exact_numeric_cmp(*right))
+                    .unwrap_or_else(exact::zero),
+            );
+        }
+    }
+    exact::sum_exact(reservations)
+}
+
 fn field(value: &Value, name: &str) -> Option<String> {
     value[name].as_str().map(str::to_string)
 }
@@ -333,41 +371,7 @@ pub async fn read_on(
             }
         }
     }
-    let mut reservations = Vec::new();
-    let mut alternatives: BTreeMap<(String, String), BTreeMap<String, (DecimalValue, bool)>> =
-        BTreeMap::new();
-    for commitment in &commitments {
-        if let Some(group) = &commitment.alternative_group {
-            let (amount, active) = alternatives
-                .entry((group.clone(), commitment.person.clone()))
-                .or_default()
-                .entry(commitment.transfer.clone())
-                .or_insert((exact::zero(), false));
-            *amount = exact::sum_exact([*amount, commitment.reserved])?;
-            *active |= matches!(commitment.state.as_str(), "active" | "kept");
-        } else {
-            reservations.push(commitment.reserved);
-        }
-    }
-    for choices in alternatives.into_values() {
-        if choices.values().any(|(_, active)| *active) {
-            reservations.extend(
-                choices
-                    .into_values()
-                    .filter(|(_, active)| *active)
-                    .map(|(amount, _)| amount),
-            );
-        } else {
-            reservations.push(
-                choices
-                    .into_values()
-                    .map(|(amount, _)| amount)
-                    .max_by(|left, right| left.exact_numeric_cmp(*right))
-                    .unwrap_or_else(exact::zero),
-            );
-        }
-    }
-    let reserved = exact::sum_exact(reservations)?;
+    let reserved = reserved_for(&commitments)?;
     let availability = crate::transfer_loans::adjustments_on(
         connection,
         nucleus::execution::now().timestamp_millis(),

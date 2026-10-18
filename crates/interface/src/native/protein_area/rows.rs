@@ -160,6 +160,7 @@ pub(super) fn content(
         && matches!(binding.source, Source::Local)
     {
         crate::native::location::record_controls(world, actions, &binding.uid, None, None);
+        crate::native::trust_castle::record_controls(world, actions, binding, data["kind"].as_str().unwrap_or_default());
     }
     if config.record_cards
         && let Some(binding) = binding.clone()

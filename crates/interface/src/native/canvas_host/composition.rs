@@ -177,6 +177,7 @@ impl Action for Save {
             let id = nucleus::new_uid("canvas-component-save");
             crate::native::sand_panel::send(
                 world,
+                host,
                 cell::ClientMessage::Act {
                     id: id.clone(),
                     action: engine::actions::Action::CreateCustomComponent { head, body },

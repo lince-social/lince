@@ -623,7 +623,7 @@ fn maintain(world: &mut World) {
     for owner in stale {
         cancel(world, owner, None);
     }
-    if !crate::native::laboratory::active(world) {
+    if crate::native::laboratory::normal(world) {
         while let Some((sender, message)) = world.resource_mut::<Requests>().outgoing.pop_front() {
             match sender.try_send(message) {
                 Ok(()) => {}

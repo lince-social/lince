@@ -104,17 +104,12 @@ impl Host {
     }
 
     pub(super) async fn fiote_choices(&self) -> Result<Vec<FioteChoice>, String> {
-        let ids: Vec<String> = store::sqlx::query_scalar("SELECT r.uid FROM record r JOIN record_extension e ON e.record_uid = r.uid WHERE e.namespace = 'lince.fiote' AND r.deleted_at IS NULL ORDER BY r.head, r.uid LIMIT 1000")
+        let rows: Vec<(String, String)> = store::sqlx::query_as("SELECT r.uid, r.head FROM record r JOIN record_extension e ON e.record_uid = r.uid WHERE e.namespace = 'lince.fiote' AND r.deleted_at IS NULL ORDER BY r.head, r.uid LIMIT 10001")
             .fetch_all(&self.engine.store.pool).await.map_err(|e| e.to_string())?;
-        let mut choices = Vec::new();
-        for uid in ids {
-            let row = self.record(&uid).await?;
-            choices.push(FioteChoice {
-                record: uid,
-                title: row.head,
-            });
+        if rows.len() > 10_000 {
+            return Err("Fiote discovery supports up to 10,000 Fiotes. Narrow the local hierarchy before using assistant discovery.".into());
         }
-        Ok(choices)
+        Ok(rows.into_iter().map(|(record, title)| FioteChoice { record, title }).collect())
     }
 
     pub(super) async fn prepare(&self, record: &str) -> Result<(), String> {
@@ -228,23 +223,17 @@ impl Host {
         self.engine
             .access_scope(true, async {
                 let _guard = self.preparation.lock().await;
+                if let Some(selection) = self.intake_selection().await
+                    .map_err(engine::EngineError::Consequence)? {
+                    return Ok(selection.record);
+                }
                 self.seed_hierarchy()
                     .await
                     .map_err(engine::EngineError::Consequence)?;
-                let bytes = std::fs::read(self.directory.join("development-fiote.json"))
-                    .map_err(|error| engine::EngineError::Consequence(error.to_string()))?;
-                let uid: String = serde_json::from_slice(&bytes)
-                    .map_err(|error| engine::EngineError::Consequence(error.to_string()))?;
-                if self.record(&uid).await.is_ok() {
-                    Ok(uid)
-                } else {
-                    self.fiote_choices()
-                        .await
-                        .map_err(engine::EngineError::Consequence)?
-                        .first()
-                        .map(|choice| choice.record.clone())
-                        .ok_or_else(|| engine::EngineError::Consequence("No Fiotes exist.".into()))
-                }
+                self.intake_selection().await
+                    .map_err(engine::EngineError::Consequence)?
+                    .map(|selection| selection.record)
+                    .ok_or_else(|| engine::EngineError::Consequence("No Fiotes exist. Create a Fiote to use the assistant.".into()))
             })
             .await
             .map_err(|error| error.to_string())
@@ -411,7 +400,14 @@ impl Host {
             })
             .collect::<Vec<_>>()
             .join("\n\n");
-        let value = serde_json::json!({"fiote":record,"sources":sources,"system":fiote::prompt::system(&description, record, thread)});
+        let mut system = fiote::prompt::system(&description, record, thread);
+        if let Some(handoff) = store::records::get_extension(&self.engine.store.pool, thread, "lince.fiote-handoff")
+            .await.map_err(|error| error.to_string())? {
+            system.push_str(&format!("\n\nDelegated conversation. Recipient Fiote: {record}. Delegation chain and source references: {handoff}. The sending Fiote remains the source; use your own instructions, tools and working directory. Read the source Message when you need its original context. Do not route back to a Fiote in this chain."));
+        } else {
+            system.push_str(&format!("\n\nPrimary conversation with Fiote {record}. Handle this request according to your description; delegation is optional. An automatic default change affects new untargeted requests, not this conversation."));
+        }
+        let value = serde_json::json!({"fiote":record,"sources":sources,"system":system});
         if serde_json::to_vec(&value).map_err(|e| e.to_string())?.len() > 96 * 1024 {
             return Err("The instruction snapshot exceeds 96 KiB.".into());
         }
@@ -483,6 +479,11 @@ impl Host {
             {
                 system.push_str(&format!("\nConversation Record {}: {}. Read its current description and properties with Lince tools when relevant.", parent.uid, parent.head));
             }
+        }
+        if store::records::get_extension(&self.engine.store.pool, thread, laboratory::NAMESPACE)
+            .await.map_err(|error| error.to_string())?.is_none()
+            && let Some((directory, _)) = self.effective_working_directory(record).await? {
+            system.push_str(&format!("\n\nWorking directory: {}\nFile tools use paths relative to this directory. run_command executes shell commands in this directory with the same operating-system permissions as Lince; the working directory is not a filesystem sandbox. Use these tools to inspect, edit and test the project when requested. Read project instructions such as AGENTS.md before changing project files. Commands may change files; report their actual results and failures.", directory.display()));
         }
         Ok(system)
     }

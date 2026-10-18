@@ -46,8 +46,10 @@ async fn native_terminal_opens_renders_output_and_closes_after_removal() {
     .await;
     app.world_mut().despawn(owner);
     settle(&mut app, |world| world.resource::<Sessions>().0.is_empty()).await;
+    let connection_owner = app.world_mut().spawn_empty().id();
     panel::send(
         app.world(),
+        connection_owner,
         ClientMessage::TerminalInput {
             id: id.clone(),
             data_base64: BASE64.encode(b"echo should-not-run\r"),

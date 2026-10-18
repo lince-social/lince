@@ -212,7 +212,7 @@ struct MediaAction(Command);
 
 impl Action for MediaAction {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::active(world) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         let Some(mut sand) = world.get_mut::<MediaPreviewSand>(owner) else {

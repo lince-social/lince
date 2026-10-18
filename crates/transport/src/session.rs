@@ -114,6 +114,10 @@ impl Session {
         self
     }
 
+    pub(crate) fn local_authority(&self) -> bool {
+        self.local_sync && self.subject.is_none()
+    }
+
     pub fn joined_rooms(&self) -> &[String] {
         &self.joined_rooms
     }

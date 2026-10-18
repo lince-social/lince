@@ -175,12 +175,13 @@ fn area(world: &mut World, owner: Entity) -> Option<Entity> {
 }
 
 fn update(world: &mut World) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<CalendarSand>>()
         .iter(world)
+        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
         .collect();
     for owner in owners {
         if let Some(picker) = world.get::<Picker>(owner)
@@ -231,7 +232,7 @@ pub(crate) enum Command {
 
 impl Action for Command {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         if matches!(self, Self::Create) {

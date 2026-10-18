@@ -2,6 +2,11 @@ use super::*;
 
 pub(super) fn fixture_status(record: &str) -> FioteStatus {
     FioteStatus {
+        assistant_reply: None,
+        assistant_directory: None,
+        assistant_request: None,
+        intake: None,
+        handoffs: Vec::new(),
         working_directory: Default::default(),
         connections: Default::default(),
         activations: Vec::new(),

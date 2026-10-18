@@ -1,0 +1,17 @@
+[package]
+name = "lince-smithay-capture"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+backend_drm = ["smithay/backend_drm"]
+
+[dependencies]
+smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend"] }
+wayland-protocols = { version = "=0.32.13", features = ["server", "staging"] }
+wayland-server = "=0.31.14"
+
+[lints]
+workspace = true

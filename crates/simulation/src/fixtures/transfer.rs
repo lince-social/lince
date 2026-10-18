@@ -169,6 +169,7 @@ pub fn sale() -> Scenario {
         action(
             "sale",
             Action::CreateTransferDraft {
+                public_history: None,
                 request_id: "sale".into(),
                 creator: Some("$ana".into()),
                 slug: Some("sale".into()),
@@ -247,6 +248,7 @@ pub fn sale() -> Scenario {
         action(
             "occurrence",
             Action::ActivateTransferOccurrence {
+                original_authorities: Vec::new(),
                 transfer: "$sale".into(),
                 promise: "bike-give".into(),
                 expected_revision: 2,

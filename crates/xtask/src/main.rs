@@ -11,6 +11,7 @@ mod design;
 mod park;
 mod prune;
 mod hand_models;
+mod ailuros;
 
 type Result<T> = std::result::Result<T, String>;
 
@@ -34,6 +35,11 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
+        Some("map-package") => {
+            if extra.len() != 1 { return Err("usage: cargo xtask map-package <package-directory>".into()); }
+            checked(cargo_command().args(["run", "--locked", "-p", "lince-map", "--example", "package", "--"]).arg(caller_directory.join(&extra[0])))
+        }
+        Some("ailuros") => ailuros::dispatch(&extra),
         Some("lingua") => {
             let expression_mode = extra.first().is_some_and(|argument| argument == "eval");
             let mut arguments = extra;
@@ -165,7 +171,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <lingua|design|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
+                "cargo xtask <ailuros|lingua|design|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -347,11 +353,10 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
         .filter(|value| !value.is_empty())
         .unwrap_or_else(|| "6176".into());
     let mut command = cargo_command();
-    let features = if env::var("LINCE_INSTINCT").is_ok_and(|value| value == "1") {
-        "ui,instinct"
-    } else {
-        "ui"
-    };
+    let mut features = vec!["ui"];
+    if env::var("LINCE_INSTINCT").is_ok_and(|value| value == "1") { features.push("instinct"); }
+    if extra.iter().any(|argument| argument == "--facade") { features.push("facade"); }
+    let features = features.join(",");
     command.args([
         "run",
         "--release",
@@ -359,7 +364,7 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
         "lince",
         "--no-default-features",
         "--features",
-        features,
+        &features,
         "--",
         "--no-tray",
     ]);

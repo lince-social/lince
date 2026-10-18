@@ -83,6 +83,43 @@ impl State {
 }
 
 impl Server {
+    pub fn keyboard_repeat(&self, rate: u32, delay_ms: u32) {
+        if let Some(keyboard) = self.state.seat.get_keyboard() {
+            keyboard.change_repeat_info(rate.min(100) as i32, delay_ms.min(5000) as i32);
+        }
+    }
+
+    #[cfg(feature = "session")]
+    pub(crate) fn key_repeats(&mut self, code: u32) -> bool {
+        let Some(keyboard) = self.state.seat.get_keyboard() else {
+            return false;
+        };
+        keyboard.with_xkb_state(&mut self.state, |context| {
+            let state = context
+                .xkb()
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            unsafe { state.state() }
+                .get_keymap()
+                .key_repeats((code + 8).into())
+        })
+    }
+
+    pub fn dragging(&self) -> bool {
+        self.state.dragging && !self.locked()
+    }
+
+    pub fn drag_nodes(&self) -> Vec<SurfaceNode> {
+        if self.locked() {
+            return Vec::new();
+        }
+        self.state
+            .drag_icon
+            .as_ref()
+            .map(|surface| self.state.nodes(surface))
+            .unwrap_or_default()
+    }
+
     pub fn key_symbol(&mut self, keycode: u32) -> io::Result<KeyEvent> {
         if keycode > 767 {
             return Err(io::Error::other("invalid evdev key code"));
@@ -176,6 +213,8 @@ impl Server {
         target: Option<(WlSurface, [f64; 2])>,
         time: u32,
     ) -> io::Result<()> {
+        let target =
+            target.filter(|(surface, _)| !self.locked() || self.state.lock_allows(surface));
         if target.as_ref().is_some_and(|(surface, point)| {
             !surface.is_alive() || point.iter().any(|value| !value.is_finite())
         }) {
@@ -186,6 +225,9 @@ impl Server {
             .seat
             .get_pointer()
             .ok_or_else(|| io::Error::other("the Park pointer is unavailable"))?;
+        if self.pointer_locked() && target.as_ref().map(|(surface, _)| surface) == pointer.current_focus().as_ref() {
+            return Ok(());
+        }
         let position = target
             .as_ref()
             .map(|(_, position)| *position)

@@ -7,9 +7,17 @@ pub mod application;
 pub mod disclosure;
 pub mod exchange;
 pub mod loans;
+pub mod transport;
 pub use agreement::AgreementGuard;
 pub mod karma;
 pub mod outcome;
+pub mod receipt;
+pub mod receipt_source;
+pub mod receipt_delivery;
+pub mod receipt_history;
+pub mod receipt_fragment;
+pub mod public_history;
+pub mod surplus;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionSnapshot {
@@ -55,6 +63,8 @@ pub struct TransferCancellationTerms {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionTerms {
     pub uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin_organ_uid: Option<String>,
     pub slug: Option<String>,
     pub head: String,
     pub agreement_type: String,
@@ -69,12 +79,16 @@ pub struct TransferRevisionTerms {
     pub require_confirmation: bool,
     #[serde(default)]
     pub default_place: Option<TransferLocationSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_history: Option<public_history::Terms>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferRevisionParty {
     pub uid: String,
     pub person_uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub organ_uid: Option<String>,
     pub kind: String,
 }
 
@@ -310,6 +324,10 @@ pub struct TransferAgreementTransitionEvidence {
     pub revision: u64,
     pub party_uid: String,
     pub person_uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub organ_uid: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub revision_fact_hash: Option<String>,
     pub from_level: u8,
     pub to_level: u8,
 }
@@ -328,6 +346,10 @@ pub struct TransferOccurrenceSnapshot {
     pub quantity: f64,
     pub giver_person_uid: String,
     pub receiver_person_uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub giver_organ_uid: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver_organ_uid: Option<String>,
     pub window_start: Option<String>,
     pub window_end: Option<String>,
     pub location: Option<TransferLocationSnapshot>,
@@ -340,6 +362,12 @@ pub struct TransferActivationEvidence {
     pub transfer_uid: String,
     pub revision: u64,
     pub actor_person_uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub revision_fact_hash: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub original_authorities: Vec<receipt::Authority>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub original_authority_records: Vec<String>,
     pub occurrences: Vec<TransferOccurrenceSnapshot>,
 }
 

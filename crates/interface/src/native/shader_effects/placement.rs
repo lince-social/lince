@@ -221,7 +221,7 @@ pub(super) fn distant(
     record: Entity,
     settings: &FloatingSettings,
 ) -> bool {
-    if settings.distance == DistancePolicy::Live {
+    if settings.distance == DistancePolicy::Live || world.get::<super::ProjectionDemand>(record).is_some() {
         return false;
     }
     let Some(root) = root(world, record) else {
@@ -418,5 +418,27 @@ mod tests {
             settings.min_pixels = f32::NAN
         });
         assert!(effective(&world, &binding, &FloatingSettings::default()).valid());
+    }
+
+    #[test]
+    fn physical_projection_demand_keeps_effects_live_without_overriding_explicit_freeze() {
+        let (mut world, root, row, editor, _) = scene();
+        Control::Override.apply(&mut world, editor);
+        change(&mut world, editor, |settings| settings.distance = DistancePolicy::Hide);
+        world.get_mut::<crate::native::canvas::CanvasView>(root).unwrap().zoom = 0.01;
+        update_presentations(&mut world);
+        let floating = world.query_filtered::<Entity, With<Floating>>().single(&world).unwrap();
+        let preview = world.get::<Floating>(floating).unwrap().preview;
+        assert!(world.get::<shader::EffectPreview>(preview).unwrap().disabled);
+        world.entity_mut(row).insert(super::super::ProjectionDemand);
+        update_presentations(&mut world);
+        assert!(!world.get::<shader::EffectPreview>(preview).unwrap().disabled);
+        assert!(!world.get::<shader::EffectPreview>(preview).unwrap().frozen);
+        change(&mut world, editor, |settings| settings.frozen = true);
+        update_presentations(&mut world);
+        assert!(world.get::<shader::EffectPreview>(preview).unwrap().frozen);
+        world.entity_mut(row).remove::<super::super::ProjectionDemand>();
+        update_presentations(&mut world);
+        assert!(world.get::<shader::EffectPreview>(preview).unwrap().disabled);
     }
 }

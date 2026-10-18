@@ -170,7 +170,7 @@ fn send(world: &World, root: Entity, message: ClientMessage) -> Result<(), Strin
     if crate::native::instinct::practice::active_source(world, root).is_some() {
         return Err("Organ publishing is available after leaving practice. Use the separate local practice library here.".into());
     }
-    if crate::native::laboratory::active(world) {
+    if crate::native::laboratory::blocked(world, root) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
     let library = world
@@ -192,7 +192,7 @@ fn send(world: &World, root: Entity, message: ClientMessage) -> Result<(), Strin
                 }
             })
     } else {
-        panel::send(world, message)
+        panel::send(world, root, message)
     }
 }
 
@@ -534,17 +534,17 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             receive(world, root, &message);
         }
         let library = world.get::<Library>(root).unwrap();
-        if !library.contacts_requested && !crate::native::laboratory::active(world) {
+        if !library.contacts_requested && !crate::native::laboratory::blocked(world, root) {
             let request = ClientMessage::Subscribe {
                 id: library.contacts_id.clone(),
                 protein: serde_json::from_value(json!({"source":"record","where":[{"kind_eq":"organ"}],"fields":["uid","head","slug"],"order":[{"asc":"head"}],"limit":null})).unwrap(),
             };
-            if panel::send(world, request).is_ok() {
+            if panel::send(world, root, request).is_ok() {
                 world.get_mut::<Library>(root).unwrap().contacts_requested = true;
             }
         }
         let library = world.get::<Library>(root).unwrap();
-        if library.connected && !library.subscribed && !crate::native::laboratory::active(world) {
+        if library.connected && !library.subscribed && !crate::native::laboratory::blocked(world, root) {
             let request = ClientMessage::Subscribe {
                 id: library.list_id.clone(),
                 protein: query(None),

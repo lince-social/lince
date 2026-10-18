@@ -1,0 +1,19 @@
+[
+  {"value":"0","accepted":true},
+  {"value":"23.7","accepted":true},
+  {"value":"1.0","accepted":true},
+  {"value":"0.00","accepted":true},
+  {"value":"-0.00","accepted":false},
+  {"value":"-0","accepted":false},
+  {"value":"01","accepted":false},
+  {"value":"+1","accepted":false},
+  {"value":"1e2","accepted":false},
+  {"value":"1\n2","accepted":false},
+  {"value":".2","accepted":false},
+  {"value":"0.000000000000000001","accepted":true},
+  {"value":"0.0000000000000000001","accepted":false},
+  {"value":"170141183460469231731687303715884105727","accepted":true},
+  {"value":"170141183460469231731687303715884105728","accepted":false},
+  {"value":"-170141183460469231731687303715884105728","accepted":true},
+  {"value":"-170141183460469231731687303715884105729","accepted":false}
+]

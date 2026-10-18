@@ -12,6 +12,7 @@ impl Engine {
             let mut outcome = ActionOutcome::default();
             match action {
                 Action::CreateTransferDraft {
+                    public_history,
                     request_id,
                     creator,
                     slug,
@@ -212,7 +213,7 @@ impl Engine {
                     }
 
                     let mut draft_promises = Vec::with_capacity(promises.len());
-                    for input in promises {
+                    for mut input in promises {
                         if !input.delta.is_finite() || input.delta == 0.0 {
                             return Err(EngineError::Consequence(
                                 "every promise delta must be finite and non-zero".into(),
@@ -233,6 +234,13 @@ impl Engine {
                                 message: "a new Transfer promise uid is already in use".into(),
                             });
                         }
+                        self.normalize_transport_item(
+                            &mut input,
+                            &creator_person,
+                            false,
+                            actor.as_deref(),
+                        )
+                        .await?;
                         let item = self
                             .resolve_transfer_item(input.item, &creator_person)
                             .await?;
@@ -348,6 +356,7 @@ impl Engine {
                     let created = store::transfers::create_draft(
                         &self.store.pool,
                         store::transfers::NewTransferDraft {
+                            public_history,
                             idempotency_key: request_id,
                             slug,
                             head,

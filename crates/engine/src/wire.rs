@@ -877,11 +877,7 @@ impl Wire {
     pub async fn pairing_invite(&self) -> Result<crate::pairing::PairingInvite, EngineError> {
         let organ = store::organs::local(&self.engine.store.pool).await?;
         let root_key = match &organ {
-            Some(organ) => crate::trust::keys_of(&self.engine.store, &organ.uid)
-                .await?
-                .into_iter()
-                .find(|(key_id, _)| key_id == crate::roster::ROOT_KEY_ID)
-                .map(|(_, public_key)| public_key),
+            Some(organ) => self.engine.current_root_key(&organ.uid).await?,
             None => None,
         };
         Ok(crate::pairing::PairingInvite {
@@ -2085,58 +2081,10 @@ impl Wire {
                 vector,
                 limit,
             } => {
-                match store::replica::is_accepted(&self.engine.store.pool, &root, authenticated)
-                    .await
-                {
-                    Ok(true) => {}
-                    Ok(false) => {
-                        return WireResponse::Refused {
-                            code: "grant_denied".into(),
-                            message: "no accepted grant on that root".into(),
-                        };
-                    }
-                    Err(error) => {
-                        return WireResponse::Error {
-                            message: error.to_string(),
-                        };
-                    }
-                }
-                let limit = limit.clamp(1, 2000);
-                let local = match store::organs::local(&self.engine.store.pool).await {
-                    Ok(organ) => organ.map(|organ| organ.uid).unwrap_or_default(),
-                    Err(error) => {
-                        return WireResponse::Error {
-                            message: error.to_string(),
-                        };
-                    }
-                };
-                match store::sync_ops::ops_missing_from_vector_in_root(
-                    &self.engine.store.pool,
-                    &root,
-                    &vector,
-                    limit,
-                )
-                .await
-                {
-                    Ok(mut rows) => {
-                        let head = rows.last().map(|row| row.seq).unwrap_or_default();
-                        if authenticated != local {
-                            rows.retain(|row| !nucleus::social::private_sync_field(&row.tbl, &row.field));
-                        }
-                        match self.engine.hydrate_ops(rows).await {
-                            Ok(ops) => WireResponse::Ops {
-                                from_organ: local,
-                                ops,
-                                head,
-                            },
-                            Err(error) => WireResponse::Error {
-                                message: error.to_string(),
-                            },
-                        }
-                    }
-                    Err(error) => WireResponse::Error {
-                        message: error.to_string(),
-                    },
+                match self.engine.export_conversation_page(authenticated,&root,&vector,limit).await {
+                    Ok(page)=>WireResponse::Ops {from_organ:page.batch.from_organ,ops:page.batch.ops,head:page.head},
+                    Err(EngineError::Forbidden(message))=>WireResponse::Refused {code:"grant_denied".into(),message},
+                    Err(error)=>WireResponse::Error {message:error.to_string()},
                 }
             }
             WireRequest::FetchOpsSince { vector, limit } => {
@@ -2182,7 +2130,7 @@ impl Wire {
                     .await
                     .ok()
                     .flatten();
-                match store::visibility::hidden_from_organ(&self.engine.store.pool, authenticated)
+                match self.engine.outgoing_hidden_from_organ(authenticated)
                     .await
                 {
                     Ok(hidden) if hidden.contains(&record) => return reference_gone(),
@@ -2835,7 +2783,8 @@ impl Wire {
                     Delivery::Failed(format!("{copies} of {requested_copies} mailbox servers accepted the envelope"))
                 }
             }
-            Ok(_) | Err(_) => Delivery::Failed(unreachable),
+            Ok(_) => Delivery::Failed(unreachable),
+            Err(error) => Delivery::Failed(error.to_string()),
         }
     }
 

@@ -84,21 +84,8 @@ pub(crate) fn frame(world: &mut World, sand: Entity, title: &str) -> Entity {
     body
 }
 
-pub(crate) fn send(world: &World, message: cell::ClientMessage) -> Result<(), String> {
-    if crate::native::laboratory::active(world) {
-        return Err("Changes are unavailable in the Laboratory".into());
-    }
-    world
-        .get_non_send::<crate::native::cell_bridge::CellBridge>()
-        .ok_or("Not connected to the local Organ")?
-        .outgoing
-        .try_send(message)
-        .map_err(|error| match error {
-            tokio::sync::mpsc::error::TrySendError::Full(_) => "Connection busy; try again".into(),
-            tokio::sync::mpsc::error::TrySendError::Closed(_) => {
-                "Connection closed; reopen the interface".into()
-            }
-        })
+pub(crate) fn send(world: &World, owner: Entity, message: cell::ClientMessage) -> Result<(), String> {
+    crate::native::practice_cells::send(world, owner, message)
 }
 
 pub(crate) fn credits(

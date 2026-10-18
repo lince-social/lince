@@ -205,7 +205,11 @@ pub fn decode_qr_luma(
 }
 
 fn decode_qr_image(image: image::GrayImage) -> Result<Option<String>, EngineError> {
-    let mut prepared = rqrr::PreparedImage::prepare(image);
+    let mut prepared = rqrr::PreparedImage::prepare_from_greyscale(
+        image.width() as usize,
+        image.height() as usize,
+        |x, y| image.get_pixel(x as u32, y as u32).0[0],
+    );
     for grid in prepared.detect_grids() {
         if let Ok((_meta, text)) = grid.decode() {
             return Ok(Some(text));

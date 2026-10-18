@@ -127,6 +127,7 @@ fn activation_checks_its_original_state_in_the_domain_transaction() {
         let failure = store::transfers::activate_occurrences_guarded(
             &engine.store.pool,
             store::transfers::ActivateOccurrencesInput {
+                original_authority_records: Vec::new(),
                 transfer_uid: transfer.transfer,
                 expected_revision: transfer.revision,
                 idempotency_key: "stale-activation".into(),

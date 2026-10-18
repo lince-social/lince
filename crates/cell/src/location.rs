@@ -158,6 +158,7 @@ mod tests {
                     request: Command::Approve {
                         person: controller.clone(),
                         record_uid: record.clone(),
+                        expected_session_uid: authority.engine.location_pending_sources().await.into_iter().find(|source|source.settings.record_uid==record).unwrap().session_uid,
                     },
                 },
                 None,
@@ -179,6 +180,7 @@ mod tests {
                             longitude: -46.6333,
                             accuracy_metres: None,
                             captured_at_ms: chrono::Utc::now().timestamp_millis(),
+                            capture_age_ms: 0,
                         },
                     },
                 },

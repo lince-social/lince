@@ -37,6 +37,8 @@ pub struct Presentation {
     renderer: Rc<VulkanRenderer>,
     target: Handle<Image>,
     windows: std::collections::HashMap<lince_interface::host::SurfaceId, clients::Window>,
+    painted_windows:
+        std::collections::BTreeMap<lince_interface::host::SurfaceId, crate::server::WindowSnapshot>,
     identities: std::collections::HashMap<
         lince_interface::host::SurfaceId,
         lince_interface::layout::desktop::PlacementId,
@@ -89,13 +91,33 @@ pub struct WindowConfiguration {
 }
 
 pub struct InputSnapshot {
+    pub workspaces: crate::server::WorkspaceSnapshot,
+    pub editor: Option<crate::native_input::Editor>,
+    pub drop_target: Option<crate::native_input::transfer::Target>,
     pub controls: Vec<lince_interface::host::Rectangle>,
     pub modal: bool,
     pub keyboard: bool,
     pub bindings: Vec<native::shortcuts::DesktopBinding>,
 }
 
+#[derive(Resource)]
+struct FrameFailure(String);
+
 impl Frame {
+    pub fn ready(&self) -> Result<bool, ProbeFailure> {
+        if !self.image.ready()? { return Ok(false); }
+        for output in &self.outputs {
+            if !output.image.ready()? { return Ok(false); }
+        }
+        Ok(true)
+    }
+
+    pub fn wait_for_probe(&self) -> Result<(), ProbeFailure> {
+        self.image.wait_for_probe()?;
+        for output in &self.outputs { output.image.wait_for_probe()?; }
+        Ok(())
+    }
+
     pub fn dmabuf(&self) -> &smithay::backend::allocator::dmabuf::Dmabuf {
         &self.image.dmabuf
     }
@@ -116,7 +138,7 @@ pub fn probe() -> Result<(), ProbeFailure> {
     )?;
     let mut frame = None;
     for _ in 0..10 {
-        frame = Some(canvas.frame()?);
+        frame = Some(canvas.probe_frame()?);
     }
     let before = probe_pixels(frame.as_ref().unwrap().dmabuf())?;
     let world = canvas.world_mut();
@@ -129,7 +151,7 @@ pub fn probe() -> Result<(), ProbeFailure> {
     native::edit_mode::EditAction::AddSand(native::sand_store::SandKind::EditableText)
         .apply(world, root);
     for _ in 0..10 {
-        frame = Some(canvas.frame()?);
+        frame = Some(canvas.probe_frame()?);
     }
     let after = probe_pixels(frame.as_ref().unwrap().dmabuf())?;
     let world = canvas.world_mut();
@@ -159,7 +181,7 @@ pub fn probe() -> Result<(), ProbeFailure> {
     }
     canvas.resize([800, 480])?;
     for _ in 0..3 {
-        frame = Some(canvas.frame()?);
+        frame = Some(canvas.probe_frame()?);
     }
     use smithay::backend::allocator::Buffer;
     if frame.as_ref().unwrap().dmabuf().size() != (800, 480).into() {
@@ -221,6 +243,7 @@ impl Presentation {
         request: lince_interface::host::WindowRequest,
     ) {
         let pending = self.window_requests.entry(surface).or_default();
+        if request.minimized.is_some() { pending.minimized = request.minimized; }
         if request.fullscreen.is_some() {
             pending.fullscreen = request.fullscreen;
         }
@@ -283,6 +306,31 @@ impl Presentation {
         let root = self.canvas_root()?;
         action.apply(self.app.world_mut(), root);
         Ok(())
+    }
+
+    pub fn activate_workspace(&mut self, owner: u64, workspace: u64) -> Result<(), ProbeFailure> {
+        let root = self.canvas_root()?;
+        if root.to_bits() != owner || native::laboratory::temporary(self.app.world(), root, workspace) { return Ok(()); }
+        let index = self.app.world().get::<native::workspace::Workspaces>(root)
+            .and_then(|spaces| spaces.entries.iter().position(|space| space.id == workspace))
+            .and_then(|index| u32::try_from(index).ok()).and_then(|index| index.checked_add(1));
+        if let Some(index) = index { self.desktop_action(lince_interface::host::DesktopAction::Workspace(index))?; }
+        Ok(())
+    }
+
+    fn workspace_snapshot(&mut self) -> crate::server::WorkspaceSnapshot {
+        let Ok(root) = self.canvas_root() else { return Default::default() };
+        let world = self.app.world();
+        let Some(spaces) = world.get::<native::workspace::Workspaces>(root) else { return Default::default() };
+        let views = world.get_resource::<native::output_views::OutputViews>();
+        crate::server::WorkspaceSnapshot {
+            owner: root.to_bits(),
+            entries: spaces.entries.iter().filter(|space| !native::laboratory::temporary(world, root, space.id))
+                .map(|space| crate::server::WorkspaceEntry {
+                    id: space.id, name: space.name.chars().take(1024).collect(),
+                    active: views.map_or(spaces.active == space.id, |views| views.outputs.iter().any(|output| output.workspace == space.id)),
+                }).take(4096).collect(),
+        }
     }
 
     pub fn focus_application(&mut self, surface: lince_interface::host::SurfaceId) {
@@ -421,6 +469,12 @@ impl Presentation {
                 ..default()
             });
         let mut app = native::app::presentation_app(assets, plugins);
+        app.insert_resource(bevy::render::error_handler::RenderErrorHandler(
+            |error, world, _| {
+                world.insert_resource(FrameFailure(format!("{error:?}")));
+                bevy::render::error_handler::RenderErrorPolicy::StopRendering
+            },
+        ));
         app.insert_resource(native::layout::desktop::DefaultLayout(
             lince_interface::host::WorkspaceLayout::ScrollingColumns,
         ));
@@ -428,12 +482,17 @@ impl Presentation {
         app.insert_resource(wake)
             .add_systems(Startup, native::app::canvas)
             .add_systems(
+                PostUpdate,
+                refresh_camera_targets.before(bevy::camera::CameraUpdateSystems),
+            )
+            .add_systems(
                 Update,
                 flat_view
                     .after(native::workspace::PrepareWorkspaces)
                     .before(native::topology::view::synchronize),
             );
         clients::install(&mut app)?;
+        crate::native_input::install(&mut app);
         app.finish();
         app.cleanup();
         let target = app
@@ -446,6 +505,7 @@ impl Presentation {
             renderer,
             target,
             windows: Default::default(),
+            painted_windows: Default::default(),
             identities: Default::default(),
             uploads: Vec::new(),
             rejected: Default::default(),
@@ -587,6 +647,7 @@ impl Presentation {
             .write_message(bevy::window::WindowEvent::WindowFocused(event.clone()));
         self.app.world_mut().write_message(event);
         if !focused {
+            crate::native_input::cancel(self.app.world_mut());
             cancel_input(self.app.world_mut(), window);
         }
         Ok(())
@@ -602,6 +663,47 @@ impl Presentation {
             .write_message(bevy::window::WindowEvent::Ime(event.clone()));
         self.app.world_mut().write_message(event);
         Ok(())
+    }
+
+    pub(crate) fn finish(&mut self) -> Result<(), ProbeFailure> {
+        native::laboratory::close(self.app.world_mut());
+        self.frame()?;
+        let window = self.input_window()?;
+        let focused = self
+            .app
+            .world()
+            .get::<Window>(window)
+            .is_some_and(|window| window.focused);
+        self.focus(false)?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        let mut requested = false;
+        let result = (|| {
+            loop {
+                self.frame()?;
+                if requested && let Some(exit) = self.app.should_exit() {
+                    return if exit == AppExit::Success {
+                        Ok(())
+                    } else {
+                        Err(input_failure("Native workspace shutdown failed"))
+                    };
+                }
+                if !requested && native::app::text_ready_to_close(self.app.world_mut()) {
+                    self.app.world_mut().write_message(AppExit::Success);
+                    requested = true;
+                }
+                if std::time::Instant::now() >= deadline {
+                    return Err(input_failure(
+                        "Logout cancelled because native changes could not be saved. Resolve pending edits or storage errors and try again.",
+                    ));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(2));
+            }
+        })();
+        if result.is_err() {
+            native::app::cancel_close(self.app.world_mut());
+            self.focus(focused)?;
+        }
+        result
     }
 
     fn input_window(&mut self) -> Result<Entity, ProbeFailure> {
@@ -647,6 +749,14 @@ impl Presentation {
         Ok(())
     }
 
+    pub fn probe_frame(&mut self) -> Result<Frame, ProbeFailure> {
+        let frame = self.frame()?;
+        frame.wait_for_probe()?;
+        Ok(frame)
+    }
+
+    pub(crate) fn imports_ready(&self) -> bool { self.renderer.imports_ready() }
+
     pub fn frame(&mut self) -> Result<Frame, ProbeFailure> {
         if let Some(records) = &mut self.records {
             records.tick(self.app.world_mut(), &self.windows, &self.identities);
@@ -667,6 +777,12 @@ impl Presentation {
         self.apply_window_requests();
         self.refresh_viewport()?;
         self.app.update();
+        if let Some(error) = self.app.world().get_resource::<FrameFailure>() {
+            return Err(ProbeFailure {
+                stage: "native_frame".into(),
+                detail: error.0.clone(),
+            });
+        }
         self.apply_window_requests();
         let texture = self
             .app
@@ -680,19 +796,10 @@ impl Presentation {
             })?
             .texture
             .clone();
-        self.renderer
-            .device
-            .poll(wgpu::PollType::Wait {
-                submission_index: None,
-                timeout: None,
-            })
-            .map_err(|error| ProbeFailure {
-                stage: "native_frame".into(),
-                detail: error.to_string(),
-            })?;
-        for buffer in self.uploads.drain(..) {
-            buffer.release();
-        }
+        let uploads = std::mem::take(&mut self.uploads);
+        self.renderer.queue.on_submitted_work_done(move || {
+            for buffer in uploads { buffer.release(); }
+        });
         let input = self.input_snapshot();
         let windows = self.window_configurations();
         let mut outputs = Vec::new();
@@ -747,18 +854,6 @@ impl Presentation {
                 let workspace_id = world
                     .get::<native::workspace::WorkspaceMember>(window.entity)?
                     .0;
-                if !self.output_state.assignments.outputs().is_empty()
-                    && !self
-                        .output_state
-                        .assignments
-                        .outputs()
-                        .iter()
-                        .any(|output| output.active == workspace_id)
-                    || self.output_state.assignments.outputs().is_empty()
-                        && workspace_id != spaces.active
-                {
-                    return None;
-                }
                 let item = world.get::<native::canvas::CanvasItem>(window.entity)?;
                 let workspace = spaces
                     .entries
@@ -774,6 +869,7 @@ impl Presentation {
                         item.size.y.round().max(1.0) as u32,
                     ],
                     state: lince_interface::host::WindowState {
+                        minimized: workspace.desktop.minimized(placement),
                         fullscreen: workspace.desktop.fullscreen() == Some(placement),
                         maximized: workspace.desktop.maximized(placement),
                     },
@@ -916,6 +1012,7 @@ impl Presentation {
 
     fn input_snapshot(&mut self) -> InputSnapshot {
         use bevy::input_focus::tab_navigation::TabGroup;
+        let workspaces = self.workspace_snapshot();
         let world = self.app.world_mut();
         let output = self.target.id();
         let offset: [f64; 2] = std::array::from_fn(|axis| {
@@ -924,6 +1021,9 @@ impl Presentation {
                 .map_or(0.0, |viewport| viewport.bounds.origin()[axis])
                 + self.render_origin[axis]
         });
+        let window = world.query_filtered::<Entity, With<PrimaryWindow>>().iter(world).next();
+        let output_id = self.output_view.as_ref().map_or(lince_interface::host::OutputId(1), |output| output.id);
+        let drop_target = window.and_then(|window| crate::native_input::transfer::capture(world, window, output, output_id, offset));
         let nodes: Vec<_> = world
             .query::<(
                 Entity,
@@ -998,6 +1098,9 @@ impl Presentation {
             focused = world.get::<ChildOf>(entity).map(ChildOf::parent);
         }
         InputSnapshot {
+            workspaces,
+            drop_target,
+            editor: crate::native_input::capture(world, output, offset),
             controls: nodes
                 .into_iter()
                 .filter_map(|(rectangle, _)| rectangle)
@@ -1009,11 +1112,19 @@ impl Presentation {
     }
 }
 
+fn refresh_camera_targets(
+    mut cameras: Query<&mut Projection, (With<Camera>, Changed<RenderTarget>)>,
+) {
+    for mut projection in &mut cameras {
+        projection.set_changed();
+    }
+}
+
 impl Drop for Presentation {
     fn drop(&mut self) {
         let _ = self.renderer.device.poll(wgpu::PollType::Wait {
             submission_index: None,
-            timeout: None,
+            timeout: Some(std::time::Duration::from_secs(5)),
         });
         for buffer in self.uploads.drain(..) {
             buffer.release();
@@ -1139,6 +1250,57 @@ mod tests {
         picking::pointer::{Location, PointerAction, PointerInput, PointerLocation},
         window::WindowEvent,
     };
+
+    #[test]
+    fn switching_existing_output_targets_refreshes_camera_dimensions() {
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins)
+            .init_resource::<Assets<Image>>()
+            .init_resource::<bevy::render::texture::ManualTextureViews>()
+            .add_message::<bevy::asset::AssetEvent<Image>>()
+            .add_message::<bevy::window::WindowResized>()
+            .add_message::<bevy::window::WindowCreated>()
+            .add_message::<bevy::window::WindowScaleFactorChanged>()
+            .add_systems(
+                PostUpdate,
+                (refresh_camera_targets, bevy::render::camera::camera_system).chain(),
+            );
+        let first = app
+            .world_mut()
+            .resource_mut::<Assets<Image>>()
+            .add(output_image([640, 424]));
+        let second = app
+            .world_mut()
+            .resource_mut::<Assets<Image>>()
+            .add(output_image([800, 600]));
+        let camera = app
+            .world_mut()
+            .spawn((
+                Camera::default(),
+                Projection::Orthographic(OrthographicProjection::default_3d()),
+                RenderTarget::Image(first.clone().into()),
+            ))
+            .id();
+        app.update();
+        app.update();
+        for (target, size) in [
+            (second.clone(), UVec2::new(800, 600)),
+            (first, UVec2::new(640, 424)),
+            (second, UVec2::new(800, 600)),
+        ] {
+            app.world_mut()
+                .entity_mut(camera)
+                .insert(RenderTarget::Image(target.into()));
+            app.update();
+            assert_eq!(
+                app.world()
+                    .get::<Camera>(camera)
+                    .unwrap()
+                    .physical_target_size(),
+                Some(size),
+            );
+        }
+    }
 
     #[test]
     fn leaving_native_focus_cancels_pending_input_and_content_grabs() {

@@ -64,6 +64,10 @@ pub(super) fn summary(world: &mut World, owner: Entity, parent: Entity, value: &
 }
 
 pub(super) fn row(world: &mut World, parent: Entity, row: &Value) {
+    if let Ok(transport) = serde_json::from_value::<nucleus::social::transport::Announcement>(row["document"]["transport"].clone())
+        && let Some(expires) = row["document"]["expires_at"].as_i64() {
+        panel::button(world, parent, parent, "View public approximate route", crate::native::map_castle::PublicTransport(transport, expires));
+    }
     label(
         world,
         parent,

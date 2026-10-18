@@ -1,0 +1,27 @@
+best-tts
+Copyright 2026 Studio Ransom
+
+This product includes software developed at Studio Ransom: the Rust runtime,
+the model packer and the test suite, all licensed under the Apache License,
+Version 2.0. See LICENSE.
+
+--------------------------------------------------------------------------
+This product bundles the following third-party components.
+Full detail in THIRD_PARTY.md.
+
+Kokoro-82M
+  Copyright hexgrad. Licensed under the Apache License, Version 2.0.
+  https://huggingface.co/hexgrad/Kokoro-82M
+  Redistributed as assets/kokoro.btm (a repacked, verified bit-exact form of
+  the published Q8F16 ONNX export) and assets/voices.btv (the voice tensors,
+  unmodified).
+
+misaki
+  Copyright hexgrad. Licensed under the MIT License.
+  https://github.com/hexgrad/misaki
+  Redistributed as the English pronunciation lexicons in assets/lexicon.btl,
+  converted from the upstream format.
+--------------------------------------------------------------------------
+
+Audio synthesized with this software carries no licence obligation from
+Studio Ransom and may be used commercially.

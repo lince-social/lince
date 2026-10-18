@@ -26,7 +26,7 @@ pub(super) enum Control {
 
 impl Action for Control {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         if matches!(self, Self::Create) {
@@ -475,7 +475,7 @@ pub struct BrowseFor {
 
 impl Action for BrowseFor {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::suspended(world, owner) {
+        if crate::native::laboratory::blocked(world, owner) {
             return;
         }
         let Ok(original) = crate::native::sand_panel::value(world, self.input) else {

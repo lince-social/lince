@@ -131,6 +131,20 @@ pub fn spawn_gossip(state: CellRuntime) -> tokio::task::JoinHandle<()> {
 
 pub fn spawn_ask(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     supervised(state, engine::social::Worker::Ask, |state| async move {
+        let evidence_state=state.clone();
+        let evidence=async move {
+            let mut changes=evidence_state.engine.watch_query_changes();
+            loop {
+                if evidence_state.wire.read().await.is_some() && evidence_state.engine.refresh_trust_requests_once().await.is_err() {
+                    tracing::debug!("Reviewed evidence query work remains bounded by its original deadline");
+                }
+                tokio::select! {
+                    result=changes.changed()=>{if result.is_err(){break;}tokio::time::sleep(Duration::from_millis(100)).await;}
+                    _=tokio::time::sleep(Duration::from_secs(1))=>{}
+                }
+            }
+        };
+        let announcements=async move {
         let mut changes = state.engine.watch_query_changes();
         loop {
             if state.wire.read().await.is_some() {
@@ -143,6 +157,8 @@ pub fn spawn_ask(state: CellRuntime) -> tokio::task::JoinHandle<()> {
                 _ = tokio::time::sleep(Duration::from_secs(1)) => {}
             }
         }
+        };
+        tokio::join!(announcements,evidence);
     })
 }
 

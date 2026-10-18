@@ -1,0 +1,15 @@
+Flexaudio microphone capture adapter
+Source: https://github.com/Studio-Sadola/flexaudio
+Revision: e36ca9fe8151cd821a35a13aa8fbf55c999e64ce
+Original package version: 0.3.0
+Author: tubome / Studio Sadola and Flexaudio contributors
+License: MIT, reproduced in LICENSE
+
+Lince adaptations: CPAL 0.18 device descriptions, plain sample rates,
+by-value stream configuration, unified error API and shared sample conversion
+for the PCM formats supported by CPAL, including 24-bit and double precision.
+Known device buffer ranges use a bounded 512-frame request.
+The remaining Flexaudio
+crates retain their upstream git revision. Source comments are omitted to
+follow the host repository's source convention. The original capture thread,
+startup transient guard and tests are retained.

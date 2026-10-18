@@ -23,6 +23,7 @@ async fn create(
     let uid = engine
         .act(
             Action::CreateTransferDraft {
+                public_history: None,
                 creator: Some(owner.uid.clone()),
                 request_id: format!("create:{name}"),
                 slug: Some(name.into()),
@@ -87,6 +88,7 @@ fn reparent(
         expected_revision: child.revision,
         request_id: request.into(),
         draft: TransferDraftRevisionInput {
+                        public_history: None,
             creator: engine_person.uid.clone(),
             slug: None,
             head: "Moved child".into(),
@@ -290,6 +292,7 @@ fn required_child_blocks_activation_and_membership_resets_parent_agreement() {
         }
         engine.set_signer(ana.signer.clone()).await.unwrap();
         let action = Action::ActivateTransferOccurrence {
+            original_authorities: Vec::new(),
             transfer: parent.transfer.clone(),
             promise: "parent-promise".into(),
             expected_revision: parent.revision,
@@ -300,6 +303,7 @@ fn required_child_blocks_activation_and_membership_resets_parent_agreement() {
         let attempted = store::transfers::activate_occurrences(
             &engine.store.pool,
             store::transfers::ActivateOccurrencesInput {
+                original_authority_records: Vec::new(),
                 transfer_uid: parent.transfer.clone(),
                 expected_revision: parent.revision,
                 idempotency_key: "direct-start".into(),
@@ -414,6 +418,9 @@ fn hidden_required_children_expose_only_the_parent_result() {
             )],
         )
         .await;
+        store::visibility::grant(&engine.store.pool, "actor", Some(&ana.uid), &child.transfer)
+            .await
+            .unwrap();
         let role = store::auth::ensure_role(&engine.store.pool, "Parent reader")
             .await
             .unwrap();

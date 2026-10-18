@@ -673,12 +673,12 @@ fn auxiliary_panels_start_hidden_and_header_buttons_toggle_them() {
     let schedules = panel("Karma schedules");
     let simulation = panel("Karma simulation");
     let commands = panel("Karma commands");
-    let embedded = panel("Karma embedded");
+    let ailuros = panel("Karma ailuros");
     for (panel, command) in [
         (schedules, ui::Command::Schedules),
         (simulation, ui::Command::Simulate),
         (commands, ui::Command::Commands),
-        (embedded, ui::Command::Embedded),
+        (ailuros, ui::Command::Ailuros),
     ] {
         assert_eq!(world.get::<Node>(panel).unwrap().display, Display::None);
         command.apply(world, owner);

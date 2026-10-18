@@ -10,28 +10,33 @@ description = "Wayland window management and desktop policies for Lince Park."
 [features]
 graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
 graphics-gate = ["graphics-probe", "dep:bevy", "dep:lince-interface", "lince-interface/ui", "dep:wayland-client", "dep:wayland-protocols", "smithay/backend_winit"]
-server = ["dep:lince-interface", "dep:rustix"]
-server-tests = ["server", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:tempfile"]
+server = ["dep:lince-interface", "dep:rustix", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
+server-tests = ["server", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:wayland-protocols-misc", "dep:tempfile"]
+clipboard-gate = ["server", "dep:bevy_clipboard", "dep:wayland-client"]
 native-presentation = ["graphics-probe", "server", "dep:bevy", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus"]
 native-client-gate = ["native-presentation", "graphics-gate"]
 worker-gate = ["native-presentation", "server-tests"]
-nested = ["native-presentation", "smithay/backend_winit"]
+nested = ["native-presentation", "smithay/backend_winit", "dep:wayland-client", "dep:wayland-protocols"]
+session = ["nested", "smithay/backend_drm", "smithay/backend_gbm", "smithay/backend_libinput", "smithay/backend_udev", "smithay/backend_session_libseat", "lince-interface/activation", "tokio/signal", "tokio/macros"]
 
 [dependencies]
 bevy = { version = "=0.19.1", default-features = false, features = ["std", "async_executor", "multi_threaded", "bevy_asset", "bevy_log", "bevy_render", "bevy_core_pipeline", "bevy_text", "bevy_ui", "bevy_ui_render", "bevy_input_focus", "bevy_ui_widgets"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "desktop"] }
+lince-smithay-capture = { path = "../vendor/smithay-capture", features = ["backend_drm"], optional = true }
+bevy_clipboard = { version = "=0.19.1", default-features = false, features = ["system_clipboard", "wayland"], optional = true }
 ash = { version = "=0.38.0", optional = true }
 pollster = { version = "=0.4.0", optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 wgpu = { version = "=29.0.4", default-features = false, features = ["std", "vulkan", "wgsl"], optional = true }
 lince-interface = { workspace = true, optional = true }
-rustix = { version = "=1.1.4", features = ["event", "time", "fs", "process"], optional = true }
+rustix = { version = "=1.1.4", features = ["event", "time", "fs", "process", "net"], optional = true }
 wayland-client = { version = "=0.31.15", optional = true }
 wayland-protocols = { version = "=0.32.13", features = ["client"], optional = true }
-wayland-protocols-wlr = { version = "=0.3.12", features = ["client"], optional = true }
+wayland-protocols-wlr = { version = "=0.3.12", features = ["client", "server"], optional = true }
+wayland-protocols-misc = { version = "=0.3.12", features = ["client"], optional = true }
 tokio = { workspace = true, optional = true }
 tempfile = { version = "=3.27.0", optional = true }
 cell = { workspace = true, optional = true }
@@ -68,6 +73,22 @@ required-features = ["worker-gate"]
 [[example]]
 name = "nested"
 required-features = ["nested", "worker-gate"]
+
+[[example]]
+name = "clipboard_probe"
+required-features = ["clipboard-gate"]
+
+[[example]]
+name = "session_probe"
+required-features = ["server-tests"]
+
+[[example]]
+name = "capture_probe"
+required-features = ["nested", "server-tests"]
+
+[[example]]
+name = "synchronization_probe"
+required-features = ["graphics-probe"]
 
 [lints]
 workspace = true

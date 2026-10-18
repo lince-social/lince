@@ -509,6 +509,7 @@ impl Action for Command {
                 };
                 crate::native::sand_panel::send(
                     world,
+                    panel,
                     cell::ClientMessage::Act {
                         id: nucleus::new_uid("canvas-component-save"),
                         action: engine::actions::Action::CreateCustomComponent {

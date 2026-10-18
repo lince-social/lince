@@ -39,6 +39,7 @@ fn revision(
         expected_revision: fixture.revision,
         request_id: request.into(),
         draft: TransferDraftRevisionInput {
+                        public_history: None,
             creator: owner.uid.clone(),
             slug: None,
             head: request.into(),
@@ -311,6 +312,7 @@ fn derived_agreement_does_not_grant_another_persons_action_and_later_dispute_pre
         let denied = engine
             .act(
                 Action::ActivateTransferOccurrence {
+                    original_authorities: Vec::new(),
                     transfer: downstream.transfer.clone(),
                     promise: "delivery-promise".into(),
                     expected_revision: downstream.revision,

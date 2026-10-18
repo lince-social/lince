@@ -2,6 +2,10 @@ mod catalogue;
 pub mod components;
 mod stress;
 mod workspace;
+mod isolation;
+pub use isolation::{blocked, temporary_owner};
+pub(crate) use isolation::{LaboratoryOwner, OwnerAccess};
+pub(crate) use isolation::{source as owner_source, reserved as reserved_source};
 
 pub use catalogue::catalogue;
 pub use stress::{Measurement, StressConfig, StressReport};

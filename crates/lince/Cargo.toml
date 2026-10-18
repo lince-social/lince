@@ -16,6 +16,7 @@ instinct = ["cell/instinct", "lince-sandbox?/instinct"]
 # The native window. Off for a headless server build:
 # `cargo build -p lince --no-default-features`.
 ui = ["dep:lince-sandbox", "lince-sandbox/native-media"]
+park = ["dep:lince-park", "lince-park/session"]
 facade = ["dep:lince-facade"]
 
 [dependencies]
@@ -23,10 +24,12 @@ anicca = { workspace = true }
 nucleus = { workspace = true }
 protein = { workspace = true }
 cell = { workspace = true }
+engine = { workspace = true }
 simulation = { workspace = true }
 lince-facade = { workspace = true, optional = true }
 lince-sandbox = { workspace = true, optional = true }
 lince-interface = { workspace = true, features = ["activation"] }
+lince-park = { path = "../park", optional = true }
 utils = { workspace = true, features = ["update-net"] }
 store = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "signal"] }

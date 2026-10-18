@@ -8,7 +8,28 @@ pub async fn saved_locations_for_person(
     visible: Option<&HashSet<String>>,
     person: Option<&str>,
 ) -> Result<HashMap<String, SavedLocation>, StoreError> {
-    let mut locations = super::saved_locations(pool, visible).await?;
+    project(pool, super::saved_locations(pool, visible).await?, person).await
+}
+
+pub async fn saved_locations_for_person_among(
+    pool: &SqlitePool,
+    visible: Option<&HashSet<String>>,
+    person: Option<&str>,
+    roots: &[String],
+) -> Result<HashMap<String, SavedLocation>, StoreError> {
+    project(
+        pool,
+        super::saved_locations_scoped(pool, visible, Some(roots)).await?,
+        person,
+    )
+    .await
+}
+
+async fn project(
+    pool: &SqlitePool,
+    mut locations: HashMap<String, SavedLocation>,
+    person: Option<&str>,
+) -> Result<HashMap<String, SavedLocation>, StoreError> {
     let Some(person) = person else {
         return Ok(locations);
     };

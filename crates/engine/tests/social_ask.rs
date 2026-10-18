@@ -578,9 +578,11 @@ async fn query_history_is_actor_scoped_and_revoked_actors_cannot_send_saved_ques
         store::auth::create_person_login(&origin.store.pool, "First", "first-query", "hash", role)
             .await
             .unwrap();
+    store::replica::make_own_root(&origin.store.pool,&selected).await.unwrap();
     store::visibility::grant(&origin.store.pool, "actor", Some(&first), &selected)
         .await
         .unwrap();
+    assert!(origin.may_read_record(Some(&first),&selected).await.unwrap());
     let second = store::auth::create_person_login(
         &origin.store.pool,
         "Second",

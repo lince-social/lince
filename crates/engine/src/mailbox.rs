@@ -1,6 +1,8 @@
 use crate::error::EngineError;
 use crate::roster::SignedRoster;
 
+mod scope;
+
 pub const MAX_BUNDLE_BYTES: usize = 1024 * 1024;
 
 pub const DEFAULT_QUOTA_BYTES: i64 = 64 * 1024 * 1024;
@@ -280,24 +282,50 @@ impl crate::Engine {
             .map_err(|why| EngineError::Consequence(why.to_string()))
     }
 
-    pub(crate) async fn outgoing_mail_policy_hash(&self, to: &str) -> Result<String, EngineError> {
-        let pool = &self.store.pool;
-        let contact = store::organs::contact(pool, to).await?.ok_or_else(|| EngineError::Forbidden("The mail recipient is no longer a contact".into()))?;
-        let hidden = store::visibility::hidden_from_organ(pool, to).await?;
-        let mut hidden: Vec<_> = hidden.into_iter().collect();
-        hidden.sort();
-        let mut selection = if let Some(raw) = &contact.share_protein { crate::share::selected(self, to, raw).await?.into_iter().collect::<Vec<_>>() } else { Vec::new() };
-        selection.sort();
-        let grants: Vec<(String, String)> = store::sqlx::query_as("SELECT root_record, state FROM replica_grant WHERE contact_organ = ? ORDER BY root_record").bind(to).fetch_all(pool).await?;
-        Ok(nucleus::fact::sha256_hex(&serde_json::to_vec(&(contact.trust, contact.mode, contact.sync_out, contact.scope_version, contact.scope_fields, contact.share_protein, selection, hidden, grants))?))
-    }
-
     pub async fn prepare_outgoing_mail(
         &self,
         to_organ: &str,
         root: Option<&str>,
         batch: &crate::sync::OpBatch,
     ) -> Result<store::mailbox::outbox::Envelope, EngineError> {
+        let local = store::organs::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("No local Organ".into()))?
+            .uid;
+        if to_organ != local {
+            if store::organs::contact(&self.store.pool, to_organ)
+                .await?
+                .is_some_and(|contact| contact.trust == "blocked")
+            {
+                return Err(EngineError::Forbidden(
+                    "The mail recipient is unavailable or blocked".into(),
+                ));
+            }
+            if let Some(root) = root
+                && !store::replica::is_accepted(&self.store.pool, root, to_organ).await?
+            {
+                return Err(EngineError::Forbidden(
+                    "Conversation sharing no longer permits this delivery".into(),
+                ));
+            }
+            let hidden = self.outgoing_hidden_from_organ(to_organ).await?;
+            for op in &batch.ops {
+                if nucleus::social::private_sync_field(&op.tbl, &op.field)
+                    || store::visibility::op_hidden_from(
+                        &self.store.pool,
+                        &hidden,
+                        &op.tbl,
+                        &op.uid,
+                    )
+                    .await?
+                {
+                    return Err(EngineError::Forbidden(
+                        "Current sharing permissions prevent sending this content; review its visibility and retry"
+                            .into(),
+                    ));
+                }
+            }
+        }
         let roster = self.roster_of(to_organ).await?.ok_or_else(|| {
             EngineError::Consequence("No recipient roster for outgoing mail".into())
         })?;
@@ -311,7 +339,8 @@ impl crate::Engine {
             .and_then(|value| value["mailbox_copies"].as_i64())
             .unwrap_or(2)
             .clamp(1, 2);
-        let policy_hash = self.outgoing_mail_policy_hash(to_organ).await?;
+        let scope = scope::Scope::new(root, batch)?;
+        let policy_hash = self.outgoing_mail_policy_hash(to_organ, &scope).await?;
         let bytes = serde_json::to_vec(&(
             "lince.mailbox.intent.v1",
             &policy_hash,
@@ -350,7 +379,13 @@ impl crate::Engine {
             },
         )
         .await?;
-        store::sqlx::query("INSERT INTO mailbox_outbox_authority(uid, policy_hash) VALUES (?, ?) ON CONFLICT(uid) DO NOTHING").bind(&queued.uid).bind(policy_hash).execute(&self.store.pool).await?;
+        store::mailbox::outbox::remember_review(
+            &self.store.pool,
+            &queued.uid,
+            &serde_json::to_string(&scope)?,
+            &policy_hash,
+        )
+        .await?;
         Ok(queued)
     }
 

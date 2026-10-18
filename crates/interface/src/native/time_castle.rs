@@ -271,6 +271,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         .active
         .iter()
         .filter(|(_, feed)| &feed.source == source)
+        .filter(|(owner, _)| !crate::native::laboratory::blocked(world, **owner))
         .map(|(owner, feed)| (*owner, feed.id.clone()))
         .collect();
     for (owner, subscription) in owners {
@@ -383,7 +384,7 @@ fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
 ) {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return;
     }
     chrome::dismiss(world);
@@ -403,6 +404,7 @@ fn update(
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<View>>()
         .iter(world)
+        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
         .collect();
     let closed: Vec<_> = world
         .resource::<Feeds>()

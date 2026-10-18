@@ -1,0 +1,24 @@
+{
+  "source": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim",
+  "revision": "5f9280c761a5c147bb682321f3f019482fab3e7b",
+  "conversion": "Rust linear interpolation from 24 kHz to mono 16 kHz signed PCM",
+  "cases": [
+    [
+      "name",
+      "Please add Maya Chen to the planning note."
+    ],
+    [
+      "path",
+      "The path is slash home slash user slash sandbox slash report dot C S V."
+    ],
+    [
+      "quantities",
+      "Give Alice eight apples, Bob four pears, and Carol seven oranges."
+    ],
+    [
+      "negation",
+      "Do not delete the file named quarterly report."
+    ]
+  ],
+  "scope": "Report raw recognition, name spelling, spoken path words, ordered quantities and negation. Spoken path words do not establish exact filesystem spelling or casing."
+}

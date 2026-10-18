@@ -21,57 +21,191 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
-        if matches!(action, Action::RecordTransferOutcome { .. }) {
+        if let Action::RecordJourneyProgress { transfer, expected_revision, person, request_id, step } = action {
             return Box::pin(async move {
-                self.record_transfer_outcome(action, actor.as_deref(), now, verified_authorship.as_ref())
+                self.record_journey_progress(transfer, expected_revision, person, request_id, step, actor.as_deref(), now, verified_authorship.as_ref()).await.map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Surplus { request } = action {
+            return Box::pin(async move {
+                self.stock_policy_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Audience { request } = action {
+            return Box::pin(async move {
+                self.audience_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Identity { request } = action {
+            return Box::pin(async move {
+                self.identity_command_with_authorship(request, actor.as_deref(), now, verified_authorship.as_ref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
+        }
+        if let Action::TrustAnalysis { person, request_id, request } = action {
+            return Box::pin(async move {
+                self.trust_analysis_command(person.as_deref(), request_id, request, actor.as_deref(), now, verified_authorship.as_ref())
                     .await.map(ControlFlow::Continue)
             });
         }
-        if let Action::Vocabulary { request } = action {
-            return Box::pin(async move { self.vocabulary_command(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+        if let Action::TransferReceipt {
+            person,
+            request_id,
+            request,
+        } = action
+        {
+            return Box::pin(async move {
+                self.transfer_receipt_command(
+                    person.as_deref(),
+                    request_id,
+                    request,
+                    actor.as_deref(),
+                    now,
+                    verified_authorship.as_ref(),
+                )
+                .await
+                .map(ControlFlow::Continue)
+            });
         }
-        if let Action::Knowledge {request}=action {
-            return Box::pin(async move {self.knowledge_command(request,actor.as_deref()).await.map(ControlFlow::Continue)});
+        if matches!(action, Action::RecordTransferOutcome { .. }) {
+            return Box::pin(async move {
+                self.record_transfer_outcome(
+                    action,
+                    actor.as_deref(),
+                    now,
+                    verified_authorship.as_ref(),
+                )
+                .await
+                .map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Vocabulary { request } = action {
+            return Box::pin(async move {
+                self.vocabulary_command(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Knowledge { request } = action {
+            return Box::pin(async move {
+                self.knowledge_command(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::SavedLocation { request } = action {
-            return Box::pin(async move { self.saved_location_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.saved_location_command(request, actor.as_deref(), now)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::Location { request } = action {
-            return Box::pin(async move { self.location_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.location_request(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::Plugins { request } = action {
-            return Box::pin(async move { self.plugin_command(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.plugin_command(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::Visibility { request } = action {
-            return Box::pin(async move { self.visibility_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.visibility_request(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::InspectRecordAuthority { person, record_uid } = action {
-            return Box::pin(async move { self.inspect_record_authority(actor.as_deref(), &person, &record_uid).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.inspect_record_authority(actor.as_deref(), &person, &record_uid)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::Workspace { request } = action {
-            return Box::pin(async move { self.workspace_request(request, actor.as_deref()).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.workspace_request(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
-        if let Action::SetRolePolicy { role, policy, expected_revision } = action {
-            return Box::pin(async move { self.set_role_policy(actor.as_deref(), &role, policy, expected_revision).await.map(ControlFlow::Continue) });
+        if let Action::SetRolePolicy {
+            role,
+            policy,
+            expected_revision,
+        } = action
+        {
+            return Box::pin(async move {
+                self.set_role_policy(actor.as_deref(), &role, policy, expected_revision)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
-        if let Action::AssignRoles { person, roles, expected_revision } = action {
-            return Box::pin(async move { self.assign_roles(actor.as_deref(), &person, &roles, expected_revision).await.map(ControlFlow::Continue) });
+        if let Action::AssignRoles {
+            person,
+            roles,
+            expected_revision,
+        } = action
+        {
+            return Box::pin(async move {
+                self.assign_roles(actor.as_deref(), &person, &roles, expected_revision)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::RecordExtensions { target, request } = action {
-            return Box::pin(async move { self.record_extensions(target, request, actor.as_deref(), now).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.record_extensions(target, request, actor.as_deref(), now)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if let Action::Canvas { canvas, request } = action {
-            return Box::pin(async move { self.canvas_action(canvas, request, actor.as_deref()).await.map(ControlFlow::Continue) });
+            return Box::pin(async move {
+                self.canvas_action(canvas, request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
         }
         if matches!(action, Action::InspectCanvases) {
             return Box::pin(async move {
-                if actor.is_some() { return Err(EngineError::Forbidden("Canvas inspection currently requires the local interface session.".into())); }
-                Ok(ControlFlow::Continue(ActionOutcome { data: Some(serde_json::json!({"canvases":self.connected_canvases()})), ..Default::default() }))
+                if actor.is_some() {
+                    return Err(EngineError::Forbidden(
+                        "Canvas inspection currently requires the local interface session.".into(),
+                    ));
+                }
+                Ok(ControlFlow::Continue(ActionOutcome {
+                    data: Some(serde_json::json!({"canvases":self.connected_canvases()})),
+                    ..Default::default()
+                }))
             });
         }
         match &action {
-            Action::Vocabulary { .. } | Action::Knowledge { .. } | Action::SavedLocation { .. } | Action::Plugins { .. } | Action::Visibility { .. } | Action::Location { .. } | Action::Workspace { .. } | Action::InspectRecordAuthority { .. } | Action::SetRolePolicy { .. } | Action::AssignRoles { .. } | Action::RecordExtensions { .. } | Action::InspectCanvases | Action::Canvas { .. } => unreachable!(),
-            Action::RecordTransferOutcome { .. } => unreachable!(),
+            Action::Identity { .. }
+            | Action::Vocabulary { .. }
+            | Action::Knowledge { .. }
+            | Action::SavedLocation { .. }
+            | Action::Plugins { .. }
+            | Action::Visibility { .. }
+            | Action::Audience { .. }
+            | Action::Surplus { .. }
+            | Action::RecordJourneyProgress { .. }
+            | Action::Location { .. }
+            | Action::Workspace { .. }
+            | Action::InspectRecordAuthority { .. }
+            | Action::SetRolePolicy { .. }
+            | Action::AssignRoles { .. }
+            | Action::RecordExtensions { .. }
+            | Action::InspectCanvases
+            | Action::Canvas { .. } => unreachable!(),
+            Action::RecordTransferOutcome { .. } | Action::TransferReceipt { .. } | Action::TrustAnalysis { .. } => unreachable!(),
             Action::Social { .. }
             | Action::SandPackage { .. }
             | Action::ChangeRecord { .. }

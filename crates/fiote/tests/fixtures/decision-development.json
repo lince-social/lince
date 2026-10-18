@@ -1,0 +1,58 @@
+[
+  {
+    "request_id":"coding-direct","generation":1,
+    "text":"Assistant, fix the failing Rust tests in my project.",
+    "context":"The person may address the Lince assistant or talk to another person. Only direct requests to the assistant should activate it.",
+    "admission":true,"routing":true,
+    "candidates":[
+      {"record":"r_00000000000000000000000001","title":"Coding","purpose":"Edits source files, fixes errors, and runs project tests."},
+      {"record":"r_00000000000000000000000002","title":"Planning","purpose":"Manages calendars, meetings, events, and schedules."},
+      {"record":"r_00000000000000000000000003","title":"Habits","purpose":"Helps with daily routines and personal habits."}
+    ]
+  },
+  {
+    "request_id":"planning-direct","generation":1,
+    "text":"Assistant, schedule a meeting with my team for tomorrow morning.",
+    "context":"The person may address the Lince assistant or talk to another person. Only direct requests to the assistant should activate it.",
+    "admission":true,"routing":true,
+    "candidates":[
+      {"record":"r_00000000000000000000000001","title":"Coding","purpose":"Edits source files, fixes errors, and runs project tests."},
+      {"record":"r_00000000000000000000000002","title":"Planning","purpose":"Manages calendars, meetings, events, and schedules."},
+      {"record":"r_00000000000000000000000003","title":"Habits","purpose":"Helps with daily routines and personal habits."}
+    ]
+  },
+  {
+    "request_id":"habits-direct","generation":1,
+    "text":"Assistant, help me build a routine for drinking water and exercising every day.",
+    "context":"The person may address the Lince assistant or talk to another person. Only direct requests to the assistant should activate it.",
+    "admission":true,"routing":true,
+    "candidates":[
+      {"record":"r_00000000000000000000000001","title":"Coding","purpose":"Edits source files, fixes errors, and runs project tests."},
+      {"record":"r_00000000000000000000000002","title":"Planning","purpose":"Manages calendars, meetings, events, and schedules."},
+      {"record":"r_00000000000000000000000003","title":"Habits","purpose":"Helps with daily routines and personal habits."}
+    ]
+  },
+  {
+    "request_id":"ordinary-conversation","generation":1,
+    "text":"I watched a movie with my sister yesterday, and we had pizza afterward.",
+    "context":"The person may address the Lince assistant or talk to another person. Only direct requests to the assistant should activate it.",
+    "admission":true,"routing":false,"candidates":[]
+  },
+  {
+    "request_id":"quoted-command","generation":1,
+    "text":"My colleague said, assistant, delete those files, but I told him that was a bad idea.",
+    "context":"The person may address the Lince assistant or talk to another person. Only direct requests to the assistant should activate it.",
+    "admission":true,"routing":false,"candidates":[]
+  },
+  {
+    "request_id":"unclear-request","generation":1,
+    "text":"Could you do that thing we talked about?",
+    "context":"There is no prior conversation identifying who is being addressed or what action is wanted.",
+    "admission":true,"routing":true,
+    "candidates":[
+      {"record":"r_00000000000000000000000001","title":"Coding","purpose":"Edits source files, fixes errors, and runs project tests."},
+      {"record":"r_00000000000000000000000002","title":"Planning","purpose":"Manages calendars, meetings, events, and schedules."},
+      {"record":"r_00000000000000000000000003","title":"Habits","purpose":"Helps with daily routines and personal habits."}
+    ]
+  }
+]

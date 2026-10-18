@@ -2,6 +2,12 @@
 
 extern crate self as lince_interface;
 
+#[cfg(feature = "models")]
+pub mod transfers;
+
+#[cfg(feature = "map-presentation")]
+pub mod map_view;
+
 pub mod blob_sync;
 pub mod credits;
 pub use lince_practice::{handbook, practice};

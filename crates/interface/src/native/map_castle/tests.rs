@@ -1,7 +1,7 @@
 use super::*;
 use crate::native::actions::Action;
 
-fn fixture() -> (App, Entity, Entity) {
+pub(super) fn fixture() -> (App, Entity, Entity) {
     let mut app = crate::native::sand_panel::tests::app();
     app.add_plugins(MinimalPlugins)
         .init_resource::<Assets<Image>>()
@@ -23,6 +23,65 @@ fn fixture() -> (App, Entity, Entity) {
         String::new(),
     );
     (app, root, owner)
+}
+
+#[test]
+fn pointer_pan_latency_uses_each_gesture_instead_of_the_previous_button() {
+    use bevy::picking::{
+        events::Drag,
+        pointer::{Location, PointerId},
+    };
+    use std::time::{Duration, Instant};
+
+    let (mut app, _, owner) = fixture();
+    let viewport = app.world().get::<MapSand>(owner).unwrap().viewport;
+    let previous = Instant::now() - Duration::from_secs(10);
+    app.world_mut()
+        .get_mut::<MapSand>(owner)
+        .unwrap()
+        .pending_input = Some(previous);
+    for delta in [Vec2::new(12.0, 5.0), Vec2::new(-6.0, 4.0)] {
+        let before = Instant::now();
+        let camera = app.world().get::<MapSand>(owner).unwrap().camera;
+        app.world_mut().trigger(Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::Window(
+                    bevy::window::WindowRef::Entity(viewport)
+                        .normalize(None)
+                        .unwrap(),
+                ),
+                position: Vec2::ZERO,
+            },
+            Drag {
+                button: PointerButton::Primary,
+                distance: delta,
+                delta,
+            },
+            viewport,
+        ));
+        app.world_mut().flush();
+        let sand = app.world().get::<MapSand>(owner).unwrap();
+        let input = sand.pending_input.unwrap();
+        assert!(input >= before);
+        assert_ne!(sand.camera, camera);
+        diagnostics::rendered(
+            app.world().resource::<diagnostics::Diagnostics>(),
+            owner,
+            crate::map_view::Rendered {
+                started: input,
+                submitted: input + Duration::from_millis(7),
+                input: Some(input),
+                device: Default::default(),
+            },
+        );
+    }
+    let trace = diagnostics::snapshot(app.world());
+    let views = trace["metrics"]["views"].as_object().unwrap();
+    assert_eq!(
+        views[&format!("{owner:?}")]["input_to_submission_micros"],
+        serde_json::json!([7000, 7000])
+    );
 }
 
 #[cfg_attr(test, test)]
@@ -140,8 +199,8 @@ fn expired_live_overlay_and_empty_record_source_are_cleared() {
                 longitude: 20.0,
             },
             live: true,
-            expires: Some(chrono::Utc::now().timestamp_millis() - 1),
-            observed: std::time::Instant::now(),
+            view: None,
+            observed: engine::location::clock::Instant::now(),
             radius_metres: None,
         });
     ui::update(app.world_mut());
@@ -163,10 +222,11 @@ fn expired_live_overlay_and_empty_record_source_are_cleared() {
                 longitude: 20.0,
             },
             live: false,
-            expires: None,
-            observed: std::time::Instant::now(),
+            view: None,
+            observed: engine::location::clock::Instant::now(),
             radius_metres: None,
         });
+    paging::maintain(app.world_mut());
     feed::maintain(app.world_mut());
     assert!(
         app.world()

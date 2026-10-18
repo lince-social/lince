@@ -99,7 +99,7 @@ rfd = { workspace = true, optional = true }
 qrcode = { workspace = true, optional = true }
 nokhwa = { version = "=0.10.11", default-features = false, features = ["input-native"], optional = true }
 lince-media = { workspace = true, optional = true }
-cpal = { version = "=0.15.3", optional = true }
+cpal = { workspace = true, optional = true }
 tts = { version = "=0.26.3", optional = true, default-features = false }
 ttf-parser = { version = "=0.25.1", optional = true }
 hound = { version = "=3.5.1", optional = true }

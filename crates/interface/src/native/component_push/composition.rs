@@ -336,6 +336,7 @@ impl crate::native::actions::Action for Invoke {
         let id = nucleus::new_uid("composition-action");
         match crate::native::sand_panel::send(
             world,
+            owner,
             cell::ClientMessage::Act {
                 id: id.clone(),
                 action: self.0.clone(),
@@ -381,6 +382,7 @@ impl crate::native::actions::Action for Save {
             let id = nucleus::new_uid("composition-save");
             crate::native::sand_panel::send(
                 world,
+                owner,
                 cell::ClientMessage::Act {
                     id: id.clone(),
                     action: engine::actions::Action::CreateCustomComponent {

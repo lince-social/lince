@@ -1,0 +1,22 @@
+Laya Rust inference
+Source: https://github.com/aovestdipaperino/laya-rust
+Revision: 8c50e61b1507638c4c1c7630633f4ce776d127db
+Original package version: 0.1.1
+Author: Enzo Lombardi and the laya-rust contributors
+License: Apache-2.0, reproduced in LICENSE
+
+The ModernBERT encoder was adapted upstream from candle-transformers 0.9.2,
+licensed under Apache-2.0 or MIT. This copy uses the Apache-2.0 option.
+Candle source: https://github.com/huggingface/candle
+The upstream adaptation makes attention masks follow the model dtype.
+
+Lince adaptations: library only; Candle 0.11; tokenizers 0.22 without default
+features or esaxx_fast/cpp; explicit CPU default; prompt-budget inspection.
+Code comments are omitted to follow the host repository's source convention.
+The model weights are separately obtained from convaiinnovations/laya and
+declare Apache-2.0. They are not included in this source package.
+
+The BERT encoder is adapted from candle-transformers 0.11.0, under its
+Apache-2.0 option. Source:
+https://github.com/huggingface/candle/blob/0.11.0/candle-transformers/src/models/bert.rs
+It uses candle_nn linear/layer_norm directly in place of tracing wrappers.

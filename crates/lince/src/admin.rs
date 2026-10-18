@@ -2,20 +2,24 @@ use std::io::Error;
 
 use store::Store;
 
+mod ailuros;
+
 pub async fn dispatch(args: &[String]) -> Option<Result<(), Error>> {
     let verbs = positional(args);
     match verbs.split_first() {
+        Some((&"ailuros", rest)) => Some(ailuros::dispatch(rest).await),
         Some((&"organ", rest)) => Some(organ(rest).await),
         Some((&"discovery", rest)) => Some(discovery(rest).await),
         _ => None,
     }
 }
 
-const VALUE_FLAGS: [&str; 6] = [
+const VALUE_FLAGS: [&str; 7] = [
     "--directory",
     "--port",
     "--peer-port",
     "--listen-addr",
+    "--facade-origin",
     "--initial-admin-password",
     "--initial-admin-password-file",
 ];

@@ -1,0 +1,132 @@
+[
+  {
+    "id": "rust-refactor",
+    "destination": "r_00000000000000000000000001",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "project-file",
+    "destination": "r_00000000000000000000000001",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "compiler-error",
+    "destination": "r_00000000000000000000000001",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "tests-order",
+    "destination": "r_00000000000000000000000001",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "calendar",
+    "destination": "r_00000000000000000000000002",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "move-event",
+    "destination": "r_00000000000000000000000002",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "meeting-room",
+    "destination": "r_00000000000000000000000002",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "daily-walk",
+    "destination": "r_00000000000000000000000003",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "sleep-routine",
+    "destination": "r_00000000000000000000000003",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "water-habit",
+    "destination": "r_00000000000000000000000003",
+    "admission": "assistant_request"
+  },
+  {
+    "id": "unknown-specialty",
+    "destination": null,
+    "admission": "assistant_request"
+  },
+  {
+    "id": "ambiguous-work",
+    "destination": null,
+    "admission": "assistant_request"
+  },
+  {
+    "id": "ordinary-weekend",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "ordinary-coding",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "ordinary-meeting",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "ordinary-habit",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "person-bob",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "person-sarah",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "quoted-complete",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "quoted-short",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "screen-text",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "broadcast",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "unclear-it",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "unclear-you",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "future-wish",
+    "destination": null,
+    "admission": "ignore"
+  },
+  {
+    "id": "no-activation",
+    "destination": null,
+    "admission": "ignore"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "name": "ESP32-S3 base",
+  "chip": "esp32s3",
+  "minimum_flash_bytes": 4194304,
+  "psram": null,
+  "camera": null,
+  "reference": "Base for scalar/custom workflows on an ESP32-S3 with at least 4 MiB flash. No PSRAM or camera wiring is assumed. Add verified memory and camera settings to board.json for other hardware."
+}

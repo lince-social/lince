@@ -1,0 +1,10 @@
+Earshot 1.2.2
+Source: https://github.com/pykeio/earshot
+Crate archive and checksum: Cargo.lock
+Author: Carson M / pyke.io and Earshot contributors
+License option used by Lince: MIT, reproduced in LICENSE-MIT.txt
+
+Lince uses the embedded default predictor through Earshot's Rust API to detect
+voice in mono 16 kHz input. No external inference runtime or model download is
+required. This detects speech activity; it does not decide whether a request
+addresses Fiote or choose a recipient.

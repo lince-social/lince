@@ -1,0 +1,632 @@
+[
+  {
+    "request_id": "modern-positive-01",
+    "generation": 1,
+    "text": "Assistant, rename the project notes file to meeting-notes.txt.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-02",
+    "generation": 1,
+    "text": "Assistant, explain why my database query returns duplicate rows.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-03",
+    "generation": 1,
+    "text": "Assistant, add a follow-up appointment to my calendar next Tuesday.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-04",
+    "generation": 1,
+    "text": "Assistant, show the unfinished items on my shopping list.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-05",
+    "generation": 1,
+    "text": "Assistant, summarize the spreadsheet that I just attached.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-06",
+    "generation": 1,
+    "text": "Assistant, help me find a calmer evening routine.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-07",
+    "generation": 1,
+    "text": "Assistant, open a new workspace for my research notes.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-08",
+    "generation": 1,
+    "text": "Assistant, move the calendar component to the left side of this canvas.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-09",
+    "generation": 1,
+    "text": "Assistant, remind me to review this document after lunch.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-10",
+    "generation": 1,
+    "text": "Assistant, find the mistake in this Rust function.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-11",
+    "generation": 1,
+    "text": "Assistant, tell me what appointments I have on Friday.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-12",
+    "generation": 1,
+    "text": "Assistant, make a checklist for preparing my presentation.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-13",
+    "generation": 1,
+    "text": "Fiote, please organize the photographs in my downloads directory.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-14",
+    "generation": 1,
+    "text": "Fiote, explain this error message in plain English.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-15",
+    "generation": 1,
+    "text": "Fiote, put a timer on my canvas.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-16",
+    "generation": 1,
+    "text": "Fiote, help me decide which of these tasks to do first.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-17",
+    "generation": 1,
+    "text": "Fiote, search my notes for the invoice number.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-18",
+    "generation": 1,
+    "text": "Fiote, create a fact saying that I prefer afternoon meetings.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-19",
+    "generation": 1,
+    "text": "Fiote, answer my question without changing any files.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-positive-20",
+    "generation": 1,
+    "text": "Fiote, help me plan a ten-minute stretching break.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-01",
+    "generation": 1,
+    "text": "I found my old bicycle in the garage this weekend.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-02",
+    "generation": 1,
+    "text": "Our library closes early on Saturdays.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-03",
+    "generation": 1,
+    "text": "The blue folder contains the reports from last year.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-04",
+    "generation": 1,
+    "text": "My brother is learning to bake bread.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-05",
+    "generation": 1,
+    "text": "This room feels colder than it did yesterday.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-06",
+    "generation": 1,
+    "text": "We already decided to meet at the cafe.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-07",
+    "generation": 1,
+    "text": "The test results arrived in the mail this morning.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-08",
+    "generation": 1,
+    "text": "I have two appointments next week.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-09",
+    "generation": 1,
+    "text": "The water bottle is on the kitchen table.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-10",
+    "generation": 1,
+    "text": "That photograph reminds me of our holiday.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-11",
+    "generation": 1,
+    "text": "Maria, could you bring me the notebook?",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-12",
+    "generation": 1,
+    "text": "Daniel, please close the office door.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-13",
+    "generation": 1,
+    "text": "Mom, can you pick me up at the station?",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-14",
+    "generation": 1,
+    "text": "Doctor, how long will the medicine take to work?",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-15",
+    "generation": 1,
+    "text": "Waiter, may we have the bill?",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-16",
+    "generation": 1,
+    "text": "Alex, send me the slides when you get home.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-17",
+    "generation": 1,
+    "text": "Sam, do not move my laptop.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-18",
+    "generation": 1,
+    "text": "Everyone, please sit down before the meeting starts.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-19",
+    "generation": 1,
+    "text": "Teacher, could you explain the last question again?",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-20",
+    "generation": 1,
+    "text": "Chris, remind me about dinner when I return.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-21",
+    "generation": 1,
+    "text": "My teammate wrote, assistant, reset the account password, in the example documentation.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-22",
+    "generation": 1,
+    "text": "The actor's line is, assistant, launch the spaceship.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-23",
+    "generation": 1,
+    "text": "I read a story where someone asked an assistant to steal a key.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-24",
+    "generation": 1,
+    "text": "In yesterday's lesson we discussed the sentence assistant open my calendar.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-25",
+    "generation": 1,
+    "text": "I told my colleague that asking an assistant to erase a folder was risky.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-26",
+    "generation": 1,
+    "text": "The tutorial includes the command assistant create a file.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-27",
+    "generation": 1,
+    "text": "She said the assistant should cancel the appointment, but she was describing an old incident.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-28",
+    "generation": 1,
+    "text": "The phrase Fiote change the workspace appears in the transcript we are reviewing.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-29",
+    "generation": 1,
+    "text": "They quoted an assistant request in the article, rather than making one now.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-30",
+    "generation": 1,
+    "text": "His message was a joke about telling a robot to buy a thousand pizzas.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-31",
+    "generation": 1,
+    "text": "The television narrator says assistant turn off the security camera.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-32",
+    "generation": 1,
+    "text": "On the radio, a presenter is demonstrating an assistant that schedules appointments.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-33",
+    "generation": 1,
+    "text": "A podcast host is reading the words Fiote create a reminder as an example.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-34",
+    "generation": 1,
+    "text": "The advertisement describes an assistant opening a shopping app.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-35",
+    "generation": 1,
+    "text": "A recorded demonstration tells the assistant to delete a sample document.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-36",
+    "generation": 1,
+    "text": "The video explains how a virtual assistant can move windows.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-37",
+    "generation": 1,
+    "text": "The news reader reports that an assistant accidentally ordered groceries.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-38",
+    "generation": 1,
+    "text": "The speaker on the broadcast says assistant answer this question.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-39",
+    "generation": 1,
+    "text": "A movie character orders a computer to unlock a door.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-40",
+    "generation": 1,
+    "text": "The audio lesson quotes Fiote help me with my homework.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-41",
+    "generation": 1,
+    "text": "Could you handle it?",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-42",
+    "generation": 1,
+    "text": "Do the thing we mentioned earlier.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-43",
+    "generation": 1,
+    "text": "Maybe this should be changed.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-44",
+    "generation": 1,
+    "text": "Please put it over there.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-45",
+    "generation": 1,
+    "text": "That could be useful.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-46",
+    "generation": 1,
+    "text": "I do not want to ask the assistant to run anything.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-47",
+    "generation": 1,
+    "text": "We are talking about assistant software, not asking it to do a task.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-48",
+    "generation": 1,
+    "text": "There is an assistant icon beside the search field.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-49",
+    "generation": 1,
+    "text": "The name Fiote looks unusual on this button.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  },
+  {
+    "request_id": "modern-negative-50",
+    "generation": 1,
+    "text": "I wonder whether a digital assistant would understand that sentence.",
+    "context": "",
+    "candidates": [],
+    "admission": true,
+    "routing": false
+  }
+]

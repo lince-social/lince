@@ -1,0 +1,94 @@
+name: Park Linux checks and package
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'flake.nix'
+      - 'flake.lock'
+      - 'institute/packaging/linux/**'
+      - '.github/workflows/park.yml'
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'flake.nix'
+      - 'flake.lock'
+      - 'institute/packaging/linux/**'
+      - '.github/workflows/park.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: park-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RUSTFLAGS: '-D warnings'
+  RUST_MIN_STACK: '33554432'
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned Rust version
+        id: toolchain
+        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config clang libclang-dev libfontconfig-dev libpipewire-0.3-dev \
+            libdbus-1-dev libglib2.0-dev libpulse-dev libspeechd-dev libva-dev \
+            libssl-dev libsqlite3-dev libasound2-dev libwayland-dev libxkbcommon-dev \
+            libx11-dev libxcb1-dev libxrandr-dev libxi-dev libxcursor-dev \
+            libgl1-mesa-dev libegl1-mesa-dev libvulkan-dev libgbm-dev libdrm-dev \
+            libudev-dev libinput-dev libseat-dev
+      - name: Compiler and protocol checks
+        run: cargo xtask park ci
+      - name: Record graphics acceptance limits
+        run: |
+          printf '%s\n' 'Nested GPU/capture smoke: NOT RUN on this hosted job; no active hardware-backed Wayland session is provisioned.' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' 'Physical DRM, seat, lock, hotplug, suspend and clean-login acceptance: NOT RUN; use the prepared local validation runner.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Prepare Park release executable
+        if: github.event_name != 'pull_request'
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+        run: cargo run --release --locked -p lince --features park -- --help
+      - name: Package Park separately from Sandbox
+        if: github.event_name != 'pull_request'
+        run: |
+          set -eu
+          install -Dm755 target/release/lince package/lince-park/bin/lince
+          install -Dm644 LICENSE package/lince-park/LICENSE
+          install -Dm644 crates/vendor/smithay-capture/LICENSE.txt package/lince-park/share/licenses/lince-smithay-capture/LICENSE.txt
+          install -Dm644 crates/vendor/smithay-capture/CREDITS.md package/lince-park/share/licenses/lince-smithay-capture/CREDITS.md
+          install -Dm644 institute/packaging/linux/wayland-sessions/lince.desktop package/lince-park/share/wayland-sessions/lince.desktop
+          install -Dm644 institute/packaging/linux/park.md package/lince-park/Using-Park.md
+          printf '%s\n' "$GITHUB_SHA" > package/lince-park/revision
+          ldd target/release/lince > package/lince-park/runtime-libraries.txt
+          if grep -q 'not found' package/lince-park/runtime-libraries.txt; then exit 1; fi
+          mkdir -p park-artifacts
+          tar -czf park-artifacts/lince-park-x86_64-unknown-linux-gnu.tar.gz -C package lince-park
+          cd park-artifacts
+          sha256sum lince-park-x86_64-unknown-linux-gnu.tar.gz > lince-park-x86_64-unknown-linux-gnu.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: lince-park-linux-${{ github.sha }}
+          path: park-artifacts/*
+          if-no-files-found: error
+          retention-days: 14

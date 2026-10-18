@@ -570,6 +570,7 @@ async fn authored_activation_routes_execute_once_and_disabled_behaviors_stay_ina
     app.world_mut().flush();
     crate::native::sand_panel::send(
         app.world(),
+        host,
         cell::ClientMessage::Act {
             id: nucleus::new_uid("barrier"),
             action: action("Following command"),

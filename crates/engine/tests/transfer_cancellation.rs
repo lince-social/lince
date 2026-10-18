@@ -1,4 +1,6 @@
 mod support;
+#[path = "transfer_cancellation/location.rs"]
+mod location;
 
 use engine::actions::{Action, TransferOccurrenceClaimRole, TransferReservePoint};
 use nucleus::transfer::{AgreementType, disclosure::TransferItem, exchange::ExchangeRoute};
@@ -114,6 +116,7 @@ fn agreed_cancellation_releases_only_the_remainder_and_retains_settled_evidence(
     support::run_async_test("agreed-cancellation", || async {
         for agreement in [AgreementType::Full, AgreementType::Percentage] {
             let (engine, ana, beto, mut fixture, stock, occurrence) = setup_with(agreement).await;
+            let (_location_network,location_record,location_controller)=location::start(&engine,&fixture.transfer).await;
             check_balance(&engine, &stock, [25.0, 6.0, 19.0]).await;
             let old_preview = support::settlement_preview(&engine, &occurrence, &ana, 6.0).await;
             let action = Action::ProposeTransferCancellation {
@@ -130,6 +133,7 @@ fn agreed_cancellation_releases_only_the_remainder_and_retains_settled_evidence(
                 .unwrap()
                 .created
                 .unwrap();
+            location::assert_live(&engine,&location_record,&location_controller).await;
             assert_eq!(
                 engine.act(action, None).await.unwrap().created.as_deref(),
                 Some(cancellation.as_str())
@@ -202,6 +206,7 @@ fn agreed_cancellation_releases_only_the_remainder_and_retains_settled_evidence(
                     .contains("request id")
             );
             let applied = engine.act(finalize.clone(), None).await.unwrap();
+            location::assert_stopped(&engine,&location_record,&location_controller).await;
             assert_eq!(
                 applied.created,
                 engine.act(finalize, None).await.unwrap().created

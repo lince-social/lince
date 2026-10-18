@@ -10,7 +10,7 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::{
-        Arc, Mutex,
+        Arc, Mutex, OnceLock, Weak,
         atomic::{AtomicBool, Ordering},
     },
     time::Duration,
@@ -21,12 +21,38 @@ pub const MAX_TILE_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_DECODED_BYTES: usize = 16 * 1024 * 1024;
 pub const PUBLIC_SERVER: &str = "https://tiles.versatiles.org/tiles/osm/{z}/{x}/{y}";
 
+pub(crate) fn quota_lock(root: &Path) -> Arc<AsyncMutex<()>> {
+    static GATES: OnceLock<Mutex<HashMap<PathBuf, Weak<AsyncMutex<()>>>>> = OnceLock::new();
+    let path = root
+        .canonicalize()
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default().join(root));
+    let mut gates = GATES
+        .get_or_init(Mutex::default)
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    gates.retain(|_, gate| gate.strong_count() > 0);
+    if let Some(gate) = gates.get(&path).and_then(Weak::upgrade) {
+        return gate;
+    }
+    let gate = Arc::new(AsyncMutex::new(()));
+    gates.insert(path, Arc::downgrade(&gate));
+    gate
+}
+
+struct Temporary(PathBuf);
+impl Drop for Temporary {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub local_directory: PathBuf,
     pub archives: Vec<PathBuf>,
     pub server: String,
+    pub dataset_version: String,
     pub online: bool,
     pub max_zoom: u8,
     pub storage_megabytes: u64,
@@ -37,8 +63,9 @@ impl Default for Settings {
         Self {
             local_directory: PathBuf::new(),
             archives: Vec::new(),
-            server: PUBLIC_SERVER.into(),
-            online: true,
+            server: String::new(),
+            dataset_version: String::new(),
+            online: false,
             max_zoom: MAX_DATA_ZOOM,
             storage_megabytes: 1024,
         }
@@ -46,7 +73,43 @@ impl Default for Settings {
 }
 
 impl Settings {
+    pub fn save_atomic(&self, path: &Path) -> Result<(), String> {
+        self.validate()?;
+        self.validate_paths()?;
+        let bytes = serde_json::to_vec_pretty(self).map_err(|error| error.to_string())?;
+        if bytes.len() > 65_536 {
+            return Err("Map settings exceed 64 KiB".into());
+        }
+        let parent = path.parent().ok_or("Choose a settings file directory")?;
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let temporary = Temporary(path.with_extension(format!(
+            "{}.{}.tmp",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        )));
+        let mut file = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&temporary.0)
+            .map_err(|error| error.to_string())?;
+        file.write_all(&bytes).map_err(|error| error.to_string())?;
+        file.sync_all().map_err(|error| error.to_string())?;
+        std::fs::rename(&temporary.0, path).map_err(|error| error.to_string())?;
+        #[cfg(unix)]
+        std::fs::File::open(parent)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|error| error.to_string())?;
+        Ok(())
+    }
+
     pub fn validate(&self) -> Result<(), String> {
+        if self.dataset_version.len() > 256
+            || self.dataset_version.chars().any(char::is_control)
+            || self.online && self.dataset_version.trim().is_empty()
+        {
+            return Err("Choose a dataset version before enabling external downloads".into());
+        }
         if self.max_zoom > MAX_DATA_ZOOM
             || !(16..=65_536).contains(&self.storage_megabytes)
             || self.archives.len() > 16
@@ -84,10 +147,44 @@ impl Settings {
     }
 
     pub fn source_id(&self) -> String {
-        Sha256::digest(format!("shortbread-1.1-no-buildings:{}", self.server).as_bytes())
+        let local = if self.local_directory.as_os_str().is_empty() {
+            None
+        } else {
+            crate::pack::manifest(&self.local_directory)
+                .and_then(|manifest| manifest.identity())
+                .ok()
+        };
+        let archives = self
+            .archives
             .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect()
+            .map(|path| crate::pack::archive_identity(path).ok())
+            .collect::<Vec<_>>();
+        Sha256::digest(
+            serde_json::to_vec(&(
+                "shortbread-1.1-no-buildings",
+                &self.server,
+                &self.dataset_version,
+                local,
+                archives,
+            ))
+            .unwrap_or_default(),
+        )
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+    }
+
+    fn validate_paths(&self) -> Result<(), String> {
+        if !self.local_directory.as_os_str().is_empty()
+            && crate::pack::manifest(&self.local_directory)?.format
+                != crate::pack::Format::Directory
+        {
+            return Err("Choose a directory pack for the primary local source".into());
+        }
+        for archive in &self.archives {
+            crate::pack::archive_identity(archive)?;
+        }
+        Ok(())
     }
 }
 
@@ -123,13 +220,15 @@ pub struct TileStore {
     slots: Semaphore,
     in_flight: AsyncMutex<HashMap<Tile, Arc<OnceCell<Result<Bytes, String>>>>>,
     progress: Mutex<BTreeMap<Tile, TileProgress>>,
-    storage: AsyncMutex<Option<u64>>,
+    quota_root: PathBuf,
+    storage: Arc<AsyncMutex<()>>,
     archives: OnceCell<Vec<pmtiles::AsyncPmTilesReader<LocalArchive>>>,
 }
 
 impl TileStore {
     pub fn new(settings: Settings, cache: impl AsRef<Path>) -> Result<Arc<Self>, String> {
         settings.validate()?;
+        settings.validate_paths()?;
         let root = cache.as_ref().join(settings.source_id());
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
@@ -144,13 +243,55 @@ impl TileStore {
             slots: Semaphore::new(4),
             in_flight: AsyncMutex::default(),
             progress: Mutex::default(),
-            storage: AsyncMutex::default(),
+            quota_root: cache.as_ref().to_path_buf(),
+            storage: quota_lock(cache.as_ref()),
             archives: OnceCell::new(),
         }))
     }
 
     pub fn settings(&self) -> &Settings {
         &self.settings
+    }
+
+    pub async fn validate_sources(&self) -> Result<(), String> {
+        self.local_archives().await.map(|_| ())
+    }
+
+    async fn local_archives(
+        &self,
+    ) -> Result<&Vec<pmtiles::AsyncPmTilesReader<LocalArchive>>, String> {
+        self.archives
+            .get_or_try_init(|| async {
+                let mut readers = Vec::new();
+                for archive in &self.settings.archives {
+                    crate::pack::verify_archive(archive.clone()).await?;
+                    let backend = LocalArchive::open(archive.clone()).await?;
+                    let metadata = backend.metadata().await?;
+                    let reader = pmtiles::AsyncPmTilesReader::try_from_source(backend)
+                        .await
+                        .map_err(|error| format!("Cannot open local map archive: {error}"))?;
+                    if reader.get_header().tile_type != pmtiles::TileType::Mvt
+                        || !matches!(
+                            reader.get_header().tile_compression,
+                            pmtiles::Compression::None | pmtiles::Compression::Gzip
+                        )
+                    {
+                        return Err(
+                            "Use a Shortbread vector PMTiles archive with plain or gzip tiles"
+                                .to_string(),
+                        );
+                    }
+                    if metadata.len() > 1_048_576 || !shortbread_metadata(&metadata) {
+                        return Err(
+                            "The archive does not declare the supported Shortbread layers"
+                                .to_string(),
+                        );
+                    }
+                    readers.push(reader);
+                }
+                Ok(readers)
+            })
+            .await
     }
 
     pub fn progress(&self, tiles: &[Tile]) -> Progress {
@@ -221,11 +362,32 @@ impl TileStore {
     }
 
     async fn load_one(&self, tile: Tile) -> Result<Bytes, String> {
+        let _slot = self
+            .slots
+            .acquire()
+            .await
+            .map_err(|_| "Map loading stopped")?;
         self.update(tile, |state| *state = TileProgress::default());
         let relative = PathBuf::from(format!("{}/{}/{}.pbf", tile.z, tile.x, tile.y));
         if !self.settings.local_directory.as_os_str().is_empty() {
+            let root = self.settings.local_directory.clone();
+            let tile_path = relative.to_string_lossy().replace('\\', "/");
             if let Some(bytes) =
-                read_bounded(&self.settings.local_directory.join(&relative)).await?
+                tokio::task::spawn_blocking(move || crate::pack::read_tile(&root, &tile_path))
+                    .await
+                    .map_err(|error| error.to_string())??
+            {
+                return normalize(&bytes);
+            }
+        }
+        let archives = self.local_archives().await?;
+        for reader in archives {
+            let coordinate = pmtiles::TileCoord::new(tile.z, tile.x, tile.y)
+                .map_err(|error| error.to_string())?;
+            if let Some(bytes) = reader
+                .get_tile(coordinate)
+                .await
+                .map_err(|error| error.to_string())?
             {
                 return normalize(&bytes);
             }
@@ -238,59 +400,11 @@ impl TileStore {
                 }
             }
         }
-        let archives = self
-            .archives
-            .get_or_try_init(|| async {
-                let mut readers = Vec::new();
-                for archive in &self.settings.archives {
-                    let backend = LocalArchive::open(archive.clone()).await?;
-                    let metadata = backend.metadata().await?;
-                    let reader = pmtiles::AsyncPmTilesReader::try_from_source(backend)
-                        .await
-                        .map_err(|error| format!("Cannot open local map archive: {error}"))?;
-                    if reader.get_header().tile_type != pmtiles::TileType::Mvt
-                        || !matches!(
-                            reader.get_header().tile_compression,
-                            pmtiles::Compression::None | pmtiles::Compression::Gzip
-                        )
-                    {
-                        return Err(
-                            "Use a Shortbread vector PMTiles archive with plain or gzip tiles"
-                                .to_string(),
-                        );
-                    }
-                    if metadata.len() > 1_048_576 || !shortbread_metadata(&metadata) {
-                        return Err(
-                            "The archive does not declare the supported Shortbread layers"
-                                .to_string(),
-                        );
-                    }
-                    readers.push(reader);
-                }
-                Ok(readers)
-            })
-            .await?;
-        for reader in archives {
-            let coordinate = pmtiles::TileCoord::new(tile.z, tile.x, tile.y)
-                .map_err(|error| error.to_string())?;
-            if let Some(bytes) = reader
-                .get_tile(coordinate)
-                .await
-                .map_err(|error| error.to_string())?
-            {
-                return normalize(&bytes);
-            }
-        }
         if !self.settings.online {
             return Err(
                 "This detail is not available locally. Enable a map server in Settings".into(),
             );
         }
-        let _slot = self
-            .slots
-            .acquire()
-            .await
-            .map_err(|_| "Map downloads stopped")?;
         let url = self
             .settings
             .server
@@ -339,18 +453,11 @@ impl TileStore {
             .write_all(&normalized)
             .map_err(|error| error.to_string())?;
         let stored = encoder.finish().map_err(|error| error.to_string())?;
-        let stored_len = stored.len() as u64;
-        let mut storage = self.storage.lock().await;
-        let used = if let Some(used) = *storage {
-            used
-        } else {
-            let root = self.root.clone();
-            let used = tokio::task::spawn_blocking(move || directory_size(&root))
-                .await
-                .map_err(|error| error.to_string())??;
-            *storage = Some(used);
-            used
-        };
+        let _storage = self.storage.lock().await;
+        let root = self.quota_root.clone();
+        let used = tokio::task::spawn_blocking(move || directory_size(&root))
+            .await
+            .map_err(|error| error.to_string())??;
         if used + stored.len() as u64 > self.settings.storage_megabytes * 1024 * 1024 {
             return Err(
                 "Map storage is full. Increase its limit in Settings or remove a downloaded pack"
@@ -361,14 +468,18 @@ impl TileStore {
         tokio::fs::create_dir_all(destination.parent().ok_or("Invalid tile path")?)
             .await
             .map_err(|error| error.to_string())?;
-        let temporary = destination.with_extension("part");
-        tokio::fs::write(&temporary, stored)
+        static NEXT_TEMPORARY: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let temporary = Temporary(destination.with_extension(format!(
+            "{}.{}.part",
+            std::process::id(),
+            NEXT_TEMPORARY.fetch_add(1, Ordering::Relaxed)
+        )));
+        tokio::fs::write(&temporary.0, stored)
             .await
             .map_err(|error| error.to_string())?;
-        tokio::fs::rename(&temporary, &destination)
+        tokio::fs::rename(&temporary.0, &destination)
             .await
             .map_err(|error| error.to_string())?;
-        *storage = Some(used + stored_len);
         Ok(normalized)
     }
 
@@ -421,12 +532,31 @@ async fn read_bounded(path: &Path) -> Result<Option<Bytes>, String> {
     }
 }
 
-fn directory_size(path: &Path) -> Result<u64, String> {
+pub(crate) fn directory_size(path: &Path) -> Result<u64, String> {
+    directory_size_bounded(path, 0, &mut 0)
+}
+
+fn directory_size_bounded(path: &Path, depth: usize, entries: &mut usize) -> Result<u64, String> {
     if !path.exists() {
         return Ok(0);
     }
-    let mut total = 0;
+    if depth > 8
+        || std::fs::symlink_metadata(path)
+            .map_err(|error| error.to_string())?
+            .is_symlink()
+    {
+        return Err(
+            "Map storage paths cannot be symbolic links or exceed eight directory levels".into(),
+        );
+    }
+    let mut total = 0_u64;
     for entry in std::fs::read_dir(path).map_err(|error| error.to_string())? {
+        *entries += 1;
+        if *entries > 250_000 {
+            return Err(
+                "Map storage contains too many files; remove unused packs or cache files".into(),
+            );
+        }
         let entry = entry.map_err(|error| error.to_string())?;
         let metadata =
             std::fs::symlink_metadata(entry.path()).map_err(|error| error.to_string())?;
@@ -434,9 +564,13 @@ fn directory_size(path: &Path) -> Result<u64, String> {
             return Err("Downloaded map storage cannot contain symbolic links".into());
         }
         if metadata.is_dir() {
-            total += directory_size(&entry.path())?;
+            total = total
+                .checked_add(directory_size_bounded(&entry.path(), depth + 1, entries)?)
+                .ok_or("Map storage size overflows")?;
         } else {
-            total += metadata.len();
+            total = total
+                .checked_add(metadata.len())
+                .ok_or("Map storage size overflows")?;
         }
     }
     Ok(total)

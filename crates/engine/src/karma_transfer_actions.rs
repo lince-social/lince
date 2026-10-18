@@ -201,6 +201,7 @@ impl Engine {
                 (expected, expected_state),
                 Box::pin(self.act_at_with_authorship(
                     Action::ActivateTransferOccurrence {
+                        original_authorities: Vec::new(),
                         transfer,
                         promise,
                         expected_revision: original_revision,

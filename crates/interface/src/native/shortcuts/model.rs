@@ -58,10 +58,16 @@ pub enum Shortcut {
     WorkspaceMonitorUp,
     WorkspaceMonitorRight,
     WindowRecord,
+    StackLeft,
+    StackRight,
+    Terminal,
+    Launcher,
+    Lock,
+    Logout,
 }
 
 impl Shortcut {
-    pub const ALL: [Self; 52] = [
+    pub const ALL: [Self; 58] = [
         Self::DeleteSand,
         Self::ToggleEdit,
         Self::OpenOperation,
@@ -114,6 +120,12 @@ impl Shortcut {
         Self::WorkspaceMonitorUp,
         Self::WorkspaceMonitorRight,
         Self::WindowRecord,
+        Self::StackLeft,
+        Self::StackRight,
+        Self::Terminal,
+        Self::Launcher,
+        Self::Lock,
+        Self::Logout,
     ];
 
     pub fn label(self) -> &'static str {
@@ -170,6 +182,12 @@ impl Shortcut {
             Self::WorkspaceMonitorUp => "Move the workspace to the monitor above",
             Self::WorkspaceMonitorRight => "Move the workspace to the right monitor",
             Self::WindowRecord => "Inspect the focused application's Record",
+            Self::StackLeft => "Stack the focused item into the column on the left",
+            Self::StackRight => "Stack the focused item into the column on the right",
+            Self::Terminal => "Open the chosen terminal",
+            Self::Launcher => "Open the chosen application launcher",
+            Self::Lock => "Request the chosen screen locker",
+            Self::Logout => "Log out of Park",
         }
     }
 
@@ -227,6 +245,12 @@ impl Shortcut {
             Self::WorkspaceMonitorUp => "Super+Alt+Shift+Up",
             Self::WorkspaceMonitorRight => "Super+Alt+Shift+Right",
             Self::WindowRecord => "Super+I",
+            Self::StackLeft => "Super+Ctrl+H",
+            Self::StackRight => "Super+Ctrl+L",
+            Self::Terminal => "Super+Enter",
+            Self::Launcher => "Super+D",
+            Self::Lock => "Super+Escape",
+            Self::Logout => "Super+Shift+Escape",
         }
     }
 
@@ -272,6 +296,12 @@ impl Shortcut {
                 | Self::WorkspaceMonitorUp
                 | Self::WorkspaceMonitorRight
                 | Self::WindowRecord
+                | Self::StackLeft
+                | Self::StackRight
+                | Self::Terminal
+                | Self::Launcher
+                | Self::Lock
+                | Self::Logout
         ) {
             Chord::parse_desktop(value)
         } else {

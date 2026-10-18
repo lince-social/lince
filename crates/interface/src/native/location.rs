@@ -4,6 +4,13 @@ use lince_interface::location::{self as ui, Request};
 #[cfg(target_os = "linux")]
 mod portal;
 
+pub(crate) async fn locate_once() -> Result<nucleus::location::Fix, String> {
+    #[cfg(target_os = "linux")]
+    { portal::locate_once().await }
+    #[cfg(not(target_os = "linux"))]
+    { Err("One-time device location is unavailable on this platform".into()) }
+}
+
 pub struct LocationPlugin;
 
 #[derive(Resource)]
@@ -31,6 +38,7 @@ impl Drop for CaptureTask {
 impl Plugin for LocationPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ui::LocationUiPlugin)
+            .insert_resource(ui::ElapsedClock(engine::location::clock::elapsed_millis))
             .init_resource::<ui::CopyReferencesAvailable>()
             .init_resource::<AuthenticationReplies>()
             .add_systems(
@@ -49,6 +57,10 @@ fn copy_reference(
         .cloned()
         .collect();
     for request in requests {
+        if crate::native::laboratory::blocked(world, request.panel) {
+            ui::reference_copied(world, request.panel, Err("Clipboard is unavailable in the Laboratory".into()));
+            continue;
+        }
         let result = world
             .get_resource_mut::<bevy::clipboard::Clipboard>()
             .ok_or_else(|| "Clipboard is unavailable".to_string())
@@ -70,7 +82,7 @@ fn authenticate(
         .cloned()
         .collect();
     for request in requests {
-        let Some(handle) = world.get_resource::<crate::native::app::CellHandle>() else {
+        let Some(cell) = crate::native::practice_cells::runtime(world, request.owner) else {
             ui::authentication_reply(
                 world,
                 &request.id,
@@ -78,7 +90,6 @@ fn authenticate(
             );
             continue;
         };
-        let cell = handle.0.clone();
         let sender = world.resource::<AuthenticationReplies>().sender.clone();
         let wake = world
             .get_resource::<crate::native::wake::WakeSignal>()
@@ -123,6 +134,7 @@ struct Open {
     transfer: Option<String>,
     person: Option<String>,
     observer: bool,
+    reference: Option<String>,
 }
 
 impl crate::native::actions::Action for Open {
@@ -147,6 +159,9 @@ impl crate::native::actions::Action for Open {
                 self.transfer.as_deref(),
             )
         };
+        if let Some(reference) = &self.reference {
+            let _ = ui::load_reference(world,panel,reference);
+        }
         #[cfg(target_os = "linux")]
         {
             ui::credits(
@@ -190,6 +205,7 @@ pub fn record_controls(
                 .filter(|person| !person.is_empty())
                 .map(str::to_string),
             observer: false,
+            reference: None,
         },
     );
     crate::native::sand_panel::button(
@@ -204,8 +220,19 @@ pub fn record_controls(
                 .filter(|person| !person.is_empty())
                 .map(str::to_string),
             observer: true,
+            reference: None,
         },
     );
+}
+
+pub fn sharing_review(world: &mut World,parent:Entity,record:&str,transfer:Option<&str>,person:Option<&str>,caption:&str) {
+    crate::native::sand_panel::button(world,parent,parent,caption,Open {record:record.into(),transfer:transfer.map(str::to_owned),person:person.filter(|person|!person.is_empty()).map(str::to_owned),observer:false,reference:None});
+}
+
+pub fn invitation_controls(world: &mut World, parent: Entity, body: &str) {
+    let Some(reference) = body.lines().map(str::trim).find(|line|nucleus::location::Invitation::parse(line).is_ok()) else {return;};
+    let container = crate::native::sand_panel::column(world,parent);
+    crate::native::sand_panel::button(world,container,container,"Open location invitation",Open {record:String::new(),transfer:None,person:None,observer:true,reference:Some(reference.into())});
 }
 
 fn send(
@@ -221,6 +248,7 @@ fn send(
     for request in saved {
         if let Err(error) = crate::native::sand_panel::send(
             world,
+            request.owner,
             cell::ClientMessage::Act {
                 id: request.id.clone(),
                 action: engine::actions::Action::SavedLocation {
@@ -238,6 +266,7 @@ fn send(
     for request in requests {
         if let Err(error) = crate::native::sand_panel::send(
             world,
+            request.owner,
             cell::ClientMessage::Act {
                 id: request.id.clone(),
                 action: engine::actions::Action::Location {
@@ -255,6 +284,7 @@ fn send(
     for request in places {
         if let Err(error) = crate::native::sand_panel::send(
             world,
+            request.owner,
             cell::ClientMessage::Act {
                 id: request.id.clone(),
                 action: engine::actions::Action::SetPlace {
@@ -280,6 +310,7 @@ fn receive(
         .unwrap_or_default();
     for message in messages {
         match message.0 {
+            cell::ServerMessage::SessionAuthenticated {person,..} => ui::actor_changed(world,&person),
             cell::ServerMessage::ActionOk { id, data, .. } => {
                 ui::receive(world, &id, Ok(data.unwrap_or(serde_json::Value::Null)));
             }
@@ -303,30 +334,22 @@ fn capture(world: &mut World) {
         return;
     };
     world.insert_resource(CaptureTask(runtime.spawn(async move {
-        let mut blocked = false;
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             let Some(engine) = engine.upgrade() else {
                 break;
             };
-            let needed =
-                engine.location_sources().await.iter().any(|source| {
+            let sources =
+                engine.location_sources().await.into_iter().filter(|source| {
                     source.settings.source_kind == nucleus::location::SourceKind::Device
-                });
-            if !needed {
-                blocked = false;
-                continue;
-            }
-            if blocked {
-                continue;
-            }
+                }).collect::<Vec<_>>();
+            if sources.is_empty() {continue;}
             #[cfg(target_os = "linux")]
-            let result = portal::capture(&engine).await;
+            let result = portal::capture(&engine,&sources).await;
             #[cfg(not(target_os = "linux"))]
             let result: Result<(), String> = Err("Use a manual source on this platform".into());
             if result.is_err() {
-                engine.location_device_unavailable().await;
-                blocked = true;
+                engine.location_device_unavailable_for(&sources).await;
             }
         }
     })));

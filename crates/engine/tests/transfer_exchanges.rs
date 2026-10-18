@@ -205,6 +205,7 @@ fn changing_a_route_requires_fresh_agreement_before_activation() {
             let refused = engine
                 .act(
                     Action::ActivateTransferOccurrence {
+                        original_authorities: Vec::new(),
                         transfer: fixture.transfer.clone(),
                         promise: "revision-route".into(),
                         expected_revision: revision,
@@ -268,6 +269,14 @@ fn guessed_upstream_is_refused_and_observing_never_joins_its_parties() {
             },
         )
         .await;
+        store::visibility::grant(
+            &engine.store.pool,
+            "actor",
+            Some(&ana.uid),
+            &fixture.transfer,
+        )
+        .await
+        .unwrap();
         let role = store::auth::ensure_role(&engine.store.pool, "Observer")
             .await
             .unwrap();

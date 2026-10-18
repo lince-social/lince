@@ -107,7 +107,7 @@ fn status(world: &mut World, sand: Entity, message: &str) {
 }
 
 fn send(world: &World, message: ClientMessage) -> Result<(), &'static str> {
-    if crate::native::laboratory::active(world) {
+    if !crate::native::laboratory::normal(world) {
         return Err("Access changes are unavailable in the Laboratory.");
     }
     let bridge = world
@@ -332,6 +332,7 @@ fn maintain(world: &mut World) {
     let scoped: Vec<_> = world
         .query_filtered::<Entity, (With<AccessControlSand>, Without<ScopedCatalog>)>()
         .iter(world)
+        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
         .filter(|owner| crate::native::practice_cells::source(world, *owner).is_some())
         .collect();
     for owner in scoped {
@@ -341,6 +342,7 @@ fn maintain(world: &mut World) {
     let owners: Vec<_> = world
         .query_filtered::<Entity, (With<AccessControlSand>, Without<ScopedCatalog>)>()
         .iter(world)
+        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
         .collect();
     if owners.is_empty() {
         if let Some(id) = world.resource::<Catalog>().subscription.clone()
@@ -357,7 +359,7 @@ fn maintain(world: &mut World) {
         let catalog = world.resource::<Catalog>();
         catalog.subscription.is_none() || catalog.refresh
     };
-    if needs_query && !crate::native::laboratory::active(world) {
+    if needs_query && crate::native::laboratory::normal(world) {
         let id = world
             .resource::<Catalog>()
             .subscription

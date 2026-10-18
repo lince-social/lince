@@ -185,6 +185,7 @@ impl Dispatch<xdg_surface::XdgSurface, ()> for State {
                         a: alpha,
                     },
                 )?;
+                image.wait_for_probe()?;
                 let params = state
                     .dmabuf
                     .as_ref()

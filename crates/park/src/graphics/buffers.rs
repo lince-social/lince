@@ -13,11 +13,24 @@ struct Content {
 }
 
 impl VulkanRenderer {
-    pub(crate) fn import_client(
+    pub(crate) fn imports_ready(&self) -> bool {
+        self.waits.borrow().values().any(crate::graphics::wait::Watch::ready)
+    }
+
+    pub(crate) fn retain_imports(&self, windows: &[crate::server::WindowSnapshot]) {
+        let live: std::collections::HashSet<_> = windows.iter().flat_map(|window| &window.nodes)
+            .map(|node| (node.content.buffer().clone(), node.content.version)).collect();
+        self.waits.borrow_mut().retain(|key, _| live.contains(key));
+    }
+
+    pub(crate) fn import_surface(
         &self,
-        buffer: &ClientBuffer,
-        target: Option<&wgpu::Texture>,
+        node: &crate::server::SurfaceNode,
+        previous: Option<(&wgpu::Texture, smithay::backend::renderer::utils::CommitCounter)>,
     ) -> Result<Option<(wgpu::Texture, bool)>> {
+        let buffer: &ClientBuffer = &node.content;
+        let damage = node.buffer_damage_since(previous.map(|(_, commit)| commit));
+        let target = previous.map(|(texture, _)| texture);
         if let Some(content) = buffer.cached::<Content>() {
             if content.device != self.device {
                 return Err(ProbeFailure::at(
@@ -57,10 +70,18 @@ impl VulkanRenderer {
                 )
                 .map_err(|error| ProbeFailure::at("client_acquire", error))?;
                 if !poll[0].revents().contains(rustix::event::PollFlags::IN) {
+                    let key = (buffer.buffer().clone(), buffer.version);
+                    let mut waits = self.waits.borrow_mut();
+                    if !waits.contains_key(&key) {
+                        let watch = self.reactor.descriptor(fd.try_clone_to_owned().map_err(|error| ProbeFailure::at("client_acquire_events", error))?)
+                            .map_err(|error| ProbeFailure::at("client_acquire_events", error))?;
+                        waits.insert(key, watch);
+                    }
                     return Ok(None);
                 }
             }
-            let texture = self.import_dmabuf_into(dmabuf, target)?;
+            self.waits.borrow_mut().remove(&(buffer.buffer().clone(), buffer.version));
+            let texture = self.import_dmabuf_regions(dmabuf, target, Some(&damage))?;
             buffer.cache(Content {
                 device: self.device.clone(),
                 texture: texture.clone(),
@@ -118,16 +139,14 @@ impl VulkanRenderer {
                 ))
             })
             .map_err(|error| ProbeFailure::at("client_shm", error))??;
-        let texture = target
+        let previous = target
             .filter(|texture| {
                 texture.width() == size[0]
                     && texture.height() == size[1]
                     && texture.format() == wgpu::TextureFormat::Bgra8Unorm
-                    && texture.usage().contains(wgpu::TextureUsages::COPY_DST)
-            })
-            .cloned()
-            .unwrap_or_else(|| {
-                self.device.create_texture(&wgpu::TextureDescriptor {
+                    && texture.usage().contains(wgpu::TextureUsages::COPY_SRC)
+            });
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some("park_client_upload"),
                     size: wgpu::Extent3d {
                         width: size[0],
@@ -143,18 +162,23 @@ impl VulkanRenderer {
                         | wgpu::TextureUsages::TEXTURE_BINDING
                         | wgpu::TextureUsages::RENDER_ATTACHMENT,
                     view_formats: &[],
-                })
-            });
-        self.queue.write_texture(
-            texture.as_image_copy(),
-            &pixels,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(size[0] * 4),
-                rows_per_image: Some(size[1]),
-            },
-            texture.size(),
-        );
+                });
+        let bounds = smithay::utils::Rectangle::from_size((size[0] as i32, size[1] as i32).into());
+        let regions = if let Some(previous) = previous {
+            let mut encoder = self.device.create_command_encoder(&Default::default());
+            encoder.copy_texture_to_texture(previous.as_image_copy(), texture.as_image_copy(), texture.size());
+            self.queue.submit([encoder.finish()]);
+            damage.into_iter().filter_map(|damage| damage.intersection(bounds)).collect::<Vec<_>>()
+        } else { vec![bounds] };
+        for region in regions {
+            let offset = (region.loc.y as usize * size[0] as usize + region.loc.x as usize) * 4;
+            self.queue.write_texture(
+                wgpu::TexelCopyTextureInfo { origin: wgpu::Origin3d { x: region.loc.x as u32, y: region.loc.y as u32, z: 0 }, ..texture.as_image_copy() },
+                &pixels[offset..],
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(size[0] * 4), rows_per_image: Some(size[1]) },
+                wgpu::Extent3d { width: region.size.w as u32, height: region.size.h as u32, depth_or_array_layers: 1 },
+            );
+        }
         buffer.cache(Content {
             device: self.device.clone(),
             texture: texture.clone(),

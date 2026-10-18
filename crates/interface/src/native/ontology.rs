@@ -439,7 +439,7 @@ fn mutation(
     let view = world
         .get::<OntologySand>(owner)
         .ok_or("Ontology is closed")?;
-    if crate::native::laboratory::active(world)
+    if crate::native::laboratory::blocked(world, owner)
         && !matches!(
             command,
             Command::KnowledgeSources
@@ -1184,7 +1184,7 @@ fn update(
         }
         for (index, source) in SOURCES.iter().enumerate() {
             let view = world.get::<OntologySand>(owner).unwrap();
-            if !view.requested[index] && !crate::native::laboratory::active(world) {
+            if !view.requested[index] && !crate::native::laboratory::blocked(world, owner) {
                 let id = view.ids[index].clone();
                 if let Some(sender) = crate::native::practice_cells::sender(world, owner)
                     && sender

@@ -17,7 +17,7 @@ pub(super) fn update(world: &mut World, now: Instant) {
     world.init_resource::<Autosave>();
     let mut enabled = BTreeMap::<PathBuf, (Entity, u16)>::new();
     for (owner, ide) in world.query::<(Entity, &Ide)>().iter(world) {
-        if ide.settings.autosave_seconds == 0 || crate::native::laboratory::suspended(world, owner)
+        if ide.settings.autosave_seconds == 0 || crate::native::laboratory::blocked(world, owner)
         {
             continue;
         }

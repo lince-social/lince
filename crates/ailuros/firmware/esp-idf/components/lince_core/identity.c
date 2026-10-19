@@ -33,15 +33,30 @@ esp_err_t lince_identity_init(void) {
     esp_err_t error = nvs_open("lince", NVS_READWRITE, &storage);
     if (error != ESP_OK) return error;
     unsigned char private_key[32] = {0};
+    unsigned char public_key[33] = {0}, retained_public[33] = {0};
+    bool generated = false;
     size_t length = sizeof(private_key);
     error = nvs_get_blob(storage, "identity", private_key, &length);
     if (error == ESP_ERR_NVS_NOT_FOUND) {
+        const char *markers[] = {"identity_public", "iroh_public", "iroh_identity"};
+        for (size_t index = 0; index < sizeof(markers) / sizeof(*markers); index++) {
+            size_t marker_length = 0;
+            if (nvs_get_blob(storage, markers[index], NULL, &marker_length) != ESP_ERR_NVS_NOT_FOUND) {
+                error = ESP_FAIL;
+                goto finished;
+            }
+        }
+        size_t configuration_length = 0;
+        if (nvs_get_str(storage, "configuration", NULL, &configuration_length) != ESP_ERR_NVS_NOT_FOUND) {
+            error = ESP_FAIL;
+            goto finished;
+        }
         if (mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, &identity, random_bytes, NULL) != 0 ||
             mbedtls_mpi_write_binary(&identity.MBEDTLS_PRIVATE(d), private_key, sizeof(private_key)) != 0) {
             error = ESP_FAIL;
         } else {
-            error = nvs_set_blob(storage, "identity", private_key, sizeof(private_key));
-            if (error == ESP_OK) error = nvs_commit(storage);
+            generated = true;
+            error = ESP_OK;
         }
     } else if (error == ESP_OK) {
         if (length != sizeof(private_key) ||
@@ -52,6 +67,26 @@ esp_err_t lince_identity_init(void) {
             error = ESP_FAIL;
         }
     }
+    if (error != ESP_OK) goto finished;
+    length = 0;
+    if (mbedtls_ecp_point_write_binary(&identity.MBEDTLS_PRIVATE(grp), &identity.MBEDTLS_PRIVATE(Q), MBEDTLS_ECP_PF_COMPRESSED, &length, public_key, sizeof(public_key)) != 0 || length != sizeof(public_key)) {
+        error = ESP_FAIL;
+        goto finished;
+    }
+    length = sizeof(retained_public);
+    error = nvs_get_blob(storage, "identity_public", retained_public, &length);
+    if (error == ESP_OK) {
+        if (length != sizeof(retained_public) || memcmp(retained_public, public_key, sizeof(public_key)) != 0) error = ESP_FAIL;
+    } else if (error == ESP_ERR_NVS_NOT_FOUND) {
+        error = nvs_set_blob(storage, "identity_public", public_key, sizeof(public_key));
+        if (error == ESP_OK) error = nvs_commit(storage);
+    }
+    if (error == ESP_OK && generated) {
+        error = nvs_set_blob(storage, "identity", private_key, sizeof(private_key));
+        if (error == ESP_OK) error = nvs_commit(storage);
+    }
+finished:
+    ;
     volatile unsigned char *erase = private_key;
     for (size_t index = 0; index < sizeof(private_key); index++) erase[index] = 0;
     nvs_close(storage);

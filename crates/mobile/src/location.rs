@@ -77,6 +77,7 @@ pub fn open_observer(world: &mut World) {
 }
 
 fn open_panel(world: &mut World, record: &str, transfer: Option<&str>, observer: bool) -> Entity {
+    crate::visibility::close(world);
     close(world);
     let person = match &world.resource::<crate::app::Mobile>().identity {
         crate::session::Identity::Person(person) => Some(person.clone()),
@@ -85,6 +86,7 @@ fn open_panel(world: &mut World, record: &str, transfer: Option<&str>, observer:
     let parent = world
         .spawn((
             Overlay,
+            crate::app::Modal,
             Node {
                 position_type: PositionType::Absolute,
                 left: px(0),

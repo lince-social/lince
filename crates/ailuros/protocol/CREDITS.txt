@@ -1,0 +1,11 @@
+Ailuros device framing: Lince contributors, MIT (LICENSE).
+
+Tokio Util 0.7.19: Tokio contributors, MIT (licenses/tokio-util-MIT.txt).
+https://docs.rs/tokio-util/0.7.19/tokio_util/codec/
+FramedRead preserves decoder buffers when pending reads are cancelled.
+
+Bytes 1.12.1: Tokio contributors, MIT (licenses/bytes-MIT.txt).
+https://docs.rs/bytes/1.12.1/bytes/
+
+This package has no Engine, database, camera driver, TLS or device-key dependency.
+Callers authenticate before enabling streaming frames and apply operation deadlines.

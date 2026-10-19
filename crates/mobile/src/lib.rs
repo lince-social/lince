@@ -26,6 +26,7 @@ pub mod session;
 mod smoke;
 pub mod storage;
 pub mod views;
+mod visibility;
 pub mod workflows;
 
 pub fn run(directory: std::path::PathBuf) {
@@ -53,6 +54,7 @@ pub fn run(directory: std::path::PathBuf) {
             bevy::input_focus::tab_navigation::TabNavigationPlugin,
             app::MobilePlugin,
             location::LocationPlugin,
+            visibility::VisibilityPlugin,
             scroll::ScrollPlugin,
             kanban::KanbanPlugin,
             lince_interface::map_view::MapRendererPlugin,

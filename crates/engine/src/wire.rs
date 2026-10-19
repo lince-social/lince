@@ -7,6 +7,7 @@ mod social;
 mod mail_delivery;
 mod record_moves;
 mod relays;
+mod ailuros;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -38,6 +39,7 @@ pub const ALPN_HELLO: &[u8] = b"lince/hello/1";
 
 pub const ALPN_MAILBOX: &[u8] = b"lince/mailbox/1";
 pub const ALPN_SOCIAL: &[u8] = b"lince/social/1";
+pub const ALPN_AILUROS: &[u8] = ailuros_protocol::ALPN;
 
 pub const DEFAULT_PEER_PORT: u16 = 6175;
 
@@ -521,6 +523,7 @@ pub struct Wire {
     connection_slots: Arc<tokio::sync::Semaphore>,
     sync_lock: Arc<tokio::sync::Mutex<()>>,
     pub(crate) blob_slots: Arc<tokio::sync::Semaphore>,
+    ailuros_auth_slots: Arc<tokio::sync::Semaphore>,
 }
 
 impl Wire {
@@ -597,6 +600,7 @@ impl Wire {
                 ALPN_HELLO.to_vec(),
                 ALPN_MAILBOX.to_vec(),
                 ALPN_SOCIAL.to_vec(),
+                ALPN_AILUROS.to_vec(),
                 crate::blob_sync::ALPN.to_vec(),
                 crate::blob_sync::DATA_ALPN.to_vec(),
             ]
@@ -670,6 +674,7 @@ impl Wire {
             private,
             sync_lock: Arc::new(tokio::sync::Mutex::new(())),
             blob_slots: Arc::new(tokio::sync::Semaphore::new(8)),
+            ailuros_auth_slots: Arc::new(tokio::sync::Semaphore::new(8)),
             connection_slots: Arc::new(tokio::sync::Semaphore::new(
                 private.map_or(64, |config| config.max_connections),
             )),
@@ -1474,6 +1479,10 @@ impl Wire {
         if contact.as_ref().is_some_and(|c| c.trust == "blocked") {
             connection.close(0u32.into(), b"blocked");
             return Ok(());
+        }
+
+        if alpn == ALPN_AILUROS {
+            return self.serve_ailuros_connection(connection).await;
         }
 
         if alpn == ALPN_SOCIAL {

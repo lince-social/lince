@@ -1,11 +1,9 @@
 #include "lince_workflows.h"
 #include <stdio.h>
 #include <string.h>
-#include "bootloader_random.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "nvs_flash.h"
 #ifdef LINCE_RUN_TESTS
 #include "unity.h"
 #include "unity_test_runner.h"
@@ -23,22 +21,16 @@ void app_main(void) {
     int failures = UNITY_END();
     printf("{\"type\":\"ailuros-tests\",\"tests\":%u,\"failures\":%d}\n", tests, failures);
 #else
-    if (nvs_flash_init() != ESP_OK) {
-        printf("{\"type\":\"fault\",\"code\":\"storage_recovery_required\"}\n");
+    cJSON *configuration = NULL;
+    esp_err_t startup = lince_runtime_start(&configuration);
+    if (startup == ESP_ERR_NOT_FOUND) return;
+    if (startup != ESP_OK) {
+        printf("{\"type\":\"fault\",\"code\":\"%s\"}\n", lince_status_get());
         return;
     }
-    bootloader_random_enable();
-    esp_err_t identity = lince_identity_init();
-    bootloader_random_disable();
-    if (identity != ESP_OK) {
-        printf("{\"type\":\"fault\",\"code\":\"identity_recovery_required\"}\n");
-        return;
-    }
-    cJSON *configuration = lince_config_load();
-    lince_provision_start(configuration != NULL);
-    if (!configuration) return;
-    if (lince_network_start(configuration) != ESP_OK) {
-        printf("{\"type\":\"fault\",\"code\":\"network_init\"}\n");
+    const cJSON *destination = cJSON_GetObjectItemCaseSensitive(configuration, "destination");
+    if (strcmp(cJSON_GetObjectItemCaseSensitive(destination, "transport")->valuestring, "https") != 0) {
+        lince_status_set("install-iroh-firmware");
         return;
     }
     const cJSON *workflow = cJSON_GetObjectItemCaseSensitive(configuration, "workflow");

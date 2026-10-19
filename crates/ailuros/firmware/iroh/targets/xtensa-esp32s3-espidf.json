@@ -1,0 +1,27 @@
+{
+  "arch": "xtensa",
+  "cpu": "esp32s3",
+  "crt-objects-fallback": "false",
+  "data-layout": "e-m:e-p:32:32-v1:8:8-i64:64-i128:128-n32",
+  "emit-debug-gdb-scripts": false,
+  "env": "newlib",
+  "linker": "ldproxy",
+  "linker-flavor": "gnu-cc",
+  "llvm-target": "xtensa-none-elf",
+  "max-atomic-width": 32,
+  "metadata": {
+    "description": null,
+    "host_tools": null,
+    "std": null,
+    "tier": null
+  },
+  "os": "espidf",
+  "panic-strategy": "abort",
+  "relocation-model": "static",
+  "target-family": [
+    "unix"
+  ],
+  "target-pointer-width": 32,
+  "vendor": "espressif",
+  "features": "-s32c1i,-forced-atomics"
+}

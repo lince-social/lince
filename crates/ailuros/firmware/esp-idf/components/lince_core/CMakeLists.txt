@@ -1,5 +1,5 @@
-set(lince_sources "identity.c" "configuration.c" "provisioning.c" "network.c" "protocol.c" "outbox.c" "stream.c" "lifecycle.c")
-set(lince_requirements nvs_flash mbedtls json esp_wifi esp_netif esp_event esp_timer esp_driver_uart esp_driver_gpio esp_http_client esp-tls spi_flash)
+set(lince_sources "bootstrap.c" "identity.c" "verification.c" "configuration.c" "provisioning.c" "network.c" "protocol.c" "outbox.c" "stream.c" "lifecycle.c")
+set(lince_requirements bootloader_support nvs_flash mbedtls json esp_wifi esp_netif esp_event esp_timer esp_driver_uart esp_driver_gpio esp_http_client esp-tls spi_flash)
 if(LINCE_COMPILE_TESTS)
     list(APPEND lince_sources "test/protocol_test.c" "test/outbox_test.c" "test/lifecycle_test.c")
     list(APPEND lince_requirements unity)

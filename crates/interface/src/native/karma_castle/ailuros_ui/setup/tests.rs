@@ -89,6 +89,15 @@ fn displayed(world: &World, owner: Entity) -> String {
 }
 
 #[test]
+fn opening_usb_setup_requires_the_inspected_device_identity() {
+    let (mut app, owner) = fixture();
+    let world = app.world_mut();
+    let error = apply(world, owner, &Control::SetupWindow).unwrap_err();
+    assert!(error.contains("Inspect installed firmware"));
+    assert!(world.get::<Form>(owner).unwrap().job.is_none());
+}
+
+#[test]
 fn loading_a_base_profile_clears_previous_wiring_and_confirmation() {
     let (mut app, owner) = fixture();
     let world = app.world_mut();
@@ -101,6 +110,7 @@ fn loading_a_base_profile_clears_previous_wiring_and_confirmation() {
         mode: lince_ailuros::project::FirmwareMode::Workflow,
         chip: "esp32s3".into(),
         idf: "5.5.2".into(),
+        flash_bytes: 4 * 1024 * 1024,
         source_sha384: "00".repeat(48),
         images: Vec::new(),
     });
@@ -113,6 +123,29 @@ fn loading_a_base_profile_clears_previous_wiring_and_confirmation() {
     assert!(form.values[PINS].is_empty());
     assert!(!form.confirmed_pins);
     assert!(form.artifact.is_none());
+}
+
+#[test]
+fn camera_setup_rejects_diagnostic_images_before_starting_installation() {
+    let (mut app, owner) = fixture();
+    let world = app.world_mut();
+    for mode in [
+        lince_ailuros::project::FirmwareMode::Tests,
+        lince_ailuros::project::FirmwareMode::IrohQualification,
+    ] {
+        world.get_mut::<Form>(owner).unwrap().artifact = Some(Artifact {
+            version: 1,
+            mode,
+            chip: "esp32s3".into(),
+            idf: "5.5.2".into(),
+            flash_bytes: 16 * 1024 * 1024,
+            source_sha384: "00".repeat(48),
+            images: Vec::new(),
+        });
+        let error = apply(world, owner, &Control::Flash).unwrap_err();
+        assert!(error.contains("workflow firmware"), "{error}");
+        assert!(world.get::<Form>(owner).unwrap().job.is_none());
+    }
 }
 
 #[test]

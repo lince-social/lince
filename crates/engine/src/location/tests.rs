@@ -1634,6 +1634,51 @@ async fn observations_are_bounded_and_never_write_record_history_or_place() {
 }
 
 #[tokio::test]
+async fn owner_cannot_configure_an_unprivileged_controller_until_local_role_assignment() {
+    let fixture = Fixture::new().await;
+    store::sqlx::query("DELETE FROM person_access WHERE person_uid = ?")
+        .bind(&fixture.controller)
+        .execute(&fixture.engine.store.pool)
+        .await
+        .unwrap();
+    let error = fixture
+        .engine
+        .act(
+            Action::Location {
+                request: Command::Configure {
+                    settings: fixture.settings.clone(),
+                },
+            },
+            None,
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(&error, EngineError::Forbidden(message) if message == "unrecognized actor"),
+        "{error}"
+    );
+    assert!(store::location::settings(&fixture.engine.store.pool, &fixture.record)
+        .await
+        .unwrap()
+        .is_none());
+    assert!(fixture.engine.location_pending_sources().await.is_empty());
+    fixture
+        .engine
+        .act(
+            Action::AssignRole {
+                user: fixture.controller.clone(),
+                role: "location-test".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    fixture.start(fixture.settings.clone()).await;
+    assert!(fixture.engine.location_pending_sources().await.is_empty());
+    assert_eq!(fixture.engine.location_sources().await.len(), 1);
+}
+
+#[tokio::test]
 async fn concurrent_starts_keep_one_source_and_permission_loss_stops_it() {
     let fixture = Fixture::new().await;
     fixture

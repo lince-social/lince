@@ -1,7 +1,7 @@
 use super::*;
 use crate::native::sand_panel as panel;
 use lince_ailuros::{
-    configuration::{CameraPins, Configuration, Setup, Workflow},
+    configuration::{CameraPins, Configuration, Destination, Setup, Workflow},
     project::{Artifact, ChipProbe, Toolchain},
     serial::{Cancellation, DeviceStatus, Identity, Port, Session},
 };
@@ -32,6 +32,26 @@ const CUSTOM_SETTINGS: usize = 18;
 const CUSTOM_OUTPUT: usize = 19;
 
 const CREDITS: &[crate::native::credits::Attribution] = &[
+    crate::native::credits::Attribution {
+        name: "Iroh",
+        author: "n0 computer and contributors",
+        license: lince_ailuros::IROH_LICENSE,
+    },
+    crate::native::credits::Attribution {
+        name: "ESP iroh provider and DNS adapter",
+        author: "Remade With Rust and n0 computer contributors",
+        license: lince_ailuros::IROH_PROVIDER_LICENSE,
+    },
+    crate::native::credits::Attribution {
+        name: "Rustls",
+        author: "Rustls contributors",
+        license: lince_ailuros::RUSTLS_LICENSE,
+    },
+    crate::native::credits::Attribution {
+        name: "RustCrypto Rustls provider",
+        author: "RustCrypto contributors",
+        license: lince_ailuros::RUSTCRYPTO_LICENSE,
+    },
     crate::native::credits::Attribution {
         name: "Serialport",
         author: "Bryant Mairs, Jesse Braham and serialport-rs contributors",
@@ -128,6 +148,7 @@ pub(super) enum Control {
     ChooseProject,
     ChoosePort(String),
     Inspect,
+    SetupWindow,
     Export(String),
     Compile,
     Flash,
@@ -192,6 +213,7 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
         "Inspect installed firmware",
         Control::Inspect,
     );
+    panel::button(world, row, owner, "Open USB setup", Control::SetupWindow);
     let ports_panel = panel::column(world, root);
     let defaults = values();
     let mut fields = vec![Entity::PLACEHOLDER; defaults.len()];
@@ -433,8 +455,10 @@ fn configuration(world: &World, owner: Entity) -> Result<Configuration, String> 
         version: 1,
         ssid: values[SSID].clone(),
         password: values[PASSWORD].clone(),
-        server: values[SERVER].clone(),
-        ca_pem: values[CA].clone(),
+        destination: Destination::Https {
+            origin: values[SERVER].clone(),
+            ca_pem: values[CA].clone(),
+        },
         time_server: values[TIME].clone(),
         setup: Setup {
             audience: world.get::<Devices>(owner).unwrap().audience.clone(),
@@ -573,6 +597,7 @@ fn apply(world: &mut World, owner: Entity, control: &Control) -> Result<(), Stri
                 | Control::Profile
                 | Control::ChooseProject
                 | Control::Inspect
+                | Control::SetupWindow
                 | Control::Export(_)
                 | Control::Compile
                 | Control::Flash
@@ -620,6 +645,20 @@ fn apply(world: &mut World, owner: Entity, control: &Control) -> Result<(), Stri
         Control::Inspect => start(world, owner, move |cancel| {
             Session::open(&port)?.identity(&cancel).map(Reply::Identity)
         }),
+        Control::SetupWindow => {
+            let identity = world
+                .get::<Form>(owner)
+                .unwrap()
+                .identity
+                .as_ref()
+                .ok_or("Inspect installed firmware before opening USB setup")?;
+            let expected = identity.public_key.clone();
+            start(world, owner, move |cancel| {
+                Session::open(&port)?
+                    .begin_setup(&expected, &cancel)
+                    .map(Reply::Identity)
+            });
+        }
         Control::Export(board_id) => {
             if values[PROJECT].trim().is_empty() {
                 return Err("Choose an empty project folder".into());
@@ -640,6 +679,9 @@ fn apply(world: &mut World, owner: Entity, control: &Control) -> Result<(), Stri
                 .artifact
                 .clone()
                 .ok_or("Compile the selected project first")?;
+            if artifact.mode != lince_ailuros::project::FirmwareMode::Workflow {
+                return Err("Choose compiled workflow firmware for camera setup; device tests and transport qualification have separate installation commands".into());
+            }
             let fingerprint = artifact.fingerprint()?;
             let mac = world
                 .get::<Form>(owner)
@@ -1027,11 +1069,12 @@ pub(super) fn maintain(world: &mut World) {
             }
             Ok(Reply::Identity(identity)) => {
                 let label = format!(
-                    "Firmware {} · flash {} bytes · PSRAM {} bytes · public key {}",
+                    "Firmware {} · flash {} bytes · PSRAM {} bytes · public key {} · USB setup {}",
                     identity.firmware,
                     identity.flash_bytes,
                     identity.psram_bytes,
-                    identity.public_key
+                    identity.public_key,
+                    if identity.provisioning { "open" } else { "closed" }
                 );
                 world.get_mut::<Form>(owner).unwrap().identity = Some(identity);
                 status(world, owner, label);

@@ -9,11 +9,19 @@
 #define LINCE_CONFIG_MAX 7168
 #define LINCE_LINE_MAX 8192
 
+esp_err_t lince_runtime_start(cJSON **configuration);
 esp_err_t lince_identity_init(void);
 esp_err_t lince_public_key(char output[67]);
 esp_err_t lince_sign(const char *payload, char output[129]);
+esp_err_t lince_ecdsa_verify(unsigned curve_bits, unsigned digest_bits,
+                            const unsigned char *public_key, size_t public_key_length,
+                            const unsigned char *message, size_t message_length,
+                            const unsigned char *signature, size_t signature_length);
 esp_err_t lince_config_validate(const cJSON *configuration);
+esp_err_t lince_destination_validate(const cJSON *destination);
+esp_err_t lince_config_set_destination(const cJSON *destination, const cJSON *setup);
 cJSON *lince_config_load(void);
+bool lince_config_present(void);
 esp_err_t lince_config_store(const cJSON *configuration);
 void lince_provision_start(bool configured);
 esp_err_t lince_network_start(const cJSON *configuration);
@@ -22,6 +30,7 @@ bool lince_time_ready(void);
 esp_err_t lince_time_from_server(int64_t server_time);
 esp_err_t lince_clock_sync(const cJSON *configuration);
 bool lince_network_connected(void);
+uint32_t lince_network_generation(void);
 void lince_status_set(const char *status);
 const char *lince_status_get(void);
 bool lince_decimal_valid(const char *value);

@@ -296,6 +296,10 @@ fn input(world: &mut World, parent: Entity, caption: &str, value: &str) -> Entit
         .spawn((
             ChildOf(parent),
             bundle,
+            controls::Editor {
+                title: caption.into(),
+                secret: false,
+            },
             bevy::a11y::AccessibilityNode::from(accessibility),
         ))
         .id()

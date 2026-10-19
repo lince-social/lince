@@ -13,5 +13,11 @@ pub const WEBSOCKET_LICENSE: &str =
     include_str!("../firmware/esp-idf/licenses/esp-websocket-client-Apache-2.0.txt");
 pub const JPEG_LICENSE: &str = include_str!("../firmware/esp-idf/licenses/esp-jpeg-Apache-2.0.txt");
 pub const TJPGDEC_LICENSE: &str = include_str!("../firmware/esp-idf/licenses/TJpgDec.txt");
+pub const IROH_LICENSE: &str = include_str!("../firmware/iroh/licenses/iroh-MIT.txt");
+pub const IROH_PROVIDER_LICENSE: &str =
+    include_str!("../firmware/iroh/licenses/rusty-esp-iroh-MIT.txt");
+pub const RUSTLS_LICENSE: &str = include_str!("../firmware/iroh/licenses/rustls-MIT.txt");
+pub const RUSTCRYPTO_LICENSE: &str =
+    include_str!("../firmware/iroh/licenses/rustls-rustcrypto-MIT.txt");
 
 pub type Result<T> = std::result::Result<T, String>;

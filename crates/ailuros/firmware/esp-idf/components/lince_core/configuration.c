@@ -84,22 +84,37 @@ static bool camera_pins(const cJSON *pins) {
     return true;
 }
 
+esp_err_t lince_destination_validate(const cJSON *destination) {
+    const char *transport = string(destination, "transport", 5);
+    if (!transport) return ESP_ERR_INVALID_ARG;
+    if (strcmp(transport, "iroh") == 0) {
+        static const char *const allowed[] = {"transport", "endpoint_id"};
+        const char *identity = string(destination, "endpoint_id", 64);
+        if (!fields(destination, allowed, 2) || !identity || strlen(identity) != 64 || strspn(identity, "0123456789abcdef") != 64) return ESP_ERR_INVALID_ARG;
+    } else if (strcmp(transport, "https") == 0) {
+        static const char *const allowed[] = {"transport", "origin", "ca_pem"};
+        const char *origin = string(destination, "origin", 512);
+        const char *ca = string(destination, "ca_pem", 4096);
+        if (!fields(destination, allowed, 3) || !origin || !ca || strncmp(origin, "https://", 8) != 0 || !origin[8] || strpbrk(origin + 8, "/?#@ \r\n\t")) return ESP_ERR_INVALID_ARG;
+        if (*ca && (strncmp(ca, "-----BEGIN CERTIFICATE-----", 27) != 0 || !strstr(ca, "-----END CERTIFICATE-----"))) return ESP_ERR_INVALID_ARG;
+    } else return ESP_ERR_NOT_SUPPORTED;
+    return ESP_OK;
+}
+
 esp_err_t lince_config_validate(const cJSON *configuration) {
-    static const char *const allowed[] = {"version", "ssid", "password", "server", "ca_pem", "time_server", "setup", "workflow", "bootstrap_time"};
-    if (!fields(configuration, allowed, 9) || !integer(configuration, "version", 1, 1)) return ESP_ERR_INVALID_ARG;
+    static const char *const allowed[] = {"version", "ssid", "password", "destination", "time_server", "setup", "workflow", "bootstrap_time"};
+    if (!fields(configuration, allowed, 8) || !integer(configuration, "version", 1, 1)) return ESP_ERR_INVALID_ARG;
     const cJSON *bootstrap = cJSON_GetObjectItemCaseSensitive(configuration, "bootstrap_time");
     if (!cJSON_IsNumber(bootstrap) || bootstrap->valuedouble < 1700000000 || bootstrap->valuedouble > 4102444800 || bootstrap->valuedouble != (long long)bootstrap->valuedouble) return ESP_ERR_INVALID_ARG;
     const char *ssid = string(configuration, "ssid", 32);
     const char *password = string(configuration, "password", 64);
-    const char *server = string(configuration, "server", 512);
-    const char *ca = string(configuration, "ca_pem", 4096);
     const char *clock = string(configuration, "time_server", 128);
-    if (!ssid || !*ssid || !password || !server || !ca || !clock || !*clock) return ESP_ERR_INVALID_ARG;
+    if (!ssid || !*ssid || !password || !clock || !*clock) return ESP_ERR_INVALID_ARG;
     size_t password_length = strlen(password);
     if (password_length != 0 && (password_length < 8 || password_length > 64)) return ESP_ERR_INVALID_ARG;
     if (password_length == 64 && strspn(password, "0123456789abcdefABCDEF") != 64) return ESP_ERR_INVALID_ARG;
-    if (strncmp(server, "https://", 8) != 0 || !server[8] || strpbrk(server + 8, "/?#@ \r\n\t")) return ESP_ERR_INVALID_ARG;
-    if (*ca && (strncmp(ca, "-----BEGIN CERTIFICATE-----", 27) != 0 || !strstr(ca, "-----END CERTIFICATE-----"))) return ESP_ERR_INVALID_ARG;
+    esp_err_t destination_error = lince_destination_validate(cJSON_GetObjectItemCaseSensitive(configuration, "destination"));
+    if (destination_error != ESP_OK) return destination_error;
     if (strspn(clock, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-:") != strlen(clock)) return ESP_ERR_INVALID_ARG;
     const cJSON *setup = cJSON_GetObjectItemCaseSensitive(configuration, "setup");
     static const char *const setup_fields[] = {"audience", "device", "signal", "key_epoch"};
@@ -112,6 +127,8 @@ esp_err_t lince_config_validate(const cJSON *configuration) {
     const cJSON *workflow = cJSON_GetObjectItemCaseSensitive(configuration, "workflow");
     const char *kind = string(workflow, "kind", 16);
     if (!kind) return ESP_ERR_INVALID_ARG;
+    const cJSON *destination = cJSON_GetObjectItemCaseSensitive(configuration, "destination");
+    if (strcmp(string(destination, "transport", 5), "iroh") == 0 && strcmp(kind, "camera") != 0) return ESP_ERR_NOT_SUPPORTED;
     if (strcmp(kind, "camera") == 0) {
         if (CONFIG_LINCE_CAMERA_XCLK_HZ == 0) return ESP_ERR_NOT_SUPPORTED;
         static const char *const workflow_fields[] = {"kind", "pins", "width", "height", "fps", "quality"};
@@ -139,7 +156,7 @@ esp_err_t lince_config_validate(const cJSON *configuration) {
     return ESP_OK;
 }
 
-cJSON *lince_config_load(void) {
+static cJSON *load(void) {
     nvs_handle_t storage;
     if (nvs_open("lince", NVS_READONLY, &storage) != ESP_OK) return NULL;
     size_t length = 0;
@@ -151,8 +168,46 @@ cJSON *lince_config_load(void) {
     cJSON *configuration = error == ESP_OK ? cJSON_ParseWithLength(bytes, length) : NULL;
     memset(bytes, 0, length);
     free(bytes);
+    return configuration;
+}
+
+bool lince_config_present(void) {
+    nvs_handle_t storage;
+    if (nvs_open("lince", NVS_READONLY, &storage) != ESP_OK) return false;
+    size_t length = 0;
+    esp_err_t error = nvs_get_str(storage, "configuration", NULL, &length);
+    nvs_close(storage);
+    return error != ESP_ERR_NVS_NOT_FOUND;
+}
+
+cJSON *lince_config_load(void) {
+    cJSON *configuration = load();
     if (lince_config_validate(configuration) != ESP_OK) { cJSON_Delete(configuration); return NULL; }
     return configuration;
+}
+
+esp_err_t lince_config_set_destination(const cJSON *destination, const cJSON *setup) {
+    esp_err_t error = lince_destination_validate(destination);
+    if (error != ESP_OK) return error;
+    cJSON *configuration = load();
+    if (!configuration) return ESP_ERR_NOT_FOUND;
+    cJSON *replacement = cJSON_Duplicate(destination, true);
+    cJSON *authorization = cJSON_Duplicate(setup, true);
+    if (!replacement || !authorization) {
+        cJSON_Delete(replacement);
+        cJSON_Delete(authorization);
+        cJSON_Delete(configuration);
+        return ESP_ERR_NO_MEM;
+    }
+    cJSON_DeleteItemFromObjectCaseSensitive(configuration, "destination");
+    cJSON_DeleteItemFromObjectCaseSensitive(configuration, "server");
+    cJSON_DeleteItemFromObjectCaseSensitive(configuration, "ca_pem");
+    cJSON_DeleteItemFromObjectCaseSensitive(configuration, "setup");
+    cJSON_AddItemToObject(configuration, "destination", replacement);
+    cJSON_AddItemToObject(configuration, "setup", authorization);
+    error = lince_config_store(configuration);
+    cJSON_Delete(configuration);
+    return error;
 }
 
 esp_err_t lince_config_store(const cJSON *configuration) {
@@ -164,8 +219,12 @@ esp_err_t lince_config_store(const cJSON *configuration) {
     nvs_handle_t storage;
     error = nvs_open("lince", NVS_READWRITE, &storage);
     if (error == ESP_OK) {
-        error = nvs_set_str(storage, "configuration", bytes);
-        if (error == ESP_OK) error = nvs_set_i64(storage, "time_floor", (int64_t)cJSON_GetObjectItemCaseSensitive(configuration, "bootstrap_time")->valuedouble - 30);
+        int64_t floor = 0;
+        error = nvs_get_i64(storage, "time_floor", &floor);
+        if (error == ESP_ERR_NVS_NOT_FOUND) error = ESP_OK;
+        int64_t candidate = (int64_t)cJSON_GetObjectItemCaseSensitive(configuration, "bootstrap_time")->valuedouble - 30;
+        if (error == ESP_OK && candidate > floor) error = nvs_set_i64(storage, "time_floor", candidate);
+        if (error == ESP_OK) error = nvs_set_str(storage, "configuration", bytes);
         if (error == ESP_OK) error = nvs_commit(storage);
         nvs_close(storage);
     }

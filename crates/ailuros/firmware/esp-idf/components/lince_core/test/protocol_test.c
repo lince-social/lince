@@ -42,13 +42,13 @@ TEST_CASE("receipt and frame acknowledgements preserve full integer precision", 
 }
 
 TEST_CASE("provisioned configuration validates trust scope and refuses unknown or duplicate fields", "[lince]") {
-    const char *encoded = "{\"version\":1,\"ssid\":\"camera-network\",\"password\":\"test-password\",\"server\":\"https://cell.example\",\"ca_pem\":\"\",\"time_server\":\"pool.ntp.org\",\"bootstrap_time\":1900000000,\"setup\":{\"audience\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"device\":\"r_00000000000000000000000001\",\"signal\":\"r_00000000000000000000000002\",\"key_epoch\":\"9223372036854775807\"},\"workflow\":{\"kind\":\"scalar\",\"value\":\"12.5\",\"interval_seconds\":60}}";
+    const char *encoded = "{\"version\":1,\"ssid\":\"camera-network\",\"password\":\"test-password\",\"destination\":{\"transport\":\"https\",\"origin\":\"https://cell.example\",\"ca_pem\":\"\"},\"time_server\":\"pool.ntp.org\",\"bootstrap_time\":1900000000,\"setup\":{\"audience\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"device\":\"r_00000000000000000000000001\",\"signal\":\"r_00000000000000000000000002\",\"key_epoch\":\"9223372036854775807\"},\"workflow\":{\"kind\":\"scalar\",\"value\":\"12.5\",\"interval_seconds\":60}}";
     cJSON *configuration = cJSON_Parse(encoded);
     TEST_ASSERT_NOT_NULL(configuration);
     TEST_ASSERT_EQUAL(ESP_OK, lince_config_validate(configuration));
-    cJSON_ReplaceItemInObjectCaseSensitive(configuration, "server", cJSON_CreateString("http://cell.example"));
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), "origin", cJSON_CreateString("http://cell.example"));
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, lince_config_validate(configuration));
-    cJSON_ReplaceItemInObjectCaseSensitive(configuration, "server", cJSON_CreateString("https://cell.example"));
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), "origin", cJSON_CreateString("https://cell.example"));
     cJSON *setup = cJSON_GetObjectItemCaseSensitive(configuration, "setup");
     cJSON_ReplaceItemInObjectCaseSensitive(setup, "key_epoch", cJSON_CreateNumber(1));
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, lince_config_validate(configuration));
@@ -59,11 +59,11 @@ TEST_CASE("provisioned configuration validates trust scope and refuses unknown o
     cJSON_AddStringToObject(configuration, "ssid", "duplicate");
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, lince_config_validate(configuration));
     cJSON_Delete(configuration);
-    const char *invalid_fields[] = {"ca_pem", "time_server", "server", "server"};
+    const char *invalid_fields[] = {"ca_pem", "time_server", "origin", "origin"};
     const char *invalid_values[] = {"not a certificate", "time.example/path", "https://user@cell.example", "https://cell.example/path"};
     for (size_t index = 0; index < sizeof(invalid_fields) / sizeof(*invalid_fields); index++) {
         configuration = cJSON_Parse(encoded);
-        cJSON_ReplaceItemInObjectCaseSensitive(configuration, invalid_fields[index], cJSON_CreateString(invalid_values[index]));
+        cJSON_ReplaceItemInObjectCaseSensitive(index == 1 ? configuration : cJSON_GetObjectItemCaseSensitive(configuration, "destination"), invalid_fields[index], cJSON_CreateString(invalid_values[index]));
         TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, lince_config_validate(configuration));
         cJSON_Delete(configuration);
     }

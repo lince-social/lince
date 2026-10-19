@@ -257,6 +257,21 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
         "Live location",
         Intent::OpenLocation(uid.into(), None),
     );
+    for (data, caption) in [
+        (nucleus::visibility::Data::Record, "Record visibility"),
+        (nucleus::visibility::Data::Place, "Saved place visibility"),
+        (
+            nucleus::visibility::Data::LiveLocation,
+            "Live location visibility",
+        ),
+    ] {
+        button(
+            world,
+            parent,
+            caption,
+            Intent::OpenVisibility(uid.into(), data),
+        );
+    }
     let Some(record) = app::row(world, "record", uid) else {
         let missing = world
             .resource::<Mobile>()

@@ -3,6 +3,7 @@ use engine::{
     actions::Action,
     ailuros::StreamProof,
     signal_endpoints::{Request, hex},
+    signal_streams::Metadata,
 };
 use futures::{SinkExt, StreamExt};
 use p256::ecdsa::{Signature, SigningKey, signature::Signer};
@@ -182,6 +183,123 @@ async fn frame(socket: &mut Socket, epoch: &str, sequence: u64, bytes: Vec<u8>) 
         .send(WireMessage::Binary(bytes.into()))
         .await
         .unwrap();
+}
+
+#[tokio::test]
+async fn shared_session_checks_authority_before_reserving_the_signal_producer() {
+    let (state, _facade, key, row) = fixture().await;
+    let engine = &state.cell.engine;
+    let (audience, challenge) = engine.ailuros_stream_challenge().await.unwrap();
+    let signed = proof(
+        &json!({"audience":audience,"challenge":challenge}),
+        &row,
+        &key,
+    );
+    let identity = engine
+        .authenticate_ailuros_stream(&signed, &signed.challenge, &row.signal_uid)
+        .await
+        .unwrap();
+    let wrong = PublisherSession::open(
+        engine,
+        &nucleus::new_uid("r"),
+        Credential::Device(identity.clone()),
+    )
+    .await;
+    assert!(
+        matches!(wrong, Err(engine::EngineError::Conflict { message, .. }) if message == "Device identity belongs to a different Signal")
+    );
+    let session = PublisherSession::open(
+        engine,
+        &row.signal_uid,
+        Credential::Device(identity.clone()),
+    )
+    .await
+    .unwrap();
+    let duplicate = PublisherSession::open(
+        engine,
+        &row.signal_uid,
+        Credential::Device(identity.clone()),
+    )
+    .await;
+    assert!(matches!(
+        duplicate,
+        Err(engine::EngineError::Conflict {
+            code: "signal_producer_busy",
+            ..
+        })
+    ));
+    drop(session);
+    drop(
+        PublisherSession::open(
+            engine,
+            &row.signal_uid,
+            Credential::Device(identity.clone()),
+        )
+        .await
+        .unwrap(),
+    );
+    let revision = engine
+        .stream_channel(&row.signal_uid, None)
+        .await
+        .unwrap()
+        .config
+        .revision;
+    let external_configuration = engine
+        .configure_stream(
+            &row.signal_uid,
+            Some("jpeg"),
+            "ws://127.0.0.1:9/stream",
+            Some(revision),
+            None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    let external = PublisherSession::open(
+        engine,
+        &row.signal_uid,
+        Credential::Device(identity.clone()),
+    )
+    .await;
+    assert!(
+        matches!(external, Err(engine::EngineError::Forbidden(message)) if message == "Signal uses an external source")
+    );
+    engine
+        .configure_stream(
+            &row.signal_uid,
+            Some("jpeg"),
+            "",
+            Some(external_configuration.revision),
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .act(
+            Action::SignalEndpoints {
+                request: Request::SetEnabled {
+                    endpoint: row.uid,
+                    expected_revision: row.revision,
+                    enabled: false,
+                },
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        PublisherSession::open(engine, &row.signal_uid, Credential::Device(identity))
+            .await
+            .is_err()
+    );
+    assert!(
+        engine
+            .stream_channel(&row.signal_uid, None)
+            .await
+            .unwrap()
+            .publisher()
+            .is_ok()
+    );
 }
 
 #[tokio::test]

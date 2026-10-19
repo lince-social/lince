@@ -9,6 +9,12 @@ use std::time::Duration;
 
 pub const BUTTON_BORDER_WIDTH: f32 = 1.0;
 
+#[derive(Component)]
+pub struct Editor {
+    pub title: String,
+    pub secret: bool,
+}
+
 #[derive(Clone, Copy)]
 pub struct EditorOptions {
     pub multiline: bool,

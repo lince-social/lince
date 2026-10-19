@@ -1,3 +1,4 @@
+pub mod ingress;
 mod source;
 
 use crate::{Engine, EngineError};

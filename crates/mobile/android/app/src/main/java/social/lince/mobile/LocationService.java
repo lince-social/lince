@@ -71,9 +71,11 @@ public final class LocationService extends Service {
         if (manager != null) { return START_NOT_STICKY; }
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         final long boundEpoch = epoch;
+        final long captureStartedAt = SystemClock.elapsedRealtimeNanos();
         listener = new LocationListener() {
             @Override public void onLocationChanged(Location location) {
                 if (epoch != boundEpoch) { return; }
+                if (location.getElapsedRealtimeNanos() < captureStartedAt) { return; }
                 if (!getSystemService(NotificationManager.class).areNotificationsEnabled()) {
                     MainActivity.nativeLocationStatus(boundEpoch, "Live-location notifications were disabled");
                     stopSelf();

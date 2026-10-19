@@ -1,0 +1,12 @@
+{
+  "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at ten. Alice brings eight apples and Bob brings four pears. The project is called sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+  "sha256": "2aa1ac6354234e1ceaac6a36c0b6363c217af35f01ecf4a2962b79d2440d1fa8",
+  "input_ms": 18200,
+  "source_ms": 16869,
+  "model_revision": "5f9280c761a5c147bb682321f3f019482fab3e7b",
+  "model_weights_sha256": "b770fd2d35f56b9b95e95d99d9954746cdc4a435223a4f41842fa12160a2419f",
+  "voice": "af_heart",
+  "model_license": "Apache-2.0; attribution under crates/fiote/assets/kokoro",
+  "method": "Rust Kokoro sentence synthesis with 200ms quiet context at boundaries; linear resampling to mono 16kHz 16-bit PCM, 18.2 seconds",
+  "scope": "Synthetic long-request framing and performance regression; no human/acoustic accuracy claim"
+}

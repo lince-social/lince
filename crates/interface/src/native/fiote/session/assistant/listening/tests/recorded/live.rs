@@ -50,7 +50,7 @@ pub(super) fn trace(app: &mut App) {
     app.insert_resource(trace);
 }
 
-fn cpu_ticks() -> Option<u64> {
+pub(super) fn cpu_ticks() -> Option<u64> {
     let status = std::fs::read_to_string("/proc/self/stat").ok()?;
     let values = status
         .rsplit_once(')')?
@@ -89,7 +89,7 @@ async fn idle(app: &mut App, segments: &mut Segments) {
     );
 }
 
-fn recording(name: &str) -> Vec<u8> {
+pub(super) fn recording(name: &str) -> Vec<u8> {
     let reference: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../fiote/tests/fixtures/english-conversation-reference.json"

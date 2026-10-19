@@ -2143,6 +2143,10 @@ impl Engine {
         namespace: &str,
         mut fds: serde_json::Value,
     ) -> Result<ActionOutcome, EngineError> {
+        if namespace == crate::ailuros::receiver::NAMESPACE {
+            fds = serde_json::to_value(crate::ailuros::receiver::Settings::parse(fds)?)
+                .map_err(|_| crate::signal_streams::invalid("Invalid hardware receiver settings"))?;
+        }
         if namespace == "lince.discovery" {
             let relays = crate::wire::configured_relays(Some(&fds))?;
             if fds.get("relays").is_some() {

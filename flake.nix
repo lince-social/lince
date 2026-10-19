@@ -1255,6 +1255,22 @@
             IDF_TARGET = "esp32s3";
           };
 
+          devShells.ailuros-rust = pkgs.mkShell {
+            packages = [
+              esp-dev.packages.${system}.esp-idf-xtensa
+              pkgs.espup
+              pkgs.ldproxy
+              pkgs.patchelf
+              pkgs.rustup
+            ];
+            IDF_TARGET = "esp32s3";
+            ESP_IDF_TOOLS_INSTALL_DIR = "fromenv";
+            AILUROS_LIBCLANG_RPATH = lib.makeLibraryPath [
+              esp-dev.inputs.nixpkgs.legacyPackages.${system}.stdenv.cc.cc.lib
+              esp-dev.inputs.nixpkgs.legacyPackages.${system}.zlib
+            ];
+          };
+
           devShells.default = pkgs.mkShell {
             LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             packages =

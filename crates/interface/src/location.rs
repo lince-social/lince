@@ -158,11 +158,7 @@ enum Field {
     Reference,
 }
 
-#[derive(Component)]
-pub struct Editor {
-    pub title: String,
-    pub secret: bool,
-}
+pub use crate::controls::Editor;
 
 #[derive(Component)]
 struct PasswordMask(Entity);

@@ -1,2 +1,2 @@
-idf_component_register(SRCS "camera.c" "scalar.c" "custom.c" INCLUDE_DIRS "include" REQUIRES lince_core espressif__esp32-camera espressif__esp_websocket_client json esp_timer esp_http_client esp-tls nvs_flash)
+idf_component_register(SRCS "camera.c" "scalar.c" "custom.c" INCLUDE_DIRS "include" REQUIRES lince_core lince_camera espressif__esp_websocket_client json esp_timer esp_http_client esp-tls nvs_flash)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Werror=extra -Werror=unused-function -Werror=unused-variable -Werror=unused-but-set-variable -Werror=deprecated-declarations -Werror=sign-compare)

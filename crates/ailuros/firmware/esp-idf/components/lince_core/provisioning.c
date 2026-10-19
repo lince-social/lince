@@ -5,6 +5,7 @@
 #include <string.h>
 #include "driver/gpio.h"
 #include "driver/uart.h"
+#include "driver/uart_vfs.h"
 #include "esp_flash.h"
 #include "esp_heap_caps.h"
 #include "esp_system.h"
@@ -22,8 +23,9 @@ static void reply(const char *id, bool ok, cJSON *data) {
     cJSON_AddItemToObject(response, "data", data);
     char *bytes = cJSON_PrintUnformatted(response);
     if (bytes) {
-        uart_write_bytes(UART_NUM_0, bytes, strlen(bytes));
-        uart_write_bytes(UART_NUM_0, "\n", 1);
+        size_t length = strlen(bytes);
+        bytes[length] = '\n';
+        uart_write_bytes(UART_NUM_0, bytes, length + 1);
         free(bytes);
     }
     cJSON_Delete(response);
@@ -60,9 +62,11 @@ static void request(char *line, size_t length) {
         cJSON_AddStringToObject(data, "phase", lince_status_get());
         cJSON_AddBoolToObject(data, "wifi_connected", lince_network_connected());
         reply(id->valuestring, true, data);
-    } else if (strcmp(operation->valuestring, "configure") == 0 && provisioning) {
+    } else if (provisioning && (strcmp(operation->valuestring, "configure") == 0 || strcmp(operation->valuestring, "set_destination") == 0)) {
         const cJSON *configuration = cJSON_GetObjectItemCaseSensitive(message, "data");
-        bool stored = lince_config_store(configuration) == ESP_OK;
+        bool stored = (strcmp(operation->valuestring, "configure") == 0
+            ? lince_config_store(configuration)
+            : lince_config_set_destination(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), cJSON_GetObjectItemCaseSensitive(configuration, "setup"))) == ESP_OK;
         cJSON *data = cJSON_CreateObject();
         cJSON_AddBoolToObject(data, "configured", stored);
         reply(id->valuestring, stored, data);
@@ -105,5 +109,6 @@ void lince_provision_start(bool configured) {
     uart_config_t serial = { .baud_rate = 115200, .data_bits = UART_DATA_8_BITS, .parity = UART_PARITY_DISABLE, .stop_bits = UART_STOP_BITS_1, .flow_ctrl = UART_HW_FLOWCTRL_DISABLE, .source_clk = UART_SCLK_DEFAULT };
     ESP_ERROR_CHECK(uart_param_config(UART_NUM_0, &serial));
     ESP_ERROR_CHECK(uart_driver_install(UART_NUM_0, 16384, 0, 0, NULL, 0));
+    uart_vfs_dev_use_driver(UART_NUM_0);
     if (xTaskCreate(provision_task, "lince-provision", 8192, NULL, 4, NULL) != pdPASS) abort();
 }

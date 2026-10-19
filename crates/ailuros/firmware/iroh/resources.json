@@ -1,0 +1,43 @@
+{
+  "status": "production camera candidate and separate transport diagnostic; full camera hardware qualification pending",
+  "target": "targets/xtensa-esp32s3-espidf.json; pinned ESP 1.93 builtin definition with S32C1I/forced-atomics disabled so LLVM emits ESP-IDF software atomic libcalls",
+  "idf": "5.5.2",
+  "iroh": "1.3.0",
+  "crypto_adapter": "rusty_esp_iroh-host 0.1.1 crypto module, using rustls-rustcrypto-gated 0.0.2-alpha with P-256, P-384 and RSA verification enabled. Device ECDSA certificate/handshake verification delegates to ESP-IDF Mbed TLS through the shared lince_ecdsa_verify binding; Rustls retains chain, issuer, name and time policy.",
+  "dns_adapter": "The same published crate's relay::StdDnsResolver only. Its relay::apply and skip_verify helpers are never called. Normal iroh probe/fallback behavior and relay/lookup certificate verification are retained.",
+  "memory_candidate": "Prefer PSRAM for normal malloc, reserve 32768 internal bytes for DMA/kernel allocations, retain the internal main stack and enable a stack watchpoint. The diagnostic runs a 40000-operation two-thread PSRAM atomic self-test. Production capture uses a separate bounded worker, at most sixteen unacknowledged frames and a separate 1 MiB unacknowledged payload budget. Each frame is capped at 128 KiB. Pending receipt state retains metadata and byte reservations only. Telemetry reports internal/PSRAM/DMA headroom, stack high-water, signature-cache counts, selected-path RTT/loss and application receipt latency. Scalar speed optimization avoids the observed verification stall and LLVM vector-codegen failure.",
+  "signature_math_cache": "Eight memory-only entries reuse successful exact curve/digest/key/message/signature calculations, with messages limited to 256..4096 bytes, keys to 97 bytes and signatures to 104 bytes. Short handshake proofs and oversized inputs remain uncached. Rustls executes chain/trust/name/time checks on every connection; failures are not cached.",
+  "camera_diagnostics": "Five-second interval counters distinguish capture attempts, sent frames, receipts, full-window skips, rejected captures, reserved payload bytes, receipt latency and time awaiting capture/writes. Pending receipt count is bounded by sixteen and reserved payloads by 1 MiB. The optional Camera report hook retains no history; the ESP emits public counters and monotonic time over USB. Resource samples also read the SDK Wi-Fi sleep mode without changing it.",
+  "camera_power_policy": "The production Rust camera acquires a reusable power-mode guard before capture starts, requests SDK WIFI_PS_NONE while capturing, and restores the actual previous mode after capture stops or initialization fails. Guard drop retries restoration. Failed writes retain the original mode for recovery. Physical UART evidence verified three capture opens at mode 0 and three closes at the saved mode 1 across no-viewer shutdown, reopening, revocation and reconnection. Performance qualification remains pending.",
+  "network_adapter": "ESP-IDF supplies station IPv4, gateway, netmask and a link-event generation. The reusable network controller replaces endpoints on disconnect, route/address changes or fast same-address rejoins, retaining the same secret identity. It advertises the current IPv4 address with iroh's actual bound port through add_external_addr. Endpoint recreation removes old hints and refreshes sockets/lookup without relying on the POSIX netwatch fallback. Publication observes link/clock changes and cleans up capture before reconnecting. Physical LAN and network-change qualification remain pending.",
+  "hardware": "GOOUUU ESP32-S3-CAM V1.5, physical 16 MiB flash and 8 MiB octal PSRAM; other profiles are not qualified by this diagnostic",
+  "shared_sources": {
+    "startup": "../esp-idf/components/lince_core/bootstrap.c",
+    "identity_and_provisioning": "../esp-idf/components/lince_core",
+    "capture": "../esp-idf/components/lince_camera"
+  },
+  "storage": "Retain NVS at 0x9000 with size 0x6000. The device's iroh key uses separate iroh_identity and iroh_public entries. No private key or Wi-Fi credential belongs in these sources.",
+  "qualification": {
+    "host_peer_authentication": "Passed exchange with a ring-backed iroh peer and rejection of a substituted peer identity",
+    "host_infrastructure_tls": "Passed trusted certificate acceptance and unknown-issuer, wrong-name and expired-certificate rejection",
+    "camera_client_host": "Twenty-eight executed tests passed: five network-controller cases including pinned transfer after socket recreation; five power-mode guard cases; eight camera client cases including sixteen-frame admission, a separate 1 MiB byte ceiling and 5 FPS with three-second receipts; peer identity, signature/certificate policy, bounded signature cache and readiness across synchronization polls and Wi-Fi reconnection.",
+    "camera_release_link": "The SDK network-bridge IrohCamera image linked and passed source/image/MAC-capacity boundary guards; application size 6364368 bytes. Both device identities and provisioned Wi-Fi survived installation and USB destination changes. The sixteen-frame window with the separate byte budget is not yet linked or physically qualified.",
+    "camera_hardware_partial": "The SDK bridge reached a direct path and decoded all 170 distinct fresh physical 320x240 JPEGs with viewer clearing, reopening and revocation/reauthentication. Stage FPS was 5.10, 4.05, 5.21 and 5.15; the result explicitly failed the unchanged performance floor in the one-viewer stage. After the initial relay connection, sampled paths were direct. A probe-period sample recorded application receipt latency 3160 ms while QUIC RTT was 107 ms, with eight full-window skips. Normal receipt maxima were 104..195 ms. Full direct/forced-relay performance and soak qualification remain pending.",
+    "host_public_relay": "Passed again with the published OS resolver and normal iroh probes: identity-only lookup and delivery with both endpoints' direct IP transports disabled; 15.18 seconds. The minimal-probe configuration timed out in this relay-only case and was rejected.",
+    "cross_check": "Passed cargo check for the actual ESP32-S3 target, shared C components and transport-check binary",
+    "release_link": "Passed with pinned ESP Rust 1.93.0.0; guarded fresh-export linking/image generation/installation also passed. The first diagnostic application was 4448640 bytes.",
+    "hardware": "The vTaskDelay(1) candidate passed two clean startups without watchdog warnings, 20 SDK-backed signature checks per startup (including off-curve points), 40000 PSRAM atomic operations per startup and 12 host-to-ESP exchanges across direct/forced-relay paths before/after reset. Both identities persisted. App size 6122880 bytes; measured minima: 87567 internal bytes, 31744 largest DMA block, 40832 stack bytes free. These results precede the new protocol dependency. ESP-initiated Cell dialing, camera concurrency/publication and soak remain unverified."
+  },
+  "references": [
+    "https://docs.iroh.computer/compatibility",
+    "https://github.com/n0-computer/iroh-esp32-examples",
+    "https://docs.rs/rusty_esp_iroh-host/0.1.1/rusty_esp_iroh_host/crypto/",
+    "https://docs.rs/crate/esp-idf-sys/0.38.1/source/BUILD-OPTIONS.md",
+    "https://github.com/esp-rs/rust/issues/277",
+    "https://github.com/esp-rs/esp-idf-sys/issues/406",
+    "https://github.com/esp-rs/esp-hal/issues/2027",
+    "https://docs.espressif.com/projects/esp-idf/en/v5.5.2/esp32s3/api-reference/protocols/mbedtls.html",
+    "https://www.rfc-editor.org/rfc/rfc6979.html#appendix-A.2.5",
+    "https://www.rfc-editor.org/rfc/rfc6979.html#appendix-A.2.6"
+  ]
+}

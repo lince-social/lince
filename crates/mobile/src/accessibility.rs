@@ -7,6 +7,27 @@ pub static ENABLED: AtomicBool = AtomicBool::new(false);
 #[derive(Resource, Default)]
 pub struct Snapshot(String);
 
+fn modal(world: &mut World) -> Option<Entity> {
+    world
+        .query_filtered::<Entity, With<crate::app::Modal>>()
+        .iter(world)
+        .next()
+}
+
+fn within_modal(world: &World, entity: Entity, modal: Option<Entity>) -> bool {
+    let Some(modal) = modal else { return true };
+    let mut current = entity;
+    loop {
+        if current == modal {
+            return true;
+        }
+        let Some(parent) = world.get::<ChildOf>(current) else {
+            return false;
+        };
+        current = parent.parent();
+    }
+}
+
 pub fn publish(world: &mut World) {
     if !ENABLED.load(Ordering::Relaxed) {
         return;
@@ -23,11 +44,15 @@ pub fn publish(world: &mut World) {
         .iter(world)
         .next()
         .map(|(node, transform)| Rect::from_center_size(transform.translation, node.size()));
+    let modal = modal(world);
     let mut items = Vec::new();
     for (entity, node, transform) in world
         .query::<(Entity, &ComputedNode, &UiGlobalTransform)>()
         .iter(world)
     {
+        if !within_modal(world, entity, modal) {
+            continue;
+        }
         let (kind, label, password) = if let Some(input) = world.get::<Input>(entity) {
             let password = input.key == "login/password";
             let value = if password {
@@ -39,10 +64,17 @@ pub fn publish(world: &mut World) {
                     .unwrap_or_default()
             };
             ("edit", format!("{}: {value}", input.title), password)
-        } else if let Some(input) = world.get::<lince_interface::location::Editor>(entity) {
-            let value = if input.secret { String::new() } else { world.get::<EditableText>(entity).map(|text| text.value().to_string()).unwrap_or_default() };
+        } else if let Some(input) = world.get::<lince_interface::controls::Editor>(entity) {
+            let value = if input.secret {
+                String::new()
+            } else {
+                world
+                    .get::<EditableText>(entity)
+                    .map(|text| text.value().to_string())
+                    .unwrap_or_default()
+            };
             ("edit", format!("{}: {value}", input.title), input.secret)
-        } else if world.get::<ButtonIntent>(entity).is_some() || world.get::<lince_interface::location::Button>(entity).is_some() {
+        } else if world.get::<bevy::ui_widgets::Button>(entity).is_some() {
             let label = world
                 .get::<Children>(entity)
                 .map(|children| {
@@ -56,9 +88,12 @@ pub fn publish(world: &mut World) {
             ("button", label, false)
         } else if let Some(text) = world.get::<Text>(entity) {
             if world.get::<ChildOf>(entity).is_some_and(|parent| {
-                world.get::<ButtonIntent>(parent.parent()).is_some()
-                    || world.get::<lince_interface::location::Button>(parent.parent()).is_some()
-                    || world.get::<lince_interface::location::Editor>(parent.parent()).is_some()
+                world
+                    .get::<bevy::ui_widgets::Button>(parent.parent())
+                    .is_some()
+                    || world
+                        .get::<lince_interface::controls::Editor>(parent.parent())
+                        .is_some()
                     || world.get::<Input>(parent.parent()).is_some()
             }) {
                 continue;
@@ -119,15 +154,21 @@ pub fn publish(world: &mut World) {
 }
 
 pub fn activate(world: &mut World, token: u64, action: i32) {
+    let modal = modal(world);
     if action == 4096 || action == 8192 {
-        for (node, mut scroll) in world
-            .query_filtered::<(&ComputedNode, &mut ScrollPosition), With<Content>>()
+        for (entity, node, mut scroll, content) in world
+            .query::<(Entity, &ComputedNode, &mut ScrollPosition, Option<&Content>)>()
             .iter_mut(world)
         {
+            if !modal.map_or(content.is_some(), |modal| modal == entity) {
+                continue;
+            }
             let direction = if action == 4096 { 1.0 } else { -1.0 };
+            let maximum =
+                ((node.content_size().y - node.size().y) * node.inverse_scale_factor()).max(0.0);
             scroll.0.y = (scroll.0.y
                 + direction * node.size().y * node.inverse_scale_factor() * 0.7)
-                .max(0.0);
+                .clamp(0.0, maximum);
         }
         return;
     }
@@ -135,13 +176,24 @@ pub fn activate(world: &mut World, token: u64, action: i32) {
         return;
     }
     let entity = Entity::from_bits(token);
+    if !within_modal(world, entity, modal) {
+        return;
+    }
     if let Some(button) = world.get::<ButtonIntent>(entity) {
         let intent = button.0.clone();
         crate::app::queue_intent(world, intent);
-    } else if world.get::<lince_interface::location::Button>(entity).is_some() {
-        lince_interface::location::click(world, entity);
-    } else if let (Some(editor), Some(text)) = (world.get::<lince_interface::location::Editor>(entity), world.get::<EditableText>(entity)) {
-        crate::android::open_location_editor(entity, editor, text, &world.resource::<crate::app::Mobile>().scope_key());
+    } else if world.get::<bevy::ui_widgets::Button>(entity).is_some() {
+        world.trigger(bevy::ui_widgets::Activate { entity });
+    } else if let (Some(editor), Some(text)) = (
+        world.get::<lince_interface::controls::Editor>(entity),
+        world.get::<EditableText>(entity),
+    ) {
+        crate::android::open_shared_editor(
+            entity,
+            editor,
+            text,
+            &world.resource::<crate::app::Mobile>().scope_key(),
+        );
     } else if let (Some(input), Some(text)) = (
         world.get::<Input>(entity),
         world.get::<EditableText>(entity),

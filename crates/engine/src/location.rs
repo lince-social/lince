@@ -479,6 +479,7 @@ impl Engine {
                 }
                 self.location_manage(&person, &record_uid, actor).await?;
                 let settings = self.location_controller(&person, &record_uid).await?;
+                self.location_validate_configuration(&settings, actor).await?;
                 self.location_begin(settings,None).await
             }
             Command::Handover { settings, expected_session_uid } => {

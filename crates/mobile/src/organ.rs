@@ -46,6 +46,16 @@ pub fn render(world: &mut World, parent: Entity) {
         crate::session::Identity::Owner => {
             label(world, parent, "Using local device-owner access", 16.0);
             login(world, parent);
+            label(world, parent, "Local Person permissions", 22.0);
+            label(
+                world,
+                parent,
+                "Enrollment shares Records. Person Role grants stay local to each device. Assign an existing Role here to authorize a Person on this device.",
+                16.0,
+            );
+            input(world, parent, "local-role", "person", "Person (@slug or Record ID)", "", false);
+            input(world, parent, "local-role", "role", "Existing local Role", "", false);
+            button(world, parent, "Review local Role assignment", Intent::AssignLocalRole);
         }
         crate::session::Identity::Locked => {
             login(world, parent);

@@ -1,0 +1,2 @@
+#pragma once
+#define CONFIG_LINCE_CAMERA_XCLK_HZ 8000000

@@ -539,7 +539,7 @@ pub fn edit(
     event: On<Pointer<Click>>,
     inputs: Query<(
         Option<&crate::app::Input>,
-        Option<&lince_interface::location::Editor>,
+        Option<&lince_interface::controls::Editor>,
         &EditableText,
     )>,
     gesture: Res<crate::scroll::Gesture>,
@@ -554,13 +554,13 @@ pub fn edit(
     if let Some(input) = input {
         open_editor(input, text, &state.scope_key());
     } else if let Some(location) = location {
-        open_location_editor(event.entity, location, text, &state.scope_key());
+        open_shared_editor(event.entity, location, text, &state.scope_key());
     }
 }
 
-pub fn open_location_editor(
+pub fn open_shared_editor(
     entity: Entity,
-    editor: &lince_interface::location::Editor,
+    editor: &lince_interface::controls::Editor,
     text: &EditableText,
     scope: &str,
 ) {
@@ -568,9 +568,9 @@ pub fn open_location_editor(
         key: format!(
             "{}/{}",
             if editor.secret {
-                "location-password"
+                "shared-password"
             } else {
-                "location-editor"
+                "shared-editor"
             },
             entity.to_bits()
         ),
@@ -598,7 +598,7 @@ pub fn open_editor(input: &crate::app::Input, text: &EditableText, scope: &str) 
                 JValue::Object(&value),
                 JValue::Bool(text.allow_newlines.into()),
                 JValue::Bool(
-                    (input.key == "login/password" || input.key.starts_with("location-password/"))
+                    (input.key == "login/password" || input.key.starts_with("shared-password/"))
                         .into(),
                 ),
             ],
@@ -718,13 +718,13 @@ pub fn receive(world: &mut World) {
                     continue;
                 }
                 if let Some(entity) = key
-                    .strip_prefix("location-editor/")
-                    .or_else(|| key.strip_prefix("location-password/"))
+                    .strip_prefix("shared-editor/")
+                    .or_else(|| key.strip_prefix("shared-password/"))
                     .and_then(|value| value.parse::<u64>().ok())
                     .map(Entity::from_bits)
                 {
                     if world
-                        .get::<lince_interface::location::Editor>(entity)
+                        .get::<lince_interface::controls::Editor>(entity)
                         .is_some()
                         && let Some(mut text) = world.get_mut::<EditableText>(entity)
                     {

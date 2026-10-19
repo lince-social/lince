@@ -1,16 +1,14 @@
 #include "lince_workflows.h"
 #include "lince_stream.h"
 #include "lince_provision.h"
-#include "sdkconfig.h"
+#include "lince_camera.h"
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include "esp_camera.h"
 #include "esp_crt_bundle.h"
-#include "esp_heap_caps.h"
 #include "esp_random.h"
 #include "esp_timer.h"
 #include "esp_websocket_client.h"
@@ -85,52 +83,11 @@ static bool authenticate(esp_websocket_client_handle_t client, const cJSON *conf
     return send_json(client, proof);
 }
 
-static esp_err_t camera_start(const cJSON *workflow) {
-    if (CONFIG_LINCE_CAMERA_XCLK_HZ == 0) return ESP_ERR_NOT_SUPPORTED;
-    const cJSON *pins = cJSON_GetObjectItemCaseSensitive(workflow, "pins");
-    const cJSON *data = cJSON_GetObjectItemCaseSensitive(pins, "data");
-    int width = cJSON_GetObjectItemCaseSensitive(workflow, "width")->valueint;
-    bool psram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM) > 0;
-    if (!psram && width > 320) return ESP_ERR_NOT_SUPPORTED;
-    camera_config_t camera = {
-        .pin_d0 = cJSON_GetArrayItem(data, 0)->valueint, .pin_d1 = cJSON_GetArrayItem(data, 1)->valueint,
-        .pin_d2 = cJSON_GetArrayItem(data, 2)->valueint, .pin_d3 = cJSON_GetArrayItem(data, 3)->valueint,
-        .pin_d4 = cJSON_GetArrayItem(data, 4)->valueint, .pin_d5 = cJSON_GetArrayItem(data, 5)->valueint,
-        .pin_d6 = cJSON_GetArrayItem(data, 6)->valueint, .pin_d7 = cJSON_GetArrayItem(data, 7)->valueint,
-        .pin_xclk = cJSON_GetObjectItemCaseSensitive(pins, "xclk")->valueint,
-        .pin_pclk = cJSON_GetObjectItemCaseSensitive(pins, "pclk")->valueint,
-        .pin_vsync = cJSON_GetObjectItemCaseSensitive(pins, "vsync")->valueint,
-        .pin_href = cJSON_GetObjectItemCaseSensitive(pins, "href")->valueint,
-        .pin_sccb_sda = cJSON_GetObjectItemCaseSensitive(pins, "sda")->valueint,
-        .pin_sccb_scl = cJSON_GetObjectItemCaseSensitive(pins, "scl")->valueint,
-        .pin_pwdn = cJSON_GetObjectItemCaseSensitive(pins, "pwdn")->valueint,
-        .pin_reset = cJSON_GetObjectItemCaseSensitive(pins, "reset")->valueint,
-        .xclk_freq_hz = CONFIG_LINCE_CAMERA_XCLK_HZ, .ledc_timer = LEDC_TIMER_0, .ledc_channel = LEDC_CHANNEL_0,
-        .pixel_format = PIXFORMAT_JPEG,
-        .frame_size = width == 160 ? FRAMESIZE_QQVGA : width == 320 ? FRAMESIZE_QVGA : width == 640 ? FRAMESIZE_VGA : width == 800 ? FRAMESIZE_SVGA : FRAMESIZE_HD,
-        .jpeg_quality = cJSON_GetObjectItemCaseSensitive(workflow, "quality")->valueint,
-        .fb_count = 1, .fb_location = psram ? CAMERA_FB_IN_PSRAM : CAMERA_FB_IN_DRAM, .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
-    };
-    esp_err_t error = esp_camera_init(&camera);
-    if (error == ESP_OK) {
-        sensor_t *sensor = esp_camera_sensor_get();
-        printf("{\"type\":\"camera\",\"sensor_pid\":%u}\n", sensor ? sensor->id.PID : 0);
-    }
-    return error;
-}
-
 static int64_t frame_now(void *context) { (void)context; return esp_timer_get_time(); }
 
-static bool frame_acquire(void *context, lince_frame_t *output) {
-    (void)context;
-    camera_fb_t *frame = esp_camera_fb_get();
-    if (!frame) { lince_status_set("camera-capture-timeout"); return false; }
-    *output = (lince_frame_t){ .bytes = frame->buf, .length = frame->len, .jpeg = frame->format == PIXFORMAT_JPEG,
-        .captured_us = (int64_t)frame->timestamp.tv_sec * 1000000 + frame->timestamp.tv_usec, .buffer = frame };
-    return true;
-}
+static bool frame_acquire(void *context, lince_frame_t *frame) { (void)context; return lince_camera_capture(frame); }
 
-static void frame_release(void *context, const lince_frame_t *frame) { (void)context; esp_camera_fb_return(frame->buffer); }
+static void frame_release(void *context, const lince_frame_t *frame) { (void)context; lince_camera_release(frame); }
 
 static bool frame_send(void *context, const lince_frame_t *frame, const char *epoch, uint64_t sequence, int64_t age) {
     esp_websocket_client_handle_t client = context;
@@ -181,10 +138,10 @@ static void stream(const cJSON *configuration, const cJSON *workflow, esp_websoc
         }
         int64_t now = esp_timer_get_time();
         if (lince_stream_timed_out(&state, now) || atomic_load(&connection->failed)) break;
-        if (!state.active && camera) { esp_camera_deinit(); camera = false; }
+        if (!state.active && camera) { lince_camera_close(); camera = false; }
         if (!lince_stream_can_capture(&state, now) || !esp_websocket_client_is_connected(client)) continue;
         if (!camera) {
-            if (camera_start(workflow) != ESP_OK) { lince_status_set("camera-initialization-failed"); printf("{\"type\":\"fault\",\"code\":\"camera_init\"}\n"); break; }
+            if (lince_camera_open(workflow) != ESP_OK) { lince_status_set("camera-initialization-failed"); printf("{\"type\":\"fault\",\"code\":\"camera_init\"}\n"); break; }
             camera = true;
         }
         lince_frame_result_t result = lince_frame_publish(&state, &io);
@@ -195,14 +152,14 @@ static void stream(const cJSON *configuration, const cJSON *workflow, esp_websoc
         }
         if (result == LINCE_FRAME_SENT) lince_status_set("streaming");
     }
-    if (camera) esp_camera_deinit();
+    if (camera) lince_camera_close();
 }
 
 void lince_camera_run(const cJSON *configuration) {
     const cJSON *setup = cJSON_GetObjectItemCaseSensitive(configuration, "setup");
     const cJSON *workflow = cJSON_GetObjectItemCaseSensitive(configuration, "workflow");
     char address[640];
-    snprintf(address, sizeof(address), "wss://%s/ailuros/streams/%s", text(configuration, "server") + 8, text(setup, "signal"));
+    snprintf(address, sizeof(address), "wss://%s/ailuros/streams/%s", text(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), "origin") + 8, text(setup, "signal"));
     unsigned backoff = 1;
     for (;;) {
         if (lince_wait_network() != ESP_OK || !lince_time_ready()) continue;
@@ -210,7 +167,7 @@ void lince_camera_run(const cJSON *configuration) {
         connection_t connection = {0};
         connection.messages = xQueueCreate(4, sizeof(message_t));
         if (!connection.messages) { vTaskDelay(pdMS_TO_TICKS(5000)); continue; }
-        const char *ca = text(configuration, "ca_pem");
+        const char *ca = text(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), "ca_pem");
         esp_websocket_client_config_t settings = { .uri = address, .cert_pem = *ca ? ca : NULL,
             .crt_bundle_attach = *ca ? NULL : esp_crt_bundle_attach, .disable_auto_reconnect = true,
             .network_timeout_ms = 5000, .buffer_size = 1024, .ping_interval_sec = 10, .pingpong_timeout_sec = 20 };

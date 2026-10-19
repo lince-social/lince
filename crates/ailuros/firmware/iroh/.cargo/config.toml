@@ -1,0 +1,26 @@
+[build]
+target = "targets/xtensa-esp32s3-espidf.json"
+rustflags = ["--cfg", "espidf_time64", "-C", "no-vectorize-loops", "-C", "no-vectorize-slp"]
+
+[target.xtensa-esp32s3-espidf]
+linker = "ldproxy"
+
+[unstable]
+build-std = ["std", "panic_abort"]
+
+[env]
+MCU = "esp32s3"
+ESP_IDF_VERSION = "v5.5.2"
+CARGO_WORKSPACE_DIR = { value = ".", relative = true }
+ESP_IDF_SYS_ROOT_CRATE = "lince-ailuros-esp-iroh"
+ESP_IDF_GLOB_ASSETS_BASE = { value = ".", relative = true }
+ESP_IDF_GLOB_ASSETS_PARTITIONS = "partitions.csv"
+ESP_IDF_GLOB_SHARED_BASE = { value = "../esp-idf", relative = true }
+ESP_IDF_GLOB_SHARED_CORE = "components/lince_core/*.c"
+ESP_IDF_GLOB_SHARED_CORE_HEADERS = "components/lince_core/include/*.h"
+ESP_IDF_GLOB_SHARED_CORE_CMAKE = "components/lince_core/CMakeLists.txt"
+ESP_IDF_GLOB_SHARED_CAMERA = "components/lince_camera/*.c"
+ESP_IDF_GLOB_SHARED_CAMERA_HEADERS = "components/lince_camera/include/*.h"
+ESP_IDF_GLOB_SHARED_CAMERA_CMAKE = "components/lince_camera/CMakeLists.txt"
+ESP_IDF_GLOB_SHARED_CAMERA_CONFIG = "components/lince_camera/Kconfig"
+ESP_IDF_GLOB_SHARED_CAMERA_MANIFEST = "components/lince_camera/idf_component.yml"

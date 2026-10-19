@@ -11,6 +11,7 @@ use std::{
 };
 
 const SDK: &str = "5.5.2";
+pub mod iroh;
 const NIX_SDK: &str =
     "github:mirrexagon/nixpkgs-esp-dev/5287d6e1ca9e15ebd5113c41b9590c468e1e001b#esp32s3-idf";
 
@@ -20,11 +21,12 @@ pub fn source_files() -> Vec<(&'static str, &'static str)> {
             ($path, include_str!(concat!("../firmware/esp-idf/", $path)))
         };
     }
-    vec![
+    let mut files = vec![
         ("LICENSE", include_str!("../../../LICENSE")),
         ("TESTING.txt", include_str!("../TESTING.txt")),
         source!("CREDITS.txt"),
         source!("licenses/esp-idf-Apache-2.0.txt"),
+        source!("licenses/mbedtls-LICENSE.txt"),
         source!("licenses/esp32-camera-Apache-2.0.txt"),
         source!("licenses/esp-websocket-client-Apache-2.0.txt"),
         source!("licenses/esp-jpeg-Apache-2.0.txt"),
@@ -41,8 +43,10 @@ pub fn source_files() -> Vec<(&'static str, &'static str)> {
         source!("main/main.c"),
         source!("components/lince_core/CMakeLists.txt"),
         source!("components/lince_core/include/lince_core.h"),
+        source!("components/lince_core/bootstrap.c"),
         source!("components/lince_core/configuration.c"),
         source!("components/lince_core/identity.c"),
+        source!("components/lince_core/verification.c"),
         source!("components/lince_core/network.c"),
         source!("components/lince_core/protocol.c"),
         source!("components/lince_core/outbox.c"),
@@ -57,12 +61,45 @@ pub fn source_files() -> Vec<(&'static str, &'static str)> {
         source!("components/lince_core/test/outbox_test.c"),
         source!("components/lince_core/test/lifecycle_test.c"),
         source!("components/lince_workflows/CMakeLists.txt"),
-        source!("components/lince_workflows/Kconfig"),
+        source!("components/lince_camera/CMakeLists.txt"),
+        source!("components/lince_camera/Kconfig"),
+        source!("components/lince_camera/idf_component.yml"),
+        source!("components/lince_camera/include/lince_camera.h"),
+        source!("components/lince_camera/camera.c"),
         source!("components/lince_workflows/include/lince_workflows.h"),
         source!("components/lince_workflows/camera.c"),
         source!("components/lince_workflows/scalar.c"),
         source!("components/lince_workflows/custom.c"),
-    ]
+    ];
+    files.extend(iroh::source_files());
+    files.extend([
+        (
+            "protocol/Cargo.toml",
+            include_str!("../protocol/Cargo.toml"),
+        ),
+        (
+            "protocol/src/lib.rs",
+            include_str!("../protocol/src/lib.rs"),
+        ),
+        (
+            "protocol/.gitignore",
+            include_str!("../protocol/.gitignore"),
+        ),
+        ("protocol/LICENSE", include_str!("../protocol/LICENSE")),
+        (
+            "protocol/CREDITS.txt",
+            include_str!("../protocol/CREDITS.txt"),
+        ),
+        (
+            "protocol/licenses/bytes-MIT.txt",
+            include_str!("../protocol/licenses/bytes-MIT.txt"),
+        ),
+        (
+            "protocol/licenses/tokio-util-MIT.txt",
+            include_str!("../protocol/licenses/tokio-util-MIT.txt"),
+        ),
+    ]);
+    files
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -142,6 +179,15 @@ pub fn export_for_board(destination: &Path, board_id: &str) -> Result<()> {
         return Err("Firmware export folder cannot be a symlink".into());
     }
     for (name, text) in source_files() {
+        let text = match name {
+            "iroh/Cargo.toml" | "iroh/.cargo/config.toml" | "iroh/resources.json" => {
+                std::borrow::Cow::Owned(
+                    text.replace("../esp-idf", "..")
+                        .replace("../../protocol", "../protocol"),
+                )
+            }
+            _ => std::borrow::Cow::Borrowed(text),
+        };
         let path = destination.join(name);
         fs::create_dir_all(path.parent().ok_or("Invalid firmware path")?)
             .map_err(|e| e.to_string())?;
@@ -211,6 +257,10 @@ fn regular_bytes(path: &Path, limit: u64) -> Result<Vec<u8>> {
 }
 
 fn source_digest(root: &Path) -> Result<String> {
+    source_digest_matching(root, |_| true)
+}
+
+fn source_digest_matching(root: &Path, include: impl Fn(&Path) -> bool) -> Result<String> {
     fn visit(
         root: &Path,
         directory: &Path,
@@ -225,7 +275,14 @@ fn source_digest(root: &Path) -> Result<String> {
             let entry = entry.map_err(|e| e.to_string())?;
             let path = entry.path();
             let name = entry.file_name();
-            if (directory == root && name == "build") || name == ".git" || name == "sdkconfig.old" {
+            if (directory == root && matches!(name.to_str(), Some("build" | "target")))
+                || (directory == root.join("iroh")
+                    && matches!(name.to_str(), Some("build" | "target" | ".embuild")))
+                || (directory == root.join("protocol")
+                    && matches!(name.to_str(), Some("target" | "Cargo.lock")))
+                || name == ".git"
+                || name == "sdkconfig.old"
+            {
                 continue;
             }
             *entries += 1;
@@ -256,6 +313,9 @@ fn source_digest(root: &Path) -> Result<String> {
     let mut hash = Sha384::new();
     let mut total = 0_usize;
     for path in files {
+        if !include(&path) {
+            continue;
+        }
         let bytes = regular_bytes(&root.join(&path), 8 * 1024 * 1024)?;
         total = total.saturating_add(bytes.len());
         if total > 32 * 1024 * 1024 {
@@ -289,6 +349,7 @@ pub struct Artifact {
     pub mode: FirmwareMode,
     pub chip: String,
     pub idf: String,
+    pub flash_bytes: u32,
     pub source_sha384: String,
     pub images: Vec<Image>,
 }
@@ -298,6 +359,8 @@ pub struct Artifact {
 pub enum FirmwareMode {
     Workflow,
     Tests,
+    IrohQualification,
+    IrohCamera,
 }
 
 impl Artifact {
@@ -312,6 +375,8 @@ impl Artifact {
         if self.version != 1
             || self.chip != "esp32s3"
             || self.idf != SDK
+            || ![4, 8, 16, 32].contains(&(self.flash_bytes / (1024 * 1024)))
+            || self.flash_bytes % (1024 * 1024) != 0
             || self.images.len() != 3
             || source_digest(root)? != self.source_sha384
         {
@@ -340,11 +405,11 @@ impl Artifact {
             {
                 return Err("Artifact escaped its build folder".into());
             }
-            let bytes = regular_bytes(&path, 4 * 1024 * 1024)?;
+            let bytes = regular_bytes(&path, self.flash_bytes.into())?;
             let maximum = match image.offset {
                 0 => 0x8000,
                 0x8000 => 0x1000,
-                0x10000 => 0x3f0000,
+                0x10000 => (self.flash_bytes - 0x10000) as usize,
                 _ => {
                     return Err(
                         "Artifact would overwrite protected configuration/identity storage".into(),
@@ -370,14 +435,15 @@ impl Artifact {
             .iter()
             .position(|image| image.offset == 0x10000)
             .ok_or("Firmware has no application")?;
-        validate_partitions(&outputs[table], outputs[app].len())?;
+        validate_partitions(&outputs[table], outputs[app].len(), self.flash_bytes)?;
         Ok(outputs)
     }
 }
 
-fn validate_partitions(table: &[u8], app_bytes: usize) -> Result<()> {
+fn validate_partitions(table: &[u8], app_bytes: usize, flash_bytes: u32) -> Result<()> {
     let mut nvs = false;
     let mut app = false;
+    let mut phy = false;
     for entry in table.chunks_exact(32) {
         if entry[..2] != 0x50aa_u16.to_le_bytes() {
             break;
@@ -402,9 +468,15 @@ fn validate_partitions(table: &[u8], app_bytes: usize) -> Result<()> {
         }
         match (entry[2], entry[3]) {
             (1, 2) if offset == 0x9000 && size == 0x6000 && !nvs => nvs = true,
-            (1, 1) if offset == 0xf000 && size == 0x1000 => {}
+            (1, 1) if offset == 0xf000 && size == 0x1000 && !phy => phy = true,
             (0, 0)
-                if offset == 0x10000 && size <= 0x3f0000 && app_bytes <= size as usize && !app =>
+                if offset == 0x10000
+                    && size > 0
+                    && offset
+                        .checked_add(size)
+                        .is_some_and(|end| end <= flash_bytes)
+                    && app_bytes <= size as usize
+                    && !app =>
             {
                 app = true
             }
@@ -676,6 +748,13 @@ fn compile_mode(
     let files = arguments["flash_files"]
         .as_object()
         .ok_or("SDK did not produce flash images")?;
+    let flash_bytes = match arguments["flash_settings"]["flash_size"].as_str() {
+        Some("4MB") => 4 * 1024 * 1024,
+        Some("8MB") => 8 * 1024 * 1024,
+        Some("16MB") => 16 * 1024 * 1024,
+        Some("32MB") => 32 * 1024 * 1024,
+        _ => return Err("SDK must declare an explicit supported flash capacity".into()),
+    };
     let mut images = Vec::new();
     for (offset, path) in files {
         let offset = u32::from_str_radix(offset.trim_start_matches("0x"), 16)
@@ -694,20 +773,31 @@ fn compile_mode(
         images.push(Image {
             offset,
             path,
-            sha384: digest(&regular_bytes(&canonical, 4 * 1024 * 1024)?),
+            sha384: digest(&regular_bytes(&canonical, flash_bytes.into())?),
         });
     }
+    finish_artifact(&root, mode, flash_bytes, images, &before)
+}
+
+fn finish_artifact(
+    root: &Path,
+    mode: FirmwareMode,
+    flash_bytes: u32,
+    images: Vec<Image>,
+    source_sha384: &str,
+) -> Result<Artifact> {
     let artifact = Artifact {
         version: 1,
         mode,
-        chip: package.chip,
-        idf: package.idf,
-        source_sha384: source_digest(&root)?,
+        chip: board(root)?.chip,
+        idf: SDK.into(),
+        flash_bytes,
+        source_sha384: source_sha384.into(),
         images,
     };
-    artifact.verify(&root)?;
+    artifact.verify(root)?;
     fs::write(
-        build.join("lince-artifact.json"),
+        root.join("build/lince-artifact.json"),
         serde_json::to_vec_pretty(&artifact).map_err(|e| e.to_string())?,
     )
     .map_err(|e| e.to_string())?;
@@ -749,7 +839,7 @@ pub fn flash(
     let profile = board(root)?;
     let _lease = crate::serial::lease(port)?;
     let chip = probe_unlocked(port, toolchain, cancellation)?;
-    validate_hardware(&chip, &profile, expected_mac)?;
+    validate_hardware(&chip, &profile, expected_mac, artifact.flash_bytes)?;
     let staging = tempfile::tempdir().map_err(|e| e.to_string())?;
     let mut command = toolchain.command("python");
     command.args([
@@ -776,12 +866,14 @@ fn validate_hardware(
     chip: &ChipProbe,
     profile: &crate::profile::BoardProfile,
     expected_mac: &str,
+    artifact_flash_bytes: u32,
 ) -> Result<()> {
     if chip.mac != expected_mac
         || chip.chip != profile.chip
         || chip.flash_bytes < profile.minimum_flash_bytes
+        || chip.flash_bytes < artifact_flash_bytes
     {
-        return Err("Selected hardware differs from the confirmed MAC, chip or board profile's minimum flash capacity".into());
+        return Err("Selected hardware differs from the confirmed MAC, chip, board minimum or firmware flash capacity".into());
     }
     Ok(())
 }
@@ -831,9 +923,9 @@ mod tests {
             parse_probe("Chip is ESP32-S3\nMAC: malformed\nDetected flash size: 16MB").is_err()
         );
         let mut table = partition_table();
-        validate_partitions(&table, 1024).unwrap();
+        validate_partitions(&table, 1024, 4 * 1024 * 1024).unwrap();
         table[4..8].copy_from_slice(&0x80000_u32.to_le_bytes());
-        assert!(validate_partitions(&table, 1024).is_err());
+        assert!(validate_partitions(&table, 1024, 4 * 1024 * 1024).is_err());
     }
 
     #[test]
@@ -931,14 +1023,30 @@ mod tests {
             flash_bytes: 4 * 1024 * 1024,
         };
         let generic = crate::profile::builtin(crate::profile::DEFAULT_BOARD).unwrap();
-        validate_hardware(&chip, &generic, &chip.mac).unwrap();
+        validate_hardware(&chip, &generic, &chip.mac, 4 * 1024 * 1024).unwrap();
+        assert!(validate_hardware(&chip, &generic, &chip.mac, 16 * 1024 * 1024).is_err());
         let camera = crate::profile::builtin("goouuu-esp32s3-cam-v1.5").unwrap();
-        assert!(validate_hardware(&chip, &camera, &chip.mac).is_err());
+        assert!(validate_hardware(&chip, &camera, &chip.mac, 4 * 1024 * 1024).is_err());
         chip.flash_bytes = 16 * 1024 * 1024;
-        validate_hardware(&chip, &camera, &chip.mac).unwrap();
-        assert!(validate_hardware(&chip, &camera, "another-device").is_err());
+        validate_hardware(&chip, &camera, &chip.mac, 16 * 1024 * 1024).unwrap();
+        assert!(validate_hardware(&chip, &camera, "another-device", 16 * 1024 * 1024).is_err());
         chip.chip = "esp32".into();
-        assert!(validate_hardware(&chip, &camera, &chip.mac).is_err());
+        assert!(validate_hardware(&chip, &camera, &chip.mac, 16 * 1024 * 1024).is_err());
+    }
+
+    #[test]
+    fn larger_applications_preserve_nvs_and_must_fit_the_declared_flash() {
+        let mut table = partition_table();
+        table[72..76].copy_from_slice(&0x7f0000_u32.to_le_bytes());
+        validate_partitions(&table, 5 * 1024 * 1024, 8 * 1024 * 1024).unwrap();
+        assert!(validate_partitions(&table, 5 * 1024 * 1024, 4 * 1024 * 1024).is_err());
+        assert!(validate_partitions(&table, 8 * 1024 * 1024, 8 * 1024 * 1024).is_err());
+        table[72..76].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert!(validate_partitions(&table, 1024, 16 * 1024 * 1024).is_err());
+        table[72..76].copy_from_slice(&0xff0000_u32.to_le_bytes());
+        validate_partitions(&table, 5 * 1024 * 1024, 16 * 1024 * 1024).unwrap();
+        table[8..12].copy_from_slice(&0x7000_u32.to_le_bytes());
+        assert!(validate_partitions(&table, 1024, 16 * 1024 * 1024).is_err());
     }
 
     #[cfg(unix)]
@@ -980,11 +1088,17 @@ mod tests {
             mode: FirmwareMode::Workflow,
             chip: "esp32s3".into(),
             idf: SDK.into(),
+            flash_bytes: 4 * 1024 * 1024,
             source_sha384: source_digest(folder.path()).unwrap(),
             images,
         };
         assert_eq!(artifact.verify(folder.path()).unwrap().len(), 3);
         let original_fingerprint = artifact.fingerprint().unwrap();
+        artifact.flash_bytes = 16 * 1024 * 1024;
+        assert_ne!(artifact.fingerprint().unwrap(), original_fingerprint);
+        artifact.flash_bytes = 0;
+        assert!(artifact.verify(folder.path()).is_err());
+        artifact.flash_bytes = 4 * 1024 * 1024;
         artifact.mode = FirmwareMode::Tests;
         assert_ne!(artifact.fingerprint().unwrap(), original_fingerprint);
         artifact.mode = FirmwareMode::Workflow;

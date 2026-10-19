@@ -1,6 +1,68 @@
 use super::*;
 
 #[test]
+fn saved_address_replies_reach_the_record_panel_without_starting_live_location() {
+    use lince_interface::location as ui;
+    let mut world = fixture();
+    world.init_resource::<Messages<ui::Request>>();
+    let parent = world.spawn_empty().id();
+    let record = nucleus::new_uid("r");
+    ui::mount(&mut world, parent, &record, None, None);
+    let field = world
+        .query::<(Entity, &lince_interface::controls::Editor)>()
+        .iter(&world)
+        .find(|(_, editor)| editor.title.starts_with("Address Record"))
+        .unwrap()
+        .0;
+    world.get_mut::<EditableText>(field).unwrap().editor.set_text("@street4");
+    fn link(world: &mut World) -> ui::SavedLocationRequest {
+        let button = world
+            .query::<(Entity, &Children, &bevy::ui_widgets::Button)>()
+            .iter(world)
+            .find(|(_, children, _)| children.iter().any(|child| world.get::<Text>(child).is_some_and(|text| text.0 == "Link address Record")))
+            .unwrap()
+            .0;
+        world.trigger(bevy::ui_widgets::Activate { entity: button });
+        world.flush();
+        world.resource_mut::<Messages<ui::SavedLocationRequest>>().drain().next().unwrap()
+    }
+    let request = link(&mut world);
+    assert!(matches!(&request.command, nucleus::vocabulary::SavedLocationCommand::Bind { record: target, address } if target == &record && address == "@street4"));
+    let candidate = nucleus::vocabulary::LocationCandidate {
+        assertion_uid: Some(nucleus::new_uid("a")),
+        record_uid: nucleus::new_uid("r"),
+        head: "Street4".into(),
+        slug: Some("street4".into()),
+        latitude: -23.5,
+        longitude: -46.6,
+        radius_metres: Some(3000),
+    };
+    receive_message(&mut world, ServerMessage::ActionOk {
+        id: request.id,
+        created: None,
+        facts: 0,
+        warnings: vec![],
+        data: Some(serde_json::to_value(nucleus::vocabulary::SavedLocation {
+            record_uid: record,
+            candidates: vec![candidate.clone()],
+            selected: Some(candidate),
+            explicit: true,
+            unavailable: false,
+            revision: 1,
+        }).unwrap()),
+    });
+    assert!(world.query::<&Text>().iter(&world).any(|text| text.0 == "Approximate saved area · radius 3000 m"));
+    let request = link(&mut world);
+    receive_message(&mut world, ServerMessage::Error {
+        id: request.id,
+        message: "Address Record is private".into(),
+        code: None,
+    });
+    assert!(world.query::<&Text>().iter(&world).any(|text| text.0 == "Address Record is private"));
+    assert!(world.resource::<Messages<ui::Request>>().is_empty());
+}
+
+#[test]
 fn mobile_schedule_initializes_with_bevy_ui_and_text_plugins() {
     let mut app = App::new();
     app.add_plugins((

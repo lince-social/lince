@@ -2,6 +2,7 @@ use super::*;
 
 mod frozen;
 mod live;
+mod performance;
 
 mod speech_reference {
     include!(concat!(

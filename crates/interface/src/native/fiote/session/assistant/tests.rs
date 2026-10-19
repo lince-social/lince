@@ -99,6 +99,20 @@ pub(super) async fn fixture_named(
     tempfile::TempDir,
     String,
 ) {
+    fixture_named_in(name, None).await
+}
+
+pub(super) async fn fixture_named_in(
+    name: &str,
+    presentation: Option<App>,
+) -> (
+    App,
+    Entity,
+    Arc<cell::fiote::Host>,
+    Arc<Script>,
+    tempfile::TempDir,
+    String,
+) {
     let directory = tempfile::tempdir().unwrap();
     let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
     let record = engine
@@ -156,13 +170,19 @@ pub(super) async fn fixture_named(
         information: None,
         fiote: Some(host.clone()),
     };
-    let (mut app, panel, _) = super::super::tests::panel_fixture(Step::Closed);
+    let rendered = presentation.is_some();
+    let (mut app, panel, _) = match presentation {
+        Some(app) => super::super::tests::panel_fixture_in(app, Step::Closed),
+        None => super::super::tests::panel_fixture(Step::Closed),
+    };
     app.insert_resource(crate::native::app::CellHandle(runtime.clone()));
+    let wake = app
+        .world()
+        .get_resource::<crate::native::wake::WakeSignal>()
+        .cloned()
+        .unwrap_or_else(|| crate::native::wake::WakeSignal::new(|| {}));
     app.world_mut()
-        .insert_non_send(crate::native::cell_bridge::connect(
-            runtime,
-            crate::native::wake::WakeSignal::new(|| {}),
-        ));
+        .insert_non_send(crate::native::cell_bridge::connect(runtime, wake));
     {
         let mut panel = app.world_mut().get_mut::<Panel>(panel).unwrap();
         panel.binding.uid = record.clone();
@@ -170,6 +190,23 @@ pub(super) async fn fixture_named(
     }
     Open.apply(app.world_mut(), panel);
     app.world_mut().get_mut::<Node>(panel).unwrap().display = Display::Flex;
+    if rendered {
+        let wake = app
+            .world()
+            .get_resource::<crate::native::wake::WakeSignal>()
+            .cloned();
+        app.insert_resource(crate::native::sound::Audio::open(
+            directory.path().into(),
+            wake,
+        ));
+        app.add_plugins(crate::native::cell_bridge::CellBridgePlugin);
+        while app.plugins_state() == bevy::app::PluginsState::Adding {
+            bevy::tasks::tick_global_task_pools_on_main_thread();
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        app.finish();
+        app.cleanup();
+    }
     responses(&mut app).await;
     let owner = app
         .world_mut()

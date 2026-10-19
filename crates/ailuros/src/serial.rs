@@ -199,6 +199,35 @@ impl Session {
         Ok(status)
     }
 
+    pub fn begin_setup(
+        &mut self,
+        expected_public_key: &str,
+        cancellation: &Cancellation,
+    ) -> Result<Identity> {
+        let identity = self.identity(cancellation)?;
+        if identity.public_key != expected_public_key {
+            return Err(
+                "Device key changed; inspect the connected ESP before opening setup".into(),
+            );
+        }
+        if identity.provisioning {
+            return Ok(identity);
+        }
+        setup_line(cancellation, |active| {
+            self.port
+                .write_data_terminal_ready(active)
+                .map_err(|_| "USB setup could not be opened through this adapter".into())
+        })?;
+        let identity = self.identity(cancellation)?;
+        if identity.public_key != expected_public_key {
+            return Err("Device key changed while opening setup".into());
+        }
+        if !identity.provisioning {
+            return Err("This adapter did not open setup. Hold BOOT for two seconds on the running ESP, then release it.".into());
+        }
+        Ok(identity)
+    }
+
     pub fn configure(
         &mut self,
         configuration: &Configuration,
@@ -206,29 +235,24 @@ impl Session {
         cancellation: &Cancellation,
     ) -> Result<()> {
         configuration.validate()?;
-        let identity = self.identity(cancellation)?;
-        if identity.public_key != expected_public_key {
-            return Err(
-                "Device key changed; enroll the connected device before provisioning".into(),
-            );
-        }
+        let identity = self.begin_setup(expected_public_key, cancellation)?;
         if let crate::configuration::Workflow::Camera { width, .. } = &configuration.workflow {
             if identity.psram_bytes == 0 && *width > 320 {
                 return Err("Installed firmware reports no PSRAM; choose at most 320×240 or compile a verified PSRAM configuration".into());
             }
         }
-        if !identity.provisioning {
-            return Err("Hold BOOT for two seconds on the running ESP, then release it to enter provisioning mode".into());
-        }
         let mut data =
             serde_json::to_value(configuration).map_err(|_| "Cannot encode configuration")?;
         data["setup"]["key_epoch"] = Value::String(configuration.setup.key_epoch.to_string());
-        data["server"] = Value::String(
-            url::Url::parse(&configuration.server)
-                .map_err(|_| "Invalid destination")?
-                .origin()
-                .ascii_serialization(),
-        );
+        if let crate::configuration::Destination::Https { origin, .. } = &configuration.destination
+        {
+            data["destination"]["origin"] = Value::String(
+                url::Url::parse(origin)
+                    .map_err(|_| "Invalid destination")?
+                    .origin()
+                    .ascii_serialization(),
+            );
+        }
         let bootstrap = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|_| "Host clock is incorrect")?
@@ -250,6 +274,51 @@ impl Session {
         }
         Ok(())
     }
+
+    pub fn set_destination(
+        &mut self,
+        destination: &crate::configuration::Destination,
+        setup: &crate::configuration::Setup,
+        expected_public_key: &str,
+        cancellation: &Cancellation,
+    ) -> Result<()> {
+        destination.validate()?;
+        setup.validate()?;
+        self.begin_setup(expected_public_key, cancellation)?;
+        let mut data = json!({"destination":destination,"setup":setup});
+        data["setup"]["key_epoch"] = Value::String(setup.key_epoch.to_string());
+        if let crate::configuration::Destination::Https { origin, .. } = destination {
+            data["destination"]["origin"] = Value::String(
+                url::Url::parse(origin)
+                    .map_err(|_| "Invalid destination")?
+                    .origin()
+                    .ascii_serialization(),
+            );
+        }
+        let result = exchange(&mut self.port, "set_destination", data, cancellation)?;
+        if result["configured"] != true {
+            return Err("Device did not confirm destination storage".into());
+        }
+        Ok(())
+    }
+}
+
+fn setup_line(cancellation: &Cancellation, mut set: impl FnMut(bool) -> Result<()>) -> Result<()> {
+    cancellation.check()?;
+    if let Err(error) = set(true) {
+        let _ = set(false);
+        return Err(error);
+    }
+    let deadline = Instant::now() + Duration::from_millis(2400);
+    let result = (|| {
+        while Instant::now() < deadline {
+            cancellation.check()?;
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        Ok(())
+    })();
+    let released = set(false);
+    result.and(released)
 }
 
 fn exchange(
@@ -285,6 +354,8 @@ fn exchange_until(
     port.write_all(&bytes)
         .and_then(|()| port.flush())
         .map_err(|_| "Could not send provisioning request")?;
+    let mut retry_hello =
+        (operation == "hello").then_some(Instant::now() + Duration::from_millis(500));
     let mut line = Vec::new();
     let mut discarded = 0_usize;
     loop {
@@ -294,6 +365,12 @@ fn exchange_until(
                 "Device response timed out; install Lince firmware and check provisioning mode"
                     .into(),
             );
+        }
+        if retry_hello.is_some_and(|retry| Instant::now() >= retry) {
+            port.write_all(&bytes)
+                .and_then(|()| port.flush())
+                .map_err(|_| "Could not send provisioning request")?;
+            retry_hello = Some(Instant::now() + Duration::from_millis(500));
         }
         let mut byte = [0];
         match port.read(&mut byte) {
@@ -337,6 +414,47 @@ fn exchange_until(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cancelled_or_failed_setup_always_releases_the_boot_line() {
+        let cancellation = Cancellation::default();
+        let mut history = Vec::new();
+        assert!(
+            setup_line(&cancellation, |active| {
+                history.push(active);
+                if active {
+                    cancellation.cancel();
+                }
+                Ok(())
+            })
+            .is_err()
+        );
+        assert_eq!(history, [true, false]);
+        let cancellation = Cancellation::default();
+        history.clear();
+        assert!(
+            setup_line(&cancellation, |active| {
+                history.push(active);
+                if active {
+                    Err("setup line failed".into())
+                } else {
+                    Ok(())
+                }
+            })
+            .is_err()
+        );
+        assert_eq!(history, [true, false]);
+        cancellation.cancel();
+        history.clear();
+        assert!(
+            setup_line(&cancellation, |active| {
+                history.push(active);
+                Ok(())
+            })
+            .is_err()
+        );
+        assert!(history.is_empty());
+    }
 
     #[test]
     fn a_selected_port_has_one_owner_across_jobs() {
@@ -396,6 +514,72 @@ mod tests {
         let request: Value = serde_json::from_slice(&device.output).unwrap();
         assert_eq!(request["operation"], "hello");
         assert!(request["id"].as_str().unwrap().len() == 32);
+    }
+
+    #[test]
+    fn identity_retries_across_boot_without_repeating_configuration_writes() {
+        struct Booting {
+            requests: Vec<Value>,
+            response: std::io::Cursor<Vec<u8>>,
+        }
+        impl Write for Booting {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                let request: Value = serde_json::from_slice(bytes).unwrap();
+                self.requests.push(request.clone());
+                if self.requests.len() == 2 {
+                    self.response = std::io::Cursor::new(
+                        format!(
+                            "{}\n",
+                            json!({"id":request["id"],"ok":true,"data":{"ready":true}})
+                        )
+                        .into_bytes(),
+                    );
+                }
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        impl Read for Booting {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                if self.response.position() < self.response.get_ref().len() as u64 {
+                    return self.response.read(bytes);
+                }
+                std::thread::sleep(Duration::from_millis(10));
+                Err(std::io::ErrorKind::TimedOut.into())
+            }
+        }
+        let mut device = Booting {
+            requests: Vec::new(),
+            response: std::io::Cursor::new(Vec::new()),
+        };
+        assert_eq!(
+            exchange_until(
+                &mut device,
+                "hello",
+                Value::Null,
+                &Cancellation::default(),
+                Instant::now() + Duration::from_secs(3)
+            )
+            .unwrap()["ready"],
+            true,
+        );
+        assert_eq!(device.requests.len(), 2);
+        assert_eq!(device.requests[0], device.requests[1]);
+        device.requests.clear();
+        device.response = std::io::Cursor::new(Vec::new());
+        assert!(
+            exchange_until(
+                &mut device,
+                "configure",
+                Value::Null,
+                &Cancellation::default(),
+                Instant::now() + Duration::from_millis(600)
+            )
+            .is_err()
+        );
+        assert_eq!(device.requests.len(), 1);
     }
 
     #[test]

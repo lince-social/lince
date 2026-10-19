@@ -71,7 +71,7 @@ void lince_scalar_run(const cJSON *configuration) {
     response_t *response = calloc(1, sizeof(*response));
     if (!journal || !response || load(journal, setup) != ESP_OK) goto finished;
     char address[640];
-    snprintf(address, sizeof(address), "%s/ailuros/readings", text(configuration, "server"));
+    snprintf(address, sizeof(address), "%s/ailuros/readings", text(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), "origin"));
     unsigned backoff = 1;
     for (;;) {
         if (lince_wait_network() != ESP_OK || !lince_time_ready()) continue;
@@ -79,7 +79,7 @@ void lince_scalar_run(const cJSON *configuration) {
         if (journal->length == 0 && lince_clock_sync(configuration) != ESP_OK) { lince_status_set("clock-or-cell-verification-failed"); vTaskDelay(pdMS_TO_TICKS(5000)); continue; }
         if (journal->length == 0 && prepare(journal, workflow) != ESP_OK) break;
         memset(response, 0, sizeof(*response));
-        const char *ca = text(configuration, "ca_pem");
+        const char *ca = text(cJSON_GetObjectItemCaseSensitive(configuration, "destination"), "ca_pem");
         esp_http_client_config_t settings = { .url = address, .cert_pem = *ca ? ca : NULL,
             .crt_bundle_attach = *ca ? NULL : esp_crt_bundle_attach, .timeout_ms = 10000,
             .event_handler = response_event, .user_data = response, .disable_auto_redirect = true };

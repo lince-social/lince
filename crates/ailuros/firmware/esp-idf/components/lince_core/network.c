@@ -19,12 +19,14 @@
 #include "nvs.h"
 
 static EventGroupHandle_t network;
+static atomic_uint network_generation;
 static atomic_llong time_floor;
 static _Atomic(const char *) status = "unconfigured";
 
 void lince_status_set(const char *value) { atomic_store(&status, value); }
 const char *lince_status_get(void) { return atomic_load(&status); }
 bool lince_network_connected(void) { return network && (xEventGroupGetBits(network) & BIT0); }
+uint32_t lince_network_generation(void) { return atomic_load(&network_generation); }
 
 static void clock_sync(struct timeval *value) {
     long long floor = atomic_load(&time_floor);
@@ -36,15 +38,15 @@ static void clock_sync(struct timeval *value) {
 
 static void event(void *context, esp_event_base_t base, int32_t id, void *data) {
     (void)context;
-    (void)data;
     if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
+        if (!lince_network_connected() || !data || ((ip_event_got_ip_t *)data)->ip_changed) atomic_fetch_add(&network_generation, 1);
         xEventGroupSetBits(network, BIT0);
         wifi_ap_record_t access_point;
         if (esp_wifi_sta_get_ap_info(&access_point) == ESP_OK) {
             printf("{\"type\":\"wifi\",\"rssi\":%d,\"free_internal\":%u}\n", access_point.rssi, (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
         }
     }
-    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) { xEventGroupClearBits(network, BIT0); lince_status_set("wifi-disconnected"); }
+    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) { atomic_fetch_add(&network_generation, 1); xEventGroupClearBits(network, BIT0); lince_status_set("wifi-disconnected"); }
 }
 
 static void reconnect(void *context) {
@@ -138,8 +140,11 @@ static esp_err_t clock_response(esp_http_client_event_t *event) {
 
 esp_err_t lince_clock_sync(const cJSON *configuration) {
     char address[640];
-    const char *server = cJSON_GetObjectItemCaseSensitive(configuration, "server")->valuestring;
-    const char *ca = cJSON_GetObjectItemCaseSensitive(configuration, "ca_pem")->valuestring;
+    const cJSON *destination = cJSON_GetObjectItemCaseSensitive(configuration, "destination");
+    const cJSON *transport = cJSON_GetObjectItemCaseSensitive(destination, "transport");
+    if (!cJSON_IsString(transport) || strcmp(transport->valuestring, "https") != 0) return ESP_ERR_NOT_SUPPORTED;
+    const char *server = cJSON_GetObjectItemCaseSensitive(destination, "origin")->valuestring;
+    const char *ca = cJSON_GetObjectItemCaseSensitive(destination, "ca_pem")->valuestring;
     snprintf(address, sizeof(address), "%s/ailuros/clock", server);
     clock_response_t response = {0};
     esp_http_client_config_t settings = { .url = address, .cert_pem = *ca ? ca : NULL,

@@ -177,6 +177,9 @@ pub struct Content;
 pub(crate) struct Shell;
 
 #[derive(Component)]
+pub(crate) struct Modal;
+
+#[derive(Component)]
 struct Status;
 
 #[derive(Component)]
@@ -241,6 +244,8 @@ pub enum Intent {
     Act(engine::actions::Action),
     OpenLocation(String, Option<String>),
     CloseLocation,
+    OpenVisibility(String, nucleus::visibility::Data),
+    CloseVisibility,
     ObserveLocation,
     EditKarma(Option<String>),
     SaveKarma,
@@ -248,6 +253,7 @@ pub enum Intent {
     SaveFrequency,
     Weekday(nucleus::karma::CivilWeekday),
     Pair,
+    AssignLocalRole,
     JoinOrgan,
     Move(String, usize),
     Ask(engine::actions::Action),
@@ -843,6 +849,7 @@ fn identity_ready(
         state.identity != identity || state.organ.is_some()
     };
     if changed {
+        crate::visibility::close(world);
         crate::location::close(world);
         capture(world);
         if let Some(old) = world.resource::<Mobile>().organ.clone() {
@@ -1024,15 +1031,20 @@ fn draft_directory(state: &Mobile) -> PathBuf {
 }
 
 fn receive_message(world: &mut World, message: ServerMessage) {
-    if crate::workflows::receive(world, &message) || crate::map::receive(world, &message) {
+    if crate::workflows::receive(world, &message)
+        || crate::map::receive(world, &message)
+        || crate::visibility::receive(world, &message)
+    {
         return;
     }
     match &message {
-        ServerMessage::ActionOk { id, data, .. } if id.starts_with("location-ui_") => {
+        ServerMessage::ActionOk { id, data, .. }
+            if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") => {
             lince_interface::location::receive(world, id, Ok(data.clone().unwrap_or(Value::Null)));
             return;
         }
-        ServerMessage::Error { id, message, .. } if id.starts_with("location-ui_") => {
+        ServerMessage::Error { id, message, .. }
+            if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") => {
             lince_interface::location::receive(world, id, Err(message.clone()));
             return;
         }
@@ -1592,7 +1604,7 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             state.status = "Saving and closing this profile…".into();
         }
         Intent::Back => {
-            if crate::location::close(world) {
+            if crate::visibility::close(world) || crate::location::close(world) {
                 return Ok(());
             }
             back(world);
@@ -1672,6 +1684,16 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
                 },
                 None,
             )?;
+        }
+        Intent::AssignLocalRole => {
+            let state = world.resource::<Mobile>();
+            let user = state.draft("local-role", "person", "").trim().to_owned();
+            let role = state.draft("local-role", "role", "").trim().to_owned();
+            if user.is_empty() || role.is_empty() {
+                return Err("Choose an existing Person and local Role".into());
+            }
+            world.resource_mut::<Mobile>().deleting =
+                Some(Intent::Act(Action::AssignRole { user, role }));
         }
         Intent::SavePeerPort => {
             let port = world
@@ -1831,6 +1853,10 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
         }
         Intent::CloseLocation => {
             crate::location::close(world);
+        }
+        Intent::OpenVisibility(record, data) => crate::visibility::open(world, &record, data),
+        Intent::CloseVisibility => {
+            crate::visibility::close(world);
         }
         Intent::ObserveLocation => crate::location::open_observer(world),
         Intent::Ask(action) => world.resource_mut::<Mobile>().deleting = Some(Intent::Act(action)),
@@ -2037,6 +2063,9 @@ fn render(world: &mut World) {
             Some(Intent::Act(engine::actions::Action::RosterRevokeCell { .. })) => {
                 "Remove this device from the Organ roster?"
             }
+            Some(Intent::Act(engine::actions::Action::AssignRole { .. })) => {
+                "Assign this Person the local Role shown below? This replaces their local Roles on this device."
+            }
             Some(Intent::Act(engine::actions::Action::ForgetOrganContact { .. })) => {
                 "Forget this Organ contact?"
             }
@@ -2049,6 +2078,11 @@ fn render(world: &mut World) {
             _ => "Apply this change?",
         };
         label(world, content, message, 22.0);
+        if let Some(Intent::Act(engine::actions::Action::AssignRole { user, role })) =
+            world.resource::<Mobile>().deleting.clone()
+        {
+            label(world, content, &format!("Person: {user}\nLocal Role: {role}"), 18.0);
+        }
         if let Some(Intent::Act(engine::actions::Action::RosterJoinOrgan { code })) =
             world.resource::<Mobile>().deleting.clone()
             && let Ok(invite) = engine::pairing::EnrolmentInvite::decode(&code)

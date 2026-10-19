@@ -1,5 +1,6 @@
 Ailuros shared firmware and workflow starters: Lince contributors, MIT (LICENSE).
 ESP-IDF 5.5.2: Espressif Systems and contributors, Apache-2.0 (licenses/esp-idf-Apache-2.0.txt).
+Mbed TLS 3.6.5 as pinned by ESP-IDF 5.5.2: Mbed TLS contributors, Apache-2.0 selected from its dual license (licenses/mbedtls-LICENSE.txt). Shared identity signing and the ECDSA verification binding call this SDK implementation.
 ESP32 camera driver 2.1.0: Espressif Systems and contributors, Apache-2.0 (licenses/esp32-camera-Apache-2.0.txt).
 ESP WebSocket Client 1.6.1: Espressif Systems and contributors, Apache-2.0 (licenses/esp-websocket-client-Apache-2.0.txt).
 ESP JPEG 1.3.1: Espressif Systems and contributors, Apache-2.0 (licenses/esp-jpeg-Apache-2.0.txt).

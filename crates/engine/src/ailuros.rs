@@ -2,8 +2,10 @@ use crate::{Engine, EngineError, signal_endpoints, signal_streams::invalid};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use store::signal_endpoints::Endpoint;
+pub mod receiver;
 
-pub const STREAM_MAX_PAYLOAD: usize = 512 * 1024;
+pub const STREAM_MAX_PAYLOAD: usize = ailuros_protocol::MAX_DATA;
+pub const AUTH_MAX_PAYLOAD: usize = ailuros_protocol::MAX_AUTH_CONTROL;
 pub const STREAM_MAX_FPS: u32 = 15;
 pub const AUTH_TIMEOUT_SECONDS: u64 = 5;
 pub const STREAM_MAX_BYTES_PER_SECOND: usize = 2 * 1024 * 1024;
@@ -58,6 +60,12 @@ pub struct StreamIdentity {
     signal: String,
     key_epoch: i64,
     public_key: String,
+}
+
+impl StreamIdentity {
+    pub(crate) fn signal(&self) -> &str {
+        &self.signal
+    }
 }
 
 fn hexadecimal(value: &str) -> bool {

@@ -26,6 +26,7 @@ members = [
     "crates/media",
     "crates/xtask",
     "crates/ailuros",
+    "crates/ailuros/protocol",
     "crates/plugins",
     "crates/plugin-nostr",
     "crates/plugin-activitypub",
@@ -98,7 +99,7 @@ include_dir = "0.7.4"
 # Exact-pinned (Ontology §11 "Compatibility and revocation floor"): two Cells on
 # different iroh builds is a silent protocol change between peers. Bump
 # deliberately, never via a caret range.
-iroh = "=1.2.0"
+iroh = "=1.3.0"
 # mDNS left iroh core at 1.0; LAN discovery now needs this companion crate.
 iroh-mdns-address-lookup = "=0.5.0"
 # QR rendering for pairing codes. Server-side because the sand runs under a CSP

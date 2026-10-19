@@ -10,40 +10,12 @@ use axum::{
     http::{HeaderMap, StatusCode, header},
     response::Response,
 };
-use engine::signal_streams::{MAX_PAYLOAD, Metadata};
+use engine::signal_streams::{
+    MAX_PAYLOAD,
+    ingress::{Credential, PublisherSession},
+};
 use serde_json::json;
 use std::time::{Duration, Instant};
-
-enum Credential {
-    Token { value: String, epoch: i64 },
-    Device(engine::ailuros::StreamIdentity),
-}
-
-impl Credential {
-    async fn authorize(
-        &self,
-        state: &State,
-        signal: &str,
-    ) -> Result<store::signal_endpoints::Endpoint, engine::EngineError> {
-        match self {
-            Self::Token { value, epoch } => {
-                let endpoint = state.cell.engine.stream_token(signal, value).await?;
-                if endpoint.credential_epoch != *epoch {
-                    return Err(engine::signal_streams::invalid("Credential changed"));
-                }
-                Ok(endpoint)
-            }
-            Self::Device(identity) => state.cell.engine.authorize_ailuros_stream(identity).await,
-        }
-    }
-
-    fn max_payload(&self) -> usize {
-        match self {
-            Self::Token { .. } => MAX_PAYLOAD,
-            Self::Device(_) => engine::ailuros::STREAM_MAX_PAYLOAD,
-        }
-    }
-}
 
 fn denied() -> Failure {
     (StatusCode::FORBIDDEN, "Signal stream access refused".into())
@@ -83,7 +55,9 @@ pub(crate) async fn publish(
         value,
         epoch: endpoint.credential_epoch,
     };
-    let producer = open_publisher(&state, &signal).await?;
+    let session = PublisherSession::open(&state.cell.engine, &signal, credential)
+        .await
+        .map_err(open_failure)?;
     let permit = state
         .connections
         .clone()
@@ -94,7 +68,7 @@ pub(crate) async fn publish(
         .max_frame_size(MAX_PAYLOAD)
         .on_upgrade(move |socket| async move {
             let _permit = permit;
-            run_publisher(state, signal, credential, producer, socket).await;
+            run_publisher(state, session, socket).await;
         }))
 }
 
@@ -132,7 +106,7 @@ pub(crate) async fn ailuros_publish(
                 "protocol":"lince-ailuros-stream-v1", "server_time":nucleus::execution::now().timestamp()})).await { return; }
             let proof = tokio::time::timeout(Duration::from_secs(engine::ailuros::AUTH_TIMEOUT_SECONDS), async {
                 let Some(Ok(Message::Text(text))) = socket.recv().await else { return None; };
-                if text.len() > 2048 { return None; }
+                if text.len() > engine::ailuros::AUTH_MAX_PAYLOAD { return None; }
                 let proof: engine::ailuros::StreamProof = serde_json::from_str(&text).ok()?;
                 state.cell.engine.authenticate_ailuros_stream(&proof, &challenge, &signal).await.ok()
             }).await.ok().flatten();
@@ -141,105 +115,63 @@ pub(crate) async fn ailuros_publish(
                 let _ = send_message(&mut socket, Message::Close(None)).await;
                 return;
             };
-            let Ok(producer) = open_publisher(&state, &signal).await else {
+            let Ok(session) = PublisherSession::open(&state.cell.engine, &signal, Credential::Device(identity)).await else {
                 let _ = send(&mut socket, json!({"type":"error","message":"Signal producer unavailable"})).await;
                 let _ = send_message(&mut socket, Message::Close(None)).await;
                 return;
             };
             if !send(&mut socket, json!({"type":"authenticated", "max_frame_bytes":engine::ailuros::STREAM_MAX_PAYLOAD,
                 "max_fps":engine::ailuros::STREAM_MAX_FPS, "max_width":1920, "max_height":1080})).await { return; }
-            run_publisher(state, signal, Credential::Device(identity), producer, socket).await;
+            run_publisher(state, session, socket).await;
         }))
 }
 
-async fn open_publisher(
-    state: &State,
-    signal: &str,
-) -> Result<engine::signal_streams::Publisher, Failure> {
-    let channel = state
-        .cell
-        .engine
-        .stream_channel(signal, None)
-        .await
-        .map_err(|_| denied())?;
-    if !channel.config.source_url.is_empty() {
-        return Err(denied());
+fn open_failure(error: engine::EngineError) -> Failure {
+    match error {
+        engine::EngineError::Conflict {
+            code: "signal_producer_busy",
+            ..
+        } => (StatusCode::CONFLICT, "Signal already has a producer".into()),
+        _ => denied(),
     }
-    channel
-        .publisher()
-        .map_err(|_| (StatusCode::CONFLICT, "Signal already has a producer".into()))
 }
 
-async fn run_publisher(
-    state: State,
-    signal: String,
-    credential: Credential,
-    producer: engine::signal_streams::Publisher,
-    mut socket: WebSocket,
-) {
-    let mut producer = producer;
-    let mut metadata: Option<Metadata> = None;
+async fn run_publisher(state: State, mut session: PublisherSession, mut socket: WebSocket) {
+    let mut demand = session.demand_changes();
     let mut timer = tokio::time::interval(Duration::from_secs(1));
-    let mut last_received = Instant::now();
-    let mut window = Instant::now();
-    let mut count = 0;
-    let mut budget = engine::ailuros::StreamBudget::new(Instant::now());
-    let mut demand_key = (String::new(), usize::MAX);
     let mut stop = state.stop.clone();
     let mut authority = state.cell.engine.watch_query_changes();
     loop {
-        let snapshot = producer.snapshot();
-        if snapshot.status == "Configuration changed" {
-            break;
-        }
-        let key = (snapshot.epoch.clone(), snapshot.consumers);
-        if demand_key != key {
-            if !send(&mut socket, json!({"type":"demand", "epoch":snapshot.epoch,"consumers":snapshot.consumers,"active":snapshot.consumers > 0})).await { break; }
-            if demand_key.0 != key.0 {
-                metadata = None;
+        match session.demand() {
+            Ok(Some(message)) => {
+                if !send(&mut socket, message).await {
+                    break;
+                }
             }
-            demand_key = key;
+            Ok(None) => {}
+            Err(_) => break,
         }
         tokio::select! {
             _ = stop.changed() => break,
             _ = authority.changed() => {
-                if credential.authorize(&state, &signal).await.is_err() { break; }
+                if session.authorize(&state.cell.engine).await.is_err() { break; }
             },
-            _ = producer.demand.changed() => {},
+            _ = demand.changed() => {},
             _ = timer.tick() => {
-                if last_received.elapsed() > Duration::from_secs(30) { break; }
-                if credential.authorize(&state, &signal).await.is_err() { break; }
+                if session.expired() { break; }
+                if session.authorize(&state.cell.engine).await.is_err() { break; }
                 if !send_message(&mut socket, Message::Ping(Vec::new().into())).await { break; }
             }
             incoming = socket.recv() => {
                 let Some(Ok(message)) = incoming else { break; };
-                last_received = Instant::now();
-                    if window.elapsed() >= Duration::from_secs(1) { window = Instant::now(); count = 0; }
-                count += 1;
-                if count > 150 { break; }
+                if session.received(Instant::now()).is_err() { break; }
                 match message {
                     Message::Text(text) => {
-                        if text.len() > 4096 || metadata.is_some() { break; }
-                        let Ok(value) = serde_json::from_str::<Metadata>(&text) else { break; };
-                        metadata = Some(value);
+                        if session.metadata(&text).is_err() { break; }
                     }
                     Message::Binary(bytes) => {
-                        let Some(value) = metadata.take() else { break; };
-                        let accepted_key = (value.epoch.clone(), value.sequence);
-                        if bytes.len() > credential.max_payload() { break; }
-                            if matches!(&credential, Credential::Device(_)) && budget.accept(bytes.len(), Instant::now()).is_err() { break; }
-                        if matches!(&credential, Credential::Device(_)) {
-                            let now = nucleus::execution::now().timestamp_millis();
-                            if value.captured_at < now.saturating_sub(120_000) || value.captured_at > now.saturating_add(30_000) { break; }
-                        }
-                        let result = state.cell.engine.access_scope(false, async {
-                            let current = credential.authorize(&state, &signal).await?;
-                            if value.content_type == "text/decimal" { engine::signal_streams::validate_scalar_endpoint(&current, &bytes)?; }
-                            if producer.snapshot().consumers == 0 { return Ok(false); }
-                            producer.publish(value, bytes.to_vec()).await
-                        }).await;
-                        match result {
-                            Ok(retained) => { if !send(&mut socket, json!({"type":"published","epoch":accepted_key.0,"sequence":accepted_key.1,"retained":retained})).await { break; } }
+                        match session.publish(&state.cell.engine, &bytes).await {
+                            Ok(receipt) => { if !send(&mut socket, receipt).await { break; } }
                             Err(_) => { let _ = send(&mut socket, json!({"type":"error","message":"Invalid frame, type, epoch or sequence"})).await; break; }
                         }
                     }

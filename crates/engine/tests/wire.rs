@@ -63,6 +63,9 @@ async fn known_peer_pushes_ops_over_iroh() {
 
     know(&a, &b_organ, &b_wire.node_id().to_string()).await;
     know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, false, true)
+        .await
+        .expect("receive policy");
 
     let b_addr = loopback(&b_wire);
     let serving = tokio::spawn(async move { b_wire.serve().await });
@@ -599,6 +602,9 @@ async fn ops_for_an_unreachable_peer_stay_queued_and_flush_later() {
 
     know(&a, &b_organ, &b_wire.node_id().to_string()).await;
     know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, false, true)
+        .await
+        .expect("receive policy");
     store::organs::set_sync_policy(&a.store.pool, &b_organ, true, true)
         .await
         .expect("policy");

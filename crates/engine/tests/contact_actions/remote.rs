@@ -16,8 +16,10 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicU8, AtomicUsize, Ordering},
     },
-    time::Duration,
 };
+
+#[cfg(feature = "trust-test-hooks")]
+use std::time::Duration;
 
 struct ReaderNetwork {
     source: String,

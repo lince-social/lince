@@ -9,6 +9,13 @@ impl Engine {
         settings.validate().map_err(invalid)?;
         self.location_manage(&settings.controller_uid, &settings.record_uid, actor)
             .await?;
+        self.require_permission(Some(&settings.controller_uid), "record:update")
+            .await?;
+        self.refuse_unreadable(
+            Some(&settings.controller_uid),
+            std::slice::from_ref(&settings.record_uid),
+        )
+        .await?;
         if self.location_authority(&settings.record_uid).await? != self.location_node_id()? {
             return Err(denied("Location authority changed"));
         }

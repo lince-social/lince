@@ -52,12 +52,17 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
 }
 
 pub(super) fn panel_fixture(step: Step) -> (App, Entity, FioteStatus) {
-    let mut app = App::new();
+    panel_fixture_in(App::new(), step)
+}
+
+pub(super) fn panel_fixture_in(mut app: App, step: Step) -> (App, Entity, FioteStatus) {
     app.init_resource::<Assets<Font>>()
         .init_resource::<crate::native::theme::Typography>()
         .init_resource::<ButtonInput<KeyCode>>()
-        .add_message::<crate::native::cell_bridge::CellMessage>()
-        .add_plugins(Plugin);
+        .add_message::<crate::native::cell_bridge::CellMessage>();
+    if !app.is_plugin_added::<Plugin>() {
+        app.add_plugins(Plugin);
+    }
     let world = app.world_mut();
     let parent = world.spawn(Node::default()).id();
     let binding = RecordBinding {

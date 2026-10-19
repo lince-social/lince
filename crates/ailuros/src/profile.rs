@@ -69,7 +69,7 @@ impl BoardProfile {
             || self.reference.len() > 2048
             || self.reference.chars().any(char::is_control)
         {
-            return Err("Choose an ESP32-S3 profile with 4, 8, 16 or 32 MiB minimum physical flash; installation retains the protected 4 MiB application layout".into());
+            return Err("Choose an ESP32-S3 profile with 4, 8, 16 or 32 MiB minimum physical flash; installation must retain the protected NVS layout".into());
         }
         if let Some(psram) = &self.psram
             && ![40, 80].contains(&psram.speed_mhz)

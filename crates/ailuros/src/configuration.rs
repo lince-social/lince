@@ -104,14 +104,64 @@ pub enum Workflow {
     },
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "transport", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum Destination {
+    Iroh { endpoint_id: String },
+    Https { origin: String, ca_pem: String },
+}
+
+impl Destination {
+    pub fn validate(&self) -> Result<()> {
+        match self {
+            Self::Iroh { endpoint_id } => {
+                if endpoint_id.len() != 64
+                    || !endpoint_id
+                        .bytes()
+                        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                {
+                    return Err("Select the destination Cell's iroh identity".into());
+                }
+            }
+            Self::Https { origin, ca_pem } => {
+                if origin.len() > 512 || origin.chars().any(char::is_control) {
+                    return Err("Invalid destination address".into());
+                }
+                let url = url::Url::parse(origin)
+                    .map_err(|_| "Use the destination Cell's HTTPS origin")?;
+                if url.scheme() != "https"
+                    || url.origin().ascii_serialization().len() > 512
+                    || url.host_str().is_none()
+                    || !url.username().is_empty()
+                    || url.password().is_some()
+                    || url.path() != "/"
+                    || url.query().is_some()
+                    || url.fragment().is_some()
+                {
+                    return Err(
+                        "Use an HTTPS origin without credentials, path, query or fragment".into(),
+                    );
+                }
+                if ca_pem.len() > 4096
+                    || (!ca_pem.is_empty()
+                        && (!ca_pem.starts_with("-----BEGIN CERTIFICATE-----")
+                            || !ca_pem.trim_end().ends_with("-----END CERTIFICATE-----")))
+                {
+                    return Err("Provide a PEM CA certificate or use the firmware CA bundle".into());
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     pub version: u32,
     pub ssid: String,
     pub password: String,
-    pub server: String,
-    pub ca_pem: String,
+    pub destination: Destination,
     pub time_server: String,
     pub setup: Setup,
     pub workflow: Workflow,
@@ -134,31 +184,11 @@ impl Configuration {
         {
             return Err("Use an open network or a valid WPA password".into());
         }
-        if self.server.len() > 512 || self.server.chars().any(char::is_control) {
-            return Err("Invalid destination address".into());
-        }
-        let url =
-            url::Url::parse(&self.server).map_err(|_| "Use the destination Cell's HTTPS origin")?;
-        if url.scheme() != "https"
-            || url.origin().ascii_serialization().len() > 512
-            || url.host_str().is_none()
-            || !url.username().is_empty()
-            || url.password().is_some()
-            || url.path() != "/"
-            || url.query().is_some()
-            || url.fragment().is_some()
+        self.destination.validate()?;
+        if matches!(self.destination, Destination::Iroh { .. })
+            && !matches!(self.workflow, Workflow::Camera { .. })
         {
-            return Err("Use an HTTPS origin without credentials, path, query or fragment".into());
-        }
-        if self.ca_pem.len() > 4096
-            || (!self.ca_pem.is_empty()
-                && (!self.ca_pem.starts_with("-----BEGIN CERTIFICATE-----")
-                    || !self
-                        .ca_pem
-                        .trim_end()
-                        .ends_with("-----END CERTIFICATE-----")))
-        {
-            return Err("Provide a PEM CA certificate or use the firmware CA bundle".into());
+            return Err("The iroh firmware currently supports the camera workflow".into());
         }
         if self.time_server.is_empty()
             || self.time_server.len() > 128
@@ -269,8 +299,10 @@ mod tests {
             version: 1,
             ssid: "Camera Wi-Fi".into(),
             password: "password-for-test".into(),
-            server: "https://cell.example".into(),
-            ca_pem: String::new(),
+            destination: Destination::Https {
+                origin: "https://cell.example".into(),
+                ca_pem: String::new(),
+            },
             time_server: "pool.ntp.org".into(),
             setup: Setup {
                 audience: "00".repeat(32),
@@ -286,6 +318,32 @@ mod tests {
     }
 
     #[test]
+    fn destination_choices_are_typed_and_iroh_needs_no_https_material() {
+        let destination = Destination::Iroh {
+            endpoint_id: "ab".repeat(32),
+        };
+        destination.validate().unwrap();
+        let encoded = serde_json::to_value(&destination).unwrap();
+        assert!(encoded.get("origin").is_none());
+        assert!(encoded.get("ca_pem").is_none());
+        assert!(
+            serde_json::from_value::<Destination>(serde_json::json!({
+                "transport":"iroh","endpoint_id":"ab".repeat(32),"origin":"https://wrong.example",
+            }))
+            .is_err()
+        );
+        for endpoint_id in ["", "not-a-key", &"AB".repeat(32), &"ab".repeat(33)] {
+            assert!(
+                Destination::Iroh {
+                    endpoint_id: endpoint_id.into()
+                }
+                .validate()
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
     fn refuses_untrusted_destinations_and_unbounded_settings() {
         let mut config = config();
         config.validate().unwrap();
@@ -295,10 +353,16 @@ mod tests {
             "https://cell.example/path",
             "https://cell.example/?token=secret",
         ] {
-            config.server = server.into();
+            config.destination = Destination::Https {
+                origin: server.into(),
+                ca_pem: String::new(),
+            };
             assert!(config.validate().is_err());
         }
-        config.server = "https://cell.example".into();
+        config.destination = Destination::Https {
+            origin: "https://cell.example".into(),
+            ca_pem: String::new(),
+        };
         config.password = "short".into();
         assert!(config.validate().is_err());
         config.password.clear();

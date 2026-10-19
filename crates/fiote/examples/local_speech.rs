@@ -7,12 +7,24 @@ use std::{
     },
 };
 
+fn memory() -> Option<Vec<String>> {
+    std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .map(|status| {
+            status
+                .lines()
+                .filter(|line| line.starts_with("VmRSS:") || line.starts_with("VmHWM:"))
+                .map(str::to_owned)
+                .collect()
+        })
+}
+
 #[tokio::main]
 async fn main() -> Result<(), String> {
     let mut arguments = std::env::args_os().skip(1);
-    let command = arguments
-        .next()
-        .ok_or("Use install <model-cache> [archive] or recognize <model-cache> <wav>...")?;
+    let command = arguments.next().ok_or(
+        "Use install <model-cache> [archive] or recognize/recognize-unload <model-cache> <wav>...",
+    )?;
     let root = PathBuf::from(
         arguments
             .next()
@@ -59,7 +71,7 @@ async fn main() -> Result<(), String> {
                 serde_json::json!({"path":path,"bytes":bytes.len(),"sha256":models::digest(&bytes)})
             );
         }
-    } else if command == "recognize" {
+    } else if command == "recognize" || command == "recognize-unload" {
         let mut count = 0;
         for path in arguments {
             let path = PathBuf::from(path);
@@ -82,19 +94,10 @@ async fn main() -> Result<(), String> {
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|error| error.to_string())?;
             let result = recognizer.transcribe(&samples, &cancelled)?;
-            let memory = std::fs::read_to_string("/proc/self/status")
-                .ok()
-                .map(|status| {
-                    status
-                        .lines()
-                        .filter(|line| line.starts_with("VmRSS:") || line.starts_with("VmHWM:"))
-                        .map(str::to_owned)
-                        .collect::<Vec<_>>()
-                });
             println!(
                 "{}",
                 serde_json::to_string(
-                    &serde_json::json!({"fixture":path,"result":result,"memory":memory})
+                    &serde_json::json!({"fixture":path,"result":result,"memory":memory()})
                 )
                 .map_err(|error| error.to_string())?
             );
@@ -104,8 +107,22 @@ async fn main() -> Result<(), String> {
             return Err("Choose at least one recorded English fixture.".into());
         }
         models::check_cancel(&cancelled)?;
+        if command == "recognize-unload" {
+            let started = std::time::Instant::now();
+            recognizer.unload();
+            assert!(!recognizer.loaded());
+            println!(
+                "{}",
+                serde_json::json!({"phase":"model_unloaded","elapsed_ms":started.elapsed().as_millis(),"loaded":recognizer.loaded(),"memory":memory()})
+            );
+            drop(recognizer);
+            println!(
+                "{}",
+                serde_json::json!({"phase":"recognizer_dropped","memory":memory()})
+            );
+        }
     } else {
-        return Err("Use install or recognize.".into());
+        return Err("Use install, inspect, recognize or recognize-unload.".into());
     }
     Ok(())
 }

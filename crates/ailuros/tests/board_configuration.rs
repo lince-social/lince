@@ -66,6 +66,11 @@ fn board_switches_and_custom_defaults_cannot_reuse_stale_sdk_configuration() {
     text.push_str("CONFIG_ESP_MAIN_TASK_STACK_SIZE=20480\n");
     fs::write(defaults, text).unwrap();
     assert_ne!(configure(project).1, base_config);
+    let before = configure(project).1;
+    let camera_options = project.join("components/lince_camera/Kconfig");
+    let text = fs::read_to_string(&camera_options).unwrap();
+    fs::write(camera_options, text.replace("default 0", "default 8000000")).unwrap();
+    assert_ne!(configure(project).1, before);
 }
 
 #[test]

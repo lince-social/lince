@@ -1,4 +1,5 @@
 use super::*;
+use engine::signal_streams::Metadata;
 use engine::{actions::Action, signal_endpoints::Request};
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::{

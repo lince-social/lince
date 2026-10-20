@@ -1,4 +1,5 @@
 use super::*;
+#[path = "renderer/capture.rs"]
 pub(crate) mod capture;
 use crate::server::SurfaceNode;
 use smithay::{
@@ -108,6 +109,7 @@ impl Composition {
         Ok(Self { reactor: Some(crate::graphics::wait::Reactor::new(move || wake.ring())?), ..Default::default() })
     }
 
+    #[cfg(feature = "session")]
     pub(crate) fn ready(&self) -> bool {
         self.submitted.as_ref().is_none_or(|sync| sync.is_reached())
     }
@@ -519,6 +521,8 @@ impl Composition {
                         &[],
                         Transform::Normal,
                         1.0,
+                        None,
+                        &[],
                     )
                     .map_err(error)?;
             }

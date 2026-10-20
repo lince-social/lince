@@ -116,7 +116,7 @@ impl Reactor {
     }
 
     fn register(&self, target: Target) -> io::Result<Watch> {
-        self.count.fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| (count < 256).then_some(count + 1))
+        self.count.try_update(Ordering::AcqRel, Ordering::Acquire, |count| (count < 256).then_some(count + 1))
             .map_err(|_| io::Error::other("Park fence watch limit reached"))?;
         let cancelled = Arc::new(AtomicBool::new(false));
         let completed = Arc::new(AtomicBool::new(false));

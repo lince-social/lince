@@ -99,7 +99,7 @@ impl Driver {
     pub(super) fn track(&self, submission: wgpu::SubmissionIndex) -> Result<Completion> {
         let completion = Completion { result: Arc::new(Mutex::new(None)) };
         let sender = self.sender.as_ref().ok_or_else(|| ProbeFailure::at("gpu_completion", "Completion driver stopped"))?;
-        self.count.fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| (count < 32).then_some(count + 1))
+        self.count.try_update(Ordering::AcqRel, Ordering::Acquire, |count| (count < 32).then_some(count + 1))
             .map_err(|_| ProbeFailure::at("gpu_completion", "GPU completion limit reached"))?;
         sender.try_send(Job { count: self.count.clone(), started: Instant::now(), submission, completion: completion.clone(), notify: std::thread::current() })
             .map_err(|_| ProbeFailure::at("gpu_completion", "GPU completion queue is full or disconnected"))?;

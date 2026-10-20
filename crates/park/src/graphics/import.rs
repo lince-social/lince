@@ -196,9 +196,11 @@ impl VulkanRenderer {
             });
         }
         self.queue.submit([encoder.finish()]);
-        let destination = unsafe { texture.as_hal::<Vulkan>() }
-            .ok_or_else(|| ProbeFailure::at("vulkan_import_copy", "Vulkan HAL unavailable"))?;
-        let destination = unsafe { destination.raw_handle() };
+        let destination = {
+            let destination = unsafe { texture.as_hal::<Vulkan>() }
+                .ok_or_else(|| ProbeFailure::at("vulkan_import_copy", "Vulkan HAL unavailable"))?;
+            unsafe { destination.raw_handle() }
+        };
         self.submit_raw("vulkan_import_copy", |command| {
             let range = vk::ImageSubresourceRange::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)

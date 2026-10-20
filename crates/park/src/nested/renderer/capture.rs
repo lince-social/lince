@@ -335,7 +335,7 @@ impl Composition {
                         self.draw_scaled(&mut frame, &view.scene.drag, mapping.point(view.scene.cursor.pointer), mapping.scale, damage)?;
                     }
                 }
-                frame.finish().map_err(error)?;
+                let _ = frame.finish().map_err(error)?;
             }
             mapping = renderer.copy_framebuffer(&target, Rect::from_size((job.size[0], job.size[1]).into()), Fourcc::Argb8888).map_err(error)?;
             sync = renderer.render(&mut target, size, Transform::Normal).map_err(error)?.finish().map_err(error)?;
@@ -354,7 +354,7 @@ impl Composition {
         }
         if let Some((_, clip)) = view.scene.clips.iter().find(|(id, _)| *id == view.id) {
             let clip = mapping.rectangle(*clip);
-            frame.render_texture_from_to(native, Rect::from_size(native.size().to_f64()), clip, &[clip], &[], Transform::Normal, 1.0).map_err(error)?;
+            frame.render_texture_from_to(native, Rect::from_size(native.size().to_f64()), clip, &[clip], &[], Transform::Normal, 1.0, None, &[]).map_err(error)?;
         }
         for popup in view.scene.popups.iter().filter(|popup| popup.output == view.id && matches!(popup.owner, PopupOwner::Application(_) | PopupOwner::Native)) { self.capture_popup_draw(frame, popup, mapping, damage)?; }
         for layer in view.scene.layers.iter().filter(|layer| layer.output == view.id && (layer.layer == Layer::Overlay || !fullscreen && layer.layer == Layer::Top)) {

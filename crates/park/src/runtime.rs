@@ -175,7 +175,7 @@ impl CanvasWorker {
         let serial =
             match self
                 .next_input
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |serial| {
+                .try_update(Ordering::Relaxed, Ordering::Relaxed, |serial| {
                     serial.checked_add(1)
                 }) {
                 Ok(serial) => serial,
@@ -201,7 +201,7 @@ impl CanvasWorker {
         }
         let serial = self
             .next_pointer
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |serial| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |serial| {
                 serial.checked_add(1)
             })
             .map_err(|_| std::io::Error::other("Park pointer serials exhausted"))?;

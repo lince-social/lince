@@ -50,7 +50,7 @@ impl InputMethodHandler for State {
     fn popup_repositioned(&mut self, surface: InputPopup) {
         let area = surface.text_input_rectangle();
         let origin = [area.loc.x, area.loc.y.saturating_add(area.size.h)];
-        surface.set_location(origin.into());
+        surface.set_location((origin[0], origin[1]).into());
         surface.surface_role.text_input_rectangle(area.loc.x.saturating_sub(origin[0]), area.loc.y.saturating_sub(origin[1]), area.size.w, area.size.h);
         self.presentation_changed();
     }
@@ -64,7 +64,7 @@ impl InputMethodHandler for State {
                 .layer_geometry(layer).unwrap_or_default();
         }
         self.id(parent).and_then(|id| self.windows.get(&id))
-            .map(|window| Rectangle::from_size(window.configured_size.into()))
+            .map(|window| Rectangle::from_size((window.configured_size[0], window.configured_size[1]).into()))
             .unwrap_or_default()
     }
 }
@@ -78,8 +78,8 @@ impl State {
             .map(|popup| {
                 let nodes = self.nodes(popup.wl_surface());
                 let size = nodes.iter().fold([1i32, 1i32], |size, node| [
-                    size[0].max(node.origin[0].saturating_add(node.layout.size[0])),
-                    size[1].max(node.origin[1].saturating_add(node.layout.size[1])),
+                    size[0].max(node.origin[0].saturating_add(node.layout.size[0].ceil() as i32)),
+                    size[1].max(node.origin[1].saturating_add(node.layout.size[1].ceil() as i32)),
                 ]);
                 let caret = popup.text_input_rectangle();
                 let bounds = if self.native_surface.as_ref() == Some(root) {
@@ -100,7 +100,7 @@ impl State {
                 let origin = bounds.map_or([popup.location().x, popup.location().y], |bounds|
                     placement([caret.loc.x, caret.loc.y, caret.size.w, caret.size.h], size, bounds));
                 if [popup.location().x, popup.location().y] != origin {
-                    popup.set_location(origin.into());
+                    popup.set_location((origin[0], origin[1]).into());
                     popup.surface_role.text_input_rectangle(caret.loc.x.saturating_sub(origin[0]), caret.loc.y.saturating_sub(origin[1]), caret.size.w, caret.size.h);
                 }
                 PopupSnapshot { surface: popup.wl_surface().clone(), origin, nodes }

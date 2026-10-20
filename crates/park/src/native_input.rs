@@ -1,4 +1,4 @@
-use bevy::{asset::AssetId, prelude::*, text::{EditableText, FontCx, LayoutCx, PreeditCursor, TextEdit}};
+use bevy::{asset::AssetId, ecs::entity_disabling::Disabled, prelude::*, text::{EditableText, FontCx, LayoutCx, PreeditCursor, TextEdit}};
 use lince_interface::native;
 use std::{collections::{HashMap, VecDeque}, hash::Hasher, num::NonZeroUsize};
 
@@ -66,7 +66,7 @@ fn allowed(world: &World, entity: Entity) -> bool {
     world.get::<EditableText>(entity).is_some()
         && world.get::<Disabled>(entity).is_none()
         && world.get::<bevy::ui::InteractionDisabled>(entity).is_none()
-        && world.get::<InheritedVisibility>(entity).is_none_or(InheritedVisibility::get)
+        && world.get::<InheritedVisibility>(entity).is_none_or(|visibility| visibility.get())
         && (!world.get::<native::record_binding::TextBinding>(entity).is_some()
             || native::record_binding::can_edit(world, entity))
 }

@@ -14,9 +14,10 @@ trash/
 !.agents/skills/
 *.gcloud
 *.glb
+!institute/assets/characters/fiote/fiote.glb
 *.glTF
 *.gltf
-!crates/sandbox/fixtures/open_scene.gltf
+!crates/interface/fixtures/open_scene.gltf
 institute/assets/3DGS/*
 testsync/
 /simulation-runs/

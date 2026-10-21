@@ -96,6 +96,8 @@
           '';
           postFixup = ''
             wrapProgram "$out/bin/lince" \
+              --set-default GBM_BACKENDS_PATH "${pkgs.mesa}/lib/gbm" \
+              --set-default __EGL_VENDOR_LIBRARY_DIRS "${pkgs.mesa}/share/glvnd/egl_vendor.d" \
               --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath libraries}" \
               --prefix PATH : "${pkgs.lib.makeBinPath (runtimeTools pkgs)}"
           '';
@@ -950,6 +952,12 @@
                 wrapProgram "$out/bin/lince" ${
                   lib.escapeShellArgs (
                     lib.optionals ui [
+                      "--set-default"
+                      "GBM_BACKENDS_PATH"
+                      "${pkgs.mesa}/lib/gbm"
+                      "--set-default"
+                      "__EGL_VENDOR_LIBRARY_DIRS"
+                      "${pkgs.mesa}/share/glvnd/egl_vendor.d"
                       "--prefix"
                       "LD_LIBRARY_PATH"
                       ":"
@@ -1385,6 +1393,7 @@
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export __EGL_VENDOR_LIBRARY_DIRS="''${__EGL_VENDOR_LIBRARY_DIRS:-${pkgs.mesa}/share/glvnd/egl_vendor.d}"
+              export GBM_BACKENDS_PATH="''${GBM_BACKENDS_PATH:-${pkgs.mesa}/lib/gbm}"
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
                   interfaceLinuxBuildInputs

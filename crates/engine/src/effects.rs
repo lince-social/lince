@@ -32,7 +32,10 @@ impl Engine {
                 return;
             }
             drop(recovery);
-            if let Err(error) = self.recover_commands().await { tracing::warn!(%error, "Could not recover command evaluations"); return; }
+            if let Err(error) = self.recover_commands().await {
+                tracing::warn!(%error, "Could not recover command evaluations");
+                return;
+            }
             let mut commands_changed = self.effects_changed.subscribe();
             let work = async {
                 loop {
@@ -91,7 +94,9 @@ impl Engine {
             && store::misc::due_effects(&self.store.pool)
                 .await?
                 .first()
-                .is_none_or(|effect| !database_effect(effect) && !self.controlled_command_effect(effect));
+                .is_none_or(|effect| {
+                    !database_effect(effect) && !self.controlled_command_effect(effect)
+                });
         Ok(DatabaseEffects {
             outcomes,
             pending,
@@ -99,7 +104,11 @@ impl Engine {
         })
     }
 
-    async fn run_effects(&self, database_only: bool, command_lane: Option<bool>) -> Result<Vec<EffectOutcome>, EngineError> {
+    async fn run_effects(
+        &self,
+        database_only: bool,
+        command_lane: Option<bool>,
+    ) -> Result<Vec<EffectOutcome>, EngineError> {
         let guard = self.effect_execution.lock().await;
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
@@ -107,9 +116,14 @@ impl Engine {
         drop(guard);
         for effect in effects {
             let command = matches!(effect.kind.as_str(), "command" | "signal" | "saved-command");
-            if command_lane.is_some_and(|lane| lane != command) { continue; }
+            if command_lane.is_some_and(|lane| lane != command) {
+                continue;
+            }
             crate::rule_runtime::execution_checkpoint(false).await?;
-            if database_only && !database_effect(&effect) && !self.controlled_command_effect(&effect) {
+            if database_only
+                && !database_effect(&effect)
+                && !self.controlled_command_effect(&effect)
+            {
                 break;
             }
             if !store::misc::claim_effect(&self.store.pool, &effect.uid).await? {
@@ -117,10 +131,19 @@ impl Engine {
             }
             let execution = match effect.payload.get("occurrence") {
                 Some(occurrence) => {
-                    let occurrence = serde_json::from_value(occurrence.clone()).map_err(EngineError::Json)?;
-                    crate::rule_runtime::EFFECT_OCCURRENCE.scope(occurrence, self.execute_effect(&effect.uid, &effect.kind, &effect.payload)).await
+                    let occurrence =
+                        serde_json::from_value(occurrence.clone()).map_err(EngineError::Json)?;
+                    crate::rule_runtime::EFFECT_OCCURRENCE
+                        .scope(
+                            occurrence,
+                            self.execute_effect(&effect.uid, &effect.kind, &effect.payload),
+                        )
+                        .await
                 }
-                None => self.execute_effect(&effect.uid, &effect.kind, &effect.payload).await,
+                None => {
+                    self.execute_effect(&effect.uid, &effect.kind, &effect.payload)
+                        .await
+                }
             };
             let (ok, result) = match execution {
                 Ok(result) => result,
@@ -128,9 +151,12 @@ impl Engine {
                 Err(error) => (false, error.to_string()),
             };
             let request = effect.payload["request_id"].as_str().unwrap_or(&effect.uid);
-            if !ok { self.fail_command(request, &result).await?; }
+            if !ok {
+                self.fail_command(request, &result).await?;
+            }
             store::misc::finish_effect(&self.store.pool, &effect.uid, ok, &result).await?;
-            self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.effects_changed
+                .send_modify(|revision| *revision = revision.wrapping_add(1));
             self.resume_command_query(&effect.payload).await?;
             if let Some(origin) = &effect.origin_uid {
                 match append_one(
@@ -161,15 +187,29 @@ impl Engine {
                 result,
             });
         }
-        if store::karma_schedules::refresh(&self.store.pool, nucleus::execution::now()).await? { self.notify_karma_deadline_change(); }
+        if store::karma_schedules::refresh(&self.store.pool, nucleus::execution::now()).await? {
+            self.notify_karma_deadline_change();
+        }
         Ok(out)
     }
 
     fn controlled_command_effect(&self, effect: &store::misc::EffectRow) -> bool {
-        if nucleus::execution::current().is_none() { return false; }
-        if !matches!(effect.kind.as_str(), "command" | "signal" | "saved-command") { return false; }
-        let command = effect.payload["saved_command"].as_str().or_else(|| effect.payload["signal"].as_str()).or_else(|| effect.payload["command_snapshot"]["uid"].as_str()).unwrap_or(&effect.uid);
-        self.command_responses.read().is_ok_and(|responses| responses.as_ref().is_some_and(|responses| responses.iter().any(|response| response.command == command)))
+        if nucleus::execution::current().is_none() {
+            return false;
+        }
+        if !matches!(effect.kind.as_str(), "command" | "signal" | "saved-command") {
+            return false;
+        }
+        let command = effect.payload["saved_command"]
+            .as_str()
+            .or_else(|| effect.payload["signal"].as_str())
+            .or_else(|| effect.payload["command_snapshot"]["uid"].as_str())
+            .unwrap_or(&effect.uid);
+        self.command_responses.read().is_ok_and(|responses| {
+            responses.as_ref().is_some_and(|responses| {
+                responses.iter().any(|response| response.command == command)
+            })
+        })
     }
 
     async fn execute_effect(
@@ -200,9 +240,13 @@ impl Engine {
                     "Rule target was deleted before the effect ran".into(),
                 ));
             }
-            self.require_karma_execution(Some(&current.record_uid)).await?;
-            self.refuse_unreadable_karma_inputs(actor, &[crate::karma_transfer_effects::target(&current).into()])
+            self.require_karma_execution(Some(&current.record_uid))
                 .await?;
+            self.refuse_unreadable_karma_inputs(
+                actor,
+                &[crate::karma_transfer_effects::target(&current).into()],
+            )
+            .await?;
             current.actor_uid = actor.map(str::to_owned);
             self.authorize_karma_rule(&current, actor).await?;
             Some(current)
@@ -212,10 +256,18 @@ impl Engine {
         match kind {
             "command" | "signal" | "saved-command" => {
                 if kind == "signal" {
-                    let signal = payload["signal"].as_str().ok_or_else(|| EngineError::Consequence("Signal effect has no Signal".into()))?;
-                    if !self.rule_dependencies().await?.records.contains_key(signal) { return Ok((false, "Signal no longer has an active reader".into())); }
+                    let signal = payload["signal"].as_str().ok_or_else(|| {
+                        EngineError::Consequence("Signal effect has no Signal".into())
+                    })?;
+                    if !self.rule_dependencies().await?.records.contains_key(signal) {
+                        return Ok((false, "Signal no longer has an active reader".into()));
+                    }
                 }
-                self.execute_command_effect(payload["request_id"].as_str().unwrap_or(request), payload).await
+                self.execute_command_effect(
+                    payload["request_id"].as_str().unwrap_or(request),
+                    payload,
+                )
+                .await
             }
             "notify" => {
                 let budget = store::config::attention_budget(&self.store.pool).await?;
@@ -249,7 +301,8 @@ impl Engine {
                     .and_then(|value| value.as_str())
                     .unwrap_or("");
                 let uid = self.resolve(target).await?;
-                self.refuse_unreadable(actor, std::slice::from_ref(&uid)).await?;
+                self.refuse_unreadable(actor, std::slice::from_ref(&uid))
+                    .await?;
                 let rows = protein::execute_saved(&self.store, &uid, actor).await?;
                 Ok((true, format!("{} rows", rows.len())))
             }
@@ -269,15 +322,32 @@ impl Engine {
                     serde_json::from_value(payload["carried"].clone())
                         .map_err(|error| EngineError::Consequence(error.to_string()))?;
                 if matches!(consequence, nucleus::karma::Consequence::ActivateFiote) {
-                    let value = carried.ok_or_else(|| EngineError::Consequence("Fiote activation needs a calculated nonzero value".into()))?;
-                    let request = payload["request_id"].as_str().ok_or_else(|| EngineError::Consequence("Activation has no occurrence identity".into()))?;
+                    let value = carried.ok_or_else(|| {
+                        EngineError::Consequence(
+                            "Fiote activation needs a calculated nonzero value".into(),
+                        )
+                    })?;
+                    let request = payload["request_id"].as_str().ok_or_else(|| {
+                        EngineError::Consequence("Activation has no occurrence identity".into())
+                    })?;
                     self.activate_fiote(rule.record_uid.clone(), value.to_string(), request.into(), serde_json::json!({"kind":"karma","rule":rule.uid,"revision":rule.revision,"occurrence":payload["occurrence"],"request_id":request}), actor).await?;
                     return Ok((true, "Fiote activation requested".into()));
                 }
                 if consequence.transfer_target().is_some() {
-                    let evaluated = serde_json::from_value(payload["transfer_evaluation"].clone()).map_err(EngineError::Json)?;
-                    let request = payload["request_id"].as_str().ok_or_else(|| EngineError::Consequence("Transfer effect has no request identity".into()))?;
-                    let result = self.execute_transfer_effect(&rule, &consequence, evaluated, request, nucleus::execution::now()).await?;
+                    let evaluated = serde_json::from_value(payload["transfer_evaluation"].clone())
+                        .map_err(EngineError::Json)?;
+                    let request = payload["request_id"].as_str().ok_or_else(|| {
+                        EngineError::Consequence("Transfer effect has no request identity".into())
+                    })?;
+                    let result = self
+                        .execute_transfer_effect(
+                            &rule,
+                            &consequence,
+                            evaluated,
+                            request,
+                            nucleus::execution::now(),
+                        )
+                        .await?;
                     return Ok((true, result));
                 }
                 self.execute_deferred_consequence(
@@ -303,15 +373,15 @@ impl Engine {
         use crate::actions::Action;
         use nucleus::karma::Consequence;
         let action = match consequence {
-            Consequence::RefreshStockPolicy { policy, commitment } => {
-                self.refresh_stock_policy(policy,commitment,rule.actor_uid.as_deref(),now).await?;
-                None
-            }
             Consequence::AdvanceAudience { plan, commitment } => {
-                self.advance_audience(plan, commitment, rule.actor_uid.as_deref(), now).await?;
+                self.advance_audience(plan, commitment, rule.actor_uid.as_deref(), now)
+                    .await?;
                 None
             }
-            Consequence::ShowComponent { component } => Some(Action::PresentComponent { target: rule.record_uid.clone(), component: component.clone() }),
+            Consequence::ShowComponent { component } => Some(Action::PresentComponent {
+                target: rule.record_uid.clone(),
+                component: component.clone(),
+            }),
             Consequence::SetConcept { concept } => Some(Action::SetIdentity {
                 subject: rule.record_uid.clone(),
                 predicate: Some(concept.clone()),
@@ -376,7 +446,8 @@ fn database_effect(effect: &store::misc::EffectRow) -> bool {
             serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()),
             Ok(Consequence::SetConcept { .. }
                 | Consequence::AdvanceAudience { .. }
-                | Consequence::RefreshStockPolicy { .. }
+                | Consequence::ReopenTransferNeed { .. }
+                | Consequence::RepeatTransfer { .. }
                 | Consequence::AddConcept { .. }
                 | Consequence::RemoveConcept { .. }
                 | Consequence::SetQuantityWhere { .. }

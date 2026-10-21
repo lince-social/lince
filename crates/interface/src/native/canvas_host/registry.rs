@@ -57,6 +57,18 @@ pub fn registry() -> Vec<api::Descriptor> {
                     },
                 );
             }
+            if kind == SandKind::Video {
+                settings.insert(
+                    "video".into(),
+                    api::Setting::Text {
+                        default: serde_json::to_string(
+                            &crate::native::video_castle::Settings::default(),
+                        )
+                        .unwrap(),
+                        max_bytes: 32768,
+                    },
+                );
+            }
             if kind == SandKind::Visibility {
                 settings.insert(
                     "visibility".into(),

@@ -248,6 +248,7 @@ pub enum Intent {
     CloseVisibility,
     ObserveLocation,
     EditKarma(Option<String>),
+    OpenKarmaDraft(lince_interface::karma::Draft),
     SaveKarma,
     EditFrequency(Option<String>),
     SaveFrequency,
@@ -1039,12 +1040,14 @@ fn receive_message(world: &mut World, message: ServerMessage) {
     }
     match &message {
         ServerMessage::ActionOk { id, data, .. }
-            if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") => {
+            if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") =>
+        {
             lince_interface::location::receive(world, id, Ok(data.clone().unwrap_or(Value::Null)));
             return;
         }
         ServerMessage::Error { id, message, .. }
-            if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") => {
+            if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") =>
+        {
             lince_interface::location::receive(world, id, Err(message.clone()));
             return;
         }
@@ -1869,6 +1872,21 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             };
         }
         Intent::RecordControl(uid, control) => crate::pages::record_control(world, &uid, control)?,
+        Intent::OpenKarmaDraft(draft) => {
+            {
+                let mut state = world.resource_mut::<Mobile>();
+                if state
+                    .karma
+                    .as_ref()
+                    .is_some_and(|current| current != &draft)
+                {
+                    return Err("Save your current Karma draft before configuring another".into());
+                }
+                state.karma = Some(draft);
+                state.navigation.open(Page::Karma);
+            }
+            subscriptions(world)?;
+        }
         Intent::EditKarma(uid) => crate::pages::edit_karma(world, uid)?,
         Intent::SaveKarma => crate::pages::save_karma(world)?,
         Intent::EditFrequency(uid) => crate::pages::edit_frequency(world, uid)?,
@@ -2081,7 +2099,12 @@ fn render(world: &mut World) {
         if let Some(Intent::Act(engine::actions::Action::AssignRole { user, role })) =
             world.resource::<Mobile>().deleting.clone()
         {
-            label(world, content, &format!("Person: {user}\nLocal Role: {role}"), 18.0);
+            label(
+                world,
+                content,
+                &format!("Person: {user}\nLocal Role: {role}"),
+                18.0,
+            );
         }
         if let Some(Intent::Act(engine::actions::Action::RosterJoinOrgan { code })) =
             world.resource::<Mobile>().deleting.clone()

@@ -222,6 +222,7 @@ struct Canvas;
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(lince_interface::map_navigation::NavigationPlugin);
         app.init_resource::<State>()
             .init_resource::<lince_interface::tokens::ThemeSettings>();
     }
@@ -1015,6 +1016,17 @@ pub fn render(world: &mut World, _parent: Entity) {
     ] {
         map_button(world, controls, label, intent);
     }
+    lince_interface::map_navigation::mount(
+        world,
+        controls,
+        owner,
+        world
+            .resource::<Mobile>()
+            .data_directory()
+            .join("maps/navigation.json"),
+        world.resource::<State>().camera.center,
+        runtime(world),
+    );
     if world.resource::<State>().list_open {
         let state = world.resource::<State>();
         let page = state.row_page;
@@ -1235,6 +1247,25 @@ pub fn maintain(world: &mut World) {
     let Some(owner) = world.resource::<State>().surface else {
         return;
     };
+    let point = world
+        .resource::<State>()
+        .picked
+        .unwrap_or(world.resource::<State>().camera.center);
+    let scope = world.resource::<State>().scope.clone();
+    let bounds = world.resource::<State>().selection;
+    let store = world.resource::<State>().store.clone();
+    lince_interface::map_navigation::region(world, owner, bounds, store);
+    let (changed, place) = lince_interface::map_navigation::update(world, owner, point, &scope);
+    if changed {
+        world.resource_mut::<State>().changed = true;
+    }
+    if let Some(place) = place {
+        let state = &mut *world.resource_mut::<State>();
+        state.picked = Some(place.coordinate);
+        state.camera.center = place.coordinate;
+        state.camera.zoom = 14.0;
+        state.changed = true;
+    }
     if let Some(mut import) = world.resource_mut::<State>().import.take() {
         if source_draft(world).ok().as_ref() == Some(&import.original) {
             match import.receiver.try_recv() {
@@ -1661,6 +1692,7 @@ fn overlays(world: &mut World, owner: Entity) {
     let selection = state.selection;
     let picked = state.picked;
     lince_interface::controls::clear(world, overlay);
+    lince_interface::map_navigation::draw_route(world, owner, overlay, camera, size);
     for marker in markers.into_iter().chain(picked.map(|point| Marker {
         record: String::new(),
         point,

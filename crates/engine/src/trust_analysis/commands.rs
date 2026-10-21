@@ -160,9 +160,24 @@ impl Engine {
             return Err(invalid("Choose a request ID of 1–256 characters"));
         }
         match &command {
-            Command::Custody {request} => return self.evidence_custody_command(&person,request,actor,now,authorship).await,
-            Command::Remote {request} => return self.remote_trust_command(&person,&request_id,request,actor,now).await,
-            Command::Serving {request} => return self.evidence_serving_command(&person,&request_id,request,actor,now,authorship).await,
+            Command::MatchSuppliers { request } => {
+                return self.match_suppliers(&person, request, actor, now).await;
+            }
+            Command::Custody { request } => {
+                return self
+                    .evidence_custody_command(&person, request, actor, now, authorship)
+                    .await;
+            }
+            Command::Remote { request } => {
+                return self
+                    .remote_trust_command(&person, &request_id, request, actor, now)
+                    .await;
+            }
+            Command::Serving { request } => {
+                return self
+                    .evidence_serving_command(&person, &request_id, request, actor, now, authorship)
+                    .await;
+            }
             Command::Claims { request } => {
                 return self
                     .profile_claim_command(&person, &request_id, request, actor, now, authorship)

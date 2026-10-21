@@ -64,9 +64,11 @@ mod client {
         until(&connection, &mut queue, &mut state, |state| state.windows.iter().all(|window| window.frames > 0))?;
         println!("PASS: two native windows configured and received presentation callbacks");
         let before = state.windows[0].frames;
+        eprintln!("Checking fullscreen entry on the first window while the second is focused");
         state.windows[0].role.set_fullscreen(None);
         until(&connection, &mut queue, &mut state, |state| state.windows[0].fullscreen && state.windows[0].frames > before)?;
         let before = state.windows[0].frames;
+        eprintln!("Checking fullscreen restore");
         state.windows[0].role.unset_fullscreen();
         until(&connection, &mut queue, &mut state, |state| !state.windows[0].fullscreen && state.windows[0].frames > before)?;
         println!("PASS: fullscreen state entered and restored with new content callbacks");
@@ -105,7 +107,10 @@ mod client {
             if Instant::now() >= deadline {
                 return Err(io::Error::other("Native session probe phase timed out"));
             }
-            connection.flush().map_err(io::Error::other)?;
+            if let Err(error) = connection.flush()
+                && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == io::ErrorKind::WouldBlock) {
+                return Err(io::Error::other(error));
+            }
             if let Some(read) = queue.prepare_read() {
                 let fd = read.connection_fd();
                 let mut descriptors = [rustix::event::PollFd::new(&fd, rustix::event::PollFlags::IN)];
@@ -115,7 +120,11 @@ mod client {
                     return Err(io::Error::other("Park disconnected the session probe"));
                 }
                 if flags.contains(rustix::event::PollFlags::IN) {
-                    read.read().map_err(io::Error::other)?;
+                    match read.read() {
+                        Ok(_) => {}
+                        Err(wayland_client::backend::WaylandError::Io(error)) if error.kind() == io::ErrorKind::WouldBlock => {}
+                        Err(error) => return Err(io::Error::other(error)),
+                    }
                 }
             }
         }
@@ -146,6 +155,7 @@ mod client {
         fn event(state: &mut Self, _: &xdg_toplevel::XdgToplevel, event: xdg_toplevel::Event, index: &usize, _: &Connection, _: &QueueHandle<Self>) {
             match event {
                 xdg_toplevel::Event::Configure { width, height, states } => {
+                    eprintln!("Window {index}: configure {width}x{height}, states {states:?}");
                     if width > 8192 || height > 8192 || width < 0 || height < 0 {
                         state.failure = Some("Invalid or oversized configure".into());
                         return;

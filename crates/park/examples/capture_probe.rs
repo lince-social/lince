@@ -71,7 +71,10 @@ mod client {
         session.destroy();
         source.destroy();
         buffer.destroy();
-        connection.flush().map_err(io::Error::other)?;
+        if let Err(error) = connection.flush()
+            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == io::ErrorKind::WouldBlock) {
+            return Err(io::Error::other(error));
+        }
         println!("PASS: {}x{} output captured through the authorized image-copy protocol into SHM", size[0], size[1]);
         Ok(())
     }
@@ -83,14 +86,23 @@ mod client {
             if let Some(failure) = state.failure.take() { return Err(io::Error::other(failure)); }
             if done(state) { return Ok(()); }
             if Instant::now() >= deadline { return Err(io::Error::other("Output capture probe timed out")); }
-            connection.flush().map_err(io::Error::other)?;
+            if let Err(error) = connection.flush()
+                && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == io::ErrorKind::WouldBlock) {
+                return Err(io::Error::other(error));
+            }
             if let Some(read) = queue.prepare_read() {
                 let fd = read.connection_fd();
                 let mut descriptors = [rustix::event::PollFd::new(&fd, rustix::event::PollFlags::IN)];
                 rustix::event::poll(&mut descriptors, Some(&rustix::time::Timespec { tv_sec: 0, tv_nsec: 100_000_000 })).map_err(io::Error::other)?;
                 let flags = descriptors[0].revents();
                 if flags.intersects(rustix::event::PollFlags::ERR | rustix::event::PollFlags::HUP) { return Err(io::Error::other("Park disconnected the capture probe")); }
-                if flags.contains(rustix::event::PollFlags::IN) { read.read().map_err(io::Error::other)?; }
+                if flags.contains(rustix::event::PollFlags::IN) {
+                    match read.read() {
+                        Ok(_) => {}
+                        Err(wayland_client::backend::WaylandError::Io(error)) if error.kind() == io::ErrorKind::WouldBlock => {}
+                        Err(error) => return Err(io::Error::other(error)),
+                    }
+                }
             }
         }
     }

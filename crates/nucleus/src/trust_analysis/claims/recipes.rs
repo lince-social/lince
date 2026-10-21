@@ -31,6 +31,7 @@ pub struct Terms {
 impl Terms {
     pub fn validate(&self) -> Result<(), String> {
         let statement = Statement {
+            category: Default::default(),
             title: self.title.clone(),
             issuer: self.issuer.clone(),
             claim: self.claim.clone(),

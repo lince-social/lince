@@ -195,6 +195,7 @@ impl Plugin for MapPlugin {
                 )
                     .chain(),
             );
+        app.add_plugins(crate::map_navigation::NavigationPlugin);
         render::install(app);
     }
 }

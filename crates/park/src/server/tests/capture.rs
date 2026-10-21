@@ -128,6 +128,7 @@ fn destroying_session_does_not_cancel_a_frame_already_created_from_it() {
     frame.attach_buffer(&harness.buffer([640, 480]));
     frame.capture();
     harness.sync();
+    assert!(harness.client.capture.failures.is_empty(), "capture failures: {:?}", harness.client.capture.failures);
     let job = harness.server.capture_jobs().pop().unwrap();
     assert!(harness.server.capture_job_valid(&job));
     job.frame.success(smithay::utils::Transform::Normal, None, Duration::from_secs(1));
@@ -135,6 +136,34 @@ fn destroying_session_does_not_cancel_a_frame_already_created_from_it() {
     assert_eq!(harness.client.capture.ready, 1);
     frame.destroy();
     harness.sync();
+}
+
+#[test]
+fn destroying_cursor_session_does_not_cancel_a_frame_already_created_from_it() {
+    for destroy_cursor in [false, true] {
+        let mut harness = harness();
+        let qh = harness.queue.handle();
+        let pointer = harness.client.seat.as_ref().unwrap().get_pointer(&qh, ());
+        let source = harness.client.capture.outputs.as_ref().unwrap().create_source(harness.client.output.as_ref().unwrap(), &qh, ());
+        let cursor = harness.client.capture.manager.as_ref().unwrap().create_pointer_cursor_session(&source, &pointer, &qh, ());
+        let session = cursor.get_capture_session(&qh, ());
+        harness.sync();
+        let frame = session.create_frame(&qh, ());
+        if destroy_cursor { cursor.destroy(); } else { session.destroy(); }
+        harness.sync();
+        frame.attach_buffer(&harness.buffer([24, 24]));
+        frame.capture();
+        harness.sync();
+        assert!(harness.client.capture.failures.is_empty(), "capture failures: {:?}", harness.client.capture.failures);
+        let job = harness.server.capture_jobs().pop().unwrap();
+        assert!(job.cursor);
+        assert!(harness.server.capture_job_valid(&job));
+        job.frame.success(smithay::utils::Transform::Normal, None, Duration::from_secs(1));
+        harness.sync();
+        assert_eq!(harness.client.capture.ready, 1);
+        frame.destroy();
+        harness.sync();
+    }
 }
 
 #[test]

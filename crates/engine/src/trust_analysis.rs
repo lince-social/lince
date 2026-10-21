@@ -1,19 +1,20 @@
+mod matching;
 use crate::{Engine, EngineError, trust::Signer};
 use nucleus::trust_analysis::{Identity, contacts::Document};
 use std::collections::BTreeSet;
 mod claim_snapshots;
 mod claims;
 mod commands;
+pub(crate) mod custody;
 mod loading;
 mod queries;
-mod summaries;
-mod serving;
-pub(crate) mod custody;
 pub(crate) mod remote;
+mod serving;
+mod summaries;
 pub use claims::sign_claim_document;
-pub use summaries::sign_recipe_permit;
 #[cfg(feature = "trust-test-hooks")]
 pub use remote::VerificationCheckpoint;
+pub use summaries::sign_recipe_permit;
 
 pub fn prepare_contact_action(
     action: &mut crate::actions::Action,

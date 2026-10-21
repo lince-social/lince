@@ -46,9 +46,17 @@ impl Engine {
         for (position, mut effect) in effects.into_iter().enumerate() {
             if let Consequence::InvokeCommand { command } = &mut effect {
                 let reading = format!("consequence.command.{position}");
-                let old = previous.iter().find(|binding| binding.reading == reading && binding.authored == *command);
-                let uid = self.resolve(old.map_or(command.as_str(), |binding| binding.target.as_str())).await?;
-                bindings.push(ConditionBinding { reading, authored: command.clone(), target: TypedUid::new(ReferenceKind::Record, &uid).map_err(invalid)? });
+                let old = previous
+                    .iter()
+                    .find(|binding| binding.reading == reading && binding.authored == *command);
+                let uid = self
+                    .resolve(old.map_or(command.as_str(), |binding| binding.target.as_str()))
+                    .await?;
+                bindings.push(ConditionBinding {
+                    reading,
+                    authored: command.clone(),
+                    target: TypedUid::new(ReferenceKind::Record, &uid).map_err(invalid)?,
+                });
                 *command = uid;
             }
             if let Consequence::ShowComponent { component } = &mut effect {
@@ -58,9 +66,17 @@ impl Engine {
                     } else {
                         format!("consequence.component.{position}.{reference}")
                     };
-                    let old = previous.iter().find(|binding| binding.reading == reading && binding.authored == *authored);
-                    let uid = self.resolve(old.map_or(authored.as_str(), |binding| binding.target.as_str())).await?;
-                    bindings.push(ConditionBinding { reading, authored: authored.clone(), target: TypedUid::new(ReferenceKind::Record, &uid).map_err(invalid)? });
+                    let old = previous.iter().find(|binding| {
+                        binding.reading == reading && binding.authored == *authored
+                    });
+                    let uid = self
+                        .resolve(old.map_or(authored.as_str(), |binding| binding.target.as_str()))
+                        .await?;
+                    bindings.push(ConditionBinding {
+                        reading,
+                        authored: authored.clone(),
+                        target: TypedUid::new(ReferenceKind::Record, &uid).map_err(invalid)?,
+                    });
                     *authored = uid;
                 }
             }
@@ -128,6 +144,21 @@ impl Engine {
                 .transfer_action_person(actor, Some(person), None)
                 .await?;
             self.transfer_person_signer(&acting, None).await?;
+            if matches!(
+                effect,
+                Consequence::ReopenTransferNeed { .. } | Consequence::RepeatTransfer { .. }
+            ) {
+                self.require_transfer_draft_creator(transfer, actor).await?;
+                if store::transfers::creator_party_actor(&self.store.pool, transfer)
+                    .await?
+                    .as_deref()
+                    != Some(acting.as_str())
+                {
+                    return Err(invalid(
+                        "Only the template creator may configure recurrent proposals",
+                    ));
+                }
+            }
             let state = self.cached_transfer_snapshot(transfer, actor).await?;
             if !state.participants.contains_key(&acting) {
                 return Err(invalid(
@@ -205,8 +236,14 @@ impl Engine {
         let reads = crate::karma_transfers::READINGS
             .try_with(|readings| readings.borrow().snapshots.clone())
             .unwrap_or_else(|_| BTreeMap::from([(state.transfer.clone(), state.clone())]));
-        let mut guards = crate::karma_transfers::READINGS.try_with(|readings| readings.borrow().guards.clone()).unwrap_or_default();
-        guards.entry(state.transfer.clone()).or_insert_with(|| nucleus::transfer::karma::Guard::base(&state)).participants.insert(person.into(), agreement.clone());
+        let mut guards = crate::karma_transfers::READINGS
+            .try_with(|readings| readings.borrow().guards.clone())
+            .unwrap_or_default();
+        guards
+            .entry(state.transfer.clone())
+            .or_insert_with(|| nucleus::transfer::karma::Guard::base(&state))
+            .participants
+            .insert(person.into(), agreement.clone());
         Ok(Some(EvaluatedTransfer {
             transfer: transfer.into(),
             person: person.into(),
@@ -251,7 +288,8 @@ impl Engine {
                     .bind(request_id).fetch_one(&self.store.pool).await?,
                 Consequence::PublishTransfer { .. } => store::transfers::revision_for_request(&self.store.pool, request_id).await?.is_some(),
                 Consequence::ActivateTransferFulfillment { promise, fulfillment, .. } => {
-                    let key = crate::karma_transfer_actions::fulfillment_request_id(&evaluated.transfer, &evaluated.person, promise, fulfillment)?;
+                    let fulfillment = occurrence_fulfillment(fulfillment, request_id);
+                    let key = crate::karma_transfer_actions::fulfillment_request_id(&evaluated.transfer, &evaluated.person, promise, &fulfillment)?;
                     store::transfers::occurrences_for_activation_request(&self.store.pool, &key).await?.is_some()
                 }
                 _ => false,
@@ -277,6 +315,15 @@ impl Engine {
                 return Ok("Transfer already has the requested agreement level".into());
             }
             let expected_state = Some(evaluated.guards.get(&evaluated.transfer).cloned().ok_or_else(|| invalid("Transfer effect has no evaluated target guard"))?);
+            if let Consequence::ReopenTransferNeed { target, .. } = consequence {
+                return self.reopen_transfer_need(&evaluated, (*target, None), request_id, current.actor_uid.as_deref(), now).await;
+            }
+            if let Consequence::RepeatTransfer { stage, .. } = consequence {
+                if !crate::rule_runtime::EFFECT_OCCURRENCE.try_with(|event| event.frequency.is_some()).unwrap_or(false) {
+                    return Ok("Repeated Transfer waits for a scheduled occurrence".into());
+                }
+                return self.reopen_transfer_need(&evaluated, (None, Some(*stage)), request_id, current.actor_uid.as_deref(), now).await;
+            }
             let action = match consequence {
                 Consequence::SetTransferAgreement { after_ms: None, .. } => {
                     Action::AssignTransferAgreementLevel {
@@ -298,7 +345,7 @@ impl Engine {
                     expected_state,
                 },
                 Consequence::ActivateTransferFulfillment { promise, fulfillment, .. } => Action::ActivateTransferFulfillment {
-                    transfer: evaluated.transfer.clone(), promise: promise.clone(), fulfillment: fulfillment.clone(),
+                    transfer: evaluated.transfer.clone(), promise: promise.clone(), fulfillment: occurrence_fulfillment(fulfillment, request_id),
                     expected_revision: evaluated.revision, request_id: request_id.into(),
                     person: Some(evaluated.person.clone()), expected: Some(evaluated.agreement.guard.clone()),
                     expected_state,
@@ -316,5 +363,13 @@ impl Engine {
             Ok("Transfer consequence committed".into())
         })
         .await
+    }
+}
+
+fn occurrence_fulfillment(key: &str, request: &str) -> String {
+    if key == "$occurrence" {
+        request.to_owned()
+    } else {
+        key.to_owned()
     }
 }

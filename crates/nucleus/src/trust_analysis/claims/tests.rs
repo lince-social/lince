@@ -14,6 +14,7 @@ fn hash(value: &str) -> CanonicalHash {
 fn statement() -> Statement {
     let issuer = Identity::Person(crate::new_uid("r"));
     Statement {
+        category: Default::default(),
         title: "Food contribution history".into(),
         issuer: issuer.clone(),
         claim: crate::new_uid("r"),
@@ -488,4 +489,57 @@ fn merged_claim_heads_withhold_hidden_newer_controls_and_preserve_forks_without_
     )
     .unwrap();
     assert_eq!(heads[0].state, HeadState::Withheld);
+}
+
+#[test]
+fn recommendations_and_credentials_never_become_delivery_totals() {
+    let mut statement = statement();
+    let (query, evidence) = analysis(&statement, "100");
+    for category in [Category::Credential, Category::Recommendation] {
+        statement.category = category;
+        if category == Category::Recommendation {
+            assert!(statement.validate().is_err());
+            statement.issuer = Identity::Person(crate::new_uid("r"));
+        }
+        statement.validate().unwrap();
+        assert!(compare(&statement, &query, &evidence).is_err());
+        let before = statement.id().unwrap();
+        statement.withdrawn = true;
+        statement.amount = amount("0");
+        statement.validate().unwrap();
+        assert_ne!(before, statement.id().unwrap());
+        assert!(compare(&statement, &query, &evidence).is_err());
+        statement.withdrawn = false;
+        statement.amount = amount("100");
+    }
+}
+
+#[test]
+fn typed_issuer_trust_is_activity_scoped_and_expiry_withdrawal_and_exclusions_win() {
+    let mut statement = statement();
+    statement.category = Category::Credential;
+    let mut query = Query::for_subject(statement.descriptor.subject.clone());
+    query.measurements = vec![statement.descriptor.measurement.clone()];
+    query.issuers.include.push(super::super::Condition {
+        identities: vec![statement.issuer.clone()],
+        ..Default::default()
+    });
+    let context = super::super::IdentityContext {
+        readable: true,
+        ..Default::default()
+    };
+    assert!(trusted_issuer_for_activity(&statement, &query, &context, 1002).unwrap());
+    assert!(!trusted_issuer_for_activity(&statement, &query, &context, 2000).unwrap());
+    query.exclude_everywhere.push(statement.issuer.clone());
+    assert!(!trusted_issuer_for_activity(&statement, &query, &context, 1002).unwrap());
+    query.exclude_everywhere.clear();
+    query.role = Role::Receiver;
+    assert!(!trusted_issuer_for_activity(&statement, &query, &context, 1002).unwrap());
+    query.role = Role::Giver;
+    query.issuers.include.clear();
+    assert!(!trusted_issuer_for_activity(&statement, &query, &context, 1002).unwrap());
+    query.rely_on_all_visible = true;
+    statement.withdrawn = true;
+    statement.amount = amount("0");
+    assert!(!trusted_issuer_for_activity(&statement, &query, &context, 1002).unwrap());
 }

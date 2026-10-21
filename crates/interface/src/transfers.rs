@@ -1,5 +1,6 @@
 pub mod actions;
 pub mod fields;
+pub mod matching;
 pub mod transport;
 pub mod workflows;
 
@@ -167,6 +168,7 @@ pub enum FieldKind {
     Duration,
     Selections(Vec<(String, String)>),
     Choice(Vec<String>),
+    DataChoice(Vec<(Value, String)>),
     OptionalChoice(Vec<(String, String)>),
     Reference(String),
 }
@@ -333,6 +335,11 @@ impl Form {
                         .filter(|v| !v.is_empty())
                         .collect::<Vec<_>>()
                 ),
+                FieldKind::DataChoice(choices) => choices
+                    .iter()
+                    .find(|(value, _)| value.to_string() == raw)
+                    .map(|(value, _)| value.clone())
+                    .ok_or_else(|| format!("Choose {}", field.label))?,
                 FieldKind::Choice(choices) => {
                     if !choices.iter().any(|choice| choice == raw) {
                         return Err(format!("Choose {}", field.label));

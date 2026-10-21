@@ -14,7 +14,7 @@ fn idle_inhibition_stops_when_its_presented_output_disappears() {
     let id = harness.server.windows()[0].id;
     let rectangle = CanvasRectangle::new([640.0, 0.0], [320.0, 240.0]).unwrap();
     let geometry = GeometrySnapshot { revision: 1, outputs: harness.server.output_viewports().into_iter().map(|(_, viewport)| viewport).collect(), focused: None,
-        items: vec![ItemGeometry { id: ItemId::Application(id), output: OutputId(2), mapping: ContentMapping { canvas: rectangle, surface: rectangle },
+        items: vec![ItemGeometry { id: ItemId::Application(id), output: OutputId(2), mapping: ContentMapping { corners: None, canvas: rectangle, surface: rectangle },
             floating: false, clip: None }] };
     harness.server.presented_outputs(&geometry, Some(OutputId(2)));
     let qh = harness.queue.handle();

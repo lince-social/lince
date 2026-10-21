@@ -20,6 +20,29 @@ async fn draft(
     source: Option<String>,
     name: &str,
 ) -> TransferFixture {
+    draft_with_plan(
+        engine,
+        driver,
+        passenger,
+        endpoints,
+        source,
+        name,
+        Vec::new(),
+        2,
+    )
+    .await
+}
+
+async fn draft_with_plan(
+    engine: &Engine,
+    driver: &Person,
+    passenger: &Person,
+    endpoints: &[String; 2],
+    source: Option<String>,
+    name: &str,
+    via: Vec<String>,
+    capacity: u32,
+) -> TransferFixture {
     engine.set_signer(driver.signer.clone()).await.unwrap();
     let mut promise = support::promise(name, "", driver, -1.0);
     promise.reserve_from = Some(TransferReservePoint::Agreed);
@@ -37,8 +60,9 @@ async fn draft(
             direction: Direction::Offer,
             origin: endpoints[0].clone(),
             destination: endpoints[1].clone(),
+            via,
             count: 1,
-            capacity: 2,
+            capacity,
         }),
         ..Default::default()
     });
@@ -325,5 +349,155 @@ fn competing_bookings_reserve_once_and_signed_journey_progress_releases_before_s
                 );
             })
             .await;
+    });
+}
+
+#[test]
+fn adjacent_transfer_parts_share_one_seat_and_finish_independently() {
+    support::run_async_test("transport-parts", || async {
+        nucleus::execution::Execution::new(
+            [83; 32],
+            chrono::DateTime::parse_from_rfc3339("2026-10-17T12:30:00Z")
+                .unwrap()
+                .timestamp_millis(),
+        )
+        .unwrap()
+        .scope(async {
+            let engine = support::engine().await;
+            let driver = support::person(&engine, "parts-driver").await;
+            let first = support::person(&engine, "parts-first").await;
+            let second = support::person(&engine, "parts-second").await;
+            let mut stops = Vec::new();
+            for index in 0..3 {
+                let stop = support::plain(&engine, &format!("part-stop-{index}"), 0.0).await;
+                engine
+                    .act(
+                        Action::SetPlace {
+                            target: stop.clone(),
+                            lat: 10.0 + f64::from(index) / 100.0,
+                            lon: 20.0,
+                            address: None,
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                stops.push(stop);
+            }
+            let whole = [stops[0].clone(), stops[2].clone()];
+            let offer = draft_with_plan(
+                &engine,
+                &driver,
+                &first,
+                &whole,
+                None,
+                "whole-route",
+                vec![stops[1].clone()],
+                1,
+            )
+            .await;
+            let ab = draft_with_plan(
+                &engine,
+                &driver,
+                &first,
+                &[stops[0].clone(), stops[1].clone()],
+                Some(offer.transfer.clone()),
+                "part-ab",
+                vec![],
+                1,
+            )
+            .await;
+            let bc = draft_with_plan(
+                &engine,
+                &driver,
+                &second,
+                &[stops[1].clone(), stops[2].clone()],
+                Some(offer.transfer.clone()),
+                "part-bc",
+                vec![],
+                1,
+            )
+            .await;
+            for (part, passenger) in [(&ab, &first), (&bc, &second)] {
+                support::agree(
+                    &engine,
+                    part,
+                    passenger,
+                    &format!("{}-passenger", part.transfer),
+                )
+                .await;
+                support::agree(&engine, part, &driver, &format!("{}-driver", part.transfer)).await;
+            }
+            let capacity = store::transport::capacity(&engine.store.pool, &offer.transfer)
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(capacity.available, 0);
+            assert_eq!(capacity.segments.len(), 2);
+            assert!(
+                capacity
+                    .segments
+                    .iter()
+                    .all(|segment| segment.reserved == 1)
+            );
+            let overlap = draft_with_plan(
+                &engine,
+                &driver,
+                &first,
+                &whole,
+                Some(offer.transfer.clone()),
+                "part-overlap",
+                vec![],
+                1,
+            )
+            .await;
+            support::agree(&engine, &overlap, &first, "overlap-passenger").await;
+            engine.set_signer(driver.signer.clone()).await.unwrap();
+            assert!(
+                level(&engine, &overlap, &driver, 2, "overlap-driver")
+                    .await
+                    .is_err()
+            );
+            let before: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM transfer_occurrence")
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap();
+            engine
+                .act(
+                    Action::RecordJourneyProgress {
+                        transfer: ab.transfer.clone(),
+                        expected_revision: ab.revision,
+                        person: driver.uid.clone(),
+                        request_id: "part-ab-finished".into(),
+                        step: Step::Finished,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            let other = store::transport::journey(&engine.store.pool, &bc.transfer)
+                .await
+                .unwrap()
+                .unwrap();
+            assert!(
+                other
+                    .participants
+                    .iter()
+                    .all(|progress| progress.step.is_none())
+            );
+            assert!(!other.all_finished);
+            let capacity = store::transport::capacity(&engine.store.pool, &offer.transfer)
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(capacity.segments[0].available, 1);
+            assert_eq!(capacity.segments[1].available, 0);
+            let after: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM transfer_occurrence")
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap();
+            assert_eq!(before, after);
+        })
+        .await;
     });
 }

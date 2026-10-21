@@ -14,20 +14,36 @@ fn saved_address_replies_reach_the_record_panel_without_starting_live_location()
         .find(|(_, editor)| editor.title.starts_with("Address Record"))
         .unwrap()
         .0;
-    world.get_mut::<EditableText>(field).unwrap().editor.set_text("@street4");
+    world
+        .get_mut::<EditableText>(field)
+        .unwrap()
+        .editor
+        .set_text("@street4");
     fn link(world: &mut World) -> ui::SavedLocationRequest {
         let button = world
             .query::<(Entity, &Children, &bevy::ui_widgets::Button)>()
             .iter(world)
-            .find(|(_, children, _)| children.iter().any(|child| world.get::<Text>(child).is_some_and(|text| text.0 == "Link address Record")))
+            .find(|(_, children, _)| {
+                children.iter().any(|child| {
+                    world
+                        .get::<Text>(child)
+                        .is_some_and(|text| text.0 == "Link address Record")
+                })
+            })
             .unwrap()
             .0;
         world.trigger(bevy::ui_widgets::Activate { entity: button });
         world.flush();
-        world.resource_mut::<Messages<ui::SavedLocationRequest>>().drain().next().unwrap()
+        world
+            .resource_mut::<Messages<ui::SavedLocationRequest>>()
+            .drain()
+            .next()
+            .unwrap()
     }
     let request = link(&mut world);
-    assert!(matches!(&request.command, nucleus::vocabulary::SavedLocationCommand::Bind { record: target, address } if target == &record && address == "@street4"));
+    assert!(
+        matches!(&request.command, nucleus::vocabulary::SavedLocationCommand::Bind { record: target, address } if target == &record && address == "@street4")
+    );
     let candidate = nucleus::vocabulary::LocationCandidate {
         assertion_uid: Some(nucleus::new_uid("a")),
         record_uid: nucleus::new_uid("r"),
@@ -37,28 +53,47 @@ fn saved_address_replies_reach_the_record_panel_without_starting_live_location()
         longitude: -46.6,
         radius_metres: Some(3000),
     };
-    receive_message(&mut world, ServerMessage::ActionOk {
-        id: request.id,
-        created: None,
-        facts: 0,
-        warnings: vec![],
-        data: Some(serde_json::to_value(nucleus::vocabulary::SavedLocation {
-            record_uid: record,
-            candidates: vec![candidate.clone()],
-            selected: Some(candidate),
-            explicit: true,
-            unavailable: false,
-            revision: 1,
-        }).unwrap()),
-    });
-    assert!(world.query::<&Text>().iter(&world).any(|text| text.0 == "Approximate saved area · radius 3000 m"));
+    receive_message(
+        &mut world,
+        ServerMessage::ActionOk {
+            id: request.id,
+            created: None,
+            facts: 0,
+            warnings: vec![],
+            data: Some(
+                serde_json::to_value(nucleus::vocabulary::SavedLocation {
+                    record_uid: record,
+                    candidates: vec![candidate.clone()],
+                    selected: Some(candidate),
+                    explicit: true,
+                    unavailable: false,
+                    revision: 1,
+                })
+                .unwrap(),
+            ),
+        },
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(&world)
+            .any(|text| text.0 == "Approximate saved area · radius 3000 m")
+    );
     let request = link(&mut world);
-    receive_message(&mut world, ServerMessage::Error {
-        id: request.id,
-        message: "Address Record is private".into(),
-        code: None,
-    });
-    assert!(world.query::<&Text>().iter(&world).any(|text| text.0 == "Address Record is private"));
+    receive_message(
+        &mut world,
+        ServerMessage::Error {
+            id: request.id,
+            message: "Address Record is private".into(),
+            code: None,
+        },
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(&world)
+            .any(|text| text.0 == "Address Record is private")
+    );
     assert!(world.resource::<Messages<ui::Request>>().is_empty());
 }
 
@@ -95,6 +130,10 @@ fn person_drafts_are_separate_and_passwords_never_reach_disk() {
     world.insert_resource(Mobile::new(directory.path().into()));
     world.resource_mut::<Mobile>().identity =
         crate::session::Identity::Person("r_person_one".into());
+    world.resource_mut::<Mobile>().karma = Some(lince_interface::karma::Draft {
+        name: "Private automation".into(),
+        ..Default::default()
+    });
     world
         .resource_mut::<Mobile>()
         .drafts
@@ -107,6 +146,11 @@ fn person_drafts_are_separate_and_passwords_never_reach_disk() {
     let first = draft_directory(world.resource::<Mobile>());
     let bytes = std::fs::read_to_string(first.join("mobile-drafts.json")).unwrap();
     assert!(!bytes.contains("secret"));
+    let saved = crate::storage::read(&first, "organ").unwrap().unwrap();
+    assert_eq!(
+        saved.karma.as_ref(),
+        world.resource::<Mobile>().karma.as_ref()
+    );
     world.resource_mut::<Mobile>().identity =
         crate::session::Identity::Person("r_person_two".into());
     let second = draft_directory(world.resource::<Mobile>());
@@ -126,10 +170,15 @@ fn expired_session_keeps_unsaved_drafts_private_until_the_same_person_returns() 
     let mut world = fixture();
     world.insert_resource(Mobile::new(directory.path().into()));
     let person = crate::session::Identity::Person("one".into());
+    let karma = lince_interface::karma::Draft {
+        name: "Unsaved private automation".into(),
+        ..Default::default()
+    };
     {
         let mut state = world.resource_mut::<Mobile>();
         state.organ = Some("organ".into());
         state.identity = person.clone();
+        state.karma = Some(karma.clone());
         state
             .drafts
             .insert("record/body".into(), "Unsaved private text".into());
@@ -150,6 +199,7 @@ fn expired_session_keeps_unsaved_drafts_private_until_the_same_person_returns() 
         crate::session::Identity::Locked,
     );
     assert!(world.resource::<Mobile>().drafts.is_empty());
+    assert!(world.resource::<Mobile>().karma.is_none());
     assert_eq!(world.resource::<DraftRecovery>().0.len(), 1);
     identity_ready(
         &mut world,
@@ -163,7 +213,9 @@ fn expired_session_keeps_unsaved_drafts_private_until_the_same_person_returns() 
             .drafts
             .contains_key("record/body")
     );
+    assert!(world.resource::<Mobile>().karma.is_none());
     identity_ready(&mut world, "organ".into(), false, person);
+    assert_eq!(world.resource::<Mobile>().karma.as_ref(), Some(&karma));
     assert_eq!(
         world.resource::<Mobile>().drafts["record/body"],
         "Unsaved private text"
@@ -181,6 +233,7 @@ fn expired_session_keeps_unsaved_drafts_private_until_the_same_person_returns() 
         .unwrap()
         .unwrap();
     assert_eq!(restored.drafts["record/body"], "Unsaved private text");
+    assert_eq!(restored.karma.as_ref(), Some(&karma));
 }
 
 #[test]
@@ -406,4 +459,29 @@ fn remote_head_updates_preserve_a_body_draft_and_its_document_base() {
         .unwrap()
         .1;
     assert_eq!(head.value(), "Remote title");
+}
+
+#[test]
+fn configured_transfer_automation_opens_the_shared_mobile_karma_editor() {
+    let mut world = fixture();
+    let person = nucleus::new_uid("r");
+    world.resource_mut::<Mobile>().identity = crate::session::Identity::Person(person);
+    let draft = lince_interface::karma::Draft {
+        name: "Weekly contribution".into(),
+        fields: ["freq(@weekly)", "> 0", "@need: repeat(@me)"].map(|text| {
+            lince_interface::karma::FieldDraft {
+                text: text.into(),
+                linked: None,
+            }
+        }),
+        ..Default::default()
+    };
+    let _ = apply_intent(&mut world, Intent::OpenKarmaDraft(draft.clone()));
+    assert_eq!(world.resource::<Mobile>().navigation.current, Page::Karma);
+    assert_eq!(world.resource::<Mobile>().karma.as_ref(), Some(&draft));
+    let mut another = draft.clone();
+    another.name = "Another contribution".into();
+    let result = apply_intent(&mut world, Intent::OpenKarmaDraft(another));
+    assert_eq!(world.resource::<Mobile>().karma.as_ref(), Some(&draft));
+    assert!(result.is_err());
 }

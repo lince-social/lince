@@ -1,18 +1,18 @@
 #![recursion_limit = "512"]
 
+mod assertion_order;
 pub mod authority;
-pub mod role_authority;
+pub mod calendar;
 mod decimal_operand;
 mod karma_rules;
 mod karma_transfers;
-pub mod calendar;
-pub mod schedule;
-mod assertion_order;
+mod meanings;
 pub mod read_rules;
 pub mod record_query;
+pub mod role_authority;
+pub mod schedule;
 pub mod shader_inputs;
 mod transfer_application;
-mod meanings;
 pub use meanings::bind_meanings;
 
 use base64::Engine as _;
@@ -133,11 +133,31 @@ pub enum Predicate {
     All(Vec<Predicate>),
     Any(Vec<Predicate>),
     Not(Box<Predicate>),
-    QuantityLt(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
-    QuantityLte(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
-    QuantityGt(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
-    QuantityGte(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
-    QuantityEq(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
+    QuantityLt(
+        #[serde(with = "crate::decimal_operand")]
+        #[schemars(with = "String")]
+        nucleus::DecimalValue,
+    ),
+    QuantityLte(
+        #[serde(with = "crate::decimal_operand")]
+        #[schemars(with = "String")]
+        nucleus::DecimalValue,
+    ),
+    QuantityGt(
+        #[serde(with = "crate::decimal_operand")]
+        #[schemars(with = "String")]
+        nucleus::DecimalValue,
+    ),
+    QuantityGte(
+        #[serde(with = "crate::decimal_operand")]
+        #[schemars(with = "String")]
+        nucleus::DecimalValue,
+    ),
+    QuantityEq(
+        #[serde(with = "crate::decimal_operand")]
+        #[schemars(with = "String")]
+        nucleus::DecimalValue,
+    ),
     UidEq(String),
     OccurrenceIn(Vec<String>),
     KindEq(String),
@@ -312,7 +332,11 @@ pub struct MessageCursor {
 
 impl Default for ThreadsInclude {
     fn default() -> Self {
-        Self { messages_limit: 50, message_limits: Default::default(), message_before: Default::default() }
+        Self {
+            messages_limit: 50,
+            message_limits: Default::default(),
+            message_before: Default::default(),
+        }
     }
 }
 
@@ -412,7 +436,9 @@ pub async fn execute_for_with_context(
         Source::Entry => execute_entries(store, protein, visible).await?,
         Source::Frequency => execute_frequency(store, visible).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
-        Source::KarmaRule => karma_rules::execute(store, protein, visible, subject, installed_signer_actor).await?,
+        Source::KarmaRule => {
+            karma_rules::execute(store, protein, visible, subject, installed_signer_actor).await?
+        }
         Source::Concept => execute_concepts(store, protein, subject).await?,
         Source::Lingua => execute_linguas(store, protein).await?,
         Source::Assertion => execute_assertions(store, protein, subject).await?,
@@ -428,8 +454,14 @@ pub async fn execute_for_with_context(
             .await?
         }
         Source::TransferSettlementPreview => {
-            execute_transfer_settlement_preview(store, protein, subject, installed_signer_actor, visible)
-                .await?
+            execute_transfer_settlement_preview(
+                store,
+                protein,
+                subject,
+                installed_signer_actor,
+                visible,
+            )
+            .await?
         }
         Source::TransferBulkCompletionPreview => {
             execute_transfer_bulk_completion_preview(
@@ -501,9 +533,13 @@ async fn read_filter_targets(
 
 fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
     match source {
-        Source::Record | Source::Fact | Source::Timeline | Source::Calendar | Source::Schedule | Source::Entry | Source::Assertion => {
-            Some(&["record:read"])
-        }
+        Source::Record
+        | Source::Fact
+        | Source::Timeline
+        | Source::Calendar
+        | Source::Schedule
+        | Source::Entry
+        | Source::Assertion => Some(&["record:read"]),
         Source::Promise
         | Source::Transfer
         | Source::TransferSettlementPreview
@@ -519,22 +555,41 @@ const MAX_FILTER_INDENT: usize = 10;
 pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
     if !protein.include.numeric_fields.is_empty() {
         if protein.source != Source::Record || protein.aggregate.is_some() {
-            return Err(store::StoreError::Protocol("Numeric inputs need a Record query without aggregation.".into()));
+            return Err(store::StoreError::Protocol(
+                "Numeric inputs need a Record query without aggregation.".into(),
+            ));
         }
         shader_inputs::validate(&protein.include.numeric_fields)?;
     }
-    if protein.include.shader_effect && (protein.source != Source::Record || protein.aggregate.is_some()) {
-        return Err(store::StoreError::Protocol("Shader effects need a Record query without aggregation.".into()));
+    if protein.include.shader_effect
+        && (protein.source != Source::Record || protein.aggregate.is_some())
+    {
+        return Err(store::StoreError::Protocol(
+            "Shader effects need a Record query without aggregation.".into(),
+        ));
     }
     if let Some(include) = &protein.include.relation_context {
         if protein.source != Source::Record || protein.aggregate.is_some() || !include.valid() {
-            return Err(store::StoreError::Protocol("Invalid Relation color context".into()));
+            return Err(store::StoreError::Protocol(
+                "Invalid Relation color context".into(),
+            ));
         }
     }
-    if protein.include.extension.as_ref().is_some_and(|extension| extension.namespace.starts_with("lince.social.")) {
-        return Err(store::StoreError::Protocol("Private social state is available only through scoped social controls".into()));
+    if protein
+        .include
+        .extension
+        .as_ref()
+        .is_some_and(|extension| extension.namespace.starts_with("lince.social."))
+    {
+        return Err(store::StoreError::Protocol(
+            "Private social state is available only through scoped social controls".into(),
+        ));
     }
-    fn visit(predicate: &Predicate, group_depth: usize, source: Source) -> Result<(), ProteinError> {
+    fn visit(
+        predicate: &Predicate,
+        group_depth: usize,
+        source: Source,
+    ) -> Result<(), ProteinError> {
         match predicate {
             Predicate::ProjectionWindow(window) => {
                 if !matches!(source, Source::Calendar | Source::Schedule) || group_depth != 0 {
@@ -544,9 +599,13 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
             }
             Predicate::RollingWindow(window) => {
                 if !matches!(source, Source::Calendar | Source::Schedule) || group_depth != 0 {
-                    return Err(store::StoreError::Protocol("Rolling windows must be top-level Calendar or Schedule filters".into()));
+                    return Err(store::StoreError::Protocol(
+                        "Rolling windows must be top-level Calendar or Schedule filters".into(),
+                    ));
                 }
-                window.resolve(nucleus::execution::now().timestamp_millis()).map_err(store::StoreError::Protocol)?;
+                window
+                    .resolve(nucleus::execution::now().timestamp_millis())
+                    .map_err(store::StoreError::Protocol)?;
             }
             Predicate::All(children) | Predicate::Any(children) => {
                 if group_depth > MAX_FILTER_INDENT {
@@ -589,16 +648,28 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
         visit(predicate, 0, protein.source)?;
     }
     if let Some(after) = &protein.include.record_after {
-        if protein.source != Source::Record || protein.aggregate.is_some() || after.is_empty() || after.len() > 256 {
-            return Err(store::StoreError::Protocol("Record paging needs a Record list and a valid cursor".into()));
+        if protein.source != Source::Record
+            || protein.aggregate.is_some()
+            || after.is_empty()
+            || after.len() > 256
+        {
+            return Err(store::StoreError::Protocol(
+                "Record paging needs a Record list and a valid cursor".into(),
+            ));
         }
     }
     if let Some(threads) = &protein.include.threads {
-        if threads.message_before.len() > 100 || threads.message_before.values().any(|cursor| {
-            cursor.uid.is_empty() || cursor.uid.len() > 256 || cursor.created_at.len() > 64
-                || chrono::DateTime::parse_from_rfc3339(&cursor.created_at).is_err()
-        }) {
-            return Err(store::StoreError::Protocol("Invalid message history cursor".into()));
+        if threads.message_before.len() > 100
+            || threads.message_before.values().any(|cursor| {
+                cursor.uid.is_empty()
+                    || cursor.uid.len() > 256
+                    || cursor.created_at.len() > 64
+                    || chrono::DateTime::parse_from_rfc3339(&cursor.created_at).is_err()
+            })
+        {
+            return Err(store::StoreError::Protocol(
+                "Invalid message history cursor".into(),
+            ));
         }
     }
     if protein.source == Source::Record
@@ -620,8 +691,14 @@ pub async fn transfer_delivery_projection(
     recipient_person_uid: &str,
     recipient_organ_uid: &str,
 ) -> Result<Value, ProteinError> {
-    if store::visibility::hidden_from_organ(&store.pool, recipient_organ_uid).await?.contains(transfer_uid) {
-        return Err(transfer_query_error("protein_transfer_visibility_denied", "The Organ cannot view this Transfer's Record data"));
+    if store::visibility::hidden_from_organ(&store.pool, recipient_organ_uid)
+        .await?
+        .contains(transfer_uid)
+    {
+        return Err(transfer_query_error(
+            "protein_transfer_visibility_denied",
+            "The Organ cannot view this Transfer's Record data",
+        ));
     }
     let policies =
         store::transfer_delivery::policies_for_transfer(&store.pool, transfer_uid).await?;
@@ -690,8 +767,13 @@ pub async fn transfer_delivery_projection(
                 continue;
             }
             occurrence["application_preparation"] = transfer_application::prepare(
-                store, transfer_uid, &occurrence_uid, projected_revision, recipient_person_uid,
-            ).await?;
+                store,
+                transfer_uid,
+                &occurrence_uid,
+                projected_revision,
+                recipient_person_uid,
+            )
+            .await?;
         }
     }
     strip_delivery_mutation_and_proof(&mut row);
@@ -778,8 +860,14 @@ async fn execute_auth(store: &Store, subject: Option<&str>) -> Result<Vec<Value>
             let mut supplied = std::collections::BTreeMap::<String, Vec<String>>::new();
             if can("permission:read") {
                 for role in store::person_roles::ids(&store.pool, &uid).await? {
-                    let name: String = store::sqlx::query_scalar("SELECT name FROM role WHERE id=?").bind(role).fetch_one(&store.pool).await?;
-                    for permission in store::auth::role_permission_keys_by_id(&store.pool, role).await? {
+                    let name: String =
+                        store::sqlx::query_scalar("SELECT name FROM role WHERE id=?")
+                            .bind(role)
+                            .fetch_one(&store.pool)
+                            .await?;
+                    for permission in
+                        store::auth::role_permission_keys_by_id(&store.pool, role).await?
+                    {
                         supplied.entry(permission).or_default().push(name.clone());
                     }
                 }
@@ -1409,25 +1497,34 @@ async fn matching_records_for(
     let required_uids = protein.filter.iter().find_map(|predicate| match predicate {
         Predicate::UidEq(uid) => Some(HashSet::from([uid.as_str()])),
         Predicate::Any(children)
-            if children.iter().all(|child| matches!(child, Predicate::UidEq(_))) =>
+            if children
+                .iter()
+                .all(|child| matches!(child, Predicate::UidEq(_))) =>
         {
-            Some(children.iter().filter_map(|child| {
-                if let Predicate::UidEq(uid) = child {
-                    Some(uid.as_str())
-                } else {
-                    None
-                }
-            }).collect::<HashSet<_>>())
+            Some(
+                children
+                    .iter()
+                    .filter_map(|child| {
+                        if let Predicate::UidEq(uid) = child {
+                            Some(uid.as_str())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<HashSet<_>>(),
+            )
         }
         _ => None,
     });
     let all = match (protein.filter.as_slice(), required_uids.as_ref()) {
-        ([Predicate::UidEq(uid)], _) => {
-            store::records::get(&store.pool, uid).await?.into_iter().collect()
-        }
-        ([Predicate::SlugEq(slug)], _) => {
-            store::records::resolve(&store.pool, slug).await?.into_iter().collect()
-        }
+        ([Predicate::UidEq(uid)], _) => store::records::get(&store.pool, uid)
+            .await?
+            .into_iter()
+            .collect(),
+        ([Predicate::SlugEq(slug)], _) => store::records::resolve(&store.pool, slug)
+            .await?
+            .into_iter()
+            .collect(),
         (_, Some(uids)) => {
             store::records::get_many(&store.pool, &uids.iter().copied().collect::<Vec<_>>()).await?
         }
@@ -1436,7 +1533,10 @@ async fn matching_records_for(
     let ctx = PredicateCtx::prepare(store, &protein.filter, visible, subject).await?;
     let mut rows: Vec<store::records::RecordRow> = Vec::new();
     for r in all {
-        if required_uids.as_ref().is_some_and(|uids| !uids.contains(r.uid.as_str())) {
+        if required_uids
+            .as_ref()
+            .is_some_and(|uids| !uids.contains(r.uid.as_str()))
+        {
             continue;
         }
         if visible.is_some_and(|v| !v.contains(&r.uid)) {
@@ -1483,9 +1583,14 @@ async fn select_records_for(
     if protein.aggregate.is_none() {
         rows = order_records(store, rows, &protein.order).await?;
         if let Some(after) = &protein.include.record_after {
-            let position = rows.iter().position(|row| &row.uid == after).ok_or_else(|| {
-                store::StoreError::Protocol("This page changed. Press Refresh to return to the first page.".into())
-            })?;
+            let position = rows
+                .iter()
+                .position(|row| &row.uid == after)
+                .ok_or_else(|| {
+                    store::StoreError::Protocol(
+                        "This page changed. Press Refresh to return to the first page.".into(),
+                    )
+                })?;
             rows.drain(..=position);
         }
         if let Some(limit) = protein.limit {
@@ -1511,17 +1616,31 @@ async fn execute_records(
     let concept_names = store::vocabulary::display_names(&store.pool, subject).await?;
     let selected: Vec<_> = rows.iter().map(|record| record.uid.clone()).collect();
     let work = store::records::extensions_for_records(&store.pool, "work", &selected).await?;
-    let mut projected = record_schema::attach(store, protein, &rows, visible, &work, &concept_names).await?;
+    let mut projected =
+        record_schema::attach(store, protein, &rows, visible, &work, &concept_names).await?;
     let mut shader_effects = HashMap::new();
-    let mut numeric_values = shader_inputs::attach(store, &rows, &protein.include.numeric_fields).await?;
+    let mut numeric_values =
+        shader_inputs::attach(store, &rows, &protein.include.numeric_fields).await?;
     if protein.include.shader_effect && !rows.is_empty() {
-        let mut query = store::sqlx::QueryBuilder::new("SELECT record_uid, fds FROM record_extension WHERE namespace = ");
-        query.push_bind(nucleus::shader_effect::NAMESPACE).push(" AND record_uid IN (");
+        let mut query = store::sqlx::QueryBuilder::new(
+            "SELECT record_uid, fds FROM record_extension WHERE namespace = ",
+        );
+        query
+            .push_bind(nucleus::shader_effect::NAMESPACE)
+            .push(" AND record_uid IN (");
         let mut ids = query.separated(",");
-        for record in rows.iter().take(256) { ids.push_bind(&record.uid); }
+        for record in rows.iter().take(256) {
+            ids.push_bind(&record.uid);
+        }
         ids.push_unseparated(")");
-        for (uid, raw) in query.build_query_as::<(String, String)>().fetch_all(&store.pool).await? {
-            if raw.len() <= 196_608 && let Ok(value) = serde_json::from_str::<Value>(&raw) {
+        for (uid, raw) in query
+            .build_query_as::<(String, String)>()
+            .fetch_all(&store.pool)
+            .await?
+        {
+            if raw.len() <= 196_608
+                && let Ok(value) = serde_json::from_str::<Value>(&raw)
+            {
                 shader_effects.insert(uid, value);
             }
         }
@@ -1672,18 +1791,23 @@ async fn order_records(
         |key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "assignee_name"),
     ) {
         {
-            let binding=store::vocabulary::feature_binding(&store.pool,"assignment").await?;
-            for link in store::assertions::binary_of_predicates(&store.pool, &binding.concept_uids).await? {
+            let binding = store::vocabulary::feature_binding(&store.pool, "assignment").await?;
+            for link in
+                store::assertions::binary_of_predicates(&store.pool, &binding.concept_uids).await?
+            {
                 if let Some(person) = store::records::get(&store.pool, &link.object_uid).await? {
                     assignees.entry(link.subject_uid).or_insert(person.head);
                 }
             }
         }
     }
-    let assertion_fields: Vec<_> = order.iter().filter_map(|key| match key {
-        Order::Asc(field) | Order::Desc(field) if field.starts_with('#') => Some(field.clone()),
-        _ => None,
-    }).collect();
+    let assertion_fields: Vec<_> = order
+        .iter()
+        .filter_map(|key| match key {
+            Order::Asc(field) | Order::Desc(field) if field.starts_with('#') => Some(field.clone()),
+            _ => None,
+        })
+        .collect();
     let assertion_values = if assertion_fields.is_empty() {
         HashMap::new()
     } else {
@@ -1699,7 +1823,13 @@ async fn order_records(
                         let left = assertion_values.get(&(a.uid.clone(), f.clone()));
                         let right = assertion_values.get(&(b.uid.clone(), f.clone()));
                         return match (left, right) {
-                            (Some(a), Some(b)) => if desc { b.cmp(a) } else { a.cmp(b) },
+                            (Some(a), Some(b)) => {
+                                if desc {
+                                    b.cmp(a)
+                                } else {
+                                    a.cmp(b)
+                                }
+                            }
                             (Some(_), None) => std::cmp::Ordering::Less,
                             (None, Some(_)) => std::cmp::Ordering::Greater,
                             (None, None) => std::cmp::Ordering::Equal,
@@ -1717,31 +1847,29 @@ async fn order_records(
                 });
             }
             Order::Link(rule) => {
-                {
-                    let family=store::vocabulary::meaning_family(&store.pool,&rule.kind,None).await?;
-                    let edges =
-                        store::assertions::edges_of_predicates(&store.pool, &family).await?;
-                    let edges = if rule.higher == LinkEndpoint::From {
-                        edges
-                    } else {
-                        edges
-                            .into_iter()
-                            .map(|edge| nucleus::graph::Edge {
-                                from: edge.to,
-                                to: edge.from,
-                                quantity: edge.quantity,
-                            })
-                            .collect()
-                    };
-                    let uids: Vec<String> = rows.iter().map(|r| r.uid.clone()).collect();
-                    let ordered = nucleus::graph::topo_order(&uids, &edges);
-                    let mut by_uid: HashMap<String, store::records::RecordRow> =
-                        rows.into_iter().map(|r| (r.uid.clone(), r)).collect();
-                    rows = ordered
+                let family =
+                    store::vocabulary::meaning_family(&store.pool, &rule.kind, None).await?;
+                let edges = store::assertions::edges_of_predicates(&store.pool, &family).await?;
+                let edges = if rule.higher == LinkEndpoint::From {
+                    edges
+                } else {
+                    edges
                         .into_iter()
-                        .filter_map(|uid| by_uid.remove(&uid))
-                        .collect();
-                }
+                        .map(|edge| nucleus::graph::Edge {
+                            from: edge.to,
+                            to: edge.from,
+                            quantity: edge.quantity,
+                        })
+                        .collect()
+                };
+                let uids: Vec<String> = rows.iter().map(|r| r.uid.clone()).collect();
+                let ordered = nucleus::graph::topo_order(&uids, &edges);
+                let mut by_uid: HashMap<String, store::records::RecordRow> =
+                    rows.into_iter().map(|r| (r.uid.clone(), r)).collect();
+                rows = ordered
+                    .into_iter()
+                    .filter_map(|uid| by_uid.remove(&uid))
+                    .collect();
             }
         }
     }
@@ -1891,11 +2019,11 @@ async fn attach_includes(
         );
     }
     if let Some(links) = &include.links {
-        row["links"] = Value::Array(links_for_record(store, record_uid, links, concept_names, subject).await?);
+        row["links"] =
+            Value::Array(links_for_record(store, record_uid, links, concept_names, subject).await?);
     }
     if let Some(threads) = &include.threads {
-        row["threads"] =
-            json!(threads_for_record(store, record_uid, threads).await?);
+        row["threads"] = json!(threads_for_record(store, record_uid, threads).await?);
     }
     if let Some(extension) = &include.extension {
         row["extension"] =
@@ -1904,7 +2032,8 @@ async fn attach_includes(
                 .unwrap_or(Value::Null);
     }
     if include.numeric_extensions {
-        row["numeric_extensions"] = serde_json::json!(store::records::numeric_extensions(&store.pool, record_uid).await?);
+        row["numeric_extensions"] =
+            serde_json::json!(store::records::numeric_extensions(&store.pool, record_uid).await?);
     }
     if include.reference_reads {
         let mut reads = Vec::new();
@@ -1946,8 +2075,9 @@ async fn attach_includes(
             })
             .unwrap_or(Value::Null);
         if row["contact"].is_object() {
-            row["contact"]["organ_access"] = serde_json::to_value(store::organ_access::get(&store.pool, record_uid).await?)
-                .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
+            row["contact"]["organ_access"] =
+                serde_json::to_value(store::organ_access::get(&store.pool, record_uid).await?)
+                    .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
             let mailbox: (i64, i64, Option<String>) = store::sqlx::query_as("SELECT COUNT(*), COALESCE(SUM(EXISTS(SELECT 1 FROM mailbox_outbox_receipt r WHERE r.uid=o.uid)),0), (SELECT MAX(r.accepted_at) FROM mailbox_outbox_receipt r JOIN mailbox_outbox q ON q.uid=r.uid WHERE q.to_organ=?1) FROM mailbox_outbox o WHERE o.to_organ=?1").bind(record_uid).fetch_one(&store.pool).await?;
             row["contact"]["delivery_status"] = json!({"saved_mail":mailbox.0,"mailbox_stored":mailbox.1,"last_mailbox_storage":mailbox.2,"queued_operations":store::sqlx::query_scalar::<_,i64>("SELECT COUNT(*) FROM sync_outbox WHERE contact_organ=?").bind(record_uid).fetch_one(&store.pool).await?});
             row["contact"]["quarantined"] = json!(
@@ -2140,16 +2270,47 @@ async fn threads_for_record(
         if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
         }
-        let social_root=store::replica::root_of(&store.pool,&thread.uid).await?;
-        let social_participant=if let Some(root)=&social_root {store::records::get_extension(&store.pool,root,nucleus::social::requests::PARTICIPANTS_NAMESPACE).await?} else {None};
-        let social_reveal=if let Some(root)=&social_root && social_participant.is_some() {store::records::get_extension(&store.pool,root,nucleus::social::requests::REVEAL_NAMESPACE).await?} else {None};
-        let messages_limit = settings.message_limits.get(&thread.uid).copied().unwrap_or(settings.messages_limit).clamp(1, 2000);
+        let social_root = store::replica::root_of(&store.pool, &thread.uid).await?;
+        let social_participant = if let Some(root) = &social_root {
+            store::records::get_extension(
+                &store.pool,
+                root,
+                nucleus::social::requests::PARTICIPANTS_NAMESPACE,
+            )
+            .await?
+        } else {
+            None
+        };
+        let social_reveal = if let Some(root) = &social_root
+            && social_participant.is_some()
+        {
+            store::records::get_extension(
+                &store.pool,
+                root,
+                nucleus::social::requests::REVEAL_NAMESPACE,
+            )
+            .await?
+        } else {
+            None
+        };
+        let messages_limit = settings
+            .message_limits
+            .get(&thread.uid)
+            .copied()
+            .unwrap_or(settings.messages_limit)
+            .clamp(1, 2000);
         let before = settings.message_before.get(&thread.uid);
         let mut messages = Vec::new();
         let mut linked_messages = match &message_in {
             Some(message_in) => {
-                store::assertions::messages_before(&store.pool, message_in, &thread.uid, messages_limit + 1, before.map(|cursor| (cursor.created_at.as_str(), cursor.uid.as_str())))
-                    .await?
+                store::assertions::messages_before(
+                    &store.pool,
+                    message_in,
+                    &thread.uid,
+                    messages_limit + 1,
+                    before.map(|cursor| (cursor.created_at.as_str(), cursor.uid.as_str())),
+                )
+                .await?
             }
             None => Vec::new(),
         };
@@ -2198,19 +2359,51 @@ async fn threads_for_record(
                 organ_name_for(store, &mut organ_names, message.organ_uid.as_deref()).await?;
             let lifecycle =
                 store::records::get_extension(&store.pool, &message.uid, "lince.message").await?;
-            let social=store::records::get_extension(&store.pool,&message.uid,nucleus::social::requests::MESSAGE_NAMESPACE).await?;
-            let author = social.as_ref().and_then(|s|s["content"]["author_owner"].as_str()).map(str::to_owned).or_else(|| lifecycle
+            let social = store::records::get_extension(
+                &store.pool,
+                &message.uid,
+                nucleus::social::requests::MESSAGE_NAMESPACE,
+            )
+            .await?;
+            let author = social
                 .as_ref()
-                .and_then(|value| value.get("author"))
-                .and_then(Value::as_str)
-                .map(str::to_string)
-                .or_else(|| created_by.clone())
-                .or_else(|| message.organ_uid.clone())
-                ).unwrap_or_else(|| "local".into());
+                .and_then(|s| s["content"]["author_owner"].as_str())
+                .map(str::to_owned)
+                .or_else(|| {
+                    lifecycle
+                        .as_ref()
+                        .and_then(|value| value.get("author"))
+                        .and_then(Value::as_str)
+                        .map(str::to_string)
+                        .or_else(|| created_by.clone())
+                        .or_else(|| message.organ_uid.clone())
+                })
+                .unwrap_or_else(|| "local".into());
             let author_name = if social.is_some() {
-                if social_participant.as_ref().is_some_and(|p|p["local_owner"]==author) { Some("You (private identity)".to_owned()) }
-                else { social_reveal.as_ref().and_then(|r|r["peer"]["profile"]["fields"]["name"].as_str()).filter(|s|!s.is_empty()).map(str::to_owned).or_else(||social_participant.as_ref().and_then(|p|p["alias"].as_str().filter(|s|!s.is_empty()).map(str::to_owned))).or_else(||Some("Anonymous participant".to_owned())) }
-            } else { organ_name_for(store, &mut organ_names, Some(&author)).await? };
+                if social_participant
+                    .as_ref()
+                    .is_some_and(|p| p["local_owner"] == author)
+                {
+                    Some("You (private identity)".to_owned())
+                } else {
+                    social_reveal
+                        .as_ref()
+                        .and_then(|r| r["peer"]["profile"]["fields"]["name"].as_str())
+                        .filter(|s| !s.is_empty())
+                        .map(str::to_owned)
+                        .or_else(|| {
+                            social_participant.as_ref().and_then(|p| {
+                                p["alias"]
+                                    .as_str()
+                                    .filter(|s| !s.is_empty())
+                                    .map(str::to_owned)
+                            })
+                        })
+                        .or_else(|| Some("Anonymous participant".to_owned()))
+                }
+            } else {
+                organ_name_for(store, &mut organ_names, Some(&author)).await?
+            };
             let operator = lifecycle
                 .as_ref()
                 .and_then(|value| value.get("operator"))
@@ -2223,7 +2416,8 @@ async fn threads_for_record(
                 .and_then(Value::as_str)
                 .filter(|value| matches!(*value, "writing" | "finished" | "interrupted"))
                 .unwrap_or("finished");
-            let tool_call = store::records::get_extension(&store.pool, &message.uid, "lince.tool-call").await?;
+            let tool_call =
+                store::records::get_extension(&store.pool, &message.uid, "lince.tool-call").await?;
             messages.push(json!({
                 "uid": message.uid,
                 "head": message.head,
@@ -2272,14 +2466,22 @@ async fn threads_for_record(
         let thread_created_at = store::records::created_at(&store.pool, &thread.uid).await?;
         let mut calls = Vec::new();
         if let Some(predicate) = store::vocabulary::feature_read(&store.pool, "call").await? {
-            for record in store::assertions::subjects_pointing_to(&store.pool, &predicate, &thread.uid).await?.into_iter().filter(|record| record.kind == "call_session").take(50) {
-                if let Ok(summary) = serde_json::from_str::<Value>(&record.body) { calls.push(summary); }
+            for record in
+                store::assertions::subjects_pointing_to(&store.pool, &predicate, &thread.uid)
+                    .await?
+                    .into_iter()
+                    .filter(|record| record.kind == "call_session")
+                    .take(50)
+            {
+                if let Ok(summary) = serde_json::from_str::<Value>(&record.body) {
+                    calls.push(summary);
+                }
             }
         }
         let (thread_created_by, thread_sender) = creator_info(store, &thread.uid).await?;
         let thread_organ_name =
             organ_name_for(store, &mut organ_names, thread.organ_uid.as_deref()).await?;
-        let social_conversation=social_participant.is_some();
+        let social_conversation = social_participant.is_some();
         out.push(json!({
             "uid": thread.uid,
             "head": thread.head,
@@ -2352,7 +2554,12 @@ struct PredicateCtx {
 }
 
 impl PredicateCtx {
-    async fn prepare(store: &Store, preds: &[Predicate], visible: Option<&HashSet<String>>, subject: Option<&str>) -> Result<Self, ProteinError> {
+    async fn prepare(
+        store: &Store,
+        preds: &[Predicate],
+        visible: Option<&HashSet<String>>,
+        subject: Option<&str>,
+    ) -> Result<Self, ProteinError> {
         fn near(predicate: &Predicate) -> bool {
             match predicate {
                 Predicate::Near { .. } => true,
@@ -2366,7 +2573,11 @@ impl PredicateCtx {
             concept_families: HashMap::new(),
             record_concepts: HashMap::new(),
             anchors: HashMap::new(),
-            locations: if preds.iter().any(near) { store::places::saved_locations_for_person(&store.pool, visible, subject).await? } else { HashMap::new() },
+            locations: if preds.iter().any(near) {
+                store::places::saved_locations_for_person(&store.pool, visible, subject).await?
+            } else {
+                HashMap::new()
+            },
             relations: HashMap::new(),
             branches: HashMap::new(),
             work: None,
@@ -2387,18 +2598,28 @@ impl PredicateCtx {
                         .into_iter()
                         .collect();
                 }
-                let family = match store::vocabulary::resolve(&store.pool, name, self.person.as_deref()).await? {
-                    Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
+                let family =
+                    match store::vocabulary::resolve(&store.pool, name, self.person.as_deref())
                         .await?
-                        .into_iter()
-                        .collect(),
-                    None => HashSet::new(),
-                };
+                    {
+                        Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
+                            .await?
+                            .into_iter()
+                            .collect(),
+                        None => HashSet::new(),
+                    };
                 self.concept_families.insert(name.clone(), family);
             }
             Predicate::Near { of, .. } => {
                 let place = match store::records::resolve(&store.pool, of).await? {
-                    Some(r) => self.locations.get(&r.uid).and_then(|location| location.selected.as_ref()).map(|candidate| nucleus::place::Place { lat: candidate.latitude, lon: candidate.longitude }),
+                    Some(r) => self
+                        .locations
+                        .get(&r.uid)
+                        .and_then(|location| location.selected.as_ref())
+                        .map(|candidate| nucleus::place::Place {
+                            lat: candidate.latitude,
+                            lon: candidate.longitude,
+                        }),
                     None => None,
                 };
                 self.anchors.insert(of.clone(), place);
@@ -2413,19 +2634,19 @@ impl PredicateCtx {
                     return Ok(());
                 }
                 let root = store::records::resolve(&store.pool, record).await?;
-                let family = store::vocabulary::meaning_family(&store.pool,kind,self.person.as_deref()).await?;
+                let family =
+                    store::vocabulary::meaning_family(&store.pool, kind, self.person.as_deref())
+                        .await?;
                 let members = match root {
-                    Some(root) => {
-                        store::assertions::record_descendants(
-                            &store.pool,
-                            &root.uid,
-                            &family,
-                            *include_self,
-                        )
-                        .await?
-                        .into_iter()
-                        .collect()
-                    }
+                    Some(root) => store::assertions::record_descendants(
+                        &store.pool,
+                        &root.uid,
+                        &family,
+                        *include_self,
+                    )
+                    .await?
+                    .into_iter()
+                    .collect(),
                     _ => HashSet::new(),
                 };
                 self.branches.insert(key, members);
@@ -2439,7 +2660,9 @@ impl PredicateCtx {
                 if self.relations.contains_key(&key) {
                     return Ok(());
                 }
-                let predicates = store::vocabulary::meaning_family(&store.pool,kind,self.person.as_deref()).await?;
+                let predicates =
+                    store::vocabulary::meaning_family(&store.pool, kind, self.person.as_deref())
+                        .await?;
                 if predicates.is_empty() {
                     self.relations.insert(key, HashSet::new());
                     return Ok(());
@@ -2635,7 +2858,13 @@ impl PredicateCtx {
                 Predicate::Near { of, meters } => {
                     match (
                         self.anchors.get(of).and_then(|a| *a),
-                        self.locations.get(&r.uid).and_then(|location| location.selected.as_ref()).map(|candidate| nucleus::place::Place { lat: candidate.latitude, lon: candidate.longitude }),
+                        self.locations
+                            .get(&r.uid)
+                            .and_then(|location| location.selected.as_ref())
+                            .map(|candidate| nucleus::place::Place {
+                                lat: candidate.latitude,
+                                lon: candidate.longitude,
+                            }),
                     ) {
                         (Some(anchor), Some(here)) => nucleus::place::near(here, anchor, *meters),
                         _ => false,
@@ -3639,24 +3868,31 @@ fn timeline_overflow() -> ProteinError {
         .into()
 }
 
-async fn execute_concepts(store: &Store, protein: &Protein, subject: Option<&str>) -> Result<Vec<Value>, ProteinError> {
+async fn execute_concepts(
+    store: &Store,
+    protein: &Protein,
+    subject: Option<&str>,
+) -> Result<Vec<Value>, ProteinError> {
     let names = store::vocabulary::display_names(&store.pool, subject).await?;
     let terms = store::vocabulary::terms(&store.pool, subject).await?;
     let sources = store::vocabulary::sources(&store.pool).await?;
     let definitions = store::vocabulary::definition_versions(&store.pool).await?;
     let terminology = store::vocabulary::terminology_state(&store.pool, subject).await?;
     let features = store::vocabulary::feature_bindings(&store.pool).await?;
-    let (write_location, binding_revision, location_concepts) = store::vocabulary::location_bindings(&store.pool).await?;
+    let (write_location, binding_revision, location_concepts) =
+        store::vocabulary::location_bindings(&store.pool).await?;
     let mut family: Option<HashSet<String>> = None;
     for p in &protein.filter {
         if let Predicate::ConceptIn(name) = p {
-            family = Some(match store::vocabulary::resolve(&store.pool, name, subject).await? {
-                Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
-                    .await?
-                    .into_iter()
-                    .collect(),
-                None => HashSet::new(),
-            });
+            family = Some(
+                match store::vocabulary::resolve(&store.pool, name, subject).await? {
+                    Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
+                        .await?
+                        .into_iter()
+                        .collect(),
+                    None => HashSet::new(),
+                },
+            );
         }
     }
     let mut out = Vec::new();
@@ -3666,8 +3902,12 @@ async fn execute_concepts(store: &Store, protein: &Protein, subject: Option<&str
         }
         let name_matches = protein.filter.iter().all(|p| match p {
             Predicate::UidEq(uid) => c.uid == *uid,
-            Predicate::SlugEq(name) => terms.iter().any(|term| term.concept_uid == c.uid && term.name == *name),
-            Predicate::TextContains(text) => terms.iter().any(|term| term.concept_uid == c.uid && term.name.to_lowercase().contains(&text.to_lowercase())),
+            Predicate::SlugEq(name) => terms
+                .iter()
+                .any(|term| term.concept_uid == c.uid && term.name == *name),
+            Predicate::TextContains(text) => terms.iter().any(|term| {
+                term.concept_uid == c.uid && term.name.to_lowercase().contains(&text.to_lowercase())
+            }),
             _ => true,
         });
         if !name_matches {
@@ -3727,18 +3967,24 @@ async fn execute_linguas(store: &Store, protein: &Protein) -> Result<Vec<Value>,
     Ok(out)
 }
 
-async fn execute_assertions(store: &Store, protein: &Protein, subject: Option<&str>) -> Result<Vec<Value>, ProteinError> {
+async fn execute_assertions(
+    store: &Store,
+    protein: &Protein,
+    subject: Option<&str>,
+) -> Result<Vec<Value>, ProteinError> {
     let concept_names = store::vocabulary::display_names(&store.pool, subject).await?;
     let mut family: Option<HashSet<String>> = None;
     for predicate in &protein.filter {
         if let Predicate::ConceptIn(name) = predicate {
-            family = Some(match store::vocabulary::resolve(&store.pool, name, subject).await? {
-                Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
-                    .await?
-                    .into_iter()
-                    .collect(),
-                None => HashSet::new(),
-            });
+            family = Some(
+                match store::vocabulary::resolve(&store.pool, name, subject).await? {
+                    Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
+                        .await?
+                        .into_iter()
+                        .collect(),
+                    None => HashSet::new(),
+                },
+            );
         }
     }
     let mut out = Vec::new();
@@ -3934,7 +4180,9 @@ fn agreement_required(agreement_type: &str, agreement_pct: Option<i64>, parties:
 }
 
 const PHASE_1_DRAFT_ACTIONS_BLOCKER: &str = "phase_1_draft_actions_not_available";
-use store::transfer_agreement::{AgreementReadinessProjection, agreement_path_matches, with_promise_context};
+use store::transfer_agreement::{
+    AgreementReadinessProjection, agreement_path_matches, with_promise_context,
+};
 
 struct EffectiveSettlementApplication {
     record: Option<String>,
@@ -3952,21 +4200,55 @@ async fn effective_settlement_application(
     owner_person_uid: &str,
     cell_formula: &str,
 ) -> Result<EffectiveSettlementApplication, ProteinError> {
-    let record = store::transfer_accounting::bound_record(&store.pool, &occurrence.transfer_uid,
-        occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), owner_person_uid, source_promise.record_uid.as_deref()).await?;
+    let record = store::transfer_accounting::bound_record(
+        &store.pool,
+        &occurrence.transfer_uid,
+        occurrence
+            .exchange_uid
+            .as_deref()
+            .unwrap_or(&occurrence.promise_uid),
+        owner_person_uid,
+        source_promise.record_uid.as_deref(),
+    )
+    .await?;
     let _ = cell_formula;
-    match store::transfer_accounting::effective(&store.pool, &store::transfer_accounting::Binding {
-        transfer: &occurrence.transfer_uid, exchange: occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid),
-        occurrence: Some(&occurrence.uid), person: owner_person_uid,
-        record: record.as_deref(), unit: occurrence.unit_uid.as_deref(),
-        outgoing: source_promise.delta < 0.0,
-    }).await {
+    match store::transfer_accounting::effective(
+        &store.pool,
+        &store::transfer_accounting::Binding {
+            transfer: &occurrence.transfer_uid,
+            exchange: occurrence
+                .exchange_uid
+                .as_deref()
+                .unwrap_or(&occurrence.promise_uid),
+            occurrence: Some(&occurrence.uid),
+            person: owner_person_uid,
+            record: record.as_deref(),
+            unit: occurrence.unit_uid.as_deref(),
+            outgoing: source_promise.delta < 0.0,
+        },
+    )
+    .await
+    {
         Ok(application) => Ok(EffectiveSettlementApplication {
             record: application.record,
-            formula: application.formula, formula_hash: application.formula_hash,
-            version: application.version, source: if application.policy.is_some() { "private_policy" } else { "default" }, error: None,
+            formula: application.formula,
+            formula_hash: application.formula_hash,
+            version: application.version,
+            source: if application.policy.is_some() {
+                "private_policy"
+            } else {
+                "default"
+            },
+            error: None,
         }),
-        Err(error) => Ok(EffectiveSettlementApplication { record, formula: String::new(), formula_hash: String::new(), version: 0, source: "unavailable", error: Some(error.to_string()) }),
+        Err(error) => Ok(EffectiveSettlementApplication {
+            record,
+            formula: String::new(),
+            formula_hash: String::new(),
+            version: 0,
+            source: "unavailable",
+            error: Some(error.to_string()),
+        }),
     }
 }
 
@@ -3996,7 +4278,10 @@ pub async fn transfer_ready_promises_for_person(
         .promises
         .iter()
         .filter(|promise| promise.person_uid.as_deref() == Some(person_uid))
-        .filter(|promise| promise.state == "agreed" || input.agreement_type == "dependency" && promise.state == "proposed")
+        .filter(|promise| {
+            promise.state == "agreed"
+                || input.agreement_type == "dependency" && promise.state == "proposed"
+        })
         .filter(|promise| {
             readiness
                 .promises
@@ -4043,18 +4328,35 @@ pub fn transfer_occurrence_roles(
         if actor != exchange.owner(promise.delta) {
             return Err("exchange_direction_invalid");
         }
-        let other = if actor == exchange.giver { &exchange.receiver } else { &exchange.giver };
-        if !eligible_counterparty(Some(other)) || !input.parties.iter().any(|party| party.person_uid == *other) {
+        let other = if actor == exchange.giver {
+            &exchange.receiver
+        } else {
+            &exchange.giver
+        };
+        if !eligible_counterparty(Some(other))
+            || !input.parties.iter().any(|party| party.person_uid == *other)
+        {
             return Err("exchange_counterparty_unavailable");
         }
-        let matches = input.promises.iter().filter(|other| agreement_path_matches(promise, other)).collect::<Vec<_>>();
+        let matches = input
+            .promises
+            .iter()
+            .filter(|other| agreement_path_matches(promise, other))
+            .collect::<Vec<_>>();
         if matches.len() > 1 {
             return Err("exchange_allocation_ambiguous");
         }
-        if matches.first().is_some_and(|other| !matches!(other.state.as_str(), "agreed" | "active")) {
+        if matches
+            .first()
+            .is_some_and(|other| !matches!(other.state.as_str(), "agreed" | "active"))
+        {
             return Err("exchange_counterparty_not_agreed");
         }
-        return Ok((matches.first().map(|promise| promise.uid.clone()), exchange.giver.clone(), exchange.receiver.clone()));
+        return Ok((
+            matches.first().map(|promise| promise.uid.clone()),
+            exchange.giver.clone(),
+            exchange.receiver.clone(),
+        ));
     }
     let exact = input
         .promises
@@ -5047,8 +5349,18 @@ async fn execute_transfer_settlement_preview(
         return Ok(Vec::new());
     }
     if visible.is_some_and(|visible| !visible.contains(local_record_uid))
-        || !transfer_application::visible_policy(store, &occurrence.transfer_uid,
-            occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), owner_person_uid, visible).await? {
+        || !transfer_application::visible_policy(
+            store,
+            &occurrence.transfer_uid,
+            occurrence
+                .exchange_uid
+                .as_deref()
+                .unwrap_or(&occurrence.promise_uid),
+            owner_person_uid,
+            visible,
+        )
+        .await?
+    {
         return Ok(Vec::new());
     }
     let cell_formula = store::config::transfer_application_formula(&store.pool).await?;
@@ -5064,16 +5376,35 @@ async fn execute_transfer_settlement_preview(
         return Ok(Vec::new());
     }
     let local_record_uid = application.record.as_deref().unwrap_or(local_record_uid);
-    let applied = store::transfer_accounting::applied(&store.pool, occurrence_uid, owner_person_uid).await?;
-    let canonical_after = store::exact::sum_exact([applied.canonical, nucleus::transfer::application::amount(requested_quantity).map_err(|error| store::StoreError::Protocol(error.to_string()))?])?;
-    let group = store::transfer_effects::quote(&store.pool, &store::transfer_accounting::Binding {
-        transfer:&occurrence.transfer_uid, exchange:occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid),
-        occurrence:Some(occurrence_uid), person:owner_person_uid, record:Some(local_record_uid),
-        unit:occurrence.unit_uid.as_deref(), outgoing:source_promise.delta < 0.0,
-    }, canonical_after).await?;
+    let applied =
+        store::transfer_accounting::applied(&store.pool, occurrence_uid, owner_person_uid).await?;
+    let canonical_after = store::exact::sum_exact([
+        applied.canonical,
+        nucleus::transfer::application::amount(requested_quantity)
+            .map_err(|error| store::StoreError::Protocol(error.to_string()))?,
+    ])?;
+    let group = store::transfer_effects::quote(
+        &store.pool,
+        &store::transfer_accounting::Binding {
+            transfer: &occurrence.transfer_uid,
+            exchange: occurrence
+                .exchange_uid
+                .as_deref()
+                .unwrap_or(&occurrence.promise_uid),
+            occurrence: Some(occurrence_uid),
+            person: owner_person_uid,
+            record: Some(local_record_uid),
+            unit: occurrence.unit_uid.as_deref(),
+            outgoing: source_promise.delta < 0.0,
+        },
+        canonical_after,
+    )
+    .await?;
     let (delta, after) = if let Some(group) = &group {
         (group.effects[0].delta, group.effects[0].cumulative_after)
-    } else { store::transfer_accounting::calculate(&application.formula, canonical_after, applied.local)? };
+    } else {
+        store::transfer_accounting::calculate(&application.formula, canonical_after, applied.local)?
+    };
     let local_delta = delta.to_f64();
     let local_cumulative_after = after.to_f64();
     let remainder_policy = store::transfers::effective_occurrence_remainder_policy(
@@ -5197,7 +5528,10 @@ async fn transfer_visible_for_viewer(
         return Ok(true);
     }
     if let Some(subject) = viewer.subject.as_deref()
-        && store::facts::creator_uid(&store.pool, transfer_uid).await?.as_deref() == Some(subject)
+        && store::facts::creator_uid(&store.pool, transfer_uid)
+            .await?
+            .as_deref()
+            == Some(subject)
     {
         return Ok(true);
     }
@@ -5206,7 +5540,9 @@ async fn transfer_visible_for_viewer(
     };
     let remote: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_remote_reference r JOIN record own ON own.uid = r.recipient_organ_uid AND own.slug = 'local-organ' AND own.deleted_at IS NULL WHERE r.transfer_uid = ? AND r.recipient_person_uid = ? AND r.state = 'active' AND r.projection IS NOT NULL)")
         .bind(transfer_uid).bind(person).fetch_one(&store.pool).await?;
-    if remote { return Ok(true); }
+    if remote {
+        return Ok(true);
+    }
     if store::transfers::creator_party_actor(&store.pool, transfer_uid)
         .await?
         .as_deref()
@@ -5686,8 +6022,17 @@ async fn origin_social_delivery_projection(
     })
     .collect::<Vec<_>>();
     for handoff in &mut settlement_handoffs {
-        if can_admin_delivery && handoff["organ"] == local_organ.uid && handoff["person"].as_str() == acting_person {
-            *handoff = transfer_application::preview(store, handoff["uid"].as_str().unwrap_or_default(), acting_person, visible).await?;
+        if can_admin_delivery
+            && handoff["organ"] == local_organ.uid
+            && handoff["person"].as_str() == acting_person
+        {
+            *handoff = transfer_application::preview(
+                store,
+                handoff["uid"].as_str().unwrap_or_default(),
+                acting_person,
+                visible,
+            )
+            .await?;
         }
     }
     let designated_cell = store::executor::designated(&store.pool, transfer_uid).await?;
@@ -6067,7 +6412,11 @@ fn attach_phase6_transfer_projection(rows: &mut [TransferOutput]) {
             .collect::<Vec<_>>();
         let (root, path, parent_cycle) = phase6_hierarchy_path(&row.uid, &parents, &visible);
         let dependency_cycle = cycle_nodes.contains(&row.uid);
-        let self_ready = row.value.pointer("/readiness/ready").and_then(Value::as_bool).unwrap_or(false);
+        let self_ready = row
+            .value
+            .pointer("/readiness/ready")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let dependency_blockers = row
             .value
             .get("dependencies")
@@ -6188,7 +6537,11 @@ fn attach_phase6_transfer_projection(rows: &mut [TransferOutput]) {
                 }),
             );
             let phase6_ready = self_ready;
-            let authoritative_blockers = object.get("readiness").and_then(|value| value.get("blockers")).cloned().unwrap_or_else(|| json!([]));
+            let authoritative_blockers = object
+                .get("readiness")
+                .and_then(|value| value.get("blockers"))
+                .cloned()
+                .unwrap_or_else(|| json!([]));
             object.insert(
                 "phase6".into(),
                 json!({
@@ -6310,12 +6663,37 @@ async fn execute_transfers(
     } else {
         json!({"options":[],"more":false})
     };
+    let mut supplier_policies = Vec::new();
+    if let Some(person) = create_person {
+        let records:Vec<String>=store::sqlx::query_scalar("SELECT q.record_uid FROM trust_query_record q JOIN record r ON r.uid=q.record_uid WHERE q.owner_person_uid=? AND r.deleted_at IS NULL ORDER BY q.record_uid DESC LIMIT 16").bind(person).fetch_all(&store.pool).await?;
+        let mut used = 0usize;
+        let mut connection = store.pool.acquire().await?;
+        for record in records {
+            if visible.is_some_and(|visible| !visible.contains(&record)) {
+                continue;
+            }
+            let saved = store::trust_queries::get_on(&mut connection, &record).await?;
+            let bytes = serde_json::to_vec(&saved.query)
+                .map_err(|error| {
+                    transfer_query_error("supplier_policy_invalid", error.to_string())
+                })?
+                .len();
+            if used + bytes > 65536 {
+                continue;
+            }
+            used += bytes;
+            supplier_policies.push(json!({"label":saved.name,"query":saved.query}));
+        }
+    }
     let person_record = match viewer.person.as_deref() {
         Some(uid) => records_by_uid.get(uid),
         None => None,
     };
     let mut out = vec![json!({
         "kind": "transfer_context",
+        "supplier_reader_policies":supplier_policies,
+        "need_outcome_options":need_outcomes["options"],
+        "need_outcome_options_more":need_outcomes["more"],
         "acting_person": create_person.filter(|person| records_by_uid.get(*person).is_some_and(|record| record.kind == "person")),
         "organ": store::organs::local(&store.pool).await?.map(|organ| organ.uid),
         "viewer": {
@@ -6423,13 +6801,17 @@ async fn execute_transfers(
         let children_details_hidden = !hidden_children.is_empty();
         if !viewer.local {
             for child in store::transfer_children::history_children(&store.pool, uid).await? {
-                if !transfer_visible_for_viewer(store, &child, &viewer, visible).await? { hidden_children.insert(child); }
+                if !transfer_visible_for_viewer(store, &child, &viewer, visible).await? {
+                    hidden_children.insert(child);
+                }
             }
         }
         let mut hidden_parent_history = false;
         if !viewer.local {
             for parent in store::transfer_children::history_parents(&store.pool, uid).await? {
-                if !transfer_visible_for_viewer(store, &parent, &viewer, visible).await? { hidden_parent_history = true; }
+                if !transfer_visible_for_viewer(store, &parent, &viewer, visible).await? {
+                    hidden_parent_history = true;
+                }
             }
         }
         let hidden_parent = match t.transfer.parent_uid.as_deref() {
@@ -6437,41 +6819,76 @@ async fn execute_transfers(
             None => false,
         };
         let hide_child_blocker = |blocker: &mut Value| {
-            if blocker.get("child").and_then(Value::as_str).is_some_and(|uid| hidden_children.contains(uid)) {
+            if blocker
+                .get("child")
+                .and_then(Value::as_str)
+                .is_some_and(|uid| hidden_children.contains(uid))
+            {
                 *blocker = json!({"code": "required_part_not_ready", "message": "Waiting on a required part"});
             }
         };
-        for blocker in &mut agreement_readiness.blockers { hide_child_blocker(blocker); }
+        for blocker in &mut agreement_readiness.blockers {
+            hide_child_blocker(blocker);
+        }
         for promise in agreement_readiness.promises.values_mut() {
-            for blocker in &mut promise.blockers { hide_child_blocker(blocker); }
+            for blocker in &mut promise.blockers {
+                hide_child_blocker(blocker);
+            }
         }
         let mut hidden_upstreams = HashSet::new();
         if !viewer.local {
             for dependency in &readiness_input.dependencies {
-                let visible_dependency = dependency.upstream_kind == nucleus::transfer::TransferDependencyUpstreamKind::Transfer
-                    && transfer_visible_for_viewer(store, &dependency.upstream_uid, &viewer, visible).await?;
-                if !visible_dependency { hidden_upstreams.insert(dependency.upstream_uid.clone()); }
+                let visible_dependency = dependency.upstream_kind
+                    == nucleus::transfer::TransferDependencyUpstreamKind::Transfer
+                    && transfer_visible_for_viewer(
+                        store,
+                        &dependency.upstream_uid,
+                        &viewer,
+                        visible,
+                    )
+                    .await?;
+                if !visible_dependency {
+                    hidden_upstreams.insert(dependency.upstream_uid.clone());
+                }
             }
-            for (kind, upstream) in store::transfer_outcomes::history_upstreams(&store.pool, uid).await? {
-                if kind != "transfer" || !transfer_visible_for_viewer(store, &upstream, &viewer, visible).await? { hidden_upstreams.insert(upstream); }
+            for (kind, upstream) in
+                store::transfer_outcomes::history_upstreams(&store.pool, uid).await?
+            {
+                if kind != "transfer"
+                    || !transfer_visible_for_viewer(store, &upstream, &viewer, visible).await?
+                {
+                    hidden_upstreams.insert(upstream);
+                }
             }
             for dependency in &mut dependency_status {
                 dependency.as_object_mut().unwrap().remove("evidence");
-                if dependency["upstream"].as_str().is_some_and(|uid| hidden_upstreams.contains(uid)) {
+                if dependency["upstream"]
+                    .as_str()
+                    .is_some_and(|uid| hidden_upstreams.contains(uid))
+                {
                     *dependency = json!({"required_state":dependency["required_state"], "satisfied":dependency["satisfied"], "message":"Required outcome details are private"});
                 }
             }
         }
         let redact_upstream = |blocker: &mut Value| {
-            if blocker["upstream"].as_str().is_some_and(|uid| hidden_upstreams.contains(uid)) {
+            if blocker["upstream"]
+                .as_str()
+                .is_some_and(|uid| hidden_upstreams.contains(uid))
+            {
                 *blocker = json!({"code":"required_outcome_unresolved", "message":"Waiting on a required outcome"});
             }
         };
-        for blocker in &mut agreement_readiness.blockers { redact_upstream(blocker); }
+        for blocker in &mut agreement_readiness.blockers {
+            redact_upstream(blocker);
+        }
         let mut seen_blockers = HashSet::new();
-        agreement_readiness.blockers.retain(|blocker| seen_blockers.insert(blocker.to_string()));
+        agreement_readiness
+            .blockers
+            .retain(|blocker| seen_blockers.insert(blocker.to_string()));
         for promise in agreement_readiness.promises.values_mut() {
-            for blocker in &mut promise.blockers { redact_upstream(blocker); }
+            for blocker in &mut promise.blockers {
+                redact_upstream(blocker);
+            }
         }
         let occurrence_roles = readiness_input
             .promises
@@ -6493,11 +6910,20 @@ async fn execute_transfers(
             &states,
         );
         let remainder_cancelled = !occurrences.is_empty()
-            && settlement_progress_by_occurrence.values().any(|progress| progress.cancelled_exact.is_positive())
-            && occurrences.iter().all(|occurrence| settlement_progress_by_occurrence.get(&occurrence.uid)
-                .is_some_and(|progress| progress.remaining_exact.is_zero()))
-            && !promises.iter().any(|promise| matches!(promise.state, nucleus::PromiseState::Proposed | nucleus::PromiseState::Agreed)
-                && !occurred_promises.contains(promise.uid.as_str()));
+            && settlement_progress_by_occurrence
+                .values()
+                .any(|progress| progress.cancelled_exact.is_positive())
+            && occurrences.iter().all(|occurrence| {
+                settlement_progress_by_occurrence
+                    .get(&occurrence.uid)
+                    .is_some_and(|progress| progress.remaining_exact.is_zero())
+            })
+            && !promises.iter().any(|promise| {
+                matches!(
+                    promise.state,
+                    nucleus::PromiseState::Proposed | nucleus::PromiseState::Agreed
+                ) && !occurred_promises.contains(promise.uid.as_str())
+            });
         let agreement_states = states
             .iter()
             .filter(|state| {
@@ -6507,21 +6933,43 @@ async fn execute_transfers(
                 )
             })
             .collect::<Vec<_>>();
-        let derived_parent = promises.is_empty() && agreement_readiness.children.iter().any(|child| child.required);
-        let all_agreed = (agreement_states.is_empty() && agreement_readiness.children.iter().any(|child| child.required)) || !agreement_states.is_empty()
-            && agreement_states.iter().all(|state| {
-                matches!(
-                    state,
-                    nucleus::PromiseState::Agreed | nucleus::PromiseState::Kept
-                )
-            });
+        let derived_parent = promises.is_empty()
+            && agreement_readiness
+                .children
+                .iter()
+                .any(|child| child.required);
+        let all_agreed = (agreement_states.is_empty()
+            && agreement_readiness
+                .children
+                .iter()
+                .any(|child| child.required))
+            || !agreement_states.is_empty()
+                && agreement_states.iter().all(|state| {
+                    matches!(
+                        state,
+                        nucleus::PromiseState::Agreed | nucleus::PromiseState::Kept
+                    )
+                });
         if status == "agreed" && !agreement_readiness.ready {
             status = "proposed";
-        } else if status == "proposed" && agreement_readiness.ready && (all_agreed || t.transfer.agreement_type == "dependency") {
+        } else if status == "proposed"
+            && agreement_readiness.ready
+            && (all_agreed || t.transfer.agreement_type == "dependency")
+        {
             status = "agreed";
         }
-        if agreement_readiness.observed && agreement_readiness.ready { status = "settled"; }
-        if derived_parent { status = if agreement_readiness.settled { "settled" } else if agreement_readiness.ready { "agreed" } else { "proposed" }; }
+        if agreement_readiness.observed && agreement_readiness.ready {
+            status = "settled";
+        }
+        if derived_parent {
+            status = if agreement_readiness.settled {
+                "settled"
+            } else if agreement_readiness.ready {
+                "agreed"
+            } else {
+                "proposed"
+            };
+        }
         if occurrences
             .iter()
             .any(|occurrence| occurrence.system_disputed)
@@ -6632,22 +7080,24 @@ async fn execute_transfers(
                     && invitation.status == store::transfers::TransferInvitationStatus::Pending
             })
         });
-        let viewer_agreement_pending = t.transfer.agreement_type != "dependency" && viewer_person.is_some_and(|person| {
-            parties
-                .iter()
-                .any(|(_, actor, level)| actor == person && *level < 2)
-        });
+        let viewer_agreement_pending = t.transfer.agreement_type != "dependency"
+            && viewer_person.is_some_and(|person| {
+                parties
+                    .iter()
+                    .any(|(_, actor, level)| actor == person && *level < 2)
+            });
         let viewer_claim_pending = viewer_person.is_some_and(|person| {
             occurrences.iter().any(|occurrence| {
                 (occurrence.giver_person_uid == person && !occurrence.delivery_claimed)
                     || (occurrence.receiver_person_uid == person && !occurrence.receipt_claimed)
             })
         });
-        let other_agreement_pending = t.transfer.agreement_type != "dependency" && viewer_person.is_some_and(|person| {
-            parties
-                .iter()
-                .any(|(_, actor, level)| actor != person && *level < 2)
-        });
+        let other_agreement_pending = t.transfer.agreement_type != "dependency"
+            && viewer_person.is_some_and(|person| {
+                parties
+                    .iter()
+                    .any(|(_, actor, level)| actor != person && *level < 2)
+            });
         let other_invitation_pending = viewer_person.is_some_and(|person| {
             invitations.iter().any(|invitation| {
                 invitation.addressed_person_uid != person
@@ -6688,7 +7138,9 @@ async fn execute_transfers(
             && states
                 .iter()
                 .all(|state| *state == nucleus::PromiseState::Withdrawn);
-        let structurally_terminal = (agreement_readiness.observed && agreement_readiness.ready) || remainder_cancelled || expired
+        let structurally_terminal = (agreement_readiness.observed && agreement_readiness.ready)
+            || remainder_cancelled
+            || expired
             || invitation_cancelled
             || all_withdrawn
             || states
@@ -6701,12 +7153,15 @@ async fn execute_transfers(
                 && settlement_progress_by_occurrence
                     .values()
                     .all(|progress| progress.settled));
-        let awaiting_me = !derived_parent && !structurally_terminal
+        let awaiting_me = !derived_parent
+            && !structurally_terminal
             && (inbox_invited
                 || (inbox_mine && (viewer_agreement_pending || viewer_claim_pending)));
-        let awaiting_others = (derived_parent && !agreement_readiness.ready) || !derived_parent && !structurally_terminal
-            && inbox_mine
-            && (other_invitation_pending || other_agreement_pending || other_claim_pending);
+        let awaiting_others = (derived_parent && !agreement_readiness.ready)
+            || !derived_parent
+                && !structurally_terminal
+                && inbox_mine
+                && (other_invitation_pending || other_agreement_pending || other_claim_pending);
         let primary_status = derive_transfer_primary_status(
             t.transfer.revision as u64,
             t.transfer.active,
@@ -6720,9 +7175,19 @@ async fn execute_transfers(
             awaiting_me,
             awaiting_others,
         );
-        let primary_status = if agreement_readiness.observed && agreement_readiness.ready { "completed" } else if derived_parent {
-            if agreement_readiness.settled { "completed" } else if agreement_readiness.ready { "agreed" } else { "awaiting_others" }
-        } else { primary_status };
+        let primary_status = if agreement_readiness.observed && agreement_readiness.ready {
+            "completed"
+        } else if derived_parent {
+            if agreement_readiness.settled {
+                "completed"
+            } else if agreement_readiness.ready {
+                "agreed"
+            } else {
+                "awaiting_others"
+            }
+        } else {
+            primary_status
+        };
         let coalition_members = readiness_input.coalition.as_ref().map(|coalition| {
             coalition
                 .party_uids
@@ -6883,8 +7348,14 @@ async fn execute_transfers(
             .chain(viewer.person.as_deref())
             .collect::<HashSet<_>>();
         for promise in revision_promises.unwrap_or_default() {
-            if disclosure_access.get(promise.uid.as_str()).is_some_and(|access| access.parties)
-                && let Some(exchange) = promise.item.as_ref().and_then(|item| item.exchange.as_ref()) {
+            if disclosure_access
+                .get(promise.uid.as_str())
+                .is_some_and(|access| access.parties)
+                && let Some(exchange) = promise
+                    .item
+                    .as_ref()
+                    .and_then(|item| item.exchange.as_ref())
+            {
                 visible_people.insert(exchange.giver.as_str());
                 visible_people.insert(exchange.receiver.as_str());
             }
@@ -7021,7 +7492,8 @@ async fn execute_transfers(
             let viewer_owns =
                 viewer.local || viewer.person.as_deref() == promise.person_uid.as_deref();
             viewer_owns
-                && (promise.state == "agreed" || t.transfer.agreement_type == "dependency" && promise.state == "proposed")
+                && (promise.state == "agreed"
+                    || t.transfer.agreement_type == "dependency" && promise.state == "proposed")
                 && promise
                     .person_uid
                     .as_deref()
@@ -7050,7 +7522,15 @@ async fn execute_transfers(
         let negotiation_write_blockers =
             viewer.negotiation_write_blockers(is_creator, is_participant, is_invitee);
         let can_write_negotiation = negotiation_write_blockers.is_empty();
-        let mut threads = threads_for_record(store, uid, &ThreadsInclude { messages_limit: 100, ..Default::default() }).await?;
+        let mut threads = threads_for_record(
+            store,
+            uid,
+            &ThreadsInclude {
+                messages_limit: 100,
+                ..Default::default()
+            },
+        )
+        .await?;
         for thread in &mut threads {
             if let Some(object) = thread.as_object_mut() {
                 object.insert(
@@ -7147,11 +7627,26 @@ async fn execute_transfers(
                 .as_deref()
                 .and_then(|record_uid| records_by_uid.get(record_uid));
             let private_effects_visible = if let Some(owner) = source_owner {
-                transfer_application::visible_policy(store, &occurrence.transfer_uid,
-                    occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), owner, visible).await?
-            } else { false };
-            let viewer_owns_origin = (viewer.local || viewer.person.as_deref() == source_owner) && private_effects_visible
-                && occurrence.record_uid.as_ref().is_none_or(|record| visible.is_none_or(|visible| visible.contains(record)));
+                transfer_application::visible_policy(
+                    store,
+                    &occurrence.transfer_uid,
+                    occurrence
+                        .exchange_uid
+                        .as_deref()
+                        .unwrap_or(&occurrence.promise_uid),
+                    owner,
+                    visible,
+                )
+                .await?
+            } else {
+                false
+            };
+            let viewer_owns_origin = (viewer.local || viewer.person.as_deref() == source_owner)
+                && private_effects_visible
+                && occurrence
+                    .record_uid
+                    .as_ref()
+                    .is_none_or(|record| visible.is_none_or(|visible| visible.contains(record)));
             let viewer_is_source_owner = source_owner.is_some_and(|owner| {
                 if viewer.local {
                     installed_signer_actor == Some(owner)
@@ -7174,23 +7669,32 @@ async fn execute_transfers(
                 || viewer.person.as_deref() == Some(occurrence.giver_person_uid.as_str());
             let viewer_is_receiver = viewer.local
                 || viewer.person.as_deref() == Some(occurrence.receiver_person_uid.as_str());
-            let outcome_history = store::transfer_evidence::history(&store.pool, &occurrence.uid, visible).await?;
+            let outcome_history =
+                store::transfer_evidence::history(&store.pool, &occurrence.uid, visible).await?;
             let mut outcome_measures = if let Some(record) = &occurrence.record_uid {
                 store::transfer_evidence::source_measures(&store.pool, record, visible).await?
-            } else { Vec::new() };
+            } else {
+                Vec::new()
+            };
             for entry in outcome_history["entries"].as_array().into_iter().flatten() {
                 let content = &entry["evidence"]["content"];
                 if content["kind"] == "need_binding" && entry["superseded"] != true {
-                    outcome_measures.retain(|option| !option["need_binding"].is_null() || option["measure"] != content["terms"]["measure"]);
+                    outcome_measures.retain(|option| {
+                        !option["need_binding"].is_null()
+                            || option["measure"] != content["terms"]["measure"]
+                    });
                     outcome_measures.push(json!({"label":format!("Need requested {} · {}",content["terms"]["requested"]["value"],entry["evidence"]["record"]),
                         "measure":content["terms"]["measure"],"need_binding":entry["evidence"]["record"]}));
                 }
             }
             for entry in outcome_history["entries"].as_array().into_iter().flatten() {
                 let content = &entry["evidence"]["content"];
-                if content["kind"] == "statement" && entry["superseded"] != true
+                if content["kind"] == "statement"
+                    && entry["superseded"] != true
                     && entry["evidence"]["author"].as_str() == create_person
-                    && !outcome_measures.iter().any(|option| option["measure"] == content["measure"])
+                    && !outcome_measures
+                        .iter()
+                        .any(|option| option["measure"] == content["measure"])
                 {
                     outcome_measures.push(json!({"label":"Previously reported meaning", "measure":content["measure"],"need_binding":content["need_binding"]}));
                 }
@@ -7388,7 +7892,13 @@ async fn execute_transfers(
                             &cell_application_formula,
                         )
                         .await?;
-                        let applied_local_delta = store::transfer_accounting::applied(&store.pool, &occurrence.uid, owner).await?.local;
+                        let applied_local_delta = store::transfer_accounting::applied(
+                            &store.pool,
+                            &occurrence.uid,
+                            owner,
+                        )
+                        .await?
+                        .local;
                         Some((
                             application.formula,
                             application.formula_hash,
@@ -7414,16 +7924,37 @@ async fn execute_transfers(
                     } else if progress.remaining_quantity > 0.0 {
                         let canonical_cumulative_after =
                             progress.settled_quantity + progress.remaining_quantity;
-                        let quantity = nucleus::transfer::application::amount(canonical_cumulative_after).map_err(|error| store::StoreError::Protocol(error.to_string()))?;
-                        let group = store::transfer_effects::quote(&store.pool, &store::transfer_accounting::Binding {
-                            transfer:&occurrence.transfer_uid, exchange:occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid),
-                            occurrence:Some(&occurrence.uid),person:source_owner.unwrap_or_default(),record:None,unit:occurrence.unit_uid.as_deref(),
-                            outgoing:origin_promise.is_some_and(|promise|promise.delta < 0.0),
-                        },quantity).await;
+                        let quantity =
+                            nucleus::transfer::application::amount(canonical_cumulative_after)
+                                .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
+                        let group = store::transfer_effects::quote(
+                            &store.pool,
+                            &store::transfer_accounting::Binding {
+                                transfer: &occurrence.transfer_uid,
+                                exchange: occurrence
+                                    .exchange_uid
+                                    .as_deref()
+                                    .unwrap_or(&occurrence.promise_uid),
+                                occurrence: Some(&occurrence.uid),
+                                person: source_owner.unwrap_or_default(),
+                                record: None,
+                                unit: occurrence.unit_uid.as_deref(),
+                                outgoing: origin_promise.is_some_and(|promise| promise.delta < 0.0),
+                            },
+                            quantity,
+                        )
+                        .await;
                         match group.and_then(|group| {
-                            let (delta,after) = if let Some(group) = &group { (group.effects[0].delta,group.effects[0].cumulative_after) }
-                                else { store::transfer_accounting::calculate(formula,quantity,*prior_local)? };
-                            Ok((delta,after,group))
+                            let (delta, after) = if let Some(group) = &group {
+                                (group.effects[0].delta, group.effects[0].cumulative_after)
+                            } else {
+                                store::transfer_accounting::calculate(
+                                    formula,
+                                    quantity,
+                                    *prior_local,
+                                )?
+                            };
+                            Ok((delta, after, group))
                         }) {
                             Ok((delta, after, group)) => {
                                 let local_delta = delta.to_f64();
@@ -7479,7 +8010,11 @@ async fn execute_transfers(
             let mut recorded_effects = HashMap::new();
             if viewer_owns_origin {
                 for slice in &progress.slices {
-                    recorded_effects.insert(slice.uid.clone(), store::transfer_effects::recorded(&store.pool,&slice.application_fact_uid).await?);
+                    recorded_effects.insert(
+                        slice.uid.clone(),
+                        store::transfer_effects::recorded(&store.pool, &slice.application_fact_uid)
+                            .await?,
+                    );
                 }
             }
             let settlement_history = progress
@@ -7722,10 +8257,18 @@ async fn execute_transfers(
                     },
                 },
             });
-            if viewer_is_source_owner && occurrence.record_uid.is_none() && installed_signer_actor == source_owner {
+            if viewer_is_source_owner
+                && occurrence.record_uid.is_none()
+                && installed_signer_actor == source_owner
+            {
                 projected_occurrence["application_preparation"] = transfer_application::prepare(
-                    store, uid, &occurrence.uid, t.transfer.revision as u64, source_owner.expect("source owner checked"),
-                ).await?;
+                    store,
+                    uid,
+                    &occurrence.uid,
+                    t.transfer.revision as u64,
+                    source_owner.expect("source owner checked"),
+                )
+                .await?;
             }
             if viewer_owns_origin {
                 let object = projected_occurrence
@@ -7780,16 +8323,23 @@ async fn execute_transfers(
                 );
             }
             let acting = installed_signer_actor.or(viewer.person.as_deref());
-            let participates = acting.is_some_and(|person| parties.iter().any(|(_,actor,_)|actor == person));
-            let cancellation_ready = participates && viewer.update_identity_blockers().is_empty()
-                && progress.remaining_exact.is_positive() && !occurrence.disputed && !occurrence.system_disputed;
-            projected_occurrence["capabilities"]["propose_cancellation"] = json!(cancellation_ready);
+            let participates =
+                acting.is_some_and(|person| parties.iter().any(|(_, actor, _)| actor == person));
+            let cancellation_ready = participates
+                && viewer.update_identity_blockers().is_empty()
+                && progress.remaining_exact.is_positive()
+                && !occurrence.disputed
+                && !occurrence.system_disputed;
+            projected_occurrence["capabilities"]["propose_cancellation"] =
+                json!(cancellation_ready);
             projected_occurrence["action_payloads"]["propose_cancellation"] = json!({
                 "action":"propose-transfer-cancellation","transfer":uid,"occurrence":occurrence.uid,
                 "expected_revision":t.transfer.revision,"expected_remaining_quantity":progress.remaining_exact,
                 "person":acting,"request_id":null
             });
-            let mut cancellations = store::transfer_cancellations::for_occurrence(&store.pool,uid,&occurrence.uid).await?;
+            let mut cancellations =
+                store::transfer_cancellations::for_occurrence(&store.pool, uid, &occurrence.uid)
+                    .await?;
             for cancellation in &mut cancellations {
                 cancellation["capabilities"] = json!({"apply_cancellation":participates && viewer.update_identity_blockers().is_empty() && cancellation["status"] == "pending" && cancellation["all_agreed"] == true});
                 cancellation["action_payloads"] = json!({"apply_cancellation":{
@@ -7844,20 +8394,22 @@ async fn execute_transfers(
         };
         let settlement_resource_progress = settlement_by_resource
             .into_iter()
-            .map(|((concept, unit), (canonical, settled, remaining, cancelled))| {
-                let concept_name = concept.as_deref().and_then(|uid| concept_names.get(uid));
-                let unit_name = unit.as_deref().and_then(|uid| concept_names.get(uid));
-                json!({
-                    "concept": concept,
-                    "concept_name": concept_name,
-                    "unit": unit,
-                    "unit_name": unit_name,
-                    "canonical_quantity": canonical,
-                    "settled_quantity": settled,
-                    "remaining_quantity": remaining,
-                    "cancelled_quantity": cancelled,
-                })
-            })
+            .map(
+                |((concept, unit), (canonical, settled, remaining, cancelled))| {
+                    let concept_name = concept.as_deref().and_then(|uid| concept_names.get(uid));
+                    let unit_name = unit.as_deref().and_then(|uid| concept_names.get(uid));
+                    json!({
+                        "concept": concept,
+                        "concept_name": concept_name,
+                        "unit": unit,
+                        "unit_name": unit_name,
+                        "canonical_quantity": canonical,
+                        "settled_quantity": settled,
+                        "remaining_quantity": remaining,
+                        "cancelled_quantity": cancelled,
+                    })
+                },
+            )
             .collect::<Vec<_>>();
         let inbox_facets = json!({
             "mine": inbox_mine,
@@ -8664,8 +9216,10 @@ async fn execute_transfers(
                 object.insert("social_delivery".into(), social_delivery);
             }
         }
-        let can_change_children = is_participant && viewer_person.is_some()
-            && installed_signer_actor == viewer_person && (viewer.local || viewer.has_permission("transfer:update"));
+        let can_change_children = is_participant
+            && viewer_person.is_some()
+            && installed_signer_actor == viewer_person
+            && (viewer.local || viewer.has_permission("transfer:update"));
         if let Some(children) = value["children"].as_array_mut() {
             for child in children {
                 child["capabilities"] = json!({"set_requirement": can_change_children});
@@ -8677,10 +9231,24 @@ async fn execute_transfers(
             }
         }
         if hidden_parent {
-            for key in ["parent", "parent_head", "parent_slug"] { value.as_object_mut().unwrap().remove(key); }
+            for key in ["parent", "parent_head", "parent_slug"] {
+                value.as_object_mut().unwrap().remove(key);
+            }
         }
-        if !hidden_children.is_empty() || hidden_parent_history || hidden_parent || !hidden_upstreams.is_empty() {
-            for key in ["revision_evidence", "proof", "timeline", "draft_terms", "terms", "proposal", "counteroffer"] {
+        if !hidden_children.is_empty()
+            || hidden_parent_history
+            || hidden_parent
+            || !hidden_upstreams.is_empty()
+        {
+            for key in [
+                "revision_evidence",
+                "proof",
+                "timeline",
+                "draft_terms",
+                "terms",
+                "proposal",
+                "counteroffer",
+            ] {
                 value.as_object_mut().unwrap().remove(key);
             }
             value["children_details_hidden"] = json!(children_details_hidden);
@@ -8689,20 +9257,35 @@ async fn execute_transfers(
         let accepted_loans = store::transfer_loans::accepted(&store.pool, uid).await?;
         if let Some(promises) = value["promises"].as_array_mut() {
             for promise in promises {
-                let exchange = promise["item"]["exchange"]["uid"].as_str().or(promise["exchange"].as_str());
-                promise["accepted_loan"] = json!(accepted_loans.iter().find(|loan| Some(loan.exchange.as_str()) == exchange));
+                let exchange = promise["item"]["exchange"]["uid"]
+                    .as_str()
+                    .or(promise["exchange"].as_str());
+                promise["accepted_loan"] = json!(
+                    accepted_loans
+                        .iter()
+                        .find(|loan| Some(loan.exchange.as_str()) == exchange)
+                );
             }
         }
-        if value["promises"].as_array().is_some_and(|promises|promises.iter().any(|promise|promise["item"]["transport"].is_object())) {
+        if value["promises"].as_array().is_some_and(|promises| {
+            promises
+                .iter()
+                .any(|promise| promise["item"]["transport"].is_object())
+        }) {
             value["journey"] = json!(store::transport::journey(&store.pool, uid).await?);
-            value["transport_capacity"] = json!(store::transport::capacity(&store.pool, uid).await?);
+            value["transport_capacity"] =
+                json!(store::transport::capacity(&store.pool, uid).await?);
         }
         nucleus::transfer::disclosure::project_transfer(
             &mut value,
             viewer.person.as_deref(),
             viewer.local || is_creator,
         );
-        if protein.fields.as_ref().is_some_and(|fields| fields.iter().any(|field| field == "karma_state")) {
+        if protein
+            .fields
+            .as_ref()
+            .is_some_and(|fields| fields.iter().any(|field| field == "karma_state"))
+        {
             karma_transfers::append(store, &mut value).await?;
         }
         transfer_rows.push(TransferOutput {
@@ -8729,27 +9312,55 @@ async fn execute_transfers(
     }
     if viewer.local || viewer.person.as_deref() == installed_signer_actor {
         for row in &mut transfer_rows {
-            transfer_application::policies(store, &mut row.value, installed_signer_actor, visible).await?;
+            transfer_application::policies(store, &mut row.value, installed_signer_actor, visible)
+                .await?;
             let own_viewer: bool = viewer.local || store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record p JOIN record own ON own.uid = p.organ_uid AND own.slug = 'local-organ' WHERE p.uid = ?)").bind(viewer.person.as_deref()).fetch_one(&store.pool).await?;
             if own_viewer && let Some(cell) = store::cells::local(&store.pool).await? {
                 let owner: Option<String> = store::sqlx::query_scalar("SELECT cell_uid FROM transfer_sync_owner WHERE (table_name = 'transfer' AND row_key = json_array(?1)) OR (table_name = 'transfer_remote_reference' AND row_key IN (SELECT json_array(uid) FROM transfer_remote_reference WHERE transfer_uid = ?1 AND recipient_person_uid = ?2)) ORDER BY table_name LIMIT 1")
                     .bind(&row.uid).bind(installed_signer_actor).fetch_optional(&store.pool).await?;
                 if let Some(owner) = owner.filter(|owner| *owner != cell.uid) {
-                    disable_remote_transfer_actions(&mut row.value, "transfer_origin_cell_required");
-                    let label: Option<String> = store::sqlx::query_scalar("SELECT head FROM record WHERE uid = ? AND head != ''").bind(&owner).fetch_optional(&store.pool).await?;
+                    disable_remote_transfer_actions(
+                        &mut row.value,
+                        "transfer_origin_cell_required",
+                    );
+                    let label: Option<String> = store::sqlx::query_scalar(
+                        "SELECT head FROM record WHERE uid = ? AND head != ''",
+                    )
+                    .bind(&owner)
+                    .fetch_optional(&store.pool)
+                    .await?;
                     row.value["writing_cell_name"] = json!(label.unwrap_or_else(|| owner.clone()));
                     row.value["writing_cell"] = json!(owner);
                 }
             }
         }
     }
-    if transfer_rows.iter().any(|row| row.value["promises"].as_array().into_iter().flatten().any(|promise|promise["accepted_loan"].is_object())) {
-        let loans = store::transfer_loans::terms(&store.pool,true).await?;
+    if transfer_rows.iter().any(|row| {
+        row.value["promises"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .any(|promise| promise["accepted_loan"].is_object())
+    }) {
+        let loans = store::transfer_loans::terms(&store.pool, true).await?;
         for row in &mut transfer_rows {
             if let Some(promises) = row.value["promises"].as_array_mut() {
                 for promise in promises {
-                    if promise["accepted_loan"].is_object() && let Some(loan) = loans.iter().find(|loan|loan.transfer == row.uid && loan.item.exchange.as_ref().is_some_and(|route|promise["exchange"] == route.uid)) {
-                        promise["loan_status"] = store::transfer_loans::status(loan,&loans,nucleus::execution::now().timestamp_millis())?;
+                    if promise["accepted_loan"].is_object()
+                        && let Some(loan) = loans.iter().find(|loan| {
+                            loan.transfer == row.uid
+                                && loan
+                                    .item
+                                    .exchange
+                                    .as_ref()
+                                    .is_some_and(|route| promise["exchange"] == route.uid)
+                        })
+                    {
+                        promise["loan_status"] = store::transfer_loans::status(
+                            loan,
+                            &loans,
+                            nucleus::execution::now().timestamp_millis(),
+                        )?;
                     }
                 }
             }
@@ -8833,13 +9444,20 @@ async fn append_remote_transfer_delivery_rows(
                     "primary_status": "remote",
                 })
             });
-        if reference.6 != "active" || installed_signer_actor != Some(reference.3.as_str())
-            || (!viewer.local && !viewer.has_permission("transfer:update")) {
-            disable_remote_transfer_actions(&mut value, if reference.6 != "active" {
-                "delivery_revoked"
-            } else if installed_signer_actor != Some(reference.3.as_str()) {
-                "missing_person_signer"
-            } else { "missing_transfer_update_permission" });
+        if reference.6 != "active"
+            || installed_signer_actor != Some(reference.3.as_str())
+            || (!viewer.local && !viewer.has_permission("transfer:update"))
+        {
+            disable_remote_transfer_actions(
+                &mut value,
+                if reference.6 != "active" {
+                    "delivery_revoked"
+                } else if installed_signer_actor != Some(reference.3.as_str()) {
+                    "missing_person_signer"
+                } else {
+                    "missing_transfer_update_permission"
+                },
+            );
         }
         let history = store::sqlx::query_as::<_, (String, i64, i64, String)>(
             "SELECT envelope_uid, cursor, transfer_revision, received_at
@@ -8942,11 +9560,15 @@ async fn append_remote_transfer_delivery_rows(
         ).bind(&reference.0).fetch_all(&store.pool).await?;
         let mut application_handoffs = Vec::new();
         for uid in handoff_uids {
-            application_handoffs.push(transfer_application::preview(store, &uid, installed_signer_actor, visible).await?);
+            application_handoffs.push(
+                transfer_application::preview(store, &uid, installed_signer_actor, visible).await?,
+            );
         }
         let evidence_at: Option<String> = store::sqlx::query_scalar("SELECT e.origin_created_at FROM transfer_outcome_evidence e JOIN transfer_remote_reference r ON r.uid = e.reference_uid AND r.last_envelope_uid = e.envelope_uid WHERE r.uid = ?")
             .bind(&reference.0).fetch_optional(&store.pool).await?;
-        let evidence_fresh = evidence_at.as_deref().is_some_and(|at| store::transfer_outcomes::fresh(at, nucleus::execution::now()));
+        let evidence_fresh = evidence_at
+            .as_deref()
+            .is_some_and(|at| store::transfer_outcomes::fresh(at, nucleus::execution::now()));
         if let Some(object) = value.as_object_mut() {
             object.insert("application_handoffs".into(), json!(application_handoffs));
             object.insert("delivery_read_only".into(), Value::Bool(true));
@@ -9026,13 +9648,22 @@ fn disable_remote_transfer_actions(value: &mut Value, reason: &str) {
     match value {
         Value::Object(object) => {
             if let Some(Value::Object(capabilities)) = object.get_mut("capabilities") {
-                let mut blockers=serde_json::Map::new();
-                for (key,enabled) in capabilities { *enabled=json!(false);blockers.insert(key.clone(),json!([reason])); }
-                object.insert("blocking_reasons".into(),Value::Object(blockers));
+                let mut blockers = serde_json::Map::new();
+                for (key, enabled) in capabilities {
+                    *enabled = json!(false);
+                    blockers.insert(key.clone(), json!([reason]));
+                }
+                object.insert("blocking_reasons".into(), Value::Object(blockers));
             }
-            for child in object.values_mut() { disable_remote_transfer_actions(child,reason); }
+            for child in object.values_mut() {
+                disable_remote_transfer_actions(child, reason);
+            }
         }
-        Value::Array(rows) => for row in rows { disable_remote_transfer_actions(row,reason); },
+        Value::Array(rows) => {
+            for row in rows {
+                disable_remote_transfer_actions(row, reason);
+            }
+        }
         _ => {}
     }
 }

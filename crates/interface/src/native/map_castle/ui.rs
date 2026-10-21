@@ -49,6 +49,14 @@ pub(super) fn mount(
         }
     }
     settings_button(world, controls, owner);
+    crate::map_navigation::mount(
+        world,
+        controls,
+        owner,
+        settings::navigation_path(world),
+        camera.center,
+        tokio::runtime::Handle::try_current().ok(),
+    );
     let status = crate::native::edit_mode::label(world, owner, "World overview · offline", 13.0);
     let image = world
         .resource_mut::<Assets<Image>>()
@@ -521,6 +529,33 @@ pub(super) fn update(world: &mut World) {
         .get_resource::<Time>()
         .map_or(0, |time| (time.elapsed_secs() * 4.0) as usize % 4);
     for owner in owners {
+        let point = world
+            .get::<MapSand>(owner)
+            .map(|sand| sand.picked.unwrap_or(sand.camera.center))
+            .unwrap_or(Coordinate {
+                latitude: 0.0,
+                longitude: 0.0,
+            });
+        let scope = world
+            .get::<MapSand>(owner)
+            .map(|sand| format!("{}:{:?}", sand.person, sand.authority_node_id))
+            .unwrap_or_default();
+        let bounds = world.get::<MapSand>(owner).and_then(|sand| sand.selection);
+        crate::map_navigation::region(world, owner, bounds, store.clone());
+        let (changed, place) = crate::map_navigation::update(world, owner, point, &scope);
+        if changed {
+            world
+                .get_mut::<MapSand>(owner)
+                .unwrap()
+                .marker_stamp
+                .clear();
+        }
+        if let Some(place) = place {
+            let sand = &mut *world.get_mut::<MapSand>(owner).unwrap();
+            sand.picked = Some(place.coordinate);
+            sand.camera.center = place.coordinate;
+            sand.camera.zoom = 14.0;
+        }
         if !visible(world, owner) {
             world.resource_mut::<render::Scenes>().0.remove(&owner);
             let viewport = {
@@ -789,8 +824,16 @@ fn progress_caption(progress: &Progress, frame: usize) -> String {
 }
 
 pub(super) fn palette(world: &World, owner: Entity) -> Palette {
-    let color = |token| crate::native::token_style::resolve(world, owner, token).0.color();
-    crate::map_view::palette(color(crate::native::tokens::Token::Surface), color(crate::native::tokens::Token::Ink), color(crate::native::tokens::Token::Accent))
+    let color = |token| {
+        crate::native::token_style::resolve(world, owner, token)
+            .0
+            .color()
+    };
+    crate::map_view::palette(
+        color(crate::native::tokens::Token::Surface),
+        color(crate::native::tokens::Token::Ink),
+        color(crate::native::tokens::Token::Accent),
+    )
 }
 
 fn overlays(world: &mut World, owner: Entity) {
@@ -841,6 +884,7 @@ fn overlays(world: &mut World, owner: Entity) {
             .collect::<Vec<_>>(),
     );
     crate::native::sand_panel::clear(world, overlay);
+    crate::map_navigation::draw_route(world, owner, overlay, camera, size);
     if let Some(bounds) = selection {
         let [a, b] = camera.area_screen(bounds, size);
         let node = world

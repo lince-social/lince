@@ -77,6 +77,27 @@ impl Engine {
                     "This snapshot is superseded, conflicted, withheld, withdrawn or expired; inspect newer signed evidence",
                 ));
             }
+            if document.statement.category != claims::Category::Experience {
+                sources.validate().map_err(claim_invalid)?;
+                let statement = &document.statement;
+                let context = self
+                    .contact_identity_context_on(&mut tx, &statement.issuer, actor)
+                    .await?;
+                let trusted = claims::trusted_issuer_for_activity(
+                    statement,
+                    sources,
+                    &context,
+                    now.timestamp(),
+                )
+                .map_err(claim_invalid)?;
+                result["kind"] = json!("credential_check");
+                result["trusted_issuer_for_activity"] = json!(trusted);
+                result["delivery_quantity_added"] = json!("0");
+                return Ok(ActionOutcome {
+                    data: Some(json!({"trust":result})),
+                    ..Default::default()
+                });
+            }
             drop(tx);
             let query = document
                 .statement

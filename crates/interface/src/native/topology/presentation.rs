@@ -717,6 +717,20 @@ pub fn displayed(world: &World, entity: Entity) -> bool {
         })
 }
 
+pub fn projected_corners(world: &World, entity: Entity) -> Option<[[f64; 2]; 4]> {
+    let surface = world.get::<Surface>(entity)?;
+    let camera = world.get_entity(world.get_resource::<SceneCamera>()?.0).ok()?;
+    let (camera, transform) = (camera.get::<Camera>()?, camera.get::<GlobalTransform>()?);
+    let face = world.get::<GlobalTransform>(surface.face)?;
+    let mut corners = [[0.0; 2]; 4];
+    for (index, uv) in [Vec2::ZERO, Vec2::X, Vec2::ONE, Vec2::Y].into_iter().enumerate() {
+        let uv = (uv - surface.uv.min) / surface.uv.size();
+        let point = face.transform_point(Vec3::new(uv.x - 0.5, 0.5 - uv.y, 0.0));
+        corners[index] = camera.world_to_viewport(transform, point).ok()?.as_dvec2().to_array();
+    }
+    Some(corners)
+}
+
 pub fn bounds(world: &World, entity: Entity) -> Option<Rect> {
     let Some(item) = world.get::<CanvasItem>(entity) else {
         return content_bounds(world, entity);

@@ -145,6 +145,7 @@ async fn group_on(
                     && candidate_terms.direction == Direction::Offer
                     && candidate_terms.activity == terms.activity
                 {
+                    candidate_terms.segment(&terms).map_err(invalid)?;
                     if giver != candidate_giver {
                         return Err(invalid("A booking must use the offering driver's capacity"));
                     }
@@ -197,20 +198,31 @@ async fn capacities_on(
         if row.get::<f64, _>("delta").abs() != f64::from(booking.count) {
             return Err(invalid("Booking quantity differs from its reviewed count"));
         }
+        let span = terms.segment(&booking).map_err(invalid)?;
         let capacity = capacities.entry(offer.clone()).or_insert(Capacity {
+            segments: segments(&terms),
             offer,
             total: terms.capacity,
             reserved: 0,
             available: terms.capacity,
         });
+        for segment in &mut capacity.segments[span] {
+            segment.reserved = segment
+                .reserved
+                .checked_add(booking.count)
+                .ok_or_else(|| invalid("Transport reservation count overflows"))?;
+            segment.available = capacity
+                .total
+                .checked_sub(segment.reserved)
+                .ok_or_else(|| invalid("Transport capacity would be exceeded on this part"))?;
+        }
         capacity.reserved = capacity
-            .reserved
-            .checked_add(booking.count)
-            .ok_or_else(|| invalid("Transport reservation count overflows"))?;
-        capacity.available = capacity
-            .total
-            .checked_sub(capacity.reserved)
-            .ok_or_else(|| invalid("Transport capacity would be exceeded"))?;
+            .segments
+            .iter()
+            .map(|segment| segment.reserved)
+            .max()
+            .unwrap_or(0);
+        capacity.available = capacity.total - capacity.reserved;
     }
     Ok(capacities)
 }
@@ -224,11 +236,39 @@ pub async fn capacity(pool: &SqlitePool, transfer: &str) -> Result<Option<Capaci
     let Some((offer, terms, _)) = group_on(&mut connection, transfer).await? else {
         return Ok(None);
     };
+    let booking = terms_on(&mut connection, transfer)
+        .await?
+        .ok_or_else(|| invalid("Transport part unavailable"))?
+        .0;
+    let span = terms.segment(&booking).map_err(invalid)?;
     let mut capacities = capacities_on(&mut connection).await?;
-    Ok(Some(capacities.remove(&offer).unwrap_or(Capacity {
+    let mut capacity = capacities.remove(&offer).unwrap_or(Capacity {
+        segments: segments(&terms),
         offer,
         total: terms.capacity,
         reserved: 0,
         available: terms.capacity,
-    })))
+    });
+    capacity.segments = capacity.segments[span].to_vec();
+    capacity.reserved = capacity
+        .segments
+        .iter()
+        .map(|segment| segment.reserved)
+        .max()
+        .unwrap_or(0);
+    capacity.available = capacity.total - capacity.reserved;
+    Ok(Some(capacity))
+}
+
+fn segments(terms: &Terms) -> Vec<nucleus::transfer::transport::SegmentCapacity> {
+    terms
+        .stops()
+        .windows(2)
+        .map(|pair| nucleus::transfer::transport::SegmentCapacity {
+            origin: pair[0].into(),
+            destination: pair[1].into(),
+            reserved: 0,
+            available: terms.capacity,
+        })
+        .collect()
 }

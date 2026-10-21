@@ -176,6 +176,7 @@ mod tests {
         crate::trust_analysis::sign_recipe_permit(&mut permit, &person).unwrap();
         let mut document = claims::Document {
             statement: claims::Statement {
+                category: Default::default(),
                 title: permit.terms.title.clone(),
                 issuer,
                 claim: permit.terms.claim.clone(),
@@ -239,9 +240,17 @@ async fn head(
 }
 
 impl Engine {
-    pub(crate) async fn require_known_server_endpoint(&self,organ:&str,endpoint:&str)->Result<(),EngineError> {
-        if !nucleus::valid_uid(organ,"r") {return Err(invalid("Choose a recognized Organ identity for the helper"));}
-        self.serving_peer_authority(organ,endpoint).await.map(|_|())
+    pub(crate) async fn require_known_server_endpoint(
+        &self,
+        organ: &str,
+        endpoint: &str,
+    ) -> Result<(), EngineError> {
+        if !nucleus::valid_uid(organ, "r") {
+            return Err(invalid("Choose a recognized Organ identity for the helper"));
+        }
+        self.serving_peer_authority(organ, endpoint)
+            .await
+            .map(|_| ())
     }
 
     pub(super) async fn serving_peer_authority(
@@ -770,7 +779,8 @@ impl Engine {
             .await?;
             return Ok(json!({"service":node,"chunk":chunk}));
         }
-        self.fetch_custody_evidence(source,node,hash,offset,now).await
+        self.fetch_custody_evidence(source, node, hash, offset, now)
+            .await
     }
 
     async fn serving_work_budget(&self, peer: &str) -> Result<(), EngineError> {

@@ -61,6 +61,38 @@ fn castle_visibility_tracks_workspace_viewport_and_window_without_focus_requirem
 }
 
 #[test]
+fn restored_settings_populate_source_and_seek_controls() {
+    let (mut app, _, sand) = app();
+    restore(
+        app.world_mut(),
+        sand,
+        Settings {
+            source: "esp-camera".into(),
+            file: false,
+            paused: true,
+            position_ms: 42000,
+        },
+    );
+    let view = app
+        .world_mut()
+        .query::<&View>()
+        .single(app.world())
+        .unwrap();
+    assert_eq!(panel::value(app.world(), view.source).unwrap(), "esp-camera");
+    assert_eq!(panel::value(app.world(), view.seek).unwrap(), "42");
+    let owner = app
+        .world()
+        .get::<crate::native::sand_store::StoredSand>(sand)
+        .unwrap()
+        .content
+        .unwrap();
+    Control::Open(false).apply(app.world_mut(), owner);
+    let settings = app.world().get::<Settings>(sand).unwrap();
+    assert_eq!(settings.source, "esp-camera");
+    assert!(!settings.paused);
+}
+
+#[test]
 fn video_reuses_texture_and_configuration_serializes_without_frames() {
     let (mut app, _, sand) = app();
     let fallback = Image::new(

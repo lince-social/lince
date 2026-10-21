@@ -96,9 +96,30 @@ pub enum Authorship {
     },
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Category {
+    #[default]
+    Experience,
+    Credential,
+    Recommendation,
+}
+
+impl Category {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Experience => "Experience claim",
+            Self::Credential => "Credential",
+            Self::Recommendation => "Activity recommendation",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Statement {
+    #[serde(default)]
+    pub category: Category,
     pub title: String,
     pub issuer: Identity,
     pub claim: String,
@@ -118,6 +139,15 @@ impl Statement {
     pub fn validate(&self) -> Result<(), String> {
         self.issuer.validate()?;
         self.descriptor.validate()?;
+        if self.category == Category::Recommendation && self.issuer == self.descriptor.subject {
+            return Err("Recommendations require a different issuer and subject".into());
+        }
+        if self.category != Category::Experience && !matches!(self.authorship, Authorship::Manual) {
+            return Err(
+                "Credentials and recommendations require an explicitly reviewed issuer statement"
+                    .into(),
+            );
+        }
         self.audience.validate()?;
         if !crate::valid_uid(&self.claim, "r")
             || self.title.trim().is_empty()
@@ -183,6 +213,39 @@ impl Statement {
         self.validate()?;
         canonical_hash("lince.profile-claim.statement.v1", self).map_err(|error| error.to_string())
     }
+}
+
+pub fn trusted_issuer_for_activity(
+    statement: &Statement,
+    sources: &Query,
+    context: &super::IdentityContext,
+    at: i64,
+) -> Result<bool, String> {
+    statement.validate()?;
+    sources.validate()?;
+    let explicit = sources.issuers.include.iter().any(|rule| {
+        !rule.identities.is_empty()
+            || rule.known.is_some()
+            || rule.lower.is_some()
+            || rule.upper.is_some()
+    });
+    Ok(statement.category != Category::Experience
+        && !statement.withdrawn
+        && statement.issued_at <= at
+        && at < statement.expires_at
+        && sources.subject == statement.descriptor.subject
+        && sources.role == statement.descriptor.role
+        && sources
+            .measurements
+            .contains(&statement.descriptor.measurement)
+        && context.readable
+        && !context.blocked
+        && (sources.rely_on_all_visible || explicit)
+        && sources.issuers.allows(&statement.issuer, context)
+        && !sources.exclude_everywhere.contains(&statement.issuer)
+        && !sources
+            .exclude_everywhere
+            .contains(&statement.descriptor.subject))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -297,6 +360,11 @@ pub fn compare(
     analysis: &Analysis,
 ) -> Result<Support, String> {
     statement.validate()?;
+    if statement.category != Category::Experience {
+        return Err(
+            "Credentials and recommendations are issuer assertions, not delivery totals".into(),
+        );
+    }
     if statement.withdrawn {
         return Err("A withdrawn claim cannot be checked as a current statement".into());
     }

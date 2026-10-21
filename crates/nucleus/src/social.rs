@@ -20,8 +20,9 @@ pub const CONVERSATION_VECTOR_PREFIX: &str = "lince.own-conversation/";
 
 pub fn private_sync_field(table: &str, field: &str) -> bool {
     table == "data_visibility"
-        || table == "record_extension" && field.starts_with(crate::transfer::surplus::NAMESPACE)
-        || table == "record_extension" && field.starts_with(crate::visibility::plan::PRIVATE_NAMESPACE)
+        || table == "record_extension" && field.starts_with("lince.stock-policy.private")
+        || table == "record_extension"
+            && field.starts_with(crate::visibility::plan::PRIVATE_NAMESPACE)
         || (table == "record_extension" && field.starts_with("lince.social."))
 }
 
@@ -84,7 +85,9 @@ pub struct PostDraft {
 
 impl PostDraft {
     pub fn validate(&self) -> Result<(), String> {
-        if let Some(transport) = &self.transport { transport.validate()?; }
+        if let Some(transport) = &self.transport {
+            transport.validate()?;
+        }
         if self
             .lifetime_days
             .is_some_and(|days| !(1..=7).contains(&days))
@@ -572,18 +575,26 @@ pub struct ServerChoice {
     pub publication: bool,
     pub query: bool,
     pub mailbox: bool,
-    #[serde(default,skip_serializing_if="Option::is_none")]
-    pub organ:Option<String>,
-    #[serde(default,skip_serializing_if="Option::is_none")]
-    pub preset:Option<ServerPreset>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub organ: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<ServerPreset>,
 }
 
-#[derive(Debug,Clone,Copy,PartialEq,Eq,Serialize,Deserialize,JsonSchema)]
-#[serde(rename_all="snake_case")]
-pub enum ServerPreset {InstituteDiscovery}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ServerPreset {
+    InstituteDiscovery,
+}
 
 impl ServerChoice {
-    pub fn institute_helper()->Self {Self {label:"Optional Institute discovery helper".into(),preset:Some(ServerPreset::InstituteDiscovery),..Default::default()}}
+    pub fn institute_helper() -> Self {
+        Self {
+            label: "Optional Institute discovery helper".into(),
+            preset: Some(ServerPreset::InstituteDiscovery),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
@@ -646,12 +657,27 @@ pub struct ServiceDescriptor {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "request", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum PublicRequest {
-    CustodyBegin {offer:Box<crate::trust_analysis::custody::Offer>},
-    CustodyChunk {upload:String,offset:u32,bytes:String},
-    CustodyFinish {upload:String},
-    CustodyCancel {upload:String},
-    DiscoverEvidence { document: Box<crate::trust_analysis::discovery::Request> },
-    FetchEvidence {hash:crate::karma::CanonicalHash,offset:u32},
+    CustodyBegin {
+        offer: Box<crate::trust_analysis::custody::Offer>,
+    },
+    CustodyChunk {
+        upload: String,
+        offset: u32,
+        bytes: String,
+    },
+    CustodyFinish {
+        upload: String,
+    },
+    CustodyCancel {
+        upload: String,
+    },
+    DiscoverEvidence {
+        document: Box<crate::trust_analysis::discovery::Request>,
+    },
+    FetchEvidence {
+        hash: crate::karma::CanonicalHash,
+        offset: u32,
+    },
     DescribeService,
     SubmitReport {
         document: Box<reports::Report>,

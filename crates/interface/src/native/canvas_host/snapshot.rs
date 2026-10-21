@@ -102,6 +102,12 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
                 serde_json::json!(serde_json::to_string(&todo).unwrap()),
             );
         }
+        if let Some(video) = world.get::<crate::native::video_castle::Settings>(entity) {
+            settings.insert(
+                "video".into(),
+                serde_json::json!(serde_json::to_string(video).unwrap()),
+            );
+        }
         if let Some(selection) = sand
             .content
             .and_then(|panel| lince_interface::visibility::selection(world, panel))

@@ -42,12 +42,17 @@ pub enum Intent {
     TrustFilter(String),
     TrustValue(String, String),
     ResolveMeasurement,
+    ClaimDraft(nucleus::trust_analysis::claims::Category),
+    ClaimList(Option<String>),
+    ClaimCheck(String),
+    ClaimWithdraw(Value),
     ClearMeasurement,
     Cancel,
     AddPromise,
     RemovePromise(usize),
     Agreement(u8),
     RefreshAgreement,
+    Configure(lince_interface::karma::transfers::Automation),
     PreviewSettlement,
     AcceptSettlement,
     Analyze,
@@ -137,7 +142,7 @@ pub fn persist_draft(world: &mut World) {
     for field in &mut form.fields {
         if !matches!(
             field.kind,
-            FieldKind::Choice(_) | FieldKind::OptionalChoice(_)
+            FieldKind::Choice(_) | FieldKind::OptionalChoice(_) | FieldKind::DataChoice(_)
         ) {
             field.value = world
                 .resource::<Mobile>()
@@ -206,7 +211,7 @@ fn commit_fields(world: &mut World) -> Result<(), String> {
     for field in &mut form.fields {
         if !matches!(
             field.kind,
-            FieldKind::Choice(_) | FieldKind::OptionalChoice(_)
+            FieldKind::Choice(_) | FieldKind::OptionalChoice(_) | FieldKind::DataChoice(_)
         ) {
             field.value = world
                 .resource::<Mobile>()
@@ -380,6 +385,75 @@ pub fn apply(world: &mut World, intent: Intent) -> Result<(), String> {
     }
     let person = person(world);
     match intent {
+        Intent::ClaimDraft(category) => {
+            let query = trust_query(world)?;
+            let measurement = query
+                .measurements
+                .first()
+                .cloned()
+                .ok_or("Select one exact activity meaning first")?;
+            if query.measurements.len() != 1 {
+                return Err("Select exactly one activity meaning".into());
+            }
+            let descriptor = nucleus::trust_analysis::claims::Descriptor {
+                subject: query.subject,
+                role: query.role,
+                measurement,
+                level: query.levels[0],
+                metric: nucleus::trust_analysis::claims::Metric::Quantity,
+                counterparty_basis: query.counterparty_basis,
+                from: None,
+                until: None,
+            };
+            let draft = nucleus::trust_analysis::claims::commands::Draft {
+                category,
+                issuer: nucleus::trust_analysis::Identity::Person(person.clone()),
+                claim: None,
+                title: category.label().into(),
+                descriptor,
+                comparator: nucleus::trust_analysis::claims::Comparator::AtLeast,
+                amount: "1".into(),
+                as_of: None,
+                lifetime_seconds: 30 * 86400,
+                expected_revision: 0,
+                withdrawn: false,
+                audience: nucleus::trust_analysis::contacts::Audience::Selected {
+                    viewers: vec![nucleus::trust_analysis::Identity::Person(person.clone())],
+                },
+                key_id: String::new(),
+                public_key: String::new(),
+            };
+            open(
+                world,
+                claim_form(
+                    &person,
+                    serde_json::to_value(draft).map_err(|error| error.to_string())?,
+                ),
+            )?;
+        }
+        Intent::ClaimList(before) => {
+            let query = trust_query(world)?;
+            send(
+                world,
+                json!({"action":"trust-analysis","person":person,"request":{"kind":"claims","request":{"kind":"list","subject":query.subject,"before":before}}}),
+                "claims",
+            )?;
+        }
+        Intent::ClaimCheck(record) => {
+            send(
+                world,
+                json!({"action":"trust-analysis","person":person,"request":{"kind":"claims","request":{"kind":"check","record":record,"sources":trust_query(world)?}}}),
+                "claims",
+            )?;
+        }
+        Intent::ClaimWithdraw(document) => {
+            let statement = &document["statement"];
+            if statement["issuer"]["uid"] != person {
+                return Err("Only the issuer can withdraw this statement".into());
+            }
+            let draft = json!({"category":statement["category"],"issuer":statement["issuer"],"claim":statement["claim"],"title":statement["title"],"descriptor":statement["descriptor"],"comparator":statement["comparator"],"amount":"0","as_of":null,"lifetime_seconds":30*86400,"expected_revision":statement["revision"],"withdrawn":true,"audience":statement["audience"]});
+            open(world, claim_form(&person, draft))?;
+        }
         Intent::ResolveMeasurement => {
             app::capture(world);
             let concept = world.resource::<Mobile>().draft("trust", "concept", "");
@@ -465,7 +539,14 @@ pub fn apply(world: &mut World, intent: Intent) -> Result<(), String> {
             if form.mode == "needs-settlement-review" {
                 return Err("Review the exact settlement before confirming".into());
             }
-            send(world, form.payload()?, "mutation")?;
+            let kind = if form.data["request"]["kind"] == "claims"
+                && form.data["request"]["request"]["kind"] == "preview"
+            {
+                format!("claim-preview:{}", fingerprint(world, &form)?)
+            } else {
+                "mutation".into()
+            };
+            send(world, form.payload()?, &kind)?;
         }
         Intent::ReviewAction => {
             commit_fields(world)?;
@@ -529,6 +610,11 @@ pub fn apply(world: &mut World, intent: Intent) -> Result<(), String> {
                 promises.remove(index);
             }
             state.review = None;
+        }
+        Intent::Configure(mode) => {
+            let row = current(world).ok_or("Select a Transfer")?;
+            let draft = lince_interface::karma::transfers::automation(&row, &person, mode)?;
+            app::queue_intent(world, app::Intent::OpenKarmaDraft(draft));
         }
         Intent::RefreshAgreement => {
             let row = current(world).ok_or("Open a Transfer first")?;
@@ -733,6 +819,7 @@ pub fn receive(world: &mut World, message: &cell::ServerMessage) -> bool {
         }
         _ => return false,
     };
+    let data = data.get("trust").cloned().unwrap_or(data);
     ensure_scope(world);
     let Some((pending, kind)) = world
         .resource::<State>()
@@ -779,7 +866,7 @@ pub fn receive(world: &mut World, message: &cell::ServerMessage) -> bool {
             state.form = None;
             state.review = None;
         }
-        state.result = data;
+        state.result = data.clone();
         state.detail = None;
         state.pages.clear();
         if completed_draft {
@@ -789,12 +876,34 @@ pub fn receive(world: &mut World, message: &cell::ServerMessage) -> bool {
                 .remove("workflow-draft/current");
         }
         if kind == "mutation"
+            && !data["kind"]
+                .as_str()
+                .is_some_and(|kind| kind.starts_with("claim") || kind == "credential_check")
             && let Some(uid) = created.filter(|uid| nucleus::valid_uid(uid, "r"))
         {
             world
                 .resource_mut::<Mobile>()
                 .navigation
                 .open(Page::Transfer(uid));
+        }
+        if let Some(expected) = kind.strip_prefix("claim-preview:") {
+            let current = world
+                .resource::<State>()
+                .form
+                .as_ref()
+                .and_then(|form| fingerprint(world, form).ok());
+            if current.as_deref() == Some(expected) && data["kind"] == "claim_review" {
+                let mut form = Form::action(
+                    "Sign reviewed statement",
+                    json!({"action":"trust-analysis","person":person(world),"request":{"kind":"claims","request":{"kind":"publish","review":data["review"],"expected_review":data["hash"]}}}),
+                );
+                form.review = data.clone();
+                if let Err(error) = open(world, form) {
+                    world.resource_mut::<Mobile>().status = error;
+                }
+            } else {
+                world.resource_mut::<State>().review = None;
+            }
         }
         world.resource_mut::<Mobile>().status = "Request completed".into();
     }
@@ -808,6 +917,10 @@ fn button(world: &mut World, parent: Entity, caption: &str, intent: Intent) {
 
 pub fn render(world: &mut World, parent: Entity) {
     ensure_scope(world);
+    let result = world.resource::<State>().result.clone();
+    for (label, form) in model::matching::candidates(&result, &person(world)) {
+        button(world, parent, &label, Intent::Open(form));
+    }
     let person = person(world);
     if !matches!(
         world.resource::<Mobile>().identity,
@@ -868,6 +981,42 @@ pub fn render(world: &mut World, parent: Entity) {
                 return;
             };
             app::label(world, parent, &title(&transfer), 22.0);
+            let offers = world
+                .resource::<Mobile>()
+                .rows
+                .get("records")
+                .cloned()
+                .unwrap_or_default();
+            button(
+                world,
+                parent,
+                "Find suppliers for this Need",
+                Intent::Open(model::matching::form(
+                    &transfer,
+                    &person,
+                    &offers,
+                    &world
+                        .resource::<Mobile>()
+                        .rows
+                        .values()
+                        .flatten()
+                        .find(|row| row["kind"] == "transfer_context")
+                        .cloned()
+                        .unwrap_or(Value::Null),
+                )),
+            );
+            button(
+                world,
+                parent,
+                "Configure reopening Need",
+                Intent::Configure(lince_interface::karma::transfers::Automation::Reopen),
+            );
+            button(
+                world,
+                parent,
+                "Configure repeated Transfer",
+                Intent::Configure(lince_interface::karma::transfers::Automation::Repeat),
+            );
             discovery::entry(world, parent, Some(&transfer));
             button(
                 world,
@@ -921,11 +1070,25 @@ pub fn render(world: &mut World, parent: Entity) {
                 "Review my live location sharing",
                 app::Intent::OpenLocation(record, Some(uid.clone())),
             );
+            for form in model::transport::parts(&transfer, &person) {
+                button(world, parent, &form.title.clone(), Intent::Open(form));
+            }
             let mut records = vec![uid];
             for promise in array(&transfer, "promises") {
                 for field in ["origin", "destination"] {
                     if let Some(uid) = promise["transport"][field].as_str() {
                         records.push(uid.into());
+                    }
+                }
+                for stop in array(&promise["transport"], "via") {
+                    if let Some(uid) = stop.as_str() {
+                        records.push(uid.into());
+                        app::button(
+                            world,
+                            parent,
+                            &format!("Stop: {uid}"),
+                            app::Intent::Open(Page::Record(uid.into())),
+                        );
                     }
                 }
                 if let Some(uid) = promise["record"].as_str() {
@@ -1001,6 +1164,17 @@ fn render_form(world: &mut World, parent: Entity) {
     let scope = format!("workflow-{}", form.request_id);
     for (index, field) in form.fields.iter().enumerate() {
         match &field.kind {
+            FieldKind::DataChoice(options) => {
+                app::label(world, parent, &field.label, 16.0);
+                for (value, label) in options {
+                    button(
+                        world,
+                        parent,
+                        label,
+                        Intent::Choose(index, value.to_string()),
+                    );
+                }
+            }
             FieldKind::Choice(options) => {
                 app::label(world, parent, &field.label, 16.0);
                 for option in options {
@@ -1086,8 +1260,103 @@ fn render_form(world: &mut World, parent: Entity) {
     button(world, parent, "Cancel", Intent::Cancel);
 }
 
+fn claim_form(person: &str, draft: Value) -> Form {
+    let mut form = Form::action(
+        "Review signed profile statement",
+        json!({"action":"trust-analysis","person":person,"request":{"kind":"claims","request":{"kind":"preview","draft":draft}}}),
+    );
+    form.field(
+        "/request/request/draft/title",
+        "Statement title",
+        FieldKind::Text,
+    );
+    form.field(
+        "/request/request/draft/amount",
+        "Stated amount / credential level",
+        FieldKind::Text,
+    );
+    form.field(
+        "/request/request/draft/lifetime_seconds",
+        "Valid for seconds (maximum 366 days)",
+        FieldKind::Number,
+    );
+    model::fields::audience_fields(&mut form, "/request/request/draft/audience");
+    form.review = json!({"Meaning":"Issuer assertion about one activity. No delivered quantity is added. Withdrawals use the same signed claim identifier and a new revision."});
+    form
+}
+
 fn render_trust(world: &mut World, parent: Entity) {
     app::label(world, parent, "Visible transfer experience", 22.0);
+    button(
+        world,
+        parent,
+        "List visible signed statements",
+        Intent::ClaimList(None),
+    );
+    button(
+        world,
+        parent,
+        "Draft credential",
+        Intent::ClaimDraft(nucleus::trust_analysis::claims::Category::Credential),
+    );
+    button(
+        world,
+        parent,
+        "Draft activity recommendation",
+        Intent::ClaimDraft(nucleus::trust_analysis::claims::Category::Recommendation),
+    );
+    let result = world.resource::<State>().result.clone();
+    if result["kind"] == "credential_check" {
+        app::label(
+            world,
+            parent,
+            &format!(
+                "Issuer trusted for this activity: {}. No delivery quantity is added.",
+                result["trusted_issuer_for_activity"]
+            ),
+            15.0,
+        );
+    }
+    if result["kind"] == "claim_list" {
+        for entry in array(&result, "entries") {
+            let document = &entry["document"];
+            app::label(
+                world,
+                parent,
+                &format!(
+                    "{} · {} · issuer {} · expires {} · withdrawn {}",
+                    document["statement"]["category"],
+                    document["statement"]["title"],
+                    document["statement"]["issuer"],
+                    document["statement"]["expires_at"],
+                    document["statement"]["withdrawn"]
+                ),
+                14.0,
+            );
+            button(
+                world,
+                parent,
+                "Check under my activity source filters",
+                Intent::ClaimCheck(text(entry, "record")),
+            );
+            if document["statement"]["issuer"]["uid"] == person(world) {
+                button(
+                    world,
+                    parent,
+                    "Review withdrawal",
+                    Intent::ClaimWithdraw(document.clone()),
+                );
+            }
+        }
+        if let Some(next) = result["next"].as_str() {
+            button(
+                world,
+                parent,
+                "More statements",
+                Intent::ClaimList(Some(next.into())),
+            );
+        }
+    }
     app::label(
         world,
         parent,

@@ -276,7 +276,10 @@ impl Engine {
         if !preserve_hidden {
             transport.origin = self.resolve(&transport.origin).await?;
             transport.destination = self.resolve(&transport.destination).await?;
-            for record in [&transport.origin, &transport.destination] {
+            for stop in &mut transport.via {
+                *stop = self.resolve(stop).await?;
+            }
+            for record in transport.stops() {
                 let location = self.saved_location_of(record, actor).await?;
                 if location.unavailable || location.selected.is_none() {
                     return Err(invalid(

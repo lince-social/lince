@@ -148,6 +148,7 @@ pub fn suspended(world: &World, mut entity: Entity) -> bool {
 
 #[derive(Clone, Copy)]
 pub enum LaboratoryAction {
+    Showoff,
     Open,
     RunAll,
     Behavior,
@@ -174,11 +175,15 @@ impl Action for LaboratoryAction {
             open(world);
             return;
         }
+        if matches!(self, Self::Showoff) {
+            super::showoff::open(world);
+            return;
+        }
         if !active(world) {
             return;
         }
         match self {
-            Self::Open => {}
+            Self::Open | Self::Showoff => {}
             Self::Close => {
                 stop(world);
                 world.resource_mut::<Laboratory>().closing = true;
@@ -258,6 +263,7 @@ pub struct LaboratoryPlugin;
 impl Plugin for LaboratoryPlugin {
     fn build(&self, app: &mut App) {
         super::fiote::install(app);
+        super::showoff::install(app);
         app.init_resource::<Laboratory>()
             .add_systems(First, tick)
             .add_systems(Update, render);
@@ -711,6 +717,7 @@ fn render(world: &mut World) {
             ))
             .id();
         for (title, action) in [
+            ("showoff workspace", LaboratoryAction::Showoff),
             ("Run all", LaboratoryAction::RunAll),
             ("Behavior", LaboratoryAction::Behavior),
             ("Stress", LaboratoryAction::Stress),

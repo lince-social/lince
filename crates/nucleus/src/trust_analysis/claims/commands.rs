@@ -4,6 +4,8 @@ use crate::trust_analysis::commands::ProfileVersion;
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Draft {
+    #[serde(default)]
+    pub category: super::Category,
     pub issuer: Identity,
     pub claim: Option<String>,
     pub title: String,

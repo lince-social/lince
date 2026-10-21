@@ -260,7 +260,7 @@ fn serve(
                 .ok_or_else(|| ProbeFailure::at("wayland_resize", "no configured toplevel"))?;
             surface.with_pending_state(|state| state.size = Some(size.into()));
             surface.send_configure();
-            let mapping = lince_interface::host::ContentMapping {
+            let mapping = lince_interface::host::ContentMapping { corners: None,
                 canvas: lince_interface::host::Rectangle::new([320.0, 16.0], [256.0, 256.0])
                     .unwrap(),
                 surface: lince_interface::host::Rectangle::new([0.0, 0.0], [128.0, 128.0]).unwrap(),

@@ -37,7 +37,10 @@ impl Action for OpenSnapshot {
 
 pub(super) fn load_snapshot(view: &mut View, document: &Document) {
     let descriptor = &document.statement.descriptor;
-    if let Ok(query) = descriptor.checking_query(&Query::for_subject(descriptor.subject.clone()), document.statement.as_of) {
+    if let Ok(query) = descriptor.checking_query(
+        &Query::for_subject(descriptor.subject.clone()),
+        document.statement.as_of,
+    ) {
         analysis::load(view, query);
     }
     view.anchor = view.person.clone();
@@ -110,10 +113,28 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         return;
     };
     let check = cached(view, &document);
-    let showing_check = view.result["kind"] == "claim_check";
+    let showing_check = matches!(
+        view.result["kind"].as_str(),
+        Some("claim_check" | "credential_check")
+    );
     let statement = &document.statement;
-    label(world, owner, &analysis::measurement_caption(&statement.descriptor.measurement));
-    label(world, owner, &format!("{:?} · {:?} · reporting period {:?} to {:?}", statement.descriptor.role, statement.descriptor.level, statement.descriptor.from, statement.descriptor.until));
+    label(world, owner, statement.category.label());
+    label(
+        world,
+        owner,
+        &analysis::measurement_caption(&statement.descriptor.measurement),
+    );
+    label(
+        world,
+        owner,
+        &format!(
+            "{:?} · {:?} · reporting period {:?} to {:?}",
+            statement.descriptor.role,
+            statement.descriptor.level,
+            statement.descriptor.from,
+            statement.descriptor.until
+        ),
+    );
     if statement.withdrawn {
         label(
             world,

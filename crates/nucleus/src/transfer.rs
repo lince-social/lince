@@ -1,3 +1,4 @@
+pub mod matching;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -11,13 +12,12 @@ pub mod transport;
 pub use agreement::AgreementGuard;
 pub mod karma;
 pub mod outcome;
-pub mod receipt;
-pub mod receipt_source;
-pub mod receipt_delivery;
-pub mod receipt_history;
-pub mod receipt_fragment;
 pub mod public_history;
-pub mod surplus;
+pub mod receipt;
+pub mod receipt_delivery;
+pub mod receipt_fragment;
+pub mod receipt_history;
+pub mod receipt_source;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionSnapshot {

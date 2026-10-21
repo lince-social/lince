@@ -118,6 +118,7 @@ async fn pair() -> Pair {
     let root = Signer::generate(&organ.uid, ROOT_KEY_ID);
     let laptop_key = Signer::generate(&organ.uid, &engine::roster::cell_key_id(&laptop_cell.uid));
     laptop.set_signer(laptop_key.clone()).await.unwrap();
+    laptop.set_organ_signer(laptop_key.clone()).await.unwrap();
     laptop.publish_root_key(&root).await.unwrap();
     laptop
         .publish_roster(&root, vec![entry(&laptop_cell.uid, &laptop_key, "laptop")])
@@ -154,6 +155,7 @@ async fn pair() -> Pair {
         .unwrap();
     let phone_key = Signer::generate(&organ.uid, &engine::roster::cell_key_id(&phone_cell.uid));
     phone.set_signer(phone_key.clone()).await.unwrap();
+    phone.set_organ_signer(phone_key.clone()).await.unwrap();
     let roster = laptop
         .enrol_cell(&root, entry(&phone_cell.uid, &phone_key, "phone"))
         .await
@@ -197,6 +199,23 @@ async fn copy_ops(from: &Engine, to: &Engine) {
     .await
     .unwrap();
     assert!(refused.is_empty(), "Sync refused: {refused:?}");
+}
+
+async fn copy_transfer_ops(from: &Engine, to: &Engine) {
+    let organ = store::organs::local(&from.store.pool)
+        .await
+        .unwrap()
+        .unwrap();
+    let page = from.export_sync_page(&organ.uid, &[], 2000).await.unwrap();
+    to.receive_sync_batch(&organ.uid, &page.batch)
+        .await
+        .unwrap();
+    assert_eq!(
+        store::organs::quarantine_count(&to.store.pool)
+            .await
+            .unwrap(),
+        0
+    );
 }
 
 #[tokio::test]
@@ -698,4 +717,97 @@ async fn disconnected_quantity_assignments_converge_and_replay_never_refires_a_r
     .await
     .unwrap();
     assert_eq!(phone, 0);
+}
+
+#[tokio::test]
+async fn two_linces_reopen_only_on_the_authorized_executor_and_sync_one_child() {
+    let pair = pair().await;
+    let owner = support::person(&pair.laptop, "recurrent-need-owner").await;
+    pair.laptop.set_signer(owner.signer.clone()).await.unwrap();
+    pair.laptop
+        .act(
+            Action::SetQuantity {
+                target: pair.trigger.clone(),
+                value: 8.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let template=pair.laptop.act(serde_json::from_value(serde_json::json!({
+        "action":"create-transfer-draft","request_id":"two-lince-template","creator":owner.uid,
+        "head":"Repeated Need","source":pair.trigger,"visibility":"hidden",
+        "promises":[{"open":true,"delta":-8.0,"item":{"title":"Requested contribution"}}]
+    })).unwrap(),None).await.unwrap().created.unwrap();
+    pair.laptop
+        .act(
+            Action::SaveKarmaRule {
+                rule: None,
+                expected_revision: None,
+                identity: None,
+                fields: [
+                    format!("@{}", pair.trigger),
+                    "< 7".into(),
+                    format!("@{template}: reopen(@{}, 14)", owner.uid),
+                ]
+                .map(|source| nucleus::karma::rule_field::RuleFieldInput::Text { source }),
+                request_id: "two-lince-reopen-rule".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    copy_transfer_ops(&pair.laptop, &pair.phone).await;
+    pair.phone.set_signer(owner.signer.clone()).await.unwrap();
+    pair.phone
+        .act(
+            Action::SetQuantity {
+                target: pair.trigger.clone(),
+                value: 6.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let _ = pair.phone.run_database_effects().await;
+    assert_eq!(recurrent_children(&pair.phone, &template).await, 0);
+    copy_transfer_ops(&pair.phone, &pair.laptop).await;
+    for _ in 0..10 {
+        let work = pair.laptop.run_database_effects().await.unwrap();
+        assert!(
+            work.outcomes.iter().all(|outcome| outcome.ok),
+            "{:?}",
+            work.outcomes
+        );
+        if !work.pending {
+            break;
+        }
+    }
+    assert_eq!(recurrent_children(&pair.laptop, &template).await, 1);
+    copy_transfer_ops(&pair.laptop, &pair.phone).await;
+    assert_eq!(recurrent_children(&pair.phone, &template).await, 1);
+    let child: String =
+        store::sqlx::query_scalar("SELECT record_uid FROM transfer WHERE parent_uid=?")
+            .bind(&template)
+            .fetch_one(&pair.laptop.store.pool)
+            .await
+            .unwrap();
+    let synced: String =
+        store::sqlx::query_scalar("SELECT record_uid FROM transfer WHERE parent_uid=?")
+            .bind(&template)
+            .fetch_one(&pair.phone.store.pool)
+            .await
+            .unwrap();
+    assert_eq!(synced, child);
+    copy_transfer_ops(&pair.phone, &pair.laptop).await;
+    let _ = pair.laptop.run_database_effects().await;
+    assert_eq!(recurrent_children(&pair.laptop, &template).await, 1);
+}
+
+async fn recurrent_children(engine: &Engine, template: &str) -> i64 {
+    store::sqlx::query_scalar("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+        .bind(template)
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap()
 }

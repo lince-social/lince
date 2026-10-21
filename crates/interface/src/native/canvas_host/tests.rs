@@ -207,6 +207,85 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
 }
 
 #[test]
+fn video_castle_keeps_signal_playback_and_geometry_across_canvas_reload() {
+    let (mut app, root) = fixture();
+    let entity = crate::native::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::Video,
+        "",
+        DVec2::new(120.0, -80.0),
+    );
+    app.world_mut().get_mut::<CanvasItem>(entity).unwrap().size = Vec2::new(1000.0, 860.0);
+    let settings = crate::native::video_castle::Settings {
+        source: "esp-camera".into(),
+        file: false,
+        paused: false,
+        position_ms: 0,
+    };
+    crate::native::video_castle::restore(app.world_mut(), entity, settings.clone());
+    let saved = capture(app.world_mut(), root).unwrap();
+    let saved: api::Snapshot =
+        serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
+    let (mut restored, root) = fixture();
+    let before = capture(restored.world_mut(), root).unwrap();
+    apply(restored.world_mut(), root, &before, &saved).unwrap();
+    assert_eq!(capture(restored.world_mut(), root).unwrap(), saved);
+    let video = restored
+        .world_mut()
+        .query::<&crate::native::video_castle::Settings>()
+        .single(restored.world())
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(video).unwrap(),
+        serde_json::to_value(settings).unwrap()
+    );
+}
+
+#[test]
+fn video_castle_keeps_paused_file_position_and_rejects_invalid_state_before_spawning() {
+    let (mut app, root) = fixture();
+    let settings = crate::native::video_castle::Settings {
+        source: "/tmp/camera.gif".into(),
+        file: true,
+        paused: true,
+        position_ms: 4321,
+    };
+    let component = ContentKind::Native {
+        kind: "video".into(),
+        settings: BTreeMap::from([(
+            "video".into(),
+            serde_json::json!(serde_json::to_string(&settings).unwrap()),
+        )]),
+        bindings: Vec::new(),
+    };
+    let entity = spawn(app.world_mut(), root, 1, DVec2::ZERO, &component).unwrap();
+    let saved = capture_content(app.world(), entity);
+    let copy = spawn(app.world_mut(), root, 1, DVec2::ZERO, &saved).unwrap();
+    assert_eq!(capture_content(app.world(), copy), saved);
+    let before = capture(app.world_mut(), root).unwrap();
+    for source in ["x".repeat(4097), "camera\0".into()] {
+        let invalid = ContentKind::Native {
+            kind: "video".into(),
+            settings: BTreeMap::from([(
+                "video".into(),
+                serde_json::json!(
+                    serde_json::to_string(&crate::native::video_castle::Settings {
+                        source,
+                        ..settings.clone()
+                    })
+                    .unwrap()
+                ),
+            )]),
+            bindings: Vec::new(),
+        };
+        assert!(spawn(app.world_mut(), root, 1, DVec2::ZERO, &invalid).is_err());
+        assert_eq!(capture(app.world_mut(), root).unwrap(), before);
+    }
+}
+
+#[test]
 fn visibility_castle_restores_its_record_and_scope_without_policy_contents() {
     let (mut app, root) = fixture();
     let sand = crate::native::sand_store::spawn_sand(

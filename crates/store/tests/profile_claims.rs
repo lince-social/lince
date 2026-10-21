@@ -27,6 +27,7 @@ async fn fixture() -> (Store, String, Document) {
     let now = nucleus::execution::now().timestamp();
     let document = Document {
         statement: Statement {
+            category: Default::default(),
             title: "Food contribution".into(),
             issuer: Identity::Person(person.clone()),
             claim: nucleus::new_uid("r"),

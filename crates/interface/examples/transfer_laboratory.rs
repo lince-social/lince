@@ -28,7 +28,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ]
             .iter()
             .any(|module| case.name.contains(module))
-                && !case.name.contains("::transfer_castle::stock::")
         })
         .collect();
     if !cases.iter().any(|case| {

@@ -31,6 +31,7 @@ fn descriptor(person: &str) -> Descriptor {
 
 pub(super) fn draft(person: &support::Person, public: bool) -> Draft {
     Draft {
+        category: Default::default(),
         issuer: Identity::Person(person.uid.clone()),
         claim: None,
         title: "Food contributions".into(),

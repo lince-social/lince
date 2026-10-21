@@ -21,32 +21,65 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
-        if let Action::RecordJourneyProgress { transfer, expected_revision, person, request_id, step } = action {
+        if let Action::RecordJourneyProgress {
+            transfer,
+            expected_revision,
+            person,
+            request_id,
+            step,
+        } = action
+        {
             return Box::pin(async move {
-                self.record_journey_progress(transfer, expected_revision, person, request_id, step, actor.as_deref(), now, verified_authorship.as_ref()).await.map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Surplus { request } = action {
-            return Box::pin(async move {
-                self.stock_policy_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue)
+                self.record_journey_progress(
+                    transfer,
+                    expected_revision,
+                    person,
+                    request_id,
+                    step,
+                    actor.as_deref(),
+                    now,
+                    verified_authorship.as_ref(),
+                )
+                .await
+                .map(ControlFlow::Continue)
             });
         }
         if let Action::Audience { request } = action {
             return Box::pin(async move {
-                self.audience_command(request, actor.as_deref(), now).await.map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Identity { request } = action {
-            return Box::pin(async move {
-                self.identity_command_with_authorship(request, actor.as_deref(), now, verified_authorship.as_ref())
+                self.audience_command(request, actor.as_deref(), now)
                     .await
                     .map(ControlFlow::Continue)
             });
         }
-        if let Action::TrustAnalysis { person, request_id, request } = action {
+        if let Action::Identity { request } = action {
             return Box::pin(async move {
-                self.trust_analysis_command(person.as_deref(), request_id, request, actor.as_deref(), now, verified_authorship.as_ref())
-                    .await.map(ControlFlow::Continue)
+                self.identity_command_with_authorship(
+                    request,
+                    actor.as_deref(),
+                    now,
+                    verified_authorship.as_ref(),
+                )
+                .await
+                .map(ControlFlow::Continue)
+            });
+        }
+        if let Action::TrustAnalysis {
+            person,
+            request_id,
+            request,
+        } = action
+        {
+            return Box::pin(async move {
+                self.trust_analysis_command(
+                    person.as_deref(),
+                    request_id,
+                    request,
+                    actor.as_deref(),
+                    now,
+                    verified_authorship.as_ref(),
+                )
+                .await
+                .map(ControlFlow::Continue)
             });
         }
         if let Action::TransferReceipt {
@@ -195,7 +228,6 @@ impl Engine {
             | Action::Plugins { .. }
             | Action::Visibility { .. }
             | Action::Audience { .. }
-            | Action::Surplus { .. }
             | Action::RecordJourneyProgress { .. }
             | Action::Location { .. }
             | Action::Workspace { .. }
@@ -205,7 +237,9 @@ impl Engine {
             | Action::RecordExtensions { .. }
             | Action::InspectCanvases
             | Action::Canvas { .. } => unreachable!(),
-            Action::RecordTransferOutcome { .. } | Action::TransferReceipt { .. } | Action::TrustAnalysis { .. } => unreachable!(),
+            Action::RecordTransferOutcome { .. }
+            | Action::TransferReceipt { .. }
+            | Action::TrustAnalysis { .. } => unreachable!(),
             Action::Social { .. }
             | Action::SandPackage { .. }
             | Action::ChangeRecord { .. }

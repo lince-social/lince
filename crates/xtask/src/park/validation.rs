@@ -192,8 +192,11 @@ fn executable(program: &Path) -> Result<PathBuf> {
             .find(|path| path.is_file())
             .ok_or_else(|| format!("Missing executable: {}", program.display()))?
     };
-    let candidate = fs::canonicalize(candidate).map_err(error)?;
-    if fs::metadata(&candidate).map_err(error)?.permissions().mode() & 0o111 == 0 {
+    let name = candidate.file_name().ok_or("Executable path has no file name")?;
+    let parent = candidate.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let candidate = fs::canonicalize(parent).map_err(error)?.join(name);
+    let metadata = fs::metadata(&candidate).map_err(error)?;
+    if !metadata.is_file() || metadata.permissions().mode() & 0o111 == 0 {
         return Err(format!("Not executable: {}", candidate.display()));
     }
     Ok(candidate)
@@ -337,6 +340,7 @@ fn prepare(configuration: &Path) -> Result<()> {
         ("native-input-editor", vec!["test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib", "native_input::"]),
         ("capture-buffer-layout", vec!["test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib", "desktop::renderer::capture::tests"]),
         ("capture-gpu-export", vec!["test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib", "capture_gpu_window_export", "--", "--ignored"]),
+        ("connected-cell-startup", vec!["test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib", "connected_cell_is_attached_before_render_plugins_finish", "--", "--ignored"]),
         ("physical-output-planning", vec!["test", "--locked", "-p", "lince-park", "--features", "session,server-tests", "--lib", "session::display::tests"]),
         ("window-layout-policy", vec!["test", "--locked", "-p", "lince-interface", "--features", "native-presentation", "--lib", "layout::desktop::tests"]),
         ("capture-helper-lifecycle", vec!["test", "--locked", "-p", "lince-smithay-capture", "--features", "backend_drm", "--lib", "wayland::image_copy_capture::tests"]),
@@ -637,6 +641,27 @@ fn seat_inner(run: &Run, children: &mut Children, results: &mut Results) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn executable_resolution_preserves_the_invoked_symlink_name() {
+        let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let directory = env::temp_dir().join(format!("park-executable-{stamp}-{}", std::process::id()));
+        fs::create_dir(&directory).unwrap();
+        fs::set_permissions(&directory, fs::Permissions::from_mode(0o700)).unwrap();
+        let target = directory.join("dispatch");
+        fs::write(&target, b"#!/bin/sh\n[ \"${0##*/}\" = selected-command ]\n").unwrap();
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o700)).unwrap();
+        let alias = directory.join("selected-command");
+        std::os::unix::fs::symlink(&target, &alias).unwrap();
+        let resolved = executable(&alias).unwrap();
+        assert!(resolved.is_absolute());
+        assert_eq!(resolved.file_name(), alias.file_name());
+        assert!(Command::new(resolved).status().unwrap().success());
+        assert!(executable(&directory).is_err());
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(executable(&alias).is_err());
+        fs::remove_dir_all(directory).unwrap();
+    }
 
     #[test]
     fn shell_paths_preserve_literal_metacharacters() {

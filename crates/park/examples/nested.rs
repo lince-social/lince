@@ -99,6 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     let report = lince_park::nested::run(
         lince_park::runtime::Configuration {
+            showoff: false,
             size: [960, 600],
             directory,
             runtime: runtime.handle().clone(),

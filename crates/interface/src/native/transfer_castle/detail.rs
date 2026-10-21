@@ -107,7 +107,6 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
     crate::native::edit_mode::label(world, heading, &title(transfer), 21.0);
     audience::render(world, owner, parent, transfer);
     transport::render(world, owner, parent, transfer);
-    stock::controls(world, owner, parent, transfer);
     let location_transfer = text(transfer, "uid");
     let location_person = person(world, owner);
     crate::native::location::record_controls(
@@ -118,7 +117,11 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         Some(&location_person),
     );
     let map_records = std::iter::once(location_transfer.clone())
-        .chain(array(transfer, "promises").iter().flat_map(|promise| ["origin", "destination"].into_iter().filter_map(move |field| promise["transport"][field].as_str().map(str::to_owned))))
+        .chain(array(transfer, "promises").iter().flat_map(|promise| {
+            ["origin", "destination"]
+                .into_iter()
+                .filter_map(move |field| promise["transport"][field].as_str().map(str::to_owned))
+        }))
         .chain(
             array(transfer, "promises")
                 .iter()
@@ -157,9 +160,21 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
             "Use this outcome",
             Command::Open(model::observer(&person(world, owner), transfer)),
         );
-        button(world,heading,owner,"Propose another solution",Command::Open(workflows::alternative(&person(world,owner),transfer)));
-        if capability(transfer,"edit_terms") {
-            button(world,heading,owner,"Create a smaller linked Need",Command::Open(workflows::smaller_need(&person(world,owner),transfer)));
+        button(
+            world,
+            heading,
+            owner,
+            "Propose another solution",
+            Command::Open(workflows::alternative(&person(world, owner), transfer)),
+        );
+        if capability(transfer, "edit_terms") {
+            button(
+                world,
+                heading,
+                owner,
+                "Create a smaller linked Need",
+                Command::Open(workflows::smaller_need(&person(world, owner), transfer)),
+            );
         }
     }
     if capability(transfer, "edit_terms") || capability(transfer, "adopt_terms") {
@@ -315,7 +330,12 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         );
         for party in array(transfer, "parties") {
             if let Some(actor) = party["actor"].as_str() {
-                crate::native::trust_castle::subject_controls(world, block, owner, nucleus::trust_analysis::Identity::Person(actor.into()));
+                crate::native::trust_castle::subject_controls(
+                    world,
+                    block,
+                    owner,
+                    nucleus::trust_analysis::Identity::Person(actor.into()),
+                );
             }
             fact(
                 world,
@@ -379,6 +399,37 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         }
         forms::review(world, block, &transfer["readiness"], 0);
         karma::render(world, owner, block, transfer);
+        let rows = world.get::<View>(owner).unwrap().rows.clone();
+        let form = crate::transfers::matching::form(
+            transfer,
+            &person(world, owner),
+            &rows,
+            &world.get::<View>(owner).unwrap().context,
+        );
+        ui::button(
+            world,
+            block,
+            owner,
+            "Find suppliers for this Need",
+            ui::Command::Open(form),
+        );
+        let results = world
+            .get::<SupplierMatches>(owner)
+            .filter(|matches| {
+                let view = world.get::<View>(owner).unwrap();
+                matches.person == person(world, owner)
+                    && matches.transfer == text(transfer, "uid")
+                    && matches.rows == view.rows
+                    && matches.context == view.context
+            })
+            .map(|matches| matches.data.clone());
+        if let Some(results) = results {
+            for (label, form) in
+                crate::transfers::matching::candidates(&results, &person(world, owner))
+            {
+                ui::button(world, block, owner, &label, ui::Command::Open(form));
+            }
+        }
     }
     invitations(world, owner, parent, transfer);
     promises(world, owner, parent, transfer);

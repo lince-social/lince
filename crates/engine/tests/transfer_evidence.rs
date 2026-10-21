@@ -1,13 +1,13 @@
+#[path = "transfer_evidence/analysis.rs"]
+mod analysis;
 #[path = "transfer_evidence/ordinary_delivery.rs"]
 mod ordinary_delivery;
+#[path = "transfer_evidence/public_history.rs"]
+mod public_history;
 #[path = "transfer_evidence/published_events.rs"]
 mod published_events;
 #[path = "transfer_evidence/remote_sources.rs"]
 mod remote_sources;
-#[path = "transfer_evidence/analysis.rs"]
-mod analysis;
-#[path = "transfer_evidence/public_history.rs"]
-mod public_history;
 pub mod support;
 
 use base64::Engine as _;
@@ -362,8 +362,8 @@ fn persisted_publication_review_keeps_its_original_mapping_private_and_is_idempo
             request_id: "receipt:persist:review".into(),
             request: nucleus::transfer::receipt::Command::Prepare {
                 scope: nucleus::transfer::receipt::ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+                    use_upfront_terms: true,
+                    audience: nucleus::trust_analysis::contacts::Audience::Public,
                     public_person_roles: Vec::new(),
                     public_measurements: Vec::new(),
                     occurrence: fixture.occurrence.clone(),
@@ -451,8 +451,8 @@ fn receipt_review_checks_original_source_and_omits_private_need_person_and_stock
         let binding = fixture.bind("receipt:review:need").await;
         let now = nucleus::execution::now();
         let request = nucleus::transfer::receipt::ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+            use_upfront_terms: true,
+            audience: nucleus::trust_analysis::contacts::Audience::Public,
             public_person_roles: Vec::new(),
             public_measurements: Vec::new(),
             occurrence: fixture.occurrence.clone(),
@@ -618,8 +618,8 @@ fn receipt_review_withholds_an_outcome_whose_original_signing_key_was_revoked() 
         );
         let now = nucleus::execution::now();
         let request = nucleus::transfer::receipt::ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+            use_upfront_terms: true,
+            audience: nucleus::trust_analysis::contacts::Audience::Public,
             public_person_roles: Vec::new(),
             public_measurements: Vec::new(),
             occurrence: fixture.occurrence.clone(),
@@ -670,7 +670,8 @@ impl Fixture {
         receiver_organ: Option<String>,
         foreign: Option<(&Engine, &Authorizer)>,
     ) -> Self {
-        Self::configured_with_history(move_receiver, proof_count, receiver_organ, foreign, None).await
+        Self::configured_with_history(move_receiver, proof_count, receiver_organ, foreign, None)
+            .await
     }
 
     async fn configured_with_history(
@@ -1065,8 +1066,8 @@ fn original_party_opening_allows_own_remote_approval_without_organ_administratio
             .engine
             .prepare_transfer_receipt_scope(
                 ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+                    use_upfront_terms: true,
+                    audience: nucleus::trust_analysis::contacts::Audience::Public,
                     public_person_roles: Vec::new(),
                     public_measurements: Vec::new(),
                     occurrence: fixture.occurrence.clone(),
@@ -1259,8 +1260,8 @@ fn original_organ_approvals_are_frozen_at_activation_and_verified_without_privat
         let fixture = Fixture::configured(false, 3, None).await;
         let now = nucleus::execution::now();
         let request = ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+            use_upfront_terms: true,
+            audience: nucleus::trust_analysis::contacts::Audience::Public,
             public_person_roles: Vec::new(),
             public_measurements: Vec::new(),
             occurrence: fixture.occurrence.clone(),
@@ -1429,8 +1430,8 @@ fn incomplete_original_authority_and_later_approvals_do_not_rewrite_started_hist
         let fixture = Fixture::configured(false, 2, None).await;
         let now = nucleus::execution::now();
         let request = ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+            use_upfront_terms: true,
+            audience: nucleus::trust_analysis::contacts::Audience::Public,
             public_person_roles: Vec::new(),
             public_measurements: Vec::new(),
             occurrence: fixture.occurrence.clone(),
@@ -1846,8 +1847,8 @@ fn signed_party_associations_survive_a_move_before_activation_and_before_receipt
         );
         let now = nucleus::execution::now();
         let request = ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+            use_upfront_terms: true,
+            audience: nucleus::trust_analysis::contacts::Audience::Public,
             public_person_roles: Vec::new(),
             public_measurements: Vec::new(),
             occurrence: fixture.occurrence.clone(),
@@ -1978,8 +1979,8 @@ fn validly_signed_activation_cannot_change_the_reviewed_organ_or_revision_bindin
             serde_json::from_str(original.payload.as_deref().unwrap()).unwrap();
         let now = nucleus::execution::now();
         let request = ScopeRequest {
-                            use_upfront_terms: true,
-                            audience: nucleus::trust_analysis::contacts::Audience::Public,
+            use_upfront_terms: true,
+            audience: nucleus::trust_analysis::contacts::Audience::Public,
             public_person_roles: Vec::new(),
             public_measurements: Vec::new(),
             occurrence: fixture.occurrence.clone(),
@@ -2739,5 +2740,116 @@ fn outcome_records_start_private_and_unshared_need_mappings_do_not_escape_throug
                 .unwrap()
                 .is_empty()
         );
+    });
+}
+
+#[test]
+fn supplier_matching_replays_as_a_read_and_disappearing_offers_never_execute() {
+    support::run_async_test("supplier-candidates", || async {
+        use nucleus::trust_analysis::{Identity, commands::Command, query::Query};
+        let f = Fixture::new().await;
+        let stock = support::plain(&f.engine, "candidate-stock", 20.0).await;
+        let unit = f.measure.unit.as_ref().unwrap().concept_uid.clone();
+        let mut tx = store::write_tx(&f.engine.store.pool).await.unwrap();
+        store::records::set_unit_on(&mut tx, &stock, Some(&unit))
+            .await
+            .unwrap();
+        tx.commit().await.unwrap();
+        store::assertions::assert(
+            &f.engine.store.pool,
+            store::assertions::NewAssertion {
+                subject_uid: &stock,
+                predicate_uid: &f.measure.meaning.concept_uid,
+                object_uid: None,
+                role: store::assertions::AssertionRole::Ordinary,
+                quantity: Some(store::exact::integer(10)),
+                unit_uid: Some(&unit),
+                asserted_by: Some(&f.giver.uid),
+            },
+        )
+        .await
+        .unwrap();
+        let mut promise = support::promise("candidate-contribution", &stock, &f.giver, -10.0);
+        promise.unit = Some(unit);
+        let offer = support::create_transfer(
+            &f.engine,
+            &f.giver,
+            std::slice::from_ref(&f.receiver),
+            vec![promise],
+            DraftOptions {
+                slug: "candidate-offer",
+                agreement: nucleus::transfer::AgreementType::Full,
+                reserve_default: engine::actions::TransferReservePoint::None,
+                require_confirmation: true,
+            },
+        )
+        .await;
+        let request = nucleus::transfer::matching::Request {
+            need: f.selection.clone(),
+            offers: vec![offer.transfer.clone()],
+            sources: Query::for_subject(Identity::Person(f.giver.uid.clone())),
+            minimum_experience: "0".into(),
+            from: None,
+            until: None,
+            within_metres: None,
+        };
+        f.engine
+            .set_signer(f.receiver.signer.clone())
+            .await
+            .unwrap();
+        let action = |request| Action::TrustAnalysis {
+            person: Some(f.receiver.uid.clone()),
+            request_id: nucleus::new_uid("match"),
+            request: Command::MatchSuppliers { request },
+        };
+        let before = f.engine.store.state_hash().await.unwrap();
+        for _ in 0..2 {
+            let result = f
+                .engine
+                .act(action(request.clone()), Some(f.receiver.uid.clone()))
+                .await
+                .unwrap()
+                .data
+                .unwrap();
+            assert_eq!(result["trust"]["candidates"].as_array().unwrap().len(), 1);
+            assert_eq!(result["trust"]["candidates"][0]["draft_only"], true);
+        }
+        let mut discover = request.clone();
+        discover.offers.clear();
+        let result = f
+            .engine
+            .act(action(discover), Some(f.receiver.uid.clone()))
+            .await
+            .unwrap()
+            .data
+            .unwrap();
+        assert_eq!(result["trust"]["candidates"].as_array().unwrap().len(), 1);
+        assert_eq!(f.engine.store.state_hash().await.unwrap(), before);
+        f.engine
+            .act(
+                Action::SetQuantity {
+                    target: offer.transfer.clone(),
+                    value: 0.0,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        let result = f
+            .engine
+            .act(action(request), Some(f.receiver.uid.clone()))
+            .await
+            .unwrap()
+            .data
+            .unwrap();
+        assert!(result["trust"]["candidates"].as_array().unwrap().is_empty());
+        let occurrences: i64 = store::sqlx::query_scalar(
+            "SELECT COUNT(*) FROM transfer_occurrence WHERE transfer_uid=?",
+        )
+        .bind(&offer.transfer)
+        .fetch_one(&f.engine.store.pool)
+        .await
+        .unwrap();
+        assert_eq!(occurrences, 0);
     });
 }

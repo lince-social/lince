@@ -1,6 +1,7 @@
 use crate::host::{DesktopAction, Direction, WorkspaceLayout};
 
 pub const COMMANDS: &[(&str, &str, DesktopAction)] = &[
+    ("/focus/canvas", "Return keyboard focus to the canvas", DesktopAction::Unfocus),
     (
         "/launch/terminal",
         "Open the chosen terminal",

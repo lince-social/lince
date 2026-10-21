@@ -232,3 +232,45 @@ fn opening_a_related_rule_preserves_other_unsaved_drafts() {
         2
     );
 }
+
+#[test]
+fn transfer_automation_opens_normal_karma_drafts_without_changing_other_drafts() {
+    let (mut app, owner, person) = setup();
+    app.add_plugins(crate::native::karma_castle::KarmaCastlePlugin);
+    let state = state(2, 1);
+    app.world_mut()
+        .get_mut::<TransferCastle>(owner)
+        .unwrap()
+        .person = person.clone();
+    app.world_mut().get_mut::<View>(owner).unwrap().context = json!({"viewer":{"local":true}});
+    app.world_mut().get_mut::<View>(owner).unwrap().rows =
+        vec![json!({"uid":state.transfer,"karma_state":state,"head":"Transport Need"})];
+    Command::Configure(transfers::Automation::Reopen).apply(app.world_mut(), owner);
+    let drafts = app
+        .world_mut()
+        .query::<&crate::native::karma_castle::KarmaCastle>()
+        .iter(app.world())
+        .filter_map(|castle| castle.draft.clone())
+        .collect::<Vec<_>>();
+    assert_eq!(drafts.len(), 1);
+    assert!(drafts[0].fields[2].text.contains("reopen("));
+    assert!(drafts[0].rule.is_none());
+    Command::Configure(transfers::Automation::Repeat).apply(app.world_mut(), owner);
+    let drafts = app
+        .world_mut()
+        .query::<&crate::native::karma_castle::KarmaCastle>()
+        .iter(app.world())
+        .filter_map(|castle| castle.draft.clone())
+        .collect::<Vec<_>>();
+    assert_eq!(drafts.len(), 2);
+    assert!(
+        drafts.iter().any(
+            |draft| draft.fields[2].text.contains("repeat(") && draft.fields[0].text.is_empty()
+        )
+    );
+    assert!(
+        drafts
+            .iter()
+            .any(|draft| draft.fields[2].text.contains("reopen("))
+    );
+}

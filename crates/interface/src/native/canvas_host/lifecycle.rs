@@ -208,6 +208,18 @@ pub(crate) fn spawn(
             if todo.as_ref().is_some_and(|todo| !todo.valid()) {
                 return Err("Invalid Todo state.".into());
             }
+            let video = settings
+                .get("video")
+                .and_then(serde_json::Value::as_str)
+                .map(serde_json::from_str::<crate::native::video_castle::Settings>)
+                .transpose()
+                .map_err(|_| "Invalid Video Castle settings.")?;
+            if video
+                .as_ref()
+                .is_some_and(|settings| !settings.valid() || kind != SandKind::Video)
+            {
+                return Err("Invalid Video Castle settings.".into());
+            }
             let visibility = settings
                 .get("visibility")
                 .and_then(serde_json::Value::as_str)
@@ -231,6 +243,9 @@ pub(crate) fn spawn(
                     .unwrap_or_default(),
                 position,
             );
+            if let Some(settings) = video {
+                crate::native::video_castle::restore(world, entity, settings);
+            }
             if let Some(selection) = visibility {
                 let panel = world
                     .get::<StoredSand>(entity)

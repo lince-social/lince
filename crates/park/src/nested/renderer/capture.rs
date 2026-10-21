@@ -219,7 +219,10 @@ impl Composition {
             if result.is_ok() {
                 if job.cursor { desktop.server.capture_cursor_ready(job.target, readback.hotspot); }
                 job.frame.success(Transform::Normal, None, readback.time);
-            } else { job.frame.fail(Failure::Unknown); }
+            } else {
+                if let Err(error) = result { eprintln!("Park capture readback: {error}"); }
+                job.frame.fail(Failure::Unknown);
+            }
         }
         for job in desktop.server.capture_jobs() {
             if self.capture.waiting.len() + self.capture.readbacks.len() >= 8 { job.frame.fail(Failure::Unknown); }
@@ -228,7 +231,11 @@ impl Composition {
         let count = self.capture.waiting.len();
         for _ in 0..count {
             let mut waiting = self.capture.waiting.pop_front().unwrap();
-            if let Some(reason) = desktop.server.capture_job_failure(&waiting.job) { waiting.job.frame.fail(reason); continue; }
+            if let Some(reason) = desktop.server.capture_job_failure(&waiting.job) {
+                if matches!(reason, Failure::Unknown) { eprintln!("Park capture timed out; scene available: {}", waiting.source.is_some()); }
+                waiting.job.frame.fail(reason);
+                continue;
+            }
             if self.capture.readbacks.len() >= 4 { self.capture.waiting.push_back(waiting); continue; }
             if waiting.source.is_none() { waiting.source = Source::new(desktop, waiting.job.target); }
             let Some(source) = waiting.source.as_ref() else { self.capture.waiting.push_back(waiting); continue };
@@ -264,7 +271,10 @@ impl Composition {
                     readback._watch = Some(self.watch(readback.sync.clone())?);
                     self.capture.readbacks.push(readback);
                 }
-                Err(_) => waiting.job.frame.fail(Failure::Unknown),
+                Err(error) => {
+                    eprintln!("Park capture preparation: {error}");
+                    waiting.job.frame.fail(Failure::Unknown);
+                }
             }
         }
         let mut retained: HashSet<_> = self.capture.waiting.iter().filter_map(|waiting| waiting.source.as_ref().map(|source| source.nodes(&waiting.job)))
@@ -305,7 +315,7 @@ impl Composition {
         {
             let mut target = renderer.bind(&mut texture).map_err(error)?;
             {
-                let mut frame = renderer.render(&mut target, size, Transform::Normal).map_err(error)?;
+                let mut frame = renderer.render(&mut target, size, Transform::Flipped180).map_err(error)?;
                 frame.clear(smithay::backend::renderer::Color32F::TRANSPARENT, &[damage]).map_err(error)?;
                 if job.cursor {
                     let cursor = source.cursor();
@@ -338,7 +348,7 @@ impl Composition {
                 let _ = frame.finish().map_err(error)?;
             }
             mapping = renderer.copy_framebuffer(&target, Rect::from_size((job.size[0], job.size[1]).into()), Fourcc::Argb8888).map_err(error)?;
-            sync = renderer.render(&mut target, size, Transform::Normal).map_err(error)?.finish().map_err(error)?;
+            sync = renderer.render(&mut target, size, Transform::Flipped180).map_err(error)?.finish().map_err(error)?;
         }
         Ok((mapping, sync, texture))
     }

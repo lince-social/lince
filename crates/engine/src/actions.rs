@@ -42,7 +42,9 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
-    Identity { request: nucleus::identity::Command },
+    Identity {
+        request: nucleus::identity::Command,
+    },
     TrustAnalysis {
         person: Option<String>,
         request_id: String,
@@ -60,14 +62,27 @@ pub enum Action {
         person: Option<String>,
         request: nucleus::transfer::outcome::Request,
     },
-    Vocabulary { request: nucleus::vocabulary::Command },
-    Knowledge { request:nucleus::knowledge::Command },
-    SavedLocation { request: nucleus::vocabulary::SavedLocationCommand },
-    Plugins { request: nucleus::plugins::Command },
-    Location { request: nucleus::location::Command },
-    Visibility { request: nucleus::visibility::Command },
-    Audience { request: nucleus::visibility::plan::Command },
-    Surplus { request: nucleus::transfer::surplus::Command },
+    Vocabulary {
+        request: nucleus::vocabulary::Command,
+    },
+    Knowledge {
+        request: nucleus::knowledge::Command,
+    },
+    SavedLocation {
+        request: nucleus::vocabulary::SavedLocationCommand,
+    },
+    Plugins {
+        request: nucleus::plugins::Command,
+    },
+    Location {
+        request: nucleus::location::Command,
+    },
+    Visibility {
+        request: nucleus::visibility::Command,
+    },
+    Audience {
+        request: nucleus::visibility::plan::Command,
+    },
     RecordJourneyProgress {
         transfer: String,
         expected_revision: u64,
@@ -75,8 +90,13 @@ pub enum Action {
         request_id: String,
         step: nucleus::transfer::transport::Step,
     },
-    Workspace { request: crate::workspace_sync::Request },
-    InspectRecordAuthority { person: String, record_uid: String },
+    Workspace {
+        request: crate::workspace_sync::Request,
+    },
+    InspectRecordAuthority {
+        person: String,
+        record_uid: String,
+    },
     SandPackage {
         request: nucleus::sand_package::Command,
     },
@@ -244,7 +264,10 @@ pub enum Action {
         request_id: String,
     },
     InspectCanvases,
-    Canvas { canvas: Option<String>, request: nucleus::canvas::Request },
+    Canvas {
+        canvas: Option<String>,
+        request: nucleus::canvas::Request,
+    },
     PresentComponent {
         target: String,
         component: nucleus::component::ComponentState,
@@ -254,8 +277,15 @@ pub enum Action {
         value: String,
         request_id: String,
     },
-    InspectFioteActivations { target: String },
-    ReportFioteChild { parent: String, thread: String, task: String, state: String },
+    InspectFioteActivations {
+        target: String,
+    },
+    ReportFioteChild {
+        parent: String,
+        thread: String,
+        task: String,
+        state: String,
+    },
     DiscardTransferDraft {
         transfer: String,
         person: Option<String>,
@@ -471,7 +501,13 @@ pub enum Action {
     },
     RosterEnrolToken,
     RosterCreateOrgan,
-    RosterSetKarmaExecution { cell_uid: String, enabled: bool, #[serde(default)] additional: bool, expected_roster_version: i64 },
+    RosterSetKarmaExecution {
+        cell_uid: String,
+        enabled: bool,
+        #[serde(default)]
+        additional: bool,
+        expected_roster_version: i64,
+    },
     RosterRenameCell {
         cell_uid: String,
         label: String,
@@ -483,8 +519,12 @@ pub enum Action {
     SyncNow,
     MailboxStatus,
     MailboxSavedStatus,
-    MailboxRetrySaved { uid: String },
-    MailboxSetCopies { copies: u8 },
+    MailboxRetrySaved {
+        uid: String,
+    },
+    MailboxSetCopies {
+        copies: u8,
+    },
     MailboxCarryFor {
         organ_uid: String,
         #[serde(default)]
@@ -702,7 +742,9 @@ pub enum Action {
         assertion: String,
     },
     PreviewInstinct,
-    ImportInstinct { fingerprint: String },
+    ImportInstinct {
+        fingerprint: String,
+    },
     ConfigureFiote {
         target: String,
         prompt_parent: Option<String>,
@@ -1258,9 +1300,16 @@ pub enum Action {
         configuration: nucleus::command::Command,
         host: Option<String>,
     },
-    RunKarmaCommand { command: String, request_id: String, #[serde(default)] numeric: bool },
+    RunKarmaCommand {
+        command: String,
+        request_id: String,
+        #[serde(default)]
+        numeric: bool,
+    },
     InspectKarmaCommands,
-    SignalEndpoints { request: crate::signal_endpoints::Request },
+    SignalEndpoints {
+        request: crate::signal_endpoints::Request,
+    },
     CreateSignal {
         slug: String,
         head: String,
@@ -1401,7 +1450,9 @@ impl TransferVisibility {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferReservePoint {
     #[default]
@@ -1726,8 +1777,14 @@ impl nucleus::karma::ExactResolver for GatheredReadings {
         if let Some(value) = self.values.get(&reading_key(func, slug, window_secs)) {
             return Ok(*value);
         }
-        self.demanded = Some(nucleus::expr::TokenKey { func: func.into(), slug: slug.into(), dur_secs: window_secs });
-        Err(nucleus::karma::ConditionError::UnknownReference(slug.to_string()))
+        self.demanded = Some(nucleus::expr::TokenKey {
+            func: func.into(),
+            slug: slug.into(),
+            dur_secs: window_secs,
+        });
+        Err(nucleus::karma::ConditionError::UnknownReference(
+            slug.to_string(),
+        ))
     }
 }
 
@@ -2022,7 +2079,9 @@ impl Engine {
                 return self.plugin_command(request, actor.as_deref()).await;
             }
             if let Action::Location { request } = action {
-                return self.access_scope(false, self.location_request(request, actor.as_deref())).await;
+                return self
+                    .access_scope(false, self.location_request(request, actor.as_deref()))
+                    .await;
             }
             if let Action::PreviewKarmaProposal { request } = action {
                 let report = self.preview_karma_proposal(request, actor, now).await?;
@@ -2050,29 +2109,64 @@ impl Engine {
         let refresh_work = matches!(&action, Action::SetExtension { namespace, .. } if namespace == "work")
             || matches!(&action, Action::ChangeRecord { request } if matches!(&request.mutation,
                 crate::record_change::Mutation::Work { .. } | crate::record_change::Mutation::WorkMetadata { .. }));
-        let changes_rules = matches!(&action,
-            Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
-            Action::CreateFrequency { .. } | Action::DeleteFrequency { .. }
-            | Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
-            | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
-            | Action::CreateSignal { .. } | Action::DeleteRecord { .. }
-            | Action::SetSlug { .. } | Action::CreateRecord { .. }
-            | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. } | Action::ImportKarmaHabit { .. }
+        let changes_rules = matches!(
+            &action,
+            Action::SaveKarmaRule { .. }
+                | Action::ReviseKarmaField { .. }
+                | Action::CreateFrequency { .. }
+                | Action::DeleteFrequency { .. }
+                | Action::CreateRecurrence { .. }
+                | Action::ReviseRecurrence { .. }
+                | Action::DeleteRecurrence { .. }
+                | Action::SetRecurrencePaused { .. }
+                | Action::CreateSignal { .. }
+                | Action::DeleteRecord { .. }
+                | Action::SetSlug { .. }
+                | Action::CreateRecord { .. }
+                | Action::SetKarmaExecution { .. }
+                | Action::DesignateKarmaExecutor { .. }
+                | Action::ImportKarmaHabit { .. }
         );
-        let preview = matches!(&action, Action::PreviewInstinct | Action::PendingOffers | Action::PreviewRecordMove { .. } | Action::PreviewKarmaReading { .. } | Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. }) || matches!(&action,Action::Identity {request} if !request.is_mutation()) || matches!(&action,Action::TrustAnalysis {request,..} if !request.is_mutation()) || matches!(&action,Action::Vocabulary {request} if !request.is_mutation());
-        let _rule_guard = if matches!(&action,
-            Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
-            Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
-            | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
-            | Action::SaveKarmaSchedule { .. } | Action::CancelKarmaSchedule { .. } | Action::RetryKarmaSchedule { .. }
-        ) { Some(self.rule_execution.lock().await) } else { None };
+        let preview = matches!(
+            &action,
+            Action::PreviewInstinct
+                | Action::PendingOffers
+                | Action::PreviewRecordMove { .. }
+                | Action::PreviewKarmaReading { .. }
+                | Action::InspectTransferKarma { .. }
+                | Action::InspectKarmaSchedules { .. }
+                | Action::PreviewKarmaScheduleDates { .. }
+                | Action::PreviewKarmaHabit { .. }
+        ) || matches!(&action,Action::Identity {request} if !request.is_mutation())
+            || matches!(&action,Action::TrustAnalysis {request,..} if !request.is_mutation())
+            || matches!(&action,Action::Vocabulary {request} if !request.is_mutation());
+        let _rule_guard = if matches!(
+            &action,
+            Action::SaveKarmaRule { .. }
+                | Action::ReviseKarmaField { .. }
+                | Action::CreateRecurrence { .. }
+                | Action::ReviseRecurrence { .. }
+                | Action::DeleteRecurrence { .. }
+                | Action::SetRecurrencePaused { .. }
+                | Action::SaveKarmaSchedule { .. }
+                | Action::CancelKarmaSchedule { .. }
+                | Action::RetryKarmaSchedule { .. }
+        ) {
+            Some(self.rule_execution.lock().await)
+        } else {
+            None
+        };
         let outcome = if let Action::Social { request } = &action {
             self.authorize_action(&action, actor.as_deref()).await?;
-            self.social_command(request.clone(), actor.as_deref(), now).await?
+            self.social_command(request.clone(), actor.as_deref(), now)
+                .await?
         } else if let Action::SetCellConfig { namespace, fds } = &action {
             self.authorize_action(&action, actor.as_deref()).await?;
             self.set_cell_config_action(namespace, fds.clone()).await?
-        } else if let Some(outcome) = self.social_message_action(&action, actor.as_deref()).await? {
+        } else if let Some(outcome) = self
+            .social_message_action(&action, actor.as_deref())
+            .await?
+        {
             outcome
         } else if matches!(action, Action::ApplyRecurrenceOccurrence { .. })
             && !crate::already_firing()
@@ -2107,14 +2201,30 @@ impl Engine {
         action: &Action,
         actor: Option<&str>,
     ) -> Result<Option<ActionOutcome>, EngineError> {
-        let Action::CreateMessage { thread, body, state, content, references, parent, .. } = action else {
+        let Action::CreateMessage {
+            thread,
+            body,
+            state,
+            content,
+            references,
+            parent,
+            ..
+        } = action
+        else {
             return Ok(None);
         };
         let thread_uid = self.resolve(thread).await?;
         let Some(root) = store::replica::root_of(&self.store.pool, &thread_uid).await? else {
             return Ok(None);
         };
-        if store::records::get_extension(&self.store.pool, &root, nucleus::social::requests::PARTICIPANTS_NAMESPACE).await?.is_none() {
+        if store::records::get_extension(
+            &self.store.pool,
+            &root,
+            nucleus::social::requests::PARTICIPANTS_NAMESPACE,
+        )
+        .await?
+        .is_none()
+        {
             return Ok(None);
         }
         for transfer in self.canonical_transfer_action_targets(action).await? {
@@ -2122,15 +2232,20 @@ impl Engine {
         }
         self.authorize_action(action, actor).await?;
         self.social_require_local_write().await?;
-        let thread_row = store::records::get(&self.store.pool, &thread_uid).await?
+        let thread_row = store::records::get(&self.store.pool, &thread_uid)
+            .await?
             .ok_or_else(|| EngineError::UnknownRecord(thread.clone()))?;
         if thread_row.kind != RecordKind::Thread.as_str() {
-            return Err(EngineError::Consequence("Choose a Thread for this private message".into()));
+            return Err(EngineError::Consequence(
+                "Choose a Thread for this private message".into(),
+            ));
         }
         if *state != MessageState::Finished || !references.is_empty() || parent.is_some() {
             return Err(EngineError::Consequence("Private conversations support finished messages with text and attached files. Shared Record references and replies to Messages require separate consent".into()));
         }
-        let data = self.social_send_message(&root, body.clone(), content.clone(), actor).await?;
+        let data = self
+            .social_send_message(&root, body.clone(), content.clone(), actor)
+            .await?;
         Ok(Some(ActionOutcome {
             created: data["message"].as_str().map(str::to_owned),
             data: Some(data),
@@ -2144,27 +2259,35 @@ impl Engine {
         mut fds: serde_json::Value,
     ) -> Result<ActionOutcome, EngineError> {
         if namespace == crate::ailuros::receiver::NAMESPACE {
-            fds = serde_json::to_value(crate::ailuros::receiver::Settings::parse(fds)?)
-                .map_err(|_| crate::signal_streams::invalid("Invalid hardware receiver settings"))?;
+            fds = serde_json::to_value(crate::ailuros::receiver::Settings::parse(fds)?).map_err(
+                |_| crate::signal_streams::invalid("Invalid hardware receiver settings"),
+            )?;
         }
         if namespace == "lince.discovery" {
             let relays = crate::wire::configured_relays(Some(&fds))?;
             if fds.get("relays").is_some() {
-                fds["relays"] = serde_json::json!(relays.iter().map(ToString::to_string).collect::<Vec<_>>());
+                fds["relays"] =
+                    serde_json::json!(relays.iter().map(ToString::to_string).collect::<Vec<_>>());
             }
         }
         if namespace == "lince.network" {
             crate::wire::configured_peer_port(Some(&fds))?;
         }
-        if namespace == "lince.karma-runtime" && (fds["running"].as_bool().is_none() || fds.as_object().is_none_or(|fields| fields.len() != 1)) {
-            return Err(EngineError::Consequence("Karma runtime configuration needs one running boolean".into()));
+        if namespace == "lince.karma-runtime"
+            && (fds["running"].as_bool().is_none()
+                || fds.as_object().is_none_or(|fields| fields.len() != 1))
+        {
+            return Err(EngineError::Consequence(
+                "Karma runtime configuration needs one running boolean".into(),
+            ));
         }
         store::cells::set_config(&self.store.pool, namespace, &fds).await?;
         self.notify_config_changed();
         let mut outcome = ActionOutcome::default();
         if namespace == "lince.karma-runtime" {
             self.notify_karma_deadline_change();
-            self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.effects_changed
+                .send_modify(|revision| *revision = revision.wrapping_add(1));
             outcome.data = Some(serde_json::json!({"karma":self.karma_device_execution().await?}));
         }
         Ok(outcome)
@@ -2181,7 +2304,8 @@ impl Engine {
     > {
         Box::pin(async move {
             for transfer_uid in self.canonical_transfer_action_targets(&action).await? {
-                self.require_transfer_origin_authority(&transfer_uid).await?;
+                self.require_transfer_origin_authority(&transfer_uid)
+                    .await?;
             }
             self.authorize_action(&action, actor.as_deref()).await?;
             let reacts_to_transfer = matches!(
@@ -2206,9 +2330,9 @@ impl Engine {
                     roots.insert(fact.record_uid.clone(), fact.uid.clone());
                 }
                 for (record, fact) in roots {
-                    outcome.facts.extend(
-                        Box::pin(self.react_to_event(vec![record], fact, now)).await?,
-                    );
+                    outcome
+                        .facts
+                        .extend(Box::pin(self.react_to_event(vec![record], fact, now)).await?);
                 }
             }
             Ok(outcome)
@@ -2239,8 +2363,18 @@ impl Engine {
         if let Some(actor) = actor {
             self.actor_user(actor).await?;
         }
-        if actor.is_some() && matches!(action, Action::CreateAgent { .. } | Action::ConfigureFiote { .. } | Action::ActivateFiote { .. } | Action::ReportFioteChild { .. }) {
-            return Err(EngineError::Forbidden("Fiote automation requires the local interface session".into()));
+        if actor.is_some()
+            && matches!(
+                action,
+                Action::CreateAgent { .. }
+                    | Action::ConfigureFiote { .. }
+                    | Action::ActivateFiote { .. }
+                    | Action::ReportFioteChild { .. }
+            )
+        {
+            return Err(EngineError::Forbidden(
+                "Fiote automation requires the local interface session".into(),
+            ));
         }
         if let Some(permission) = Self::generic_write_permission(action) {
             self.require_permission(actor, permission).await?;
@@ -2248,17 +2382,21 @@ impl Engine {
         let touched = self.record_targets_of(action).await.map_err(|error| {
             if actor.is_some() && matches!(error, EngineError::UnknownRecord(_)) {
                 EngineError::Forbidden("Record unavailable for this login".into())
-            } else { error }
+            } else {
+                error
+            }
         })?;
         self.refuse_unreadable(actor, &touched).await?;
         self.authorize_record_policy(action, actor).await?;
         let edited = match action {
-            Action::AssertRecord { subject, .. } | Action::RefineAssertion { subject, .. } | Action::RetractRecord { subject, .. } => {
+            Action::AssertRecord { subject, .. }
+            | Action::RefineAssertion { subject, .. }
+            | Action::RetractRecord { subject, .. } => {
                 vec![self.resolve(subject).await?]
             }
             Action::CreateThread { .. }
-            | Action::Identity {..}
-            | Action::TrustAnalysis {..}
+            | Action::Identity { .. }
+            | Action::TrustAnalysis { .. }
             | Action::CreateMessage { .. }
             | Action::CreateMessageDraft { .. }
             | Action::PreviewAreaTransition { .. } => vec![],
@@ -2287,36 +2425,63 @@ impl Engine {
             }
         }
         match action {
-            Action::CreateRecord { kind, .. } if actor.is_some() => {
-                match kind {
-                    RecordKind::Plain => {}
-                    RecordKind::Person => self.require_permission(actor, "user:create").await?,
-                    RecordKind::Signal => self.require_permission(actor, "organ:update").await?,
-                    _ => return Err(EngineError::Forbidden("Use the dedicated editor to create this managed Record kind".into())),
+            Action::CreateRecord { kind, .. } if actor.is_some() => match kind {
+                RecordKind::Plain => {}
+                RecordKind::Person => self.require_permission(actor, "user:create").await?,
+                RecordKind::Signal => self.require_permission(actor, "organ:update").await?,
+                _ => {
+                    return Err(EngineError::Forbidden(
+                        "Use the dedicated editor to create this managed Record kind".into(),
+                    ));
                 }
-            }
-            Action::GrantVisibility { subject_kind, subject, .. } => {
+            },
+            Action::GrantVisibility {
+                subject_kind,
+                subject,
+                ..
+            } => {
                 self.require_permission(actor, "permission:assign").await?;
                 match (subject_kind.as_str(), subject.as_deref()) {
                     ("public", None) => {}
                     ("actor", Some(uid)) => {
                         let uid = self.resolve(uid).await?;
-                        if store::records::get(&self.store.pool, &uid).await?.is_none_or(|record| record.kind != "person") {
-                            return Err(EngineError::Consequence("Choose an existing Person".into()));
+                        if store::records::get(&self.store.pool, &uid)
+                            .await?
+                            .is_none_or(|record| record.kind != "person")
+                        {
+                            return Err(EngineError::Consequence(
+                                "Choose an existing Person".into(),
+                            ));
                         }
                         self.require_manageable_person(actor, &uid).await?;
                     }
                     ("role", Some(id)) => {
-                        let id: i64 = id.parse().map_err(|_| EngineError::Consequence("Choose an existing Role".into()))?;
-                        let name: String = store::sqlx::query_scalar("SELECT name FROM role WHERE id=?").bind(id).fetch_optional(&self.store.pool).await?.ok_or_else(|| EngineError::Consequence("Choose an existing Role".into()))?;
+                        let id: i64 = id.parse().map_err(|_| {
+                            EngineError::Consequence("Choose an existing Role".into())
+                        })?;
+                        let name: String =
+                            store::sqlx::query_scalar("SELECT name FROM role WHERE id=?")
+                                .bind(id)
+                                .fetch_optional(&self.store.pool)
+                                .await?
+                                .ok_or_else(|| {
+                                    EngineError::Consequence("Choose an existing Role".into())
+                                })?;
                         self.require_assignable_role(actor, &name).await?;
                     }
                     ("organ", Some(uid)) => {
                         if self.resolve(uid).await? != self.resolve("local-organ").await? {
-                            return Err(EngineError::Forbidden("Visibility grants require this Organ".into()));
+                            return Err(EngineError::Forbidden(
+                                "Visibility grants require this Organ".into(),
+                            ));
                         }
                     }
-                    _ => return Err(EngineError::Consequence("Choose a public, Person, Role or local Organ visibility recipient".into())),
+                    _ => {
+                        return Err(EngineError::Consequence(
+                            "Choose a public, Person, Role or local Organ visibility recipient"
+                                .into(),
+                        ));
+                    }
                 }
             }
             Action::CreateConcept { .. }
@@ -2380,11 +2545,14 @@ impl Engine {
             }
             Action::AssignRoles { person, roles, .. } => {
                 self.require_permission(actor, "user:assign_role").await?;
-                self.require_manageable_person(actor, &self.resolve(person).await?).await?;
+                self.require_manageable_person(actor, &self.resolve(person).await?)
+                    .await?;
                 if roles.len() > store::person_roles::MAX_ROLES {
                     return Err(EngineError::Consequence("Assign at most 64 Roles".into()));
                 }
-                for role in roles { self.require_assignable_role(actor, role).await?; }
+                for role in roles {
+                    self.require_assignable_role(actor, role).await?;
+                }
             }
             Action::GrantPermission { role, permission }
             | Action::RevokePermission { role, permission } => {
@@ -2697,7 +2865,8 @@ impl Engine {
     }
 
     async fn transfer_for_thread(&self, thread_uid: &str) -> Result<Option<String>, EngineError> {
-        let Some(thread_of) = store::vocabulary::feature_read(&self.store.pool, "thread").await? else {
+        let Some(thread_of) = store::vocabulary::feature_read(&self.store.pool, "thread").await?
+        else {
             return Ok(None);
         };
         let mut transfers = Vec::new();
@@ -3041,14 +3210,19 @@ impl Engine {
         if let Some(exchange) = &mut item.exchange {
             for person in [&mut exchange.giver, &mut exchange.receiver] {
                 let uid = self.resolve(person.trim()).await?;
-                let record = store::records::get(&self.store.pool, &uid).await?
+                let record = store::records::get(&self.store.pool, &uid)
+                    .await?
                     .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
                 if record.kind != RecordKind::Person.as_str() {
-                    return Err(EngineError::Consequence("exchange endpoints must be People".into()));
+                    return Err(EngineError::Consequence(
+                        "exchange endpoints must be People".into(),
+                    ));
                 }
                 *person = uid;
             }
-            exchange.validate().map_err(|message| EngineError::Consequence(message.into()))?;
+            exchange
+                .validate()
+                .map_err(|message| EngineError::Consequence(message.into()))?;
         }
         for field in item.disclosure.fields_mut() {
             for person in &mut field.people {
@@ -3067,9 +3241,17 @@ impl Engine {
             field.people.dedup();
         }
         if let Some(link) = item.return_of.as_ref().or(item.future_need_for.as_ref()) {
-            if store::records::get(&self.store.pool, &link.transfer).await?.is_some()
-                && self.readable_by(person).await?.is_some_and(|visible| !visible.contains(&link.transfer)) {
-                return Err(EngineError::Consequence("the linked loan is unavailable to this Person".into()));
+            if store::records::get(&self.store.pool, &link.transfer)
+                .await?
+                .is_some()
+                && self
+                    .readable_by(person)
+                    .await?
+                    .is_some_and(|visible| !visible.contains(&link.transfer))
+            {
+                return Err(EngineError::Consequence(
+                    "the linked loan is unavailable to this Person".into(),
+                ));
             }
             store::transfer_loans::validate_link(&self.store.pool, &item, person).await?;
         }
@@ -3106,7 +3288,11 @@ impl Engine {
         Ok(uid)
     }
 
-    pub(crate) async fn readable_remote_transfer(&self, target: &str, actor: Option<&str>) -> Result<Option<String>, EngineError> {
+    pub(crate) async fn readable_remote_transfer(
+        &self,
+        target: &str,
+        actor: Option<&str>,
+    ) -> Result<Option<String>, EngineError> {
         Ok(store::sqlx::query_scalar(
             "SELECT r.transfer_uid FROM transfer_remote_reference r
              WHERE (r.uid = ? OR r.transfer_uid = ?) AND r.state = 'active' AND r.projection IS NOT NULL
@@ -3169,14 +3355,24 @@ impl Engine {
             }
             let (upstream_kind, upstream_uid, upstream_transfer) = match input.upstream_kind {
                 TransferDependencyUpstreamKindInput::Transfer => {
-                    let uid = if let Some(record) = store::records::resolve(&self.store.pool, upstream_token).await? {
-                        if store::transfers::get(&self.store.pool, &record.uid).await?.is_none() {
-                            return Err(EngineError::Consequence("a Transfer dependency upstream must be a Transfer record".into()));
+                    let uid = if let Some(record) =
+                        store::records::resolve(&self.store.pool, upstream_token).await?
+                    {
+                        if store::transfers::get(&self.store.pool, &record.uid)
+                            .await?
+                            .is_none()
+                        {
+                            return Err(EngineError::Consequence(
+                                "a Transfer dependency upstream must be a Transfer record".into(),
+                            ));
                         }
                         record.uid
                     } else {
-                        self.readable_remote_transfer(upstream_token, actor).await?
-                            .ok_or_else(|| EngineError::Forbidden("The upstream outcome is unavailable".into()))?
+                        self.readable_remote_transfer(upstream_token, actor)
+                            .await?
+                            .ok_or_else(|| {
+                                EngineError::Forbidden("The upstream outcome is unavailable".into())
+                            })?
                     };
                     (
                         nucleus::transfer::TransferDependencyUpstreamKind::Transfer,
@@ -3209,15 +3405,25 @@ impl Engine {
                 let target = if let Some(transfer) = &upstream_transfer {
                     Some(transfer.clone())
                 } else {
-                    store::misc::get_promise(&self.store.pool, &upstream_uid).await?.and_then(|promise| promise.record_uid)
+                    store::misc::get_promise(&self.store.pool, &upstream_uid)
+                        .await?
+                        .and_then(|promise| promise.record_uid)
                 };
                 if let Some(target) = target {
                     if !self.may_read_record(Some(actor), &target).await?
-                        && self.readable_remote_transfer(&target, Some(actor)).await?.is_none() {
-                        return Err(EngineError::Forbidden("The upstream outcome is unavailable".into()));
+                        && self
+                            .readable_remote_transfer(&target, Some(actor))
+                            .await?
+                            .is_none()
+                    {
+                        return Err(EngineError::Forbidden(
+                            "The upstream outcome is unavailable".into(),
+                        ));
                     }
                 } else {
-                    return Err(EngineError::Forbidden("The upstream outcome is unavailable".into()));
+                    return Err(EngineError::Forbidden(
+                        "The upstream outcome is unavailable".into(),
+                    ));
                 }
             }
             if promise_uid.as_deref() == Some(upstream_uid.as_str()) {
@@ -3243,9 +3449,17 @@ impl Engine {
                 });
             }
             let required_state = input.required_state.trim().to_ascii_lowercase();
-            let required_state = if required_state == "settled" { "kept".to_string() } else { required_state };
-            if upstream_kind == nucleus::transfer::TransferDependencyUpstreamKind::Transfer && !matches!(required_state.as_str(), "agreed" | "kept") {
-                return Err(EngineError::Consequence("Transfer dependencies require an agreed or settled outcome".into()));
+            let required_state = if required_state == "settled" {
+                "kept".to_string()
+            } else {
+                required_state
+            };
+            if upstream_kind == nucleus::transfer::TransferDependencyUpstreamKind::Transfer
+                && !matches!(required_state.as_str(), "agreed" | "kept")
+            {
+                return Err(EngineError::Consequence(
+                    "Transfer dependencies require an agreed or settled outcome".into(),
+                ));
             }
             if !matches!(
                 required_state.as_str(),
@@ -3625,7 +3839,10 @@ impl Engine {
                 if !access.quantity {
                     input.delta = existing.delta;
                     input.unit = existing.unit_uid.clone();
-                    input.party = input.item.as_ref().and_then(|item| item.exchange.as_ref())
+                    input.party = input
+                        .item
+                        .as_ref()
+                        .and_then(|item| item.exchange.as_ref())
                         .map(|exchange| exchange.owner(existing.delta).to_string())
                         .or_else(|| existing.party_uid.clone());
                 }
@@ -3651,12 +3868,25 @@ impl Engine {
                     "every promise delta must be finite and non-zero".into(),
                 ));
             }
-            let preserve_transport = private_source.is_some() && if let Some(existing) = existing_promise {
-                store::transfers::item_of(&self.store.pool, &existing.uid).await?.and_then(|item| item.transport)
-                    == input.item.as_ref().and_then(|item| item.transport.clone())
-            } else { false };
-            self.normalize_transport_item(&mut input, &creator_person_uid, preserve_transport, actor).await?;
-            let item = self.resolve_transfer_item(input.item, &proposal_author_person_uid).await?;
+            let preserve_transport = private_source.is_some()
+                && if let Some(existing) = existing_promise {
+                    store::transfers::item_of(&self.store.pool, &existing.uid)
+                        .await?
+                        .and_then(|item| item.transport)
+                        == input.item.as_ref().and_then(|item| item.transport.clone())
+                } else {
+                    false
+                };
+            self.normalize_transport_item(
+                &mut input,
+                &creator_person_uid,
+                preserve_transport,
+                actor,
+            )
+            .await?;
+            let item = self
+                .resolve_transfer_item(input.item, &proposal_author_person_uid)
+                .await?;
             let (record_uid, concept_uid) = match private_source {
                 Some(source) => source,
                 None => {
@@ -3905,9 +4135,13 @@ impl Engine {
         outcome: &mut ActionOutcome,
     ) -> Result<(), EngineError> {
         match commit {
-            store::transfers::RevisionCommit::Committed { fact, parent_facts, .. } => {
+            store::transfers::RevisionCommit::Committed {
+                fact, parent_facts, ..
+            } => {
                 outcome.facts = self.publish_committed_fact(fact);
-                for parent in parent_facts { outcome.facts.extend(self.publish_committed_fact(parent)); }
+                for parent in parent_facts {
+                    outcome.facts.extend(self.publish_committed_fact(parent));
+                }
             }
             store::transfers::RevisionCommit::Replayed { .. } => {}
             store::transfers::RevisionCommit::Stale { current_revision } => {
@@ -4133,7 +4367,8 @@ impl Engine {
         record_uid: &str,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
-        self.social_require_safe_generic_deletion(record_uid).await?;
+        self.social_require_safe_generic_deletion(record_uid)
+            .await?;
         let Some(actor) = actor else {
             return Ok(());
         };
@@ -4154,22 +4389,32 @@ impl Engine {
 
     pub(crate) fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
-            Action::Identity {request} => request.permission(),
-            Action::TrustAnalysis {request,..} => request.permission(),
+            Action::Identity { request } => request.permission(),
+            Action::TrustAnalysis { request, .. } => request.permission(),
             Action::TransferReceipt { request, .. } => request.permission(),
             Action::SignalEndpoints { .. } => "permission:assign",
-            Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Knowledge { .. } => "record:read",
+            Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Knowledge { .. } => {
+                "record:read"
+            }
             Action::Plugins { request } => request.permission(),
             Action::Social { request } => request.permission(),
             Action::SandPackage { request } => request.permission(),
-            Action::DiscardTransferDraft { .. } | Action::RecordTransferOutcome { .. } => "transfer:update",
+            Action::DiscardTransferDraft { .. } | Action::RecordTransferOutcome { .. } => {
+                "transfer:update"
+            }
             Action::InspectCanvases => "record:read",
             Action::RecordExtensions { request, .. } => match request {
                 nucleus::record_extension::Request::Inspect { .. } => "record:read",
                 nucleus::record_extension::Request::Create { .. } => "record:create",
                 _ => "record:update",
             },
-            Action::Canvas { request, .. } => if request.is_mutation() { "record:update" } else { "record:read" },
+            Action::Canvas { request, .. } => {
+                if request.is_mutation() {
+                    "record:update"
+                } else {
+                    "record:read"
+                }
+            }
             Action::InspectFioteActivations { .. } => "record:read",
             Action::CreateRecord { .. }
             | Action::CreateCustomComponent { .. }
@@ -4178,7 +4423,8 @@ impl Engine {
             | Action::CreateAgent { .. }
             | Action::CreateMessageDraft { .. }
             | Action::SendMessageDraft { .. }
-            | Action::ImportInstinct { .. } | Action::ImportKarmaHabit { .. } => "record:create",
+            | Action::ImportInstinct { .. }
+            | Action::ImportKarmaHabit { .. } => "record:create",
             Action::PreviewInstinct => "record:read",
             Action::SetQuantity { .. }
             | Action::PreviewAreaTransition { .. }
@@ -4239,12 +4485,26 @@ impl Engine {
             Action::ProposeGroup { .. } => "record:create",
             Action::SetGroupPerson { .. } => "user:update",
             Action::RemoveGroupOrgan { .. } => "record:update",
-            Action::PreviewKarmaReading { .. } | Action::PreviewKarmaProposal { .. } | Action::InspectKarmaRuleHistory { .. } | Action::ReadMessageAttachment { .. } => "record:read",
-            Action::InspectTransferKarma { .. } | Action::InspectKarmaSchedules { .. } | Action::PreviewKarmaScheduleDates { .. } | Action::PreviewKarmaHabit { .. } => "frequency:read",
+            Action::PreviewKarmaReading { .. }
+            | Action::PreviewKarmaProposal { .. }
+            | Action::InspectKarmaRuleHistory { .. }
+            | Action::ReadMessageAttachment { .. } => "record:read",
+            Action::InspectTransferKarma { .. }
+            | Action::InspectKarmaSchedules { .. }
+            | Action::PreviewKarmaScheduleDates { .. }
+            | Action::PreviewKarmaHabit { .. } => "frequency:read",
             Action::SaveKarmaSchedule { schedule: None, .. } => "frequency:create",
-            Action::SaveKarmaSchedule { schedule: Some(_), .. } | Action::CancelKarmaSchedule { .. } | Action::RetryKarmaSchedule { .. } => "frequency:update",
-            Action::SaveKarmaRule { rule: None, .. } | Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
-            Action::SaveKarmaRule { rule: Some(_), .. } | Action::ReviseKarmaField { .. } => "frequency:update",
+            Action::SaveKarmaSchedule {
+                schedule: Some(_), ..
+            }
+            | Action::CancelKarmaSchedule { .. }
+            | Action::RetryKarmaSchedule { .. } => "frequency:update",
+            Action::SaveKarmaRule { rule: None, .. }
+            | Action::CreateFrequency { .. }
+            | Action::CreateRecurrence { .. } => "frequency:create",
+            Action::SaveKarmaRule { rule: Some(_), .. } | Action::ReviseKarmaField { .. } => {
+                "frequency:update"
+            }
             Action::ReviseRecurrence { .. }
             | Action::SetRecurrencePaused { .. }
             | Action::ApplyRecurrenceOccurrence { .. }
@@ -4293,7 +4553,9 @@ impl Engine {
             | Action::RosterSetKarmaExecution { .. }
             | Action::RosterRenameCell { .. }
             | Action::RosterEnrolToken
-            | Action::SaveKarmaCommand { .. } | Action::RunKarmaCommand { .. } | Action::InspectKarmaCommands
+            | Action::SaveKarmaCommand { .. }
+            | Action::RunKarmaCommand { .. }
+            | Action::InspectKarmaCommands
             | Action::SetCellConfig { .. }
             | Action::MailboxCarryFor { .. }
             | Action::MailboxAddPickup { .. }
@@ -4395,7 +4657,6 @@ impl Engine {
             | Action::Location { .. }
             | Action::Visibility { .. }
             | Action::Audience { .. }
-            | Action::Surplus { .. }
             | Action::RecordJourneyProgress { .. }
             | Action::Workspace { .. }
             | Action::InspectRecordAuthority { .. }
@@ -4420,7 +4681,9 @@ impl Engine {
         let mut rewritten = String::with_capacity(source.len());
         let mut copied = 0usize;
         for (start, end, name) in tokens {
-            let uid = store::vocabulary::resolve(&self.store.pool,&name,actor).await?.ok_or_else(||EngineError::UnknownRecord(name.clone()))?;
+            let uid = store::vocabulary::resolve(&self.store.pool, &name, actor)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(name.clone()))?;
             rewritten.push_str(&source[copied..start]);
             rewritten.push('#');
             rewritten.push_str(&uid);
@@ -4457,7 +4720,9 @@ impl Engine {
                 Consequence::RemoveConcept { concept } => Consequence::RemoveConcept {
                     concept: self.resolve_concept(&concept).await?,
                 },
-                Consequence::ShowComponent { component } => Consequence::ShowComponent { component: self.resolve_component(component).await? },
+                Consequence::ShowComponent { component } => Consequence::ShowComponent {
+                    component: self.resolve_component(component).await?,
+                },
                 mut other if other.transfer_target().is_some() => {
                     if let Some((transfer, person)) = other.transfer_references_mut() {
                         *transfer = self.resolve_karma_transfer(transfer).await?;
@@ -4490,14 +4755,15 @@ impl Engine {
         now: DateTime<Utc>,
         depth: usize,
     ) -> Result<Option<nucleus::DecimalValue>, EngineError> {
-        let parsed = condition.parsed().map_err(|e| {
-            EngineError::Conflict {
-                code: "rule_condition_invalid",
-                message: e.to_string(),
-            }
+        let parsed = condition.parsed().map_err(|e| EngineError::Conflict {
+            code: "rule_condition_invalid",
+            message: e.to_string(),
         })?;
 
-        let mut readings = GatheredReadings { values: Default::default(), demanded: None };
+        let mut readings = GatheredReadings {
+            values: Default::default(),
+            demanded: None,
+        };
         let unreadable = |e: nucleus::karma::ConditionError| EngineError::Conflict {
             code: "rule_condition_unreadable",
             message: e.to_string(),
@@ -4506,10 +4772,30 @@ impl Engine {
             match parsed.evaluate(&mut readings) {
                 Ok(value) => break value,
                 Err(error) => {
-                    let Some(token) = readings.demanded.take() else { return Err(unreadable(error)) };
-                    let value = self.read_for_condition(&token.func, &token.slug, token.dur_secs, at, now, depth).await;
-                    crate::karma_history::reading(&token.func, &token.slug, token.dur_secs, depth, &value);
-                    readings.values.insert(reading_key(&token.func, &token.slug, token.dur_secs), value?);
+                    let Some(token) = readings.demanded.take() else {
+                        return Err(unreadable(error));
+                    };
+                    let value = self
+                        .read_for_condition(
+                            &token.func,
+                            &token.slug,
+                            token.dur_secs,
+                            at,
+                            now,
+                            depth,
+                        )
+                        .await;
+                    crate::karma_history::reading(
+                        &token.func,
+                        &token.slug,
+                        token.dur_secs,
+                        depth,
+                        &value,
+                    );
+                    readings.values.insert(
+                        reading_key(&token.func, &token.slug, token.dur_secs),
+                        value?,
+                    );
                 }
             }
         };
@@ -4537,10 +4823,18 @@ impl Engine {
             nucleus::DecimalValue::from_mantissa(0, 0).expect("scale zero is always constructible");
         if let Some((namespace, property)) = nucleus::expr::extension_parts(func) {
             let uid = self.resolve(slug).await?;
-            return Ok(store::records::extension_number(&self.store.pool, &uid, &namespace, &property).await?);
+            return Ok(store::records::extension_number(
+                &self.store.pool,
+                &uid,
+                &namespace,
+                &property,
+            )
+            .await?);
         }
         if nucleus::transfer::karma::is_reading(func) {
-            return self.transfer_condition_reading(func, slug, now.timestamp_millis()).await;
+            return self
+                .transfer_condition_reading(func, slug, now.timestamp_millis())
+                .await;
         }
         match func {
             "query_command" => self.query_command_reading(slug).await,
@@ -4624,11 +4918,19 @@ impl Engine {
                 let mut places = Vec::new();
                 let actor = crate::karma_transfers::actor();
                 for token in slug.split('|') {
-                    let place = self.saved_location_of(token, actor.as_deref()).await?.selected
-                        .map(|candidate| nucleus::place::Place { lat: candidate.latitude, lon: candidate.longitude })
+                    let place = self
+                        .saved_location_of(token, actor.as_deref())
+                        .await?
+                        .selected
+                        .map(|candidate| nucleus::place::Place {
+                            lat: candidate.latitude,
+                            lon: candidate.longitude,
+                        })
                         .ok_or_else(|| EngineError::Conflict {
                             code: "rule_condition_invalid",
-                            message: format!("`{token}` needs one available selected saved location"),
+                            message: format!(
+                                "`{token}` needs one available selected saved location"
+                            ),
                         })?;
                     places.push(place);
                 }
@@ -4723,8 +5025,15 @@ impl Engine {
                 .await?;
             }
             nucleus::karma::Consequence::InvokeCommand { command } => {
-                let snapshot = self.command_snapshot(command, rule.actor_uid.as_deref()).await?;
-                self.queue_rule_effect(rule, "saved-command", serde_json::json!({"saved_command":command,"command_snapshot":snapshot})).await?;
+                let snapshot = self
+                    .command_snapshot(command, rule.actor_uid.as_deref())
+                    .await?;
+                self.queue_rule_effect(
+                    rule,
+                    "saved-command",
+                    serde_json::json!({"saved_command":command,"command_snapshot":snapshot}),
+                )
+                .await?;
             }
             nucleus::karma::Consequence::RunCommand { command } => {
                 self.queue_rule_effect(
@@ -4787,14 +5096,31 @@ impl Engine {
         if let Ok(occurrence) = crate::rule_runtime::EFFECT_OCCURRENCE.try_with(Clone::clone) {
             payload["occurrence"] = serde_json::to_value(&occurrence).map_err(EngineError::Json)?;
             let encoded = serde_json::to_string(&payload).map_err(EngineError::Json)?;
-            let hash = nucleus::karma::canonical_hash("lince.karma-nested-effect.v1", &encoded).map_err(|error| EngineError::Consequence(error.to_string()))?;
+            let hash = nucleus::karma::canonical_hash("lince.karma-nested-effect.v1", &encoded)
+                .map_err(|error| EngineError::Consequence(error.to_string()))?;
             let mut tx = store::write_tx(&self.store.pool).await?;
-            crate::rule_runtime::queue_effect_tx(&mut tx, &format!("{}:{}:{}:{kind}:{}", occurrence.event_id, rule.uid, rule.revision, hash.as_str()), kind, payload, &rule.record_uid, nucleus::execution::now()).await?;
+            crate::rule_runtime::queue_effect_tx(
+                &mut tx,
+                &format!(
+                    "{}:{}:{}:{kind}:{}",
+                    occurrence.event_id,
+                    rule.uid,
+                    rule.revision,
+                    hash.as_str()
+                ),
+                kind,
+                payload,
+                &rule.record_uid,
+                nucleus::execution::now(),
+            )
+            .await?;
             tx.commit().await?;
         } else {
-            store::misc::queue_effect(&self.store.pool, kind, &payload, Some(&rule.record_uid)).await?;
+            store::misc::queue_effect(&self.store.pool, kind, &payload, Some(&rule.record_uid))
+                .await?;
         }
-        self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.effects_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
         Ok(())
     }
 
@@ -4833,8 +5159,6 @@ impl Engine {
                 message: "an always-gate cannot block".into(),
             })
     }
-
-
 
     async fn resolve_concept(&self, token: &str) -> Result<String, EngineError> {
         store::concepts::resolve(&self.store.pool, token.trim())

@@ -61,9 +61,18 @@ impl ContactReview {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
-    Remote {request:super::remote::Command},
-    Serving {request:super::serving::Command},
-    Custody {request:super::custody::Command},
+    MatchSuppliers {
+        request: crate::transfer::matching::Request,
+    },
+    Remote {
+        request: super::remote::Command,
+    },
+    Serving {
+        request: super::serving::Command,
+    },
+    Custody {
+        request: super::custody::Command,
+    },
     Claims {
         request: super::claims::commands::Command,
     },
@@ -119,8 +128,17 @@ pub enum Command {
 
 impl Command {
     pub fn is_mutation(&self) -> bool {
-        if let Self::Custody {request}=self {return matches!(request,super::custody::Command::SetPolicy {..}|super::custody::Command::Cleanup|super::custody::Command::CancelDelivery {..});}
-        if let Self::Serving {request}=self {return matches!(request,super::serving::Command::Publish {..});}
+        if let Self::Custody { request } = self {
+            return matches!(
+                request,
+                super::custody::Command::SetPolicy { .. }
+                    | super::custody::Command::Cleanup
+                    | super::custody::Command::CancelDelivery { .. }
+            );
+        }
+        if let Self::Serving { request } = self {
+            return matches!(request, super::serving::Command::Publish { .. });
+        }
         if let Self::Claims { request } = self {
             return request.is_mutation();
         }
@@ -131,9 +149,30 @@ impl Command {
     }
 
     pub fn permission(&self) -> &'static str {
-        if matches!(self,Self::Custody {request:super::custody::Command::CancelDelivery {..}}) {return "record:update";}
-        if let Self::Custody {request:super::custody::Command::SetPolicy {..}|super::custody::Command::Cleanup}=self {return "organ:update";}
-        if matches!(self, Self::Claims { request: super::claims::commands::Command::Recipes { request: super::claims::recipes::commands::Command::Control {..} } }) { return "record:update"; }
+        if matches!(
+            self,
+            Self::Custody {
+                request: super::custody::Command::CancelDelivery { .. }
+            }
+        ) {
+            return "record:update";
+        }
+        if let Self::Custody {
+            request: super::custody::Command::SetPolicy { .. } | super::custody::Command::Cleanup,
+        } = self
+        {
+            return "organ:update";
+        }
+        if matches!(
+            self,
+            Self::Claims {
+                request: super::claims::commands::Command::Recipes {
+                    request: super::claims::recipes::commands::Command::Control { .. }
+                }
+            }
+        ) {
+            return "record:update";
+        }
         if self.is_mutation() {
             "record:create"
         } else {

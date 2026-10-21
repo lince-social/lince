@@ -81,9 +81,15 @@ pub enum Consequence {
         plan: String,
         commitment: String,
     },
-    RefreshStockPolicy {
-        policy: String,
-        commitment: String,
+    RepeatTransfer {
+        transfer: String,
+        person: String,
+        stage: crate::transfer::karma::AutomationStage,
+    },
+    ReopenTransferNeed {
+        transfer: String,
+        person: String,
+        target: Option<DecimalValue>,
     },
     SetTransferAgreement {
         transfer: String,
@@ -130,7 +136,8 @@ impl Consequence {
             Self::RunAction { .. } => "run-action",
             Self::SetVisibility { .. } => "set-visibility",
             Self::AdvanceAudience { .. } => "advance-audience",
-            Self::RefreshStockPolicy { .. } => "refresh-stock-policy",
+            Self::RepeatTransfer { .. } => "repeat-transfer",
+            Self::ReopenTransferNeed { .. } => "reopen-transfer-need",
             Self::SetTransferAgreement { .. } => "set-transfer-agreement",
             Self::PublishTransfer { .. } => "publish-transfer",
             Self::ActivateTransferFulfillment { .. } => "activate-transfer-fulfillment",
@@ -151,7 +158,8 @@ impl Consequence {
                 | Self::RunAction { .. }
                 | Self::SetVisibility { .. }
                 | Self::AdvanceAudience { .. }
-                | Self::RefreshStockPolicy { .. }
+                | Self::ReopenTransferNeed { .. }
+                | Self::RepeatTransfer { .. }
         )
     }
 
@@ -164,7 +172,9 @@ impl Consequence {
 
     pub fn transfer_target(&self) -> Option<&str> {
         match self {
-            Self::SetTransferAgreement { transfer, .. }
+            Self::RepeatTransfer { transfer, .. }
+            | Self::ReopenTransferNeed { transfer, .. }
+            | Self::SetTransferAgreement { transfer, .. }
             | Self::PublishTransfer { transfer, .. }
             | Self::ActivateTransferFulfillment { transfer, .. } => Some(transfer),
             _ => None,
@@ -173,7 +183,9 @@ impl Consequence {
 
     pub fn transfer_person(&self) -> Option<&str> {
         match self {
-            Self::SetTransferAgreement { person, .. }
+            Self::RepeatTransfer { person, .. }
+            | Self::ReopenTransferNeed { person, .. }
+            | Self::SetTransferAgreement { person, .. }
             | Self::PublishTransfer { person, .. }
             | Self::ActivateTransferFulfillment { person, .. } => Some(person),
             _ => None,
@@ -182,7 +194,13 @@ impl Consequence {
 
     pub fn transfer_references_mut(&mut self) -> Option<(&mut String, &mut String)> {
         match self {
-            Self::SetTransferAgreement {
+            Self::RepeatTransfer {
+                transfer, person, ..
+            }
+            | Self::ReopenTransferNeed {
+                transfer, person, ..
+            }
+            | Self::SetTransferAgreement {
                 transfer, person, ..
             }
             | Self::PublishTransfer { transfer, person }
@@ -209,15 +227,23 @@ impl Consequence {
     }
 
     fn validate(&self) -> Result<(), NucleusError> {
-        if let Self::RefreshStockPolicy { policy, commitment } = self
-            && (!crate::valid_uid(policy,"r") || commitment.len()!=64 || !commitment.bytes().all(|byte|byte.is_ascii_hexdigit())) {
-            return Err(NucleusError::Parse("Choose a reviewed stock policy".into()));
+        if let Self::ReopenTransferNeed {
+            target: Some(target),
+            ..
+        } = self
+            && (target.is_negative() || target.is_zero())
+        {
+            return Err(NucleusError::Parse(
+                "Choose a positive target quantity".into(),
+            ));
         }
         if let Self::AdvanceAudience { plan, commitment } = self
             && (!crate::valid_uid(plan, "r")
                 || super::CanonicalHash::parse(commitment.clone()).is_err())
         {
-            return Err(NucleusError::Parse("Choose a reviewed audience plan".into()));
+            return Err(NucleusError::Parse(
+                "Choose a reviewed audience plan".into(),
+            ));
         }
         if let Self::ShowComponent { component } = self {
             component.validate().map_err(NucleusError::Parse)?;

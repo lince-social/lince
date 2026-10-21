@@ -15,7 +15,7 @@ fn reactive_popup_follows_parent_output_and_fractional_usable_region() {
     let rectangle = CanvasRectangle::new([0.0; 2], [320.0, 240.0]).unwrap();
     let mut geometry = GeometrySnapshot { revision: 1, outputs: harness.server.output_viewports().into_iter().map(|(_, viewport)| viewport).collect(), focused: None,
         items: vec![ItemGeometry { id: ItemId::Application(id), output: OutputId(1),
-            mapping: ContentMapping { canvas: rectangle, surface: rectangle }, floating: false, clip: None }] };
+            mapping: ContentMapping { corners: None, canvas: rectangle, surface: rectangle }, floating: false, clip: None }] };
     harness.server.presented_outputs(&geometry, Some(OutputId(1)));
     let qh = harness.queue.handle();
     let positioner = harness.client.shell.as_ref().unwrap().create_positioner(&qh, ());

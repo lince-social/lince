@@ -3,6 +3,7 @@ use nucleus::trust_analysis::claims::{self, Comparator, Metric, commands::Comman
 
 #[derive(Clone)]
 pub(super) struct Draft {
+    pub category: claims::Category,
     pub title: String,
     pub amount: String,
     pub claim: String,
@@ -19,6 +20,7 @@ pub(super) struct Draft {
 impl Default for Draft {
     fn default() -> Self {
         Self {
+            category: Default::default(),
             title: "Contribution history claim".into(),
             amount: String::new(),
             claim: String::new(),
@@ -58,6 +60,7 @@ pub(super) enum UiCommand {
     InspectSnapshot,
     Exact,
     Metric,
+    Category,
     Withdrawn,
     Revise(Value, bool),
 }
@@ -118,6 +121,7 @@ pub(super) fn draft(view: &View) -> Result<claims::commands::Draft, String> {
         )
     };
     Ok(claims::commands::Draft {
+        category: source.category,
         issuer: if view.issuer_organ {
             Identity::Organ(view.context["organ"].as_str().unwrap_or_default().into())
         } else {
@@ -195,11 +199,23 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                 as_organ: view.as_organ,
             }),
             UiCommand::InspectSnapshot => Some(Request::InspectDocument {
-                document: serde_json::to_string(view.claims.snapshot.as_ref().ok_or("Select a profile claim first")?).map_err(|error| error.to_string())?,
+                document: serde_json::to_string(
+                    view.claims
+                        .snapshot
+                        .as_ref()
+                        .ok_or("Select a profile claim first")?,
+                )
+                .map_err(|error| error.to_string())?,
                 as_organ: view.as_organ,
             }),
             UiCommand::CheckSnapshot => Some(Request::CheckDocument {
-                document: serde_json::to_string(view.claims.snapshot.as_ref().ok_or("Select a profile claim first")?).map_err(|error| error.to_string())?,
+                document: serde_json::to_string(
+                    view.claims
+                        .snapshot
+                        .as_ref()
+                        .ok_or("Select a profile claim first")?,
+                )
+                .map_err(|error| error.to_string())?,
                 sources: analysis::build(view)?,
                 as_organ: view.as_organ,
             }),
@@ -222,6 +238,13 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
             view.result = Value::Null;
             match command {
                 UiCommand::Exact => view.claims.exact = !view.claims.exact,
+                UiCommand::Category => {
+                    view.claims.category = match view.claims.category {
+                        claims::Category::Experience => claims::Category::Credential,
+                        claims::Category::Credential => claims::Category::Recommendation,
+                        claims::Category::Recommendation => claims::Category::Experience,
+                    }
+                }
                 UiCommand::Metric => view.claims.metric = (view.claims.metric + 1) % 3,
                 UiCommand::Withdrawn => {
                     view.claims.withdrawn = !view.claims.withdrawn;
@@ -233,6 +256,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                     if let Ok(document) = serde_json::from_value::<claims::Document>(value.clone())
                     {
                         let statement = document.statement;
+                        view.claims.category = statement.category;
                         let mut query = nucleus::trust_analysis::query::Query::for_subject(
                             statement.descriptor.subject.clone(),
                         );
@@ -328,6 +352,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         owner,
         "Issuer, private/public audience, extra viewers and term use the disclosure controls above. A public signed payload does not widen its private holder Record.",
     );
+    button(world, owner, draft.category.label(), UiCommand::Category);
     input(world, owner, Field::Title, "Claim title", &draft.title);
     input(
         world,
@@ -475,7 +500,14 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         result["kind"].as_str(),
         Some("claim_document" | "claim_check")
     ) {
-        if let Some(record)=result["record"].as_str() {evidence_serving_controls(world,owner,record,nucleus::trust_analysis::serving::SourceKind::Claim);}
+        if let Some(record) = result["record"].as_str() {
+            evidence_serving_controls(
+                world,
+                owner,
+                record,
+                nucleus::trust_analysis::serving::SourceKind::Claim,
+            );
+        }
         if let Ok(document) = serde_json::from_value::<claims::Document>(result["document"].clone())
         {
             let statement = &document.statement;
@@ -561,6 +593,21 @@ pub(super) fn render(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn render_check(world: &mut World, owner: Entity, result: &Value, page: usize) {
+    if result["kind"] == "credential_check" {
+        label(
+            world,
+            owner,
+            &format!(
+                "Issuer trusted for this exact activity: {}. Delivery quantity added: zero.",
+                result["trusted_issuer_for_activity"]
+            ),
+        );
+        label(
+            world,
+            owner,
+            "This checks current issuer authority, signed scope, expiry, withdrawal and your source filters. It does not verify physical delivery.",
+        );
+    }
     if result["kind"] == "claim_check" {
         let state = match result["support"]["state"].as_str() {
             Some("partial_support") => "Partial support in visible evidence",

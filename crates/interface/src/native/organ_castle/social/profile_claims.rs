@@ -9,13 +9,16 @@ struct Editor {
 }
 
 fn at(time: i64) -> String {
-    chrono::DateTime::from_timestamp(time, 0).map(|time| time.to_rfc3339()).unwrap_or_else(|| "unavailable".into())
+    chrono::DateTime::from_timestamp(time, 0)
+        .map(|time| time.to_rfc3339())
+        .unwrap_or_else(|| "unavailable".into())
 }
 
 fn caption(document: &Document) -> String {
     let statement = &document.statement;
     format!(
-        "{} · {:?} {} · {:?} · revision {} · as of {} · expires {}{}",
+        "{} · {} · {:?} {} · {:?} · revision {} · as of {} · expires {}{}",
+        statement.category.label(),
         statement.title,
         statement.comparator,
         statement.amount,
@@ -70,7 +73,11 @@ fn render_editor(world: &mut World, body: Entity) {
         .map(|form| form.payload["request"]["fields"]["claims"].clone())
         .unwrap_or(Value::Null);
     panel::clear(world, body);
-    label(world, body, "Up to four public snapshots. Remove one before selecting another when the profile is full; total profile size is checked before publication.");
+    label(
+        world,
+        body,
+        "Up to four public snapshots. Remove one before selecting another when the profile is full; total profile size is checked before publication.",
+    );
     for (index, value) in claims.as_array().into_iter().flatten().enumerate() {
         if let Ok(document) = serde_json::from_value::<Document>(value.clone()) {
             label(world, body, &caption(&document));
@@ -184,7 +191,13 @@ pub(super) fn cards(world: &mut World, parent: Entity, fields: &Value) {
     for value in fields["claims"].as_array().into_iter().flatten() {
         if let Ok(document) = serde_json::from_value::<Document>(value.clone()) {
             label(world, parent, &caption(&document));
-            if document.statement.withdrawn { label(world, parent, "Withdrawn statement: no current numerical contribution claim."); }
+            if document.statement.withdrawn {
+                label(
+                    world,
+                    parent,
+                    "Withdrawn statement: no current numerical contribution claim.",
+                );
+            }
             if document.statement.expires_at <= nucleus::execution::now().timestamp() {
                 label(
                     world,
@@ -243,6 +256,7 @@ fn selecting_profile_claims_only_changes_the_reviewed_draft_and_keeps_reader_pol
     let now = nucleus::execution::now().timestamp();
     let mut document = Document {
         statement: Statement {
+            category: Default::default(),
             title: "Public food deliveries".into(),
             issuer: Identity::Person(issuer),
             claim: nucleus::new_uid("r"),
@@ -292,9 +306,18 @@ fn selecting_profile_claims_only_changes_the_reviewed_draft_and_keeps_reader_pol
         Some("Review before publishing"),
     );
     editor(app.world_mut(), owner, parent, save, &subject);
-    let request = app.world_mut().query::<&forms::Form>().iter(app.world()).find(|form| form.payload["action"]=="trust-analysis").unwrap().payload.clone();
+    let request = app
+        .world_mut()
+        .query::<&forms::Form>()
+        .iter(app.world())
+        .find(|form| form.payload["action"] == "trust-analysis")
+        .unwrap()
+        .payload
+        .clone();
     let request: engine::actions::Action = serde_json::from_value(request).unwrap();
-    assert!(matches!(request, engine::actions::Action::TrustAnalysis { request, .. } if !request.is_mutation() && request.permission()=="record:read"));
+    assert!(
+        matches!(request, engine::actions::Action::TrustAnalysis { request, .. } if !request.is_mutation() && request.permission()=="record:read")
+    );
     Select {
         owner,
         document: document.clone(),
@@ -367,52 +390,126 @@ fn selecting_profile_claims_only_changes_the_reviewed_draft_and_keeps_reader_pol
 #[cfg_attr(test, test)]
 fn public_profile_opens_the_actual_organ_experience_without_discovery() {
     let mut app = crate::native::sand_panel::tests::app();
-    let root = app.world_mut().spawn(crate::native::workspace::Workspaces::default()).id();
+    let root = app
+        .world_mut()
+        .spawn(crate::native::workspace::Workspaces::default())
+        .id();
     let owner = app.world_mut().spawn((Node::default(), ChildOf(root))).id();
-    let parent = app.world_mut().spawn((Node::default(), ChildOf(owner))).id();
+    let parent = app
+        .world_mut()
+        .spawn((Node::default(), ChildOf(owner)))
+        .id();
     let organ = nucleus::new_uid("r");
-    super::result(app.world_mut(), owner, parent, &json!({"profile":{"authority":{"organ":organ},"fields":{"name":"Food workshop"}}}));
-    crate::native::trust_castle::tests::assert_subject_entry(app.world_mut(), parent, nucleus::trust_analysis::Identity::Organ(organ));
+    super::result(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"profile":{"authority":{"organ":organ},"fields":{"name":"Food workshop"}}}),
+    );
+    crate::native::trust_castle::tests::assert_subject_entry(
+        app.world_mut(),
+        parent,
+        nucleus::trust_analysis::Identity::Organ(organ),
+    );
 }
 
 #[cfg_attr(test, test)]
 fn optional_helper_form_keeps_preset_pins_roles_and_explicit_enable() {
     let mut app = crate::native::sand_panel::tests::app();
     let owner = app.world_mut().spawn(Node::default()).id();
-    super::servers_view(app.world_mut(),owner,owner,&json!([]),true);
-    let helper = app.world_mut().query::<(Entity,&forms::Form)>().iter(app.world()).find(|(_,form)|form.payload["request"]["choice"]["preset"] == "institute_discovery").unwrap().0;
-    let original = forms::payload(app.world(),helper).unwrap();
-    assert_eq!(original["request"]["choice"]["query"],false);
-    assert_eq!(original["request"]["choice"]["publication"],false);
-    assert_eq!(original["request"]["choice"]["mailbox"],false);
+    super::servers_view(app.world_mut(), owner, owner, &json!([]), true);
+    let helper = app
+        .world_mut()
+        .query::<(Entity, &forms::Form)>()
+        .iter(app.world())
+        .find(|(_, form)| form.payload["request"]["choice"]["preset"] == "institute_discovery")
+        .unwrap()
+        .0;
+    let original = forms::payload(app.world(), helper).unwrap();
+    assert_eq!(original["request"]["choice"]["query"], false);
+    assert_eq!(original["request"]["choice"]["publication"], false);
+    assert_eq!(original["request"]["choice"]["mailbox"], false);
     let organ = nucleus::new_uid("r");
-    forms::prepare_values(app.world_mut(),helper,&[("/request/choice/organ",json!(organ)),("/request/choice/endpoint",json!("pinned-endpoint")),("/request/choice/query",json!(true))]);
-    let edited = forms::payload(app.world(),helper).unwrap();
-    assert_eq!(edited["request"]["choice"]["preset"],"institute_discovery");
-    assert_eq!(edited["request"]["choice"]["organ"],organ);
-    assert_eq!(edited["request"]["choice"]["endpoint"],"pinned-endpoint");
-    assert_eq!(edited["request"]["choice"]["query"],true);
-    assert_eq!(edited["request"]["choice"]["publication"],false);
-    assert_eq!(edited["request"]["choice"]["mailbox"],false);
-    assert!(app.world().get::<forms::Form>(helper).unwrap().pending.is_none());
+    forms::prepare_values(
+        app.world_mut(),
+        helper,
+        &[
+            ("/request/choice/organ", json!(organ)),
+            ("/request/choice/endpoint", json!("pinned-endpoint")),
+            ("/request/choice/query", json!(true)),
+        ],
+    );
+    let edited = forms::payload(app.world(), helper).unwrap();
+    assert_eq!(edited["request"]["choice"]["preset"], "institute_discovery");
+    assert_eq!(edited["request"]["choice"]["organ"], organ);
+    assert_eq!(edited["request"]["choice"]["endpoint"], "pinned-endpoint");
+    assert_eq!(edited["request"]["choice"]["query"], true);
+    assert_eq!(edited["request"]["choice"]["publication"], false);
+    assert_eq!(edited["request"]["choice"]["mailbox"], false);
+    assert!(
+        app.world()
+            .get::<forms::Form>(helper)
+            .unwrap()
+            .pending
+            .is_none()
+    );
 }
 
 #[cfg_attr(test, test)]
 fn received_private_location_invitation_opens_scoped_controls_without_observing() {
-    let mut app=crate::native::sand_panel::tests::app();
+    let mut app = crate::native::sand_panel::tests::app();
     app.add_message::<crate::location::Request>();
-    let owner=app.world_mut().spawn(Node::default()).id();
-    let recipient=nucleus::new_uid("r");
-    let invitation=nucleus::location::Invitation {record_uid:nucleus::new_uid("r"),authority_node_id:"a".repeat(64),grant:Some(nucleus::location::InvitationGrant {uid:nucleus::new_uid("li"),issuer:nucleus::new_uid("r"),recipient:recipient.clone(),radius_metres:Some(1000),expires_at_ms:1_800_000_000_000})};
-    super::result(app.world_mut(),owner,owner,&json!({"requests":[{"record":nucleus::new_uid("r"),"state":{"state":"accepted"},"messages":[{"body":format!("Private location invitation\n{}",invitation.reference().unwrap())}]}]}));
-    let label=app.world_mut().query::<(Entity,&Text)>().iter(app.world()).find(|(_,text)|text.0=="Open location invitation").unwrap().0;
-    let button=app.world().get::<ChildOf>(label).unwrap().parent();
-    let action=app.world().get::<crate::native::actions::ActionButton>(button).unwrap();
-    let (target,actions)=(action.target,action.actions.clone());
-    actions.run(app.world_mut(),target);
-    assert_eq!(app.world_mut().query_filtered::<Entity,With<crate::location::Panel>>().iter(app.world()).count(),1);
-    assert!(app.world().resource::<Messages<crate::location::Request>>().is_empty());
-    assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|text.0.contains(&format!("Intended Person: {recipient}"))));
+    let owner = app.world_mut().spawn(Node::default()).id();
+    let recipient = nucleus::new_uid("r");
+    let invitation = nucleus::location::Invitation {
+        record_uid: nucleus::new_uid("r"),
+        authority_node_id: "a".repeat(64),
+        grant: Some(nucleus::location::InvitationGrant {
+            uid: nucleus::new_uid("li"),
+            issuer: nucleus::new_uid("r"),
+            recipient: recipient.clone(),
+            radius_metres: Some(1000),
+            expires_at_ms: 1_800_000_000_000,
+        }),
+    };
+    super::result(
+        app.world_mut(),
+        owner,
+        owner,
+        &json!({"requests":[{"record":nucleus::new_uid("r"),"state":{"state":"accepted"},"messages":[{"body":format!("Private location invitation\n{}",invitation.reference().unwrap())}]}]}),
+    );
+    let label = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find(|(_, text)| text.0 == "Open location invitation")
+        .unwrap()
+        .0;
+    let button = app.world().get::<ChildOf>(label).unwrap().parent();
+    let action = app
+        .world()
+        .get::<crate::native::actions::ActionButton>(button)
+        .unwrap();
+    let (target, actions) = (action.target, action.actions.clone());
+    actions.run(app.world_mut(), target);
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<Entity, With<crate::location::Panel>>()
+            .iter(app.world())
+            .count(),
+        1
+    );
+    assert!(
+        app.world()
+            .resource::<Messages<crate::location::Request>>()
+            .is_empty()
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains(&format!("Intended Person: {recipient}")))
+    );
 }
 
 crate::native::laboratory_cases! { selecting_profile_claims_only_changes_the_reviewed_draft_and_keeps_reader_policies_private, public_profile_opens_the_actual_organ_experience_without_discovery, optional_helper_form_keeps_preset_pins_roles_and_explicit_enable, received_private_location_invitation_opens_scoped_controls_without_observing, }

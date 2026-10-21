@@ -29,6 +29,7 @@ enum Command {
     Pause(bool),
     Edit(String),
     Refresh,
+    Configure(transfers::Automation),
     Dismiss,
 }
 
@@ -38,6 +39,15 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::Configure(mode) => {
+                let Some(row) = selected(world, owner) else {
+                    return;
+                };
+                match transfers::automation(&row, &person(world, owner), *mode) {
+                    Ok(draft) => crate::native::karma_castle::open_draft(world, owner, draft),
+                    Err(error) => status(world, owner, error),
+                }
+            }
             Self::Select(uid) => {
                 let mut state = world.get_mut::<Automation>(owner).unwrap();
                 if !state.selected.remove(uid) {
@@ -242,6 +252,13 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer: &Value) {
+    let setup = ui::row(world, parent);
+    for (label, mode) in [
+        ("Configure reopening Need", transfers::Automation::Reopen),
+        ("Configure repeated Transfer", transfers::Automation::Repeat),
+    ] {
+        crate::native::castle_feed::button(world, setup, owner, label, Command::Configure(mode));
+    }
     let Some(state) = world.get::<Automation>(owner) else {
         return;
     };

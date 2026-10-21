@@ -34,7 +34,7 @@ impl PopupSnapshot {
         };
         let first: Rectangle<f64, Logical> = rectangle(nodes.next()?);
         let bounds = nodes.fold(first, |bounds, node| bounds.merge(rectangle(node)));
-        Some(lince_interface::host::ContentMapping {
+        Some(lince_interface::host::ContentMapping { corners: None,
             canvas: lince_interface::host::Rectangle::new(
                 [
                     origin[0] + f64::from(self.origin[0]) + bounds.loc.x,
@@ -74,7 +74,7 @@ impl PopupSnapshot {
             f64::from(self.origin[0]) + bounds.loc.x + parent_origin.x - parent_bounds.loc.x,
             f64::from(self.origin[1]) + bounds.loc.y + parent_origin.y - parent_bounds.loc.y,
         ];
-        Some(lince_interface::host::ContentMapping {
+        Some(lince_interface::host::ContentMapping { corners: None,
             canvas: lince_interface::host::Rectangle::new(
                 std::array::from_fn(|axis| {
                     item.mapping.canvas.origin()[axis] + popup_origin[axis] * scale[axis]

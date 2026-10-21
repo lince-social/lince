@@ -1,6 +1,6 @@
 use lince_interface::karma as model;
-pub(crate) mod commands_ui;
 mod ailuros_ui;
+pub(crate) mod commands_ui;
 mod history_ui;
 mod persistence;
 mod preview_ui;
@@ -117,6 +117,14 @@ struct Requests {
 struct FocusRule(String);
 
 pub(crate) fn open_rule(world: &mut World, source: Entity, uid: &str) {
+    open_configured(world, source, Some(uid), None);
+}
+
+pub(crate) fn open_draft(world: &mut World, source: Entity, draft: Draft) {
+    open_configured(world, source, None, Some(draft));
+}
+
+fn open_configured(world: &mut World, source: Entity, uid: Option<&str>, draft: Option<Draft>) {
     let mut root = source;
     while world
         .get::<crate::native::workspace::Workspaces>(root)
@@ -133,14 +141,25 @@ pub(crate) fn open_rule(world: &mut World, source: Entity, uid: &str) {
     let position = world
         .get::<crate::native::canvas::CanvasItem>(source)
         .map_or(DVec2::ZERO, |item| item.position + DVec2::new(40.0, 40.0));
-    let owner = spawn(world, root, workspace, position, KarmaCastle::default());
+    let owner = spawn(
+        world,
+        root,
+        workspace,
+        position,
+        KarmaCastle {
+            draft,
+            ..Default::default()
+        },
+    );
     if let Some(source) = crate::native::practice_cells::source(world, source) {
         world
             .entity_mut(owner)
             .insert(crate::native::practice_cells::PracticeSource(source));
         crate::native::instinct::practice::track_custom(world, root, &[owner]);
     }
-    world.entity_mut(owner).insert(FocusRule(uid.into()));
+    if let Some(uid) = uid {
+        world.entity_mut(owner).insert(FocusRule(uid.into()));
+    }
 }
 
 pub struct KarmaCastlePlugin;

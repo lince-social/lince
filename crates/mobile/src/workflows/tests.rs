@@ -185,3 +185,62 @@ fn restore_keeps_only_editable_person_drafts_and_requires_review_again() {
     ensure_scope(&mut next);
     assert!(next.resource::<State>().form.is_none());
 }
+
+#[test]
+fn credential_forms_use_normal_review_and_scope_changes_clear_private_drafts() {
+    let directory = tempfile::tempdir().unwrap();
+    let person = nucleus::new_uid("r");
+    let (mut world, parent) = fixture(directory.path(), &person);
+    ensure_scope(&mut world);
+    let meaning = nucleus::vocabulary::reference::MeaningReference {
+        vocabulary_uid: nucleus::new_uid("g"),
+        concept_uid: nucleus::new_uid("c"),
+        revision: 1,
+        definition_hash: "a".repeat(64),
+    };
+    let descriptor = nucleus::trust_analysis::claims::Descriptor {
+        subject: nucleus::trust_analysis::Identity::Person(nucleus::new_uid("r")),
+        role: nucleus::transfer::outcome::Role::Giver,
+        measurement: nucleus::transfer::receipt::Measurement {
+            meaning,
+            unit: None,
+            object_commitment: None,
+        },
+        level: nucleus::trust_analysis::query::EvidenceLevel::NeedLinkedReceiver,
+        metric: nucleus::trust_analysis::claims::Metric::Quantity,
+        counterparty_basis: nucleus::trust_analysis::query::CounterpartyBasis::Organ,
+        from: None,
+        until: None,
+    };
+    let form = claim_form(
+        &person,
+        json!({"category":"credential","issuer":{"kind":"person","uid":person},"claim":null,"title":"Activity credential","descriptor":descriptor,"comparator":"at_least","amount":"1","as_of":null,"lifetime_seconds":3600,"expected_revision":0,"withdrawn":false,"audience":{"kind":"selected","viewers":[{"kind":"person","uid":person}]}}),
+    );
+    open(&mut world, form).unwrap();
+    render(&mut world, parent);
+    assert!(world.resource::<State>().review.is_none());
+    apply(&mut world, Intent::ReviewAction).unwrap();
+    assert!(world.resource::<State>().review.is_some());
+    let payload = world
+        .resource::<State>()
+        .form
+        .as_ref()
+        .unwrap()
+        .payload()
+        .unwrap();
+    let action: engine::actions::Action = serde_json::from_value(payload).unwrap();
+    assert!(matches!(
+        action,
+        engine::actions::Action::TrustAnalysis {
+            request: nucleus::trust_analysis::commands::Command::Claims {
+                request: nucleus::trust_analysis::claims::commands::Command::Preview { .. }
+            },
+            ..
+        }
+    ));
+    world.resource_mut::<Mobile>().identity =
+        crate::session::Identity::Person(nucleus::new_uid("r"));
+    ensure_scope(&mut world);
+    assert!(world.resource::<State>().form.is_none());
+    assert!(world.resource::<State>().review.is_none());
+}

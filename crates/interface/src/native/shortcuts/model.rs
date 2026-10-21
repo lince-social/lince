@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, HashMap};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Shortcut {
+    Unfocus,
     DeleteSand,
     ToggleEdit,
     OpenOperation,
@@ -67,7 +68,8 @@ pub enum Shortcut {
 }
 
 impl Shortcut {
-    pub const ALL: [Self; 58] = [
+    pub const ALL: [Self; 59] = [
+        Self::Unfocus,
         Self::DeleteSand,
         Self::ToggleEdit,
         Self::OpenOperation,
@@ -130,6 +132,7 @@ impl Shortcut {
 
     pub fn label(self) -> &'static str {
         match self {
+            Self::Unfocus => "Return keyboard focus to the canvas",
             Self::DeleteSand => "Delete selected Sands or Castles",
             Self::ToggleEdit => "Toggle edit mode",
             Self::OpenOperation => "Open Operation",
@@ -193,6 +196,7 @@ impl Shortcut {
 
     pub fn default_binding(self) -> &'static str {
         match self {
+            Self::Unfocus => "Super+Backspace",
             Self::DeleteSand => "Delete",
             Self::ToggleEdit => "Alt+E",
             Self::OpenOperation => "Ctrl+K",
@@ -257,7 +261,8 @@ impl Shortcut {
     fn parse(self, value: &str) -> Result<Chord, String> {
         if matches!(
             self,
-            Self::FocusLeft
+            Self::Unfocus
+                | Self::FocusLeft
                 | Self::FocusDown
                 | Self::FocusUp
                 | Self::FocusRight

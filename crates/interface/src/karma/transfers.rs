@@ -71,10 +71,16 @@ pub fn elements(kind: RuleFieldKind, rows: &[Value], acting: Option<&str>) -> Ve
                 }
                 values.push(format!("{target}: agreement(@{person}, 2, 3d)"));
                 values.push(format!("{target}: publish(@{person})"));
+                values.push(format!("{target}: repeat(@{person})"));
+                values.push(format!("{target}: repeat(@{person}, \"publish\")"));
+                values.push(format!("{target}: repeat(@{person}, \"commit\")"));
+                values.push(format!("{target}: repeat(@{person}, \"activate\")"));
+                values.push(format!("{target}: reopen(@{person})"));
+                values.push(format!("{target}: reopen(@{person}, 14)"));
                 for promise in row["promises"].as_array().into_iter().flatten() {
                     if let Some(promise) = promise["uid"].as_str() {
                         values.push(format!(
-                            "{target}: activate(@{person}, @{promise}, \"once\")"
+                            "{target}: activate(@{person}, @{promise}, \"$occurrence\")"
                         ));
                     }
                 }
@@ -85,6 +91,39 @@ pub fn elements(kind: RuleFieldKind, rows: &[Value], acting: Option<&str>) -> Ve
     values.sort();
     values.dedup();
     values
+}
+
+#[derive(Clone, Copy)]
+pub enum Automation {
+    Reopen,
+    Repeat,
+}
+
+pub fn automation(row: &Value, person: &str, mode: Automation) -> Result<super::Draft, String> {
+    let state = snapshot(row).ok_or("Refresh the Transfer before configuring automation")?;
+    if !state.participants.contains_key(person) {
+        return Err("Choose a participating Person".into());
+    }
+    let (name, condition, threshold, consequence) = match mode {
+        Automation::Reopen => (
+            "Reopen Need",
+            "1".to_owned(),
+            "> 0",
+            format!("@{}: reopen(@{person})", state.transfer),
+        ),
+        Automation::Repeat => (
+            "Repeat Transfer",
+            String::new(),
+            "> 0",
+            format!("@{}: repeat(@{person})", state.transfer),
+        ),
+    };
+    Ok(super::Draft {
+        name: name.into(),
+        fields: [condition, threshold.into(), consequence]
+            .map(|text| super::FieldDraft { text, linked: None }),
+        ..Default::default()
+    })
 }
 
 #[cfg(test)]
@@ -128,6 +167,22 @@ mod tests {
     }
 
     #[test]
+    fn automation_drafts_share_normal_karma_fields_and_require_frequency_for_repeat() {
+        let state = state(0);
+        let person = state.participants.keys().next().unwrap();
+        let row = serde_json::json!({"uid":state.transfer,"karma_state":state});
+        let reopen = automation(&row, person, Automation::Reopen).unwrap();
+        assert!(reopen.fields[2].text.contains("reopen("));
+        assert!(reopen.valid());
+        let mut repeat = automation(&row, person, Automation::Repeat).unwrap();
+        assert!(repeat.fields[0].text.is_empty());
+        repeat.fields[0].text = "freq(@weekly)".into();
+        assert!(repeat.valid());
+        assert!(repeat.rule.is_none());
+        assert!(automation(&row, "another-person", Automation::Repeat).is_err());
+    }
+
+    #[test]
     fn transfer_templates_use_stable_ids_and_an_explicit_fulfillment_key() {
         let state = state(0);
         let person = state.participants.keys().next().unwrap();
@@ -138,11 +193,15 @@ mod tests {
             nucleus::karma::Condition::parse(&source).unwrap();
         }
         let effects = elements(RuleFieldKind::Consequence, &[row.clone()], Some(person));
-        assert_eq!(effects.len(), 7);
+        assert_eq!(effects.len(), 13);
         for source in &effects {
             nucleus::karma::rule_field::RuleConsequence::parse(source).unwrap();
         }
-        assert!(effects.iter().any(|source| source.ends_with("\"once\")")));
+        assert!(
+            effects
+                .iter()
+                .any(|source| source.ends_with("\"$occurrence\")"))
+        );
         assert!(elements(RuleFieldKind::Consequence, &[row], None).is_empty());
     }
 }

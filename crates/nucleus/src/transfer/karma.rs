@@ -4,6 +4,18 @@ use serde::{Deserialize, Serialize};
 
 use super::AgreementGuard;
 
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum AutomationStage {
+    #[default]
+    Draft,
+    Publish,
+    Commit,
+    Activate,
+}
+
 pub const READINGS: [&str; 7] = [
     "agreement_level",
     "agreement_changed_at",

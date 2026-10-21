@@ -2,6 +2,7 @@ mod catalogue;
 pub mod components;
 mod stress;
 mod workspace;
+pub mod showoff;
 mod isolation;
 pub use isolation::{blocked, temporary_owner};
 pub(crate) use isolation::{LaboratoryOwner, OwnerAccess};

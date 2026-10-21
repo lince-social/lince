@@ -21,6 +21,25 @@ pub fn fields(form: &mut Form) {
         FieldKind::Reference("record".into()),
     );
     form.field(
+        &format!("{prefix}/via"),
+        "Intermediate stop Records / #addresses, in order, comma separated",
+        FieldKind::Text,
+    );
+    if let Some(field) = form.fields.last_mut() {
+        field.value = form
+            .data
+            .pointer(&format!("{prefix}/via"))
+            .and_then(Value::as_array)
+            .map(|stops| {
+                stops
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            })
+            .unwrap_or_default();
+    }
+    form.field(
         "/promises/0/window_start",
         "Pickup window starts (date, time, timezone)",
         FieldKind::Text,
@@ -137,6 +156,15 @@ pub fn normalize(data: &mut Value) -> Result<(), String> {
         if !promise["item"]["transport"].is_object() {
             continue;
         }
+        if let Some(stops) = promise["item"]["transport"]["via"].as_str() {
+            promise["item"]["transport"]["via"] = json!(
+                stops
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|stop| !stop.is_empty())
+                    .collect::<Vec<_>>()
+            );
+        }
         for field in ["count", "capacity"] {
             let value = promise["item"]["transport"][field]
                 .as_f64()
@@ -175,4 +203,77 @@ pub fn normalize(data: &mut Value) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+pub fn parts(transfer: &Value, person: &str) -> Vec<Form> {
+    let Some(promise) = array(transfer, "promises")
+        .iter()
+        .find(|promise| promise["transport"].is_object())
+    else {
+        return Vec::new();
+    };
+    let Ok(terms) = serde_json::from_value::<Terms>(promise["transport"].clone()) else {
+        return Vec::new();
+    };
+    if terms.via.is_empty() {
+        return Vec::new();
+    }
+    terms
+        .stops()
+        .windows(2)
+        .enumerate()
+        .map(|(index, pair)| {
+            let mut form = super::composer(
+                person,
+                if terms.activity == nucleus::transfer::transport::Activity::Ride {
+                    "Ride"
+                } else {
+                    "Delivery"
+                },
+            );
+            form.title = format!("Contribute transport on part {}", index + 1);
+            form.data["head"] = json!(format!("{} · part {}", super::title(transfer), index + 1));
+            form.data["parent"] = transfer["uid"].clone();
+            form.data["source"] = transfer["uid"].clone();
+            let part = &mut form.data["promises"][0];
+            part["item"]["transport"]["origin"] = json!(pair[0]);
+            part["item"]["transport"]["destination"] = json!(pair[1]);
+            part["item"]["transport"]["capacity"] = json!(terms.capacity);
+            part["window_start"] = promise["window_start"].clone();
+            part["window_end"] = promise["window_end"].clone();
+            form
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod parts_tests {
+    use super::*;
+    #[test]
+    fn each_stop_part_is_an_independent_ordinary_transfer_draft() {
+        let person = nucleus::new_uid("r");
+        let parent = nucleus::new_uid("r");
+        let a = nucleus::new_uid("r");
+        let b = nucleus::new_uid("r");
+        let c = nucleus::new_uid("r");
+        let transfer = json!({"uid":parent,"head":"Journey","promises":[{"transport":{"activity":"ride","direction":"offer","origin":a,"destination":c,"via":[b],"count":1,"capacity":1},"window_start":"2030-01-01T00:00:00Z","window_end":"2030-01-01T01:00:00Z"}]});
+        let parts = parts(&transfer, &person);
+        assert_eq!(parts.len(), 2);
+        for form in &parts {
+            assert_eq!(form.mode, "create-transfer-draft");
+            assert_eq!(form.data["parent"], parent);
+            assert_eq!(form.data["source"], parent);
+            assert_eq!(form.data["require_confirmation"], true);
+            assert!(form.data["promises"][0]["item"]["exchange"].is_null());
+        }
+        assert_ne!(parts[0].request_id, parts[1].request_id);
+        assert_eq!(
+            parts[0].data["promises"][0]["item"]["transport"]["destination"],
+            b
+        );
+        assert_eq!(
+            parts[1].data["promises"][0]["item"]["transport"]["origin"],
+            b
+        );
+    }
 }

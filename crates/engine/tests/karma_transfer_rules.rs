@@ -16,6 +16,11 @@ fn run(test: impl std::future::Future<Output = ()> + Send + 'static) {
 }
 
 async fn fixture() -> (Engine, Person, TransferFixture) {
+    let (engine, a, _, transfer) = fixture_parties().await;
+    (engine, a, transfer)
+}
+
+async fn fixture_parties() -> (Engine, Person, Person, TransferFixture) {
     let engine = support::karma::engine().await;
     let a = support::person(&engine, "a").await;
     let b = support::person(&engine, "b").await;
@@ -37,7 +42,7 @@ async fn fixture() -> (Engine, Person, TransferFixture) {
     )
     .await;
     engine.set_signer(a.signer.clone()).await.unwrap();
-    (engine, a, transfer)
+    (engine, a, b, transfer)
 }
 
 async fn save(engine: &Engine, condition: &str, gate: &str, consequence: &str) -> String {
@@ -58,6 +63,30 @@ async fn save(engine: &Engine, condition: &str, gate: &str, consequence: &str) -
         .unwrap()
         .created
         .unwrap()
+}
+
+async fn create_weekly(engine: &Engine) {
+    engine
+        .act(
+            Action::CreateFrequency {
+                slug: "weekly".into(),
+                head: Some("Weekly".into()),
+                every: nucleus::karma::CadenceStep {
+                    weeks: 1,
+                    ..Default::default()
+                },
+                anchor_at: Some("2030-01-01T00:00:00Z".into()),
+                request_id: Some("create-weekly".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+}
+
+async fn weekly(engine: &Engine, consequence: &str) -> String {
+    create_weekly(engine).await;
+    save(engine, "freq(@weekly)", "> 0", consequence).await
 }
 
 async fn fire(engine: &Engine, rule: &str) -> Result<(), engine::EngineError> {
@@ -353,5 +382,388 @@ fn repeated_targets_are_noops_and_editor_person_bindings_survive_name_reuse() {
         );
         assert_eq!(level(&engine, &transfer, &a).await, 0);
         assert!(!result.pending);
+    });
+}
+
+#[test]
+fn need_reopening_uses_children_and_never_duplicates_unresolved_demand() {
+    run(async {
+        let engine = support::karma::engine().await;
+        let owner = support::person(&engine, "receiver").await;
+        let quantity = support::plain(&engine, "pantry", 8.0).await;
+        engine.set_signer(owner.signer.clone()).await.unwrap();
+        let template = engine.act(serde_json::from_value(serde_json::json!({
+            "action":"create-transfer-draft","request_id":"need-template","creator":owner.uid,
+            "head":"Recurrent food Need","source":quantity,"visibility":"hidden",
+            "promises":[{"open":true,"delta":-8.0,"item":{"title":"Food contribution"}}]
+        })).unwrap(), None).await.unwrap().created.unwrap();
+        let rule = save(
+            &engine,
+            &format!("@{quantity}"),
+            "< 7",
+            &format!("@{template}: reopen(@{}, 14)", owner.uid),
+        )
+        .await;
+        let count = || {
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+                .bind(&template)
+                .fetch_one(&engine.store.pool)
+        };
+        fire(&engine, &rule).await.unwrap();
+        drain(&engine).await;
+        assert_eq!(count().await.unwrap(), 0);
+        for (amount, expected) in [(7.0, 0), (6.0, 1)] {
+            engine
+                .act(
+                    Action::SetQuantity {
+                        target: quantity.clone(),
+                        value: amount,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            drain(&engine).await;
+            assert_eq!(count().await.unwrap(), expected);
+        }
+        fire(&engine, &rule).await.unwrap();
+        drain(&engine).await;
+        assert_eq!(count().await.unwrap(), 1);
+        let delta: f64 = sqlx::query_scalar("SELECT p.delta FROM promise p JOIN transfer t ON t.record_uid=p.transfer_uid WHERE t.parent_uid=?").bind(&template).fetch_one(&engine.store.pool).await.unwrap();
+        assert_eq!(delta, -8.0);
+        let before = store::transfers::revision_fact(&engine.store.pool, &template, 1)
+            .await
+            .unwrap()
+            .unwrap();
+        let child: String =
+            sqlx::query_scalar("SELECT record_uid FROM transfer WHERE parent_uid=?")
+                .bind(&template)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap();
+        engine
+            .act(
+                Action::ReviseTransferDraft {
+                    transfer: child.clone(),
+                    expected_revision: 1,
+                    request_id: "withdraw-reopened-need".into(),
+                    draft: serde_json::from_value(serde_json::json!({
+                        "creator":owner.uid,"head":"Closed food Need",
+                        "parent":template,"source":quantity,"visibility":"hidden",
+                        "promises":[]
+                    }))
+                    .unwrap(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(
+            store::location::transfer_ended(&engine.store.pool, &child)
+                .await
+                .unwrap()
+        );
+        engine
+            .act(
+                Action::SetQuantity {
+                    target: quantity,
+                    value: 5.0,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        drain(&engine).await;
+        assert_eq!(count().await.unwrap(), 2);
+        let original = store::transfers::revision_fact(&engine.store.pool, &template, 1)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(original.hash, before.hash);
+        assert_eq!(original.payload, before.payload);
+        assert_eq!(original.signature, before.signature);
+        let revision = store::transfers::get(&engine.store.pool, &template)
+            .await
+            .unwrap()
+            .unwrap()
+            .revision as u64;
+        let current = store::transfers::revision_fact(&engine.store.pool, &template, revision)
+            .await
+            .unwrap()
+            .unwrap();
+        let previous: serde_json::Value =
+            serde_json::from_str(before.payload.as_deref().unwrap()).unwrap();
+        let current: serde_json::Value =
+            serde_json::from_str(current.payload.as_deref().unwrap()).unwrap();
+        for field in ["transfer", "promises", "parties", "invitations"] {
+            assert_eq!(current["terms"][field], previous["terms"][field], "{field}");
+        }
+    });
+}
+
+#[test]
+fn scheduled_proposals_replay_once_and_do_not_invent_counterparty_agreement() {
+    run(async {
+        let (engine, a, transfer) = fixture().await;
+        let rule = weekly(&engine, &format!("@trade: repeat(@{})", a.uid)).await;
+        fire(&engine, &rule).await.unwrap();
+        drain(&engine).await;
+        fire(&engine, &rule).await.unwrap();
+        drain(&engine).await;
+        let children: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+            .bind(&transfer.transfer)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        assert_eq!(children, 1);
+        let confirmed: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM transfer_occurrence o JOIN transfer t ON t.record_uid=o.transfer_uid WHERE t.parent_uid=?").bind(&transfer.transfer).fetch_one(&engine.store.pool).await.unwrap();
+        assert_eq!(confirmed, 0);
+        save(
+            &engine,
+            "@item",
+            "> 0",
+            &format!("@trade: repeat(@{})", a.uid),
+        )
+        .await;
+        engine
+            .act(
+                Action::SetQuantity {
+                    target: "item".into(),
+                    value: 9.0,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        drain(&engine).await;
+        let children: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+            .bind(&transfer.transfer)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        assert_eq!(children, 1);
+        engine
+            .act(
+                Action::ApplyRecurrenceOccurrence {
+                    recurrence: rule,
+                    due_at: "2030-01-08T00:00:00Z".into(),
+                    amount: None,
+                    note: None,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        drain(&engine).await;
+        let children: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+            .bind(&transfer.transfer)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        assert_eq!(children, 2);
+    });
+}
+
+#[test]
+fn competing_executors_restart_and_pause_preserve_one_scheduled_effect() {
+    run(async {
+        let (engine, a, transfer) = fixture().await;
+        let other = Engine::new(engine.store.clone()).await.unwrap();
+        other.set_signer(a.signer.clone()).await.unwrap();
+        let rule = weekly(&engine, &format!("@trade: repeat(@{})", a.uid)).await;
+        let (a_result, b_result) = tokio::join!(fire(&engine, &rule), fire(&other, &rule));
+        assert!(a_result.is_ok() || b_result.is_ok());
+        let _ = tokio::join!(engine.run_database_effects(), other.run_database_effects());
+        drain(&engine).await;
+        let count = || {
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+                .bind(&transfer.transfer)
+                .fetch_one(&engine.store.pool)
+        };
+        assert_eq!(count().await.unwrap(), 1);
+        drop(other);
+        let restarted = Engine::new(engine.store.clone()).await.unwrap();
+        restarted.set_signer(a.signer.clone()).await.unwrap();
+        fire(&restarted, &rule).await.unwrap();
+        drain(&restarted).await;
+        assert_eq!(count().await.unwrap(), 1);
+        let revision = store::recurrence::get(&engine.store.pool, &rule)
+            .await
+            .unwrap()
+            .unwrap()
+            .revision;
+        engine
+            .act(
+                Action::SetRecurrencePaused {
+                    recurrence: rule.clone(),
+                    expected_revision: revision,
+                    request_id: "pause-repeated-transfer".into(),
+                    paused: true,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        let _ = restarted
+            .act(
+                Action::ApplyRecurrenceOccurrence {
+                    recurrence: rule,
+                    due_at: "2030-01-08T00:00:00Z".into(),
+                    amount: None,
+                    note: None,
+                },
+                None,
+            )
+            .await;
+        let _ = restarted.run_database_effects().await;
+        assert_eq!(count().await.unwrap(), 1);
+    });
+}
+
+#[test]
+fn recurring_activation_waits_for_current_counterparty_agreement_and_never_reports_receipt() {
+    run(async {
+        let (engine, a, b, transfer) = fixture_parties().await;
+        let rule = weekly(
+            &engine,
+            &format!("@trade: repeat(@{}, \"activate\")", a.uid),
+        )
+        .await;
+        fire(&engine, &rule).await.unwrap();
+        drain(&engine).await;
+        let child: String =
+            sqlx::query_scalar("SELECT record_uid FROM transfer WHERE parent_uid=?")
+                .bind(&transfer.transfer)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap();
+        let count = || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM transfer_occurrence WHERE transfer_uid=?",
+            )
+            .bind(&child)
+            .fetch_one(&engine.store.pool)
+        };
+        assert_eq!(count().await.unwrap(), 0);
+        let invitation = store::transfers::invitations_for_transfer(&engine.store.pool, &child)
+            .await
+            .unwrap()
+            .into_iter()
+            .find(|invitation| invitation.addressed_person_uid == b.uid)
+            .unwrap();
+        engine.set_signer(b.signer.clone()).await.unwrap();
+        engine
+            .act(
+                Action::AcceptTransferInvitation {
+                    transfer: Some(child.clone()),
+                    invitation: invitation.uid,
+                    person: Some(b.uid.clone()),
+                    expected_revision: 2,
+                    request_id: "accept-recurring-child".into(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        let revision = store::transfers::get(&engine.store.pool, &child)
+            .await
+            .unwrap()
+            .unwrap()
+            .revision as u64;
+        let child_fixture = TransferFixture {
+            transfer: child.clone(),
+            revision,
+        };
+        assign(&engine, &child_fixture, &b, 2).await;
+        engine.set_signer(a.signer.clone()).await.unwrap();
+        drain(&engine).await;
+        assert_eq!(count().await.unwrap(), 0);
+        assign(&engine, &child_fixture, &a, 2).await;
+        drain(&engine).await;
+        assert_eq!(count().await.unwrap(), 1);
+        let claims:i64=sqlx::query_scalar("SELECT COUNT(*) FROM transfer_occurrence_claim_event WHERE occurrence_uid IN (SELECT uid FROM transfer_occurrence WHERE transfer_uid=?)").bind(&child).fetch_one(&engine.store.pool).await.unwrap();
+        assert_eq!(claims, 0);
+    });
+}
+
+#[test]
+fn revoking_required_permissions_before_a_recurrent_effect_prevents_the_proposal() {
+    run(async {
+        let (engine, a, transfer) = fixture().await;
+        let role = store::auth::ensure_role(&engine.store.pool, "recurrent-controller")
+            .await
+            .unwrap();
+        let mut creation = None;
+        for (resource, operations) in [
+            ("record", vec!["read", "create", "update"]),
+            ("transfer", vec!["read", "create", "update"]),
+            ("frequency", vec!["read", "create", "update"]),
+        ] {
+            for operation in operations {
+                let permission =
+                    store::auth::ensure_permission(&engine.store.pool, resource, operation)
+                        .await
+                        .unwrap();
+                store::auth::grant(&engine.store.pool, role, permission)
+                    .await
+                    .unwrap();
+                if resource == "transfer" && operation == "create" {
+                    creation = Some(permission);
+                }
+            }
+        }
+        store::auth::create_credential(
+            &engine.store.pool,
+            &a.uid,
+            "recurrent-controller",
+            "fixture",
+            role,
+        )
+        .await
+        .unwrap();
+        create_weekly(&engine).await;
+        let rule = engine
+            .act(
+                Action::SaveKarmaRule {
+                    rule: None,
+                    expected_revision: None,
+                    identity: None,
+                    fields: [
+                        "freq(@weekly)".into(),
+                        "> 0".into(),
+                        format!("@trade: repeat(@{})", a.uid),
+                    ]
+                    .map(|source| RuleFieldInput::Text { source }),
+                    request_id: "save-guarded-repeat".into(),
+                },
+                Some(a.uid.clone()),
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        engine
+            .act(
+                Action::ApplyRecurrenceOccurrence {
+                    recurrence: rule,
+                    due_at: "2030-01-01T00:00:00Z".into(),
+                    amount: None,
+                    note: None,
+                },
+                Some(a.uid.clone()),
+            )
+            .await
+            .unwrap();
+        store::auth::revoke(&engine.store.pool, role, creation.unwrap())
+            .await
+            .unwrap();
+        let outcomes = engine.run_database_effects().await.unwrap();
+        assert!(outcomes.outcomes.iter().any(|outcome| !outcome.ok));
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM transfer WHERE parent_uid=?")
+            .bind(&transfer.transfer)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        assert_eq!(count, 0);
     });
 }

@@ -99,6 +99,7 @@ fn validate_dmabuf(buffer: &WlBuffer, constraints: &BufferConstraints) -> Result
 #[derive(Debug)]
 struct SessionInner {
     stopped: bool,
+    resource_destroyed: bool,
     constraints: Option<BufferConstraints>,
     draw_cursors: bool,
     source: ImageCaptureSource,
@@ -109,6 +110,7 @@ impl SessionInner {
     fn new(source: ImageCaptureSource, draw_cursors: bool) -> Self {
         Self {
             stopped: false,
+            resource_destroyed: false,
             constraints: None,
             draw_cursors,
             source,
@@ -205,7 +207,7 @@ impl Drop for Session {
     fn drop(&mut self) {
         let mut inner = self.0.inner.lock().unwrap();
 
-        if !self.0.obj.is_alive() || inner.stopped {
+        if inner.resource_destroyed || !self.0.obj.is_alive() || inner.stopped {
             return;
         }
 
@@ -239,6 +241,7 @@ struct CursorSessionInner {
     cursor_obj: Option<wayland_server::Weak<ExtImageCopyCaptureCursorSessionV1>>,
     session_obj: Option<wayland_server::Weak<ExtImageCopyCaptureSessionV1>>,
     stopped: bool,
+    resource_destroyed: bool,
     constraints: Option<BufferConstraints>,
     source: ImageCaptureSource,
     position: Option<crate::utils::Point<i32, BufferCoords>>,
@@ -252,6 +255,7 @@ impl CursorSessionInner {
             cursor_obj: None,
             session_obj: None,
             stopped: false,
+            resource_destroyed: false,
             constraints: None,
             source,
             position: None,
@@ -391,7 +395,7 @@ impl Drop for CursorSession {
     fn drop(&mut self) {
         let mut inner = self.0.inner.lock().unwrap();
 
-        if !self.0.obj.is_alive() || inner.stopped {
+        if inner.resource_destroyed || !self.0.obj.is_alive() || inner.stopped {
             return;
         }
 
@@ -742,6 +746,7 @@ where
                 let Some(capture_source) = ImageCaptureSource::from_resource(&source).filter(|_| !limited) else {
                     let inner = Arc::new(Mutex::new(SessionInner {
                         stopped: true,
+                        resource_destroyed: false,
                         constraints: None,
                         draw_cursors: false,
                         source: ImageCaptureSource::new(),
@@ -895,6 +900,7 @@ where
         resource: &ExtImageCopyCaptureSessionV1,
         data: &SessionData,
     ) {
+        data.inner.lock().unwrap().resource_destroyed = true;
         let session_ref = SessionRef {
             obj: resource.clone(),
             inner: data.inner.clone(),
@@ -1008,6 +1014,7 @@ where
         resource: &ExtImageCopyCaptureCursorSessionV1,
         data: &CursorSessionData,
     ) {
+        data.inner.lock().unwrap().resource_destroyed = true;
         let session_ref = CursorSessionRef {
             obj: resource.clone(),
             inner: data.inner.clone(),
@@ -1227,7 +1234,9 @@ mod tests {
             else { frame.fail(FailureReason::Unknown); }
             handle.backend_handle().destroy_object::<State>(&object.id()).unwrap();
             drop(object);
-            display.dispatch_clients(&mut State).unwrap();
+            if let Err(error) = display.backend().dispatch_single_client(&mut State, client.id()) {
+                assert_eq!(error.kind(), std::io::ErrorKind::WouldBlock);
+            }
             assert!(weak.upgrade().is_none());
             assert!(inner.lock().unwrap().active_frames.iter().all(|frame| frame.upgrade().is_none()));
         }

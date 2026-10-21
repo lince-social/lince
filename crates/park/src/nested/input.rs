@@ -320,12 +320,7 @@ impl Desktop {
                     let window = current.windows.iter().find(|window| window.id == id)?;
                     let node = window.nodes.iter().find(|node| node.surface == surface)?;
                     let bounds = window.bounds()?;
-                    let point: [f64; 2] = std::array::from_fn(|axis| {
-                        item.mapping.surface.origin()[axis]
-                            + (self.pointer[axis] - item.mapping.canvas.origin()[axis])
-                                / item.mapping.canvas.size()[axis]
-                                * item.mapping.surface.size()[axis]
-                    });
+                    let point = item.mapping.surface_point_unbounded(self.pointer)?;
                     Some((
                         surface,
                         [

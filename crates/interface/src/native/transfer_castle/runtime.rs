@@ -205,7 +205,7 @@ pub(super) fn receive(
                             if view.pending.as_ref().is_some_and(|pending| {
                                 matches!(
                                     pending.form.data["action"].as_str(),
-                                    Some("transfer-receipt" | "identity" | "surplus")
+                                    Some("transfer-receipt" | "identity")
                                 )
                             }) {
                                 view.pending = None;
@@ -228,7 +228,6 @@ pub(super) fn receive(
                         }
                         if viewer_changed {
                             super::receipts::clear_form(world, owner);
-                            stock::clear_form(world, owner);
                         }
                         ui::render(world, owner);
                     }
@@ -286,10 +285,7 @@ pub(super) fn receive(
                 } else {
                     pending.form.data["action"].as_str().unwrap_or_default()
                 };
-                if action == "surplus" && !stock::current(world, owner, &pending.form) {
-                    status(world, owner, "Stock inputs changed; inspect and review the current policy");
-                    continue;
-                }
+
                 let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 if castle.form.as_ref() == Some(&pending.form) {
                     castle.form = None;
@@ -348,8 +344,20 @@ pub(super) fn receive(
                 } else {
                     world.get_mut::<View>(owner).unwrap().notice = None;
                 }
-                if action == "surplus" {
-                    stock::complete(world, owner, &pending.form, data.as_ref());
+
+                if let Some(data) = data.as_ref().map(|data| data.get("trust").unwrap_or(data))
+                    && data["kind"] == "supplier_candidates"
+                    && pending.form.actor.as_deref() == Some(person(world, owner).as_str())
+                {
+                    let view = world.get::<View>(owner).unwrap();
+                    let matches = SupplierMatches {
+                        person: person(world, owner),
+                        transfer: world.get::<TransferCastle>(owner).unwrap().selected.clone(),
+                        rows: view.rows.clone(),
+                        context: view.context.clone(),
+                        data: data.clone(),
+                    };
+                    world.entity_mut(owner).insert(matches);
                 }
                 forms::render(world, owner);
                 ui::render(world, owner);

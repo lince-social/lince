@@ -19,6 +19,7 @@ pub fn desktop_bindings(world: &World) -> Vec<DesktopBinding> {
     let defaults = Settings::default();
     let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
     [
+        (Shortcut::Unfocus, A::Unfocus),
         (Shortcut::FocusLeft, A::Focus(D::Left)),
         (Shortcut::FocusDown, A::Focus(D::Down)),
         (Shortcut::FocusUp, A::Focus(D::Up)),

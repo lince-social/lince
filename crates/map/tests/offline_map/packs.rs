@@ -259,3 +259,85 @@ async fn offline_defaults_and_same_url_dataset_changes_never_reuse_another_versi
     assert_eq!(count.load(Ordering::SeqCst), 1);
     server.abort();
 }
+
+#[tokio::test]
+async fn regional_preparation_reuses_normalization_and_preserves_existing_packs_on_failure() {
+    use lince_map::region::{self, Definition, Progress};
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("source");
+    std::fs::create_dir_all(root.join("0/0")).unwrap();
+    std::fs::write(root.join("0/0/0.pbf"), fixture()).unwrap();
+    manifest(&root, Format::Directory, &["0/0/0.pbf"], "regional-source");
+    let store = TileStore::new(
+        Settings {
+            local_directory: root.clone(),
+            ..Default::default()
+        },
+        directory.path().join("cache"),
+    )
+    .unwrap();
+    let definition = Definition {
+        dataset: "region".into(),
+        source: "Fixture".into(),
+        date: "2026-10-19".into(),
+        license: "MIT".into(),
+        credits: "Fixture authors".into(),
+        coverage: Bounds {
+            west: -1.0,
+            east: 1.0,
+            south: -1.0,
+            north: 1.0,
+        },
+        min_zoom: 0,
+        max_zoom: 0,
+    };
+    let output = directory.path().join("ready");
+    let prepared = region::prepare(
+        store.clone(),
+        definition.clone(),
+        output.clone(),
+        Arc::new(AtomicBool::new(false)),
+        Arc::new(Progress::default()),
+    )
+    .await
+    .unwrap();
+    assert_eq!(prepared.files.len(), 1);
+    let bytes = pack::read_tile(&output, "0/0/0.pbf").unwrap().unwrap();
+    assert_eq!(
+        bytes.as_slice(),
+        lince_map::source::normalize(&fixture()).unwrap().as_ref()
+    );
+    let identity = prepared.identity().unwrap();
+    assert!(
+        region::prepare(
+            store.clone(),
+            definition.clone(),
+            output.clone(),
+            Arc::new(AtomicBool::new(false)),
+            Arc::new(Progress::default())
+        )
+        .await
+        .is_err()
+    );
+    assert_eq!(
+        pack::manifest(&output).unwrap().identity().unwrap(),
+        identity
+    );
+    let cancelled = directory.path().join("cancelled");
+    assert!(
+        region::prepare(
+            store,
+            definition,
+            cancelled.clone(),
+            Arc::new(AtomicBool::new(true)),
+            Arc::new(Progress::default())
+        )
+        .await
+        .is_err()
+    );
+    assert!(!cancelled.exists());
+    assert_eq!(
+        pack::manifest(&output).unwrap().identity().unwrap(),
+        identity
+    );
+}

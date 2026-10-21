@@ -1,28 +1,26 @@
+mod audience;
 mod detail;
 mod forms;
 mod karma;
 mod model;
 mod outcomes;
 mod persistence;
-mod receipts;
-mod receipt_delivery;
-mod receipt_history;
 mod receipt_browsing;
+mod receipt_delivery;
 mod receipt_files;
+mod receipt_history;
 mod receipt_identity;
+mod receipts;
 mod runtime;
 pub(crate) mod tests;
+mod transport;
 mod ui;
 mod workflows;
-mod audience;
-mod stock;
-mod transport;
 
-pub(crate) fn laboratory_cases(cases:&mut Vec<crate::native::laboratory::Case>) {
+pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
     tests::laboratory_cases(cases);
     workflows::tests::laboratory_cases(cases);
     audience::tests::laboratory_cases(cases);
-    stock::tests::laboratory_cases(cases);
 }
 
 use bevy::{math::DVec2, prelude::*};
@@ -93,6 +91,15 @@ struct View {
     receipt_file_job: Option<String>,
     receipt_list: Value,
     receipt_export: Option<String>,
+}
+
+#[derive(Component)]
+struct SupplierMatches {
+    person: String,
+    transfer: String,
+    rows: Vec<Value>,
+    context: Value,
+    data: Value,
 }
 
 struct Pending {

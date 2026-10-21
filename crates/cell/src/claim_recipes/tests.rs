@@ -132,6 +132,7 @@ async fn supervisor_publishes_without_a_person_private_key_coalesces_wakes_and_s
     inputs.rely_on_all_visible = true;
     let draft = recipes::commands::Draft {
         claim: claims::commands::Draft {
+            category: Default::default(),
             issuer: Identity::Person(person.clone()),
             claim: None,
             title: "Local automatic history".into(),

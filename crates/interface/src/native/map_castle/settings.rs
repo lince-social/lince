@@ -78,6 +78,14 @@ pub(super) fn initialize(world: &mut World) {
     crate::map_view::initialize_fonts();
 }
 
+pub(super) fn navigation_path(world: &World) -> PathBuf {
+    world
+        .get_resource::<Sources>()
+        .and_then(|sources| sources.path.as_ref())
+        .map(|path| path.with_file_name("navigation.json"))
+        .unwrap_or_default()
+}
+
 #[derive(Component)]
 struct Form {
     local: Entity,

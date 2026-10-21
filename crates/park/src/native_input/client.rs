@@ -104,7 +104,11 @@ impl Client {
             let mut descriptors = [rustix::event::PollFd::new(&fd, rustix::event::PollFlags::IN)];
             rustix::event::poll(&mut descriptors, Some(&rustix::time::Timespec { tv_sec: 0, tv_nsec: 0 }))?;
             if descriptors[0].revents().is_empty() { break; }
-            read.read().map_err(error)?;
+            match read.read() {
+                Ok(_) => {}
+                Err(wayland_client::backend::WaylandError::Io(value)) if value.kind() == io::ErrorKind::WouldBlock => break,
+                Err(value) => return Err(error(value)),
+            }
             self.queue.dispatch_pending(&mut self.state).map_err(error)?;
         }
         self.state.initialize(&self.queue.handle());
@@ -293,3 +297,26 @@ delegate_noop!(State: ignore wl_seat::WlSeat);
 delegate_noop!(State: ignore zwp_text_input_manager_v3::ZwpTextInputManagerV3);
 
 fn error(value: impl std::fmt::Display) -> io::Error { io::Error::other(value.to_string()) }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn fragmented_registry_event_preserves_the_native_input_connection() {
+        let (stream, mut server) = UnixStream::pair().unwrap();
+        let mut client = Client::new(stream).unwrap();
+        let mut message = Vec::new();
+        for word in [2_u32, 36_u32 << 16, 1, 14] { message.extend_from_slice(&word.to_ne_bytes()); }
+        message.extend_from_slice(b"wl_compositor\0");
+        message.extend_from_slice(&[0; 2]);
+        message.extend_from_slice(&6_u32.to_ne_bytes());
+        server.write_all(&message[..4]).unwrap();
+        client.dispatch().unwrap();
+        assert!(client.state.compositor.is_none());
+        server.write_all(&message[4..]).unwrap();
+        client.dispatch().unwrap();
+        assert!(client.state.compositor.is_some());
+    }
+}

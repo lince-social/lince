@@ -628,8 +628,17 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
     }
     if !privileged && !participant {
         hide(row, &["journey", "transport_capacity"]);
-    } else if !privileged && let Some(people) = row.get_mut("journey").and_then(|journey|journey.get_mut("participants")).and_then(Value::as_array_mut) {
-        people.retain(|progress|progress["person"].as_str().is_some_and(|person|visible_people.contains(person)));
+    } else if !privileged
+        && let Some(people) = row
+            .get_mut("journey")
+            .and_then(|journey| journey.get_mut("participants"))
+            .and_then(Value::as_array_mut)
+    {
+        people.retain(|progress| {
+            progress["person"]
+                .as_str()
+                .is_some_and(|person| visible_people.contains(person))
+        });
     }
     if hidden_source {
         hide(
@@ -657,6 +666,12 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
         );
     }
     if hidden_location {
+        if let Some(capacity) = row
+            .get_mut("transport_capacity")
+            .and_then(Value::as_object_mut)
+        {
+            capacity.remove("segments");
+        }
         hide(row, &["default_place"]);
     }
     if hidden_people {

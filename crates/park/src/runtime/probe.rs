@@ -20,13 +20,36 @@ pub fn demo_client() -> Result<(), ProbeFailure> {
 }
 
 pub fn probe() -> Result<(), ProbeFailure> {
+    probe_mode(false)?;
+    probe_mode(true)
+}
+
+fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
     let runtime = tokio::runtime::Runtime::new().map_err(|error| failure(error.to_string()))?;
     let directory = tempfile::tempdir().map_err(|error| failure(error.to_string()))?;
+    let cell = if connected {
+        let engine = Arc::new(runtime.block_on(engine::Engine::open_memory())
+            .map_err(|error| failure(error.to_string()))?);
+        Some(CellHandle(cell::CellRuntime {
+            commands: cell::terminal::commands::CommandHost::new(directory.path().into()),
+            store: engine.store.clone(),
+            engine,
+            lanes: Arc::new(cell::LaneHub::new()),
+            wire: Default::default(),
+            information: None,
+            fiote: None,
+            speech: None,
+        }))
+    } else {
+        None
+    };
+    eprintln!("Checking Park canvas worker with Cell connected: {connected}");
     let mut worker = CanvasWorker::spawn(Configuration {
+        showoff: false,
         size: [800, 480],
         directory: directory.path().into(),
         runtime: runtime.handle().clone(),
-        cell: None,
+        cell,
     })
     .map_err(|error| failure(error.to_string()))?;
     let mut server = Server::new([800, 480]).map_err(|error| failure(error.to_string()))?;

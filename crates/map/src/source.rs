@@ -76,31 +76,7 @@ impl Settings {
     pub fn save_atomic(&self, path: &Path) -> Result<(), String> {
         self.validate()?;
         self.validate_paths()?;
-        let bytes = serde_json::to_vec_pretty(self).map_err(|error| error.to_string())?;
-        if bytes.len() > 65_536 {
-            return Err("Map settings exceed 64 KiB".into());
-        }
-        let parent = path.parent().ok_or("Choose a settings file directory")?;
-        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        let temporary = Temporary(path.with_extension(format!(
-            "{}.{}.tmp",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        )));
-        let mut file = std::fs::OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(&temporary.0)
-            .map_err(|error| error.to_string())?;
-        file.write_all(&bytes).map_err(|error| error.to_string())?;
-        file.sync_all().map_err(|error| error.to_string())?;
-        std::fs::rename(&temporary.0, path).map_err(|error| error.to_string())?;
-        #[cfg(unix)]
-        std::fs::File::open(parent)
-            .and_then(|directory| directory.sync_all())
-            .map_err(|error| error.to_string())?;
-        Ok(())
+        save_json_atomic(self, path)
     }
 
     pub fn validate(&self) -> Result<(), String> {
@@ -807,4 +783,32 @@ impl pmtiles::AsyncBackend for LocalArchive {
         }
         Ok(pmtiles::BackendResponse::new(Bytes::from(bytes)))
     }
+}
+
+pub(crate) fn save_json_atomic(value: &impl serde::Serialize, path: &Path) -> Result<(), String> {
+    let bytes = serde_json::to_vec_pretty(value).map_err(|error| error.to_string())?;
+    if bytes.len() > 65_536 {
+        return Err("Map settings exceed 64 KiB".into());
+    }
+    let parent = path.parent().ok_or("Choose a settings file directory")?;
+    std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let temporary = Temporary(path.with_extension(format!(
+        "{}.{}.tmp",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    )));
+    let mut file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&temporary.0)
+        .map_err(|error| error.to_string())?;
+    file.write_all(&bytes).map_err(|error| error.to_string())?;
+    file.sync_all().map_err(|error| error.to_string())?;
+    std::fs::rename(&temporary.0, path).map_err(|error| error.to_string())?;
+    #[cfg(unix)]
+    std::fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|error| error.to_string())?;
+    Ok(())
 }

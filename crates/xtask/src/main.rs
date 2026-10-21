@@ -4,14 +4,14 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+mod ailuros;
 mod android;
 mod android_clean;
 mod android_smoke;
 mod design;
+mod hand_models;
 mod park;
 mod prune;
-mod hand_models;
-mod ailuros;
 
 type Result<T> = std::result::Result<T, String>;
 
@@ -35,9 +35,41 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
+        Some("map-region") => {
+            if extra.len() != 3 {
+                return Err("usage: cargo xtask map-region <source-settings.json> <region.json> <new-output-directory>".into());
+            }
+            checked(
+                cargo_command()
+                    .args([
+                        "run",
+                        "--locked",
+                        "-p",
+                        "lince-map",
+                        "--example",
+                        "region",
+                        "--",
+                    ])
+                    .args(extra.iter().map(|path| caller_directory.join(path))),
+            )
+        }
         Some("map-package") => {
-            if extra.len() != 1 { return Err("usage: cargo xtask map-package <package-directory>".into()); }
-            checked(cargo_command().args(["run", "--locked", "-p", "lince-map", "--example", "package", "--"]).arg(caller_directory.join(&extra[0])))
+            if extra.len() != 1 {
+                return Err("usage: cargo xtask map-package <package-directory>".into());
+            }
+            checked(
+                cargo_command()
+                    .args([
+                        "run",
+                        "--locked",
+                        "-p",
+                        "lince-map",
+                        "--example",
+                        "package",
+                        "--",
+                    ])
+                    .arg(caller_directory.join(&extra[0])),
+            )
         }
         Some("ailuros") => ailuros::dispatch(&extra),
         Some("lingua") => {
@@ -50,13 +82,25 @@ fn dispatch() -> Result<()> {
                     directory_value = false;
                 } else if argument == "--directory" {
                     directory_value = true;
-                } else if !expression_mode && !argument.to_string_lossy().starts_with('-')
-                    && !(index == 0 && (argument == "check" || argument == "fmt")) {
+                } else if !expression_mode
+                    && !argument.to_string_lossy().starts_with('-')
+                    && !(index == 0 && (argument == "check" || argument == "fmt"))
+                {
                     *argument = caller_directory.join(&*argument).into_os_string();
                 }
             }
             let mut command = cargo_command();
-            command.args(["run", "--locked", "-p", "lince", "--no-default-features", "--", "lingua"]).args(arguments);
+            command
+                .args([
+                    "run",
+                    "--locked",
+                    "-p",
+                    "lince",
+                    "--no-default-features",
+                    "--",
+                    "lingua",
+                ])
+                .args(arguments);
             if let Some(directory) = env::var_os("LINCE_DATA_DIR") {
                 command.env("LINCE_DATA_DIR", caller_directory.join(directory));
             }
@@ -75,18 +119,53 @@ fn dispatch() -> Result<()> {
             if extra.len() != 1 {
                 return Err("usage: cargo xtask plugin-example <Lince-data-directory>".into());
             }
-            checked(cargo_command().args(["run", "--locked", "-p", "lince-plugin-nostr", "--", "--install"]).args(&extra))
+            checked(
+                cargo_command()
+                    .args([
+                        "run",
+                        "--locked",
+                        "-p",
+                        "lince-plugin-nostr",
+                        "--",
+                        "--install",
+                    ])
+                    .args(&extra),
+            )
         }
         Some("plugin-files") => {
             if extra.len() != 1 {
                 return Err("usage: cargo xtask plugin-files <Lince-data-directory>".into());
             }
-            checked(cargo_command().args(["run", "--locked", "-p", "lince-plugin-files", "--", "--install"]).args(&extra))
+            checked(
+                cargo_command()
+                    .args([
+                        "run",
+                        "--locked",
+                        "-p",
+                        "lince-plugin-files",
+                        "--",
+                        "--install",
+                    ])
+                    .args(&extra),
+            )
         }
         Some("plugin-activitypub" | "plugin-irc") => {
-            if extra.len() != 1 { return Err("usage: cargo xtask <plugin-activitypub|plugin-irc> <Lince-data-directory>".into()); }
-            let package = if task == "plugin-irc" { "lince-plugin-irc" } else { "lince-plugin-activitypub" };
-            checked(cargo_command().args(["run", "--locked", "-p", package, "--", "--install"]).args(&extra))
+            if extra.len() != 1 {
+                return Err(
+                    "usage: cargo xtask <plugin-activitypub|plugin-irc> <Lince-data-directory>"
+                        .into(),
+                );
+            }
+            let package = if task == "plugin-irc" {
+                "lince-plugin-irc"
+            } else {
+                "lince-plugin-activitypub"
+            };
+            checked(
+                cargo_command()
+                    .args(["run", "--locked", "-p", package, "--", "--install"])
+                    .args(&extra),
+            )
         }
         Some("mobile-preview") => {
             if extra.len() > 1 {
@@ -182,7 +261,9 @@ fn dispatch() -> Result<()> {
             );
             println!("dev passes additional arguments to Lince.");
             println!("hand-models downloads the ONNX models for Hand Camera Castle.");
-            println!("LINCE_DATA_DIR and LINCE_PORT select dev data and port; LINCE_INSTINCT=1 enables the handbook.");
+            println!(
+                "LINCE_DATA_DIR and LINCE_PORT select dev data and port; LINCE_INSTINCT=1 enables the handbook."
+            );
             println!(
                 "check-instinct checks both handbook feature paths and shared practice contracts."
             );
@@ -354,8 +435,12 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
         .unwrap_or_else(|| "6176".into());
     let mut command = cargo_command();
     let mut features = vec!["ui"];
-    if env::var("LINCE_INSTINCT").is_ok_and(|value| value == "1") { features.push("instinct"); }
-    if extra.iter().any(|argument| argument == "--facade") { features.push("facade"); }
+    if env::var("LINCE_INSTINCT").is_ok_and(|value| value == "1") {
+        features.push("instinct");
+    }
+    if extra.iter().any(|argument| argument == "--facade") {
+        features.push("facade");
+    }
     let features = features.join(",");
     command.args([
         "run",

@@ -170,9 +170,10 @@ pub(super) fn run(
             surface.commit();
             client.popup = Some((surface, xdg, popup));
         }
-        connection
-            .flush()
-            .map_err(|error| failure(error.to_string()))?;
+        if let Err(error) = connection.flush()
+            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock) {
+            return Err(failure(error.to_string()));
+        }
         queue
             .dispatch_pending(&mut client)
             .map_err(|error| failure(error.to_string()))?;
@@ -192,6 +193,9 @@ pub(super) fn run(
             .map_err(|error| failure(error.to_string()))?;
             if poll[0].revents().contains(rustix::event::PollFlags::IN) {
                 if let Err(error) = read.read() {
+                    if matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock) {
+                        continue;
+                    }
                     if stop.load(Ordering::Acquire) {
                         return Ok(());
                     }

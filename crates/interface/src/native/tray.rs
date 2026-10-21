@@ -130,7 +130,17 @@ fn drain(world: &mut World) {
     }
     for message in messages {
         match message {
-            TrayMessage::Available(_) => {}
+            TrayMessage::Available(available) => {
+                world.resource_mut::<InterfaceWindowSettings>().tray_enabled = available;
+                if !available {
+                    let hidden = state.saved_window.is_some()
+                        || world.query_filtered::<&Window, With<PrimaryWindow>>().iter(world)
+                            .any(|window| !window.visible);
+                    if hidden {
+                        world.write_message(AppExit::Success);
+                    }
+                }
+            }
             TrayMessage::Quit => {
                 world.write_message(AppExit::Success);
             }
@@ -409,6 +419,42 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn tray_registration_failure_exits_on_close_even_if_the_window_already_closed() {
+        for close_suspends in [false, true] {
+            for already_closed in [false, true] {
+                let (mut app, window, sender) = fixture();
+                app.world_mut().resource_mut::<InterfaceWindowSettings>().close_suspends = close_suspends;
+                if already_closed {
+                    app.world_mut().write_message(WindowCloseRequested { window });
+                    app.update();
+                    assert_eq!(app.should_exit(), None);
+                }
+                sender.send(TrayMessage::Available(false));
+                app.update();
+                if !already_closed {
+                    app.world_mut().write_message(WindowCloseRequested { window });
+                    app.update();
+                }
+                assert_eq!(app.should_exit(), Some(AppExit::Success));
+            }
+        }
+    }
+
+    #[cfg_attr(test, test)]
+    fn a_restored_tray_resumes_close_suspension() {
+        let (mut app, window, sender) = fixture();
+        sender.send(TrayMessage::Available(false));
+        app.update();
+        assert!(!app.world().resource::<InterfaceWindowSettings>().tray_enabled);
+        sender.send(TrayMessage::Available(true));
+        app.update();
+        app.world_mut().write_message(WindowCloseRequested { window });
+        app.update();
+        assert_eq!(app.should_exit(), None);
+        assert!(app.world().get::<Window>(window).is_none());
+    }
+
+    #[cfg_attr(test, test)]
     fn disabled_tray_starts_without_registering_a_platform_icon() {
         let (mut app, _, _) = fixture();
         app.world_mut()
@@ -426,6 +472,8 @@ pub(crate) mod tests {
         close_request_suspends_the_window_until_the_tray_restores_it,
         disabling_close_suspension_minimizes_without_closing_the_window,
         closing_without_a_tray_exits_regardless_of_saved_window_settings,
+        tray_registration_failure_exits_on_close_even_if_the_window_already_closed,
+        a_restored_tray_resumes_close_suspension,
         disabled_tray_starts_without_registering_a_platform_icon,
     }
 }

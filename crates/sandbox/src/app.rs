@@ -9,11 +9,15 @@ pub fn run_native_interface(
     tray_enabled: bool,
     backup_handoff: crate::owner_backup::BackupHandoff,
     laboratory: Option<cell::fiote::laboratory::Options>,
+    showoff: bool,
 ) -> std::io::Result<()> {
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
     let mut app = interface_app_at(data_dir.join("interface-assets"), false);
+    if showoff {
+        app.insert_resource(crate::laboratory::showoff::Launch);
+    }
     if let Some(options) = laboratory {
         app.insert_resource(crate::laboratory::fiote::Launch(options));
     }

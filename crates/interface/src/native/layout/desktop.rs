@@ -536,7 +536,7 @@ pub(crate) fn resolve(world: &mut World) {
             for (id, input) in inputs {
                 let _ = model.influence(id, input);
             }
-            if let Some(id) = model.focused() {
+            if let Some(id) = model.focused().filter(|_| model.fullscreen().is_none()) {
                 let _ = model.focus(id, usable);
             }
             world
@@ -705,7 +705,7 @@ pub(crate) fn resolve(world: &mut World) {
                         geometries.push(ItemGeometry {
                             id,
                             output,
-                            mapping: ContentMapping { canvas, surface },
+                            mapping: ContentMapping { corners: None, canvas, surface },
                             floating: managed.floating,
                             clip: None,
                         });
@@ -821,6 +821,7 @@ impl crate::native::actions::Action for DesktopAction {
         };
         let model = &mut workspace.desktop;
         match *self {
+            Self::Unfocus => model.clear_focus(),
             Self::SetLayout(mode) => model.set_mode(mode),
             Self::Focus(direction) => {
                 let _ = model.focus_direction(direction, bounds);
@@ -885,6 +886,9 @@ impl crate::native::actions::Action for DesktopAction {
             })
             .flatten();
         drop(spaces);
+        if *self == Self::Unfocus {
+            world.resource_mut::<bevy::input_focus::InputFocus>().clear();
+        }
         if !matches!(
             self,
             Self::Focus(_) | Self::ToggleFullscreen | Self::OpenOperation

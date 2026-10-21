@@ -392,7 +392,11 @@ pub async fn mark_deleted_on(
     require_active_on(tx, uid).await?;
     let active_plan: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_extension WHERE record_uid=? AND namespace=? AND CASE WHEN json_valid(fds) THEN COALESCE(json_extract(fds,'$.status'),'') ELSE '' END!='stopped')")
         .bind(uid).bind(nucleus::visibility::plan::PRIVATE_NAMESPACE).fetch_one(&mut **tx).await?;
-    if active_plan { return Err(protocol("Stop the audience plan before deleting its Record")); }
+    if active_plan {
+        return Err(protocol(
+            "Stop the audience plan before deleting its Record",
+        ));
+    }
     let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(
         "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ?
@@ -424,7 +428,9 @@ pub async fn restore_on(
     let moved: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_move_member m JOIN record_move_offer o ON o.uid=m.offer_uid WHERE m.record_uid=? AND o.direction='outgoing' AND o.state='complete')")
         .bind(uid).fetch_one(&mut **tx).await?;
     if moved {
-        return Err(protocol("This Record moved to another Organ and cannot be restored from its source"));
+        return Err(protocol(
+            "This Record moved to another Organ and cannot be restored from its source",
+        ));
     }
     if let Some(slug) = slug {
         if !nucleus::valid_slug(slug) {
@@ -687,86 +693,202 @@ pub async fn set_extension_on(
     namespace: &str,
     fds: &Value,
 ) -> Result<Option<i64>, StoreError> {
-    if namespace == nucleus::transfer::surplus::NAMESPACE {
-        return Err(protocol("Change stock policies through their reviewed actions"));
-    }
     if namespace == nucleus::visibility::plan::PRIVATE_NAMESPACE {
-        return Err(protocol("Change audience plans through reviewed visibility actions"));
+        return Err(protocol(
+            "Change audience plans through reviewed visibility actions",
+        ));
     }
     require_active_on(tx, record_uid).await?;
     validate_extension_name(namespace, "namespace", true)?;
     if namespace == nucleus::transfer::public_history::NAMESPACE {
-        return Err(protocol("Change public-history terms through a reviewed Transfer revision"));
+        return Err(protocol(
+            "Change public-history terms through a reviewed Transfer revision",
+        ));
     }
     if namespace == nucleus::trust_analysis::serving::NAMESPACE {
-        let original:Option<String> = sqlx::query_scalar("SELECT review_json FROM record_evidence_serving WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {return Err(protocol("Review a new evidence serving permission instead of replacing it"));}
+        let original: Option<String> = sqlx::query_scalar(
+            "SELECT review_json FROM record_evidence_serving WHERE record_uid=?",
+        )
+        .bind(record_uid)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Review a new evidence serving permission instead of replacing it",
+            ));
+        }
     }
     if namespace == nucleus::identity::roots::NAMESPACE {
-        let original:Option<String> = sqlx::query_scalar("SELECT review_json FROM organ_root_recognition WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {return Err(protocol("Append a reviewed root recognition instead of replacing its decision"));}
+        let original: Option<String> =
+            sqlx::query_scalar("SELECT review_json FROM organ_root_recognition WHERE record_uid=?")
+                .bind(record_uid)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Append a reviewed root recognition instead of replacing its decision",
+            ));
+        }
     }
     if namespace == nucleus::trust_analysis::query::NAMESPACE {
-        let original:Option<String> = sqlx::query_scalar("SELECT policy_json FROM trust_query_record WHERE record_uid=?")
-            .bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref() != Some(fds) {
-            return Err(protocol("Save a new reader policy instead of replacing its original fields"));
+        let original: Option<String> =
+            sqlx::query_scalar("SELECT policy_json FROM trust_query_record WHERE record_uid=?")
+                .bind(record_uid)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Save a new reader policy instead of replacing its original fields",
+            ));
         }
     }
     if namespace == nucleus::trust_analysis::claims::recipes::NAMESPACE {
-        let original:Option<String> = sqlx::query_scalar("SELECT recipe_json FROM profile_claim_recipe_record WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {
-            return Err(protocol("Review a new publication recipe instead of changing its authorization"));
+        let original: Option<String> = sqlx::query_scalar(
+            "SELECT recipe_json FROM profile_claim_recipe_record WHERE record_uid=?",
+        )
+        .bind(record_uid)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Review a new publication recipe instead of changing its authorization",
+            ));
         }
     }
     if namespace == nucleus::trust_analysis::claims::NAMESPACE {
-        let original:Option<String> = sqlx::query_scalar("SELECT document_json FROM profile_claim_record WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error|protocol(error.to_string()))?.as_ref()!=Some(fds) {
-            return Err(protocol("Append a reviewed signed claim instead of replacing its fields"));
+        let original: Option<String> =
+            sqlx::query_scalar("SELECT document_json FROM profile_claim_record WHERE record_uid=?")
+                .bind(record_uid)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Append a reviewed signed claim instead of replacing its fields",
+            ));
         }
     }
     if namespace == nucleus::trust_analysis::contacts::NAMESPACE {
-        let original: Option<String> = sqlx::query_scalar("SELECT document_json FROM contact_disclosure_record WHERE record_uid=?")
-            .bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error| protocol(error.to_string()))?.as_ref() != Some(fds) {
-            return Err(protocol("Append a reviewed signed contact disclosure instead of rewriting evidence"));
+        let original: Option<String> = sqlx::query_scalar(
+            "SELECT document_json FROM contact_disclosure_record WHERE record_uid=?",
+        )
+        .bind(record_uid)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Append a reviewed signed contact disclosure instead of rewriting evidence",
+            ));
         }
     }
-    if namespace=="lince.message-content" || namespace.starts_with("lince.message-data.") {
-        let saved:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_artifact_delivery WHERE message_uid=?)").bind(record_uid).fetch_one(&mut **tx).await?;
-        if saved { return Err(protocol("Send a new reviewed artifact instead of changing delivered attachments")); }
+    if namespace == "lince.message-content" || namespace.starts_with("lince.message-data.") {
+        let saved: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM record_artifact_delivery WHERE message_uid=?)",
+        )
+        .bind(record_uid)
+        .fetch_one(&mut **tx)
+        .await?;
+        if saved {
+            return Err(protocol(
+                "Send a new reviewed artifact instead of changing delivered attachments",
+            ));
+        }
     }
     if namespace == nucleus::transfer::receipt::NAMESPACE {
         let original: Option<String> = sqlx::query_scalar("SELECT document_json FROM transfer_receipt_version WHERE record_uid=? ORDER BY version DESC LIMIT 1")
             .bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error| protocol(error.to_string()))?.as_ref() != Some(fds) {
-            return Err(protocol("Use verified receipt controls to append signed evidence"));
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Use verified receipt controls to append signed evidence",
+            ));
         }
     }
     if namespace == nucleus::transfer::receipt_source::NAMESPACE {
-        let original:Option<String>=sqlx::query_scalar("SELECT payload_json FROM transfer_receipt_source_record WHERE record_uid=?").bind(record_uid).fetch_optional(&mut **tx).await?;
-        if original.as_deref().map(serde_json::from_str::<Value>).transpose().map_err(|error| protocol(error.to_string()))?.as_ref()!=Some(fds) { return Err(protocol("Use reviewed source controls to append signed snapshots")); }
+        let original: Option<String> = sqlx::query_scalar(
+            "SELECT payload_json FROM transfer_receipt_source_record WHERE record_uid=?",
+        )
+        .bind(record_uid)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if original
+            .as_deref()
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|error| protocol(error.to_string()))?
+            .as_ref()
+            != Some(fds)
+        {
+            return Err(protocol(
+                "Use reviewed source controls to append signed snapshots",
+            ));
+        }
     }
     if namespace == nucleus::transfer::outcome::NAMESPACE {
-        let original: Option<String> = sqlx::query_scalar("SELECT payload_json FROM transfer_outcome_record WHERE record_uid=?")
-            .bind(record_uid).fetch_optional(&mut **tx).await?;
+        let original: Option<String> = sqlx::query_scalar(
+            "SELECT payload_json FROM transfer_outcome_record WHERE record_uid=?",
+        )
+        .bind(record_uid)
+        .fetch_optional(&mut **tx)
+        .await?;
         if let Some(original) = original
-            && serde_json::from_str::<Value>(&original).map_err(|error| protocol(error.to_string()))? != *fds
+            && serde_json::from_str::<Value>(&original)
+                .map_err(|error| protocol(error.to_string()))?
+                != *fds
         {
-            return Err(protocol("Append a signed outcome correction instead of rewriting evidence"));
+            return Err(protocol(
+                "Append a signed outcome correction instead of rewriting evidence",
+            ));
         }
     }
     write_extension_on(tx, record_uid, namespace, fds).await
-}
-
-pub async fn set_stock_policy_on(
-    tx: &mut Transaction<'_, Sqlite>,
-    record: &str,
-    value: &nucleus::transfer::surplus::Saved,
-) -> Result<Option<i64>, StoreError> {
-    require_active_on(tx, record).await?;
-    write_extension_on(tx, record, nucleus::transfer::surplus::NAMESPACE,
-        &serde_json::to_value(value).map_err(|error|protocol(error.to_string()))?).await
 }
 
 pub async fn set_audience_plan_on(
@@ -775,8 +897,13 @@ pub async fn set_audience_plan_on(
     value: &nucleus::visibility::plan::Saved,
 ) -> Result<Option<i64>, StoreError> {
     require_active_on(tx, record).await?;
-    write_extension_on(tx, record, nucleus::visibility::plan::PRIVATE_NAMESPACE,
-        &serde_json::to_value(value).map_err(|error| protocol(error.to_string()))?).await
+    write_extension_on(
+        tx,
+        record,
+        nucleus::visibility::plan::PRIVATE_NAMESPACE,
+        &serde_json::to_value(value).map_err(|error| protocol(error.to_string()))?,
+    )
+    .await
 }
 
 pub(crate) async fn set_transfer_public_history_on(
@@ -785,9 +912,20 @@ pub(crate) async fn set_transfer_public_history_on(
     terms: Option<&nucleus::transfer::public_history::Terms>,
 ) -> Result<Option<i64>, StoreError> {
     require_active_on(tx, record).await?;
-    if let Some(terms) = terms { terms.validate().map_err(protocol)?; }
-    let fields = terms.map_or_else(|| serde_json::json!({}), |terms| serde_json::json!({"terms":terms}));
-    write_extension_on(tx, record, nucleus::transfer::public_history::NAMESPACE, &fields).await
+    if let Some(terms) = terms {
+        terms.validate().map_err(protocol)?;
+    }
+    let fields = terms.map_or_else(
+        || serde_json::json!({}),
+        |terms| serde_json::json!({"terms":terms}),
+    );
+    write_extension_on(
+        tx,
+        record,
+        nucleus::transfer::public_history::NAMESPACE,
+        &fields,
+    )
+    .await
 }
 
 async fn write_extension_on(
@@ -867,37 +1005,78 @@ pub async fn delete_extension_on(
     namespace: &str,
 ) -> Result<bool, StoreError> {
     if namespace == nucleus::visibility::plan::PRIVATE_NAMESPACE {
-        return Err(protocol("Stop an audience plan through its reviewed action"));
+        return Err(protocol(
+            "Stop an audience plan through its reviewed action",
+        ));
     }
     require_active_on(tx, record_uid).await?;
     validate_extension_name(namespace, "namespace", true)?;
-    if namespace == nucleus::transfer::public_history::NAMESPACE { return Err(protocol("Remove public-history terms through a reviewed Transfer revision")); }
-    if namespace == nucleus::identity::roots::NAMESPACE { return Err(protocol("Root recognition retains its original reviewed decision")); }
-    if namespace == nucleus::trust_analysis::serving::NAMESPACE { return Err(protocol("Delete the serving permission Record to stop; retain its reviewed decision")); }
+    if namespace == nucleus::transfer::public_history::NAMESPACE {
+        return Err(protocol(
+            "Remove public-history terms through a reviewed Transfer revision",
+        ));
+    }
+    if namespace == nucleus::identity::roots::NAMESPACE {
+        return Err(protocol(
+            "Root recognition retains its original reviewed decision",
+        ));
+    }
+    if namespace == nucleus::trust_analysis::serving::NAMESPACE {
+        return Err(protocol(
+            "Delete the serving permission Record to stop; retain its reviewed decision",
+        ));
+    }
     if namespace == nucleus::trust_analysis::query::NAMESPACE {
-        return Err(protocol("Retain the saved reader policy; delete its Record or save a new policy"));
+        return Err(protocol(
+            "Retain the saved reader policy; delete its Record or save a new policy",
+        ));
     }
     if namespace == nucleus::trust_analysis::claims::NAMESPACE {
-        return Err(protocol("Retain the original signed claim and append a withdrawal"));
+        return Err(protocol(
+            "Retain the original signed claim and append a withdrawal",
+        ));
     }
     if namespace == nucleus::trust_analysis::claims::recipes::NAMESPACE {
-        return Err(protocol("Publication recipes retain their original authorization"));
+        return Err(protocol(
+            "Publication recipes retain their original authorization",
+        ));
     }
     if namespace == nucleus::trust_analysis::contacts::NAMESPACE {
-        return Err(protocol("Retain the original signed contact disclosure and append a withdrawal"));
+        return Err(protocol(
+            "Retain the original signed contact disclosure and append a withdrawal",
+        ));
     }
-    if namespace=="lince.message-content" || namespace.starts_with("lince.message-data.") {
-        let saved:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_artifact_delivery WHERE message_uid=?)").bind(record_uid).fetch_one(&mut **tx).await?;
-        if saved { return Err(protocol("Retain the original delivery attachment")); }
+    if namespace == "lince.message-content" || namespace.starts_with("lince.message-data.") {
+        let saved: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM record_artifact_delivery WHERE message_uid=?)",
+        )
+        .bind(record_uid)
+        .fetch_one(&mut **tx)
+        .await?;
+        if saved {
+            return Err(protocol("Retain the original delivery attachment"));
+        }
     }
     if namespace == nucleus::transfer::receipt::NAMESPACE {
-        return Err(protocol("Receipt evidence is retained through its signed version history"));
+        return Err(protocol(
+            "Receipt evidence is retained through its signed version history",
+        ));
     }
-    if namespace == nucleus::transfer::receipt_source::NAMESPACE { return Err(protocol("Original source snapshots retain their signed payloads")); }
+    if namespace == nucleus::transfer::receipt_source::NAMESPACE {
+        return Err(protocol(
+            "Original source snapshots retain their signed payloads",
+        ));
+    }
     if namespace == nucleus::transfer::outcome::NAMESPACE {
-        let saved: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer_outcome_record WHERE record_uid=?)")
-            .bind(record_uid).fetch_one(&mut **tx).await?;
-        if saved { return Err(protocol("Original outcome evidence must be retained")); }
+        let saved: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM transfer_outcome_record WHERE record_uid=?)",
+        )
+        .bind(record_uid)
+        .fetch_one(&mut **tx)
+        .await?;
+        if saved {
+            return Err(protocol("Original outcome evidence must be retained"));
+        }
     }
     let Some(old) = stored_extension_on(tx, record_uid, namespace).await? else {
         return Ok(false);
@@ -921,7 +1100,9 @@ fn extension_decimal(raw: &str) -> Result<DecimalValue, StoreError> {
     let (coefficient, exponent) = raw.split_once(['e', 'E']).unwrap_or((raw, "0"));
     let number = DecimalValue::parse_inferred(coefficient)
         .map_err(|error| protocol(format!("Extension number is unsupported: {error}")))?;
-    let exponent: i32 = exponent.parse().map_err(|_| protocol("Extension number exponent is out of range"))?;
+    let exponent: i32 = exponent
+        .parse()
+        .map_err(|_| protocol("Extension number exponent is out of range"))?;
     let mut scale = i64::from(number.scale()) - i64::from(exponent);
     let mut mantissa = number.mantissa();
     if mantissa == 0 {
@@ -932,21 +1113,29 @@ fn extension_decimal(raw: &str) -> Result<DecimalValue, StoreError> {
         scale -= 1;
     }
     if scale < 0 {
-        let factor = u32::try_from(-scale).ok().and_then(|shift| 10_i128.checked_pow(shift));
-        mantissa = factor.and_then(|factor| mantissa.checked_mul(factor))
+        let factor = u32::try_from(-scale)
+            .ok()
+            .and_then(|shift| 10_i128.checked_pow(shift));
+        mantissa = factor
+            .and_then(|factor| mantissa.checked_mul(factor))
             .ok_or_else(|| protocol("Extension number is too large"))?;
         scale = 0;
     }
-    let scale = u8::try_from(scale).map_err(|_| protocol("Extension number has too many decimal places"))?;
-    DecimalValue::from_mantissa(scale, mantissa).map_err(|error| protocol(format!("Extension number is unsupported: {error}")))
+    let scale = u8::try_from(scale)
+        .map_err(|_| protocol("Extension number has too many decimal places"))?;
+    DecimalValue::from_mantissa(scale, mantissa)
+        .map_err(|error| protocol(format!("Extension number is unsupported: {error}")))
 }
 
-fn extension_raw_fields(raw: &str) -> Result<std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>, StoreError> {
+fn extension_raw_fields(
+    raw: &str,
+) -> Result<std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>, StoreError> {
     if raw.len() > MAX_EXTENSION_BYTES {
         return Err(protocol("Record extension exceeds its byte limit"));
     }
-    let fields: std::collections::BTreeMap<String, Box<serde_json::value::RawValue>> = serde_json::from_str(raw)
-        .map_err(|error| protocol(format!("Extension is not a JSON object: {error}")))?;
+    let fields: std::collections::BTreeMap<String, Box<serde_json::value::RawValue>> =
+        serde_json::from_str(raw)
+            .map_err(|error| protocol(format!("Extension is not a JSON object: {error}")))?;
     if fields.len() > MAX_EXTENSION_KEYS {
         return Err(protocol("Record extension exceeds its key count limit"));
     }
@@ -961,15 +1150,29 @@ pub async fn extension_number(
 ) -> Result<DecimalValue, StoreError> {
     validate_extension_name(namespace, "namespace", true)?;
     validate_extension_name(property, "property", false)?;
-    let raw: Option<String> = sqlx::query_scalar("SELECT substr(fds, 1, ?) FROM record_extension WHERE record_uid = ? AND namespace = ?")
-        .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap()).bind(record_uid).bind(namespace).fetch_optional(pool).await?;
+    let raw: Option<String> = sqlx::query_scalar(
+        "SELECT substr(fds, 1, ?) FROM record_extension WHERE record_uid = ? AND namespace = ?",
+    )
+    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap())
+    .bind(record_uid)
+    .bind(namespace)
+    .fetch_optional(pool)
+    .await?;
     let raw = raw.ok_or_else(|| protocol(format!("Record extension {namespace} is missing")))?;
     let fields = extension_raw_fields(&raw)?;
-    let raw = fields.get(property).ok_or_else(|| protocol(format!("Extension property {namespace}.{property} is missing")))?;
-    extension_decimal(raw.get()).map_err(|error| protocol(format!("Cannot read {namespace}.{property}: {error}")))
+    let raw = fields.get(property).ok_or_else(|| {
+        protocol(format!(
+            "Extension property {namespace}.{property} is missing"
+        ))
+    })?;
+    extension_decimal(raw.get())
+        .map_err(|error| protocol(format!("Cannot read {namespace}.{property}: {error}")))
 }
 
-pub async fn numeric_extensions(pool: &SqlitePool, record_uid: &str) -> Result<Vec<Value>, StoreError> {
+pub async fn numeric_extensions(
+    pool: &SqlitePool,
+    record_uid: &str,
+) -> Result<Vec<Value>, StoreError> {
     let rows = sqlx::query("SELECT namespace, substr(fds, 1, ?) AS fds FROM record_extension WHERE record_uid = ? ORDER BY namespace")
         .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap()).bind(record_uid).fetch_all(pool).await?;
     let mut readings = Vec::new();
@@ -985,15 +1188,20 @@ pub async fn numeric_extensions(pool: &SqlitePool, record_uid: &str) -> Result<V
 }
 
 pub fn extension_numeric_at(raw: &str, path: &[String]) -> Result<DecimalValue, StoreError> {
-    if path.is_empty() || path.len() > 8 || path.iter().any(|part| part.is_empty() || part.len() > 128)
+    if path.is_empty()
+        || path.len() > 8
+        || path.iter().any(|part| part.is_empty() || part.len() > 128)
         || path.iter().map(String::len).sum::<usize>() > 512
     {
         return Err(protocol("Numeric extension paths exceed their bounds"));
     }
     let mut fields = extension_raw_fields(raw)?;
-    let mut value = fields.remove(&path[0]).ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
+    let mut value = fields
+        .remove(&path[0])
+        .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
     for part in &path[1..] {
-        value = extension_raw_fields(value.get())?.remove(part)
+        value = extension_raw_fields(value.get())?
+            .remove(part)
             .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
     }
     extension_decimal(value.get())
@@ -1045,10 +1253,14 @@ pub async fn extensions_for_records(
 ) -> Result<std::collections::HashMap<String, Value>, StoreError> {
     let mut output = std::collections::HashMap::new();
     for records in records.chunks(512) {
-        let mut query = sqlx::QueryBuilder::new("SELECT e.record_uid, e.fds FROM record_extension e JOIN record r ON r.uid = e.record_uid WHERE r.deleted_at IS NULL AND e.namespace = ");
+        let mut query = sqlx::QueryBuilder::new(
+            "SELECT e.record_uid, e.fds FROM record_extension e JOIN record r ON r.uid = e.record_uid WHERE r.deleted_at IS NULL AND e.namespace = ",
+        );
         query.push_bind(namespace).push(" AND e.record_uid IN (");
         let mut arguments = query.separated(",");
-        for uid in records { arguments.push_bind(uid); }
+        for uid in records {
+            arguments.push_bind(uid);
+        }
         arguments.push_unseparated(")");
         for row in query.build().fetch_all(pool).await? {
             if let Ok(value) = serde_json::from_str::<Value>(row.get("fds")) {
@@ -1273,15 +1485,32 @@ pub async fn set_place_on(
     log_set_on(tx, uid, "place_uid", serde_json::json!(place_uid)).await
 }
 
-pub async fn bump_quantity(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: DecimalValue, now_rfc3339: &str) -> Result<(), StoreError> {
+pub async fn bump_quantity(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    delta: DecimalValue,
+    now_rfc3339: &str,
+) -> Result<(), StoreError> {
     bump_quantity_on(tx, uid, delta, now_rfc3339, None).await
 }
 
-pub async fn bump_imported_quantity(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: DecimalValue, now_rfc3339: &str, writer: &str) -> Result<(), StoreError> {
+pub async fn bump_imported_quantity(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    delta: DecimalValue,
+    now_rfc3339: &str,
+    writer: &str,
+) -> Result<(), StoreError> {
     bump_quantity_on(tx, uid, delta, now_rfc3339, Some(writer)).await
 }
 
-async fn bump_quantity_on(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: DecimalValue, now_rfc3339: &str, imported_writer: Option<&str>) -> Result<(), StoreError> {
+async fn bump_quantity_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    delta: DecimalValue,
+    now_rfc3339: &str,
+    imported_writer: Option<&str>,
+) -> Result<(), StoreError> {
     let row = sqlx::query("SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ?")
         .bind(uid)
         .fetch_optional(&mut **tx)
@@ -1309,9 +1538,16 @@ async fn bump_quantity_on(tx: &mut Transaction<'_, Sqlite>, uid: &str, delta: De
     if let Some(writer) = imported_writer {
         crate::transfer_stock::validate_record_on(tx, uid, Some(writer)).await?;
     } else {
-        let is_transfer: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer WHERE record_uid = ?)").bind(uid).fetch_one(&mut **tx).await?;
-        if is_transfer { crate::transfer_stock::validate_all_on(tx).await?; }
-        else { crate::transfer_stock::validate_record_on(tx, uid, None).await?; }
+        let is_transfer: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM transfer WHERE record_uid = ?)")
+                .bind(uid)
+                .fetch_one(&mut **tx)
+                .await?;
+        if is_transfer {
+            crate::transfer_stock::validate_all_on(tx).await?;
+        } else {
+            crate::transfer_stock::validate_record_on(tx, uid, None).await?;
+        }
     }
     Ok(())
 }

@@ -82,6 +82,7 @@ impl Engine {
                     .saturating_add(i64::from(terms.lifetime_seconds)),
             );
         let mut statement = claims::Statement {
+            category: Default::default(),
             title: terms.title.clone(),
             issuer: terms.issuer.clone(),
             claim: terms.claim.clone(),

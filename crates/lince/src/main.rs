@@ -14,7 +14,7 @@ use utils::logging::{init, set_quiet};
 fn main() -> Result<(), Error> {
     utils::build_info::set_revision(option_env!("LINCE_REVISION").unwrap_or("unknown"));
     let mut args = env::args().collect::<Vec<String>>();
-    let application = if has_arg(&args, "--park") {
+    let application = if has_arg(&args, "--park") || has_arg(&args, "--park-nested") {
         args.iter()
             .position(|argument| argument == "--")
             .map(|index| {
@@ -64,7 +64,7 @@ fn main() -> Result<(), Error> {
         print_help();
         return Ok(());
     }
-    let park_mode = has_arg(&args, "--park");
+    let park_mode = has_arg(&args, "--park") || has_arg(&args, "--park-nested");
     #[cfg(not(all(target_os = "linux", feature = "park")))]
     if park_mode {
         return Err(Error::other(
@@ -81,7 +81,7 @@ fn main() -> Result<(), Error> {
         return Err(Error::other("Pass an application executable after --."));
     }
     #[cfg(all(target_os = "linux", feature = "park"))]
-    if park_mode && !lince_park::session::environment_ready() {
+    if has_arg(&args, "--park") && !lince_park::session::environment_ready() {
         return Err(lince_park::session::reexec_environment());
     }
     #[cfg(not(feature = "facade"))]
@@ -318,20 +318,34 @@ fn main() -> Result<(), Error> {
             .collect();
         let result = {
             let _entered = runtime.enter();
-            lince_park::session::run(
-                lince_park::runtime::Configuration {
+            let configuration = lince_park::runtime::Configuration {
+                    showoff: has_arg(&args, "--showoff"),
                     size: [1280, 720],
                     directory: data_dir,
                     runtime: runtime.handle().clone(),
                     cell: Some(lince_interface::native::app::CellHandle(
                         cell.runtime().clone(),
                     )),
-                },
+                };
+            if has_arg(&args, "--park-nested") {
+                lince_park::nested::run(configuration, applications, lince_park::nested::Options {
+                    duration: arg_value(&args, "--park-duration")
+                        .map(|seconds| seconds.parse::<u64>().map(std::time::Duration::from_secs))
+                        .transpose().map_err(Error::other)?,
+                    outputs: arg_value(&args, "--park-outputs")
+                        .map(|count| count.parse::<usize>()).transpose().map_err(Error::other)?.unwrap_or(1),
+                    ready_hook: true,
+                    smoke: false,
+                }).map(|_| ())
+            } else {
+            lince_park::session::run(
+                configuration,
                 instance
                     .as_ref()
                     .expect("Park claimed its Cell before startup"),
                 applications,
             )
+            }
         };
         runtime.block_on(cell.shutdown());
         drop(instance);
@@ -359,6 +373,7 @@ fn main() -> Result<(), Error> {
                 } else {
                     None
                 },
+                has_arg(&args, "--showoff"),
             )
         };
         runtime.block_on(cell.shutdown());

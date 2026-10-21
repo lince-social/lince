@@ -9,33 +9,48 @@ fn setup() -> (App, Entity) {
 }
 
 fn activate_caption(world: &mut World, parent: Entity, caption: &str) {
-    let labels = world.query::<(Entity, &Text)>().iter(world)
+    let labels = world
+        .query::<(Entity, &Text)>()
+        .iter(world)
         .filter(|(_, text)| text.0 == caption)
-        .map(|(entity, _)| entity).collect::<Vec<_>>();
-    let buttons = labels.into_iter().filter_map(|label| {
-        let button = world.get::<ChildOf>(label)?.parent();
-        let mut cursor = Some(button);
-        while let Some(entity) = cursor {
-            if entity == parent {
-                let action = world.get::<crate::native::actions::ActionButton>(button)?;
-                return Some((action.target, action.actions.clone()));
+        .map(|(entity, _)| entity)
+        .collect::<Vec<_>>();
+    let buttons = labels
+        .into_iter()
+        .filter_map(|label| {
+            let button = world.get::<ChildOf>(label)?.parent();
+            let mut cursor = Some(button);
+            while let Some(entity) = cursor {
+                if entity == parent {
+                    let action = world.get::<crate::native::actions::ActionButton>(button)?;
+                    return Some((action.target, action.actions.clone()));
+                }
+                cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
             }
-            cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
-        }
-        None
-    }).collect::<Vec<_>>();
+            None
+        })
+        .collect::<Vec<_>>();
     assert_eq!(buttons.len(), 1);
     buttons[0].1.run(world, buttons[0].0);
 }
 
 pub(crate) fn assert_subject_entry(world: &mut World, parent: Entity, subject: Identity) {
-    let before = world.query_filtered::<Entity, With<View>>().iter(world).collect::<BTreeSet<_>>();
-    activate_caption(world,parent,"Inspect permitted Transfer experience");
-    let opened = world.query_filtered::<Entity, With<View>>().iter(world)
-        .filter(|entity| !before.contains(entity)).collect::<Vec<_>>();
+    let before = world
+        .query_filtered::<Entity, With<View>>()
+        .iter(world)
+        .collect::<BTreeSet<_>>();
+    activate_caption(world, parent, "Inspect permitted Transfer experience");
+    let opened = world
+        .query_filtered::<Entity, With<View>>()
+        .iter(world)
+        .filter(|entity| !before.contains(entity))
+        .collect::<Vec<_>>();
     assert_eq!(opened.len(), 1);
     let view = world.get::<View>(opened[0]).unwrap();
-    assert_eq!(analysis::build(view).unwrap(), nucleus::trust_analysis::query::Query::for_subject(subject));
+    assert_eq!(
+        analysis::build(view).unwrap(),
+        nucleus::trust_analysis::query::Query::for_subject(subject)
+    );
     assert!(view.analyze_after_context);
     assert!(view.pending.is_none());
     assert!(view.remote.job.is_none());
@@ -340,6 +355,7 @@ fn claim_controls_separate_publisher_amount_from_visible_support_and_clear_priva
     assert_eq!(draft.descriptor.measurement, view.analysis.measurements[0]);
     let document = nucleus::trust_analysis::claims::Document {
         statement: nucleus::trust_analysis::claims::Statement {
+            category: Default::default(),
             title: draft.title,
             issuer: draft.issuer,
             claim: nucleus::new_uid("r"),
@@ -620,6 +636,7 @@ fn profile_snapshot_checks_cache_only_the_exact_reader_document_and_source_polic
     let draft = claims::draft(app.world().get::<View>(owner).unwrap()).unwrap();
     let mut document = Document {
         statement: Statement {
+            category: Default::default(),
             title: draft.title,
             issuer: draft.issuer,
             claim: nucleus::new_uid("r"),
@@ -1164,7 +1181,10 @@ fn remote_view_edits_and_closing_discard_jobs_through_the_original_connection() 
 
 #[cfg_attr(test, test)]
 fn rolling_serving_controls_require_explicit_scope_review_and_clear_changed_or_late_results() {
-    use nucleus::trust_analysis::{claims::{self as model, recipes}, serving::{self, Artifact, Scope, SourceKind}};
+    use nucleus::trust_analysis::{
+        claims::{self as model, recipes},
+        serving::{self, Artifact, Scope, SourceKind},
+    };
     let (mut app, owner) = setup();
     let now = nucleus::execution::now().timestamp();
     let person = nucleus::new_uid("r");
@@ -1173,15 +1193,27 @@ fn rolling_serving_controls_require_explicit_scope_review_and_clear_changed_or_l
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
         view.person = person.clone();
         view.analysis.subject = person.clone();
-        view.analysis.measurements.push(nucleus::transfer::receipt::Measurement {
-            meaning: nucleus::vocabulary::reference::MeaningReference {
-                vocabulary_uid: nucleus::new_uid("g"), concept_uid: nucleus::new_uid("c"), revision: 1, definition_hash: "b".repeat(64),
-            }, unit: None, object_commitment: None,
-        });
+        view.analysis
+            .measurements
+            .push(nucleus::transfer::receipt::Measurement {
+                meaning: nucleus::vocabulary::reference::MeaningReference {
+                    vocabulary_uid: nucleus::new_uid("g"),
+                    concept_uid: nucleus::new_uid("c"),
+                    revision: 1,
+                    definition_hash: "b".repeat(64),
+                },
+                unit: None,
+                object_commitment: None,
+            });
         view.serving.source = source;
         view.serving.kind = SourceKind::Claim;
     }
-    assert_eq!(serving_controls::selection(app.world().get::<View>(owner).unwrap()).unwrap().scope, Scope::Fixed);
+    assert_eq!(
+        serving_controls::selection(app.world().get::<View>(owner).unwrap())
+            .unwrap()
+            .scope,
+        Scope::Fixed
+    );
     serving_controls::apply(app.world_mut(), owner, &serving_controls::UiCommand::Scope);
     let request = serving_controls::selection(app.world().get::<View>(owner).unwrap()).unwrap();
     assert_eq!(request.scope, Scope::Recipe);
@@ -1194,35 +1226,104 @@ fn rolling_serving_controls_require_explicit_scope_review_and_clear_changed_or_l
         recipe: nucleus::karma::canonical_hash("lince.test.recipe.v1", &"native rolling").unwrap(),
         revision: 1,
         terms: recipes::Terms {
-            issuer: draft.issuer.clone(), claim: nucleus::new_uid("r"), title: draft.title.clone(), descriptor: draft.descriptor.clone(),
-            comparator: draft.comparator, audience: Audience::Public, issued_at: now, expires_at: now + 86400, lifetime_seconds: 3600,
-            delegate: recipes::Delegate { organ, cell: nucleus::new_uid("r"), key_id: publisher.key_id.clone(), public_key: publisher.public_key_b64() },
-        }, key_id: signer.key_id.clone(), public_key: signer.public_key_b64(), signature: String::new(),
+            issuer: draft.issuer.clone(),
+            claim: nucleus::new_uid("r"),
+            title: draft.title.clone(),
+            descriptor: draft.descriptor.clone(),
+            comparator: draft.comparator,
+            audience: Audience::Public,
+            issued_at: now,
+            expires_at: now + 86400,
+            lifetime_seconds: 3600,
+            delegate: recipes::Delegate {
+                organ,
+                cell: nucleus::new_uid("r"),
+                key_id: publisher.key_id.clone(),
+                public_key: publisher.public_key_b64(),
+            },
+        },
+        key_id: signer.key_id.clone(),
+        public_key: signer.public_key_b64(),
+        signature: String::new(),
     };
     engine::trust_analysis::sign_recipe_permit(&mut permit, &signer).unwrap();
     let mut document = model::Document {
         statement: model::Statement {
-            title: draft.title, issuer: draft.issuer, claim: permit.terms.claim.clone(), revision: 1,
-            descriptor: draft.descriptor, comparator: draft.comparator, amount: nucleus::DecimalValue::parse_inferred("12").unwrap(),
-            as_of: now, issued_at: now, expires_at: now + 3600, withdrawn: false, audience: Audience::Public,
-            authorship: model::Authorship::Generated { recipe: permit.recipe.clone(), revision: 1, partial: false, state: recipes::EvaluationState::Available, permit: Box::new(permit) },
-        }, key_id: publisher.key_id.clone(), public_key: publisher.public_key_b64(), signature: String::new(),
+            category: Default::default(),
+            title: draft.title,
+            issuer: draft.issuer,
+            claim: permit.terms.claim.clone(),
+            revision: 1,
+            descriptor: draft.descriptor,
+            comparator: draft.comparator,
+            amount: nucleus::DecimalValue::parse_inferred("12").unwrap(),
+            as_of: now,
+            issued_at: now,
+            expires_at: now + 3600,
+            withdrawn: false,
+            audience: Audience::Public,
+            authorship: model::Authorship::Generated {
+                recipe: permit.recipe.clone(),
+                revision: 1,
+                partial: false,
+                state: recipes::EvaluationState::Available,
+                permit: Box::new(permit),
+            },
+        },
+        key_id: publisher.key_id.clone(),
+        public_key: publisher.public_key_b64(),
+        signature: String::new(),
     };
     document.signature = publisher.sign_bytes(&document.signing_bytes().unwrap());
-    let review = serving::Review { person, previous: None, request, artifact: Artifact::Claim(document), source_version: 1, source_revision: 0, reviewed_at: now, expires_at: now + 86400 };
+    let review = serving::Review {
+        person,
+        previous: None,
+        request,
+        artifact: Artifact::Claim(document),
+        source_version: 1,
+        source_revision: 0,
+        reviewed_at: now,
+        expires_at: now + 86400,
+    };
     let result = json!({"kind":"serving_preview", "review":review, "hash":review.hash().unwrap(), "artifact_hash":review.artifact.hash().unwrap()});
     app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone();
-    assert!(serving_controls::request(app.world().get::<View>(owner).unwrap(), &serving_controls::UiCommand::Publish).is_ok());
+    assert!(
+        serving_controls::request(
+            app.world().get::<View>(owner).unwrap(),
+            &serving_controls::UiCommand::Publish
+        )
+        .is_ok()
+    );
     render(app.world_mut(), owner);
-    let labels = app.world_mut().query::<&Text>().iter(app.world()).map(|text|text.0.as_str()).collect::<Vec<_>>().join(" ");
+    let labels = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.as_str())
+        .collect::<Vec<_>>()
+        .join(" ");
     assert!(labels.contains("The displayed output is an example"));
     assert!(labels.contains("current and future outputs"));
     let generation = app.world().get::<View>(owner).unwrap().generation;
-    app.world_mut().get_mut::<View>(owner).unwrap().pending = Some(("old-rolling-review".into(),generation));
+    app.world_mut().get_mut::<View>(owner).unwrap().pending =
+        Some(("old-rolling-review".into(), generation));
     serving_controls::apply(app.world_mut(), owner, &serving_controls::UiCommand::Scope);
     assert!(app.world().get::<View>(owner).unwrap().result.is_null());
-    assert!(serving_controls::request(app.world().get::<View>(owner).unwrap(), &serving_controls::UiCommand::Publish).is_err());
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::ActionOk { id:"old-rolling-review".into(), created: None, facts: 0, warnings: Vec::new(), data: Some(json!({"trust":result})) }));
+    assert!(
+        serving_controls::request(
+            app.world().get::<View>(owner).unwrap(),
+            &serving_controls::UiCommand::Publish
+        )
+        .is_err()
+    );
+    app.world_mut()
+        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+            id: "old-rolling-review".into(),
+            created: None,
+            facts: 0,
+            warnings: Vec::new(),
+            data: Some(json!({"trust":result})),
+        }));
     app.add_systems(Update, receive);
     app.update();
     assert!(app.world().get::<View>(owner).unwrap().result.is_null());
@@ -1239,7 +1340,11 @@ fn merged_proof_controls_keep_verification_separate_and_review_context_before_ne
     let (mut app, owner) = setup();
     app.init_resource::<Messages<CellMessage>>();
     let person = nucleus::new_uid("r");
-    let source = ReceiptSource { origin: nucleus::new_uid("r"), occurrence: nucleus::karma::canonical_hash("lince.test.source.v1", &"public source").unwrap() };
+    let source = ReceiptSource {
+        origin: nucleus::new_uid("r"),
+        occurrence: nucleus::karma::canonical_hash("lince.test.source.v1", &"public source")
+            .unwrap(),
+    };
     let subject = Identity::Organ(nucleus::new_uid("r"));
     let artifact = nucleus::karma::canonical_hash("lince.test.artifact.v1", &"original").unwrap();
     let record = nucleus::new_uid("r");
@@ -1253,12 +1358,24 @@ fn merged_proof_controls_keep_verification_separate_and_review_context_before_ne
         view.remote.job = Some(job);
         view.remote.result = json!({"kind":"remote_progress","state":"completed"});
         assert!(remote_controls::receive(&mut view, &verified));
-        assert!(matches!(remote_controls::request(&view, &remote_controls::UiCommand::Verify).unwrap(), model::Command::Verify { .. }));
-        remote_controls::receive(&mut view, &json!({"kind":"remote_progress","state":"completed","artifacts":[]}));
+        assert!(matches!(
+            remote_controls::request(&view, &remote_controls::UiCommand::Verify).unwrap(),
+            model::Command::Verify { .. }
+        ));
+        remote_controls::receive(
+            &mut view,
+            &json!({"kind":"remote_progress","state":"completed","artifacts":[]}),
+        );
         assert_eq!(view.remote.verified, verified);
     }
     render(app.world_mut(), owner);
-    let text = app.world_mut().query::<&Text>().iter(app.world()).map(|text| text.0.as_str()).collect::<Vec<_>>().join(" ");
+    let text = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.as_str())
+        .collect::<Vec<_>>()
+        .join(" ");
     assert!(text.contains("Verify and analyze permitted local and collected originals"));
     assert!(text.contains("Open permitted local proof Record"));
     assert!(text.contains("Open collected original proof"));
@@ -1274,11 +1391,24 @@ fn merged_proof_controls_keep_verification_separate_and_review_context_before_ne
         assert_eq!(view.remote.contact_subjects, vec![subject]);
         let draft = remote_controls::selection(&view).unwrap();
         let questions = serde_json::to_value(draft.questions().unwrap()).unwrap();
-        assert!(questions.as_array().unwrap().iter().any(|question| question["kind"] == "receipt_source"));
+        assert!(
+            questions
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|question| question["kind"] == "receipt_source")
+        );
         assert!(!questions.to_string().contains(&person));
         view.pending = Some(("old-merged-result".into(), generation));
     }
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::ActionOk { id:"old-merged-result".into(), created:None, facts:0, warnings:Vec::new(), data:Some(json!({"trust":verified})) }));
+    app.world_mut()
+        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+            id: "old-merged-result".into(),
+            created: None,
+            facts: 0,
+            warnings: Vec::new(),
+            data: Some(json!({"trust":verified})),
+        }));
     app.add_systems(Update, receive);
     app.update();
     let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
@@ -1294,9 +1424,12 @@ fn combined_advisory_results_keep_raw_amounts_and_typed_proof_navigation() {
     let person = nucleus::new_uid("r");
     let subject = Identity::Organ(nucleus::new_uid("r"));
     let record = nucleus::new_uid("r");
-    let artifact = nucleus::karma::canonical_hash("lince.native.combined-proof.v1", &"original").unwrap();
+    let artifact =
+        nucleus::karma::canonical_hash("lince.native.combined-proof.v1", &"original").unwrap();
     let root = app.world().get::<View>(owner).unwrap().root;
-    app.world_mut().entity_mut(root).insert(crate::native::workspace::Workspaces::default());
+    app.world_mut()
+        .entity_mut(root)
+        .insert(crate::native::workspace::Workspaces::default());
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
         view.person = person.clone();
@@ -1307,18 +1440,35 @@ fn combined_advisory_results_keep_raw_amounts_and_typed_proof_navigation() {
         view.remote.verified = json!({"kind":"remote_verified","checked_at":1000,"partial":false,"analysis":{"groups":[{"raw_quantity":{"value":"12.000000000000000001"},"weighted_index":{"value":"6"},"occurrences":1}],"rows":[{"quantity":{"value":"12.000000000000000001"},"records":[record],"originals":[{"provenance":"artifact","hash":artifact}],"selected":true}],"protocol":[],"withheld":[]},"claim_checks":[],"signatures":[]});
         let draft = remote_controls::selection(&view).unwrap();
         assert_eq!(draft.query, analysis::build(&view).unwrap());
-        assert!(matches!(remote_controls::request(&view, &remote_controls::UiCommand::Inspect(artifact.clone())).unwrap(), nucleus::trust_analysis::remote::Command::Inspect { artifact: actual, .. } if actual == artifact));
+        assert!(
+            matches!(remote_controls::request(&view, &remote_controls::UiCommand::Inspect(artifact.clone())).unwrap(), nucleus::trust_analysis::remote::Command::Inspect { artifact: actual, .. } if actual == artifact)
+        );
         assert!(view.remote.review.is_none());
     }
     render(app.world_mut(), owner);
-    let text = app.world_mut().query::<&Text>().iter(app.world()).map(|text| text.0.as_str()).collect::<Vec<_>>().join(" ");
+    let text = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.as_str())
+        .collect::<Vec<_>>()
+        .join(" ");
     assert!(text.contains("raw 12.000000000000000001"));
     assert!(text.contains("weighted index 6"));
     assert!(text.contains("Open original evidence Record"));
     assert!(text.contains("Inspect collected original proof"));
-    activate_caption(app.world_mut(),owner,"Open original evidence Record");
-    let areas = app.world_mut().query::<&crate::native::area::InfluenceArea>().iter(app.world()).filter_map(|area|area.protein.as_ref()).collect::<Vec<_>>();
-    assert!(areas.iter().any(|config|matches!(config.source,crate::native::protein_area::Source::Local) && config.draft.query["where"][0]["all"][0]["uid_eq"] == record));
+    activate_caption(app.world_mut(), owner, "Open original evidence Record");
+    let areas = app
+        .world_mut()
+        .query::<&crate::native::area::InfluenceArea>()
+        .iter(app.world())
+        .filter_map(|area| area.protein.as_ref())
+        .collect::<Vec<_>>();
+    assert!(areas.iter().any(|config| matches!(
+        config.source,
+        crate::native::protein_area::Source::Local
+    ) && config.draft.query["where"][0]["all"][0]["uid_eq"]
+        == record));
     let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
     clear_scope(&mut view);
     assert!(view.remote.verified.is_null());
@@ -1337,13 +1487,37 @@ fn changed_claim_review_discards_old_job_without_starting_new_network_work() {
         view.person = person.clone();
         view.analysis.subject = person.clone();
         view.analysis.measurements = vec![nucleus::transfer::receipt::Measurement {
-            meaning: nucleus::vocabulary::reference::MeaningReference { vocabulary_uid:nucleus::new_uid("g"), concept_uid:nucleus::new_uid("c"), revision:1, definition_hash:"a".repeat(64) }, unit:None, object_commitment:None,
+            meaning: nucleus::vocabulary::reference::MeaningReference {
+                vocabulary_uid: nucleus::new_uid("g"),
+                concept_uid: nucleus::new_uid("c"),
+                revision: 1,
+                definition_hash: "a".repeat(64),
+            },
+            unit: None,
+            object_commitment: None,
         }];
     }
     let draft = claims::draft(app.world().get::<View>(owner).unwrap()).unwrap();
     let mut document = Document {
-        statement: Statement { title:draft.title, issuer:draft.issuer, claim:nucleus::new_uid("r"), revision:1, descriptor:draft.descriptor, comparator:draft.comparator, amount:nucleus::DecimalValue::parse_inferred("100").unwrap(), as_of:now, issued_at:now, expires_at:now+3600, withdrawn:false, audience:Audience::Public, authorship:Authorship::Manual },
-        key_id:signer.key_id.clone(), public_key:signer.public_key_b64(), signature:String::new(),
+        statement: Statement {
+            category: Default::default(),
+            title: draft.title,
+            issuer: draft.issuer,
+            claim: nucleus::new_uid("r"),
+            revision: 1,
+            descriptor: draft.descriptor,
+            comparator: draft.comparator,
+            amount: nucleus::DecimalValue::parse_inferred("100").unwrap(),
+            as_of: now,
+            issued_at: now,
+            expires_at: now + 3600,
+            withdrawn: false,
+            audience: Audience::Public,
+            authorship: Authorship::Manual,
+        },
+        key_id: signer.key_id.clone(),
+        public_key: signer.public_key_b64(),
+        signature: String::new(),
     };
     engine::trust_analysis::sign_claim_document(&mut document, &signer).unwrap();
     let published = document.clone();
@@ -1361,7 +1535,20 @@ fn changed_claim_review_discards_old_job_without_starting_new_network_work() {
     remote_controls::track_with_sender(app.world_mut(), owner, sender);
     Command::Remote(remote_controls::UiCommand::ReviewClaim(0)).apply(app.world_mut(), owner);
     remote_controls::maintain(app.world_mut());
-    let cell::ClientMessage::Act { action:engine::actions::Action::TrustAnalysis { request:Backend::Remote { request:nucleus::trust_analysis::remote::Command::Forget { job:actual } }, .. }, .. } = receiver.try_recv().unwrap() else { panic!("Only forget is sent before a fresh review") };
+    let cell::ClientMessage::Act {
+        action:
+            engine::actions::Action::TrustAnalysis {
+                request:
+                    Backend::Remote {
+                        request: nucleus::trust_analysis::remote::Command::Forget { job: actual },
+                    },
+                ..
+            },
+        ..
+    } = receiver.try_recv().unwrap()
+    else {
+        panic!("Only forget is sent before a fresh review")
+    };
     assert_eq!(actual, job);
     assert!(receiver.try_recv().is_err());
     let view = app.world().get::<View>(owner).unwrap();
@@ -1369,60 +1556,119 @@ fn changed_claim_review_discards_old_job_without_starting_new_network_work() {
     assert!(view.remote.review.is_none());
     assert_eq!(view.claims.snapshot.as_ref(), Some(&document));
     assert_eq!(published.statement.revision, 1);
-    assert_eq!(published.statement.descriptor.measurement.meaning.revision, 1);
-    assert_eq!(remote_controls::selection(view).unwrap().linked_claims[0].snapshot.as_ref(), Some(&document));
+    assert_eq!(
+        published.statement.descriptor.measurement.meaning.revision,
+        1
+    );
+    assert_eq!(
+        remote_controls::selection(view).unwrap().linked_claims[0]
+            .snapshot
+            .as_ref(),
+        Some(&document)
+    );
 }
 
 crate::native::laboratory_cases! {contact_controls_default_private_and_compose_typed_range_rules,viewer_changes_clear_private_drafts_and_late_trust_replies,edited_drafts_cannot_restore_a_late_confirmation,reader_query_roundtrip_keeps_independent_filters_weights_budgets_and_exclusions,claim_controls_separate_publisher_amount_from_visible_support_and_clear_private_reviews,activity_selection_without_history_ignores_a_response_after_the_draft_changes,recipe_controls_default_paused_bind_public_scope_and_reject_late_edited_reviews,profile_snapshot_checks_cache_only_the_exact_reader_document_and_source_policy,organ_root_controls_require_exact_independent_review_clear_on_viewer_change_and_ignore_old_replies,serving_controls_default_private_review_exact_conditions_and_clear_late_viewer_results,remote_controls_review_exact_questions_keep_local_policy_and_ignore_changed_viewer_replies,remote_view_edits_and_closing_discard_jobs_through_the_original_connection,rolling_serving_controls_require_explicit_scope_review_and_clear_changed_or_late_results,merged_proof_controls_keep_verification_separate_and_review_context_before_network_work,combined_advisory_results_keep_raw_amounts_and_typed_proof_navigation,changed_claim_review_discards_old_job_without_starting_new_network_work,custody_controls_require_current_policy_keep_exact_limits_and_clear_private_reviews,forwarding_controls_require_separate_consent_and_cancel_only_the_reviewed_offer,}
 
-#[cfg_attr(test,test)]
+#[cfg_attr(test, test)]
 fn forwarding_controls_require_separate_consent_and_cancel_only_the_reviewed_offer() {
-    use nucleus::trust_analysis::custody::{Command as Request,Policy};
-    let (mut app,owner)=setup();
-    let peer=nucleus::new_uid("r");
+    use nucleus::trust_analysis::custody::{Command as Request, Policy};
+    let (mut app, owner) = setup();
+    let peer = nucleus::new_uid("r");
     {
-        let mut view=app.world_mut().get_mut::<View>(owner).unwrap();
-        custody_controls::receive(&mut view,&json!({"kind":"custody_policy","state":{"version":1,"policy":Policy::default()}}));
-        let Request::SetPolicy {policy,..}=custody_controls::request(&view,&custody_controls::UiCommand::Save).unwrap() else {panic!("Expected reviewed policy")};
+        let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
+        custody_controls::receive(
+            &mut view,
+            &json!({"kind":"custody_policy","state":{"version":1,"policy":Policy::default()}}),
+        );
+        let Request::SetPolicy { policy, .. } =
+            custody_controls::request(&view, &custody_controls::UiCommand::Save).unwrap()
+        else {
+            panic!("Expected reviewed policy")
+        };
         assert!(!policy.forwarding.enabled);
     }
-    custody_controls::apply(app.world_mut(),owner,&custody_controls::UiCommand::Forwarding);
-    let mut view=app.world_mut().get_mut::<View>(owner).unwrap();
-    assert!(custody_controls::request(&view,&custody_controls::UiCommand::Save).is_err());
-    view.rules.push(Rule {scope:RuleScope::CustodyForwardPeer,identities:format!("organ:{peer}"),..Default::default()});
-    let Request::SetPolicy {policy,..}=custody_controls::request(&view,&custody_controls::UiCommand::Save).unwrap() else {panic!("Expected reviewed policy")};
+    custody_controls::apply(
+        app.world_mut(),
+        owner,
+        &custody_controls::UiCommand::Forwarding,
+    );
+    let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
+    assert!(custody_controls::request(&view, &custody_controls::UiCommand::Save).is_err());
+    view.rules.push(Rule {
+        scope: RuleScope::CustodyForwardPeer,
+        identities: format!("organ:{peer}"),
+        ..Default::default()
+    });
+    let Request::SetPolicy { policy, .. } =
+        custody_controls::request(&view, &custody_controls::UiCommand::Save).unwrap()
+    else {
+        panic!("Expected reviewed policy")
+    };
     assert!(policy.forwarding.enabled);
-    assert_eq!(policy.forwarding.peers.include[0].identities,vec![Identity::Organ(peer)]);
-    let job=nucleus::new_uid("r");
-    let expected=nucleus::karma::canonical_hash("lince.test.native.forwarding.offer.v1",&"reviewed").unwrap();
-    let cancelled=custody_controls::request(&view,&custody_controls::UiCommand::Cancel(job.clone(),expected.clone())).unwrap();
-    assert!(matches!(cancelled,Request::CancelDelivery {record,expected_offer} if record==job && expected_offer==expected));
+    assert_eq!(
+        policy.forwarding.peers.include[0].identities,
+        vec![Identity::Organ(peer)]
+    );
+    let job = nucleus::new_uid("r");
+    let expected =
+        nucleus::karma::canonical_hash("lince.test.native.forwarding.offer.v1", &"reviewed")
+            .unwrap();
+    let cancelled = custody_controls::request(
+        &view,
+        &custody_controls::UiCommand::Cancel(job.clone(), expected.clone()),
+    )
+    .unwrap();
+    assert!(
+        matches!(cancelled,Request::CancelDelivery {record,expected_offer} if record==job && expected_offer==expected)
+    );
     clear_scope(&mut view);
-    assert!(custody_controls::request(&view,&custody_controls::UiCommand::Save).is_err());
+    assert!(custody_controls::request(&view, &custody_controls::UiCommand::Save).is_err());
 }
 
 #[cfg_attr(test, test)]
 fn custody_controls_require_current_policy_keep_exact_limits_and_clear_private_reviews() {
-    use nucleus::trust_analysis::{Condition,Filter,custody::{Command as Request,Policy}};
-    let (mut app,owner)=setup();
-    let mut policy=Policy::default();
-    policy.enabled=true;
-    policy.storage_bytes+=17;
-    policy.retention_seconds=86401;
-    policy.senders=Filter {include:vec![Condition {known:Some(true),..Default::default()}],exclude:vec![]};
-    policy.readers=policy.senders.clone();
+    use nucleus::trust_analysis::{
+        Condition, Filter,
+        custody::{Command as Request, Policy},
+    };
+    let (mut app, owner) = setup();
+    let mut policy = Policy::default();
+    policy.enabled = true;
+    policy.storage_bytes += 17;
+    policy.retention_seconds = 86401;
+    policy.senders = Filter {
+        include: vec![Condition {
+            known: Some(true),
+            ..Default::default()
+        }],
+        exclude: vec![],
+    };
+    policy.readers = policy.senders.clone();
     {
-        let mut view=app.world_mut().get_mut::<View>(owner).unwrap();
-        assert!(custody_controls::request(&view,&custody_controls::UiCommand::Save).is_err());
-        custody_controls::receive(&mut view,&json!({"kind":"custody_policy","state":{"version":7,"policy":policy}}));
-        let request=custody_controls::request(&view,&custody_controls::UiCommand::Save).unwrap();
-        let Request::SetPolicy {policy:actual,expected_version}=request else {panic!("Expected reviewed custody policy")};
-        assert_eq!(expected_version,7);
-        assert_eq!(actual,policy);
-        custody_controls::capture(&mut view.custody,custody_controls::Field::Term,"0".into());
-        assert!(custody_controls::request(&view,&custody_controls::UiCommand::Save).is_err());
+        let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
+        assert!(custody_controls::request(&view, &custody_controls::UiCommand::Save).is_err());
+        custody_controls::receive(
+            &mut view,
+            &json!({"kind":"custody_policy","state":{"version":7,"policy":policy}}),
+        );
+        let request = custody_controls::request(&view, &custody_controls::UiCommand::Save).unwrap();
+        let Request::SetPolicy {
+            policy: actual,
+            expected_version,
+        } = request
+        else {
+            panic!("Expected reviewed custody policy")
+        };
+        assert_eq!(expected_version, 7);
+        assert_eq!(actual, policy);
+        custody_controls::capture(&mut view.custody, custody_controls::Field::Term, "0".into());
+        assert!(custody_controls::request(&view, &custody_controls::UiCommand::Save).is_err());
         clear_scope(&mut view);
-        assert!(custody_controls::request(&view,&custody_controls::UiCommand::Save).is_err());
-        assert!(!view.rules.iter().any(|rule|matches!(rule.scope,RuleScope::CustodyReader|RuleScope::CustodySender)));
+        assert!(custody_controls::request(&view, &custody_controls::UiCommand::Save).is_err());
+        assert!(!view.rules.iter().any(|rule| matches!(
+            rule.scope,
+            RuleScope::CustodyReader | RuleScope::CustodySender
+        )));
     }
 }

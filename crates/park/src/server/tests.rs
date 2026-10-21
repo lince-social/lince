@@ -238,7 +238,10 @@ fn synchronize(
         if Instant::now() >= deadline {
             return Err("the Wayland client timed out".into());
         }
-        connection.flush().map_err(|error| error.to_string())?;
+        if let Err(error) = connection.flush()
+            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock) {
+            return Err(error.to_string());
+        }
         server.dispatch().map_err(|error| error.to_string())?;
         queue
             .dispatch_pending(client)
@@ -255,7 +258,11 @@ fn synchronize(
             };
             rustix::event::poll(&mut poll, Some(&timeout)).map_err(|error| error.to_string())?;
             if poll[0].revents().contains(rustix::event::PollFlags::IN) {
-                read.read().map_err(|error| error.to_string())?;
+                match read.read() {
+                    Ok(_) => {}
+                    Err(wayland_client::backend::WaylandError::Io(error)) if error.kind() == io::ErrorKind::WouldBlock => {}
+                    Err(error) => return Err(error.to_string()),
+                }
             }
         }
         queue
@@ -1019,7 +1026,7 @@ fn visible_inhibitors_respect_reference_counts_input_idle_and_session_lock() {
         revision: 1, outputs: Vec::new(), focused: None,
         items: vec![lince_interface::host::ItemGeometry {
             id: lince_interface::host::ItemId::Application(id), output: OutputId(1),
-            mapping: lince_interface::host::ContentMapping { canvas: rectangle, surface: rectangle },
+            mapping: lince_interface::host::ContentMapping { corners: None, canvas: rectangle, surface: rectangle },
             floating: false, clip: None,
         }],
     });
@@ -2633,7 +2640,8 @@ fn disconnect_reclaims_registry_and_buffer_leases() {
         server.dispatch().unwrap();
     }
     assert!(server.windows().is_empty());
-    assert!(server.state.surfaces.is_empty());
+    let native: HashSet<_> = server.state.native_surface.iter().cloned().collect();
+    assert_eq!(server.state.surfaces, native);
     assert!(server.state.buffers.is_empty());
     assert_eq!(server.clients.load(Ordering::Acquire), 0);
     drop(held);

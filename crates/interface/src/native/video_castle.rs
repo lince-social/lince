@@ -194,22 +194,34 @@ pub fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
 }
 
 pub(crate) fn open_signal(world: &mut World, sand: Entity, source: String) {
+    restore(
+        world,
+        sand,
+        Settings {
+            source,
+            ..Default::default()
+        },
+    );
+}
+
+pub(crate) fn restore(world: &mut World, sand: Entity, settings: Settings) {
     let views: Vec<_> = world
         .query::<(Entity, &View)>()
         .iter(world)
         .filter(|(_, view)| view.sand == sand)
-        .map(|(owner, view)| (owner, view.source))
+        .map(|(owner, view)| (owner, view.source, view.seek))
         .collect();
-    for (owner, field) in views {
+    for (owner, source, seek) in views {
         stop(world, owner);
-        if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(field) {
-            text.editor.set_text(&source);
+        if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(source) {
+            text.editor.set_text(&settings.source);
+        }
+        if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(seek) {
+            text.editor
+                .set_text(&(settings.position_ms / 1000).to_string());
         }
     }
-    world.entity_mut(sand).insert(Settings {
-        source,
-        ..Default::default()
-    });
+    world.entity_mut(sand).insert(settings);
 }
 
 #[derive(Clone)]

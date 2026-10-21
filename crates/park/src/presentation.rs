@@ -103,6 +103,18 @@ pub struct InputSnapshot {
 #[derive(Resource)]
 struct FrameFailure(String);
 
+fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::Result<records::Records> {
+    let records = records::Records::load(data.join("park-windows.json"))?;
+    let storage = tokio::runtime::Handle::current().block_on(runtime.0.interface_storage())?;
+    app.insert_resource(native::workspace::WorkspaceFile::with_settings(
+        data.join("interface.json"),
+        storage,
+    )?)
+    .insert_resource(runtime)
+    .add_plugins(native::cell_bridge::CellBridgePlugin);
+    Ok(records)
+}
+
 impl Frame {
     pub fn ready(&self) -> Result<bool, ProbeFailure> {
         if !self.image.ready()? { return Ok(false); }
@@ -439,6 +451,15 @@ impl Presentation {
             .insert_resource(native::layout::desktop::HostRequests(sender));
     }
     pub fn new(size: [u32; 2], assets: PathBuf, wake: WakeSignal) -> Result<Self, ProbeFailure> {
+        Self::new_with_cell(size, assets, wake, None)
+    }
+
+    pub(crate) fn new_with_cell(
+        size: [u32; 2],
+        assets: PathBuf,
+        wake: WakeSignal,
+        connection: Option<(CellHandle, PathBuf)>,
+    ) -> Result<Self, ProbeFailure> {
         validate_size(size)?;
         let renderer = Rc::new(VulkanRenderer::new()?);
         let render_creation = RenderCreation::manual(
@@ -484,15 +505,13 @@ impl Presentation {
             .add_systems(
                 PostUpdate,
                 refresh_camera_targets.before(bevy::camera::CameraUpdateSystems),
-            )
-            .add_systems(
-                Update,
-                flat_view
-                    .after(native::workspace::PrepareWorkspaces)
-                    .before(native::topology::view::synchronize),
             );
         clients::install(&mut app)?;
         crate::native_input::install(&mut app);
+        let records = connection
+            .map(|(runtime, data)| connect_cell(&mut app, runtime, data))
+            .transpose()
+            .map_err(|error| input_failure(&error.to_string()))?;
         app.finish();
         app.cleanup();
         let target = app
@@ -518,22 +537,8 @@ impl Presentation {
             output_state: Default::default(),
             application_focus: None,
             canonical_root: None,
-            records: None,
+            records,
         })
-    }
-
-    pub fn connect(&mut self, runtime: CellHandle, data: PathBuf) -> std::io::Result<()> {
-        self.records = Some(records::Records::load(data.join("park-windows.json"))?);
-        let storage = tokio::runtime::Handle::current().block_on(runtime.0.interface_storage())?;
-        self.app
-            .insert_resource(native::workspace::WorkspaceFile::with_settings(
-                data.join("interface.json"),
-                storage,
-            )?);
-        self.app
-            .insert_resource(runtime)
-            .add_plugins(native::cell_bridge::CellBridgePlugin);
-        Ok(())
     }
 
     pub fn world_mut(&mut self) -> &mut World {
@@ -941,11 +946,7 @@ impl Presentation {
         if !self.output_state.outputs.is_empty() {
             for item in &mut geometry.items {
                 let target = self.output_state.targets.get(&item.output)?;
-                let rectangle = item.mapping.canvas;
-                item.mapping.canvas = lince_interface::host::Rectangle::new(
-                    std::array::from_fn(|axis| rectangle.origin()[axis] + target.origin[axis]),
-                    rectangle.size(),
-                )?;
+                item.mapping = item.mapping.translated(target.origin)?;
                 if let Some(polygons) = &mut item.clip {
                     for point in polygons.iter_mut().flatten() {
                         for axis in 0..2 {
@@ -982,11 +983,7 @@ impl Presentation {
                 viewport.bounds.origin()[axis] + self.render_origin[axis]
             });
             for item in &mut geometry.items {
-                let rectangle = item.mapping.canvas;
-                item.mapping.canvas = lince_interface::host::Rectangle::new(
-                    std::array::from_fn(|axis| rectangle.origin()[axis] + offset[axis]),
-                    rectangle.size(),
-                )?;
+                item.mapping = item.mapping.translated(offset)?;
             }
             let mut output = viewport.clone();
             if let Some(local) = geometry.outputs.first() {
@@ -1139,32 +1136,6 @@ fn output_image(size: [u32; 2]) -> Image {
     image
 }
 
-fn flat_view(world: &mut World) {
-    let mut changed = false;
-    for mut view in world
-        .query_filtered::<&mut native::topology::view::View, With<native::workspace::Workspaces>>()
-        .iter_mut(world)
-    {
-        if view.spatial {
-            view.spatial = false;
-            changed = true;
-        }
-    }
-    for mut placement in world.query_filtered::<&mut native::topology::Spatial, With<native::layout::desktop::ApplicationWindow>>().iter_mut(world) {
-        if placement.rotation != native::topology::Spatial::default().rotation {
-            placement.rotation = native::topology::Spatial::default().rotation;
-            changed = true;
-        }
-    }
-    if changed {
-        native::notifications::report(
-            world,
-            "park::view",
-            "Park currently supports flat application windows.",
-        );
-    }
-}
-
 fn validate_size(size: [u32; 2]) -> Result<(), ProbeFailure> {
     if size.iter().any(|size| *size == 0 || *size > 16384) {
         return Err(ProbeFailure {
@@ -1250,6 +1221,44 @@ mod tests {
         picking::pointer::{Location, PointerAction, PointerInput, PointerLocation},
         window::WindowEvent,
     };
+
+    #[test]
+    #[ignore = "requires hardware Vulkan and EGL"]
+    fn connected_cell_is_attached_before_render_plugins_finish() {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .thread_stack_size(32 * 1024 * 1024)
+            .build()
+            .unwrap();
+        let _entered = runtime.enter();
+        let directory = tempfile::tempdir().unwrap();
+        let engine = Arc::new(runtime.block_on(engine::Engine::open_memory()).unwrap());
+        let cell = CellHandle(cell::CellRuntime {
+            commands: cell::terminal::commands::CommandHost::new(directory.path().into()),
+            store: engine.store.clone(),
+            engine,
+            lanes: Arc::new(cell::LaneHub::new()),
+            wire: Default::default(),
+            information: None,
+            fiote: None,
+            speech: None,
+        });
+        let mut canvas = Presentation::new_with_cell(
+            [640, 360],
+            directory.path().join("assets"),
+            WakeSignal::new(|| {}),
+            Some((cell, directory.path().into())),
+        )
+        .unwrap();
+        for _ in 0..10 {
+            canvas.probe_frame().unwrap();
+        }
+        assert!(canvas.records.is_some());
+        assert!(canvas.app.world().contains_resource::<CellHandle>());
+        assert!(canvas.app.world().get_non_send::<native::cell_bridge::CellBridge>().is_some());
+        outputs::probe(&mut canvas).unwrap();
+        canvas.finish().unwrap();
+    }
 
     #[test]
     fn switching_existing_output_targets_refreshes_camera_dimensions() {

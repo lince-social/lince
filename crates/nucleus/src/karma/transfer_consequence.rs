@@ -33,7 +33,7 @@ fn duration(value: &Expr) -> Result<DurationMs, String> {
 }
 
 pub fn parse(target: &str, source: &str) -> Result<Option<Consequence>, String> {
-    if !["agreement(", "publish(", "activate("]
+    if !["agreement(", "publish(", "activate(", "reopen(", "repeat("]
         .iter()
         .any(|name| source.starts_with(name))
     {
@@ -74,6 +74,47 @@ pub fn parse(target: &str, source: &str) -> Result<Option<Consequence>, String> 
                 person,
                 level: value,
                 after_ms,
+            }
+        }
+        "repeat" => {
+            use crate::transfer::karma::AutomationStage;
+            let stage = match arguments.as_slice() {
+                [_] => AutomationStage::Draft,
+                [_, Expr::Text(stage)] => match stage.as_str() {
+                    "publish" => AutomationStage::Publish,
+                    "commit" => AutomationStage::Commit,
+                    "activate" => AutomationStage::Activate,
+                    _ => {
+                        return Err(
+                            "Choose publish, commit or activate as the permitted stage".into()
+                        );
+                    }
+                },
+                _ => return Err("Use repeat(@person) or repeat(@person, \"publish\")".into()),
+            };
+            Consequence::RepeatTransfer {
+                transfer: target.into(),
+                person,
+                stage,
+            }
+        }
+        "reopen" if arguments.len() == 1 || arguments.len() == 2 => {
+            let amount = match arguments.get(1) {
+                None => None,
+                Some(Expr::Num(value)) => {
+                    let value =
+                        DecimalValue::parse_inferred(value).map_err(|error| error.to_string())?;
+                    if value.is_negative() || value.is_zero() {
+                        return Err("Choose a positive target quantity".into());
+                    }
+                    Some(value)
+                }
+                _ => return Err("Use reopen(@person) or reopen(@person, 14)".into()),
+            };
+            Consequence::ReopenTransferNeed {
+                transfer: target.into(),
+                person,
+                target: amount,
             }
         }
         "publish" if arguments.len() == 1 => Consequence::PublishTransfer {
@@ -138,6 +179,32 @@ pub fn display(target: &str, effect: &Consequence) -> Option<String> {
                 delay.map(|delay| format!(", {delay}")).unwrap_or_default()
             )
         }
+        Consequence::RepeatTransfer {
+            transfer,
+            person,
+            stage,
+        } if transfer == target => {
+            use crate::transfer::karma::AutomationStage;
+            let suffix = match stage {
+                AutomationStage::Draft => "",
+                AutomationStage::Publish => ", \"publish\"",
+                AutomationStage::Commit => ", \"commit\"",
+                AutomationStage::Activate => ", \"activate\"",
+            };
+            format!("repeat(@{person}{suffix})")
+        }
+        Consequence::ReopenTransferNeed {
+            transfer,
+            person,
+            target: quantity,
+        } if transfer == target => {
+            format!(
+                "reopen(@{person}{})",
+                quantity
+                    .map(|value| format!(", {value}"))
+                    .unwrap_or_default()
+            )
+        }
         Consequence::PublishTransfer { transfer, person } if transfer == target => {
             format!("publish(@{person})")
         }
@@ -181,6 +248,12 @@ mod tests {
             "agreement(@me, 2)",
             "agreement(@me, 3d)",
             "agreement(@me, 2, 3d)",
+            "repeat(@me)",
+            "repeat(@me, \"publish\")",
+            "repeat(@me, \"commit\")",
+            "repeat(@me, \"activate\")",
+            "reopen(@me)",
+            "reopen(@me, 14)",
             "publish(@me)",
             "activate(@me, @promise, \"purchase-once\")",
         ] {
@@ -194,6 +267,8 @@ mod tests {
             "agreement(@me, 1.5)",
             "agreement(@me, 3)",
             "agreement(@me, 2, 0s)",
+            "reopen(@me, -1)",
+            "reopen(@me, @stock)",
             "publish(@me, 2)",
             "activate(@me, @promise)",
         ] {

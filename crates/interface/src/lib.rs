@@ -6,6 +6,9 @@ extern crate self as lince_interface;
 pub mod transfers;
 
 #[cfg(feature = "map-presentation")]
+pub mod map_navigation;
+
+#[cfg(feature = "map-presentation")]
 pub mod map_view;
 
 pub mod blob_sync;

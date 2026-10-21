@@ -78,7 +78,7 @@ pub fn geometry(
             (point - canvas.center) * canvas.zoom
                 + bevy::math::DVec2::from_array(output.bounds.size()) * 0.5
         };
-        let Some(rectangle) = Rectangle::new(
+        let Some(mut rectangle) = Rectangle::new(
             screen(item.position - size * 0.5).to_array(),
             (size * canvas.zoom).to_array(),
         ) else {
@@ -100,6 +100,24 @@ pub fn geometry(
         let Some(surface) = surface else {
             continue;
         };
+        let spatial = world.get::<super::view::View>(root).is_some_and(|view| view.spatial)
+            && world.get_resource::<OutputViews>().is_none_or(|views| views.focused == output.id);
+        let corners = if spatial {
+            let Some(corners) = super::presentation::projected_corners(world, entity) else { continue };
+            let low = std::array::from_fn(|axis| corners.iter().map(|point| point[axis]).fold(f64::INFINITY, f64::min));
+            let high: [f64; 2] = std::array::from_fn(|axis| corners.iter().map(|point| point[axis]).fold(f64::NEG_INFINITY, f64::max));
+            let Some(bounds) = Rectangle::new(low, std::array::from_fn(|axis| high[axis] - low[axis])) else { continue };
+            rectangle = bounds;
+            Some(corners)
+        } else { None };
+        let mapping = ContentMapping { canvas: rectangle, surface, corners };
+        let screen = |point: bevy::math::DVec2| {
+            if spatial {
+                let uv = (point - item.position) / size + bevy::math::DVec2::splat(0.5);
+                mapping.canvas_point(std::array::from_fn(|axis| surface.origin()[axis] + uv[axis] * surface.size()[axis]))
+                    .map(bevy::math::DVec2::from_array)
+            } else { Some(screen(point)) }
+        };
         let polygons = holes::surface_pieces_in(world, root, output.workspace, entity, &item).0;
         let extent = bevy::math::DVec2::from_array(output.bounds.size());
         let viewport = [
@@ -111,7 +129,11 @@ pub fn geometry(
         let clip: Vec<_> = polygons
             .into_iter()
             .map(|polygon| {
-                let polygon: Vec<_> = polygon.into_iter().map(screen).collect();
+                let polygon: Vec<_> = polygon.into_iter().filter_map(screen).collect();
+                let winding: f64 = polygon.iter().zip(polygon.iter().cycle().skip(1)).take(polygon.len())
+                    .map(|(a, b)| a.x * b.y - b.x * a.y).sum();
+                let mut polygon = polygon;
+                if winding < 0.0 { polygon.reverse(); }
                 holes::intersect(&polygon, &viewport)
             })
             .filter(|polygon| polygon.len() >= 3)
@@ -129,10 +151,7 @@ pub fn geometry(
             ItemGeometry {
                 id,
                 output: output.id,
-                mapping: ContentMapping {
-                    canvas: rectangle,
-                    surface,
-                },
+                mapping,
                 floating: world
                     .get::<crate::native::layout::desktop::Managed>(entity)
                     .is_none_or(|managed| managed.floating),

@@ -85,6 +85,7 @@ fn claim(organ: &str, root: &Signer) -> claims::Document {
     let now = nucleus::execution::now().timestamp();
     let mut document = claims::Document {
         statement: claims::Statement {
+            category: Default::default(),
             title: "Cooperative deliveries".into(),
             issuer: Identity::Organ(organ.into()),
             claim: nucleus::new_uid("r"),

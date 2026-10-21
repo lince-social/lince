@@ -39,6 +39,7 @@ pub(super) async fn automatic_summary_uses_public_receiver_evidence(
     };
     let draft = recipes::commands::Draft {
         claim: claim::commands::Draft {
+            category: Default::default(),
             issuer: Identity::Person(person.uid.clone()),
             claim: None,
             title: "Automatic public receiver-confirmed contribution history".into(),

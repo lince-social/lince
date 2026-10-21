@@ -87,6 +87,7 @@ pub enum WorkspaceLayout {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DesktopAction {
+    Unfocus,
     Focus(Direction),
     Move(Direction),
     Stack(Direction),
@@ -151,18 +152,68 @@ impl Rectangle {
 pub struct ContentMapping {
     pub canvas: Rectangle,
     pub surface: Rectangle,
+    pub corners: Option<[[f64; 2]; 4]>,
 }
 
 impl ContentMapping {
     pub fn surface_point(self, canvas_point: [f64; 2]) -> Option<[f64; 2]> {
-        self.canvas.contains(canvas_point).then(|| {
-            std::array::from_fn(|axis| {
-                self.surface.origin[axis]
-                    + (canvas_point[axis] - self.canvas.origin[axis]) / self.canvas.size[axis]
-                        * self.surface.size[axis]
-            })
+        if !self.canvas.contains(canvas_point) { return None; }
+        let point = self.surface_point_unbounded(canvas_point)?;
+        self.surface.contains(point).then_some(point)
+    }
+
+    pub fn surface_point_unbounded(self, point: [f64; 2]) -> Option<[f64; 2]> {
+        let uv = if let Some(corners) = self.corners {
+            project(inverse(homography(corners)?)?, point)?
+        } else {
+            std::array::from_fn(|axis| (point[axis] - self.canvas.origin[axis]) / self.canvas.size[axis])
+        };
+        Some(std::array::from_fn(|axis| self.surface.origin[axis] + uv[axis] * self.surface.size[axis]))
+    }
+
+    pub fn canvas_point(self, point: [f64; 2]) -> Option<[f64; 2]> {
+        let uv = std::array::from_fn(|axis| (point[axis] - self.surface.origin[axis]) / self.surface.size[axis]);
+        if let Some(corners) = self.corners {
+            project(homography(corners)?, uv)
+        } else {
+            Some(std::array::from_fn(|axis| self.canvas.origin[axis] + uv[axis] * self.canvas.size[axis]))
+        }
+    }
+
+    pub fn translated(self, delta: [f64; 2]) -> Option<Self> {
+        Some(Self {
+            canvas: Rectangle::new(std::array::from_fn(|axis| self.canvas.origin[axis] + delta[axis]), self.canvas.size)?,
+            corners: self.corners.map(|corners| corners.map(|point| std::array::from_fn(|axis| point[axis] + delta[axis]))),
+            ..self
         })
     }
+}
+
+fn project(matrix: [[f64; 3]; 3], point: [f64; 2]) -> Option<[f64; 2]> {
+    let value: [f64; 3] = std::array::from_fn(|row| matrix[row][0] * point[0] + matrix[row][1] * point[1] + matrix[row][2]);
+    if !value.iter().all(|value| value.is_finite()) || value[2].abs() < 1e-12 { return None; }
+    Some([value[0] / value[2], value[1] / value[2]])
+}
+
+fn homography(corners: [[f64; 2]; 4]) -> Option<[[f64; 3]; 3]> {
+    let [a, b, c, d] = corners;
+    let dx = [b[0] - c[0], d[0] - c[0], a[0] - b[0] + c[0] - d[0]];
+    let dy = [b[1] - c[1], d[1] - c[1], a[1] - b[1] + c[1] - d[1]];
+    let denominator = dx[0] * dy[1] - dx[1] * dy[0];
+    if !denominator.is_finite() || denominator.abs() < 1e-12 { return None; }
+    let g = (dx[2] * dy[1] - dx[1] * dy[2]) / denominator;
+    let h = (dx[0] * dy[2] - dx[2] * dy[0]) / denominator;
+    Some([[b[0] - a[0] + g * b[0], d[0] - a[0] + h * d[0], a[0]],
+        [b[1] - a[1] + g * b[1], d[1] - a[1] + h * d[1], a[1]], [g, h, 1.0]])
+}
+
+fn inverse(matrix: [[f64; 3]; 3]) -> Option<[[f64; 3]; 3]> {
+    let [[a, b, c], [d, e, f], [g, h, i]] = matrix;
+    let determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if !determinant.is_finite() || determinant.abs() < 1e-12 { return None; }
+    Some([[e * i - f * h, c * h - b * i, b * f - c * e],
+        [f * g - d * i, a * i - c * g, c * d - a * f],
+        [d * h - e * g, b * g - a * h, a * e - b * d]].map(|row| row.map(|value| value / determinant)))
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -329,7 +380,7 @@ mod tests {
 
     #[test]
     fn mapped_input_uses_the_published_content_rectangle() {
-        let mapping = ContentMapping {
+        let mapping = ContentMapping { corners: None,
             canvas: Rectangle::new([-400.0, 20.0], [800.0, 600.0]).unwrap(),
             surface: Rectangle::new([12.0, 8.0], [400.0, 300.0]).unwrap(),
         };
@@ -357,7 +408,7 @@ mod tests {
         let item = ItemGeometry {
             id: ItemId::Application(SurfaceId(1)),
             output: OutputId(1),
-            mapping: ContentMapping {
+            mapping: ContentMapping { corners: None,
                 canvas: rectangle,
                 surface: rectangle,
             },

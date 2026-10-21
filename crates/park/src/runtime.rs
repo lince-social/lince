@@ -37,6 +37,7 @@ mod probe;
 pub use probe::{demo_client, probe};
 
 pub struct Configuration {
+    pub showoff: bool,
     pub size: [u32; 2],
     pub directory: PathBuf,
     pub runtime: tokio::runtime::Handle,
@@ -97,11 +98,17 @@ pub struct CanvasWorker {
     join: Option<JoinHandle<()>>,
 }
 
-struct Active(Arc<AtomicBool>);
+struct Active {
+    running: Arc<AtomicBool>,
+    notify: Option<WakeSignal>,
+}
 
 impl Drop for Active {
     fn drop(&mut self) {
-        self.0.store(false, Ordering::Release);
+        self.running.store(false, Ordering::Release);
+        if let Some(notify) = &self.notify {
+            notify.ring();
+        }
     }
 }
 
@@ -128,7 +135,7 @@ impl CanvasWorker {
             .name("park-canvas".into())
             .stack_size(32 * 1024 * 1024)
             .spawn(move || {
-                let active = Active(active);
+                let active = Active { running: active, notify: notify.clone() };
                 if let Err(error) = run(
                     configuration,
                     scenes,
@@ -136,7 +143,7 @@ impl CanvasWorker {
                     motion,
                     images,
                     commands,
-                    &active.0,
+                    &active.running,
                     &changed,
                     notify.as_ref(),
                 ) {
@@ -265,20 +272,21 @@ fn run(
         changed.store(true, Ordering::Release);
         thread.unpark();
     });
-    let mut canvas = Presentation::new(
+    let connected = configuration.cell.is_some();
+    let mut canvas = Presentation::new_with_cell(
         configuration.size,
         configuration.directory.join("assets"),
         wake,
+        configuration.cell.map(|cell| (cell, configuration.directory.clone())),
     )?;
     canvas.host_requests(commands.clone());
+    if configuration.showoff {
+        canvas.world_mut().insert_resource(lince_interface::native::laboratory::showoff::Launch);
+    }
     canvas
         .output_preferences(configuration.directory.join("park-outputs.json"))
         .map_err(|error| failure(error.to_string()))?;
-    if let Some(cell) = configuration.cell {
-        canvas
-            .connect(cell, configuration.directory.clone())
-            .map_err(|error| failure(error.to_string()))?;
-    } else {
+    if !connected {
         canvas
             .world_mut()
             .insert_resource(lince_interface::native::workspace::WorkspaceFile::new(
@@ -419,5 +427,29 @@ fn failure(detail: String) -> ProbeFailure {
     ProbeFailure {
         stage: "canvas_worker".into(),
         detail,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn canvas_panic_wakes_the_compositor_after_marking_the_worker_stopped() {
+        let running = Arc::new(AtomicBool::new(true));
+        let stopped = running.clone();
+        let notified = Arc::new(AtomicBool::new(false));
+        let observed = notified.clone();
+        let notify = WakeSignal::new(move || {
+            assert!(!stopped.load(Ordering::Acquire));
+            observed.store(true, Ordering::Release);
+        });
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _active = Active { running: running.clone(), notify: Some(notify) };
+            panic!("canvas failure");
+        }));
+        assert!(outcome.is_err());
+        assert!(!running.load(Ordering::Acquire));
+        assert!(notified.load(Ordering::Acquire));
     }
 }

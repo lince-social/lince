@@ -1,7 +1,6 @@
 use super::*;
 use nucleus::transfer::transport::{Activity, Direction, Journey, Step, Terms};
 
-
 fn endpoint(world: &World, owner: Entity, uid: &str) -> String {
     world
         .get::<View>(owner)
@@ -56,6 +55,28 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
             ui::Command::Record(uid.clone()),
         );
     }
+    for (index, stop) in terms.via.iter().enumerate() {
+        ui::button(
+            world,
+            block,
+            owner,
+            &format!("Stop {}: {}", index + 1, endpoint(world, owner, stop)),
+            ui::Command::Record(stop.clone()),
+        );
+    }
+    for segment in array(&transfer["transport_capacity"], "segments") {
+        crate::native::edit_mode::label(
+            world,
+            block,
+            &format!(
+                "{} → {}: {} available",
+                endpoint(world, owner, &text(segment, "origin")),
+                endpoint(world, owner, &text(segment, "destination")),
+                segment["available"]
+            ),
+            13.0,
+        );
+    }
     crate::native::edit_mode::label(
         world,
         block,
@@ -90,6 +111,15 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
             Some(&text(transfer, "uid")),
             Some(&person),
             &format!("Review my {role} location sharing"),
+        );
+    }
+    for form in crate::transfers::transport::parts(transfer, &person) {
+        ui::button(
+            world,
+            block,
+            owner,
+            &form.title.clone(),
+            ui::Command::Open(form),
         );
     }
     progress_controls(world, owner, block, transfer);

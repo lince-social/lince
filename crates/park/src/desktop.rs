@@ -195,7 +195,11 @@ pub fn run(
                 let presented = awaiting_presented.take().unwrap();
                 if presented.locked { desktop.server.lock_presented(); }
                 desktop.presented(presented, started.elapsed().as_millis() as u32)?;
-                if options.ready_hook && !environment_ready { desktop.ready(); environment_ready = true; }
+                if options.ready_hook && !environment_ready && !desktop.viewports.is_empty()
+                    && desktop.viewports.iter().all(|viewport| desktop.output_frames.contains_key(&viewport.id)) {
+                    desktop.ready();
+                    environment_ready = true;
+                }
                 frames += 1;
                 seen_layers.extend(desktop.layers.iter().map(|layer| layer.surface.clone()));
                 if let Some(geometry) = desktop

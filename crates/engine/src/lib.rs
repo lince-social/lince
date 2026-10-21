@@ -1,80 +1,68 @@
 #![recursion_limit = "256"]
 pub mod sand_packages;
 
-mod fiote_config;
 pub mod fiote_activation;
+mod fiote_config;
 mod transfer_discard;
 
 pub mod access;
-mod record_policy;
-pub mod workspace_sync;
 pub mod action_intent;
-pub mod identity;
-pub mod trust_analysis;
 pub mod actions;
+pub mod ailuros;
 pub mod append;
 pub mod area_transition;
-pub mod body_links;
+mod audience;
 pub mod blob_sync;
+pub mod body_links;
+pub mod calls;
+pub mod canvas;
 pub mod checkpoint;
 pub mod collab;
 pub mod collab_guard;
-pub mod custom_component;
-pub mod presence;
-pub mod location;
-pub mod vocabulary;
-pub mod knowledge;
-pub mod saved_location;
-pub mod visibility;
-mod audience;
-mod stock_policy;
-mod transport;
-pub mod record_change;
-pub mod record_extensions;
-pub mod record_creation;
+pub mod commands;
 #[allow(dead_code)]
 pub mod communication;
+pub mod component_presentation;
+pub mod custom_component;
 pub mod directory;
 pub mod effects;
-pub mod commands;
-pub mod signal_endpoints;
-pub mod signal_streams;
-pub mod ailuros;
 pub mod enrolment;
 pub mod error;
 pub mod expiry;
 pub mod file_sync;
-pub mod operation_origin;
+pub mod groups;
+pub mod identity;
 pub mod imagination;
-pub mod projection;
 pub mod instinct;
 pub mod instinct_import;
 pub mod karma_control;
-pub mod karma_execution;
-pub mod karma_runtime;
-pub mod karma_preview;
-pub mod karma_history;
-pub mod karma_habits;
-mod karma_read_access;
-mod karma_transfers;
-mod karma_transfer_effects;
-mod karma_transfer_actions;
-mod karma_transfer_stages;
-mod karma_transfer_commands;
-mod karma_transfer_inspection;
-mod karma_transfer_evidence;
-pub mod rule_runtime;
 mod karma_editor;
+pub mod karma_execution;
+pub mod karma_habits;
+pub mod karma_history;
+pub mod karma_preview;
+mod karma_read_access;
+pub mod karma_runtime;
 mod karma_schedules;
 pub mod karma_timezone;
+mod karma_transfer_actions;
+mod karma_transfer_commands;
+mod karma_transfer_effects;
+mod karma_transfer_evidence;
+mod karma_transfer_inspection;
+mod karma_transfer_stages;
+mod karma_transfers;
+pub mod knowledge;
 pub mod lingua_file;
+pub mod location;
 pub mod login;
-mod role_management;
 pub mod mailbox;
+pub mod operation_origin;
 pub mod pairing;
-pub mod peers;
 pub mod peer_sync;
-mod transfer_replication;
+pub mod peers;
+pub mod plugins;
+pub mod presence;
 pub mod private_admin_catalog;
 pub mod private_auth;
 pub mod private_files;
@@ -82,31 +70,43 @@ pub mod private_json;
 pub mod private_password;
 pub mod private_requests;
 pub mod private_work;
+pub mod projection;
+mod read_cursor;
 pub mod read_filter;
-pub mod record_moves;
 pub mod rebuild;
+pub mod record_change;
+pub mod record_creation;
+pub mod record_extensions;
+pub mod record_moves;
+mod record_policy;
+mod role_management;
 pub mod roster;
+pub mod rule_runtime;
+pub mod saved_location;
 pub mod seal;
 pub mod senses;
-pub mod social;
 pub mod share;
-pub mod component_presentation;
-pub mod canvas;
+pub mod signal_endpoints;
+pub mod signal_streams;
+pub mod social;
 pub mod sync;
 pub mod sync_service;
-pub mod plugins;
 mod tagged_record;
 pub mod threads;
-pub mod groups;
-pub mod calls;
 pub mod transfer;
+mod transfer_counterparty;
 pub mod transfer_delivery;
 mod transfer_evidence;
+mod transfer_needs;
 pub mod transfer_receipts;
-mod read_cursor;
-mod transfer_counterparty;
+mod transfer_replication;
+mod transport;
 pub mod trust;
+pub mod trust_analysis;
+pub mod visibility;
+pub mod vocabulary;
 pub mod wire;
+pub mod workspace_sync;
 
 use chrono::{DateTime, Utc};
 
@@ -136,7 +136,7 @@ use tokio::sync::{Mutex, broadcast, watch};
 pub use error::EngineError;
 
 pub struct Engine {
-    pub(crate) knowledge:knowledge::Runtime,
+    pub(crate) knowledge: knowledge::Runtime,
     pub signal_streams: signal_streams::Runtime,
     pub projection: projection::Controller,
     pub store: Store,
@@ -165,7 +165,8 @@ pub struct Engine {
     pub(crate) social_network: std::sync::Mutex<Option<std::sync::Weak<dyn social::Network>>>,
     pub(crate) location: location::Runtime,
     pub(crate) social_deployment: std::sync::Mutex<Option<nucleus::social::ServiceSettings>>,
-    pub(crate) social_workers: std::sync::Mutex<std::collections::BTreeMap<&'static str, social::WorkerStatus>>,
+    pub(crate) social_workers:
+        std::sync::Mutex<std::collections::BTreeMap<&'static str, social::WorkerStatus>>,
     pub(crate) social_memory_wallet_key: std::sync::Mutex<Option<[u8; 32]>>,
     pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
     karma_deadline_changed: watch::Sender<u64>,
@@ -175,7 +176,7 @@ pub struct Engine {
     karma_preview_runner: RwLock<Option<std::sync::Arc<dyn karma_preview::Runner>>>,
     pub(crate) rule_index: Mutex<Option<(u64, std::sync::Arc<rule_runtime::RuleIndex>)>>,
     pub(crate) rule_execution: Mutex<()>,
-    pub(crate) stock_policy_execution: Mutex<()>,
+    pub(crate) transfer_need_execution: Mutex<()>,
     pub(crate) roster_execution: Mutex<()>,
     pub(crate) command_authoring: Mutex<()>,
     pub(crate) command_capacity: tokio::sync::Semaphore,
@@ -212,8 +213,16 @@ impl Engine {
 
     pub async fn new(store: Store) -> Result<Engine, EngineError> {
         let mut custody_cleanup = store.pool.begin().await?;
-        store::evidence_forwarding::interrupted_on(&mut custody_cleanup, nucleus::execution::now().timestamp()).await?;
-        store::evidence_custody::cleanup_on(&mut custody_cleanup, nucleus::execution::now().timestamp()).await?;
+        store::evidence_forwarding::interrupted_on(
+            &mut custody_cleanup,
+            nucleus::execution::now().timestamp(),
+        )
+        .await?;
+        store::evidence_custody::cleanup_on(
+            &mut custody_cleanup,
+            nucleus::execution::now().timestamp(),
+        )
+        .await?;
         custody_cleanup.commit().await?;
         if let Some(max) = store::sync_ops::max_hlc(&store.pool).await? {
             nucleus::hlc::observe(max);
@@ -226,7 +235,7 @@ impl Engine {
         let (config_changed, _) = watch::channel(0);
         let (effects_changed, _) = watch::channel(0);
         let engine = Engine {
-            knowledge:knowledge::Runtime::default(),
+            knowledge: knowledge::Runtime::default(),
             signal_streams: Default::default(),
             projection: projection::Controller::default(),
             store,
@@ -266,7 +275,7 @@ impl Engine {
             karma_preview_runner: RwLock::new(None),
             rule_index: Mutex::new(None),
             rule_execution: Mutex::new(()),
-            stock_policy_execution: Mutex::new(()),
+            transfer_need_execution: Mutex::new(()),
             roster_execution: Mutex::new(()),
             command_authoring: Mutex::new(()),
             command_capacity: tokio::sync::Semaphore::new(8),
@@ -305,7 +314,8 @@ impl Engine {
     }
 
     pub fn notify_query_changed(&self) {
-        self.query_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.query_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
     }
 
     pub fn watch_notifications(&self) -> watch::Receiver<u64> {
@@ -420,17 +430,23 @@ impl Engine {
         committed.extend(Box::pin(self.react_to_event(changed, event_id, now)).await?);
         Ok(committed)
     }
-    pub(crate) async fn observe_fact_state(&self, fact: &Fact, now: DateTime<Utc>) -> Result<(), EngineError> {
+    pub(crate) async fn observe_fact_state(
+        &self,
+        fact: &Fact,
+        now: DateTime<Utc>,
+    ) -> Result<(), EngineError> {
         if let Some(execution) = nucleus::execution::current()
             && let Some(control) = execution.control()
-            && let Some(cell) = execution.cell() {
+            && let Some(cell) = execution.cell()
+        {
             if let Ok(occurrence) = rule_runtime::EFFECT_OCCURRENCE.try_with(Clone::clone) {
                 control.link_effect(cell, &fact.uid, &occurrence);
             }
             if let Ok(original) = rule_runtime::RECEIVED_PARENT.try_with(Clone::clone) {
                 control.link_received(cell, &fact.uid, &original);
             }
-            self.check_control_quantities(cell, &control, &fact.record_uid, now).await?;
+            self.check_control_quantities(cell, &control, &fact.record_uid, now)
+                .await?;
         }
         Ok(())
     }

@@ -198,6 +198,7 @@ impl Engine {
                 }
                 let mut document = Claim {
                     statement: ClaimStatement {
+                        category: draft.category,
                         title: draft.title.clone(),
                         issuer: draft.issuer.clone(),
                         claim: draft.claim.clone().unwrap_or_else(|| nucleus::new_uid("r")),
@@ -298,14 +299,31 @@ impl Engine {
                 record, as_organ, ..
             } => {
                 let record = self.resolve(record).await?;
-                let cached=self.local_custody_originals(person,actor,Some(nucleus::trust_analysis::serving::SourceKind::Claim),now.timestamp(),nucleus::trust_analysis::MAX_BYTES).await?;
+                let cached = self
+                    .local_custody_originals(
+                        person,
+                        actor,
+                        Some(nucleus::trust_analysis::serving::SourceKind::Claim),
+                        now.timestamp(),
+                        nucleus::trust_analysis::MAX_BYTES,
+                    )
+                    .await?;
                 let mut tx = self.store.pool.begin().await?;
                 let (saved, authority) = self
                     .permitted_claim_on(&mut tx, person, actor, &record, *as_organ, now)
                     .await?;
                 let current =
                     store::profile_claims::current_on(&mut tx, person, &saved.document.statement)
-                        .await? && self.custody_claim_is_current_on(&mut tx,&saved.document,&cached,actor,now.timestamp()).await?;
+                        .await?
+                        && self
+                            .custody_claim_is_current_on(
+                                &mut tx,
+                                &saved.document,
+                                &cached,
+                                actor,
+                                now.timestamp(),
+                            )
+                            .await?;
                 let mut result = json!({"kind":"claim_document","record":saved.record,"document":saved.document,"authority_current":authority==IdentityAuthenticity::Accepted,"current_retained":current,"checked_at":now.timestamp()});
                 if matches!(request, Request::Export { .. }) {
                     if saved.owner != person
@@ -329,6 +347,27 @@ impl Engine {
                             "The current retained claim is withheld, withdrawn, conflicted or expired",
                         ));
                     }
+                    if saved.document.statement.category != claims::Category::Experience {
+                        sources.validate().map_err(claim_invalid)?;
+                        let statement = &saved.document.statement;
+                        let context = self
+                            .contact_identity_context_on(&mut tx, &statement.issuer, actor)
+                            .await?;
+                        let trusted = claims::trusted_issuer_for_activity(
+                            statement,
+                            sources,
+                            &context,
+                            now.timestamp(),
+                        )
+                        .map_err(claim_invalid)?;
+                        result["kind"] = json!("credential_check");
+                        result["trusted_issuer_for_activity"] = json!(trusted);
+                        result["delivery_quantity_added"] = json!("0");
+                        return Ok(ActionOutcome {
+                            data: Some(json!({"trust":result})),
+                            ..Default::default()
+                        });
+                    }
                     drop(tx);
                     let query = saved
                         .document
@@ -349,7 +388,15 @@ impl Engine {
                         .await?;
                     if checked.document != saved.document
                         || accepted != IdentityAuthenticity::Accepted
-                        || !self.custody_claim_is_current_on(&mut tx,&checked.document,&cached,actor,finished_at.timestamp()).await?
+                        || !self
+                            .custody_claim_is_current_on(
+                                &mut tx,
+                                &checked.document,
+                                &cached,
+                                actor,
+                                finished_at.timestamp(),
+                            )
+                            .await?
                         || checked.document.statement.expires_at <= finished_at.timestamp()
                         || *self.watch_query_changes().borrow() != evaluated.revision
                         || !store::profile_claims::current_on(
@@ -589,7 +636,15 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
         subject.validate().map_err(claim_invalid)?;
-        let cached=self.local_custody_originals(person,actor,Some(nucleus::trust_analysis::serving::SourceKind::Claim),now.timestamp(),nucleus::trust_analysis::MAX_BYTES).await?;
+        let cached = self
+            .local_custody_originals(
+                person,
+                actor,
+                Some(nucleus::trust_analysis::serving::SourceKind::Claim),
+                now.timestamp(),
+                nucleus::trust_analysis::MAX_BYTES,
+            )
+            .await?;
         let principal = serde_json::to_string(&(person, actor, subject, as_organ))?;
         let before: Option<String> = if let Some(token) = before {
             Some(
@@ -631,7 +686,16 @@ impl Engine {
             };
             let current =
                 store::profile_claims::current_on(&mut tx, person, &saved.document.statement)
-                    .await? && self.custody_claim_is_current_on(&mut tx,&saved.document,&cached,actor,now.timestamp()).await?;
+                    .await?
+                    && self
+                        .custody_claim_is_current_on(
+                            &mut tx,
+                            &saved.document,
+                            &cached,
+                            actor,
+                            now.timestamp(),
+                        )
+                        .await?;
             entries.push(json!({"record":saved.record,"document":saved.document,"authority_current":authority==IdentityAuthenticity::Accepted,"current_retained":current}));
         }
         drop(tx);

@@ -251,6 +251,7 @@ async fn cached_claim_withdrawal(f: &Fixture, target: &Engine, operator: &suppor
     let now = f.now;
     let mut claim = claims::Document {
         statement: claims::Statement {
+            category: Default::default(),
             title: "Public activity".into(),
             issuer: Identity::Person(f.author.uid.clone()),
             claim: nucleus::new_uid("r"),

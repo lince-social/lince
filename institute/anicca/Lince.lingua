@@ -1,12 +1,3 @@
-Remaining Verifications (@checking: 0) {
-# ESP
-- [ ] Verify the authenticated feed in your real Cell’s Signal and Video Castle using the prepared build.
-- [ ] Test ESP and Lince restarts, including charger-only cold startup.
-- [ ] Test sustained wall-powered streaming: FPS, latency and stability over direct and relay connections.
-- [ ] Verify reconnection after changing the PC’s Wi-Fi, without reconfiguring the ESP.
-- [ ] Select the prepared package for normal Lince startup
-}
-
 Workspace (@workspace: 0) {
 Learning how hardware works, and how to build and research it is fun and cool. Having in the base app the capabilities of modeling things like Figma and/or CAD programs, from mechanical parts to GPUs, molecules and biology is an amazing dream. The edge cases and the architecture keeps on facing issues, and we keep on improving it. This would be the capabilities to use Lince as a laboratory for creation and inovation, the hardware that is self composable to help you on the day to day, and to change it's composition to become the lab/infrastructure you need to work or live is sci-fi, and in the future, the next undone task.
 

@@ -24,14 +24,50 @@ pub struct Terms {
     pub direction: Direction,
     pub origin: String,
     pub destination: String,
+    #[serde(default)]
+    pub via: Vec<String>,
     pub count: u32,
     pub capacity: u32,
 }
 
 impl Terms {
+    pub fn stops(&self) -> Vec<&str> {
+        std::iter::once(self.origin.as_str())
+            .chain(self.via.iter().map(String::as_str))
+            .chain(std::iter::once(self.destination.as_str()))
+            .collect()
+    }
+
+    pub fn segment(&self, part: &Self) -> Result<std::ops::Range<usize>, &'static str> {
+        let stops = self.stops();
+        let start = stops
+            .iter()
+            .position(|stop| *stop == part.origin)
+            .ok_or("Part origin is outside the larger Transfer route")?;
+        let end = stops
+            .iter()
+            .position(|stop| *stop == part.destination)
+            .ok_or("Part destination is outside the larger Transfer route")?;
+        if start >= end || !part.via.is_empty() && part.stops() != stops[start..=end] {
+            return Err("Transfer parts must follow their larger route's stop order");
+        }
+        Ok(start..end)
+    }
+
     pub fn validate(&self) -> Result<(), &'static str> {
         if !crate::valid_uid(&self.origin, "r") || !crate::valid_uid(&self.destination, "r") {
             return Err("Choose origin and destination Records with saved locations");
+        }
+        let stops = self.stops();
+        if stops.len() > 64
+            || stops.iter().any(|uid| !crate::valid_uid(uid, "r"))
+            || stops
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+                != stops.len()
+        {
+            return Err("Choose at most 64 distinct ordered stop Records");
         }
         if self.count == 0
             || self.capacity == 0
@@ -136,9 +172,48 @@ pub struct Journey {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SegmentCapacity {
+    pub origin: String,
+    pub destination: String,
+    pub reserved: u32,
+    pub available: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Capacity {
     pub offer: String,
+    pub segments: Vec<SegmentCapacity>,
     pub total: u32,
     pub reserved: u32,
     pub available: u32,
+}
+
+#[cfg(test)]
+mod segment_tests {
+    use super::*;
+
+    fn terms(origin: &str, destination: &str, via: Vec<String>) -> Terms {
+        Terms {
+            activity: Activity::Ride,
+            direction: Direction::Offer,
+            origin: origin.into(),
+            destination: destination.into(),
+            via,
+            count: 1,
+            capacity: 1,
+        }
+    }
+    #[test]
+    fn ordinary_transfer_parts_select_only_the_segments_they_use() {
+        let a = crate::new_uid("r");
+        let b = crate::new_uid("r");
+        let c = crate::new_uid("r");
+        let journey = terms(&a, &c, vec![b.clone()]);
+        journey.validate().unwrap();
+        assert_eq!(journey.segment(&terms(&a, &b, vec![])).unwrap(), 0..1);
+        assert_eq!(journey.segment(&terms(&b, &c, vec![])).unwrap(), 1..2);
+        assert_eq!(journey.segment(&terms(&a, &c, vec![])).unwrap(), 0..2);
+        assert!(journey.segment(&terms(&c, &a, vec![])).is_err());
+        assert!(terms(&a, &c, vec![a.clone()]).validate().is_err());
+    }
 }

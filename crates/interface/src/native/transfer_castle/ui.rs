@@ -74,7 +74,7 @@ impl Action for Command {
                 !matches!(self, Self::Person(_))
                     || !matches!(
                         pending.form.data["action"].as_str(),
-                        Some("transfer-receipt" | "identity" | "surplus")
+                        Some("transfer-receipt" | "identity")
                     )
             })
         {
@@ -194,13 +194,13 @@ impl Action for Command {
             Self::Person(person) => {
                 world.get_mut::<TransferCastle>(owner).unwrap().person = person.clone();
                 super::receipts::clear_form(world, owner);
-                stock::clear_form(world, owner);
+
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.receipt = None;
                 if view.pending.as_ref().is_some_and(|pending| {
                     matches!(
                         pending.form.data["action"].as_str(),
-                        Some("transfer-receipt" | "identity" | "surplus")
+                        Some("transfer-receipt" | "identity")
                     )
                 }) {
                     view.pending = None;
@@ -335,7 +335,12 @@ impl Action for Command {
                     return;
                 }
                 if key == "public_history" {
-                    form.data[key] = if matches!(self, Self::Remove(_, _)) { Value::Null } else { serde_json::to_value(nucleus::transfer::public_history::Terms::default()).unwrap() };
+                    form.data[key] = if matches!(self, Self::Remove(_, _)) {
+                        Value::Null
+                    } else {
+                        serde_json::to_value(nucleus::transfer::public_history::Terms::default())
+                            .unwrap()
+                    };
                 }
                 let new = if key == "promises" {
                     model::promise(&text(&form.data, "creator"))
@@ -596,7 +601,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     clear(world, summary);
     clear(world, list);
     clear(world, detail);
-    crate::native::trust_castle::entry_controls(world,controls);
+    crate::native::trust_castle::entry_controls(world, controls);
     for (mine, label) in [(false, "All"), (true, "Mine")] {
         let count = rows
             .iter()

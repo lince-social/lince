@@ -20,6 +20,7 @@ pub(super) async fn check_publisher_amount_against_original_receipts(
 ) {
     let measurement = serde_json::from_value(original["groups"][0]["measurement"].clone()).unwrap();
     let draft = Draft {
+        category: Default::default(),
         issuer: Identity::Person(person.uid.clone()),
         claim: None,
         title: "A publisher's contribution claim".into(),
@@ -59,14 +60,42 @@ pub(super) async fn check_publisher_amount_against_original_receipts(
     let mut review: Review = serde_json::from_value(preview["trust"]["review"].clone()).unwrap();
     engine::trust_analysis::sign_claim_document(&mut review.document, &person.signer).unwrap();
     let snapshot = serde_json::to_string(&review.document).unwrap();
-    let retained_before: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM profile_claim_record").fetch_one(&reader.store.pool).await.unwrap();
-    let snapshot_check = reader.act(request(person, "analysis:unretained-snapshot", ClaimCommand::CheckDocument { document:snapshot, sources:sources.clone(), as_organ:false }), Some(person.uid.clone())).await.unwrap();
+    let retained_before: i64 =
+        store::sqlx::query_scalar("SELECT COUNT(*) FROM profile_claim_record")
+            .fetch_one(&reader.store.pool)
+            .await
+            .unwrap();
+    let snapshot_check = reader
+        .act(
+            request(
+                person,
+                "analysis:unretained-snapshot",
+                ClaimCommand::CheckDocument {
+                    document: snapshot,
+                    sources: sources.clone(),
+                    as_organ: false,
+                },
+            ),
+            Some(person.uid.clone()),
+        )
+        .await
+        .unwrap();
     assert!(snapshot_check.created.is_none());
     assert!(snapshot_check.facts.is_empty());
     let snapshot_check = snapshot_check.data.unwrap();
-    assert_eq!(snapshot_check["trust"]["support"]["observed"]["value"], "12.000000000000000001");
-    assert_eq!(snapshot_check["trust"]["support"]["state"], "partial_support");
-    let retained_after: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM profile_claim_record").fetch_one(&reader.store.pool).await.unwrap();
+    assert_eq!(
+        snapshot_check["trust"]["support"]["observed"]["value"],
+        "12.000000000000000001"
+    );
+    assert_eq!(
+        snapshot_check["trust"]["support"]["state"],
+        "partial_support"
+    );
+    let retained_after: i64 =
+        store::sqlx::query_scalar("SELECT COUNT(*) FROM profile_claim_record")
+            .fetch_one(&reader.store.pool)
+            .await
+            .unwrap();
     assert_eq!(retained_before, retained_after);
     let expected_review = serde_json::from_value(preview["trust"]["hash"].clone()).unwrap();
     let record = reader

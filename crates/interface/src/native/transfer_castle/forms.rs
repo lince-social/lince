@@ -146,6 +146,26 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 );
                 ui::picker(world, container, owner, selected, options);
             }
+            FieldKind::DataChoice(choices) => {
+                crate::native::edit_mode::label(world, container, &field.label, 12.0);
+                let selected = choices
+                    .iter()
+                    .find(|(value, _)| value.to_string() == field.value)
+                    .map(|(_, label)| label.as_str())
+                    .unwrap_or("Choose a Need");
+                ui::picker(
+                    world,
+                    container,
+                    owner,
+                    selected,
+                    choices
+                        .iter()
+                        .map(|(value, label)| {
+                            (label.clone(), Command::Set(index, value.to_string()))
+                        })
+                        .collect(),
+                );
+            }
             FieldKind::Choice(choices) => {
                 crate::native::edit_mode::label(world, container, &field.label, 12.0);
                 ui::picker(
@@ -348,21 +368,6 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     } else if form.data["action"] == "record-journey-progress" {
         review(world, container, &form.review, 0);
         button(world, container, owner, &form.title, Command::Submit);
-    } else if form.data["action"] == "surplus" {
-        let mut visible_review = form.review.clone();
-        if let Some(object) = visible_review.as_object_mut() {
-            object.remove("Saved stock policy");
-        }
-        review(world, container, &visible_review, 0);
-        stock::extra_controls(world, owner, container, &form);
-        let caption = match form.data["request"]["kind"].as_str() {
-            Some("inspect") => "Load stock planning",
-            Some("review") => "Review stock policy",
-            Some("enable") => "Enable reviewed stock policy",
-            Some("pause") => "Pause this stock policy",
-            _ => "Confirm stock policy",
-        };
-        button(world, container, owner, caption, Command::Submit);
     } else if form.data["action"] == "transfer-receipt" {
         let mut visible_review = form.review.clone();
         if let Some(object) = visible_review.as_object_mut() {

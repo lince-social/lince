@@ -48,11 +48,11 @@ impl Desktop {
                 let item = current.frame.geometry.as_ref()?.items.iter().find(|item| item.id == ItemId::Application(window.id))?;
                 Some((&item.mapping, node.layout.size))
             })?;
-            let scale: [f64; 2] = std::array::from_fn(|axis| mapping.surface.size()[axis] / mapping.canvas.size()[axis]);
-            if scale.iter().any(|scale| !scale.is_finite() || *scale <= 0.0) { return None; }
-            let position = std::array::from_fn(|axis| local[axis] + (proposed[axis] - self.pointer[axis]) * scale[axis]);
+            let previous = mapping.surface_point_unbounded(self.pointer)?;
+            let next = mapping.surface_point_unbounded(proposed)?;
+            let position = std::array::from_fn(|axis| local[axis] + next[axis] - previous[axis]);
             let position = self.server.constrain_pointer(surface, *local, position, size);
-            Some(std::array::from_fn(|axis| self.pointer[axis] + (position[axis] - local[axis]) / scale[axis]))
+            mapping.canvas_point(std::array::from_fn(|axis| previous[axis] + position[axis] - local[axis]))
         });
         self.pointer = constrained.unwrap_or(proposed);
         self.motion(time)
@@ -71,10 +71,14 @@ impl Desktop {
                     .map(|item| &item.mapping)
             });
         let Some(mapping) = mapping else { return };
-        let scale: [f64; 2] = std::array::from_fn(|axis| mapping.surface.size()[axis] / mapping.canvas.size()[axis]);
+        let Some(current) = mapping.surface_point_unbounded(self.pointer) else { return };
+        let converted = |delta: [f64; 2]| mapping.surface_point_unbounded(
+            std::array::from_fn(|axis| self.pointer[axis] + delta[axis]),
+        ).map(|next| std::array::from_fn(|axis| next[axis] - current[axis]));
+        let Some(delta) = converted(delta) else { return };
+        let Some(unaccelerated) = converted(unaccelerated) else { return };
         self.server.relative_motion(
-            std::array::from_fn(|axis| delta[axis] * scale[axis]),
-            std::array::from_fn(|axis| unaccelerated[axis] * scale[axis]), time,
+            delta, unaccelerated, time,
         );
     }
 

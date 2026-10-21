@@ -2,9 +2,15 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut arguments = std::env::args_os().skip(1);
     let report = arguments.next().ok_or("Provide a report path, or --help")?;
-    if report == "--help" { println!("capture_probe REPORT: capture one authorized output into SHM and validate its completion and pixels"); return Ok(()); }
-    if arguments.next().is_some() { return Err("Provide exactly one report path".into()); }
-    client::run(std::path::Path::new(&report))?;
+    if report == "--help" { println!("capture_probe REPORT [--image PATH] [--application APP_ID]: capture an authorized output and optionally require a mapped application"); return Ok(()); }
+    let mut image = None;
+    let mut application = None;
+    while let Some(option) = arguments.next() {
+        if option == "--image" { image = Some(arguments.next().ok_or("--image needs a new PPM filename")?); }
+        else if option == "--application" { application = Some(arguments.next().ok_or("--application needs an app ID")?.into_string().map_err(|_| "Invalid application ID")?); }
+        else { return Err("Unexpected capture argument".into()); }
+    }
+    client::run(std::path::Path::new(&report), image.as_deref().map(std::path::Path::new), application.as_deref())?;
     Ok(())
 }
 
@@ -21,20 +27,26 @@ mod client {
         image_copy_capture::v1::client::{ext_image_copy_capture_manager_v1::{self as manager, ExtImageCopyCaptureManagerV1 as Manager},
             ext_image_copy_capture_session_v1::{self as session, ExtImageCopyCaptureSessionV1 as Session},
             ext_image_copy_capture_frame_v1::{self as frame, ExtImageCopyCaptureFrameV1 as Frame}}};
+    use wayland_protocols::ext::foreign_toplevel_list::v1::client::{ext_foreign_toplevel_list_v1 as list, ext_foreign_toplevel_handle_v1 as handle};
 
     #[derive(Default)]
     struct State {
         output: Option<wl_output::WlOutput>, shm: Option<wl_shm::WlShm>, factory: Option<Factory>, manager: Option<Manager>,
         size: Option<[u32; 2]>, argb: bool, constraints: bool, ready: bool, normal: bool, time: bool, damage: bool, failure: Option<String>,
+        foreign: Option<list::ExtForeignToplevelListV1>,
+        windows: Vec<(handle::ExtForeignToplevelHandleV1, String, String)>,
     }
 
-    pub(super) fn run(report: &Path) -> io::Result<()> {
+    pub(super) fn run(report: &Path, image: Option<&Path>, application: Option<&str>) -> io::Result<()> {
         let connection = Connection::connect_to_env().map_err(io::Error::other)?;
         let mut queue = connection.new_event_queue();
         let qh = queue.handle();
         connection.display().get_registry(&qh, ());
         let mut state = State::default();
         until(&connection, &mut queue, &mut state, |state| state.output.is_some() && state.shm.is_some() && state.factory.is_some() && state.manager.is_some())?;
+        if let Some(application) = application {
+            until(&connection, &mut queue, &mut state, |state| state.windows.iter().any(|(_, app_id, _)| app_id.to_lowercase().contains(&application.to_lowercase())))?;
+        }
         let source = state.factory.as_ref().unwrap().create_source(state.output.as_ref().unwrap(), &qh, ());
         let session = state.manager.as_ref().unwrap().create_session(&source, manager::Options::empty(), &qh, ());
         until(&connection, &mut queue, &mut state, |state| state.constraints)?;
@@ -58,7 +70,15 @@ mod client {
         let opaque = pixels.chunks_exact(4).filter(|pixel| pixel[3] == 255).count();
         let colored = pixels.chunks_exact(4).filter(|pixel| pixel[..3].iter().any(|channel| *channel != 0)).count();
         if opaque == 0 || colored == 0 { return Err(io::Error::other("The captured Park scene is empty or black")); }
+        if let Some(path) = image {
+            let mut image = OpenOptions::new().create_new(true).write(true).mode(0o600).open(path)?;
+            write!(image, "P6\n{} {}\n255\n", size[0], size[1])?;
+            let rgb: Vec<_> = pixels.chunks_exact(4).flat_map(|pixel| [pixel[2], pixel[1], pixel[0]]).collect();
+            image.write_all(&rgb)?;
+            image.sync_all()?;
+        }
         let result = serde_json::json!({"status": "passed", "size": size, "opaque_pixels": opaque, "colored_pixels": colored,
+            "applications": state.windows.iter().map(|(_, app_id, title)| serde_json::json!({"app_id": app_id, "title": title})).collect::<Vec<_>>(),
             "checks": ["authorized-output-source", "shm-export", "ready", "normal-transform", "monotonic-timestamp", "initial-damage", "nonempty-scene"],
             "limits": "This does not establish visual fidelity, cursor policy, window capture, portal consent or physical scanout."});
         let temporary = report.with_extension("pending");
@@ -115,8 +135,28 @@ mod client {
                     "wl_shm" => state.shm = Some(registry.bind(name, 1, qh, ())),
                     "ext_output_image_capture_source_manager_v1" => state.factory = Some(registry.bind(name, 1, qh, ())),
                     "ext_image_copy_capture_manager_v1" => state.manager = Some(registry.bind(name, 1, qh, ())),
+                    "ext_foreign_toplevel_list_v1" => state.foreign = Some(registry.bind(name, 1, qh, ())),
                     _ => {}
                 }
+            }
+        }
+    }
+
+    impl Dispatch<list::ExtForeignToplevelListV1, ()> for State {
+        fn event(state: &mut Self, _: &list::ExtForeignToplevelListV1, event: list::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+            if let list::Event::Toplevel { toplevel } = event { state.windows.push((toplevel, String::new(), String::new())); }
+        }
+        wayland_client::event_created_child!(State, list::ExtForeignToplevelListV1, [0 => (handle::ExtForeignToplevelHandleV1, ())]);
+    }
+
+    impl Dispatch<handle::ExtForeignToplevelHandleV1, ()> for State {
+        fn event(state: &mut Self, proxy: &handle::ExtForeignToplevelHandleV1, event: handle::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+            let Some((_, app_id, title)) = state.windows.iter_mut().find(|(window, _, _)| window == proxy) else { return };
+            match event {
+                handle::Event::AppId { app_id: value } => *app_id = value,
+                handle::Event::Title { title: value } => *title = value,
+                handle::Event::Closed => state.windows.retain(|(window, _, _)| window != proxy),
+                _ => {}
             }
         }
     }

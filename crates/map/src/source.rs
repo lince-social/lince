@@ -73,6 +73,15 @@ impl Default for Settings {
 }
 
 impl Settings {
+    pub fn browsing() -> Self {
+        Self {
+            server: PUBLIC_SERVER.into(),
+            dataset_version: "versatiles-osm-live-v1".into(),
+            online: true,
+            ..Self::default()
+        }
+    }
+
     pub fn save_atomic(&self, path: &Path) -> Result<(), String> {
         self.validate()?;
         self.validate_paths()?;
@@ -173,6 +182,47 @@ pub struct Progress {
     pub expected_bytes: u64,
     pub errors: Vec<String>,
     pub cancelled: bool,
+}
+
+pub fn progress_caption(progress: &Progress, frame: usize) -> String {
+    if progress.cancelled {
+        return format!(
+            "Cancelled · {} / {} map sections saved",
+            progress.completed, progress.total
+        );
+    }
+    if progress.total == 0 {
+        return "World overview · available offline".into();
+    }
+    if progress.failed > 0 {
+        return format!(
+            "{} / {} map sections ready · {}",
+            progress.completed,
+            progress.total,
+            progress
+                .errors
+                .first()
+                .map_or("Some detail unavailable", String::as_str)
+        );
+    }
+    if progress.finished() {
+        return "Map ready · saved on this device".into();
+    }
+    let received = progress.downloaded_bytes as f64 / 1024.0;
+    let bytes = if progress.expected_bytes > 0 {
+        format!(
+            "{received:.0} / {:.0} KiB",
+            progress.expected_bytes as f64 / 1024.0
+        )
+    } else {
+        format!("{received:.0} KiB received")
+    };
+    format!(
+        "{} Loading map · {} / {} sections · {bytes}",
+        ["◐", "◓", "◑", "◒"][frame % 4],
+        progress.completed,
+        progress.total
+    )
 }
 
 impl Progress {

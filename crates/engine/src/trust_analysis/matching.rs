@@ -65,7 +65,12 @@ impl Engine {
                 limit: Some(1),
             };
             let rows = protein::execute_for(&self.store, &query, Some(person)).await?;
-            let Some(row) = rows.first() else { continue };
+            let Some(row) = rows
+                .iter()
+                .find(|row| row["uid"].as_str() == Some(offer.as_str()))
+            else {
+                continue;
+            };
             for promise in row["promises"].as_array().into_iter().flatten() {
                 if !matches!(promise["state"].as_str(), Some("proposed" | "open"))
                     || promise["delta"].as_f64().is_none_or(|value| value >= 0.0)

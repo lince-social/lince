@@ -37,6 +37,19 @@ impl View {
     }
 }
 
+pub fn spatial(world: &World, root: Entity) -> bool {
+    world.get::<View>(root).is_some_and(|view| view.spatial)
+        && world
+            .get::<crate::native::workspace::Workspaces>(root)
+            .is_none_or(|spaces| {
+                spaces
+                    .entries
+                    .iter()
+                    .find(|space| space.id == spaces.active)
+                    .is_none_or(|space| space.desktop.fullscreen().is_none())
+            })
+}
+
 pub fn synchronize(world: &mut World) {
     let Some((root, canvas)) = world
         .query::<(Entity, &crate::native::canvas::CanvasView)>()
@@ -64,8 +77,9 @@ pub fn synchronize(world: &mut World) {
         });
     }
     let mut view = *world.get::<View>(root).unwrap();
+    let spatial = spatial(world, root);
     let before = DVec3::from_array(view.position);
-    if view.spatial && !crate::native::shortcuts::editing_text(world) {
+    if spatial && !crate::native::shortcuts::editing_text(world) {
         use crate::native::shortcuts::{Shortcut, pressed};
         let keys = world.resource::<ButtonInput<KeyCode>>();
         let mut direction = Vec3::ZERO;
@@ -115,7 +129,7 @@ pub fn synchronize(world: &mut World) {
             }
         }
     }
-    if view.spatial
+    if spatial
         && !world
             .get::<crate::native::edit_mode::EditMode>(root)
             .is_some_and(|m| m.enabled)
@@ -173,7 +187,7 @@ pub fn synchronize(world: &mut World) {
         }
     }
     world.get_mut::<View>(root).unwrap().set_if_neq(view);
-    if view.spatial {
+    if spatial {
         let position = DVec3::from_array(view.position);
         if (position - origin(world, root)).length() > 10_000.0 {
             world
@@ -182,7 +196,7 @@ pub fn synchronize(world: &mut World) {
                 .center = bevy::math::DVec2::new(position.x, position.z);
         }
     }
-    let transform = if view.spatial {
+    let transform = if spatial {
         Transform::from_translation(
             (DVec3::from_array(view.position) - origin(world, root)).as_vec3(),
         )
@@ -196,10 +210,10 @@ pub fn synchronize(world: &mut World) {
         .set_if_neq(transform);
     let update_projection = match world.get::<Projection>(camera) {
         Some(Projection::Perspective(projection)) => {
-            !view.spatial || projection.near != 0.5 || projection.far != 1_000_000.0
+            !spatial || projection.near != 0.5 || projection.far != 1_000_000.0
         }
         Some(Projection::Orthographic(projection)) => {
-            view.spatial
+            spatial
                 || projection.scale != 1.0 / canvas.zoom as f32
                 || projection.near != -1_000_000.0
                 || projection.far != 1_000_000.0
@@ -209,7 +223,7 @@ pub fn synchronize(world: &mut World) {
     if !update_projection {
         return;
     }
-    let projection = if view.spatial {
+    let projection = if spatial {
         Projection::Perspective(PerspectiveProjection {
             near: 0.5,
             far: 1_000_000.0,

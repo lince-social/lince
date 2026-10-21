@@ -7,11 +7,17 @@ const INPUT_FEATURES: &str = "nested,server-tests";
 
 #[cfg(target_os = "linux")]
 mod validation;
+#[cfg(target_os = "linux")]
+mod showoff;
 
 pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
         #[cfg(target_os = "linux")]
         Some("validate") => validation::dispatch(&arguments[1..]),
+        #[cfg(target_os = "linux")]
+        Some("showoff") => showoff::run(&arguments[1..]).map_err(|error| error.to_string()),
+        #[cfg(target_os = "linux")]
+        Some("showoff-ready") => showoff::ready(&arguments[1..]).map_err(|error| error.to_string()),
         Some("ci") if arguments.len() == 1 => {
             for arguments in [
                 vec!["check", "--locked", "-p", "lince", "--features", "park"],
@@ -112,6 +118,7 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
             );
             println!("Runs Park protocol regressions and Vulkan/wgpu sharing probes.");
             println!("Use park validate help for isolated, bounded session acceptance runs.");
+            println!("Use park showoff --nested for an interactive release session with Firefox and the saved Laboratory showoff workspace.");
             println!("Use park ci for compiler and deterministic protocol checks without a desktop session.");
             println!(
                 "Use park nested --outputs 2 --smoke to exercise monitor focus and application movement."

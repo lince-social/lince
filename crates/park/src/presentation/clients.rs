@@ -300,10 +300,10 @@ impl Presentation {
             records.capture(self.app.world(), &window, *identity);
         }
         let world = self.app.world_mut();
-        world.despawn(window.entity);
         for node in window.nodes.into_values() {
             tree::remove(world, node);
         }
+        world.despawn(window.entity);
         world
             .resource_mut::<Textures>()
             .0

@@ -891,6 +891,9 @@ pub fn observer(person: &str, upstream: &Value) -> Form {
 }
 
 pub fn bind_preset(form: &mut Form) {
+    if form.step.is_none() {
+        return;
+    }
     if transport::bind(form) {
         return;
     }

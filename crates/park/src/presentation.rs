@@ -106,6 +106,9 @@ struct FrameFailure(String);
 fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::Result<records::Records> {
     let records = records::Records::load(data.join("park-windows.json"))?;
     let storage = tokio::runtime::Handle::current().block_on(runtime.0.interface_storage())?;
+    app.insert_resource(native::sound::Audio::open(
+        data.clone(), app.world().get_resource::<WakeSignal>().cloned(),
+    ));
     app.insert_resource(native::workspace::WorkspaceFile::with_settings(
         data.join("interface.json"),
         storage,
@@ -1211,6 +1214,7 @@ fn cancel_input(world: &mut World, window: Entity) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    mod showoff;
     use bevy::{
         ecs::message::{MessageCursor, Messages},
         input::{

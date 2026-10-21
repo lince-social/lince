@@ -14,9 +14,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output = arguments
         .next()
         .ok_or_else(|| Error::other("Choose a new report filename"))?;
-    if arguments.next().is_some() {
-        return Err(Error::other("Only the report filename is accepted").into());
-    }
+    let filters = arguments
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
     let cases: Vec<_> = catalogue()
         .into_iter()
         .filter(|case| {
@@ -28,6 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ]
             .iter()
             .any(|module| case.name.contains(module))
+                && (filters.is_empty() || filters.iter().any(|filter| case.name.contains(filter)))
         })
         .collect();
     if !cases.iter().any(|case| {
@@ -77,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         file,
         &Report {
             schema: 1,
-            scope: "Transfer, trust, map and profile claim behavior; deferred stock excluded; no GPU or OS/device claim",
+            scope: "Selected Transfer Laboratory behavior; no GPU or OS/device claim",
             behavior: result,
         },
     )?;

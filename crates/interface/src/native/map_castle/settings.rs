@@ -26,7 +26,7 @@ pub(super) fn initialize(world: &mut World) {
         });
     let Some(base) = base else { return };
     let path = base.join("maps/settings.json");
-    let mut settings = Settings::default();
+    let mut settings = Settings::browsing();
     let loaded = match fs::read(&path) {
         Ok(bytes) if bytes.len() <= 65_536 => {
             serde_json::from_slice::<Settings>(&bytes).map_err(|error| error.to_string())
@@ -93,7 +93,6 @@ struct Form {
     server: Entity,
     version: Entity,
     storage: Entity,
-    zoom: Entity,
     online: bool,
     toggle: Entity,
     status: Entity,
@@ -153,6 +152,10 @@ impl crate::native::actions::Action for Change {
             Self::Preset => {
                 if let Some(mut input) = world.get_mut::<bevy::text::EditableText>(server) {
                     input.editor.set_text(lince_map::source::PUBLIC_SERVER);
+                }
+                let version = world.get::<Form>(target).unwrap().version;
+                if let Some(mut input) = world.get_mut::<bevy::text::EditableText>(version) {
+                    input.editor.set_text(&Settings::browsing().dataset_version);
                 }
             }
             Self::Save => {
@@ -226,12 +229,6 @@ fn mount(world: &mut World, parent: Entity) {
         "External dataset version",
         &settings.dataset_version,
     );
-    let zoom = crate::native::sand_panel::field(
-        world,
-        body,
-        "Maximum downloaded detail (0–14)",
-        &settings.max_zoom.to_string(),
-    );
     let storage = crate::native::sand_panel::field(
         world,
         body,
@@ -262,7 +259,7 @@ fn mount(world: &mut World, parent: Entity) {
     let status = crate::native::edit_mode::label(
         world,
         body,
-        "Local tiles are used first. The overview always works offline.",
+        "Zooming downloads missing detail automatically when external downloads are on. Local tiles are used first. The overview always works offline.",
         13.0,
     );
     world.entity_mut(body).insert(Form {
@@ -271,7 +268,6 @@ fn mount(world: &mut World, parent: Entity) {
         server,
         version,
         storage,
-        zoom,
         online: settings.online,
         toggle,
         status,
@@ -294,9 +290,7 @@ fn form_settings(world: &World, target: Entity) -> Result<Settings, String> {
         server: value(form.server)?,
         dataset_version: value(form.version)?,
         online: form.online,
-        max_zoom: value(form.zoom)?
-            .parse()
-            .map_err(|_| "Use a detail level between 0 and 14")?,
+        max_zoom: world.resource::<Sources>().settings.max_zoom,
         storage_megabytes: value(form.storage)?
             .parse()
             .map_err(|_| "Enter a map storage limit in MB")?,
@@ -501,6 +495,40 @@ pub(super) mod tests {
     use super::*;
     use crate::native::actions::Action;
 
+    #[test]
+    fn fresh_map_setup_downloads_on_zoom_and_saved_offline_settings_are_preserved() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut world = World::new();
+        world.init_resource::<Sources>();
+        world.insert_resource(crate::native::topology::assets::AssetDirectory(
+            directory.path().join("assets"),
+        ));
+        initialize(&mut world);
+        assert!(world.resource::<Sources>().settings.online);
+        assert_eq!(
+            world.resource::<Sources>().settings.server,
+            lince_map::source::PUBLIC_SERVER
+        );
+        let path = directory.path().join("maps/settings.json");
+        Settings::default().save_atomic(&path).unwrap();
+        world.insert_resource(Sources::default());
+        initialize(&mut world);
+        assert!(!world.resource::<Sources>().settings.online);
+        let (mut app, _, owner) = super::super::tests::fixture();
+        assert!(
+            !app.world_mut()
+                .query::<&crate::controls::Editor>()
+                .iter(app.world())
+                .any(|editor| editor.title.contains("Area detail"))
+        );
+        let before = app.world().get::<MapSand>(owner).unwrap().camera.zoom;
+        Command::Zoom(1.0).apply(app.world_mut(), owner);
+        let sand = app.world().get::<MapSand>(owner).unwrap();
+        assert_eq!(sand.camera.zoom, before + 1.0);
+        assert!(sand.selection.is_none());
+        assert!(sand.job.is_none());
+    }
+
     #[cfg_attr(test, tokio::test)]
     async fn settings_reject_invalid_edits_and_replace_the_source_after_a_saved_change() {
         let directory = tempfile::tempdir().unwrap();
@@ -530,8 +558,6 @@ pub(super) mod tests {
         assert!(!directory.path().join("maps/settings.json").exists());
         Change::Preset.apply(app.world_mut(), body);
         Change::Toggle.apply(app.world_mut(), body);
-        assert!(save_form(app.world_mut(), body).is_err());
-        Change::Toggle.apply(app.world_mut(), body);
         save_form(app.world_mut(), body).unwrap();
         tokio::time::timeout(std::time::Duration::from_secs(5), async {
             while app.world().get::<SaveJob>(body).is_some() {
@@ -545,7 +571,7 @@ pub(super) mod tests {
             &std::fs::read(directory.path().join("maps/settings.json")).unwrap(),
         )
         .unwrap();
-        assert!(!settings.online);
+        assert!(settings.online);
         assert_eq!(settings.server, lince_map::source::PUBLIC_SERVER);
         assert_eq!(app.world().resource::<Sources>().revision, 1);
         assert_eq!(

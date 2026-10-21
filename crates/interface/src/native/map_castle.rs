@@ -115,7 +115,6 @@ pub struct MapSand {
     status: Entity,
     overlay: Entity,
     selected_text: Entity,
-    zoom_field: Entity,
     size: [u32; 2],
     image: Handle<Image>,
     scene: Option<Arc<Mutex<Scene>>>,

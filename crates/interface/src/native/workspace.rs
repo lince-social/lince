@@ -111,6 +111,8 @@ struct SavedSand {
     placement: crate::native::sand_placement::Placement,
     #[serde(default)]
     tokens: crate::native::tokens::TokenOverrides,
+    #[serde(default)]
+    properties: Option<serde_json::Value>,
     kind: SandKind,
     texts: Vec<SavedText>,
     workspace: u64,
@@ -411,6 +413,10 @@ impl Workspace {
 impl SavedSand {
     fn valid(&self) -> bool {
         self.tokens.validate()
+            && self
+                .properties
+                .as_ref()
+                .is_none_or(serde_json::Value::is_object)
             && self.placement.valid()
             && valid_geometry(self.position, self.size)
             && self.texts.len() <= 128
@@ -739,6 +745,11 @@ fn initialize(world: &mut World) {
                         sand.tokens,
                         crate::native::token_style::AppliedSize(Vec2::from_array(sand.size)),
                     ));
+                    if let Some(properties) = sand.properties {
+                        world
+                            .entity_mut(entity)
+                            .insert(crate::native::area::RecordProperties(properties));
+                    }
                     if let Some(timer) = sand.timer {
                         world.entity_mut(entity).insert(timer);
                     }
@@ -1132,6 +1143,9 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
             sands.push(SavedSand {
                 placement: crate::native::sand_placement::Placement::capture(world, entity),
                 tokens: crate::native::token_style::overrides(world, entity),
+                properties: world
+                    .get::<crate::native::area::RecordProperties>(entity)
+                    .map(|properties| properties.0.clone()),
                 kind: sand.kind,
                 texts: sand_text::snapshot(world, entity),
                 video: world
@@ -2347,6 +2361,11 @@ pub(crate) mod tests {
         );
         let editor = world.get::<StoredSand>(sand).unwrap().content.unwrap();
         world
+            .entity_mut(sand)
+            .insert(crate::native::area::RecordProperties(
+                serde_json::json!({"kind": "physics-piece", "quantity": -3}),
+            ));
+        world
             .get_mut::<EditableText>(editor)
             .unwrap()
             .editor
@@ -2406,11 +2425,19 @@ pub(crate) mod tests {
             world.get::<Workspaces>(root).unwrap().entries[1].colors,
             colors
         );
-        let (sand, item) = world
-            .query::<(&StoredSand, &CanvasItem)>()
+        let (sand, item, properties) = world
+            .query::<(
+                &StoredSand,
+                &CanvasItem,
+                &crate::native::area::RecordProperties,
+            )>()
             .single(world)
             .unwrap();
         assert_eq!(item.position, DVec2::new(1e12 + 0.25, -1e12));
+        assert_eq!(
+            properties.0,
+            serde_json::json!({"kind": "physics-piece", "quantity": -3}),
+        );
         assert_eq!(
             world
                 .get::<EditableText>(sand.content.unwrap())

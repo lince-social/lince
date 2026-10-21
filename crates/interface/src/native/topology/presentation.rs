@@ -184,10 +184,11 @@ fn request_in(
     let scale = world
         .get::<crate::native::area_effects::AreaScale>(entity)
         .map_or(1.0, |scale| scale.0);
-    let view = world
+    let mut view = world
         .get::<super::view::View>(root)
         .copied()
         .unwrap_or_default();
+    view.spatial = super::view::spatial(world, root);
     let placement = spatial(world, entity);
     let depth =
         if let Some(settings) = world.get::<crate::native::time_castle::TimeSettings>(entity) {
@@ -570,9 +571,7 @@ pub fn synchronize(world: &mut World) {
             .is_some()
             || area
             || arrow
-            || !world
-                .get::<super::view::View>(root)
-                .is_some_and(|view| view.spatial);
+            || !super::view::spatial(world, root);
         let boundary = world.get::<super::rooms::Room>(entity).is_some()
             && world.get::<super::appearance::Material>(entity).is_none()
             && crate::native::token_style::overrides(world, entity)
@@ -719,14 +718,23 @@ pub fn displayed(world: &World, entity: Entity) -> bool {
 
 pub fn projected_corners(world: &World, entity: Entity) -> Option<[[f64; 2]; 4]> {
     let surface = world.get::<Surface>(entity)?;
-    let camera = world.get_entity(world.get_resource::<SceneCamera>()?.0).ok()?;
+    let camera = world
+        .get_entity(world.get_resource::<SceneCamera>()?.0)
+        .ok()?;
     let (camera, transform) = (camera.get::<Camera>()?, camera.get::<GlobalTransform>()?);
     let face = world.get::<GlobalTransform>(surface.face)?;
     let mut corners = [[0.0; 2]; 4];
-    for (index, uv) in [Vec2::ZERO, Vec2::X, Vec2::ONE, Vec2::Y].into_iter().enumerate() {
+    for (index, uv) in [Vec2::ZERO, Vec2::X, Vec2::ONE, Vec2::Y]
+        .into_iter()
+        .enumerate()
+    {
         let uv = (uv - surface.uv.min) / surface.uv.size();
         let point = face.transform_point(Vec3::new(uv.x - 0.5, 0.5 - uv.y, 0.0));
-        corners[index] = camera.world_to_viewport(transform, point).ok()?.as_dvec2().to_array();
+        corners[index] = camera
+            .world_to_viewport(transform, point)
+            .ok()?
+            .as_dvec2()
+            .to_array();
     }
     Some(corners)
 }

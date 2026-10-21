@@ -279,18 +279,27 @@ fn scope(world: &mut World) {
         }
         close_surface(world);
         let base = world.resource::<Mobile>().data_directory().join("maps");
-        let loaded = std::fs::read(base.join("settings.json"))
-            .ok()
-            .filter(|bytes| bytes.len() <= 65_536)
-            .and_then(|bytes| serde_json::from_slice::<Settings>(&bytes).ok())
-            .filter(|settings| settings.validate().is_ok())
-            .unwrap_or_default();
-        let (store, notice) = match TileStore::new(loaded.clone(), &base) {
-            Ok(store) => (Some(store), String::new()),
-            Err(error) => (
-                TileStore::new(Settings::default(), &base).ok(),
-                format!("Using the offline overview. Check map sources: {error}"),
-            ),
+        let loaded = match std::fs::read(base.join("settings.json")) {
+            Ok(bytes) if bytes.len() <= 65_536 => {
+                serde_json::from_slice::<Settings>(&bytes).map_err(|error| error.to_string())
+            }
+            Ok(_) => Err("Map Settings exceed their size limit".into()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Settings::browsing()),
+            Err(error) => Err(error.to_string()),
+        };
+        let (loaded, store, notice) = match loaded.and_then(|settings| {
+            TileStore::new(settings.clone(), &base).map(|store| (settings, store))
+        }) {
+            Ok((settings, store)) => (settings, Some(store), String::new()),
+            Err(error) => {
+                let settings = Settings::default();
+                let store = TileStore::new(settings.clone(), &base).ok();
+                (
+                    settings,
+                    store,
+                    format!("Using the offline overview. Check map sources: {error}"),
+                )
+            }
         };
         world.insert_resource(State {
             scope: current,
@@ -611,12 +620,12 @@ pub fn apply(world: &mut World, intent: Intent) -> Result<(), String> {
         Intent::Download => {
             let state = world.resource::<State>();
             let area = state.selection.ok_or("Select an area first")?;
-            let zoom = world
-                .resource::<Mobile>()
-                .draft("map", "zoom", "14")
-                .parse::<u8>()
-                .map_err(|_| "Choose detail 0–14")?;
-            let tiles = area.pyramid(zoom)?;
+            let zoom = state.camera.data_zoom(state.settings.max_zoom);
+            let tiles = area
+                .pyramid(zoom)?
+                .into_iter()
+                .filter(|tile| tile.z >= 3)
+                .collect::<Vec<_>>();
             let store = state.store.clone().ok_or("Map storage is unavailable")?;
             let cancelled = Arc::new(AtomicBool::new(false));
             let result = Arc::new(Mutex::new(None));
@@ -721,7 +730,7 @@ pub fn apply(world: &mut World, intent: Intent) -> Result<(), String> {
                     state.select_area = !state.select_area;
                     state.anchor = None;
                     state.notice =
-                        "Drag to choose two area corners, then choose detail and Download area."
+                        "Drag to choose an area, then save it offline at the current map detail."
                             .into();
                 }
                 Intent::Online => state.online = !state.online,
@@ -1095,7 +1104,11 @@ pub fn render(world: &mut World, _parent: Entity) {
         map_button(
             world,
             owner,
-            "Toggle external downloads (default off)",
+            if world.resource::<State>().online {
+                "External downloads: on"
+            } else {
+                "External downloads: off"
+            },
             Intent::Online,
         );
         map_button(world, owner, "Verify and save sources", Intent::SaveSources);
@@ -1148,16 +1161,12 @@ pub fn render(world: &mut World, _parent: Entity) {
     world.get_mut::<Node>(controls).unwrap().flex_wrap = FlexWrap::Wrap;
     world.get_mut::<Node>(controls).unwrap().max_height = percent(25);
     world.get_mut::<Node>(controls).unwrap().overflow = Overflow::scroll_y();
-    app::input(
+    map_button(
         world,
         controls,
-        "map",
-        "zoom",
-        "Area detail (0–14)",
-        "14",
-        false,
+        "Save selected area offline",
+        Intent::Download,
     );
-    map_button(world, controls, "Download area", Intent::Download);
     map_button(world, controls, "Cancel", Intent::CancelDownload);
     if world.resource::<State>().records.len() == 1
         && world.resource::<State>().invitation.is_none()
@@ -1567,10 +1576,11 @@ fn status(world: &World) -> String {
             })
             .unwrap_or_default();
         return format!(
-            "{} / {} tiles · {} bytes{}",
-            progress.completed,
-            progress.total,
-            progress.downloaded_bytes,
+            "Selected area · {}{}",
+            data::source::progress_caption(
+                &progress,
+                chrono::Utc::now().timestamp_millis().div_euclid(250) as usize
+            ),
             if progress.cancelled {
                 " · cancelled"
             } else {
@@ -1578,19 +1588,46 @@ fn status(world: &World) -> String {
             }
         );
     }
+    let detail = state
+        .store
+        .as_ref()
+        .map(|store| {
+            let tiles = state
+                .surface
+                .and_then(|owner| world.get::<Surface>(owner))
+                .map(|surface| {
+                    if state.camera.data_zoom(store.settings().max_zoom) < 3 {
+                        Vec::new()
+                    } else {
+                        state
+                            .camera
+                            .visible_tiles(surface.size.map(f64::from), store.settings().max_zoom)
+                    }
+                })
+                .unwrap_or_default();
+            data::source::progress_caption(
+                &store.progress(&tiles),
+                chrono::Utc::now().timestamp_millis().div_euclid(250) as usize,
+            )
+        })
+        .unwrap_or_else(|| "Preparing map".into());
     format!(
-        "{} · {} · {}",
+        "{detail} · {}{}{}",
         if state.settings.online {
-            "Configured downloads enabled"
+            "Zoom to see streets; detail downloads automatically"
         } else {
-            "Offline"
+            "Offline mode"
         },
         if state.pending.is_empty() {
             ""
         } else {
-            "Loading permitted locations…"
+            " · Loading permitted locations…"
         },
-        state.notice
+        if state.notice.is_empty() {
+            String::new()
+        } else {
+            format!(" · {}", state.notice)
+        }
     )
 }
 

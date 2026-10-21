@@ -2771,6 +2771,35 @@ fn supplier_matching_replays_as_a_read_and_disappearing_offers_never_execute() {
         .unwrap();
         let mut promise = support::promise("candidate-contribution", &stock, &f.giver, -10.0);
         promise.unit = Some(unit);
+        promise.item = Some(nucleus::transfer::disclosure::TransferItem {
+            title: "Private meal source".into(),
+            ..Default::default()
+        });
+        let hidden = support::create_transfer(
+            &f.engine,
+            &f.giver,
+            std::slice::from_ref(&f.receiver),
+            vec![promise.clone()],
+            DraftOptions {
+                slug: "candidate-hidden",
+                agreement: nucleus::transfer::AgreementType::Full,
+                reserve_default: engine::actions::TransferReservePoint::None,
+                require_confirmation: true,
+            },
+        )
+        .await;
+        promise.uid = Some("candidate-visible-contribution".into());
+        promise.item = Some(nucleus::transfer::disclosure::TransferItem {
+            title: "Meal contributions".into(),
+            disclosure: nucleus::transfer::disclosure::ItemDisclosure {
+                source: nucleus::transfer::disclosure::FieldAudience {
+                    scope: nucleus::transfer::disclosure::AudienceScope::Participants,
+                    people: Vec::new(),
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        });
         let offer = support::create_transfer(
             &f.engine,
             &f.giver,
@@ -2786,7 +2815,7 @@ fn supplier_matching_replays_as_a_read_and_disappearing_offers_never_execute() {
         .await;
         let request = nucleus::transfer::matching::Request {
             need: f.selection.clone(),
-            offers: vec![offer.transfer.clone()],
+            offers: vec![hidden.transfer.clone(), offer.transfer.clone()],
             sources: Query::for_subject(Identity::Person(f.giver.uid.clone())),
             minimum_experience: "0".into(),
             from: None,
@@ -2802,6 +2831,28 @@ fn supplier_matching_replays_as_a_read_and_disappearing_offers_never_execute() {
             request_id: nucleus::new_uid("match"),
             request: Command::MatchSuppliers { request },
         };
+        let rows = protein::execute_for(
+            &f.engine.store,
+            &Protein {
+                source: Source::Transfer,
+                filter: vec![protein::Predicate::UidEq(offer.transfer.clone())],
+                fields: None,
+                include: Default::default(),
+                aggregate: None,
+                order: Vec::new(),
+                limit: Some(1),
+            },
+            Some(&f.receiver.uid),
+        )
+        .await
+        .unwrap();
+        assert_eq!(rows[0]["kind"], "transfer_context");
+        assert_eq!(
+            rows.iter()
+                .filter(|row| row["uid"] == offer.transfer)
+                .count(),
+            1
+        );
         let before = f.engine.store.state_hash().await.unwrap();
         for _ in 0..2 {
             let result = f
@@ -2813,6 +2864,7 @@ fn supplier_matching_replays_as_a_read_and_disappearing_offers_never_execute() {
                 .unwrap();
             assert_eq!(result["trust"]["candidates"].as_array().unwrap().len(), 1);
             assert_eq!(result["trust"]["candidates"][0]["draft_only"], true);
+            assert_eq!(result["trust"]["candidates"][0]["transfer"], offer.transfer);
         }
         let mut discover = request.clone();
         discover.offers.clear();
@@ -2824,15 +2876,46 @@ fn supplier_matching_replays_as_a_read_and_disappearing_offers_never_execute() {
             .data
             .unwrap();
         assert_eq!(result["trust"]["candidates"].as_array().unwrap().len(), 1);
+        let mut timed = request.clone();
+        timed.from = Some("2026-10-20T12:00:00Z".into());
+        timed.until = Some("2026-10-20T13:00:00Z".into());
+        let mut nearby = request.clone();
+        nearby.within_metres = Some(3000);
+        let mut weighted = request.clone();
+        weighted.minimum_experience = "1".into();
+        weighted.sources.weights.need_linked_receiver = store::exact::zero();
+        weighted.sources.weights.receiver = store::exact::zero();
+        weighted.sources.weights.giver = store::exact::zero();
+        weighted
+            .sources
+            .exclude_everywhere
+            .push(Identity::Person(f.giver.uid.clone()));
+        for filtered in [timed, nearby, weighted] {
+            let result = f
+                .engine
+                .act(action(filtered), Some(f.receiver.uid.clone()))
+                .await
+                .unwrap()
+                .data
+                .unwrap();
+            assert!(result["trust"]["candidates"].as_array().unwrap().is_empty());
+        }
         assert_eq!(f.engine.store.state_hash().await.unwrap(), before);
+        f.engine.set_signer(f.giver.signer.clone()).await.unwrap();
         f.engine
             .act(
-                Action::SetQuantity {
-                    target: offer.transfer.clone(),
-                    value: 0.0,
+                Action::ReviseTransferDraft {
+                    transfer: offer.transfer.clone(),
+                    expected_revision: offer.revision,
+                    request_id: "withdraw-candidate-offer".into(),
+                    draft: serde_json::from_value(json!({"creator":f.giver.uid,"head":"Withdrawn contribution","slug":"candidate-offer","visibility":"hidden","promises":[]})).unwrap(),
                 },
                 None,
             )
+            .await
+            .unwrap();
+        f.engine
+            .set_signer(f.receiver.signer.clone())
             .await
             .unwrap();
         let result = f

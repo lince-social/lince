@@ -319,32 +319,43 @@ fn main() -> Result<(), Error> {
         let result = {
             let _entered = runtime.enter();
             let configuration = lince_park::runtime::Configuration {
-                    showoff: has_arg(&args, "--showoff"),
-                    size: [1280, 720],
-                    directory: data_dir,
-                    runtime: runtime.handle().clone(),
-                    cell: Some(lince_interface::native::app::CellHandle(
-                        cell.runtime().clone(),
-                    )),
-                };
+                showoff: has_arg(&args, "--showoff"),
+                size: [1280, 720],
+                directory: data_dir,
+                runtime: runtime.handle().clone(),
+                cell: Some(lince_interface::native::app::CellHandle(
+                    cell.runtime().clone(),
+                )),
+            };
             if has_arg(&args, "--park-nested") {
-                lince_park::nested::run(configuration, applications, lince_park::nested::Options {
-                    duration: arg_value(&args, "--park-duration")
-                        .map(|seconds| seconds.parse::<u64>().map(std::time::Duration::from_secs))
-                        .transpose().map_err(Error::other)?,
-                    outputs: arg_value(&args, "--park-outputs")
-                        .map(|count| count.parse::<usize>()).transpose().map_err(Error::other)?.unwrap_or(1),
-                    ready_hook: true,
-                    smoke: false,
-                }).map(|_| ())
+                lince_park::nested::run(
+                    configuration,
+                    applications,
+                    lince_park::nested::Options {
+                        duration: arg_value(&args, "--park-duration")
+                            .map(|seconds| {
+                                seconds.parse::<u64>().map(std::time::Duration::from_secs)
+                            })
+                            .transpose()
+                            .map_err(Error::other)?,
+                        outputs: arg_value(&args, "--park-outputs")
+                            .map(|count| count.parse::<usize>())
+                            .transpose()
+                            .map_err(Error::other)?
+                            .unwrap_or(1),
+                        ready_hook: true,
+                        smoke: false,
+                    },
+                )
+                .map(|_| ())
             } else {
-            lince_park::session::run(
-                configuration,
-                instance
-                    .as_ref()
-                    .expect("Park claimed its Cell before startup"),
-                applications,
-            )
+                lince_park::session::run(
+                    configuration,
+                    instance
+                        .as_ref()
+                        .expect("Park claimed its Cell before startup"),
+                    applications,
+                )
             }
         };
         runtime.block_on(cell.shutdown());
@@ -443,6 +454,12 @@ fn print_help() {
     println!("  lingua FILE          Run a Lingua script; check, fmt, and eval are also available");
     println!("      --directory <path> Override the Lince data directory");
     println!("      --park           Run the native Wayland desktop (Linux, park feature)");
+    println!(
+        "      --park-nested    Run the same Cell-backed compositor inside the current desktop"
+    );
+    println!("      --park-duration N  Limit a nested session to N seconds");
+    println!("      --park-outputs N   Simulate N outputs in a nested session");
+    println!("      --showoff        Open the saved Laboratory showoff workspace");
     println!("                       Pass -- PROGRAM ARGUMENTS to open an application");
     println!("      --port <port>     Override the local HTTP listen port");
     println!(

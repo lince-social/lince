@@ -218,3 +218,48 @@ async fn packaged_overview_and_example_are_offline_and_received_invitation_start
     assert!(state.pending.is_empty());
     assert!(state.locate_epoch.is_none());
 }
+
+#[test]
+fn ordinary_zoom_needs_no_detail_form_and_persisted_offline_mode_is_respected() {
+    let temporary = tempfile::tempdir().unwrap();
+    let (mut world, _, _) = fixture(temporary.path());
+    assert!(world.resource::<State>().settings.online);
+    assert_eq!(
+        world.resource::<State>().settings.server,
+        data::source::PUBLIC_SERVER
+    );
+    assert!(
+        !world
+            .query::<&lince_interface::controls::Editor>()
+            .iter(&world)
+            .any(|editor| editor.title.contains("Area detail"))
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(&world)
+            .any(|text| text.0 == "Save selected area offline")
+    );
+    let before = world.resource::<State>().camera.zoom;
+    apply(&mut world, Intent::Zoom(1.0)).unwrap();
+    assert_eq!(world.resource::<State>().camera.zoom, before + 1.0);
+    assert!(world.resource::<State>().selection.is_none());
+    assert!(world.resource::<State>().download.is_none());
+    let path = temporary.path().join("maps/settings.json");
+    Settings::default().save_atomic(&path).unwrap();
+    world.resource_mut::<Mobile>().identity =
+        crate::session::Identity::Person(nucleus::new_uid("r"));
+    scope(&mut world);
+    assert!(!world.resource::<State>().settings.online);
+    std::fs::write(&path, b"invalid settings").unwrap();
+    world.resource_mut::<Mobile>().identity =
+        crate::session::Identity::Person(nucleus::new_uid("r"));
+    scope(&mut world);
+    assert!(!world.resource::<State>().settings.online);
+    assert!(
+        world
+            .resource::<State>()
+            .notice
+            .contains("offline overview")
+    );
+}

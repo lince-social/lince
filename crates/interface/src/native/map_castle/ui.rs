@@ -90,7 +90,7 @@ pub(super) fn mount(
     crate::native::accessibility::input(
         world,
         viewport,
-        "Map. Drag to pan, use plus and minus to zoom, or Draw area to select an offline download.",
+        "Map. Drag to pan or use plus and minus to zoom. Missing detail downloads automatically unless offline mode is enabled.",
         false,
     );
     input::install(world, viewport);
@@ -109,12 +109,17 @@ pub(super) fn mount(
     let selected_text = crate::native::edit_mode::label(
         world,
         owner,
-        "Click to choose a reference point. Draw an area to download more detail.",
+        "Zoom to see streets; missing detail downloads automatically. Click to choose a reference point.",
         13.0,
     );
     let download = crate::native::sand_panel::row(world, owner);
-    let zoom_field = crate::native::sand_panel::field(world, download, "Area detail (0–14)", "14");
-    crate::native::sand_panel::button(world, download, owner, "Download area", Command::Download);
+    crate::native::sand_panel::button(
+        world,
+        download,
+        owner,
+        "Save selected area offline",
+        Command::Download,
+    );
     crate::native::sand_panel::button(world, download, owner, "Cancel download", Command::Cancel);
     let records: Vec<_> = records
         .into_iter()
@@ -160,7 +165,6 @@ pub(super) fn mount(
         status,
         overlay,
         selected_text,
-        zoom_field,
         size: [800, 360],
         image,
         scene: None,
@@ -461,18 +465,12 @@ fn download(world: &mut World, owner: Entity) {
     let Some(sand) = world.get::<MapSand>(owner) else {
         return;
     };
-    let field = sand.zoom_field;
+    let camera = sand.camera;
     let selection = sand.selection;
     let store = world.resource::<settings::Sources>().store.clone();
     let result = (|| {
         let store = store.ok_or("Configure a map source in Map Settings")?;
-        let zoom: u8 = crate::native::sand_panel::value(world, field)?
-            .trim()
-            .parse()
-            .map_err(|_| "Choose a detail level between 0 and 14")?;
-        if zoom > store.settings().max_zoom {
-            return Err("The selected detail exceeds the source maximum".into());
-        }
+        let zoom = camera.data_zoom(store.settings().max_zoom);
         let tiles: Vec<_> = selection
             .ok_or("Draw an area first")?
             .pyramid(zoom)?
@@ -712,7 +710,7 @@ pub(super) fn update(world: &mut World) {
         }
         overlays(world, owner);
         let sand = world.get::<MapSand>(owner).unwrap();
-        let mut caption = format!("Zoom {:.1} · ", sand.camera.zoom);
+        let mut caption = String::new();
         if let Some(error) = &source_error {
             caption.push_str(error);
         } else if let Some(store) = &store {
@@ -754,8 +752,10 @@ pub(super) fn update(world: &mut World) {
                 "Selected area: {:.4}…{:.4} longitude, {:.4}…{:.4} latitude",
                 bounds.west, bounds.east, bounds.south, bounds.north
             )
+        } else if store.as_ref().is_some_and(|store| !store.settings().online) {
+            "Offline mode uses saved map detail. Click to choose a reference point.".into()
         } else {
-            "Click to choose a reference point. Draw an area to download more detail.".into()
+            "Zoom to see streets; missing detail downloads automatically. Click to choose a reference point.".into()
         };
         let pending = store.as_ref().is_some_and(|store| {
             sand.camera.data_zoom(store.settings().max_zoom) >= 3
@@ -789,38 +789,7 @@ pub(super) fn update(world: &mut World) {
 }
 
 fn progress_caption(progress: &Progress, frame: usize) -> String {
-    if progress.total == 0 {
-        return "World overview · offline".into();
-    }
-    if progress.failed > 0 {
-        return format!(
-            "{} / {} tiles · {}",
-            progress.completed,
-            progress.total,
-            progress
-                .errors
-                .first()
-                .map_or("Some detail unavailable", String::as_str)
-        );
-    }
-    if progress.finished() {
-        return format!("{} tiles available locally", progress.completed);
-    }
-    let received = progress.downloaded_bytes as f64 / 1024.0;
-    let bytes = if progress.expected_bytes > 0 {
-        format!(
-            "{received:.0} / {:.0} KiB",
-            progress.expected_bytes as f64 / 1024.0
-        )
-    } else {
-        format!("{received:.0} KiB downloaded")
-    };
-    format!(
-        "{} {} / {} tiles · {bytes}",
-        ["◐", "◓", "◑", "◒"][frame % 4],
-        progress.completed,
-        progress.total
-    )
+    lince_map::source::progress_caption(progress, frame)
 }
 
 pub(super) fn palette(world: &World, owner: Entity) -> Palette {

@@ -6,6 +6,9 @@ use lince_map::{
 };
 use std::{path::PathBuf, sync::Arc};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Component)]
 struct Panel {
     owner: Entity,
@@ -91,6 +94,14 @@ fn button(world: &mut World, parent: Entity, panel: Entity, caption: &str, inten
         .spawn((
             ChildOf(parent),
             controls::button(0),
+            Node {
+                min_height: px(44),
+                padding: UiRect::axes(px(8), px(6)),
+                border: UiRect::all(px(1)),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            crate::style::border(crate::tokens::Token::Accent),
             Button { panel, intent },
         ))
         .id();
@@ -153,6 +164,7 @@ pub fn mount(
                 ..default()
             },
             ZIndex(30),
+            ScrollPosition::default(),
             crate::style::background(crate::tokens::Token::Surface),
         ))
         .id();
@@ -634,6 +646,10 @@ pub fn update(
         state.changed = true;
         let results = state.results;
         let status = state.status;
+        let query = state.fields[0];
+        if let Some(mut editor) = world.get_mut::<bevy::text::EditableText>(query) {
+            editor.editor.set_text("");
+        }
         controls::clear(world, results);
         controls::status(world, status, "");
     }

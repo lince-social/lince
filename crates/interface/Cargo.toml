@@ -160,6 +160,8 @@ iroh = { workspace = true, optional = true }
 [dev-dependencies]
 fiote = { workspace = true }
 utils = { workspace = true }
+tempfile = "=3.27.0"
+tokio = { version = "1.53.1", features = ["macros", "net", "io-util", "rt"] }
 
 [build-dependencies]
 sensei = { workspace = true }

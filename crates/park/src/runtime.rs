@@ -275,14 +275,12 @@ fn run(
     let connected = configuration.cell.is_some();
     let mut canvas = Presentation::new_with_cell(
         configuration.size,
-        configuration.directory.join("assets"),
+        configuration.directory.join("interface-assets"),
         wake,
         configuration.cell.map(|cell| (cell, configuration.directory.clone())),
     )?;
     canvas.host_requests(commands.clone());
-    if configuration.showoff {
-        canvas.world_mut().insert_resource(lince_interface::native::laboratory::showoff::Launch);
-    }
+    let mut showoff = configuration.showoff;
     canvas
         .output_preferences(configuration.directory.join("park-outputs.json"))
         .map_err(|error| failure(error.to_string()))?;
@@ -310,6 +308,10 @@ fn run(
         if let Some(scene) = scenes.take() {
             scene_revision = scene.revision;
             canvas.outputs(scene.outputs)?;
+            if showoff {
+                canvas.world_mut().insert_resource(lince_interface::native::laboratory::showoff::Launch);
+                showoff = false;
+            }
             pending = canvas.sync_windows(&scene.windows)?;
             windows = scene.windows;
             settle = settle.max(3);

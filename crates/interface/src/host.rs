@@ -157,7 +157,9 @@ pub struct ContentMapping {
 
 impl ContentMapping {
     pub fn surface_point(self, canvas_point: [f64; 2]) -> Option<[f64; 2]> {
-        if !self.canvas.contains(canvas_point) { return None; }
+        if !self.canvas.contains(canvas_point) {
+            return None;
+        }
         let point = self.surface_point_unbounded(canvas_point)?;
         self.surface.contains(point).then_some(point)
     }
@@ -166,32 +168,49 @@ impl ContentMapping {
         let uv = if let Some(corners) = self.corners {
             project(inverse(homography(corners)?)?, point)?
         } else {
-            std::array::from_fn(|axis| (point[axis] - self.canvas.origin[axis]) / self.canvas.size[axis])
+            std::array::from_fn(|axis| {
+                (point[axis] - self.canvas.origin[axis]) / self.canvas.size[axis]
+            })
         };
-        Some(std::array::from_fn(|axis| self.surface.origin[axis] + uv[axis] * self.surface.size[axis]))
+        Some(std::array::from_fn(|axis| {
+            self.surface.origin[axis] + uv[axis] * self.surface.size[axis]
+        }))
     }
 
     pub fn canvas_point(self, point: [f64; 2]) -> Option<[f64; 2]> {
-        let uv = std::array::from_fn(|axis| (point[axis] - self.surface.origin[axis]) / self.surface.size[axis]);
+        let uv = std::array::from_fn(|axis| {
+            (point[axis] - self.surface.origin[axis]) / self.surface.size[axis]
+        });
         if let Some(corners) = self.corners {
             project(homography(corners)?, uv)
         } else {
-            Some(std::array::from_fn(|axis| self.canvas.origin[axis] + uv[axis] * self.canvas.size[axis]))
+            Some(std::array::from_fn(|axis| {
+                self.canvas.origin[axis] + uv[axis] * self.canvas.size[axis]
+            }))
         }
     }
 
     pub fn translated(self, delta: [f64; 2]) -> Option<Self> {
         Some(Self {
-            canvas: Rectangle::new(std::array::from_fn(|axis| self.canvas.origin[axis] + delta[axis]), self.canvas.size)?,
-            corners: self.corners.map(|corners| corners.map(|point| std::array::from_fn(|axis| point[axis] + delta[axis]))),
+            canvas: Rectangle::new(
+                std::array::from_fn(|axis| self.canvas.origin[axis] + delta[axis]),
+                self.canvas.size,
+            )?,
+            corners: self.corners.map(|corners| {
+                corners.map(|point| std::array::from_fn(|axis| point[axis] + delta[axis]))
+            }),
             ..self
         })
     }
 }
 
 fn project(matrix: [[f64; 3]; 3], point: [f64; 2]) -> Option<[f64; 2]> {
-    let value: [f64; 3] = std::array::from_fn(|row| matrix[row][0] * point[0] + matrix[row][1] * point[1] + matrix[row][2]);
-    if !value.iter().all(|value| value.is_finite()) || value[2].abs() < 1e-12 { return None; }
+    let value: [f64; 3] = std::array::from_fn(|row| {
+        matrix[row][0] * point[0] + matrix[row][1] * point[1] + matrix[row][2]
+    });
+    if !value.iter().all(|value| value.is_finite()) || value[2].abs() < 1e-12 {
+        return None;
+    }
     Some([value[0] / value[2], value[1] / value[2]])
 }
 
@@ -200,20 +219,32 @@ fn homography(corners: [[f64; 2]; 4]) -> Option<[[f64; 3]; 3]> {
     let dx = [b[0] - c[0], d[0] - c[0], a[0] - b[0] + c[0] - d[0]];
     let dy = [b[1] - c[1], d[1] - c[1], a[1] - b[1] + c[1] - d[1]];
     let denominator = dx[0] * dy[1] - dx[1] * dy[0];
-    if !denominator.is_finite() || denominator.abs() < 1e-12 { return None; }
+    if !denominator.is_finite() || denominator.abs() < 1e-12 {
+        return None;
+    }
     let g = (dx[2] * dy[1] - dx[1] * dy[2]) / denominator;
     let h = (dx[0] * dy[2] - dx[2] * dy[0]) / denominator;
-    Some([[b[0] - a[0] + g * b[0], d[0] - a[0] + h * d[0], a[0]],
-        [b[1] - a[1] + g * b[1], d[1] - a[1] + h * d[1], a[1]], [g, h, 1.0]])
+    Some([
+        [b[0] - a[0] + g * b[0], d[0] - a[0] + h * d[0], a[0]],
+        [b[1] - a[1] + g * b[1], d[1] - a[1] + h * d[1], a[1]],
+        [g, h, 1.0],
+    ])
 }
 
 fn inverse(matrix: [[f64; 3]; 3]) -> Option<[[f64; 3]; 3]> {
     let [[a, b, c], [d, e, f], [g, h, i]] = matrix;
     let determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
-    if !determinant.is_finite() || determinant.abs() < 1e-12 { return None; }
-    Some([[e * i - f * h, c * h - b * i, b * f - c * e],
-        [f * g - d * i, a * i - c * g, c * d - a * f],
-        [d * h - e * g, b * g - a * h, a * e - b * d]].map(|row| row.map(|value| value / determinant)))
+    if !determinant.is_finite() || determinant.abs() < 1e-12 {
+        return None;
+    }
+    Some(
+        [
+            [e * i - f * h, c * h - b * i, b * f - c * e],
+            [f * g - d * i, a * i - c * g, c * d - a * f],
+            [d * h - e * g, b * g - a * h, a * e - b * d],
+        ]
+        .map(|row| row.map(|value| value / determinant)),
+    )
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -373,6 +404,38 @@ pub fn bridge(capacity: NonZeroUsize) -> (HostBridge, PresentationBridge) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn perspective_mapping_round_trips_and_rejects_points_outside_the_quad() {
+        let mapping = ContentMapping {
+            canvas: Rectangle::new([100.0, 100.0], [600.0, 500.0]).unwrap(),
+            surface: Rectangle::new([0.0, 0.0], [1200.0, 800.0]).unwrap(),
+            corners: Some([
+                [100.0, 100.0],
+                [700.0, 180.0],
+                [550.0, 600.0],
+                [180.0, 450.0],
+            ]),
+        };
+        for point in [[20.0, 30.0], [600.0, 400.0], [1180.0, 780.0]] {
+            let canvas = mapping.canvas_point(point).unwrap();
+            let actual = mapping.surface_point(canvas).unwrap();
+            assert!((actual[0] - point[0]).abs() < 1e-8);
+            assert!((actual[1] - point[1]).abs() < 1e-8);
+            let shifted = mapping.translated([1366.0, 32.0]).unwrap();
+            let actual = shifted
+                .surface_point([canvas[0] + 1366.0, canvas[1] + 32.0])
+                .unwrap();
+            assert!((actual[0] - point[0]).abs() < 1e-8);
+            assert!((actual[1] - point[1]).abs() < 1e-8);
+        }
+        assert!(mapping.surface_point([690.0, 590.0]).is_none());
+        assert!(mapping.surface_point_unbounded([690.0, 590.0]).is_some());
+        let invalid = ContentMapping {
+            corners: Some([[1.0, 1.0]; 4]),
+            ..mapping
+        };
+        assert!(invalid.surface_point([200.0, 200.0]).is_none());
+    }
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
         mpsc::TrySendError,
@@ -380,7 +443,8 @@ mod tests {
 
     #[test]
     fn mapped_input_uses_the_published_content_rectangle() {
-        let mapping = ContentMapping { corners: None,
+        let mapping = ContentMapping {
+            corners: None,
             canvas: Rectangle::new([-400.0, 20.0], [800.0, 600.0]).unwrap(),
             surface: Rectangle::new([12.0, 8.0], [400.0, 300.0]).unwrap(),
         };
@@ -408,7 +472,8 @@ mod tests {
         let item = ItemGeometry {
             id: ItemId::Application(SurfaceId(1)),
             output: OutputId(1),
-            mapping: ContentMapping { corners: None,
+            mapping: ContentMapping {
+                corners: None,
                 canvas: rectangle,
                 surface: rectangle,
             },

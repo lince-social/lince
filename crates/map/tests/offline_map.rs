@@ -436,3 +436,75 @@ async fn world_scene_clamps_polar_centers_to_the_flat_projection() {
         assert!(scene.map.view().get_bbox().is_some());
     }
 }
+
+#[tokio::test]
+async fn zooming_fetches_visible_street_detail_and_reuses_it_without_area_preparation() {
+    let directory = tempfile::tempdir().unwrap();
+    let count = Arc::new(AtomicUsize::new(0));
+    let (url, server) = server(fixture(), count.clone()).await;
+    let settings = Settings {
+        server: url,
+        ..Settings::browsing()
+    };
+    settings.validate().unwrap();
+    let store = TileStore::new(settings.clone(), directory.path()).unwrap();
+    let palette = lince_map::scene::Palette {
+        land: [30, 30, 30, 255],
+        water: [20, 20, 40, 255],
+        roads: [200, 200, 200, 255],
+        nature: [30, 40, 30, 255],
+        ink: [255; 4],
+    };
+    let mut scene =
+        lince_map::scene::Scene::new(store.clone(), Camera::default(), [400, 400], palette, None)
+            .unwrap();
+    scene.load();
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    assert_eq!(count.load(Ordering::SeqCst), 0);
+    let camera = Camera {
+        center: Coordinate {
+            latitude: -23.5505,
+            longitude: -46.6333,
+        },
+        zoom: 16.0,
+    };
+    let visible = camera.visible_tiles([400.0, 400.0], settings.max_zoom);
+    let pending = lince_map::source::progress_caption(&store.progress(&visible), 0);
+    assert!(pending.contains("Loading map"));
+    scene.set_camera(camera, [400, 400]);
+    scene.load();
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let progress = store.progress(&visible);
+            if progress.completed == visible.len() {
+                break;
+            }
+            assert_eq!(progress.failed, 0, "{:?}", progress.errors);
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let progress = store.progress(&visible);
+    assert!(progress.downloaded_bytes > 0);
+    assert!(lince_map::source::progress_caption(&progress, 0).contains("saved on this device"));
+    let requests = count.load(Ordering::SeqCst);
+    assert!(requests > 0);
+    drop(scene);
+    let offline = TileStore::new(
+        Settings {
+            online: false,
+            ..settings
+        },
+        directory.path(),
+    )
+    .unwrap();
+    for tile in &visible {
+        offline.load(*tile).await.unwrap();
+    }
+    assert_eq!(offline.progress(&visible).downloaded_bytes, 0);
+    let unavailable = Tile { z: 14, x: 0, y: 0 };
+    assert!(offline.load(unavailable).await.is_err());
+    assert_eq!(count.load(Ordering::SeqCst), requests);
+    server.abort();
+}

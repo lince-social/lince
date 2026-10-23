@@ -207,6 +207,171 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
 }
 
 #[test]
+fn video_castle_refreshes_saved_canvas_registry_before_sync_and_requests() {
+    for via_update in [false, true] {
+        let (mut app, root) = fixture();
+        let entity = crate::native::sand_store::spawn_sand(
+            app.world_mut(),
+            root,
+            1,
+            SandKind::Video,
+            "",
+            DVec2::ZERO,
+        );
+        let mut snapshot = capture(app.world_mut(), root).unwrap();
+        let ContentKind::Native { settings, .. } = &mut snapshot.placements[0].component else {
+            panic!();
+        };
+        settings.remove("video");
+        let mut saved_registry = registry();
+        saved_registry
+            .iter_mut()
+            .find(|entry| entry.kind == "video")
+            .unwrap()
+            .settings
+            .remove("video");
+        let state = api::State::new(snapshot, saved_registry).unwrap();
+        let state = serde_json::from_slice(&serde_json::to_vec(&state).unwrap()).unwrap();
+        app.world_mut()
+            .get_mut::<Workspaces>(root)
+            .unwrap()
+            .canvas_state = Some(state);
+        crate::native::video_castle::restore(
+            app.world_mut(),
+            entity,
+            crate::native::video_castle::Settings {
+                source: "esp-camera".into(),
+                ..default()
+            },
+        );
+        if via_update {
+            update(app.world_mut());
+            assert!(app.world().get::<Failure>(root).is_none());
+        } else {
+            let api::Response::Registry { components } =
+                handle(app.world_mut(), root, &api::Request::Registry).unwrap()
+            else {
+                panic!();
+            };
+            assert!(
+                components
+                    .iter()
+                    .find(|entry| entry.kind == "video")
+                    .unwrap()
+                    .settings
+                    .contains_key("video")
+            );
+        }
+        let state = app
+            .world()
+            .get::<Workspaces>(root)
+            .unwrap()
+            .canvas_state
+            .as_ref()
+            .unwrap();
+        state.validate().unwrap();
+        assert_eq!(
+            state.snapshot.placements[0].component,
+            capture_content(app.world(), entity)
+        );
+        assert!(
+            app.world()
+                .resource::<crate::native::notifications::Notifications>()
+                .log
+                .snapshot()
+                .1
+                .is_empty()
+        );
+    }
+}
+
+#[test]
+fn canvas_refreshes_saved_layout_schema_without_replacing_the_layout() {
+    let (mut app, root) = fixture();
+    let component = ContentKind::Native {
+        kind: "layout".into(),
+        settings: BTreeMap::new(),
+        bindings: Vec::new(),
+    };
+    let entity = spawn(app.world_mut(), root, 1, DVec2::ZERO, &component).unwrap();
+    let mut snapshot = capture(app.world_mut(), root).unwrap();
+    snapshot.placements[0].component = component;
+    let mut saved_registry = registry();
+    saved_registry
+        .iter_mut()
+        .find(|entry| entry.kind == "layout")
+        .unwrap()
+        .settings
+        .clear();
+    let state = api::State::new(snapshot, saved_registry).unwrap();
+    app.world_mut()
+        .get_mut::<Workspaces>(root)
+        .unwrap()
+        .canvas_state = Some(state);
+    update(app.world_mut());
+    assert!(app.world().get::<Failure>(root).is_none());
+    let state = app
+        .world()
+        .get::<Workspaces>(root)
+        .unwrap()
+        .canvas_state
+        .as_ref()
+        .unwrap();
+    assert_eq!(
+        state.snapshot.placements[0].component,
+        capture_content(app.world(), entity)
+    );
+    assert!(
+        app.world()
+            .get::<crate::native::layout::LayoutBox>(entity)
+            .is_some()
+    );
+}
+
+#[test]
+fn persistent_canvas_failure_reports_once_and_reports_again_after_recovery() {
+    let (mut app, root) = fixture();
+    let entity = crate::native::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::Video,
+        "",
+        DVec2::ZERO,
+    );
+    app.world_mut()
+        .get_mut::<crate::native::video_castle::Settings>(entity)
+        .unwrap()
+        .source = "x".repeat(40000);
+    for _ in 0..100 {
+        app.world_mut().entity_mut(root).remove::<Refreshed>();
+        update(app.world_mut());
+    }
+    let log = app
+        .world()
+        .resource::<crate::native::notifications::Notifications>()
+        .log
+        .clone();
+    assert_eq!(log.snapshot().1.len(), 1);
+    assert_eq!(log.snapshot().1[0].occurrences, 1);
+    app.world_mut()
+        .get_mut::<crate::native::video_castle::Settings>(entity)
+        .unwrap()
+        .source
+        .clear();
+    app.world_mut().entity_mut(root).remove::<Refreshed>();
+    update(app.world_mut());
+    assert!(app.world().get::<Failure>(root).is_none());
+    app.world_mut()
+        .get_mut::<crate::native::video_castle::Settings>(entity)
+        .unwrap()
+        .source = "x".repeat(40000);
+    app.world_mut().entity_mut(root).remove::<Refreshed>();
+    update(app.world_mut());
+    assert_eq!(log.snapshot().1[0].occurrences, 2);
+}
+
+#[test]
 fn video_castle_keeps_signal_playback_and_geometry_across_canvas_reload() {
     let (mut app, root) = fixture();
     let entity = crate::native::sand_store::spawn_sand(

@@ -21,7 +21,7 @@ trait Recognition: Send + Sync {
 #[async_trait::async_trait]
 impl Recognition for LocalRecognition {
     fn present(&self) -> bool {
-        self.0.cache.present()
+        self.0.present()
     }
     async fn transcribe(
         &self,
@@ -35,7 +35,7 @@ impl Recognition for LocalRecognition {
     }
 }
 
-struct LocalRecognition(Arc<speech::local::Recognizer>);
+struct LocalRecognition(Arc<speech::recognition::Recognizer>);
 
 #[async_trait::async_trait]
 trait Delivery: Send + Sync {
@@ -286,7 +286,7 @@ impl Controller {
         owner: String,
         target: Option<String>,
         routing: bool,
-        recognition: Arc<speech::local::Recognizer>,
+        recognition: Arc<speech::recognition::Recognizer>,
         decision: Arc<decision::Engine>,
         delivery: Arc<crate::fiote::Host>,
     ) -> Result<(), String> {

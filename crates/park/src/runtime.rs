@@ -28,6 +28,19 @@ use std::{
     thread::{JoinHandle, Thread},
 };
 
+pub(crate) fn tracing_frames() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("LINCE_PARK_TRACE_FRAMES").is_some())
+}
+
+pub(crate) fn trace_frame(stage: &str, started: std::time::Instant) {
+    if tracing_frames() {
+        let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default().as_secs_f64();
+        eprintln!("Park frame {stage}: {:.3} ms at {timestamp:.6}", started.elapsed().as_secs_f64() * 1000.0);
+    }
+}
+
 #[cfg(feature = "worker-gate")]
 use std::time::Duration;
 
@@ -83,6 +96,11 @@ pub struct Completed {
     pub input_serial: u64,
 }
 
+pub struct Started {
+    pub scene_revision: u64,
+    pub windows: Vec<WindowSnapshot>,
+}
+
 pub struct CanvasWorker {
     scene: LatestSender<Scene>,
     inputs: SyncSender<(u64, Input)>,
@@ -90,6 +108,7 @@ pub struct CanvasWorker {
     pointer: LatestSender<(u64, [f32; 2])>,
     next_pointer: AtomicU64,
     frames: LatestReceiver<Completed>,
+    started: LatestReceiver<Started>,
     requests: Receiver<HostRequest>,
     failures: Receiver<ProbeFailure>,
     running: Arc<AtomicBool>,
@@ -123,6 +142,7 @@ impl CanvasWorker {
     ) -> std::io::Result<Self> {
         let (scene, scenes) = latest_channel();
         let (images, frames) = latest_channel();
+        let (starting, started) = latest_channel();
         let (inputs, events) = sync_channel(128);
         let (pointer, motion) = latest_channel();
         let (commands, requests) = sync_channel(64);
@@ -142,6 +162,7 @@ impl CanvasWorker {
                     events,
                     motion,
                     images,
+                    starting,
                     commands,
                     &active.running,
                     &changed,
@@ -161,6 +182,7 @@ impl CanvasWorker {
             pointer,
             next_pointer: AtomicU64::new(1),
             frames,
+            started,
             requests,
             failures,
             running,
@@ -200,6 +222,10 @@ impl CanvasWorker {
 
     pub fn frame(&self) -> Option<Completed> {
         self.frames.take()
+    }
+
+    pub fn started(&self) -> Option<Started> {
+        self.started.take()
     }
 
     pub fn pointer(&self, position: [f32; 2]) -> std::io::Result<u64> {
@@ -259,6 +285,7 @@ fn run(
     events: Receiver<(u64, Input)>,
     motion: LatestReceiver<(u64, [f32; 2])>,
     images: LatestSender<Completed>,
+    starting: LatestSender<Started>,
     commands: SyncSender<HostRequest>,
     running: &AtomicBool,
     dirty: &Arc<AtomicBool>,
@@ -395,15 +422,13 @@ fn run(
             settle = settle.max(3);
         }
         if pending && canvas.imports_ready() { settle = settle.max(1); }
-        if let Some(completed) = awaiting.take() {
-            if completed.frame.ready()? {
-                if images.publish(completed).is_err() { break; }
-                if let Some(notify) = notify { notify.ring(); }
-            } else {
-                awaiting = Some(completed);
+        if let Some(completed) = awaiting.as_ref() {
+            if !completed.frame.ready()? {
                 std::thread::park();
                 continue;
             }
+            if images.publish(awaiting.take().unwrap()).is_err() { return canvas.finish(); }
+            if let Some(notify) = notify { notify.ring(); }
         }
         if settle == 0 {
             std::thread::park();
@@ -412,6 +437,8 @@ fn run(
         if pending {
             pending = canvas.sync_windows(&windows)?;
         }
+        if starting.publish(Started { scene_revision, windows: canvas.painted_windows() }).is_err() { break; }
+        if let Some(notify) = notify { notify.ring(); }
         let frame = canvas.frame()?;
         awaiting = Some(Completed {
                 scene_revision,

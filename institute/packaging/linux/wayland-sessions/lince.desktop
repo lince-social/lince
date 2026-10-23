@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=Lince
+Name=Lince (Park)
 Comment=Lince Wayland desktop
-Exec=lince --park
+Exec=lince-park-session
 Type=Application
 DesktopNames=Lince

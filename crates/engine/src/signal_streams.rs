@@ -210,6 +210,15 @@ impl Publisher {
     }
 
     pub async fn publish(&self, metadata: Metadata, bytes: Vec<u8>) -> Result<bool, EngineError> {
+        self.publish_with_capture_age(metadata, bytes, None).await
+    }
+
+    pub(super) async fn publish_with_capture_age(
+        &self,
+        metadata: Metadata,
+        bytes: Vec<u8>,
+        maximum_capture_age: Option<std::time::Duration>,
+    ) -> Result<bool, EngineError> {
         if self.channel.is_closed() {
             return Err(invalid("Stream configuration changed"));
         }
@@ -258,6 +267,14 @@ impl Publisher {
             return Err(invalid("Expired epoch or repeated sequence"));
         }
         inner.sequence = metadata.sequence;
+        if maximum_capture_age.is_some_and(|limit| {
+            let age = nucleus::execution::now()
+                .timestamp_millis()
+                .saturating_sub(metadata.captured_at);
+            age > 0 && age as u128 > limit.as_millis()
+        }) {
+            return Ok(false);
+        }
         self.channel.state.send_modify(|state| {
             state.status = "Live".into();
             state.value = Some(Arc::new(Value {

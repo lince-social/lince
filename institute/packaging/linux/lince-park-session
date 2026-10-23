@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+lince_executable="$(dirname "$(readlink -f "$0")")/lince"
+if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    exec "$lince_executable" --park "$@"
+fi
+exec dbus-run-session -- "$lince_executable" --park "$@"

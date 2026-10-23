@@ -92,7 +92,8 @@
       "inputs": {
         "esp-dev": "esp-dev",
         "flake-utils": "flake-utils_2",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs_2",
+        "lince-binary": "lince-binary"
       }
     },
     "systems": {
@@ -123,6 +124,19 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
+      }
+    },
+    "lince-binary": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792502011,
+        "narHash": "sha256-bWxy4gI7jpm7f9r8hD6Bta/j6b9pZr2hOqPpNo+wDDk=",
+        "type": "tarball",
+        "url": "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz"
       }
     }
   },

@@ -1,6 +1,9 @@
 pub mod endpoint;
+pub mod evaluation;
 pub mod input;
 pub mod local;
+pub mod moonshine;
+pub mod recognition;
 pub mod segment;
 pub mod voice;
 pub mod wake;
@@ -126,6 +129,9 @@ pub enum Request {
     SelectMode {
         mode: Mode,
     },
+    SelectLocal {
+        model: recognition::ModelId,
+    },
     InstallLocal {
         job: String,
         source: Option<std::path::PathBuf>,
@@ -176,6 +182,7 @@ pub struct Status {
     #[serde(default)]
     pub voice: voice::Status,
     pub mode: Mode,
+    pub local_selection: recognition::ModelId,
     pub decision_selection: crate::communication::decision::ModelId,
     pub local: Option<LocalStatus>,
     pub decision_model: Option<LocalStatus>,

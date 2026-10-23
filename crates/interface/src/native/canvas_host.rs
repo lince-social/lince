@@ -17,6 +17,9 @@ struct Host(engine::canvas::Receiver);
 #[derive(Component)]
 struct Refreshed(std::time::Instant);
 
+#[derive(Component)]
+struct Failure(String);
+
 pub struct Plugin;
 impl bevy::prelude::Plugin for Plugin {
     fn build(&self, app: &mut App) {
@@ -75,6 +78,7 @@ fn handle_checked(
         .clone()
         .map(Ok)
         .unwrap_or_else(|| api::State::new(snapshot.clone(), registry()))?;
+    before.refresh_registry(registry())?;
     before.synchronize(snapshot)?;
     before.mark_saved_through(crate::native::workspace::saved_canvas_revision(world, root));
     let mut next = before.clone();
@@ -112,7 +116,7 @@ fn update(world: &mut World) {
     for root in roots {
         if world
             .get::<Host>(root)
-            .is_some_and(|host| !host.0.has_pending())
+            .is_none_or(|host| !host.0.has_pending())
             && world.get::<Refreshed>(root).is_some_and(|refreshed| {
                 refreshed.0.elapsed() < std::time::Duration::from_millis(200)
             })
@@ -131,6 +135,7 @@ fn update(world: &mut World) {
                 .clone()
                 .map(Ok)
                 .unwrap_or_else(|| api::State::new(snapshot.clone(), registry()))?;
+            state.refresh_registry(registry())?;
             state.synchronize(snapshot)?;
             state.mark_saved_through(crate::native::workspace::saved_canvas_revision(world, root));
             world.get_mut::<Workspaces>(root).unwrap().canvas_state = Some(state);
@@ -173,7 +178,15 @@ fn update(world: &mut World) {
             Ok::<_, String>(())
         })();
         if let Err(error) = result {
-            crate::native::notifications::report(world, "interface::canvas", &error);
+            if world
+                .get::<Failure>(root)
+                .is_none_or(|failure| failure.0 != error)
+            {
+                crate::native::notifications::report(world, "interface::canvas", &error);
+                world.entity_mut(root).insert(Failure(error));
+            }
+        } else {
+            world.entity_mut(root).remove::<Failure>();
         }
     }
 }

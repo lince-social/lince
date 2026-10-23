@@ -103,6 +103,9 @@ pub struct InputSnapshot {
 #[derive(Resource)]
 struct FrameFailure(String);
 
+#[derive(Resource)]
+struct MainUpdateStart(std::time::Instant);
+
 fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::Result<records::Records> {
     let records = records::Records::load(data.join("park-windows.json"))?;
     let storage = tokio::runtime::Handle::current().block_on(runtime.0.interface_storage())?;
@@ -493,6 +496,13 @@ impl Presentation {
                 ..default()
             });
         let mut app = native::app::presentation_app(assets, plugins);
+        if crate::runtime::tracing_frames() {
+            app.add_systems(First, |mut commands: Commands| {
+                commands.insert_resource(MainUpdateStart(std::time::Instant::now()));
+            }).add_systems(Last, |started: Res<MainUpdateStart>| {
+                crate::runtime::trace_frame("native-main", started.0);
+            });
+        }
         app.insert_resource(bevy::render::error_handler::RenderErrorHandler(
             |error, world, _| {
                 world.insert_resource(FrameFailure(format!("{error:?}")));
@@ -505,6 +515,10 @@ impl Presentation {
         app.sub_app_mut(RenderApp).insert_resource(wake.clone());
         app.insert_resource(wake)
             .add_systems(Startup, native::app::canvas)
+            .add_systems(
+                First,
+                route_pointer_target.in_set(bevy::picking::PickingSystems::PostInput),
+            )
             .add_systems(
                 PostUpdate,
                 refresh_camera_targets.before(bevy::camera::CameraUpdateSystems),
@@ -695,7 +709,14 @@ impl Presentation {
                         Err(input_failure("Native workspace shutdown failed"))
                     };
                 }
-                if !requested && native::app::text_ready_to_close(self.app.world_mut()) {
+                if !requested && native::app::text_ready_to_close(self.app.world_mut())
+                    && self.records.as_ref().is_none_or(|records| !records.pending())
+                {
+                    if let Some(records) = &mut self.records {
+                        records.flush().map_err(|error| input_failure(&format!(
+                            "Logout cancelled because Park window customizations could not be saved: {error}"
+                        )))?;
+                    }
                     self.app.world_mut().write_message(AppExit::Success);
                     requested = true;
                 }
@@ -766,6 +787,7 @@ impl Presentation {
     pub(crate) fn imports_ready(&self) -> bool { self.renderer.imports_ready() }
 
     pub fn frame(&mut self) -> Result<Frame, ProbeFailure> {
+        let started = std::time::Instant::now();
         if let Some(records) = &mut self.records {
             records.tick(self.app.world_mut(), &self.windows, &self.identities);
         }
@@ -785,13 +807,14 @@ impl Presentation {
         self.apply_window_requests();
         self.refresh_viewport()?;
         self.app.update();
+        crate::runtime::trace_frame("native-update", started);
+        let started = std::time::Instant::now();
         if let Some(error) = self.app.world().get_resource::<FrameFailure>() {
             return Err(ProbeFailure {
                 stage: "native_frame".into(),
                 detail: error.0.clone(),
             });
         }
-        self.apply_window_requests();
         let texture = self
             .app
             .sub_app(RenderApp)
@@ -831,7 +854,7 @@ impl Presentation {
                 fullscreen: target.fullscreen,
             });
         }
-        Ok(Frame {
+        let frame = Frame {
             output: self.output_state.assignments.focused(),
             image: self.renderer.export_copy(&texture)?,
             geometry: self.frame_geometry().map(Arc::new),
@@ -840,7 +863,9 @@ impl Presentation {
             fullscreen: self.render_fullscreen,
             origin: self.render_origin,
             outputs,
-        })
+        };
+        crate::runtime::trace_frame("export", started);
+        Ok(frame)
     }
 
     fn window_configurations(&self) -> Vec<WindowConfiguration> {
@@ -1120,6 +1145,37 @@ fn refresh_camera_targets(
     }
 }
 
+fn route_pointer_target(
+    output: Res<OutputTarget>,
+    windows: Query<Entity, With<PrimaryWindow>>,
+    mut inputs: MessageMutator<bevy::picking::pointer::PointerInput>,
+    mut pointers: Query<&mut bevy::picking::pointer::PointerLocation>,
+    mut previous: Local<Option<bevy::camera::NormalizedRenderTarget>>,
+) {
+    let Ok(window) = windows.single() else {
+        return;
+    };
+    let Some(target) = output.0.normalize(Some(window)) else {
+        return;
+    };
+    let window_target = RenderTarget::Window(bevy::window::WindowRef::Entity(window))
+        .normalize(Some(window))
+        .unwrap();
+    for input in inputs.read() {
+        if input.location.target == window_target {
+            input.location.target = target.clone();
+        }
+    }
+    for mut pointer in &mut pointers {
+        if let Some(location) = &mut pointer.location
+            && (location.target == window_target || previous.as_ref() == Some(&location.target))
+        {
+            location.target = target.clone();
+        }
+    }
+    *previous = Some(target);
+}
+
 impl Drop for Presentation {
     fn drop(&mut self) {
         let _ = self.renderer.device.poll(wgpu::PollType::Wait {
@@ -1213,8 +1269,38 @@ fn cancel_input(world: &mut World, window: Entity) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn fullscreen_and_tiled_physics_behavior_checks() {
+        std::thread::Builder::new()
+            .stack_size(32 * 1024 * 1024)
+            .spawn(|| {
+                let runtime = tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
+                let cases: Vec<_> = lince_interface::native::laboratory::catalogue()
+                    .into_iter()
+                    .filter(|case| {
+                        case.name.ends_with("tiling_and_fullscreen_suppression_remove_physics_until_released")
+                            || case.name.ends_with("fullscreen_restore_keeps_free_geometry_despite_presentation_changes")
+                            || case.name.ends_with("mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window")
+                            || case.name.ends_with("dialog_stays_above_its_parent_and_preserves_parent_fullscreen")
+                    })
+                    .collect();
+                assert_eq!(cases.len(), 4);
+                for case in cases {
+                    let result = case.execute(&runtime);
+                    assert!(result.error.is_none(), "{}: {:?}", result.name, result.error);
+                }
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+
     use super::*;
     mod showoff;
+    mod pointer;
     use bevy::{
         ecs::message::{MessageCursor, Messages},
         input::{
@@ -1228,7 +1314,46 @@ mod tests {
 
     #[test]
     #[ignore = "requires hardware Vulkan and EGL"]
-    fn connected_cell_is_attached_before_render_plugins_finish() {
+    fn window_state_and_geometry_are_exported_from_the_same_layout() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let _entered = runtime.enter();
+        let directory = tempfile::tempdir().unwrap();
+        let mut canvas = Presentation::new(
+            [800, 600],
+            directory.path().into(),
+            WakeSignal::new(|| {}),
+        ).unwrap();
+        for _ in 0..4 { canvas.probe_frame().unwrap(); }
+        canvas.desktop_action(lince_interface::host::DesktopAction::SetLayout(
+            lince_interface::host::WorkspaceLayout::Free,
+        )).unwrap();
+        let surface = lince_interface::host::SurfaceId(1);
+        canvas.open_window(surface, "Lifecycle", "validation").unwrap();
+        canvas.window_request(surface, lince_interface::host::WindowRequest {
+            fullscreen: Some(true),
+            ..Default::default()
+        });
+        for _ in 0..4 {
+            let frame = canvas.probe_frame().unwrap();
+            let window = frame.windows.iter().find(|window| window.surface == surface).unwrap();
+            assert_eq!(window.size, if window.state.fullscreen { [800, 600] } else { [640, 480] });
+        }
+        assert!(canvas.window_requests.is_empty());
+        canvas.window_request(surface, lince_interface::host::WindowRequest {
+            fullscreen: Some(false),
+            ..Default::default()
+        });
+        for _ in 0..4 {
+            let frame = canvas.probe_frame().unwrap();
+            let window = frame.windows.iter().find(|window| window.surface == surface).unwrap();
+            assert!(!window.state.fullscreen);
+            assert_eq!(window.size, [640, 480]);
+        }
+    }
+
+    #[test]
+    #[ignore = "requires hardware Vulkan and EGL"]
+    fn connected_cell_attaches_before_render_plugins_and_protects_failed_saves() {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .thread_stack_size(32 * 1024 * 1024)
@@ -1261,7 +1386,28 @@ mod tests {
         assert!(canvas.app.world().contains_resource::<CellHandle>());
         assert!(canvas.app.world().get_non_send::<native::cell_bridge::CellBridge>().is_some());
         outputs::probe(&mut canvas).unwrap();
+        let surface = lince_interface::host::SurfaceId(1);
+        let identity = canvas.open_window(surface, "Save retry", "test.generic").unwrap();
+        for _ in 0..100 {
+            canvas.probe_frame().unwrap();
+            if canvas.records.as_ref().unwrap().profile(identity).is_some_and(|record| record.uid.is_some()) { break; }
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
+        let uid = canvas.records.as_ref().unwrap().profile(identity).unwrap().uid.clone().unwrap();
+        let path = directory.path().join("park-windows.json");
+        if path.exists() { std::fs::remove_file(&path).unwrap(); }
+        std::fs::create_dir(&path).unwrap();
+        let launch = serde_json::from_value(serde_json::json!({"program":"test-generic","arguments":[]})).unwrap();
+        assert!(canvas.window_launch_description(surface, launch).is_err());
+        let failure = canvas.finish().unwrap_err();
+        assert!(failure.detail.contains("window customizations could not be saved"));
+        assert!(canvas.app.should_exit().is_none());
+        std::fs::remove_dir(&path).unwrap();
         canvas.finish().unwrap();
+        let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        let saved = saved.as_array().unwrap().iter()
+            .find(|record| record["uid"].as_str() == Some(uid.as_str())).unwrap();
+        assert_eq!(saved["launch"]["program"], "test-generic");
     }
 
     #[test]

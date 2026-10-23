@@ -85,7 +85,7 @@ impl Desktop {
     pub(crate) fn event(&mut self, event: WinitEvent) -> io::Result<()> {
         if matches!(&event, WinitEvent::Input(_)) { self.server.activity(); }
         match event {
-            WinitEvent::CloseRequested => self.running = false,
+            WinitEvent::CloseRequested => self.send(Input::Logout)?,
             WinitEvent::Redraw => self.redraw = true,
             WinitEvent::Resized { size, .. } if size.w > 0 && size.h > 0 => {
                 self.size = [size.w as u32, size.h as u32];
@@ -213,6 +213,23 @@ impl Desktop {
             .clips
             .iter()
             .any(|(_, clip)| clip.contains(self.pointer));
+        if let Some(current) = self.frame_at(self.pointer)
+            && current.frame.input.modal
+            && current.frame.geometry.as_ref().is_none_or(|geometry| {
+                geometry.outputs.iter().any(|output| {
+                    Some(output.id) == current.frame.output && output.bounds.contains(self.pointer)
+                })
+            })
+        {
+            return Target::Native;
+        }
+        for popup in self.popups.iter().rev() {
+            if let renderer::PopupOwner::Application(id) = popup.owner
+                && let Some(surface) = popup.hit(self.pointer)
+            {
+                return Target::Application(id, surface, popup.output);
+            }
+        }
         if !canvas {
             return self
                 .layers
@@ -225,34 +242,17 @@ impl Desktop {
         let Some(current) = self.frame_at(self.pointer) else {
             return Target::Native;
         };
-        if current.frame.input.modal
-            && current.frame.geometry.as_ref().is_none_or(|geometry| {
-                geometry.outputs.iter().any(|output| {
-                    Some(output.id) == current.frame.output && output.bounds.contains(self.pointer)
-                })
-            })
-            || current
-                .frame
-                .input
-                .controls
-                .iter()
-                .any(|region| region.contains(self.pointer))
-        {
-            return Target::Native;
-        }
         let Some(geometry) = &current.frame.geometry else {
             return Target::Native;
         };
-        for popup in self.popups.iter().rev() {
-            if let renderer::PopupOwner::Application(id) = popup.owner
-                && geometry
-                    .outputs
-                    .iter()
-                    .any(|output| output.id == popup.output && output.bounds.contains(self.pointer))
-                && let Some(surface) = popup.hit(self.pointer)
-            {
-                return Target::Application(id, surface, popup.output);
-            }
+        if current
+            .frame
+            .input
+            .controls
+            .iter()
+            .any(|region| region.contains(self.pointer))
+        {
+            return Target::Native;
         }
         for item in geometry.items.iter().rev() {
             if !geometry

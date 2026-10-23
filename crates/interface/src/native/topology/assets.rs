@@ -61,6 +61,40 @@ pub struct Loading(pub Handle<Gltf>);
 #[derive(Component)]
 pub struct ImportedScene(pub Entity);
 
+#[derive(Component)]
+struct OutputLayers {
+    scene: Entity,
+    layers: bevy::camera::visibility::RenderLayers,
+}
+
+fn output_layers(
+    world: &mut World,
+    entity: Entity,
+    layers: bevy::camera::visibility::RenderLayers,
+) {
+    let Some(scene) = world.get::<ImportedScene>(entity).map(|scene| scene.0) else {
+        return;
+    };
+    if world
+        .get::<OutputLayers>(entity)
+        .is_some_and(|current| current.scene == scene && current.layers == layers)
+    {
+        return;
+    }
+    let mut pending = vec![scene];
+    while let Some(child) = pending.pop() {
+        if let Some(children) = world.get::<Children>(child) {
+            pending.extend(children.iter());
+        }
+        if let Ok(mut child) = world.get_entity_mut(child) {
+            child.insert(layers.clone());
+        }
+    }
+    world
+        .entity_mut(entity)
+        .insert(OutputLayers { scene, layers });
+}
+
 #[derive(Component, Clone, Copy)]
 pub struct CenteredAsset;
 
@@ -897,14 +931,17 @@ pub fn update(world: &mut World) {
             }
         }
         let spatial = super::spatial(world, entity);
-        let visible = world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .is_some_and(|s| s.active == workspace)
+        let layers = super::output_views::asset_layers(world, root, workspace);
+        if world.get::<Ready>(entity).is_some() {
+            output_layers(world, entity, layers.clone());
+        }
+        let visible = layers.iter().next().is_some()
             && world
                 .get::<crate::native::layout::desktop::Suppressed>(entity)
                 .is_none()
             && world.get::<Ready>(entity).is_some();
-        let origin = super::presentation::origin(world, root);
+        let canvas = crate::native::output_views::canvas(world, root, workspace);
+        let origin = bevy::math::DVec3::new(canvas.center.x, 0.0, canvas.center.y);
         let transform = Transform {
             translation: (spatial.position(item.position) - origin).as_vec3(),
             rotation: spatial.rotation().as_quat(),

@@ -300,15 +300,26 @@ async fn verify(spoken: bool, stop_during_playback: bool) {
         })
         .await
         .unwrap();
+    let selection = std::env::var("LINCE_SPEECH_TEST_SELECTION")
+        .map(|value| serde_json::from_str::<cell::speech::ModelId>(&value).unwrap())
+        .unwrap_or_default();
+    speech
+        .handle(Request::SelectLocal { model: selection })
+        .await
+        .unwrap();
     let local = speech
         .handle(Request::Inspect)
         .await
         .unwrap()
         .local
         .unwrap();
-    let archive = std::path::PathBuf::from(std::env::var_os("LINCE_SPEECH_TEST_CACHE").unwrap())
-        .join(format!("{}-{}", local.model, local.revision))
-        .join("phonon-2.bps.tar.zst");
+    let archive = std::env::var_os("LINCE_SPEECH_TEST_IMPORT")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(std::env::var_os("LINCE_SPEECH_TEST_CACHE").unwrap())
+                .join(format!("{}-{}", local.model, local.revision))
+                .join("phonon-2.bps.tar.zst")
+        });
     let job = nucleus::new_uid("speech");
     speech
         .handle(Request::InstallLocal {

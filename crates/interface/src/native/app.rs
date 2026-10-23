@@ -182,6 +182,9 @@ fn camera(mut commands: Commands, target: Option<Res<OutputTarget>>) {
             illuminance: 250.0,
             ..default()
         },
+        bevy::camera::visibility::RenderLayers::from_layers(
+            &std::iter::once(0).chain(32..48).collect::<Vec<_>>(),
+        ),
         Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.8, 0.4, 0.0)),
     ));
 }

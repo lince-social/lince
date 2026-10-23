@@ -68,6 +68,13 @@ impl Recognizer {
         let threads = std::thread::available_parallelism()
             .map_or(1, usize::from)
             .min(4);
+        Self::with_threads(root, threads)
+    }
+
+    pub(crate) fn with_threads(root: PathBuf, threads: usize) -> Result<Self, String> {
+        if !(1..=16).contains(&threads) {
+            return Err("Local speech supports between one and sixteen compute threads.".into());
+        }
         Ok(Self {
             cache: Cache::new(root, MANIFEST)?,
             engine: Mutex::new(None),
@@ -120,6 +127,23 @@ impl Recognizer {
         samples: &[f32],
         cancelled: &AtomicBool,
     ) -> Result<Transcript, String> {
+        self.transcribe_checked(samples, cancelled, true)
+    }
+
+    pub(crate) fn transcribe_unfiltered(
+        &self,
+        samples: &[f32],
+        cancelled: &AtomicBool,
+    ) -> Result<Transcript, String> {
+        self.transcribe_checked(samples, cancelled, false)
+    }
+
+    fn transcribe_checked(
+        &self,
+        samples: &[f32],
+        cancelled: &AtomicBool,
+        require_speech: bool,
+    ) -> Result<Transcript, String> {
         if samples.is_empty()
             || samples.len() > 1_920_000
             || samples.iter().any(|sample| !sample.is_finite())
@@ -128,12 +152,17 @@ impl Recognizer {
                 "Local dictation requires finite mono 16 kHz samples, up to two minutes.".into(),
             );
         }
-        if samples.iter().all(|sample| sample.abs() < 0.001) {
+        if require_speech && samples.iter().all(|sample| sample.abs() < 0.001) {
             return Err("No speech was recognized. Your draft is unchanged.".into());
         }
         models::check_cancel(cancelled)?;
         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.run(samples, cancelled)
+            let mut result = self.run(samples, cancelled)?;
+            if require_speech {
+                result.text =
+                    super::endpoint::transcript(&serde_json::json!({"text": result.text}))?;
+            }
+            Ok(result)
         })) {
             Ok(result) => result,
             Err(_) => {
@@ -183,7 +212,7 @@ impl Recognizer {
                 words.push(word.word);
             }
         }
-        let text = super::endpoint::transcript(&serde_json::json!({"text": words.join(" ")}))?;
+        let text = words.join(" ");
         Ok(Transcript {
             text,
             measurements: Measurements {

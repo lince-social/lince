@@ -246,6 +246,7 @@ impl Composition {
         canvas: Option<&Completed>,
         pointer: [f64; 2],
     ) -> io::Result<Presented> {
+        let started = std::time::Instant::now();
         let size = backend.window_size();
         let presented = {
             let (renderer, mut target) = backend.bind().map_err(error)?;
@@ -259,9 +260,18 @@ impl Composition {
                 pointer,
             )?
         };
+        crate::runtime::trace_frame("composition", started);
+        let display = backend.renderer().egl_context().display().get_display_handle();
+        if unsafe { smithay::backend::egl::ffi::egl::SwapInterval(**display, 0) }
+            == smithay::backend::egl::ffi::egl::FALSE
+        {
+            return Err(io::Error::other("Could not disable blocking nested buffer swaps"));
+        }
+        let started = std::time::Instant::now();
         backend
             .submit(Some(&[Rect::from_size(size)]))
             .map_err(error)?;
+        crate::runtime::trace_frame("nested-submit", started);
         backend.window().set_cursor_visible(false);
         Ok(presented)
     }
@@ -390,7 +400,7 @@ impl Composition {
                         if canvas.frame.input.modal && canvas.frame.output == Some(output.id) {
                             Vec::new()
                         } else {
-                            uncovered(output.bounds, &canvas.frame.input.controls)
+                            vec![output.bounds]
                         };
                     popup_plans.push((
                         popup,
@@ -517,7 +527,7 @@ impl Composition {
                         texture,
                         Rect::from_size(texture.size().to_f64()),
                         clip,
-                        &[clip],
+                        &[Rect::from_size(clip.size)],
                         &[],
                         Transform::Normal,
                         1.0,
@@ -576,14 +586,14 @@ impl Composition {
                 frame
                     .draw_solid(
                         Rect::new(position.into(), (4, 20).into()),
-                        &[damage],
+                        &[Rect::from_size((4, 20).into())],
                         smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0),
                     )
                     .map_err(error)?;
                 frame
                     .draw_solid(
                         Rect::new(position.into(), (14, 4).into()),
-                        &[damage],
+                        &[Rect::from_size((14, 4).into())],
                         smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0),
                     )
                     .map_err(error)?;
@@ -631,7 +641,7 @@ impl Composition {
                 if overlap
                     && let Some(window) = canvas.windows.iter().find(|window| window.id == id)
                 {
-                    callbacks.push((Some(item.output), window.nodes.clone()));
+                    callbacks.push((Some(item.output), server.callback_nodes(window)));
                 }
             }
         }
@@ -812,6 +822,9 @@ impl Composition {
                 )
                     .into(),
             );
+            let Some(damage) = local_damage(destination, damage) else {
+                continue;
+            };
             let opaque: Vec<Rect<i32, Physical>> = node.opaque_rectangles().into_iter().filter_map(|rectangle| {
                 let low = [(rectangle.loc.x * scale[0]).ceil() as i32, (rectangle.loc.y * scale[1]).ceil() as i32];
                 let high = [((rectangle.loc.x + rectangle.size.w) * scale[0]).floor() as i32, ((rectangle.loc.y + rectangle.size.h) * scale[1]).floor() as i32];
@@ -833,47 +846,17 @@ impl Composition {
     }
 }
 
-fn uncovered(bounds: Rectangle, controls: &[Rectangle]) -> Vec<Rectangle> {
-    let mut pieces = vec![bounds];
-    for control in controls {
-        let mut remaining = Vec::new();
-        for piece in pieces {
-            let low: [f64; 2] =
-                std::array::from_fn(|axis| piece.origin()[axis].max(control.origin()[axis]));
-            let high: [f64; 2] = std::array::from_fn(|axis| {
-                (piece.origin()[axis] + piece.size()[axis])
-                    .min(control.origin()[axis] + control.size()[axis])
-            });
-            if (0..2).any(|axis| low[axis] >= high[axis]) {
-                remaining.push(piece);
-                continue;
-            }
-            let end: [f64; 2] =
-                std::array::from_fn(|axis| piece.origin()[axis] + piece.size()[axis]);
-            for (origin, size) in [
-                (
-                    piece.origin(),
-                    [piece.size()[0], low[1] - piece.origin()[1]],
-                ),
-                (
-                    [piece.origin()[0], high[1]],
-                    [piece.size()[0], end[1] - high[1]],
-                ),
-                (
-                    [piece.origin()[0], low[1]],
-                    [low[0] - piece.origin()[0], high[1] - low[1]],
-                ),
-                ([high[0], low[1]], [end[0] - high[0], high[1] - low[1]]),
-            ] {
-                if let Some(rectangle) = Rectangle::new(origin, size) {
-                    remaining.push(rectangle);
-                }
-            }
-            if remaining.len() > 256 {
-                return Vec::new();
-            }
-        }
-        pieces = remaining;
-    }
-    pieces
+fn local_damage(
+    destination: Rect<i32, Physical>,
+    clip: Rect<i32, Physical>,
+) -> Option<Rect<i32, Physical>> {
+    let intersection = destination.intersection(clip)?;
+    Some(Rect::new(
+        intersection.loc - destination.loc,
+        intersection.size,
+    ))
 }
+
+#[cfg(test)]
+#[path = "renderer/tests.rs"]
+pub(crate) mod tests;

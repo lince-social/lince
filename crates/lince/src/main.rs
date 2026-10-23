@@ -2,6 +2,7 @@
 #![recursion_limit = "256"]
 
 mod admin;
+mod build_info;
 #[cfg(feature = "ui")]
 mod fiote_laboratory;
 mod lingua;
@@ -25,6 +26,9 @@ fn main() -> Result<(), Error> {
     } else {
         None
     };
+    if has_arg(&args, "--build-info") {
+        return build_info::print();
+    }
     if args.get(1).is_some_and(|argument| argument == "lingua") {
         if let Err(error) = lingua::dispatch(&args[2..]) {
             eprintln!("{error}");
@@ -160,7 +164,12 @@ fn main() -> Result<(), Error> {
     let instance = if !server_mode {
         let data_dir = utils::config::lince_data_dir()
             .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
-        match runtime.block_on(lince_interface::activation::claim(&data_dir))? {
+        let claimed = if park_mode {
+            Some(runtime.block_on(lince_interface::activation::claim_session(&data_dir))?)
+        } else {
+            runtime.block_on(lince_interface::activation::claim(&data_dir))?
+        };
+        match claimed {
             Some(instance) => Some(instance),
             None if has_arg(&args, "--laboratory-fiote") => {
                 return Err(Error::other(
@@ -344,6 +353,7 @@ fn main() -> Result<(), Error> {
                             .map_err(Error::other)?
                             .unwrap_or(1),
                         ready_hook: true,
+                        activation: instance.as_ref().map(|instance| instance.events()),
                         smoke: false,
                     },
                 )
@@ -444,6 +454,9 @@ fn initial_admin_password(args: &[String]) -> Result<Option<String>, Error> {
 
 fn print_help() {
     println!("Usage: lince [OPTIONS]");
+    println!(
+        "  --build-info                 Print build revision, target and capabilities as JSON"
+    );
     println!();
     println!("Runs this Lince Cell — Karma, Transfers, sync, file sync and the peer");
     println!("endpoint. Without --server it also opens the native interface window;");

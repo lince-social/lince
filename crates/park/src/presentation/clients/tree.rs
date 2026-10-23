@@ -32,6 +32,7 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
 
 impl Presentation {
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
+        let started = std::time::Instant::now();
         self.renderer.retain_imports(windows);
         let live: HashSet<_> = windows.iter().map(|window| window.id).collect();
         self.window_requests.retain(|id, _| live.contains(id));
@@ -133,6 +134,7 @@ impl Presentation {
                     .remove::<native::layout::desktop::TransientParent>();
             }
         }
+        crate::runtime::trace_frame("client-import", started);
         Ok(pending)
     }
 
@@ -149,7 +151,9 @@ impl Presentation {
         world
             .entity_mut(window.entity)
             .remove::<MaterialNode<ClientMaterial>>();
-        world.get_mut::<Node>(window.entity).unwrap().overflow = bevy::ui::Overflow::clip();
+        if world.get::<Node>(window.entity).unwrap().overflow != bevy::ui::Overflow::clip() {
+            world.get_mut::<Node>(window.entity).unwrap().overflow = bevy::ui::Overflow::clip();
+        }
         let mut layout = world
             .get::<native::layout::LayoutBox>(window.entity)
             .copied()
@@ -218,6 +222,8 @@ impl Presentation {
                             None,
                         );
                         view.texture = Some(texture);
+                        world.resource_mut::<Assets<ClientMaterial>>()
+                            .get_mut(&view.material).unwrap().content = view.image.clone();
                     }
                     view.version = Some(node.content.version);
                     view.layout = Some(node.layout);
@@ -293,9 +299,13 @@ fn place(
         height: percent((source.layout.size[1] / bounds.size.h * 100.0) as f32),
         ..default()
     };
-    world
-        .entity_mut(view.entity)
-        .insert((geometry, ZIndex(index as i32)));
+    if world.get::<Node>(view.entity) != Some(&geometry) {
+        world.entity_mut(view.entity).insert(geometry);
+    }
+    let order = ZIndex(index as i32);
+    if world.get::<ZIndex>(view.entity) != Some(&order) {
+        world.entity_mut(view.entity).insert(order);
+    }
     let mapping = Mapping {
         u: Vec4::new(
             source.layout.uv_origin[0],
@@ -310,9 +320,8 @@ fn place(
             0.0,
         ),
     };
-    world
-        .resource_mut::<Assets<ClientMaterial>>()
-        .get_mut(&view.material)
-        .unwrap()
-        .mapping = mapping;
+    let mut materials = world.resource_mut::<Assets<ClientMaterial>>();
+    if materials.get(&view.material).unwrap().mapping != mapping {
+        materials.get_mut(&view.material).unwrap().mapping = mapping;
+    }
 }

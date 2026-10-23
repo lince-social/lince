@@ -49,6 +49,13 @@ impl Plugin for TopologyPlugin {
                 input::gestures.after(crate::native::inspection::InspectInput),
             )
             .add_systems(
+                PreUpdate,
+                input::cursor::relative
+                    .after(bevy::ui::UiSystems::Focus)
+                    .after(bevy::picking::PickingSystems::ProcessInput)
+                    .before(bevy::picking::PickingSystems::Backend),
+            )
+            .add_systems(
                 Update,
                 (
                     holes::refresh,

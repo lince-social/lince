@@ -1,11 +1,23 @@
 Workspace (@workspace: 0) {
-Learning how hardware works, and how to build and research it is fun and cool. Having in the base app the capabilities of modeling things like Figma and/or CAD programs, from mechanical parts to GPUs, molecules and biology is an amazing dream. The edge cases and the architecture keeps on facing issues, and we keep on improving it. This would be the capabilities to use Lince as a laboratory for creation and inovation, the hardware that is self composable to help you on the day to day, and to change it's composition to become the lab/infrastructure you need to work or live is sci-fi, and in the future, the next undone task.
+The best workspace should blur the barrier between programs, making them feel like parts of a whole. With many features in a base app, we can make each appearance of a workflow enjoy the level of control of a CAD in a molecule scale, the reality of a street-view with a fake castle mashed together, or the plentiful level of metadata that exists around one specific idea, it's automations, transfers, definitions...
 
-- [ ] Molecule lab.
-	- [ ] CAD-like for modeling mechanical parts.
-	- [ ] CAD-like for modeling electrical parts.
-	- [ ] Biology lab.
-- [ ] For funsies, use Ithkuil as one of the languages
+Such workspace would have the possibility of opening apps in windows normally, being a wayland compositor or something better, and being able to spawn Lince's native components/widgets: Sands, Castles, Areas of Influence... So it has available to the experience Lince gives to the user the usage of all the programs in the world the user wants. The extra work is baking it into a generic program in a way that elevates each experience, being an improvement over the original idea if possible and an ever growing combination of ways one can combine the growing features together.
+
+The applications of such generic interface space should be able to bring about from UI/UX editing and prototyping to molecular editing, protein folding environments and hardware engineering, from circuits to GPUs, with full behavior correctness of the tecnical aspects. The more these capabilities are tiny abstractions over robust and generic native primitives the better.
+
+The wording of workspace can be broken down if you want to philosophise, workspace, work space. If i can have a generic digital experience, easy to mold to fit my Needs, we should also be able to have a fluent integration with hardware that can do the same. Moving closer to science-fiction in the time of writing this, but with a good enough plan, it's not fiction, just a lot of work.
+
+What would be the capabilities of a work space? How can hardware be generic? By definition it is hard ware. Doing this would be a revolution in tecnology, having the things we use hardware today for be completely dynamic. Those that have studied the common sense of academia or played so far with hardware have dust in their eyes by current experience. History can find you many instances of the flipping of the board happening under completely contrary common sense. Can you at least give it one second of plausibility?
+
+The hipotetical dynamicware would be a blob of something undistinguishable from biology or technology. An Ailuros is the melting of barriers between software and hardware inside the cocoon, to emerge into something better. Such dynamicware would have shape and materials as the defining programmed capabilities in the micro of what we deem like software programs and macro of what we think of components to a computer like cameras and microprocessors. 
+
+This dynamicware could easily be turned into your laboratory of exploration. It should be self composable, easy to change, conserve and preserve. It should be able to help you on your day to day with what you need, follow you around, energize itself, and not get in your way.
+
+The immediate form of this is proving it can be done in prototype form, with a non-prototype and fully functioning workspace, that can model anything, the scale, concept, relationships, behavior, is but a configuration.
+
+- [ ] Physics' "periodic table"
+- [ ] Proteins and cellular automata.
+- [ ] CAD with different materials, drinking from previous smaller scale fields. Modeling mechanical structures and electrical parts (from circuit to GPUs and beyond).
 
 We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince.
 

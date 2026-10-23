@@ -137,6 +137,10 @@ fn spawn(world: &mut World, root: Entity, owner: Entity, area: &InfluenceArea) -
     ]
     .into_iter()
     .map(|(mesh, color)| {
+        let depth_bias = match mesh.primitive_topology() {
+            PrimitiveTopology::TriangleList | PrimitiveTopology::TriangleStrip => 1.0,
+            _ => 0.0,
+        };
         let mesh = world.resource_mut::<Assets<Mesh>>().add(mesh);
         let material = world
             .resource_mut::<Assets<StandardMaterial>>()
@@ -146,7 +150,7 @@ fn spawn(world: &mut World, root: Entity, owner: Entity, area: &InfluenceArea) -
                 unlit: true,
                 cull_mode: None,
                 double_sided: true,
-                depth_bias: 1.0,
+                depth_bias,
                 ..default()
             });
         world

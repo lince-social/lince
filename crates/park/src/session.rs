@@ -81,7 +81,7 @@ enum Event {
     Input(InputEvent<LibinputInputBackend>),
     Session(SessionEvent),
     Device(UdevEvent),
-    Presented(crtc::Handle, std::time::Duration),
+    Presented(crtc::Handle, std::time::Duration, bool),
     Error(String),
 }
 
@@ -223,10 +223,10 @@ pub fn run(
         .insert_source(notifier_drm, |event, metadata, events| match event {
             DrmEvent::VBlank(crtc) => {
                 let time = metadata.as_ref().and_then(|metadata| match metadata.time {
-                    smithay::backend::drm::DrmEventTime::Monotonic(time) => Some(time),
+                    smithay::backend::drm::DrmEventTime::Monotonic(time) => Some((time, true)),
                     smithay::backend::drm::DrmEventTime::Realtime(_) => None,
-                }).unwrap_or_else(crate::desktop::renderer::capture::monotonic);
-                events.push(Event::Presented(crtc, time));
+                }).unwrap_or_else(|| (crate::desktop::renderer::capture::monotonic(), false));
+                events.push(Event::Presented(crtc, time.0, time.1));
             }
             DrmEvent::Error(error) => events.push(Event::Error(error.to_string())),
         })
@@ -324,9 +324,15 @@ pub fn run(
                         desktop.invalidate_outputs()?;
                         desktop.event(smithay::backend::winit::WinitEvent::Focus(true))?;
                     }
-                    Event::Presented(crtc, presentation_time) => {
+                    Event::Presented(crtc, presentation_time, hardware_clock) => {
                         if let Some(screen) = hardware.screens.get_mut(&crtc) {
                             if let Some(queued) = screen.output.frame_submitted().map_err(error)? {
+                                if crate::runtime::tracing_frames() {
+                                    let observed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+                                        .unwrap_or_default().as_secs_f64();
+                                    let clock = if hardware_clock { "drm" } else { "dispatch" };
+                                    eprintln!("Park scanout: {} {:.9} {observed:.6} {clock}", queued.id.0, presentation_time.as_secs_f64());
+                                }
                                 screen.protected = queued.scene.locked;
                                 let stale = desktop.pending.as_ref().or(desktop.current.as_ref())
                                     .is_some_and(|latest| !Arc::ptr_eq(latest, &queued.frame));

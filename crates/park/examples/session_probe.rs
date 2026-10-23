@@ -80,7 +80,8 @@ mod client {
         until(&connection, &mut queue, &mut state, |state| state.synchronized)?;
         let before = state.windows[1].frames;
         state.windows[1].surface.commit();
-        until(&connection, &mut queue, &mut state, |state| state.windows[1].frames > before)?;
+        state.windows[1].role.set_fullscreen(None);
+        until(&connection, &mut queue, &mut state, |state| state.windows[1].fullscreen && state.windows[1].frames > before)?;
         println!("PASS: native window unmapped and remapped");
         for window in &state.windows {
             window.role.destroy();

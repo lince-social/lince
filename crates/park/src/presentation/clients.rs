@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 
 mod tree;
 
-#[derive(Clone, Copy, ShaderType)]
+#[derive(Clone, Copy, PartialEq, ShaderType)]
 struct Mapping {
     u: Vec4,
     v: Vec4,
@@ -104,20 +104,29 @@ fn prepare(
     mut images: ResMut<RenderAssets<GpuImage>>,
     mut retained: Local<HashSet<AssetId<Image>>>,
 ) {
-    if !textures.is_changed() {
-        return;
-    }
     let current: HashSet<_> = textures.0.keys().copied().collect();
-    for removed in retained.difference(&current) {
-        images.remove(*removed);
-    }
+    retained.retain(|id| {
+        if current.contains(id) {
+            true
+        } else {
+            images.remove(*id);
+            false
+        }
+    });
     for (id, texture) in &textures.0 {
+        if images.get(*id).is_some_and(|image| &*image.texture == texture) {
+            continue;
+        }
         images.insert(
             *id,
             GpuImage {
                 texture: texture.clone().into(),
                 texture_view: texture.create_view(&Default::default()).into(),
-                sampler: device.create_sampler(&Default::default()),
+                sampler: device.create_sampler(&wgpu::SamplerDescriptor {
+                    mag_filter: wgpu::FilterMode::Linear,
+                    min_filter: wgpu::FilterMode::Linear,
+                    ..Default::default()
+                }),
                 texture_descriptor: wgpu::TextureDescriptor {
                     label: Some("park_application_content"),
                     size: texture.size(),
@@ -132,8 +141,8 @@ fn prepare(
                 had_data: false,
             },
         );
+        retained.insert(*id);
     }
-    *retained = current;
 }
 
 impl Presentation {

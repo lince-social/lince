@@ -1,0 +1,16 @@
+Moonshine Streaming evaluation backend
+
+Rust implementation of the Moonshine Streaming architecture, based on the
+Hugging Face Transformers reference by the HuggingFace Team, copyright 2026.
+Reference revision: 3f91ebf8eb1e833e05ceaeb8877e6f99196af4a2
+https://github.com/huggingface/transformers/blob/3f91ebf8eb1e833e05ceaeb8877e6f99196af4a2/src/transformers/models/moonshine_streaming/modeling_moonshine_streaming.py
+Code adaptations are distributed under Apache-2.0; see LICENSE-CODE-Apache-2.0.txt.
+
+Moonshine English Streaming weights are by Useful Sensors, Inc. (Moonshine AI),
+copyright 2025, distributed under MIT; see LICENSE-WEIGHTS-MIT.txt.
+https://huggingface.co/moonshine-ai/moonshine-streaming-tiny
+https://huggingface.co/moonshine-ai/moonshine-streaming-small
+
+This CPU evaluation backend performs bounded, offline segment transcription.
+It does not claim tensor parity with Transformers or incremental microphone
+streaming. It uses Lince's existing Candle Rust tensor runtime.

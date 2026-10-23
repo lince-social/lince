@@ -58,7 +58,12 @@ impl Driver {
                 if !disconnected {
                     let next = if jobs.is_empty() {
                         receiver.recv().map_err(|_| RecvTimeoutError::Disconnected)
-                    } else { receiver.recv_timeout(Duration::from_millis(2)) };
+                    } else {
+                        receiver.try_recv().map_err(|error| match error {
+                            TryRecvError::Empty => RecvTimeoutError::Timeout,
+                            TryRecvError::Disconnected => RecvTimeoutError::Disconnected,
+                        })
+                    };
                     match next {
                         Ok(job) => jobs.push(job),
                         Err(RecvTimeoutError::Disconnected) => disconnected = true,
@@ -75,7 +80,7 @@ impl Driver {
                 jobs.retain(|job| {
                     let result = if let Some(error) = &failure { Some(Err(error.clone())) } else {
                         match device.poll(wgpu::PollType::Wait {
-                            submission_index: Some(job.submission.clone()), timeout: Some(Duration::ZERO),
+                            submission_index: Some(job.submission.clone()), timeout: Some(Duration::from_millis(2)),
                         }) {
                             Ok(_) => Some(Ok(())),
                             Err(wgpu::PollError::Timeout) if job.started.elapsed() < Duration::from_secs(5) => None,
@@ -90,7 +95,6 @@ impl Driver {
                     } else { true }
                 });
                 if disconnected && jobs.is_empty() { break; }
-                if disconnected { std::thread::sleep(Duration::from_millis(2)); }
             }
         }).map_err(|error| ProbeFailure::at("gpu_completion", error))?;
         Ok(Self { count: Arc::new(AtomicUsize::new(0)), sender: Some(sender), worker: Some(worker) })

@@ -364,7 +364,7 @@ impl Composition {
         }
         if let Some((_, clip)) = view.scene.clips.iter().find(|(id, _)| *id == view.id) {
             let clip = mapping.rectangle(*clip);
-            frame.render_texture_from_to(native, Rect::from_size(native.size().to_f64()), clip, &[clip], &[], Transform::Normal, 1.0, None, &[]).map_err(error)?;
+            frame.render_texture_from_to(native, Rect::from_size(native.size().to_f64()), clip, &[Rect::from_size(clip.size)], &[], Transform::Normal, 1.0, None, &[]).map_err(error)?;
         }
         for popup in view.scene.popups.iter().filter(|popup| popup.output == view.id && matches!(popup.owner, PopupOwner::Application(_) | PopupOwner::Native)) { self.capture_popup_draw(frame, popup, mapping, damage)?; }
         for layer in view.scene.layers.iter().filter(|layer| layer.output == view.id && (layer.layer == Layer::Overlay || !fullscreen && layer.layer == Layer::Top)) {
@@ -391,7 +391,10 @@ impl Composition {
         if cursor.named {
             for size in [[4.0, 20.0], [14.0, 4.0]] {
                 let rectangle = Rectangle::new(cursor.pointer, size).unwrap();
-                frame.draw_solid(mapping.rectangle(rectangle), &[damage], smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0)).map_err(error)?;
+                let destination = mapping.rectangle(rectangle);
+                if let Some(damage) = local_damage(destination, damage) {
+                    frame.draw_solid(destination, &[damage], smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0)).map_err(error)?;
+                }
             }
             Ok(())
         } else {

@@ -70,6 +70,128 @@ mod speech_reference {
 
 use speech_reference::words as reference_words;
 
+#[tokio::test]
+async fn local_model_selection_persists_without_enabling_listening_or_downloading() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("speech.json");
+    let host = Host::open(path.clone()).unwrap();
+    for model in ModelId::ALL {
+        let selected = host.handle(Request::SelectLocal { model }).await.unwrap();
+        assert_eq!(selected.local_selection, model);
+        assert!(!selected.ready);
+        assert!(!selected.listening.enabled);
+        assert!(!selected.local.unwrap().present);
+        let reopened = Host::open(path.clone()).unwrap();
+        assert_eq!(
+            reopened
+                .handle(Request::Inspect)
+                .await
+                .unwrap()
+                .local_selection,
+            model
+        );
+    }
+}
+
+#[tokio::test]
+#[ignore = "Requires LINCE_MOONSHINE_TEST_IMPORT containing the pinned Tiny or Small model files"]
+async fn actual_moonshine_import_dictation_and_silence_use_normal_speech_service() {
+    let root = tempfile::tempdir().unwrap();
+    let (host, endpoint) = configured(root.path().join("speech.json")).await;
+    let model = std::env::var("LINCE_SPEECH_TEST_SELECTION")
+        .map(|value| serde_json::from_str::<ModelId>(&value).unwrap())
+        .unwrap_or(ModelId::MoonshineTiny);
+    assert_ne!(model, ModelId::Phonon);
+    host.handle(Request::SelectLocal { model }).await.unwrap();
+    let installation = nucleus::new_uid("speech");
+    host.handle(Request::InstallLocal {
+        job: installation.clone(),
+        source: Some(
+            std::env::var_os("LINCE_MOONSHINE_TEST_IMPORT")
+                .unwrap()
+                .into(),
+        ),
+    })
+    .await
+    .unwrap();
+    let setup = finished(&host, &installation).await;
+    assert!(setup.error.is_none(), "{setup:?}");
+    let installed = host.handle(Request::Inspect).await.unwrap().local.unwrap();
+    assert_eq!(installed.acquired_bytes, installed.required_bytes);
+    assert!(installed.present);
+    let id = nucleus::new_uid("speech");
+    host.handle(Request::StartLocal {
+        job: id.clone(),
+        audio: ::fiote::config::Secret(STANDARD.encode(include_bytes!(
+            "../../../fiote/tests/fixtures/speech-goforward.wav"
+        ))),
+    })
+    .await
+    .unwrap();
+    let result = finished(&host, &id).await;
+    assert!(result.error.is_none(), "{result:?}");
+    let text = result.text.unwrap();
+    println!(
+        "{}",
+        serde_json::json!({"model":model,"transcript":text,"strict_reference_match":reference_words(&text) == reference_words("go forward ten meters")})
+    );
+    assert!(
+        reference_words(&text).starts_with(&reference_words("go forward ten")),
+        "{text}"
+    );
+    let mut long = speech::decode_audio(&STANDARD.encode(include_bytes!(
+        "../../../fiote/tests/fixtures/speech-goforward.wav"
+    )))
+    .unwrap()
+    .into_iter()
+    .map(|sample| (sample * 32768.0).round() as i16)
+    .collect::<Vec<_>>();
+    long.extend(std::iter::repeat_n(0, 640_000));
+    let id = nucleus::new_uid("speech");
+    host.handle(Request::StartLocal {
+        job: id.clone(),
+        audio: recording(&long),
+    })
+    .await
+    .unwrap();
+    let result = finished(&host, &id).await;
+    assert!(result.error.is_none(), "{result:?}");
+    let text = result.text.unwrap();
+    println!(
+        "{}",
+        serde_json::json!({"model":model,"long_recording_transcript":text,"silent_tail_seconds":40})
+    );
+    let words = reference_words(&text);
+    assert!(
+        words.starts_with(&reference_words("go forward ten")),
+        "{text}"
+    );
+    assert!(
+        !words.iter().any(|word| word == "you"),
+        "Silence added a hallucination: {text}"
+    );
+    let id = nucleus::new_uid("speech");
+    host.handle(Request::StartLocal {
+        job: id.clone(),
+        audio: recording(&[0; 16_000]),
+    })
+    .await
+    .unwrap();
+    assert!(
+        finished(&host, &id)
+            .await
+            .error
+            .unwrap()
+            .contains("No speech")
+    );
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), endpoint.accept())
+            .await
+            .is_err()
+    );
+    host.shutdown().await;
+}
+
 #[test]
 fn reference_comparison_ignores_formatting_without_hiding_negation_or_reordered_quantities() {
     assert_eq!(
@@ -241,7 +363,7 @@ async fn actual_local_shutdown_drains_cpu_unloads_weights_and_keeps_verified_ass
     assert!(!status.ready);
     assert!(!status.local.as_ref().unwrap().busy);
     assert!(!status.local.unwrap().loaded);
-    assert!(host.local.cache.verified_file().is_ok());
+    assert!(host.local.primary_cache().verified_file().is_ok());
     assert!(host.handle(Request::Poll { job }).await.is_err());
     assert!(
         host.handle(Request::StartLocal {
@@ -344,8 +466,8 @@ async fn real_local_failures_recover_without_endpoint_fallback_or_duplicate_tran
     let expected = std::env::var("LINCE_SPEECH_TEST_EXPECTED")
         .expect("Choose the independent reference phrase");
     let audio = ::fiote::config::Secret(STANDARD.encode(wav));
-    std::fs::create_dir_all(host.local.cache.directory()).unwrap();
-    std::fs::File::create(host.local.cache.path())
+    std::fs::create_dir_all(host.local.primary_cache().directory()).unwrap();
+    std::fs::File::create(host.local.primary_cache().path())
         .unwrap()
         .set_len(speech::local::MANIFEST.artifact.bytes)
         .unwrap();
@@ -398,7 +520,7 @@ async fn real_local_failures_recover_without_endpoint_fallback_or_duplicate_tran
     assert!(finished(&host, &refused).await.error.is_some());
     assert_eq!(
         host.local
-            .cache
+            .primary_cache()
             .verified_file()
             .unwrap()
             .metadata()

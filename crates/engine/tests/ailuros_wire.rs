@@ -34,6 +34,10 @@ impl Drop for Fixture {
 
 impl Fixture {
     async fn new(enabled: bool) -> Self {
+        Self::with_builder(enabled, false).await
+    }
+
+    async fn with_builder(enabled: bool, customized: bool) -> Self {
         let engine = Arc::new(Engine::open_memory().await.unwrap());
         let organ = store::organs::ensure_local(&engine.store.pool, "http://hardware.test")
             .await
@@ -88,9 +92,27 @@ impl Fixture {
             .configure_stream(&grant.signal_uid, Some("jpeg"), "", None, None)
             .await
             .unwrap();
-        let wire = Wire::bind_loopback(engine.clone(), iroh::SecretKey::generate())
+        let secret = iroh::SecretKey::generate();
+        let expected = secret.public();
+        let wire = if customized {
+            Wire::bind_with_endpoint_builder(
+                engine.clone(),
+                secret,
+                engine::wire::Reach::Internet,
+                Endpoint::builder(iroh::endpoint::presets::Minimal)
+                    .clear_relay_transports()
+                    .clear_ip_transports()
+                    .secret_key(iroh::SecretKey::generate())
+                    .alpns(vec![b"not-lince".to_vec()])
+                    .bind_addr("127.0.0.1:0".parse::<std::net::SocketAddr>().unwrap())
+                    .unwrap(),
+            )
             .await
-            .unwrap();
+            .unwrap()
+        } else {
+            Wire::bind_loopback(engine.clone(), secret).await.unwrap()
+        };
+        assert_eq!(wire.endpoint().id(), expected);
         let server = wire.clone();
         let serving = tokio::spawn(async move { server.serve().await });
         let client = Endpoint::builder(iroh::endpoint::presets::Minimal)
@@ -196,10 +218,20 @@ impl Stream {
     }
 
     async fn frame(&mut self, epoch: &str, sequence: u64) {
+        self.frame_at(
+            epoch,
+            sequence,
+            nucleus::execution::now().timestamp_millis(),
+            true,
+        )
+        .await;
+    }
+
+    async fn write_frame(&mut self, epoch: &str, sequence: u64, captured_at: i64) {
         let metadata = Metadata {
             epoch: epoch.into(),
             sequence,
-            captured_at: nucleus::execution::now().timestamp_millis(),
+            captured_at,
             content_type: "image/jpeg".into(),
         };
         let mut jpeg = Vec::new();
@@ -209,11 +241,44 @@ impl Stream {
         self.send(Kind::Metadata, serde_json::to_vec(&metadata).unwrap())
             .await;
         self.send(Kind::Data, jpeg).await;
+    }
+
+    async fn frame_at(&mut self, epoch: &str, sequence: u64, captured_at: i64, retained: bool) {
+        self.write_frame(epoch, sequence, captured_at).await;
         let published = self.control().await;
         assert_eq!(published["type"], "published");
         assert_eq!(published["sequence"], sequence);
-        assert_eq!(published["retained"], true);
+        assert_eq!(published["retained"], retained);
     }
+}
+
+#[tokio::test]
+async fn custom_builder_keeps_auth_identity_and_socket_scope() {
+    let fixture = Fixture::with_builder(true, true).await;
+    assert!(
+        fixture
+            .wire
+            .endpoint()
+            .bound_sockets()
+            .iter()
+            .all(|address| address.ip().is_loopback())
+    );
+    let channel = fixture
+        .engine
+        .stream_channel(&fixture.grant.signal_uid, None)
+        .await
+        .unwrap();
+    let _viewer = channel.subscribe().unwrap();
+    let mut stream = fixture.stream().await;
+    stream.authenticate(&fixture).await;
+    let demand = stream.control().await;
+    stream.frame(demand["epoch"].as_str().unwrap(), 1).await;
+    assert!(channel.snapshot().value.is_some());
+    settings(&fixture.engine, false).await;
+    tokio::time::timeout(Duration::from_secs(5), stream.connection.closed())
+        .await
+        .unwrap();
+    assert!(channel.snapshot().value.is_none());
 }
 
 fn proof(challenge: &Value, fixture: &Fixture) -> StreamProof {
@@ -228,6 +293,56 @@ fn proof(challenge: &Value, fixture: &Fixture) -> StreamProof {
     let signature: Signature = fixture.key.sign(&proof.signing_payload().unwrap());
     proof.signature = hex(&signature.to_bytes());
     proof
+}
+
+#[tokio::test]
+async fn expired_camera_frames_keep_fresh_state_and_sequence_guards() {
+    let fixture = Fixture::new(true).await;
+    let channel = fixture
+        .engine
+        .stream_channel(&fixture.grant.signal_uid, None)
+        .await
+        .unwrap();
+    let _viewer = channel.subscribe().unwrap();
+    let mut stream = fixture.stream().await;
+    stream.authenticate(&fixture).await;
+    let demand = stream.control().await;
+    let epoch = demand["epoch"].as_str().unwrap();
+    stream
+        .frame_at(
+            epoch,
+            1,
+            nucleus::execution::now().timestamp_millis() - 10000,
+            false,
+        )
+        .await;
+    assert!(channel.snapshot().value.is_none());
+    stream.frame(epoch, 2).await;
+    stream
+        .frame_at(
+            epoch,
+            3,
+            nucleus::execution::now().timestamp_millis() - 10000,
+            false,
+        )
+        .await;
+    assert_eq!(channel.snapshot().value.unwrap().metadata.sequence, 2);
+    stream.frame(epoch, 4).await;
+    assert_eq!(channel.snapshot().value.unwrap().metadata.sequence, 4);
+    stream
+        .frame_at(
+            epoch,
+            5,
+            nucleus::execution::now().timestamp_millis() - 10000,
+            false,
+        )
+        .await;
+    stream
+        .write_frame(epoch, 5, nucleus::execution::now().timestamp_millis())
+        .await;
+    tokio::time::timeout(Duration::from_secs(5), stream.connection.closed())
+        .await
+        .unwrap();
 }
 
 #[tokio::test]

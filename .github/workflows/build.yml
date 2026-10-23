@@ -23,7 +23,10 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  park-checks:
+    uses: ./.github/workflows/park.yml
   binary:
+    needs: [park-checks]
     if: github.ref != 'refs/heads/dev'
     name: binary (${{ matrix.variant }}, ${{ matrix.os }}, ${{ matrix.target }})
     runs-on: ${{ matrix.os }}
@@ -82,7 +85,8 @@ jobs:
             libxi-dev \
             libxcursor-dev \
             libgl1-mesa-dev \
-            libvulkan-dev
+            libvulkan-dev \
+            libegl1-mesa-dev libgbm-dev libdrm-dev libudev-dev libinput-dev libseat-dev
           printf '%s\n' 'RUSTFLAGS=-D warnings -C link-arg=-fuse-ld=mold' >> "$GITHUB_ENV"
 
       - name: Restore compiled crates
@@ -108,7 +112,12 @@ jobs:
         env:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
-        run: cargo build --release --locked --package lince --features instinct --target "$BUILD_TARGET" --timings
+        run: |
+          mkdir -p target
+          cargo xtask park release --target "$BUILD_TARGET" > target/release-build-info.json
+          if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
+            python3 institute/packaging/linux/check-build-info.py target/release-build-info.json
+          fi
         shell: bash
 
       - name: Build headless Lince for NixOS server
@@ -118,7 +127,10 @@ jobs:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
         shell: bash
-        run: cargo build --release --locked --package lince --no-default-features --features instinct --target "$BUILD_TARGET" --timings
+        run: |
+          mkdir -p target
+          cargo xtask park release --target "$BUILD_TARGET" --headless > target/release-build-info.json
+          python3 -c 'import json; info=json.load(open("target/release-build-info.json")); assert info["optimized"] is True; assert info["features"] == {"ui": False, "instinct": True, "park": False}'
 
       - name: Save compiled crates
         if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
@@ -141,13 +153,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p binary-artifacts package/lince/bin
+          if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
+            PYTHONDONTWRITEBYTECODE=1 python3 institute/packaging/linux/package.py \
+              "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
+            exit 0
+          fi
           install -m755 "target/$BUILD_TARGET/release/lince$BINARY_EXTENSION" "package/lince/bin/lince$BINARY_EXTENSION"
           install -m644 LICENSE package/lince/LICENSE
-          if [ "$RUNNER_OS" = Linux ]; then
-            install -Dm644 institute/packaging/linux/ufw/lince package/lince/etc/ufw/applications.d/lince
-            install -Dm644 institute/packaging/linux/firewalld/lince.xml package/lince/lib/firewalld/services/lince.xml
-            install -Dm644 institute/packaging/linux/firewalld/lince-test.xml package/lince/lib/firewalld/services/lince-test.xml
-          fi
+          install -m644 target/release-build-info.json package/lince/build-info.json
           printf '%s\n' "$GITHUB_SHA" > package/lince/revision
           if [ "$RUNNER_OS" = Windows ]; then
             asset="lince-$BUILD_TARGET.zip"
@@ -167,6 +180,14 @@ jobs:
           fi
           printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
 
+      - uses: cachix/install-nix-action@v31
+        if: matrix.variant == 'native' && runner.os == 'Linux'
+      - name: Check the actual Linux release archive as an installed package
+        if: matrix.variant == 'native' && matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          nix build --no-link --no-write-lock-file .#lince-park \
+            --override-input lince-binary "tarball+file://$PWD/binary-artifacts/lince-x86_64-unknown-linux-gnu.tar.gz"
+
       - name: Upload binaries
         if: matrix.variant == 'native'
         uses: actions/upload-artifact@v4
@@ -185,6 +206,7 @@ jobs:
         run: |
           set -euo pipefail
           install -Dm755 "target/$BUILD_TARGET/release/lince" server-artifacts/lince
+          install -m644 target/release-build-info.json server-artifacts/build-info.json
           printf '%s\n' "$GITHUB_SHA" > server-artifacts/revision
 
       - name: Upload headless binary
@@ -328,7 +350,15 @@ jobs:
           asset = artifacts / 'lince-x86_64-unknown-linux-gnu.tar.gz'
           checksum = hashlib.sha256(asset.read_bytes()).digest()
           version = tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version']
+          with tarfile.open(asset) as archive:
+              build_info = json.load(archive.extractfile('lince/build-info.json'))
+          if build_info['features'] != {'ui': True, 'instinct': True, 'park': True}:
+              raise SystemExit('Linux GUI artifact lacks Park capabilities')
+          if build_info['revision'] != os.environ['GITHUB_SHA'] or build_info['version'] != version:
+              raise SystemExit('Linux GUI artifact identity does not match release')
           release = {
+              'features': build_info['features'],
+              'target': build_info['target'],
               'version': version,
               'revision': os.environ['GITHUB_SHA'],
               'url': f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/main-binary/{asset.name}",

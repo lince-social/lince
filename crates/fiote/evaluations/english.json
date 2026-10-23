@@ -1,0 +1,170 @@
+{
+  "models": [
+    {
+      "id": "moonshine-tiny",
+      "engine": {
+        "kind": "moonshine_streaming",
+        "directory": "../../../.cache-lince-speech-models/moonshine-streaming-tiny",
+        "repository": "moonshine-ai/moonshine-streaming-tiny",
+        "revision": "f8e9dfd8c562c257c151a907b7b7f2fe8ff8511a",
+        "license": "MIT",
+        "artifacts": [
+          {
+            "file": "config.json",
+            "bytes": 1421,
+            "sha256": "166861753adaf928ae99b3709bfb1da47cb76319be58f37c6f9b7a539ce371f0"
+          },
+          {
+            "file": "tokenizer.json",
+            "bytes": 1676069,
+            "sha256": "28bbc54a47dfa33673affa26010f23ac452685b18c76e81451d9b3ea25a54d54"
+          },
+          {
+            "file": "model.safetensors",
+            "bytes": 176237308,
+            "sha256": "0ab3443dabd95a4afb35f0a26155428c03b7c3c450fa6923ffdac4510ba3d040"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-small",
+      "engine": {
+        "kind": "moonshine_streaming",
+        "directory": "../../../.cache-lince-speech-models/moonshine-streaming-small",
+        "repository": "moonshine-ai/moonshine-streaming-small",
+        "revision": "2c036506f23a09c18df5a50057599ba6d9280999",
+        "license": "MIT",
+        "artifacts": [
+          {
+            "file": "config.json",
+            "bytes": 1579,
+            "sha256": "9196efd60b559dc4dc4e9fab08a7b0fce3501d0373b995158c6c6d3ab9b58461"
+          },
+          {
+            "file": "tokenizer.json",
+            "bytes": 1676069,
+            "sha256": "28bbc54a47dfa33673affa26010f23ac452685b18c76e81451d9b3ea25a54d54"
+          },
+          {
+            "file": "model.safetensors",
+            "bytes": 560571228,
+            "sha256": "003635df57b9a47771fd94a6290ab517d7487d0026c165ca9f2ac90411802646"
+          }
+        ]
+      }
+    },
+    {
+      "id": "phonon",
+      "engine": {
+        "kind": "phonon",
+        "cache": "../../../.cache-lince-speech-models/phonon"
+      }
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "natural-short",
+      "audio": "../tests/fixtures/speech-goforward.wav",
+      "expected": "go forward ten meters",
+      "sha256": "97ec638609b9c7eeb616764b4e5713d7ed2d0a8e1a2f8246631d9074d47aaf11",
+      "provenance": "Natural PocketSphinx human recording; source and license in speech-goforward.json."
+    },
+    {
+      "id": "long-request",
+      "audio": "../tests/fixtures/long-request.wav",
+      "expected": "Please remember the following details for our next conversation. The meeting is on Tuesday at ten. Alice brings eight apples and Bob brings four pears. The project is called sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+      "sha256": "2aa1ac6354234e1ceaac6a36c0b6363c217af35f01ecf4a2962b79d2440d1fa8",
+      "provenance": "Synthetic pinned Kokoro af_heart; original text unchanged; provenance in long-request-reference.json."
+    },
+    {
+      "id": "name",
+      "audio": "../tests/fixtures/precision/name.wav",
+      "expected": "Please add Maya Chen to the planning note.",
+      "sha256": "ce7a45684b19815fc3b10ac363a5e6b7efd2f45ed7b979f1197ddb6c2ee6ac3b",
+      "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim"
+    },
+    {
+      "id": "path",
+      "audio": "../tests/fixtures/precision/path.wav",
+      "expected": "The path is slash home slash user slash sandbox slash report dot C S V.",
+      "sha256": "cf55449ad0051ecebda9af04647f3077bff2fdd252384d979dcce2e633b43a12",
+      "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim"
+    },
+    {
+      "id": "quantities",
+      "audio": "../tests/fixtures/precision/quantities.wav",
+      "expected": "Give Alice eight apples, Bob four pears, and Carol seven oranges.",
+      "sha256": "3df1a33effacb7cd56b71e12adf2e002a33e58fea5cc42c805dfbb7204761c9c",
+      "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim"
+    },
+    {
+      "id": "negation",
+      "audio": "../tests/fixtures/precision/negation.wav",
+      "expected": "Do not delete the file named quarterly report.",
+      "sha256": "fd63ace45a2bba710d468cdd5063f06ee7ab33e8e1a260ce3132affcc87bb748",
+      "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim"
+    },
+    {
+      "id": "first",
+      "audio": "../tests/fixtures/conversation/first.wav",
+      "expected": "Please remember the word sapphire.",
+      "sha256": "eb1a1d6dc52448243907f1ef335e42d74eedca60f108ee4b4b9215d7c7f4fed0",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "followup",
+      "audio": "../tests/fixtures/conversation/followup.wav",
+      "expected": "What word did I ask you to remember?",
+      "sha256": "8a17f4bae84aa08f44b5fc18ce2ffb90239929cedb759483676ff0d5dcc79091",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "ending",
+      "audio": "../tests/fixtures/conversation/ending.wav",
+      "expected": "Thanks, that is all for now. Goodbye.",
+      "sha256": "3511c2a6a0f0c4b764dc12611270a8b0b877cf4b6a41ec08bf1836056c18c089",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "background",
+      "audio": "../tests/fixtures/conversation/background.wav",
+      "expected": "Maria, please pass me the salt at the dinner table.",
+      "sha256": "7dcf6c306fab9fe19909158c34923e9990f1584e7e6c695c819dbb9177d34450",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "wake-statement",
+      "audio": "../tests/fixtures/conversation/wake-statement.wav",
+      "expected": "Hey Fiote.",
+      "sha256": "e0a4f7eef7262c04785f1af3855f75ae990a424ced140d056f62202c65b07c0f",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "wake-question",
+      "audio": "../tests/fixtures/conversation/wake-question.wav",
+      "expected": "Hey Fiote?",
+      "sha256": "222f2cc0f31aa02db3d35baed8dc37c574da2c48754bb6322b64d6bc2e1a105f",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "wake-exclamation",
+      "audio": "../tests/fixtures/conversation/wake-exclamation.wav",
+      "expected": "Hey Fiote!",
+      "sha256": "5726fd149583dc80deb300853380396fea08c8b267e3f86be792d8fcb7f7ce24",
+      "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic."
+    },
+    {
+      "id": "silence",
+      "require_exact": true,
+      "audio": "../tests/fixtures/speech-silence.wav",
+      "expected": "",
+      "sha256": "20eaebffe1816e0ffa6f7f854f5ef4ea80d5349faaf0ce1fec1b713e7fde58fa",
+      "provenance": "Two seconds of digitally generated PCM silence; no speech."
+    }
+  ],
+  "repetitions": 2,
+  "timeout_seconds": 900,
+  "threads": 4,
+  "maximum_wer": 0.15
+}

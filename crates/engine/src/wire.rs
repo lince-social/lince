@@ -562,7 +562,25 @@ impl Wire {
         local_discovery: bool,
         peer_port: u16,
     ) -> Result<Wire, EngineError> {
-        Self::bind_inner(engine, secret, reach, display_name, local_discovery, peer_port, None).await
+        Self::bind_inner(
+            engine,
+            secret,
+            reach,
+            display_name,
+            local_discovery,
+            peer_port,
+            (None, None),
+        )
+        .await
+    }
+
+    pub async fn bind_with_endpoint_builder(
+        engine: Arc<Engine>,
+        secret: SecretKey,
+        reach: Reach,
+        builder: iroh::endpoint::Builder,
+    ) -> Result<Wire, EngineError> {
+        Self::bind_inner(engine, secret, reach, None, false, 0, (None, Some(builder))).await
     }
 
     pub async fn bind_private(
@@ -571,10 +589,22 @@ impl Wire {
         config: PrivateWireConfig,
     ) -> Result<Wire, EngineError> {
         config.validate()?;
-        Self::bind_inner(engine, secret, Reach::Local, None, false, 0, Some(config)).await
+        Self::bind_inner(
+            engine,
+            secret,
+            Reach::Local,
+            None,
+            false,
+            0,
+            (Some(config), None),
+        )
+        .await
     }
 
-    pub async fn bind_loopback(engine: Arc<Engine>, secret: SecretKey) -> Result<Wire, EngineError> {
+    pub async fn bind_loopback(
+        engine: Arc<Engine>,
+        secret: SecretKey,
+    ) -> Result<Wire, EngineError> {
         let mut config = PrivateWireConfig::new(SocketAddr::from(([127, 0, 0, 1], 0)), false);
         config.full_protocols = true;
         Self::bind_private(engine, secret, config).await
@@ -587,8 +617,9 @@ impl Wire {
         display_name: Option<&str>,
         local_discovery: bool,
         peer_port: u16,
-        private: Option<PrivateWireConfig>,
+        binding: (Option<PrivateWireConfig>, Option<iroh::endpoint::Builder>),
     ) -> Result<Wire, EngineError> {
+        let (private, builder) = binding;
         let alpns = if private.is_some_and(|config| !config.full_protocols) {
             vec![ALPN_LIVE.to_vec()]
         } else {
@@ -605,11 +636,19 @@ impl Wire {
                 crate::blob_sync::DATA_ALPN.to_vec(),
             ]
         };
-        let relays = if private.is_none() {
+        let customized = builder.is_some();
+        let relays = if private.is_none() && !customized {
             let fields = match store::cells::config(&engine.store.pool, "lince.discovery").await? {
                 Some(fields) => Some(fields),
                 None => match store::organs::local(&engine.store.pool).await? {
-                    Some(organ) => store::records::get_extension(&engine.store.pool, &organ.uid, "lince.discovery").await?,
+                    Some(organ) => {
+                        store::records::get_extension(
+                            &engine.store.pool,
+                            &organ.uid,
+                            "lince.discovery",
+                        )
+                        .await?
+                    }
                     None => None,
                 },
             };
@@ -617,7 +656,7 @@ impl Wire {
         } else {
             Vec::new()
         };
-        let mut builder = relays::endpoint_builder(reach, &relays);
+        let mut builder = builder.unwrap_or_else(|| relays::endpoint_builder(reach, &relays));
         if let Some(config) = private {
             builder = builder
                 .portmapper_config(iroh::endpoint::PortmapperConfig::Disabled)
@@ -630,11 +669,14 @@ impl Wire {
                         config.listen_addr
                     ))
                 })?;
-        } else if reach != Reach::Relay {
+        } else if reach != Reach::Relay && !customized {
             builder = builder
                 .bind_addr(SocketAddr::from(([0, 0, 0, 0], peer_port)))
                 .map_err(|error| EngineError::Consequence(format!("Peer IPv4 port: {error}")))?
-                .bind_addr_with_opts(SocketAddr::from(([0u16; 8], peer_port)), iroh::endpoint::BindOpts::default().set_is_required(false))
+                .bind_addr_with_opts(
+                    SocketAddr::from(([0u16; 8], peer_port)),
+                    iroh::endpoint::BindOpts::default().set_is_required(false),
+                )
                 .map_err(|error| EngineError::Consequence(format!("Peer IPv6 port: {error}")))?;
         }
         let endpoint = builder

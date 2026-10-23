@@ -12,6 +12,8 @@ use bevy::{
     window::{PrimaryWindow, WindowEvent},
 };
 
+pub(crate) mod cursor;
+
 pub const CONTENT_POINTER: PointerId =
     PointerId::Custom(Uuid::from_u128(0x4c696e6365546f706f6c6f6779));
 

@@ -57,3 +57,12 @@ pub fn probe() -> Result<()> {
     println!("Delayed GPU submission returned in {} ms; completion and retained-resource release occurred after the gate opened.", elapsed.as_millis());
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[ignore = "requires a hardware Vulkan device"]
+    fn stalled_gpu_retains_resources_and_does_not_publish_early() {
+        super::probe().unwrap();
+    }
+}

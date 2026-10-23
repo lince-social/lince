@@ -463,6 +463,10 @@ pub(crate) fn resolve(world: &mut World) {
                 let _ = model.configure(id, layout.rules);
                 if (floating || mode == WorkspaceLayout::Free)
                     && model.fullscreen() != Some(id)
+                    && !model.maximized(id)
+                    && world
+                        .get::<Managed>(entity)
+                        .is_none_or(|managed| managed.floating)
                     && previous_geometry != Some(raw_geometry)
                 {
                     let _ = model.set_free_geometry(id, geometry);
@@ -484,12 +488,13 @@ pub(crate) fn resolve(world: &mut World) {
             }
         }
         if inserted && let Some(id) = model.focused() {
-            let fullscreen = model.fullscreen().filter(|_| {
-                entities
-                    .get(&id)
-                    .is_some_and(|entity| world.get::<TransientParent>(*entity).is_some())
+            let fullscreen = model.fullscreen();
+            let transient = fullscreen.is_some_and(|fullscreen| {
+                entities.get(&id).zip(entities.get(&fullscreen)).is_some_and(|(entity, parent)| {
+                    transients::descendant(world, *entity, *parent)
+                })
             });
-            let _ = model.focus(id, usable);
+            let _ = model.focus(if transient { id } else { fullscreen.unwrap_or(id) }, usable);
             if let Some(id) = fullscreen {
                 model.request_state(
                     id,
@@ -598,7 +603,9 @@ pub(crate) fn resolve(world: &mut World) {
                 let changed_view =
                     world.resource::<Runtime>().views.get(&(root, active)) != Some(&view);
                 let mut canvas = crate::native::output_views::canvas(world, root, active);
-                if model.fullscreen().is_some() {
+                let normalized = model.fullscreen().is_some()
+                    || mode == WorkspaceLayout::Free && model.items().iter().any(|item| model.maximized(item.id) && !model.minimized(item.id));
+                if normalized {
                     if !world
                         .resource::<Runtime>()
                         .fullscreen_views
@@ -616,7 +623,7 @@ pub(crate) fn resolve(world: &mut World) {
                 {
                     canvas = view;
                 }
-                if model.fullscreen().is_some() || changed_view && mode != WorkspaceLayout::Free {
+                if normalized || changed_view && mode != WorkspaceLayout::Free {
                     canvas.center = bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
                         bounds.size()[axis] * 0.5 + solution.scroll[axis]
                     }));
@@ -676,7 +683,8 @@ pub(crate) fn resolve(world: &mut World) {
                     let managed = Managed {
                         id: item.id,
                         floating: (item.floating || mode == WorkspaceLayout::Free)
-                            && model.fullscreen() != Some(item.id),
+                            && model.fullscreen() != Some(item.id)
+                            && !model.maximized(item.id),
                     };
                     if world.get::<Managed>(entity) != Some(&managed) {
                         world.entity_mut(entity).insert(managed);
@@ -981,6 +989,7 @@ pub(crate) mod tests {
     #[test]
     fn imported_models_keep_world_placement_outside_window_tiling() {
         let (mut world, root, model, _) = fixture();
+        world.insert_resource(DefaultLayout(WorkspaceLayout::Free));
         world
             .entity_mut(model)
             .insert(crate::native::topology::assets::ImportedAsset {
@@ -995,7 +1004,7 @@ pub(crate) mod tests {
             WorkspaceLayout::Grid,
             WorkspaceLayout::ScrollingColumns,
         ] {
-            DesktopAction::SetLayout(mode).apply(&mut world, root);
+            world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_mode(mode);
             for _ in 0..3 {
                 super::super::engine::resolve(&mut world);
             }
@@ -1277,6 +1286,36 @@ pub(crate) mod tests {
         assert_eq!(output.usable, Some(usable));
     }
 
+    #[test]
+    fn free_maximize_restores_camera_and_placement_after_bar_resize() {
+        let (mut world, root, _, application) = fixture();
+        world.insert_resource(DefaultLayout(WorkspaceLayout::Free));
+        let bounds = Rectangle::new([0.0; 2], [1000.0, 700.0]).unwrap();
+        let usable = Rectangle::new([0.0, 34.0], [1000.0, 666.0]).unwrap();
+        world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_mode(WorkspaceLayout::Free);
+        let view = CanvasView { center: bevy::math::DVec2::new(120.0, 180.0), zoom: 0.65 };
+        world.entity_mut(root).insert((view, HostViewport(OutputViewport {
+            id: OutputId(1), bounds, usable: Some(usable), physical_size: [1000, 700], workspace: 1,
+        })));
+        resolve(&mut world);
+        focus_item(&mut world, application);
+        let before = *world.get::<CanvasItem>(application).unwrap();
+        DesktopAction::ToggleMaximized.apply(&mut world, root);
+        for _ in 0..3 { resolve(&mut world); }
+        assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 1.0);
+        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, Vec2::new(984.0, 650.0));
+        assert!(!world.get::<Managed>(application).unwrap().floating);
+        world.get_mut::<HostViewport>(root).unwrap().0.usable = Some(bounds);
+        for _ in 0..3 { resolve(&mut world); }
+        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, Vec2::new(984.0, 684.0));
+        DesktopAction::ToggleMaximized.apply(&mut world, root);
+        for _ in 0..3 { resolve(&mut world); }
+        assert_eq!(world.get::<CanvasItem>(application).unwrap().position, before.position);
+        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, before.size);
+        assert_eq!(world.get::<CanvasView>(root).unwrap().center, view.center);
+        assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, view.zoom);
+    }
+
     fn fixture() -> (World, Entity, Entity, Entity) {
         let mut world = World::new();
         let mut spaces = Workspaces::default();
@@ -1432,6 +1471,59 @@ pub(crate) mod tests {
         assert_eq!(geometry.mapping.surface_point(center), Some([160.0, 120.0]));
     }
 
+    #[cfg_attr(test, test)]
+    fn fullscreen_restore_keeps_free_geometry_despite_presentation_changes() {
+        let (mut world, root, _, application) = fixture();
+        world.insert_resource(DefaultLayout(WorkspaceLayout::Free));
+        world.get_mut::<Workspaces>(root).unwrap().entries[0]
+            .desktop
+            .set_mode(WorkspaceLayout::Free);
+        resolve(&mut world);
+        assert!(world.get::<Managed>(application).is_some());
+        let original = *world.get::<CanvasItem>(application).unwrap();
+        focus_item(&mut world, application);
+        DesktopAction::ToggleFullscreen.apply(&mut world, root);
+        resolve(&mut world);
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().size,
+            Vec2::new(1000.0, 700.0)
+        );
+        world.get_mut::<CanvasItem>(application).unwrap().position.x += 20.0;
+        DesktopAction::ToggleFullscreen.apply(&mut world, root);
+        resolve(&mut world);
+        let restored = world.get::<CanvasItem>(application).unwrap();
+        assert_eq!(restored.position, original.position);
+        assert_eq!(restored.size, original.size);
+    }
+
+    #[cfg_attr(test, test)]
+    fn mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window() {
+        let (mut world, root, _, application) = fixture();
+        world.insert_resource(DefaultLayout(WorkspaceLayout::Free));
+        world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_mode(WorkspaceLayout::Free);
+        resolve(&mut world);
+        let original = *world.get::<CanvasItem>(application).unwrap();
+        focus_item(&mut world, application);
+        DesktopAction::ToggleFullscreen.apply(&mut world, root);
+        resolve(&mut world);
+        let fullscreen = world.get::<Managed>(application).unwrap().id;
+        let other = world.spawn((
+            CanvasItem { position: bevy::math::DVec2::ZERO, size: Vec2::new(640.0, 480.0) },
+            ApplicationWindow { surface: SurfaceId(8), content_size: [640, 480] },
+            WorkspaceMember(1),
+            ChildOf(root),
+        )).id();
+        resolve(&mut world);
+        assert_eq!(world.get::<Workspaces>(root).unwrap().entries[0].desktop.fullscreen(), Some(fullscreen));
+        assert!(world.get::<Suppressed>(application).is_none());
+        assert!(world.get::<Suppressed>(other).is_some());
+        DesktopAction::ToggleFullscreen.apply(&mut world, root);
+        resolve(&mut world);
+        assert_eq!(world.get::<CanvasItem>(application).unwrap().position, original.position);
+        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, original.size);
+        assert!(world.get::<Suppressed>(other).is_none());
+    }
+
     #[test]
     fn fullscreen_suppresses_other_canvas_content_and_restores_overview() {
         let (mut world, root, native, application) = fixture();
@@ -1514,7 +1606,11 @@ pub(crate) mod tests {
         assert_eq!(world.get::<CanvasItem>(native).unwrap().size.x, 492.0);
         assert_eq!(world.get::<CanvasItem>(application).unwrap().size.x, 492.0);
     }
-    crate::native::laboratory_cases! { dialog_stays_above_its_parent_and_preserves_parent_fullscreen, }
+    crate::native::laboratory_cases! {
+        dialog_stays_above_its_parent_and_preserves_parent_fullscreen,
+        fullscreen_restore_keeps_free_geometry_despite_presentation_changes,
+        mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window,
+    }
 }
 
 pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {

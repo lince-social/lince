@@ -1,0 +1,2216 @@
+{
+  "schema": 1,
+  "type": "speech-model-evaluation-results",
+  "date": "2026-10-21",
+  "environment": {
+    "os": "Linux-6.18.55-x86_64-with-glibc2.42",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+    "logical_cpus": 8,
+    "memory_total": "16115844 kB",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "runtime": "Candle 0.11.0; CPU F32; no new inference dependency",
+    "scope": "Other agents are compiling during this evaluation; timings are observations under load, not isolated throughput claims."
+  },
+  "implementation": "Rust Candle CPU F32 inference; prototype Moonshine Streaming offline port, not verified tensor-for-tensor against Transformers.",
+  "verification": {
+    "unit_tests": "31 passed, 4 existing asset-dependent tests ignored in the normal speech filter",
+    "cargo_check": "cargo check --locked -p lince-fiote --all-targets passed; no Rust warnings.",
+    "fetch": "Shared Rust fetch downloaded missing pinned config and tokenizer into a fresh cache and verified SHA-256; weights reused through a hard link.",
+    "format": "Targeted rustfmt --check and git diff --check passed.",
+    "phonon_production_regression": "Asset-dependent production Recognizer test passed with the natural JFK sample; second inference reused the loaded engine and cold_load_ms was zero.",
+    "final_model_transcriptions": 90
+  },
+  "limitations": [
+    "Small mixed corpus: one public natural short recording, synthetic Kokoro speech, and digital silence. An additional public human JFK recording is evaluated separately. These are regression checks, not population accuracy or general model rankings.",
+    "Strict WER retains alternate spellings such as metres/meters, 10:00/ten, and spelled letters/CSV as differences. Raw transcripts and original references are retained.",
+    "Moonshine Small emitted You for digital silence on both repetitions; mandatory silence acceptance fails even though aggregate WER is within its configured threshold. No silence filter hides this result.",
+    "Moonshine is available to the evaluation API/CLI. Fiote speech model selection and incremental microphone streaming are not integrated for Moonshine.",
+    "New compatible Moonshine Streaming checkpoints use JSON configuration; other architectures need a Backend adapter and loader. Phonon uses its registered pinned checkpoint.",
+    "No provider/account/LLM, production binary, user microphone, or Fiote routing/action test was run."
+  ],
+  "comparison": {
+    "settings": {
+      "threads": 4,
+      "repetitions": 2,
+      "timeout_seconds": 900,
+      "maximum_wer": 0.15
+    },
+    "normalization": "Lowercase alphanumeric words, punctuation separators, split adjacent letters and digits; zero through ten and mister normalized. Raw hypotheses and references retained. Aggregate word edit distance divided by reference words; silence insertions counted.",
+    "scope": "Sequential isolated model processes on the same fixture bytes and repeat order. Cache reuse is explicit; cold load includes integrity checks. This small corpus is a regression comparison, not a general accuracy benchmark or a Fiote wake/routing/account/UI test.",
+    "passed": false,
+    "fixtures": [
+      {
+        "id": "natural-short",
+        "sha256": "97ec638609b9c7eeb616764b4e5713d7ed2d0a8e1a2f8246631d9074d47aaf11",
+        "expected": "go forward ten meters",
+        "provenance": "Natural PocketSphinx human recording; source and license in speech-goforward.json.",
+        "require_exact": false
+      },
+      {
+        "id": "long-request",
+        "sha256": "2aa1ac6354234e1ceaac6a36c0b6363c217af35f01ecf4a2962b79d2440d1fa8",
+        "expected": "Please remember the following details for our next conversation. The meeting is on Tuesday at ten. Alice brings eight apples and Bob brings four pears. The project is called sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+        "provenance": "Synthetic pinned Kokoro af_heart; original text unchanged; provenance in long-request-reference.json.",
+        "require_exact": false
+      },
+      {
+        "id": "name",
+        "sha256": "ce7a45684b19815fc3b10ac363a5e6b7efd2f45ed7b979f1197ddb6c2ee6ac3b",
+        "expected": "Please add Maya Chen to the planning note.",
+        "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim",
+        "require_exact": false
+      },
+      {
+        "id": "path",
+        "sha256": "cf55449ad0051ecebda9af04647f3077bff2fdd252384d979dcce2e633b43a12",
+        "expected": "The path is slash home slash user slash sandbox slash report dot C S V.",
+        "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim",
+        "require_exact": false
+      },
+      {
+        "id": "quantities",
+        "sha256": "3df1a33effacb7cd56b71e12adf2e002a33e58fea5cc42c805dfbb7204761c9c",
+        "expected": "Give Alice eight apples, Bob four pears, and Carol seven oranges.",
+        "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim",
+        "require_exact": false
+      },
+      {
+        "id": "negation",
+        "sha256": "fd63ace45a2bba710d468cdd5063f06ee7ab33e8e1a260ce3132affcc87bb748",
+        "expected": "Do not delete the file named quarterly report.",
+        "provenance": "Pinned Lince Kokoro af_heart, synthetic English; not a natural-voice accuracy claim",
+        "require_exact": false
+      },
+      {
+        "id": "first",
+        "sha256": "eb1a1d6dc52448243907f1ef335e42d74eedca60f108ee4b4b9215d7c7f4fed0",
+        "expected": "Please remember the word sapphire.",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "followup",
+        "sha256": "8a17f4bae84aa08f44b5fc18ce2ffb90239929cedb759483676ff0d5dcc79091",
+        "expected": "What word did I ask you to remember?",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "ending",
+        "sha256": "3511c2a6a0f0c4b764dc12611270a8b0b877cf4b6a41ec08bf1836056c18c089",
+        "expected": "Thanks, that is all for now. Goodbye.",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "background",
+        "sha256": "7dcf6c306fab9fe19909158c34923e9990f1584e7e6c695c819dbb9177d34450",
+        "expected": "Maria, please pass me the salt at the dinner table.",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "wake-statement",
+        "sha256": "e0a4f7eef7262c04785f1af3855f75ae990a424ced140d056f62202c65b07c0f",
+        "expected": "Hey Fiote.",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "wake-question",
+        "sha256": "222f2cc0f31aa02db3d35baed8dc37c574da2c48754bb6322b64d6bc2e1a105f",
+        "expected": "Hey Fiote?",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "wake-exclamation",
+        "sha256": "5726fd149583dc80deb300853380396fea08c8b267e3f86be792d8fcb7f7ce24",
+        "expected": "Hey Fiote!",
+        "provenance": "Kokoro af_heart with the pinned Lince English voice assets; synthetic.",
+        "require_exact": false
+      },
+      {
+        "id": "silence",
+        "sha256": "20eaebffe1816e0ffa6f7f854f5ef4ea80d5349faaf0ce1fec1b713e7fde58fa",
+        "expected": "",
+        "provenance": "Two seconds of digitally generated PCM silence; no speech.",
+        "require_exact": true
+      }
+    ],
+    "models": [
+      {
+        "id": "moonshine-tiny",
+        "provenance": {
+          "repository": "moonshine-ai/moonshine-streaming-tiny",
+          "revision": "f8e9dfd8c562c257c151a907b7b7f2fe8ff8511a",
+          "artifacts": [
+            {
+              "file": "config.json",
+              "bytes": 1421,
+              "sha256": "166861753adaf928ae99b3709bfb1da47cb76319be58f37c6f9b7a539ce371f0"
+            },
+            {
+              "file": "tokenizer.json",
+              "bytes": 1676069,
+              "sha256": "28bbc54a47dfa33673affa26010f23ac452685b18c76e81451d9b3ea25a54d54"
+            },
+            {
+              "file": "model.safetensors",
+              "bytes": 176237308,
+              "sha256": "0ab3443dabd95a4afb35f0a26155428c03b7c3c450fa6923ffdac4510ba3d040"
+            }
+          ],
+          "implementation": "Lince Moonshine Streaming Candle CPU F32 port; offline segments; no reference tensor-parity or incremental streaming claim"
+        },
+        "cold_load_ms": 5130,
+        "initialization_rss_bytes": 217366528,
+        "peak_process_rss_bytes": 371703808,
+        "memory_scope": "Linux process VmHWM; CPU-only inference; includes runtime, weights and allocator peak, excludes other processes and kernel file cache. Unavailable on other systems.",
+        "score": {
+          "reference_words": 258,
+          "edits": 38,
+          "utterances": 28,
+          "exact_utterances": 12
+        },
+        "word_error_rate": 0.14728682170542637,
+        "completed": true,
+        "passed": true,
+        "timed_out": false,
+        "exit_code": 0,
+        "error": null,
+        "samples": [
+          {
+            "fixture": "natural-short",
+            "repetition": 0,
+            "audio_ms": 2786,
+            "recognition": {
+              "text": "Go forward ten meters.",
+              "cold_load_ms": 0,
+              "transcription_ms": 390
+            },
+            "score": {
+              "reference_words": 4,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.1399856424982053,
+            "process_rss_bytes": 219971584,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "long-request",
+            "repetition": 0,
+            "audio_ms": 18200,
+            "recognition": {
+              "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at 10. Alice brings eight apples and Bob brings four pairs. The project is called Zappire. Keep all of these details together and remember that the final word of this request is telescope.",
+              "cold_load_ms": 0,
+              "transcription_ms": 4417
+            },
+            "score": {
+              "reference_words": 47,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.24269230769230768,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "name",
+            "repetition": 0,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Please add my a Chen to the planning note.",
+              "cold_load_ms": 0,
+              "transcription_ms": 509
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.1834234234234234,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "path",
+            "repetition": 0,
+            "audio_ms": 5325,
+            "recognition": {
+              "text": "The Pathist Lash Homes Lash User Slash Sandbox slash Report.csv.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1010
+            },
+            "score": {
+              "reference_words": 15,
+              "edits": 9,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.18967136150234745,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "quantities",
+            "repetition": 0,
+            "audio_ms": 4400,
+            "recognition": {
+              "text": "Give Alice eight apples, Bob four pairs, and Carol seven orangs.",
+              "cold_load_ms": 0,
+              "transcription_ms": 814
+            },
+            "score": {
+              "reference_words": 11,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.185,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "negation",
+            "repetition": 0,
+            "audio_ms": 3100,
+            "recognition": {
+              "text": "Do not delete the file, nommed quarterly report.",
+              "cold_load_ms": 0,
+              "transcription_ms": 529
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.1706451612903226,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "first",
+            "repetition": 0,
+            "audio_ms": 2475,
+            "recognition": {
+              "text": "Please remember the word sapphire.",
+              "cold_load_ms": 0,
+              "transcription_ms": 364
+            },
+            "score": {
+              "reference_words": 5,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.14707070707070707,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "followup",
+            "repetition": 0,
+            "audio_ms": 2500,
+            "recognition": {
+              "text": "What word did I ask you to remember?",
+              "cold_load_ms": 0,
+              "transcription_ms": 405
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.162,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "ending",
+            "repetition": 0,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Thanks that is all for now. Goodbye.",
+              "cold_load_ms": 0,
+              "transcription_ms": 469
+            },
+            "score": {
+              "reference_words": 7,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.169009009009009,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "background",
+            "repetition": 0,
+            "audio_ms": 3400,
+            "recognition": {
+              "text": "Maria, please pass me the salt at the dinner table.",
+              "cold_load_ms": 0,
+              "transcription_ms": 503
+            },
+            "score": {
+              "reference_words": 10,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.14794117647058824,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-statement",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phelps.",
+              "cold_load_ms": 0,
+              "transcription_ms": 258
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.16918032786885245,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-question",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, failed.",
+              "cold_load_ms": 0,
+              "transcription_ms": 237
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.15540983606557376,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-exclamation",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, failed.",
+              "cold_load_ms": 0,
+              "transcription_ms": 257
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.16852459016393442,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "silence",
+            "repetition": 0,
+            "audio_ms": 2000,
+            "recognition": {
+              "text": "",
+              "cold_load_ms": 0,
+              "transcription_ms": 198
+            },
+            "score": {
+              "reference_words": 0,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.099,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "natural-short",
+            "repetition": 1,
+            "audio_ms": 2786,
+            "recognition": {
+              "text": "Go forward ten meters.",
+              "cold_load_ms": 0,
+              "transcription_ms": 369
+            },
+            "score": {
+              "reference_words": 4,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.13244795405599424,
+            "process_rss_bytes": 262991872,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "long-request",
+            "repetition": 1,
+            "audio_ms": 18200,
+            "recognition": {
+              "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at 10. Alice brings eight apples and Bob brings four pairs. The project is called Zappire. Keep all of these details together and remember that the final word of this request is telescope.",
+              "cold_load_ms": 0,
+              "transcription_ms": 3442
+            },
+            "score": {
+              "reference_words": 47,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.18912087912087913,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "name",
+            "repetition": 1,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Please add my a Chen to the planning note.",
+              "cold_load_ms": 0,
+              "transcription_ms": 456
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.1643243243243243,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "path",
+            "repetition": 1,
+            "audio_ms": 5325,
+            "recognition": {
+              "text": "The Pathist Lash Homes Lash User Slash Sandbox slash Report.csv.",
+              "cold_load_ms": 0,
+              "transcription_ms": 671
+            },
+            "score": {
+              "reference_words": 15,
+              "edits": 9,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.1260093896713615,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "quantities",
+            "repetition": 1,
+            "audio_ms": 4400,
+            "recognition": {
+              "text": "Give Alice eight apples, Bob four pairs, and Carol seven orangs.",
+              "cold_load_ms": 0,
+              "transcription_ms": 587
+            },
+            "score": {
+              "reference_words": 11,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.13340909090909092,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "negation",
+            "repetition": 1,
+            "audio_ms": 3100,
+            "recognition": {
+              "text": "Do not delete the file, nommed quarterly report.",
+              "cold_load_ms": 0,
+              "transcription_ms": 454
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.1464516129032258,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "first",
+            "repetition": 1,
+            "audio_ms": 2475,
+            "recognition": {
+              "text": "Please remember the word sapphire.",
+              "cold_load_ms": 0,
+              "transcription_ms": 324
+            },
+            "score": {
+              "reference_words": 5,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.13090909090909092,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "followup",
+            "repetition": 1,
+            "audio_ms": 2500,
+            "recognition": {
+              "text": "What word did I ask you to remember?",
+              "cold_load_ms": 0,
+              "transcription_ms": 327
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.1308,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "ending",
+            "repetition": 1,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Thanks that is all for now. Goodbye.",
+              "cold_load_ms": 0,
+              "transcription_ms": 415
+            },
+            "score": {
+              "reference_words": 7,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.14954954954954955,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "background",
+            "repetition": 1,
+            "audio_ms": 3400,
+            "recognition": {
+              "text": "Maria, please pass me the salt at the dinner table.",
+              "cold_load_ms": 0,
+              "transcription_ms": 512
+            },
+            "score": {
+              "reference_words": 10,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.15058823529411763,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-statement",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phelps.",
+              "cold_load_ms": 0,
+              "transcription_ms": 277
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.18163934426229508,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-question",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, failed.",
+              "cold_load_ms": 0,
+              "transcription_ms": 236
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.1547540983606557,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-exclamation",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, failed.",
+              "cold_load_ms": 0,
+              "transcription_ms": 221
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.14491803278688525,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "silence",
+            "repetition": 1,
+            "audio_ms": 2000,
+            "recognition": {
+              "text": "",
+              "cold_load_ms": 0,
+              "transcription_ms": 170
+            },
+            "score": {
+              "reference_words": 0,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.085,
+            "process_rss_bytes": 262995968,
+            "passed": true,
+            "error": null
+          }
+        ]
+      },
+      {
+        "id": "moonshine-small",
+        "provenance": {
+          "repository": "moonshine-ai/moonshine-streaming-small",
+          "revision": "2c036506f23a09c18df5a50057599ba6d9280999",
+          "artifacts": [
+            {
+              "file": "config.json",
+              "bytes": 1579,
+              "sha256": "9196efd60b559dc4dc4e9fab08a7b0fce3501d0373b995158c6c6d3ab9b58461"
+            },
+            {
+              "file": "tokenizer.json",
+              "bytes": 1676069,
+              "sha256": "28bbc54a47dfa33673affa26010f23ac452685b18c76e81451d9b3ea25a54d54"
+            },
+            {
+              "file": "model.safetensors",
+              "bytes": 560571228,
+              "sha256": "003635df57b9a47771fd94a6290ab517d7487d0026c165ca9f2ac90411802646"
+            }
+          ],
+          "implementation": "Lince Moonshine Streaming Candle CPU F32 port; offline segments; no reference tensor-parity or incremental streaming claim"
+        },
+        "cold_load_ms": 13983,
+        "initialization_rss_bytes": 602030080,
+        "peak_process_rss_bytes": 1140441088,
+        "memory_scope": "Linux process VmHWM; CPU-only inference; includes runtime, weights and allocator peak, excludes other processes and kernel file cache. Unavailable on other systems.",
+        "score": {
+          "reference_words": 258,
+          "edits": 26,
+          "utterances": 28,
+          "exact_utterances": 10
+        },
+        "word_error_rate": 0.10077519379844961,
+        "completed": true,
+        "passed": false,
+        "timed_out": false,
+        "exit_code": 0,
+        "error": null,
+        "samples": [
+          {
+            "fixture": "natural-short",
+            "repetition": 0,
+            "audio_ms": 2786,
+            "recognition": {
+              "text": "Go forward ten metres.",
+              "cold_load_ms": 0,
+              "transcription_ms": 985
+            },
+            "score": {
+              "reference_words": 4,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.3535534816941852,
+            "process_rss_bytes": 608292864,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "long-request",
+            "repetition": 0,
+            "audio_ms": 18200,
+            "recognition": {
+              "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at 10:00. Alice brings eight apples, and Bob brings four pairs. The project is called Sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+              "cold_load_ms": 0,
+              "transcription_ms": 10265
+            },
+            "score": {
+              "reference_words": 47,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.564010989010989,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "name",
+            "repetition": 0,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Please add Maya Chen to the planning note.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1179
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.42486486486486486,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "path",
+            "repetition": 0,
+            "audio_ms": 5325,
+            "recognition": {
+              "text": "The path is slash home slash user slash sandbox slash report dot CSV.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2109
+            },
+            "score": {
+              "reference_words": 15,
+              "edits": 3,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.39605633802816903,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "quantities",
+            "repetition": 0,
+            "audio_ms": 4400,
+            "recognition": {
+              "text": "Give Alice eight apples, Bob four pairs, and Carol seven orangs.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2159
+            },
+            "score": {
+              "reference_words": 11,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.49068181818181816,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "negation",
+            "repetition": 0,
+            "audio_ms": 3100,
+            "recognition": {
+              "text": "Do not delete the file, nommed quarterly report.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1526
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.492258064516129,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "first",
+            "repetition": 0,
+            "audio_ms": 2475,
+            "recognition": {
+              "text": "Please remember the word sapphire.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1049
+            },
+            "score": {
+              "reference_words": 5,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.42383838383838385,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "followup",
+            "repetition": 0,
+            "audio_ms": 2500,
+            "recognition": {
+              "text": "What word did I ask you to remember?",
+              "cold_load_ms": 0,
+              "transcription_ms": 1222
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4888,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "ending",
+            "repetition": 0,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Thanks, that is all for now. Goodbye.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1523
+            },
+            "score": {
+              "reference_words": 7,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.5488288288288288,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "background",
+            "repetition": 0,
+            "audio_ms": 3400,
+            "recognition": {
+              "text": "Maria, please pass me the salt at the dinner table.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1543
+            },
+            "score": {
+              "reference_words": 10,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4538235294117647,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-statement",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phil.",
+              "cold_load_ms": 0,
+              "transcription_ms": 731
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.479344262295082,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-question",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phil.",
+              "cold_load_ms": 0,
+              "transcription_ms": 705
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.46229508196721314,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-exclamation",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phil.",
+              "cold_load_ms": 0,
+              "transcription_ms": 736
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.48262295081967216,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "silence",
+            "repetition": 0,
+            "audio_ms": 2000,
+            "recognition": {
+              "text": "You",
+              "cold_load_ms": 0,
+              "transcription_ms": 612
+            },
+            "score": {
+              "reference_words": 0,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.306,
+            "process_rss_bytes": 653119488,
+            "passed": false,
+            "error": null
+          },
+          {
+            "fixture": "natural-short",
+            "repetition": 1,
+            "audio_ms": 2786,
+            "recognition": {
+              "text": "Go forward ten metres.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1055
+            },
+            "score": {
+              "reference_words": 4,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.3786791098348887,
+            "process_rss_bytes": 653119488,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "long-request",
+            "repetition": 1,
+            "audio_ms": 18200,
+            "recognition": {
+              "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at 10:00. Alice brings eight apples, and Bob brings four pairs. The project is called Sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+              "cold_load_ms": 0,
+              "transcription_ms": 9785
+            },
+            "score": {
+              "reference_words": 47,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.5376373626373626,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "name",
+            "repetition": 1,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Please add Maya Chen to the planning note.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1380
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4972972972972973,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "path",
+            "repetition": 1,
+            "audio_ms": 5325,
+            "recognition": {
+              "text": "The path is slash home slash user slash sandbox slash report dot CSV.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2344
+            },
+            "score": {
+              "reference_words": 15,
+              "edits": 3,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.44018779342723,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "quantities",
+            "repetition": 1,
+            "audio_ms": 4400,
+            "recognition": {
+              "text": "Give Alice eight apples, Bob four pairs, and Carol seven orangs.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2180
+            },
+            "score": {
+              "reference_words": 11,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.4954545454545455,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "negation",
+            "repetition": 1,
+            "audio_ms": 3100,
+            "recognition": {
+              "text": "Do not delete the file, nommed quarterly report.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1562
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.5038709677419355,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "first",
+            "repetition": 1,
+            "audio_ms": 2475,
+            "recognition": {
+              "text": "Please remember the word sapphire.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1123
+            },
+            "score": {
+              "reference_words": 5,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4537373737373737,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "followup",
+            "repetition": 1,
+            "audio_ms": 2500,
+            "recognition": {
+              "text": "What word did I ask you to remember?",
+              "cold_load_ms": 0,
+              "transcription_ms": 1284
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.5136,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "ending",
+            "repetition": 1,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Thanks, that is all for now. Goodbye.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1281
+            },
+            "score": {
+              "reference_words": 7,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4616216216216216,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "background",
+            "repetition": 1,
+            "audio_ms": 3400,
+            "recognition": {
+              "text": "Maria, please pass me the salt at the dinner table.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1624
+            },
+            "score": {
+              "reference_words": 10,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4776470588235294,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-statement",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phil.",
+              "cold_load_ms": 0,
+              "transcription_ms": 773
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.5068852459016393,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-question",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phil.",
+              "cold_load_ms": 0,
+              "transcription_ms": 780
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.5114754098360655,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-exclamation",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "Hey, Phil.",
+              "cold_load_ms": 0,
+              "transcription_ms": 768
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.5036065573770492,
+            "process_rss_bytes": 653254656,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "silence",
+            "repetition": 1,
+            "audio_ms": 2000,
+            "recognition": {
+              "text": "You",
+              "cold_load_ms": 0,
+              "transcription_ms": 659
+            },
+            "score": {
+              "reference_words": 0,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.3295,
+            "process_rss_bytes": 653254656,
+            "passed": false,
+            "error": null
+          }
+        ]
+      },
+      {
+        "id": "phonon",
+        "provenance": {
+          "manifest": {
+            "id": "phonon-2",
+            "repository": "FermionResearch/Phonon-2",
+            "revision": "7e153e4054c0a10db6d47d6fff5c062d4c77c154",
+            "license": "CC-BY-4.0",
+            "artifact": {
+              "name": "phonon-2.bps.tar.zst",
+              "bytes": 163515201,
+              "sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e"
+            }
+          },
+          "implementation": "phonon-rs; Candle CPU F32; evaluation bypasses the production silence and draft filters"
+        },
+        "cold_load_ms": 13530,
+        "initialization_rss_bytes": 18399232,
+        "peak_process_rss_bytes": 2769788928,
+        "memory_scope": "Linux process VmHWM; CPU-only inference; includes runtime, weights and allocator peak, excludes other processes and kernel file cache. Unavailable on other systems.",
+        "score": {
+          "reference_words": 258,
+          "edits": 24,
+          "utterances": 28,
+          "exact_utterances": 16
+        },
+        "word_error_rate": 0.09302325581395349,
+        "completed": true,
+        "passed": true,
+        "timed_out": false,
+        "exit_code": 0,
+        "error": null,
+        "samples": [
+          {
+            "fixture": "natural-short",
+            "repetition": 0,
+            "audio_ms": 2786,
+            "recognition": {
+              "text": "Go forward ten meters.",
+              "cold_load_ms": 13530,
+              "transcription_ms": 1835
+            },
+            "score": {
+              "reference_words": 4,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6586503948312994,
+            "process_rss_bytes": 2600038400,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "long-request",
+            "repetition": 0,
+            "audio_ms": 18200,
+            "recognition": {
+              "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at ten. Alice brings eight apples and Bob brings four pairs. The project is called Sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+              "cold_load_ms": 0,
+              "transcription_ms": 6853
+            },
+            "score": {
+              "reference_words": 47,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.37653846153846154,
+            "process_rss_bytes": 2595692544,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "name",
+            "repetition": 0,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Please add Maya Chen to the planning note.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1778
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6407207207207207,
+            "process_rss_bytes": 2600148992,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "path",
+            "repetition": 0,
+            "audio_ms": 5325,
+            "recognition": {
+              "text": "The path is slash home slash user slash sandbox slash report.csv.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2616
+            },
+            "score": {
+              "reference_words": 15,
+              "edits": 4,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.4912676056338029,
+            "process_rss_bytes": 2630557696,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "quantities",
+            "repetition": 0,
+            "audio_ms": 4400,
+            "recognition": {
+              "text": "Give Alice eight apples, Bob four pears, and Carol seven oranges.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2312
+            },
+            "score": {
+              "reference_words": 11,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.5254545454545455,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "negation",
+            "repetition": 0,
+            "audio_ms": 3100,
+            "recognition": {
+              "text": "Do not delete the file nomed Quarterly Report.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1870
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.603225806451613,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "first",
+            "repetition": 0,
+            "audio_ms": 2475,
+            "recognition": {
+              "text": "Please remember the word sapphire.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1792
+            },
+            "score": {
+              "reference_words": 5,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.724040404040404,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "followup",
+            "repetition": 0,
+            "audio_ms": 2500,
+            "recognition": {
+              "text": "What word did I ask you to remember?",
+              "cold_load_ms": 0,
+              "transcription_ms": 1683
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6732,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "ending",
+            "repetition": 0,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Thanks, that is all for now. Goodbye.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1733
+            },
+            "score": {
+              "reference_words": 7,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6245045045045045,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "background",
+            "repetition": 0,
+            "audio_ms": 3400,
+            "recognition": {
+              "text": "Maria, please pass me the salt at the dinner table.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1955
+            },
+            "score": {
+              "reference_words": 10,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.575,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-statement",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "He felt.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1369
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.8977049180327868,
+            "process_rss_bytes": 2630885376,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-question",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "He felt.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1353
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.8872131147540984,
+            "process_rss_bytes": 2631102464,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-exclamation",
+            "repetition": 0,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "He felt.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1381
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.9055737704918032,
+            "process_rss_bytes": 2631102464,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "silence",
+            "repetition": 0,
+            "audio_ms": 2000,
+            "recognition": {
+              "text": "",
+              "cold_load_ms": 0,
+              "transcription_ms": 1424
+            },
+            "score": {
+              "reference_words": 0,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.712,
+            "process_rss_bytes": 2631102464,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "natural-short",
+            "repetition": 1,
+            "audio_ms": 2786,
+            "recognition": {
+              "text": "Go forward ten meters.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1697
+            },
+            "score": {
+              "reference_words": 4,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6091170136396267,
+            "process_rss_bytes": 2631102464,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "long-request",
+            "repetition": 1,
+            "audio_ms": 18200,
+            "recognition": {
+              "text": "Please remember the following details for our next conversation. The meeting is on Tuesday at ten. Alice brings eight apples and Bob brings four pairs. The project is called Sapphire. Keep all of these details together, and remember that the final word of this request is telescope.",
+              "cold_load_ms": 0,
+              "transcription_ms": 7560
+            },
+            "score": {
+              "reference_words": 47,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.4153846153846154,
+            "process_rss_bytes": 2596237312,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "name",
+            "repetition": 1,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Please add Maya Chen to the planning note.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1869
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6735135135135135,
+            "process_rss_bytes": 2600693760,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "path",
+            "repetition": 1,
+            "audio_ms": 5325,
+            "recognition": {
+              "text": "The path is slash home slash user slash sandbox slash report.csv.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2656
+            },
+            "score": {
+              "reference_words": 15,
+              "edits": 4,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.4987793427230046,
+            "process_rss_bytes": 2631102464,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "quantities",
+            "repetition": 1,
+            "audio_ms": 4400,
+            "recognition": {
+              "text": "Give Alice eight apples, Bob four pears, and Carol seven oranges.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2444
+            },
+            "score": {
+              "reference_words": 11,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.5554545454545454,
+            "process_rss_bytes": 2631102464,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "negation",
+            "repetition": 1,
+            "audio_ms": 3100,
+            "recognition": {
+              "text": "Do not delete the file nomed Quarterly Report.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1896
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 1,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.6116129032258064,
+            "process_rss_bytes": 2631114752,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "first",
+            "repetition": 1,
+            "audio_ms": 2475,
+            "recognition": {
+              "text": "Please remember the word sapphire.",
+              "cold_load_ms": 0,
+              "transcription_ms": 2075
+            },
+            "score": {
+              "reference_words": 5,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.8383838383838383,
+            "process_rss_bytes": 2631114752,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "followup",
+            "repetition": 1,
+            "audio_ms": 2500,
+            "recognition": {
+              "text": "What word did I ask you to remember?",
+              "cold_load_ms": 0,
+              "transcription_ms": 1765
+            },
+            "score": {
+              "reference_words": 8,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.706,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "ending",
+            "repetition": 1,
+            "audio_ms": 2775,
+            "recognition": {
+              "text": "Thanks, that is all for now. Goodbye.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1778
+            },
+            "score": {
+              "reference_words": 7,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.6407207207207207,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "background",
+            "repetition": 1,
+            "audio_ms": 3400,
+            "recognition": {
+              "text": "Maria, please pass me the salt at the dinner table.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1944
+            },
+            "score": {
+              "reference_words": 10,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.571764705882353,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-statement",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "He felt.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1389
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.9108196721311476,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-question",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "He felt.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1393
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.9134426229508196,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "wake-exclamation",
+            "repetition": 1,
+            "audio_ms": 1525,
+            "recognition": {
+              "text": "He felt.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1405
+            },
+            "score": {
+              "reference_words": 2,
+              "edits": 2,
+              "utterances": 1,
+              "exact_utterances": 0
+            },
+            "real_time_factor": 0.921311475409836,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "silence",
+            "repetition": 1,
+            "audio_ms": 2000,
+            "recognition": {
+              "text": "",
+              "cold_load_ms": 0,
+              "transcription_ms": 1618
+            },
+            "score": {
+              "reference_words": 0,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.809,
+            "process_rss_bytes": 2631118848,
+            "passed": true,
+            "error": null
+          }
+        ]
+      }
+    ]
+  },
+  "human_cross_check": {
+    "settings": {
+      "threads": 4,
+      "repetitions": 2,
+      "timeout_seconds": 900,
+      "maximum_wer": 0.15
+    },
+    "normalization": "Lowercase alphanumeric words, punctuation separators, split adjacent letters and digits; zero through ten and mister normalized. Raw hypotheses and references retained. Aggregate word edit distance divided by reference words; silence insertions counted.",
+    "scope": "Sequential isolated model processes on the same fixture bytes and repeat order. Cache reuse is explicit; cold load includes integrity checks. This small corpus is a regression comparison, not a general accuracy benchmark or a Fiote wake/routing/account/UI test.",
+    "passed": true,
+    "fixtures": [
+      {
+        "id": "human-jfk",
+        "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e",
+        "expected": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+        "provenance": "Natural public JFK speech sample from https://raw.githubusercontent.com/ggml-org/whisper.cpp/231638a0717b7822784297e5980965ffcec05810/samples/jfk.wav; unchanged PCM; upstream MIT LICENSE retained.",
+        "require_exact": true
+      }
+    ],
+    "models": [
+      {
+        "id": "moonshine-tiny",
+        "provenance": {
+          "repository": "moonshine-ai/moonshine-streaming-tiny",
+          "revision": "f8e9dfd8c562c257c151a907b7b7f2fe8ff8511a",
+          "artifacts": [
+            {
+              "file": "config.json",
+              "bytes": 1421,
+              "sha256": "166861753adaf928ae99b3709bfb1da47cb76319be58f37c6f9b7a539ce371f0"
+            },
+            {
+              "file": "tokenizer.json",
+              "bytes": 1676069,
+              "sha256": "28bbc54a47dfa33673affa26010f23ac452685b18c76e81451d9b3ea25a54d54"
+            },
+            {
+              "file": "model.safetensors",
+              "bytes": 176237308,
+              "sha256": "0ab3443dabd95a4afb35f0a26155428c03b7c3c450fa6923ffdac4510ba3d040"
+            }
+          ],
+          "implementation": "Lince Moonshine Streaming Candle CPU F32 port; offline segments; no reference tensor-parity or incremental streaming claim"
+        },
+        "cold_load_ms": 5538,
+        "initialization_rss_bytes": 214560768,
+        "peak_process_rss_bytes": 368689152,
+        "memory_scope": "Linux process VmHWM; CPU-only inference; includes runtime, weights and allocator peak, excludes other processes and kernel file cache. Unavailable on other systems.",
+        "score": {
+          "reference_words": 44,
+          "edits": 0,
+          "utterances": 2,
+          "exact_utterances": 2
+        },
+        "word_error_rate": 0.0,
+        "completed": true,
+        "passed": true,
+        "timed_out": false,
+        "exit_code": 0,
+        "error": null,
+        "samples": [
+          {
+            "fixture": "human-jfk",
+            "repetition": 0,
+            "audio_ms": 11000,
+            "recognition": {
+              "text": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1842
+            },
+            "score": {
+              "reference_words": 22,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.16745454545454547,
+            "process_rss_bytes": 228638720,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "human-jfk",
+            "repetition": 1,
+            "audio_ms": 11000,
+            "recognition": {
+              "text": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "cold_load_ms": 0,
+              "transcription_ms": 1807
+            },
+            "score": {
+              "reference_words": 22,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.16427272727272726,
+            "process_rss_bytes": 228642816,
+            "passed": true,
+            "error": null
+          }
+        ]
+      },
+      {
+        "id": "moonshine-small",
+        "provenance": {
+          "repository": "moonshine-ai/moonshine-streaming-small",
+          "revision": "2c036506f23a09c18df5a50057599ba6d9280999",
+          "artifacts": [
+            {
+              "file": "config.json",
+              "bytes": 1579,
+              "sha256": "9196efd60b559dc4dc4e9fab08a7b0fce3501d0373b995158c6c6d3ab9b58461"
+            },
+            {
+              "file": "tokenizer.json",
+              "bytes": 1676069,
+              "sha256": "28bbc54a47dfa33673affa26010f23ac452685b18c76e81451d9b3ea25a54d54"
+            },
+            {
+              "file": "model.safetensors",
+              "bytes": 560571228,
+              "sha256": "003635df57b9a47771fd94a6290ab517d7487d0026c165ca9f2ac90411802646"
+            }
+          ],
+          "implementation": "Lince Moonshine Streaming Candle CPU F32 port; offline segments; no reference tensor-parity or incremental streaming claim"
+        },
+        "cold_load_ms": 13554,
+        "initialization_rss_bytes": 599224320,
+        "peak_process_rss_bytes": 1137819648,
+        "memory_scope": "Linux process VmHWM; CPU-only inference; includes runtime, weights and allocator peak, excludes other processes and kernel file cache. Unavailable on other systems.",
+        "score": {
+          "reference_words": 44,
+          "edits": 0,
+          "utterances": 2,
+          "exact_utterances": 2
+        },
+        "word_error_rate": 0.0,
+        "completed": true,
+        "passed": true,
+        "timed_out": false,
+        "exit_code": 0,
+        "error": null,
+        "samples": [
+          {
+            "fixture": "human-jfk",
+            "repetition": 0,
+            "audio_ms": 11000,
+            "recognition": {
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "cold_load_ms": 0,
+              "transcription_ms": 5146
+            },
+            "score": {
+              "reference_words": 22,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4678181818181818,
+            "process_rss_bytes": 623005696,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "human-jfk",
+            "repetition": 1,
+            "audio_ms": 11000,
+            "recognition": {
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "cold_load_ms": 0,
+              "transcription_ms": 4536
+            },
+            "score": {
+              "reference_words": 22,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.4123636363636364,
+            "process_rss_bytes": 623009792,
+            "passed": true,
+            "error": null
+          }
+        ]
+      },
+      {
+        "id": "phonon",
+        "provenance": {
+          "manifest": {
+            "id": "phonon-2",
+            "repository": "FermionResearch/Phonon-2",
+            "revision": "7e153e4054c0a10db6d47d6fff5c062d4c77c154",
+            "license": "CC-BY-4.0",
+            "artifact": {
+              "name": "phonon-2.bps.tar.zst",
+              "bytes": 163515201,
+              "sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e"
+            }
+          },
+          "implementation": "phonon-rs; Candle CPU F32; evaluation bypasses the production silence and draft filters"
+        },
+        "cold_load_ms": 15723,
+        "initialization_rss_bytes": 15609856,
+        "peak_process_rss_bytes": 2767331328,
+        "memory_scope": "Linux process VmHWM; CPU-only inference; includes runtime, weights and allocator peak, excludes other processes and kernel file cache. Unavailable on other systems.",
+        "score": {
+          "reference_words": 44,
+          "edits": 0,
+          "utterances": 2,
+          "exact_utterances": 2
+        },
+        "word_error_rate": 0.0,
+        "completed": true,
+        "passed": true,
+        "timed_out": false,
+        "exit_code": 0,
+        "error": null,
+        "samples": [
+          {
+            "fixture": "human-jfk",
+            "repetition": 0,
+            "audio_ms": 11000,
+            "recognition": {
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "cold_load_ms": 15723,
+              "transcription_ms": 4329
+            },
+            "score": {
+              "reference_words": 22,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.3935454545454546,
+            "process_rss_bytes": 2601693184,
+            "passed": true,
+            "error": null
+          },
+          {
+            "fixture": "human-jfk",
+            "repetition": 1,
+            "audio_ms": 11000,
+            "recognition": {
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "cold_load_ms": 0,
+              "transcription_ms": 4190
+            },
+            "score": {
+              "reference_words": 22,
+              "edits": 0,
+              "utterances": 1,
+              "exact_utterances": 1
+            },
+            "real_time_factor": 0.3809090909090909,
+            "process_rss_bytes": 2601779200,
+            "passed": true,
+            "error": null
+          }
+        ]
+      }
+    ]
+  },
+  "human_fixture_source": {
+    "repository": "https://github.com/ggml-org/whisper.cpp",
+    "revision": "231638a0717b7822784297e5980965ffcec05810",
+    "source": "samples/jfk.wav",
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e",
+    "expected": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+    "scope": "Only the audio sample is used. No whisper.cpp code or C++ inference runtime is used."
+  }
+}

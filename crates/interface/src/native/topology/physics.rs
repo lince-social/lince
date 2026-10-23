@@ -251,6 +251,9 @@ pub fn synchronize(world: &mut World) -> bool {
         .filter(|(e, _, root, member)| {
             !crate::native::layout::desktop::tiled(world, *e)
                 && world
+                    .get::<crate::native::layout::desktop::Suppressed>(*e)
+                    .is_none()
+                && world
                     .get::<crate::native::external_drop::Preview>(*e)
                     .is_none()
                 && super::holes::live(world, root.parent(), member.0)

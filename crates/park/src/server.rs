@@ -83,6 +83,7 @@ pub(crate) use output_control::validate_catalog as validate_output_catalog;
 mod extensions;
 mod constraints;
 mod damage;
+mod commits;
 mod idle;
 mod ime;
 
@@ -382,6 +383,7 @@ struct State {
     dmabuf: buffers::Buffers,
     buttons: BTreeSet<u32>,
     generations: HashMap<WlSurface, u64>,
+    visuals: HashMap<WlSurface, commits::Visual>,
     callbacks: HashMap<WlSurface, VecDeque<Callbacks>>,
     requests: BTreeMap<SurfaceId, WindowRequest>,
     popups: popups::Popups,
@@ -515,6 +517,7 @@ impl Server {
             dmabuf: buffers::Buffers::new(),
             buttons: BTreeSet::new(),
             generations: HashMap::new(),
+            visuals: HashMap::new(),
             callbacks: HashMap::new(),
             requests: BTreeMap::new(),
             popups: Default::default(),
@@ -902,6 +905,32 @@ impl Server {
     }
 
     pub fn presented_nodes(&mut self, nodes: &[SurfaceNode]) {
+        self.presented_groups([nodes]);
+    }
+
+    pub(crate) fn presented_groups<'a>(&mut self, groups: impl IntoIterator<Item = &'a [SurfaceNode]>) {
+        #[cfg(feature = "native-presentation")]
+        let time = crate::runtime::tracing_frames().then(|| std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs_f64());
+        for nodes in groups {
+            #[cfg(feature = "native-presentation")]
+            if let Some(time) = time {
+                for node in nodes {
+                    if let Some(id) = self.state.input_root(&node.surface).and_then(|root| self.state.id(&root)) {
+                        eprintln!("Park app-presentation: {} {} {} {time:.6}", id.0, node.surface.id().protocol_id(), node.content.version);
+                    }
+                }
+            }
+            self.finish_frame_callbacks(nodes);
+        }
+    }
+
+    #[cfg(any(feature = "nested", test))]
+    pub(crate) fn frame_started_nodes(&mut self, nodes: &[SurfaceNode]) {
+        self.finish_frame_callbacks(nodes);
+    }
+
+    fn finish_frame_callbacks(&mut self, nodes: &[SurfaceNode]) {
         let time = self.started.elapsed().as_millis() as u32;
         for node in nodes {
             let Some(pending) = self.state.callbacks.get_mut(&node.surface) else {
@@ -1161,38 +1190,22 @@ impl CompositorHandler for State {
             .iter()
             .map(|(surface, _)| surface.clone())
             .collect();
-        for (surface, new) in callbacks {
-            self.generations.insert(surface.clone(), self.revision);
-            if !new.is_empty() {
-                let pending = self.callbacks.entry(surface.clone()).or_default();
-                let count = pending
-                    .iter()
-                    .map(|batch| batch.callbacks.len())
-                    .sum::<usize>();
-                if count + new.len() > 256 {
-                    self.reject(&surface, "Park frame callback limit reached");
-                } else {
-                    pending.push_back(Callbacks {
-                        generation: self.revision,
-                        callbacks: new,
-                    });
-                }
-            }
-        }
+        let pixels_changed = !assignments.is_empty() || damages.iter().any(|(_, damage)| !damage.is_empty());
         for (surface, assignment) in assignments {
             match assignment {
                 BufferAssignment::NewBuffer(buffer) => {
-                    if let Some(id) = id
+                    if surface == root
+                        && let Some(id) = id
                         && !self.windows[&id].role.ensure_configured()
                     {
                         buffer.release();
                         continue;
                     }
-                    if !self.layer_configured(&root) {
+                    if surface == root && !self.layer_configured(&root) {
                         buffer.release();
                         continue;
                     }
-                    if self
+                    if surface == root && self
                         .popups
                         .surfaces
                         .get(&root)
@@ -1311,12 +1324,39 @@ impl CompositorHandler for State {
             }
         }
         for (surface, damage) in damages { self.update_damage(&surface, damage); }
+        let frame_only = if let Some(id) = id {
+            let visual = self.visual(&root);
+            let unchanged = !pixels_changed && self.windows[&id].mapped
+                && self.visuals.get(&root) == Some(&visual);
+            self.visuals.insert(root.clone(), visual);
+            unchanged
+        } else { false };
+        for (surface, new) in callbacks {
+            self.generations.insert(surface.clone(), self.revision);
+            let generation = self.revision;
+            if !new.is_empty() {
+                let pending = self.callbacks.entry(surface.clone()).or_default();
+                let count = pending
+                    .iter()
+                    .map(|batch| batch.callbacks.len())
+                    .sum::<usize>();
+                if count + new.len() > 256 {
+                    self.reject(&surface, "Park frame callback limit reached");
+                } else {
+                    pending.push_back(Callbacks {
+                        generation,
+                        callbacks: new,
+                    });
+                }
+            }
+        }
+
         for surface in committed {
             if let Some(buffer) = self.buffers.get(&surface) {
                 self.valid_surface(&surface, buffer.size);
             }
         }
-        if let Some(id) = id {
+        if surface == &root && let Some(id) = id {
             let window = self.windows.get_mut(&id).unwrap();
             if window.needs_initial && !window.mapped && !unmapped {
                 window.role.with_pending_state(|state| {
@@ -1326,9 +1366,11 @@ impl CompositorHandler for State {
                 window.needs_initial = false;
             }
         }
-        self.layer_commit(&root, unmapped);
-        self.popup_commit(&root);
-        if id.is_some() || self.popups.surfaces.contains_key(&root) {
+        if surface == &root {
+            self.layer_commit(&root, unmapped);
+            self.popup_commit(&root);
+        }
+        if !frame_only && (id.is_some() || self.popups.surfaces.contains_key(&root)) {
             self.changed();
         } else {
             self.presentation_changed();
@@ -1343,6 +1385,7 @@ impl CompositorHandler for State {
         self.buffers.remove(surface);
         self.damage.remove(surface);
         self.generations.remove(surface);
+        self.visuals.remove(surface);
         self.callbacks.remove(surface);
         self.remove_layer(surface);
         self.popups.surfaces.remove(surface);

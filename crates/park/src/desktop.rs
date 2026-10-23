@@ -41,6 +41,7 @@ pub struct Options {
     pub smoke: bool,
     pub outputs: usize,
     pub ready_hook: bool,
+    pub activation: Option<lince_interface::activation::InstanceEvents>,
 }
 
 pub(crate) struct Desktop {
@@ -115,6 +116,9 @@ pub fn run(
     let (ping, source) = make_ping().map_err(error)?;
     handle.insert_source(source, |_, _, _| {}).map_err(error)?;
     let wake = lince_interface::host::WakeSignal::new(move || ping.ping());
+    if let Some(activation) = &options.activation {
+        activation.attach(wake.clone());
+    }
     let physical = backend.window_size();
     let size = [physical.w as u32, physical.h as u32];
     let mut server = Server::new([physical.w, physical.h])?;
@@ -148,6 +152,8 @@ pub fn run(
     let mut smoke = smoke::Check::default();
     let mut input = Vec::new();
     let mut awaiting_presented: Option<renderer::Presented> = None;
+    let mut draw_allowed = false;
+    let mut redraw_requested = false;
     let mut environment_ready = false;
     let result: io::Result<()> = (|| {
         while desktop.running
@@ -156,7 +162,14 @@ pub fn run(
                 .is_none_or(|duration| started.elapsed() < duration)
         {
             for event in input.drain(..) {
+                if matches!(event, WinitEvent::Redraw) {
+                    draw_allowed = true;
+                    redraw_requested = false;
+                }
                 desktop.event(event)?;
+            }
+            if options.activation.as_ref().is_some_and(|events| events.take_show()) {
+                desktop.send(Input::Action(lince_interface::host::DesktopAction::OpenOperation))?;
             }
             desktop.dispatch()?;
             for request in desktop.server.output_requests() {
@@ -181,7 +194,11 @@ pub fn run(
                     }
                 }
             }
-            if awaiting_presented.is_none() && desktop.redraw && backend.window_size().w > 0 && backend.window_size().h > 0 {
+            if desktop.redraw && !draw_allowed && !redraw_requested {
+                backend.window().request_redraw();
+                redraw_requested = true;
+            }
+            if awaiting_presented.is_none() && desktop.redraw && draw_allowed && backend.window_size().w > 0 && backend.window_size().h > 0 {
                 let presented = composition.present(
                     &mut backend,
                     &mut desktop.server,
@@ -189,6 +206,7 @@ pub fn run(
                     desktop.pointer,
                 )?;
                 desktop.redraw = false;
+                draw_allowed = false;
                 awaiting_presented = Some(presented);
             }
             if awaiting_presented.as_ref().is_some_and(|presented| presented.sync.is_reached()) {
@@ -378,6 +396,25 @@ impl Desktop {
             self.pending_output = Some((serial, None));
             self.pending_focus = Some((serial, None));
         }
+        if let Some(started) = self.worker.started()
+            && started.scene_revision == self.scene_serial
+            && !self.server.locked()
+            && let Some(geometry) = self.current.as_ref().and_then(|current| current.frame.geometry.clone())
+        {
+            for item in &geometry.items {
+                let ItemId::Application(id) = item.id else { continue; };
+                let visible = geometry.outputs.iter().find(|output| output.id == item.output)
+                    .and_then(|output| if self.fullscreen(output.id) { Some(output.bounds) } else { output.usable })
+                    .is_some_and(|clip| (0..2).all(|axis| {
+                        item.mapping.canvas.origin()[axis] < clip.origin()[axis] + clip.size()[axis]
+                            && item.mapping.canvas.origin()[axis] + item.mapping.canvas.size()[axis] > clip.origin()[axis]
+                    }));
+                if visible && let Some(window) = started.windows.iter().find(|window| window.id == id && window.mapped) {
+                    let nodes = self.server.callback_nodes(window);
+                    self.server.frame_started_nodes(&nodes);
+                }
+            }
+        }
         if let Some(failure) = self.worker.failure() {
             return Err(error(failure));
         }
@@ -499,7 +536,7 @@ impl Desktop {
         presented: renderer::Presented,
         time: u32,
     ) -> io::Result<()> {
-        for (_, nodes) in &presented.callbacks { self.server.presented_nodes(nodes); }
+        self.server.presented_groups(presented.callbacks.iter().map(|(_, nodes)| nodes.as_slice()));
         let Some(frame) = self.pending.take().or_else(|| self.current.clone()) else {
             return Ok(());
         };
@@ -531,9 +568,9 @@ impl Desktop {
         presentation_time: Duration,
         time: u32,
     ) -> io::Result<()> {
-        for (output, nodes) in &presented.callbacks {
-            if output.is_none_or(|output| output == id) { self.server.presented_nodes(nodes); }
-        }
+        self.server.presented_groups(presented.callbacks.iter()
+            .filter(|(output, _)| output.is_none_or(|output| output == id))
+            .map(|(_, nodes)| nodes.as_slice()));
         self.output_frames.insert(id, (frame.clone(), presented));
         self.capture_times.insert(id, presentation_time);
         if frame.frame.output == Some(id) || self.current.is_none() {

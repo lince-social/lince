@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    lince-binary = {
+      url = "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz";
+      flake = false;
+    };
     esp-dev.url = "github:mirrexagon/nixpkgs-esp-dev/5287d6e1ca9e15ebd5113c41b9590c468e1e001b";
   };
 
@@ -13,6 +17,7 @@
       nixpkgs,
       flake-utils,
       esp-dev,
+      lince-binary,
     }:
     let
       binaryRelease =
@@ -63,7 +68,38 @@
         ])
         ++ linuxBuildInputs pkgs;
 
-      runtimeTools = pkgs: [ pkgs.bash ];
+      runtimeTools = pkgs: [ pkgs.bash pkgs.dbus pkgs.coreutils ];
+
+      captureGraphicsEnvironment = pkgs:
+        pkgs.lib.concatMapStringsSep "\n" (name: ''
+          if [ "${"$" + "{LINCE_HOST_" + name + "+x}"}" != x ]; then
+            if [ "${"$" + "{" + name + "+x}"}" = x ]; then
+              export LINCE_HOST_${name}="1${"$" + "{" + name + "}"}"
+            else
+              export LINCE_HOST_${name}=0
+            fi
+          fi
+          case "$LINCE_HOST_${name}" in
+            0) unset ${name} ;;
+            1*) export ${name}="${"$" + "{LINCE_HOST_" + name + "#1}"}" ;;
+            *) printf '%s\n' 'Invalid saved graphics environment for ${name}' >&2; exit 1 ;;
+          esac
+        '') [ "LD_LIBRARY_PATH" "GBM_BACKENDS_PATH" "__EGL_VENDOR_LIBRARY_DIRS" ];
+
+      graphicsWrapperArgs = pkgs: libraries:
+        [ "--run" (captureGraphicsEnvironment pkgs) ]
+        ++ [
+          "--set-default" "GBM_BACKENDS_PATH" "${pkgs.mesa}/lib/gbm"
+          "--set-default" "__EGL_VENDOR_LIBRARY_DIRS" "${pkgs.mesa}/share/glvnd/egl_vendor.d"
+          "--prefix" "LD_LIBRARY_PATH" ":" (pkgs.lib.makeLibraryPath libraries)
+        ];
+
+      installParkSession = ''
+        install -Dm755 institute/packaging/linux/lince-park-session "$out/bin/lince-park-session"
+        install -Dm644 institute/packaging/linux/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
+        substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
+          --replace-fail "Exec=lince-park-session" "Exec=$out/bin/lince-park-session"
+      '';
 
       mkBinaryPackage =
         {
@@ -80,6 +116,7 @@
           nativeBuildInputs = with pkgs; [
             autoPatchelfHook
             makeWrapper
+            python3
           ];
           buildInputs = libraries;
           dontBuild = true;
@@ -89,24 +126,38 @@
             install -Dm755 bin/lince "$out/bin/lince"
             install -Dm644 LICENSE "$out/share/licenses/lince/LICENSE"
             install -Dm644 revision "$out/share/lince/revision"
+            install -Dm644 build-info.json "$out/share/lince/build-info.json"
+            install -Dm755 bin/lince-park-session "$out/bin/lince-park-session"
+            install -Dm644 share/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
+            substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
+              --replace-fail "Exec=lince-park-session" "Exec=$out/bin/lince-park-session"
+            cp -r share/licenses/lince-smithay-capture "$out/share/licenses/"
             install -Dm644 ${./institute/packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
             install -Dm644 ${./institute/packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
             install -Dm644 ${./institute/packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
             runHook postInstall
           '';
           postFixup = ''
-            wrapProgram "$out/bin/lince" \
-              --set-default GBM_BACKENDS_PATH "${pkgs.mesa}/lib/gbm" \
-              --set-default __EGL_VENDOR_LIBRARY_DIRS "${pkgs.mesa}/share/glvnd/egl_vendor.d" \
-              --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath libraries}" \
-              --prefix PATH : "${pkgs.lib.makeBinPath (runtimeTools pkgs)}"
+            wrapProgram "$out/bin/lince" ${pkgs.lib.escapeShellArgs (
+              graphicsWrapperArgs pkgs libraries ++ [
+                "--prefix" "PATH" ":" (pkgs.lib.makeBinPath (runtimeTools pkgs))
+              ]
+            )}
+            substituteInPlace "$out/bin/lince-park-session" --replace-fail \
+              'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
+            patchShebangs "$out/bin/lince-park-session"
+            wrapProgram "$out/bin/lince-park-session" --prefix PATH : "${pkgs.lib.makeBinPath (runtimeTools pkgs)}"
           '';
           doInstallCheck = true;
           installCheckPhase = ''
             runHook preInstallCheck
-            "$out/bin/lince" --help > /dev/null
+            timeout 10 "$out/bin/lince" --build-info > actual-build-info.json
+            ${pkgs.python3}/bin/python3 ${./institute/packaging/linux/check-build-info.py} \
+              actual-build-info.json "$out/share/lince/build-info.json"
+            grep -Fx "Exec=$out/bin/lince-park-session" "$out/share/wayland-sessions/lince.desktop"
             runHook postInstallCheck
           '';
+          passthru.providedSessions = [ "lince" ];
           meta = {
             description = "Lince with its native interface and Cell runtime";
             mainProgram = "lince";
@@ -875,8 +926,13 @@
           interfaceLinuxRuntimeTools = runtimeTools pkgs;
 
           mkLince =
-            { pname, ui, park ? false }:
-            pkgs.rustPlatform.buildRustPackage {
+            { pname, ui }:
+            let
+              withPark = ui && pkgs.stdenv.hostPlatform.isLinux;
+              features = [ "instinct" ] ++ lib.optional withPark "park";
+              cargoFlags = [ "--package" "lince" "--features" (lib.concatStringsSep "," features) ]
+                ++ lib.optional (!ui) "--no-default-features";
+            in pkgs.rustPlatform.buildRustPackage {
               inherit pname version;
               src = cleanSrc;
 
@@ -898,20 +954,8 @@
               dontUseNinjaCheck = ui;
               dontUseNinjaInstall = ui;
 
-              cargoBuildFlags = [
-                "--package"
-                "lince"
-                "--features"
-                ("instinct" + lib.optionalString park ",park")
-              ]
-              ++ lib.optional (!ui) "--no-default-features";
-              cargoTestFlags = [
-                "--package"
-                "lince"
-                "--features"
-                ("instinct" + lib.optionalString park ",park")
-              ]
-              ++ lib.optional (!ui) "--no-default-features";
+              cargoBuildFlags = cargoFlags;
+              cargoTestFlags = cargoFlags;
 
               nativeBuildInputs =
                 (with pkgs; [
@@ -938,31 +982,17 @@
                 install -Dm644 institute/packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
                 install -Dm644 institute/packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
-              '' + lib.optionalString park ''
+              '' + lib.optionalString withPark (''
                 install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
                 install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"
-                install -Dm644 institute/packaging/linux/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
-                substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
-                  --replace-fail "Exec=lince --park" "Exec=$out/bin/lince --park"
-              '';
+              '' + installParkSession);
 
-              passthru = lib.optionalAttrs park { providedSessions = [ "lince" ]; };
+              passthru = lib.optionalAttrs withPark { providedSessions = [ "lince" ]; };
 
               postFixup = lib.optionalString (pkgs.stdenv.hostPlatform.isLinux && (ui || system == "x86_64-linux")) ''
                 wrapProgram "$out/bin/lince" ${
                   lib.escapeShellArgs (
-                    lib.optionals ui [
-                      "--set-default"
-                      "GBM_BACKENDS_PATH"
-                      "${pkgs.mesa}/lib/gbm"
-                      "--set-default"
-                      "__EGL_VENDOR_LIBRARY_DIRS"
-                      "${pkgs.mesa}/share/glvnd/egl_vendor.d"
-                      "--prefix"
-                      "LD_LIBRARY_PATH"
-                      ":"
-                      (lib.makeLibraryPath interfaceLinuxRuntimeLibraries)
-                    ]
+                    lib.optionals ui (graphicsWrapperArgs pkgs interfaceLinuxRuntimeLibraries)
                     ++ [
                       "--prefix"
                       "PATH"
@@ -971,7 +1001,21 @@
                     ]
                   )
                 }
+              '' + lib.optionalString withPark ''
+                substituteInPlace "$out/bin/lince-park-session" --replace-fail \
+                  'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
+                patchShebangs "$out/bin/lince-park-session"
+                wrapProgram "$out/bin/lince-park-session" --prefix PATH : "${lib.makeBinPath interfaceLinuxRuntimeTools}"
               '';
+
+              postInstallCheck = lib.optionalString withPark ''
+                timeout 10 "$out/bin/lince" --build-info > build-info.json
+                ${pkgs.python3}/bin/python3 ${./institute/packaging/linux/check-build-info.py} build-info.json
+                install -Dm644 ${./LICENSE} "$out/share/licenses/lince/LICENSE"
+                install -Dm644 build-info.json "$out/share/lince/build-info.json"
+                ${pkgs.python3}/bin/python3 -c 'import json; print(json.load(open("build-info.json"))["revision"])' > "$out/share/lince/revision"
+              '';
+              doInstallCheck = withPark;
 
               meta = {
                 description =
@@ -985,17 +1029,23 @@
               };
             };
 
-          binaryPackage = mkBinaryPackage {
+          binaryPackage = assert binaryRelease == null || (
+            binaryRelease.features == { ui = true; instinct = true; park = true; }
+            && binaryRelease.target == "x86_64-unknown-linux-gnu"
+          ); mkBinaryPackage ({
             inherit pkgs;
+            src =
+              if binaryRelease != null then
+                pkgs.fetchurl { inherit (binaryRelease) url hash; }
+              else
+                lince-binary;
+          } // lib.optionalAttrs (binaryRelease != null) {
             version = "${binaryRelease.version}-${builtins.substring 0 12 binaryRelease.revision}";
-            src = pkgs.fetchurl {
-              inherit (binaryRelease) url hash;
-            };
-          };
+          });
 
           lince =
-            if binaryRelease != null && system == "x86_64-linux" then
-              binaryPackage
+            if pkgs.stdenv.hostPlatform.isLinux then
+              lince-ui
             else
               mkLince {
                 pname = "lince";
@@ -1003,7 +1053,7 @@
               };
 
           lince-ui =
-            if binaryRelease != null && system == "x86_64-linux" then
+            if system == "x86_64-linux" then
               binaryPackage
             else
               mkLince {
@@ -1015,7 +1065,10 @@
           packages = {
             default = lince-ui;
             inherit lince lince-ui;
-            lince-park = mkLince { pname = "lince-park"; ui = true; park = true; };
+            lince-source = mkLince { pname = "lince"; ui = false; };
+            lince-ui-source = mkLince { pname = "lince-ui"; ui = true; };
+          } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            lince-park = lince-ui;
           };
 
           apps = {
@@ -1037,11 +1090,13 @@
 
             lince-headless =
               (flake-utils.lib.mkApp {
-                drv = lince;
+                drv = self.packages.${system}.lince-source;
               })
               // {
                 meta.description = "Lince headless";
               };
+          } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            park = { type = "app"; program = "${lince-ui}/bin/lince-park-session"; };
           };
 
           formatter = pkgs.nixfmt;
@@ -1173,6 +1228,20 @@
                   lib.any (package: toString package == toString pkgs.hello) config.environment.systemPackages;
               in
               {
+                park-launch = import ./institute/packaging/linux/launch-checks.nix { inherit pkgs graphicsWrapperArgs; };
+                park-session = import ./institute/packaging/linux/park-checks.nix { inherit self nixpkgs pkgs system; };
+                park-source-install = pkgs.runCommand "park-source-install-contract" { } ''
+                  mkdir -p "$out/bin"
+                  cat > "$out/bin/lince" <<'EXECUTABLE'
+                  #!${pkgs.runtimeShell}
+                  printf '%s\n' '{"version":"0.8.0","revision":"fixture","target":"x86_64-unknown-linux-gnu","optimized":true,"features":{"ui":true,"instinct":true,"park":true}}'
+                  EXECUTABLE
+                  chmod +x "$out/bin/lince"
+                  ${self.packages.${system}.lince-ui-source.postInstallCheck}
+                  cmp ${./LICENSE} "$out/share/licenses/lince/LICENSE"
+                  cmp build-info.json "$out/share/lince/build-info.json"
+                  grep -Fx fixture "$out/share/lince/revision"
+                '';
                 desktop-runtime = pkgs.runCommand "lince-sandbox-runtime" { } (
                   assert failures desktop == [ ];
                   assert desktopUnit.wantedBy == [ "graphical-session.target" ];
@@ -1256,7 +1325,7 @@
                 );
               }
             )
-            // lib.optionalAttrs (binaryRelease != null) { binary = lince; };
+            // lib.optionalAttrs (system == "x86_64-linux") { binary = lince; };
 
           devShells.ailuros = pkgs.mkShell {
             packages = [ esp-dev.packages.${system}.esp-idf-xtensa ];
@@ -1292,7 +1361,7 @@
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
-            shellHook = ''
+            shellHook = captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
@@ -1388,7 +1457,7 @@
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
-            shellHook = ''
+            shellHook = captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
@@ -1418,23 +1487,7 @@
       };
       nixosModules.lince = self.nixosModules.default;
 
-      nixosModules.park = { config, lib, pkgs, ... }:
-        let cfg = config.programs.lince-park;
-        in {
-          options.programs.lince-park = {
-            enable = lib.mkEnableOption "the Lince Wayland session";
-            package = lib.mkOption {
-              type = lib.types.package;
-              default = self.packages.${pkgs.stdenv.hostPlatform.system}.lince-park;
-              description = "Lince executable with the Park feature.";
-            };
-          };
-          config = lib.mkIf cfg.enable {
-            environment.systemPackages = [ cfg.package ];
-            services.displayManager.sessionPackages = [ cfg.package ];
-            hardware.graphics.enable = true;
-          };
-        };
+      nixosModules.park = import ./institute/packaging/linux/park-module.nix { inherit self; };
 
       # `iroh-relay` is a DEPENDENCY Lince can use, not part of it, which is
       # why it keeps its own `services.iroh-relay` namespace and its own system

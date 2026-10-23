@@ -35,6 +35,17 @@ const CREDITS: &[crate::native::credits::Attribution] = &[
         license: include_str!("../../../fiote/assets/phonon/NOTICE"),
     },
     crate::native::credits::Attribution {
+        name: "Moonshine speech recognition",
+        author: "Moonshine AI and Hugging Face contributors; Rust implementation by Lince",
+        license: concat!(
+            include_str!("../../../fiote/assets/moonshine/NOTICE"),
+            "\n",
+            include_str!("../../../fiote/assets/moonshine/LICENSE-CODE-Apache-2.0.txt"),
+            "\n",
+            include_str!("../../../fiote/assets/moonshine/LICENSE-WEIGHTS-MIT.txt"),
+        ),
+    },
+    crate::native::credits::Attribution {
         name: "ruzstd",
         author: "The ruzstd contributors",
         license: include_str!("../../licenses/native/ruzstd-MIT.txt"),
@@ -131,7 +142,7 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
     crate::native::edit_mode::label(
         world,
         settings_panel,
-        "Speech settings apply to every message draft. Local English uses the supported Phonon-2 model on this device (about 2.8 GiB RAM while loaded). Download it here or import the exact compatible archive; arbitrary voice models are not supported. Installation never starts the microphone. A selected endpoint receives the recording. Dictation remains editable and unsent.",
+        "The chosen local model serves dictation and general Fiote listening. Download a supported English model or import its compatible files. Moonshine Tiny uses about 355 MiB RAM, Small about 1.1 GiB, and Phonon-2 about 2.6 GiB. Installation keeps the microphone off. Transcription endpoints serve dictation and receive its recording. Dictation stays editable and unsent.",
         13.0,
     );
     let local_status = crate::native::edit_mode::label(
@@ -147,6 +158,15 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
         "Use local English speech",
         Command::Local,
     );
+    for model in cell::speech::ModelId::ALL {
+        panel::button(
+            world,
+            settings_panel,
+            owner,
+            model.label(),
+            Command::SelectLocal(model),
+        );
+    }
     panel::button(
         world,
         settings_panel,
@@ -157,7 +177,7 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
     let local_import = panel::field(
         world,
         settings_panel,
-        "Downloaded Phonon-2 archive path",
+        "Phonon archive or Moonshine model directory",
         "",
     );
     panel::button(
@@ -337,6 +357,7 @@ fn send(world: &mut World, owner: Entity, request: Request) -> Result<(), String
 #[derive(Clone)]
 enum Command {
     Local,
+    SelectLocal(cell::speech::ModelId),
     Endpoint,
     DownloadLocal,
     ImportLocal,
@@ -408,6 +429,9 @@ impl Action for Command {
                 return Err("Finish the current speech operation first.".into());
             }
             match self {
+                Self::SelectLocal(model) => {
+                    send(world, owner, Request::SelectLocal { model: *model })?;
+                }
                 Self::Local | Self::Endpoint => {
                     send(
                         world,
@@ -425,7 +449,10 @@ impl Action for Command {
                     let source = if matches!(self, Self::ImportLocal) {
                         let value = panel::value(world, composer.local_import)?;
                         if value.trim().is_empty() {
-                            return Err("Choose the downloaded Phonon-2 archive path.".into());
+                            return Err(
+                                "Choose a compatible Phonon archive or Moonshine model directory."
+                                    .into(),
+                            );
                         }
                         Some(std::path::PathBuf::from(value))
                     } else {
@@ -920,7 +947,8 @@ pub(crate) fn update(
                         world,
                         label,
                         format!(
-                            "Local English · {selected} · {detail} · {} / {} MB acquired",
+                            "{} · {selected} · {detail} · {} / {} MB acquired",
+                            saved.local_selection.label(),
                             local.acquired_bytes / 1_000_000,
                             local.required_bytes / 1_000_000
                         ),
@@ -1331,6 +1359,7 @@ mod tests {
                 wake_error: None,
                 voice: Default::default(),
                 mode: cell::speech::Mode::Local,
+                local_selection: Default::default(),
                 decision_selection: Default::default(),
                 local: None,
                 decision_model: None,
@@ -1529,17 +1558,35 @@ mod endpoint_tests {
             .spawn(EditableText::new("Keep this unsent draft"))
             .id();
         composer(app.world_mut(), owner, parent, input);
+        let selection = std::env::var("LINCE_SPEECH_TEST_SELECTION")
+            .map(|value| serde_json::from_str::<cell::speech::ModelId>(&value).unwrap())
+            .unwrap_or_default();
+        Command::SelectLocal(selection).apply(app.world_mut(), owner);
+        crate::native::sand_panel::tests::settle(&mut app, |world| {
+            world
+                .get::<Composer>(owner)
+                .unwrap()
+                .saved
+                .as_ref()
+                .is_some_and(|status| status.local_selection == selection)
+        })
+        .await;
         let model = speech
             .handle(Request::Inspect)
             .await
             .unwrap()
             .local
             .unwrap();
-        let archive = std::path::PathBuf::from(
-            std::env::var_os("LINCE_SPEECH_TEST_CACHE").expect("Choose installed model cache"),
-        )
-        .join(format!("{}-{}", model.model, model.revision))
-        .join("phonon-2.bps.tar.zst");
+        let archive = std::env::var_os("LINCE_SPEECH_TEST_IMPORT")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| {
+                std::path::PathBuf::from(
+                    std::env::var_os("LINCE_SPEECH_TEST_CACHE")
+                        .expect("Choose installed model cache"),
+                )
+                .join(format!("{}-{}", model.model, model.revision))
+                .join("phonon-2.bps.tar.zst")
+            });
         let import = app.world().get::<Composer>(owner).unwrap().local_import;
         app.world_mut()
             .get_mut::<EditableText>(import)
@@ -1700,6 +1747,39 @@ mod endpoint_tests {
             .id();
         composer(app.world_mut(), owner, parent, input);
         let fields = app.world().get::<Composer>(owner).unwrap().endpoint_fields;
+        let selected = app
+            .world_mut()
+            .query::<(
+                &crate::native::actions::ActionButton,
+                &bevy::a11y::AccessibilityNode,
+            )>()
+            .iter(app.world())
+            .find(|(_, node)| node.label() == Some("Moonshine Tiny"))
+            .map(|(button, _)| button.clone())
+            .unwrap();
+        selected.actions.run(app.world_mut(), selected.target);
+        crate::native::sand_panel::tests::settle(&mut app, |world| {
+            world
+                .get::<Composer>(owner)
+                .unwrap()
+                .saved
+                .as_ref()
+                .is_some_and(|status| {
+                    status.local_selection == cell::speech::ModelId::MoonshineTiny
+                })
+        })
+        .await;
+        let selected = service.handle(Request::Inspect).await.unwrap();
+        assert_eq!(
+            selected.local_selection,
+            cell::speech::ModelId::MoonshineTiny
+        );
+        assert!(!selected.listening.enabled);
+        assert!(!selected.local.unwrap().present);
+        assert_eq!(
+            app.world().get::<EditableText>(input).unwrap().value(),
+            "My unsent draft"
+        );
         app.world_mut()
             .get_mut::<EditableText>(fields[0])
             .unwrap()

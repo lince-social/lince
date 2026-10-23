@@ -43,6 +43,28 @@ struct Fill {
 #[derive(Component)]
 struct FillGeometry(Vec<[f32; 3]>);
 
+pub(crate) fn asset_layers(world: &World, root: Entity, workspace: u64) -> RenderLayers {
+    let mut layers = if world
+        .get::<Workspaces>(root)
+        .is_some_and(|spaces| spaces.active == workspace)
+    {
+        RenderLayers::layer(0)
+    } else {
+        RenderLayers::none()
+    };
+    if let Some(views) = world
+        .get_resource::<OutputViews>()
+        .filter(|views| views.applies_to(root))
+    {
+        for (index, output) in views.outputs.iter().enumerate() {
+            if output.id != views.focused && output.workspace == workspace {
+                layers = layers.with(32 + index);
+            }
+        }
+    }
+    layers
+}
+
 pub fn geometry(
     world: &mut World,
     root: Entity,

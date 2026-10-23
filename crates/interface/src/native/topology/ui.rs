@@ -50,12 +50,28 @@ impl Action for TopologyAction {
                 .unwrap_or_default();
             view.spatial = !view.spatial;
             if view.spatial {
-                let center = world
+                let canvas = world
                     .get::<crate::native::canvas::CanvasView>(entity)
-                    .map_or(bevy::math::DVec2::ZERO, |canvas| canvas.center);
-                view.position = [center.x, view.plane + 500.0, center.y + 500.0];
+                    .copied()
+                    .unwrap_or_default();
+                let viewport_height = world
+                    .get_resource::<super::presentation::SceneCamera>()
+                    .and_then(|camera| world.get::<Camera>(camera.0))
+                    .and_then(Camera::logical_viewport_size)
+                    .map_or(720.0, |size| f64::from(size.y));
+                let tangent = f64::from((PerspectiveProjection::default().fov * 0.5).tan());
+                let height = (viewport_height / (2.0 * canvas.zoom)
+                    * (0.5 + std::f64::consts::FRAC_1_SQRT_2 / tangent)
+                    * 1.05)
+                    .max(16.0);
+                view.position = [
+                    canvas.center.x,
+                    view.plane + height,
+                    canvas.center.y + height,
+                ];
                 view.yaw = 0.0;
                 view.pitch = -std::f32::consts::FRAC_PI_4;
+                view.selection_depth = view.selection_depth.max(height * 4.0).min(100_000.0);
             } else {
                 let point = world
                     .get_resource::<super::presentation::SceneCamera>()

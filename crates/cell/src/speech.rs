@@ -1,6 +1,7 @@
 use ::fiote::communication::decision;
 use ::fiote::speech;
 pub use ::fiote::speech::endpoint;
+pub use ::fiote::speech::recognition::ModelId;
 pub use ::fiote::speech::{Job, LocalStatus, Mode, Purpose, Request, Status};
 pub use ::fiote::speech::{ListeningMode, ListeningStage, ListeningStatus, VoiceRequest};
 use std::{
@@ -27,7 +28,7 @@ pub struct Host {
     path: PathBuf,
     state: Mutex<State>,
     vault: Option<Arc<crate::fiote::vault::Vault>>,
-    local: Arc<speech::local::Recognizer>,
+    local: Arc<speech::recognition::Recognizer>,
     voice: speech::voice::Service,
     wake_profile: std::sync::Mutex<Option<speech::wake::Profile>>,
     wake_error: std::sync::Mutex<Option<String>>,
@@ -108,6 +109,14 @@ impl Host {
             .parent()
             .ok_or("Speech settings need a parent directory.")?
             .join("models");
+        let local_selection = match std::fs::read(path.with_extension("recognition.json")) {
+            Ok(bytes) if bytes.len() <= 256 => {
+                serde_json::from_slice(&bytes).map_err(|error| error.to_string())?
+            }
+            Ok(_) => return Err("Speech model selection exceeds its size limit.".into()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => ModelId::default(),
+            Err(error) => return Err(error.to_string()),
+        };
         let decision_selection = match std::fs::read(path.with_extension("decision.json")) {
             Ok(bytes) if bytes.len() <= 256 => {
                 serde_json::from_slice(&bytes).map_err(|error| error.to_string())?
@@ -139,7 +148,10 @@ impl Host {
                 job: None,
                 used: VecDeque::new(),
             }),
-            local: Arc::new(speech::local::Recognizer::new(models.clone())?),
+            local: Arc::new(speech::recognition::Recognizer::selected(
+                models.clone(),
+                local_selection,
+            )?),
             voice: speech::voice::Service::new(models.clone())?,
             wake_profile: std::sync::Mutex::new(wake_profile),
             wake_error: std::sync::Mutex::new(wake_error),
@@ -222,10 +234,16 @@ impl transport::speech::Service for Host {
                 result.listening = self.listening.status().await;
                 return Ok(result);
             }
-            Request::StopListening { owner, generation } | Request::PauseListening { owner, generation } | Request::ResumeListening { owner, generation } => {
+            Request::StopListening { owner, generation }
+            | Request::PauseListening { owner, generation }
+            | Request::ResumeListening { owner, generation } => {
                 match &request {
-                    Request::PauseListening { .. } => self.listening.pause(owner, *generation).await?,
-                    Request::ResumeListening { .. } => self.listening.resume(owner, *generation).await?,
+                    Request::PauseListening { .. } => {
+                        self.listening.pause(owner, *generation).await?
+                    }
+                    Request::ResumeListening { .. } => {
+                        self.listening.resume(owner, *generation).await?
+                    }
                     _ => self.listening.stop(owner, *generation).await?,
                 }
                 let mut result = status(&*self.state.lock().await, self);
@@ -379,6 +397,21 @@ impl transport::speech::Service for Host {
                 save_value(&self.path.with_extension("mode.json"), &mode)?;
                 state.mode = mode;
             }
+            Request::SelectLocal { model } => {
+                idle(&state)?;
+                if state.decision.busy() {
+                    return Err("The decision model is still finishing an operation.".into());
+                }
+                let previous = self.local.selection();
+                self.local.select(model)?;
+                if let Err(error) =
+                    save_value(&self.path.with_extension("recognition.json"), &model)
+                {
+                    self.local.select(previous)?;
+                    return Err(error);
+                }
+                self.acquisition_progress.store(0, Ordering::Release);
+            }
             Request::InstallLocal { job, source } => {
                 if repeated(&state, &job)? {
                     return Ok(status(&state, self));
@@ -387,13 +420,13 @@ impl transport::speech::Service for Host {
                 if self.local.busy() || state.decision.busy() {
                     return Err("Local speech is still finishing an operation. Retry installation when it is idle.".into());
                 }
-                let cache = self.local.cache.clone();
+                let local = self.local.clone();
                 let cancelled = Arc::new(AtomicBool::new(false));
                 let control = cancelled.clone();
                 let progress = self.acquisition_progress.clone();
                 progress.store(0, Ordering::Release);
                 let task = tokio::spawn(async move {
-                    cache.acquire(source, control, progress).await?;
+                    local.acquire(source, control, progress).await?;
                     Ok(JobResult::Text(
                         "Local English speech model installed and verified.".into(),
                     ))
@@ -427,7 +460,7 @@ impl transport::speech::Service for Host {
                     return Err("The decision model is still finishing an operation. Try dictation when it is idle.".into());
                 }
                 speech::validate_audio(&audio.0)?;
-                if !self.local.cache.present() {
+                if !self.local.present() {
                     return Err(
                         "Download or import the local English model before recording.".into(),
                     );
@@ -627,14 +660,15 @@ fn remember(state: &mut State, job: &str) {
 }
 
 fn status(state: &State, host: &Host) -> Status {
+    let manifest = host.local.primary_cache().manifest;
     let local = LocalStatus {
-        model: speech::local::MANIFEST.id.into(),
-        revision: speech::local::MANIFEST.revision.into(),
-        present: host.local.cache.present(),
+        model: manifest.id.into(),
+        revision: manifest.revision.into(),
+        present: host.local.present(),
         loaded: host.local.loaded(),
         busy: host.local.busy(),
         acquired_bytes: host.acquisition_progress.load(Ordering::Acquire),
-        required_bytes: speech::local::MANIFEST.artifact.bytes,
+        required_bytes: host.local.required_bytes(),
     };
     let ready = !host.closing.load(Ordering::Acquire)
         && !host.listening.active()
@@ -664,10 +698,19 @@ fn status(state: &State, host: &Host) -> Status {
         "Speech configuration is ready. This check sends no audio and does not verify a billed transcription. Speech usage and cost are not reported by this tool."
     };
     Status {
-        wake_profile: host.wake_profile.lock().unwrap_or_else(|error| error.into_inner()).clone(),
-        wake_error: host.wake_error.lock().unwrap_or_else(|error| error.into_inner()).clone(),
+        wake_profile: host
+            .wake_profile
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone(),
+        wake_error: host
+            .wake_error
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone(),
         voice: speech::voice::Status::default(),
         mode: state.mode,
+        local_selection: host.local.selection(),
         decision_selection: state.decision_selection,
         listening: ListeningStatus::default(),
         local: Some(local),

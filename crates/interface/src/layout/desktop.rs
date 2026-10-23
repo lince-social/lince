@@ -114,6 +114,8 @@ pub struct Workspace {
     minimized: BTreeSet<PlacementId>,
     #[serde(default)]
     minimized_fullscreen: BTreeSet<PlacementId>,
+    #[serde(default)]
+    maximized: BTreeSet<PlacementId>,
     #[serde(skip)]
     influences: BTreeMap<PlacementId, Influence>,
     mode: WorkspaceLayout,
@@ -160,6 +162,7 @@ impl Workspace {
         Self {
             minimized: BTreeSet::new(),
             minimized_fullscreen: BTreeSet::new(),
+            maximized: BTreeSet::new(),
             influences: BTreeMap::new(),
             mode,
             gap: 8.0,
@@ -193,8 +196,11 @@ impl Workspace {
     }
 
     pub fn maximized(&self, id: PlacementId) -> bool {
-        self.column(id)
-            .is_some_and(|column| self.columns[column].maximized)
+        if self.mode == WorkspaceLayout::ScrollingColumns && self.column(id).is_some() {
+            self.column(id).is_some_and(|column| self.columns[column].maximized)
+        } else {
+            self.maximized.contains(&id)
+        }
     }
 
     pub fn minimized(&self, id: PlacementId) -> bool { self.minimized.contains(&id) }
@@ -230,10 +236,14 @@ impl Workspace {
                 self.fullscreen = None;
             }
         }
-        if let Some(enabled) = request.maximized
-            && let Some(column) = self.column(id)
-        {
-            self.columns[column].maximized = enabled;
+        if let Some(enabled) = request.maximized {
+            if enabled { self.maximized.insert(id); } else { self.maximized.remove(&id); }
+            if let Some(column) = self.column(id) {
+                self.columns[column].maximized = enabled;
+                for member in &self.columns[column].items {
+                    if enabled { self.maximized.insert(*member); } else { self.maximized.remove(member); }
+                }
+            }
         }
         if let Some(minimized) = request.minimized { self.set_minimized(id, minimized); }
         true
@@ -287,6 +297,7 @@ impl Workspace {
             }
         }
         tiled == arranged
+            && self.maximized.iter().all(|id| all.contains(id))
             && self.minimized.iter().all(|id| all.contains(id))
             && self.minimized_fullscreen.iter().all(|id| self.minimized.contains(id))
             && self.focused.is_none_or(|id| !self.minimized.contains(&id))
@@ -335,6 +346,7 @@ impl Workspace {
         let removed = self.items.remove(index);
         self.minimized.remove(&id);
         self.minimized_fullscreen.remove(&id);
+        self.maximized.remove(&id);
         self.influences.remove(&id);
         if self.fullscreen == Some(id) {
             self.fullscreen = None;
@@ -587,7 +599,9 @@ impl Workspace {
                 .focused
                 .and_then(|id| self.column(id))
                 .map_or(self.columns.len(), |column| column + 1);
-            self.columns.insert(position, new_column(id, Width::Half));
+            let mut column = new_column(id, Width::Half);
+            column.maximized = self.maximized.contains(&id);
+            self.columns.insert(position, column);
         } else {
             self.remove_from_columns(id);
         }
@@ -634,11 +648,11 @@ impl Workspace {
     }
 
     pub fn toggle_maximized(&mut self) -> bool {
-        let Some(column) = self.focused.and_then(|id| self.column(id)) else {
-            return false;
-        };
-        self.columns[column].maximized = !self.columns[column].maximized;
-        true
+        let Some(id) = self.focused else { return false; };
+        self.request_state(id, crate::host::WindowRequest {
+            maximized: Some(!self.maximized(id)),
+            ..Default::default()
+        })
     }
 
     pub fn toggle_fullscreen(&mut self) {
@@ -804,6 +818,14 @@ impl Workspace {
                 rectangle: free_rectangle(item),
                 floating: true,
             });
+        }
+        for item in &mut solved {
+            if self.maximized(item.id) && (self.mode != WorkspaceLayout::ScrollingColumns || item.floating) {
+                let rules = entries[&item.id].rules;
+                let size = std::array::from_fn(|axis| inner[axis].clamp(f64::from(rules.axes[axis].min), f64::from(rules.axes[axis].max)));
+                item.rectangle = Rectangle::new(usable.origin().map(|value| value + gap), size).unwrap();
+                item.floating = false;
+            }
         }
         if let Some(id) = self.fullscreen {
             solved.retain(|item| item.id == id);

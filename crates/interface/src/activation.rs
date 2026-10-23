@@ -51,32 +51,22 @@ impl Drop for InstanceGuard {
 }
 
 pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
-    std::fs::create_dir_all(data_dir)
-        .map_err(|error| path_error(error, "create application data directory", data_dir))?;
-    let canonical = data_dir
-        .canonicalize()
-        .map_err(|error| path_error(error, "resolve application data directory", data_dir))?;
-    use std::hash::{Hash, Hasher};
-    let mut hash = std::collections::hash_map::DefaultHasher::new();
-    canonical.hash(&mut hash);
-    let directory = control_directory(&canonical)?;
-    let stem = format!("{:016x}", hash.finish());
-    let lock_path = directory.join(format!("{stem}.lock"));
-    let endpoint = directory.join(format!("{stem}.sock"));
-    let mut options = OpenOptions::new();
-    options.read(true).write(true).create(true).truncate(false);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options
-            .mode(0o600)
-            .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32);
-    }
-    let lock = options
-        .open(&lock_path)
-        .map_err(|error| path_error(error, "open instance lock", &lock_path))?;
+    claim_with_policy(data_dir, true).await
+}
+
+pub async fn claim_session(data_dir: &Path) -> io::Result<InstanceGuard> {
+    claim_with_policy(data_dir, false)
+        .await?
+        .ok_or_else(|| io::Error::other("Park must own its data directory"))
+}
+
+async fn claim_with_policy(data_dir: &Path, activate: bool) -> io::Result<Option<InstanceGuard>> {
+    let (lock, endpoint) = instance_lock(data_dir)?;
     match lock.try_lock() {
         Ok(()) => {}
+        Err(std::fs::TryLockError::WouldBlock) if !activate => {
+            return Err(ownership_error(data_dir));
+        }
         Err(std::fs::TryLockError::WouldBlock) => {
             for attempt in 0..40 {
                 match request_show(&endpoint).await {
@@ -105,13 +95,29 @@ pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
     }))
 }
 
-pub fn claim_headless(data_dir: &Path) -> io::Result<File> {
-    std::fs::create_dir_all(data_dir)?;
-    let canonical = data_dir.canonicalize()?;
+fn ownership_error(data_dir: &Path) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::WouldBlock,
+        format!(
+            "Another Lince instance owns {}. Save and stop it before starting Park, or select a separate directory with --directory.",
+            data_dir.display()
+        ),
+    )
+}
+
+fn instance_lock(data_dir: &Path) -> io::Result<(File, PathBuf)> {
+    std::fs::create_dir_all(data_dir)
+        .map_err(|error| path_error(error, "create application data directory", data_dir))?;
+    let canonical = data_dir
+        .canonicalize()
+        .map_err(|error| path_error(error, "resolve application data directory", data_dir))?;
     use std::hash::{Hash, Hasher};
     let mut hash = std::collections::hash_map::DefaultHasher::new();
     canonical.hash(&mut hash);
-    let path = control_directory(&canonical)?.join(format!("{:016x}.lock", hash.finish()));
+    let directory = control_directory(&canonical)?;
+    let stem = format!("{:016x}", hash.finish());
+    let lock_path = directory.join(format!("{stem}.lock"));
+    let endpoint = directory.join(format!("{stem}.sock"));
     let mut options = OpenOptions::new();
     options.read(true).write(true).create(true).truncate(false);
     #[cfg(unix)]
@@ -121,9 +127,18 @@ pub fn claim_headless(data_dir: &Path) -> io::Result<File> {
             .mode(0o600)
             .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32);
     }
-    let file = options.open(path)?;
-    file.try_lock()
-        .map_err(|_| io::Error::other("Another Lince instance is using this data directory."))?;
+    let lock = options
+        .open(&lock_path)
+        .map_err(|error| path_error(error, "open instance lock", &lock_path))?;
+    Ok((lock, endpoint))
+}
+
+pub fn claim_headless(data_dir: &Path) -> io::Result<File> {
+    let (file, _) = instance_lock(data_dir)?;
+    file.try_lock().map_err(|error| match error {
+        std::fs::TryLockError::WouldBlock => ownership_error(data_dir),
+        std::fs::TryLockError::Error(error) => error,
+    })?;
     Ok(file)
 }
 
@@ -295,6 +310,27 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, tokio::test)]
+    async fn session_claim_never_activates_an_existing_owner() {
+        let directory = tempfile::tempdir().unwrap();
+        let sandbox = claim(directory.path()).await.unwrap().unwrap();
+        let failure = claim_session(directory.path()).await.err().unwrap();
+        assert_eq!(failure.kind(), io::ErrorKind::WouldBlock);
+        assert!(failure.to_string().contains("--directory"));
+        assert!(!sandbox.events().take_show());
+        drop(sandbox);
+        let headless = claim_headless(directory.path()).unwrap();
+        assert!(claim_session(directory.path()).await.is_err());
+        drop(headless);
+        let park = claim_session(directory.path()).await.unwrap();
+        assert!(claim_session(directory.path()).await.is_err());
+        assert!(!park.events().take_show());
+        assert!(claim(directory.path()).await.unwrap().is_none());
+        assert!(park.events().take_show());
+        drop(park);
+        assert!(claim_session(directory.path()).await.is_ok());
+    }
+
+    #[cfg_attr(test, tokio::test)]
     async fn second_launch_wakes_the_owner_and_lock_lasts_until_shutdown() {
         let directory = tempfile::tempdir().unwrap();
         let first = claim(directory.path()).await.unwrap().unwrap();
@@ -346,6 +382,7 @@ pub(crate) mod tests {
 
     #[cfg(feature = "native-presentation")]
     crate::native::laboratory_cases! {
+        async session_claim_never_activates_an_existing_owner,
         async second_launch_wakes_the_owner_and_lock_lasts_until_shutdown,
         async separate_directories_keep_their_owners_and_wake_requests_independent,
         #[cfg(unix)]

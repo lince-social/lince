@@ -25,6 +25,8 @@ pub struct Controls;
 #[derive(Clone, Copy)]
 enum Control {
     Canvas,
+    Map,
+    Shader,
     Scatter,
     Help,
 }
@@ -33,7 +35,7 @@ enum Control {
 struct Help;
 
 pub(crate) fn install(app: &mut App) {
-    app.add_systems(Update, update.after(workspace::PrepareWorkspaces));
+    app.add_systems(Update, update.after(crate::native::edit_mode::setup));
 }
 
 fn update(world: &mut World) {
@@ -135,6 +137,11 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
     workspace::rename(world, root, NAME);
     let workspace = world.get::<Workspaces>(root).unwrap().active;
     let view = overview(world, root);
+    let topology = crate::native::topology::view::View {
+        selection_depth: 4000.0,
+        ..default()
+    };
+    world.entity_mut(root).insert(topology);
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
     let entry = spaces
         .entries
@@ -144,6 +151,7 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
     entry.desktop.set_mode(WorkspaceLayout::Free);
     entry.center = view.center.to_array();
     entry.zoom = view.zoom;
+    entry.topology = topology;
     *world.get_mut::<CanvasView>(root).unwrap() = view;
     sand(
         world,
@@ -171,6 +179,49 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
         "",
         [640.0, -220.0],
         [360.0, 360.0],
+    );
+    let shader = sand(
+        world,
+        root,
+        workspace,
+        SandKind::Square,
+        "",
+        [-230.0, -230.0],
+        [400.0, 340.0],
+    );
+    world.entity_mut(shader).insert((
+        Name::new("Showoff · animated WGSL mesh"),
+        crate::native::topology::Spatial {
+            elevation: 180.0,
+            ..default()
+        },
+        crate::native::shader_effects::Surface {
+            effect: mesh_effect(),
+            strength: 1.0,
+            glow: 0.0,
+            ..default()
+        },
+    ));
+    crate::native::edit_mode::label(
+        world,
+        shader,
+        "WGSL · generated, animated 3D geometry",
+        14.0,
+    );
+    crate::native::map_castle::spawn(
+        world,
+        root,
+        workspace,
+        DVec2::new(-1520.0, 100.0),
+        lince_map::Camera {
+            center: lince_map::Coordinate {
+                latitude: -15.0,
+                longitude: -47.0,
+            },
+            zoom: 1.8,
+        },
+        Vec::new(),
+        String::new(),
     );
     let mut area = InfluenceArea::new(
         AreaShape::Circle,
@@ -225,12 +276,43 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
     Ok(())
 }
 
+fn mesh_effect() -> nucleus::shader_effect::Effect {
+    use nucleus::shader_effect::spatial::{Deformation, GeneratedGeometry, MeshSettings, Mode};
+    nucleus::shader_effect::Effect {
+        mode: Mode::Mesh(MeshSettings {
+            geometry: Some(GeneratedGeometry {
+                source: nucleus::shader_effect::spatial::GENERATED_SPHERE.into(),
+                vertices: 32 * 20 * 6,
+            }),
+            deformation: Some(Deformation {
+                source: nucleus::shader_effect::spatial::DEFORM_SPHERE.into(),
+                max_displacement: 0.24,
+            }),
+            ..default()
+        }),
+        programs: std::collections::BTreeMap::from([("showoff".into(), MESH_SHADER.into())]),
+        rules: Vec::new(),
+        fallback: "showoff".into(),
+        ..default()
+    }
+}
+
+const MESH_SHADER: &str = "fn shade_mesh(point: MeshPoint, inputs: ShaderInputs) -> vec4<f32> { let bands = 0.5 + 0.5 * sin(point.local_position.y * 22.0 + inputs.time * f32(inputs.motion_allowed)); let color = mix(vec3<f32>(0.08, 0.55, 0.9), vec3<f32>(0.7, 0.25, 0.95), bands); let light = 0.35 + 0.65 * max(dot(normalize(point.normal), normalize(vec3<f32>(0.5, 0.8, 1.0))), 0.0); return vec4<f32>(color * light, 1.0); }";
+
 fn pebble_positions() -> [[f64; 2]; 3] {
     [[435.0, 270.0], [800.0, 300.0], [590.0, 475.0]]
 }
 
 fn overview(world: &World, root: Entity) -> CanvasView {
-    let size = world
+    let size = viewport_size(world, root);
+    CanvasView {
+        center: DVec2::new(0.0, 80.0),
+        zoom: (size[0] / 1900.0).min(size[1] / 1100.0).clamp(0.15, 0.65),
+    }
+}
+
+fn viewport_size(world: &World, root: Entity) -> [f64; 2] {
+    world
         .get::<crate::native::layout::desktop::HostViewport>(root)
         .map(|viewport| viewport.0.bounds.size())
         .or_else(|| {
@@ -240,11 +322,7 @@ fn overview(world: &World, root: Entity) -> CanvasView {
                     .to_array()
             })
         })
-        .unwrap_or([1280.0, 720.0]);
-    CanvasView {
-        center: DVec2::new(0.0, 80.0),
-        zoom: (size[0] / 1900.0).min(size[1] / 1100.0).clamp(0.15, 0.65),
-    }
+        .unwrap_or([1280.0, 720.0])
 }
 
 fn sand(
@@ -282,6 +360,7 @@ fn controls(world: &mut World, root: Entity, workspace: u64) {
     let panel = world
         .spawn((
             Controls,
+            crate::native::inspection::InspectionExcluded,
             Name::new("showoff controls"),
             WorkspaceMember(workspace),
             ChildOf(root),
@@ -302,6 +381,8 @@ fn controls(world: &mut World, root: Entity, workspace: u64) {
     let buttons = crate::native::sand_panel::row(world, panel);
     world.get_mut::<Node>(buttons).unwrap().flex_wrap = FlexWrap::Wrap;
     crate::native::description::button(world, buttons, root, "Canvas", Control::Canvas);
+    crate::native::description::button(world, buttons, root, "Map", Control::Map);
+    crate::native::description::button(world, buttons, root, "WGSL 3D", Control::Shader);
     for (title, action) in [
         ("Tile", DesktopAction::SetLayout(WorkspaceLayout::Grid)),
         (
@@ -334,7 +415,7 @@ fn controls(world: &mut World, root: Entity, workspace: u64) {
 
 impl Action for Control {
     fn apply(&self, world: &mut World, root: Entity) {
-        if matches!(self, Self::Canvas) {
+        if matches!(self, Self::Canvas | Self::Map | Self::Shader) {
             DesktopAction::SetLayout(WorkspaceLayout::Free).apply(world, root);
             DesktopAction::Unfocus.apply(world, root);
             if world
@@ -343,9 +424,40 @@ impl Action for Control {
             {
                 TopologyAction::ToggleView.apply(world, root);
             }
-            let view = overview(world, root);
+            let mut view = overview(world, root);
+            if matches!(self, Self::Map) {
+                let workspace = world.get::<Workspaces>(root).map(|spaces| spaces.active);
+                let item = world.query_filtered::<(&CanvasItem, &WorkspaceMember, &ChildOf), With<crate::native::map_castle::MapSand>>()
+                    .iter(world)
+                    .find(|(_, member, parent)| Some(member.0) == workspace && parent.parent() == root)
+                    .map(|(item, _, _)| *item);
+                if let Some(item) = item {
+                    let size = viewport_size(world, root);
+                    let reserved = world.query_filtered::<(&ComputedNode, &ChildOf, &WorkspaceMember), With<Controls>>()
+                        .iter(world)
+                        .find(|(_, parent, member)| parent.parent() == root && Some(member.0) == workspace)
+                        .map_or(120.0, |(node, _, _)| f64::from(node.size().y * node.inverse_scale_factor()) + 16.0);
+                    view.zoom = ((size[0] - 32.0) / f64::from(item.size.x))
+                        .min((size[1] - reserved - 16.0) / f64::from(item.size.y))
+                        .clamp(0.1, 1.0);
+                    view.center = item.position - DVec2::new(0.0, reserved * 0.5 / view.zoom);
+                }
+            }
+            if matches!(self, Self::Shader) {
+                let workspace = world.get::<Workspaces>(root).map(|spaces| spaces.active);
+                let position = world.query_filtered::<(&CanvasItem, &WorkspaceMember, &ChildOf), With<crate::native::shader_effects::Surface>>()
+                    .iter(world)
+                    .find(|(_, member, parent)| Some(member.0) == workspace && parent.parent() == root)
+                    .map(|(item, _, _)| item.position);
+                if let Some(position) = position {
+                    view.center = position;
+                }
+            }
             if let Some(mut current) = world.get_mut::<CanvasView>(root) {
                 *current = view;
+            }
+            if matches!(self, Self::Shader) {
+                TopologyAction::ToggleView.apply(world, root);
             }
             return;
         }

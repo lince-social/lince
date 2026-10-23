@@ -154,6 +154,9 @@ impl PublisherSession {
         }
         let epoch = metadata.epoch.clone();
         let sequence = metadata.sequence;
+        let maximum_capture_age = (matches!(&self.credential, Credential::Device(_))
+            && metadata.content_type == "image/jpeg")
+            .then_some(Duration::from_secs(5));
         let retained = engine
             .access_scope(false, async {
                 let current = self.authorize(engine).await?;
@@ -163,7 +166,9 @@ impl PublisherSession {
                 if self.producer.snapshot().consumers == 0 {
                     return Ok(false);
                 }
-                self.producer.publish(metadata, bytes.to_vec()).await
+                self.producer
+                    .publish_with_capture_age(metadata, bytes.to_vec(), maximum_capture_age)
+                    .await
             })
             .await?;
         Ok(json!({"type":"published","epoch":epoch,"sequence":sequence,"retained":retained}))

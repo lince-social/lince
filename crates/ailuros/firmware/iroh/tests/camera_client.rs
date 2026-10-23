@@ -157,8 +157,12 @@ impl Receiver {
     }
 
     async fn receipt(&mut self, metadata: &Value) {
+        self.receipt_with_retention(metadata, true).await;
+    }
+
+    async fn receipt_with_retention(&mut self, metadata: &Value, retained: bool) {
         self.send(json!({"type":"published","epoch":metadata["epoch"],
-            "sequence":metadata["sequence"],"retained":true}))
+            "sequence":metadata["sequence"],"retained":retained}))
             .await;
     }
 
@@ -282,26 +286,28 @@ async fn delayed_receipts_preserve_frame_rate_without_unbounded_capture() {
 
 #[tokio::test]
 async fn payload_budget_limits_large_frames_before_the_frame_count_limit() {
-    let mut receiver = Receiver::new();
-    receiver.observations.lock().unwrap().bytes = Some(128 * 1024);
-    receiver.authenticate().await;
-    receiver.demand("epoch", 1).await;
-    let mut pending = Vec::new();
-    for sequence in 1..=8 {
-        let metadata = receiver.frame().await;
-        assert_eq!(metadata["sequence"], sequence);
-        pending.push(metadata);
+    for retained in [true, false] {
+        let mut receiver = Receiver::new();
+        receiver.observations.lock().unwrap().bytes = Some(128 * 1024);
+        receiver.authenticate().await;
+        receiver.demand("epoch", 1).await;
+        let mut pending = Vec::new();
+        for sequence in 1..=8 {
+            let metadata = receiver.frame().await;
+            assert_eq!(metadata["sequence"], sequence);
+            pending.push(metadata);
+        }
+        let captures = receiver.observations.lock().unwrap().captures;
+        assert_eq!(captures, 8);
+        tokio::time::sleep(Duration::from_millis(450)).await;
+        assert_eq!(receiver.observations.lock().unwrap().captures, captures);
+        receiver.receipt_with_retention(&pending[0], retained).await;
+        let resumed = receiver.frame().await;
+        assert_eq!(resumed["sequence"], 9);
+        tokio::time::sleep(Duration::from_millis(450)).await;
+        assert_eq!(receiver.observations.lock().unwrap().captures, captures + 1);
+        receiver.finish().await;
     }
-    let captures = receiver.observations.lock().unwrap().captures;
-    assert_eq!(captures, 8);
-    tokio::time::sleep(Duration::from_millis(450)).await;
-    assert_eq!(receiver.observations.lock().unwrap().captures, captures);
-    receiver.receipt(&pending[0]).await;
-    let resumed = receiver.frame().await;
-    assert_eq!(resumed["sequence"], 9);
-    tokio::time::sleep(Duration::from_millis(450)).await;
-    assert_eq!(receiver.observations.lock().unwrap().captures, captures + 1);
-    receiver.finish().await;
 }
 
 #[tokio::test]

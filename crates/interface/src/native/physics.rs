@@ -262,9 +262,13 @@ fn synchronize(world: &mut World) -> bool {
         )>()
         .iter(world)
         .filter(|(entity, item, parent, member, pin)| {
-            world
-                .get::<crate::native::external_drop::Preview>(*entity)
-                .is_none()
+            !crate::native::layout::desktop::tiled(world, *entity)
+                && world
+                    .get::<crate::native::layout::desktop::Suppressed>(*entity)
+                    .is_none()
+                && world
+                    .get::<crate::native::external_drop::Preview>(*entity)
+                    .is_none()
                 && world
                     .get::<crate::native::area::InfluenceArea>(*entity)
                     .is_none()
@@ -695,6 +699,42 @@ pub(crate) mod tests {
         for _ in 0..ticks {
             app.update();
         }
+    }
+
+    #[cfg_attr(test, test)]
+    fn tiling_and_fullscreen_suppression_remove_physics_until_released() {
+        let (mut app, root, _, sand) = fixture(DVec2::ZERO);
+        crate::native::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 30);
+        let start = app.world().get::<CanvasItem>(sand).unwrap().position;
+        app.world_mut()
+            .entity_mut(sand)
+            .insert(crate::native::layout::desktop::Managed {
+                id: crate::layout::desktop::PlacementId([1; 16]),
+                floating: false,
+            });
+        advance(&mut app, 60);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, start);
+        assert_eq!(
+            app.world_mut()
+                .query::<&BodyLink>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+        app.world_mut()
+            .entity_mut(sand)
+            .remove::<crate::native::layout::desktop::Managed>();
+        app.world_mut()
+            .entity_mut(sand)
+            .insert(crate::native::layout::desktop::Suppressed);
+        advance(&mut app, 60);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, start);
+        app.world_mut()
+            .entity_mut(sand)
+            .remove::<crate::native::layout::desktop::Suppressed>();
+        advance(&mut app, 60);
+        assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < start.x - 10.0);
     }
 
     #[test]
@@ -1444,6 +1484,7 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        tiling_and_fullscreen_suppression_remove_physics_until_released,
         size_and_immunity_update_colliders_and_saved_force_without_resizing_the_sand,
         protein_membership_wakes_only_matching_source_bodies_and_stops_force_on_disconnect,
         area_reach_changes_wake_offscreen_bodies_and_apply_real_motion,

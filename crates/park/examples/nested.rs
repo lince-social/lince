@@ -15,10 +15,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut smoke = false;
     let mut outputs = 1;
     let mut ready_hook = false;
+    let mut showoff = false;
     let mut index = 0;
     while index < arguments.len() {
         match arguments[index].to_str() {
             Some("--ready-hook") => ready_hook = true,
+            Some("--showoff") => showoff = true,
             Some("--outputs") => {
                 index += 1;
                 outputs = arguments
@@ -65,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Some("--help" | "-h") => {
                 println!(
-                    "cargo xtask park nested --directory PATH [--duration SECONDS] [--outputs COUNT] [--ready-hook] [-- PROGRAM ARGUMENTS]\ncargo xtask park nested --smoke"
+                    "cargo xtask park nested --directory PATH [--duration SECONDS] [--outputs COUNT] [--ready-hook] [--showoff] [-- PROGRAM ARGUMENTS]\ncargo xtask park nested --smoke"
                 );
                 return Ok(());
             }
@@ -99,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     let report = lince_park::nested::run(
         lince_park::runtime::Configuration {
-            showoff: false,
+            showoff,
             size: [960, 600],
             directory,
             runtime: runtime.handle().clone(),
@@ -108,6 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         applications,
         lince_park::nested::Options {
             ready_hook,
+            activation: None,
             duration,
             smoke,
             outputs,

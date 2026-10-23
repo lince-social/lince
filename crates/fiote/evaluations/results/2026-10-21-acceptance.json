@@ -1,0 +1,282 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "state": "finished",
+  "scope": "Published-package native conversation acceptance, plus current-source Moonshine and voice integration; these are separate evidence.",
+  "release": {
+    "tag": "rolling-94-1",
+    "commit": "5e3d9c0db7d81c12cc5ac2e8c14cd2569d153473",
+    "asset_sha256": "aaf0ddd3081924054a41eadd5dfa153d794546cbc6c267f512240bf04193fd84",
+    "executable_sha256": "122087f5b3a2768d07cc0b0be29972387bc7096a66924690a29eea818a4bc0e5",
+    "installed_application_replaced": false,
+    "native_hello": {
+      "schema": 1,
+      "version": "0.8.0",
+      "revision": "5e3d9c0db7d81c12cc5ac2e8c14cd2569d153473",
+      "outcome": "passed",
+      "stage": "view",
+      "detail": "Completed reply saved and delivered to the normal conversation view",
+      "record": "r_01M5FBC68J8ADVTEXM038B3EFP",
+      "thread": "r_01M5FBTTEF8VZRJ9TCMAJ9839W",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low",
+      "fast": false,
+      "tools_enabled": false,
+      "elapsed_ms": 5003,
+      "reply": "Hello! Connection successful.",
+      "persisted": true,
+      "view": "headless-component-state",
+      "timings": [
+        [
+          "connection",
+          343
+        ],
+        [
+          "persistence",
+          4628
+        ],
+        [
+          "view",
+          0
+        ]
+      ]
+    },
+    "laboratory": {
+      "cases": 452,
+      "passed": 445,
+      "failed": [
+        {
+          "name": "lince_interface::native::instinct::practice::tests::foundational_pages_confirm_native_effects_and_explain_direct_starts",
+          "milliseconds": 48698.077256,
+          "error": "Practice did not confirm its result: [(0, Some(ReadVocabulary), {ReadVocabulary: Object {\"record\": Object {\"uid\": String(\"r_01M5FAB53P9H78FB1S03HDBZXM\"), \"slug\": String(\"instinct-note\"), \"kind\": String(\"plain\"), \"head\": String(\"My practice note\"), \"body\": String(\"Today I tried Lince.\"), \"quantity\": String(\"-1\"), \"unit\": Null, \"start_date\": Null, \"due_date\": Null, \"estimate_min\": Null, \"work_logs\": Array [], \"assertions\": Array [Object {\"uid\": String(\"a_01M5FAB8YN8WEBEZ40V59V5ZVM\"), \"role\": String(\"identity\"), \"predicate\": String(\"sample-kind\"), \"predicate_uid\": String(\"c_01M5FAB8XE9JRSWSA6FSHXSWBK\"), \"object\": Null, \"quantity\": Null, \"unit\": Null}, Object {\"uid\": String(\"a_01M5FAB8ZX8RNSM2PPSHABF2HF\"), \"role\": String(\"ordinary\"), \"predicate\": String(\"related\"), \"predicate_uid\": String(\"c_01M5FAB8ZP8ANSM2072MTPXCKE\"), \"object\": String(\"r_01M5FAB8PM8YKT9PAMTG76HDRF\"), \"quantity\": Null, \"unit\": Null}]}, \"concepts\": Array [Object {\"name\": String(\"actor\"), \"uid\": String(\"c_01JA0000000000000000000112\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"agent\"), \"uid\": String(\"c_01JA0000000000000000000111\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"assigned-to\"), \"uid\": String(\"c_01JA0000000000000000000100\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"call-in\"), \"uid\": String(\"c_01JA0000000000000000000106\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"call-recording\"), \"uid\": String(\"c_01JA0000000000000000000123\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"call-session-of\"), \"uid\": String(\"c_01JA0000000000000000000122\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"call-transcript\"), \"uid\": String(\"c_01JA0000000000000000000124\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"descendant-of\"), \"uid\": String(\"c_01JA0000000000000000000110\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"group-of\"), \"uid\": String(\"c_01JA0000000000000000000107\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"member-of\"), \"uid\": String(\"c_01JA0000000000000000000108\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"message-in\"), \"uid\": String(\"c_01JA0000000000000000000103\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"note\"), \"uid\": String(\"c_01M5FAB8WZ8WHA5N8V7EHC20EY\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"operated-by\"), \"uid\": String(\"c_01JA0000000000000000000109\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"organ\"), \"uid\": String(\"c_01JA0000000000000000000114\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"part-of\"), \"uid\": String(\"c_01JA0000000000000000000101\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"participant\"), \"uid\": String(\"c_01JA0000000000000000000120\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"person\"), \"uid\": String(\"c_01JA0000000000000000000113\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"practice-note\"), \"uid\": String(\"c_01M5FAB8XE9JRSWSA6FSHXSWBK\"), \"parents\": Array [String(\"c_01M5FAB8WZ8WHA5N8V7EHC20EY\")], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"references\"), \"uid\": String(\"c_01JA0000000000000000000105\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"related\"), \"uid\": String(\"c_01M5FAB8ZP8ANSM2072MTPXCKE\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"reply-to\"), \"uid\": String(\"c_01JA0000000000000000000104\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"tagged\"), \"uid\": String(\"c_01JA0000000000000000000121\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"thread-of\"), \"uid\": String(\"c_01JA0000000000000000000102\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}, Object {\"name\": String(\"t\u00f3pos\"), \"uid\": String(\"c_01JA0000000000000000000001\"), \"parents\": Array [], \"vocabulary\": String(\"Local\")}]}}, false, false, Waiting { ticket: Ticket { session: 11767063460771343600, generation: 1, serial: 1 }, deadline: 33724 }, false, 3, false, false, false, [true, true])], [(DVec2(0.0, 0.0), Object {\"uid\": String(\"r_01M5FAB53P9H78FB1S03HDBZXM\"), \"slug\": String(\"instinct-note\"), \"kind\": String(\"plain\"), \"head\": String(\"My practice note\"), \"body\": String(\"Today I tried Lince.\"), \"quantity\": String(\"-1\"), \"organ\": String(\"r_01M5FAB8JM867AMTWSCQBNZ64J\"), \"start_date\": Null, \"due_date\": Null, \"threads\": Array [], \"extension\": Null, \"estimate_min\": Null, \"work_logs\": Array [], \"spent_seconds\": Number(0), \"running_since\": Null, \"assertions\": Array [Object {\"uid\": String(\"a_01M5FAB8YN8WEBEZ40V59V5ZVM\"), \"role\": String(\"identity\"), \"predicate\": String(\"sample-kind\"), \"predicate_uid\": String(\"c_01M5FAB8XE9JRSWSA6FSHXSWBK\"), \"object\": Null, \"quantity\": Null, \"unit\": Null}, Object {\"uid\": String(\"a_01M5FAB8ZX8RNSM2PPSHABF2HF\"), \"role\": String(\"ordinary\"), \"predicate\": String(\"related\"), \"predicate_uid\": String(\"c_01M5FAB8ZP8ANSM2072MTPXCKE\"), \"object\": String(\"r_01M5FAB8PM8YKT9PAMTG76HDRF\"), \"quantity\": Null, \"unit\": Null}], \"assignees\": Array []}, false)], [(\"Record Castle\", false, None)], [\"\", \"Protein filter\", \"\", \"\", \"\", \"\", \"\", \"Record changes\", \"\", \"\", \"\", \"\", \"\", \"\", \"\", \"\", \"\", \"\", \"Slug\", \"Quantity\", \"Assignees\", \"Start\", \"Due\", \"Estimate (minutes)\", \"Work timer\", \"\", \"Choose a Fiote and connect its agent.\", \"v\", \"v\", \"v\", \"\", \"Property changes inactive\", \"\", \"\", \"\", \"\u2212\", \"+\", \"Quantity\", \"Position Y\", \"Depth\", \"On entry\", \"Size\", \"Assign people\", \"Remove Assertions\", \"Add Assertions\", \"\u00f7\", \"\u00d7\", \"+\", \"\u2212\", \"=\", \"=\", \"Quantity\", \"On exit\", \"Unassign people\", \"Unassign people\", \"Assign people\", \"Remove Assertions\", \"Add Assertions\", \"\u00f7\", \"\u00d7\", \"Areas\", \"Add\", \"Draw\", \"Selection\", \"Area of influence\", \"Rules affecting a Sand\", \"Click a Sand in edit mode. This explanation stays available while you adjust its Areas. Pauses stop Area effects, sounds and boundary changes. Submitted Record changes may still finish.\", \"Select a Sand to inspect its evaluated rules.\", \"Area enabled\", \"Attraction\", \"Change properties\", \"Hole to workspace below\", \"Name\", \"Background\", \"\", \"Red\", \"128\", \"Green\", \"102\", \"Blue\", \"217\", \"Opacity\", \"50%\", \"Protein\", \"Sorting\", \"Immunity\", \"Size multiplier\", \"1.00\u00d7\", \"Physics influence\", \"Sound on crossing\", \"Enable sound area\", \"Force\", \"Strength\", \"0.0\", \"Reach\", \"Limited\", \"Unlimited\", \"Square\", \"Follow shape\", \"Radius\", \"Target\", \"Filter\", \"All\", \"Shape\", \"Position X\", \"nota-de-pratica \u2192 practice-note\\nsample-kind \u2192 choose note or practice-note\", \"Disconnect parent\", \"Connect parent\", \"Parent concept (selected concept is a\u2026)\", \"Remove from Lingua\", \"Include in Lingua\", \"Delete selected\", \"Rename selected\", \"Create\", \"Name (for create or rename)\", \"Concept\", \"Vocabulary\", \"WGSL effect\u2026\", \"Next\", \"Previous\", \"Live\", \"Refresh\", \"Knowledge sources\", \"Record history\", \"Terms and translations\", \"Record assertions\", \"Concepts and hierarchy\", \"Vocabularies\", \"Ontology\", \"Free\", \"Assisted\", \"Close\", \"Vocabulary and Ontology\", \"Free \u00b7 disposable practice. Close offers Keep or Discard.\", \"Recall Assertions and identity\", \"Waiting for the feature to confirm the result. Skip, Free and Close remain available.\", \"Perform this sample action\", \"Next\", \"Skip\", \"Starting another page discards this disposable example. To retain it, Close and choose Keep first.\", \"Why Lince\", \"Starting Lince\", \"Using Instinct\", \"Workspaces\", \"Canvas navigation\", \"Edit mode and the store\", \"Sands and placement\", \"Plain and editable text\", \"Castle composition\", \"Appearance\", \"Keyboard and accessible navigation\", \"Area shape and reach\", \"Attraction and repulsion\", \"Area presentation effects\", \"Understanding an Area effect\", \"A Record\", \"Assertions and identity\", \"Vocabulary and Ontology\", \"Record, Assertions and Relations views\", \"Facts and work metadata\", \"Protein\", \"Protein Castle and presentation\", \"Areas that change Records\", \"Protein arrangement and motion\", \"Todo\", \"Kanban\", \"Time Castle\", \"Calendar\", \"Operation Sand\", \"Notifications\", \"Frequency and Cadence\", \"Karma and Rule Castle\", \"Daily habit helper\", \"Commands and Signals\", \"Simulation Castle\", \"Fiote\", \"Cell and Organ\", \"Contacts and pairing\", \"Users, Roles and Access Control\", \"Sharing and synchronization\", \"My devices and Karma authority\", \"Mail and delivery\", \"Public Needs and Contributions\", \"Conversations and Messages\", \"Calls and screen sharing\", \"Transfer Castle\", \"Transfers with Karma\", \"Trail and handbook import\", \"Sync and Lingua files\", \"File and blob transfers\", \"Storage and owner backup\", \"File Explorer and IDE\", \"IDE language tools\", \"Document Viewer\", \"Terminal\", \"Dropping and pasting files\", \"Recorder Castle\", \"Sound on Area crossing\", \"Shader Castle\", \"Spatial view and Topology\", \"Custom Castles and the library\", \"Freedoom\", \"Inspection\", \"Information, updates and credits\", \"Laboratory\", \"Connect again\", \"thread-of\", \"\", \"Connected to Organ\", \"Organ: g_01M5FAB53P83RVSX6MFMG42JT8\", \"Live\", \"Username\", \"Password\", \"Log in\", \"One login unlocks all Areas using this Organ. Passwords are not saved.\", \"Extensions\u2026\", \"Edit Record data\u2026\", \"Lince\", \"Assertions\", \"Local\", \"Local\", \"Undo presentation\", \"Change presentation\u2026\", \"+\", \"Threads\", \"Manage Fiote\", \"\", \"Start\", \"Total 00:00:00\", \"End\", \"Start\", \"New work log\", \"Date / time\", \"\u25a6\", \"Date / time\", \"\u25a6\", \"Assignees \u25be\", \"\u00d7\", \"#related @r_01M5FAB8PM8YKT9PAMTG76HDRF\", \"\u00d7\", \"#sample-kind\", \"tagged\", \"Choose\u2026\", \"sample-kind\", \"sample-kind\", \"reply-to\", \"related\", \"references\", \"person\", \"participant\", \"part-of\", \"organ\", \"operated-by\", \"message-in\", \"member-of\", \"location\", \"group-of\", \"descendant-of\", \"call-transcript\", \"call-session-of\", \"call-recording\", \"call-in\", \"assigned-to\", \"agent\", \"actor\", \"tagged\", \"sample-kind\", \"sample-kind\", \"reply-to\", \"related\", \"references\", \"person\", \"participant\", \"part-of\", \"organ\", \"operated-by\", \"message-in\", \"member-of\", \"location\", \"group-of\", \"descendant-of\", \"call-transcript\", \"call-session-of\", \"call-recording\", \"call-in\", \"assigned-to\", \"agent\", \"actor\", \"thread-of\", \"Choose\u2026\", \"Transclude\u2026\", \"Draw\u2026\", \"Side by side\", \"Pretty\", \"Raw\", \"Record actions\", \"Discussion\", \"Work\", \"Planning\", \"Identity and description\", \"Title only\", \"\u2304\", \"24 entries \u00b7 page 1\", \"actor\", \"Root concept \u00b7 Linguas: Lince\", \"agent\", \"Root concept \u00b7 Linguas: Lince\", \"assigned-to\", \"Root concept \u00b7 Linguas: Lince\", \"call-in\", \"Root concept \u00b7 Linguas: Lince\", \"call-recording\", \"Root concept \u00b7 Linguas: Lince\", \"call-session-of\", \"Root concept \u00b7 Linguas: Lince\", \"call-transcript\", \"Root concept \u00b7 Linguas: Lince\", \"descendant-of\", \"Root concept \u00b7 Linguas: Lince\", \"group-of\", \"Root concept \u00b7 Linguas: Lince\", \"location\", \"Root concept \u00b7 Linguas: Lince\", \"member-of\", \"Root concept \u00b7 Linguas: Lince\", \"message-in\", \"Root concept \u00b7 Linguas: Lince\", \"operated-by\", \"Root concept \u00b7 Linguas: Lince\", \"organ\", \"Root concept \u00b7 Linguas: Lince\", \"part-of\", \"Root concept \u00b7 Linguas: Lince\", \"participant\", \"Root concept \u00b7 Linguas: Lince\", \"person\", \"Root concept \u00b7 Linguas: Lince\", \"references\", \"Root concept \u00b7 Linguas: Lince\", \"related\", \"Root concept \u00b7 Linguas: Local\", \"reply-to\", \"Root concept \u00b7 Linguas: Lince\", \"sample-kind\", \"Root concept \u00b7 Linguas: Local\", \"sample-kind\", \"Is a sample-kind \u00b7 Linguas: Local\", \"tagged\", \"Root concept \u00b7 Linguas: Lince\", \"thread-of\", \"Root concept \u00b7 Linguas: Lince\"]"
+        },
+        {
+          "name": "lince_interface::native::instinct::practice::tests::inactive_idle_and_closed_practice_do_not_repeat_input_scans",
+          "milliseconds": 487.376082,
+          "error": "Idle practice budget exceeded: baseline 597 \u00b5s, idle 2186 \u00b5s"
+        },
+        {
+          "name": "lince_interface::native::instinct::practice::tests::protein_query_controls_and_saves_stay_in_the_sample_cell",
+          "milliseconds": 3864.0264330000005,
+          "error": "assertion `left == right` failed\n  left: 0\n right: 2"
+        },
+        {
+          "name": "lince_interface::native::instinct::practice::tests::community_views_keep_identity_pairing_and_roles_in_prepared_cells",
+          "milliseconds": 72005.39125,
+          "error": "Practice did not confirm its result: [(0, Some(InspectMail), {}, false, false, Unavailable(\"forbidden: Conversation sharing no longer permits this delivery\"), false, 2, false, false, true, [true, true])], [], [], [\"\", \"\", \"Free\", \"Assisted\", \"Close\", \"Mail and delivery\", \"Assisted \u00b7 disposable practice. Close offers Keep or Discard.\", \"Recall Sharing and synchronization\", \"Recall My devices and Karma authority\", \"forbidden: Conversation sharing no longer permits this delivery\", \"Perform this sample action\", \"Next\", \"Skip\", \"Retry\", \"Starting another page discards this disposable example. To retain it, Close and choose Keep first.\", \"Why Lince\", \"Starting Lince\", \"Using Instinct\", \"Workspaces\", \"Canvas navigation\", \"Edit mode and the store\", \"Sands and placement\", \"Plain and editable text\", \"Castle composition\", \"Appearance\", \"Keyboard and accessible navigation\", \"Area shape and reach\", \"Attraction and repulsion\", \"Area presentation effects\", \"Understanding an Area effect\", \"A Record\", \"Assertions and identity\", \"Vocabulary and Ontology\", \"Record, Assertions and Relations views\", \"Facts and work metadata\", \"Protein\", \"Protein Castle and presentation\", \"Areas that change Records\", \"Protein arrangement and motion\", \"Todo\", \"Kanban\", \"Time Castle\", \"Calendar\", \"Operation Sand\", \"Notifications\", \"Frequency and Cadence\", \"Karma and Rule Castle\", \"Daily habit helper\", \"Commands and Signals\", \"Simulation Castle\", \"Fiote\", \"Cell and Organ\", \"Contacts and pairing\", \"Users, Roles and Access Control\", \"Sharing and synchronization\", \"My devices and Karma authority\", \"Mail and delivery\", \"Public Needs and Contributions\", \"Conversations and Messages\", \"Calls and screen sharing\", \"Transfer Castle\", \"Transfers with Karma\", \"Trail and handbook import\", \"Sync and Lingua files\", \"File and blob transfers\", \"Storage and owner backup\", \"File Explorer and IDE\", \"IDE language tools\", \"Document Viewer\", \"Terminal\", \"Dropping and pasting files\", \"Recorder Castle\", \"Sound on Area crossing\", \"Shader Castle\", \"Spatial view and Topology\", \"Custom Castles and the library\", \"Freedoom\", \"Inspection\", \"Information, updates and credits\", \"Laboratory\"]"
+        },
+        {
+          "name": "lince_interface::native::instinct::practice::tests::visual_lessons_save_shader_and_custom_castles_and_restore_views",
+          "milliseconds": 31527.796147,
+          "error": "Practice did not confirm its result: [(0, Some(AddShaderExample), {AddShaderExample: Object {\"record\": Object {\"uid\": String(\"r_01M5FAH9CY98GAJ0R2VE308ZB8\"), \"slug\": String(\"instinct-note\"), \"kind\": String(\"plain\"), \"head\": String(\"My practice note\"), \"body\": String(\"Today I tried Lince.\"), \"quantity\": String(\"-1\"), \"unit\": Null, \"start_date\": Null, \"due_date\": Null, \"estimate_min\": Null, \"work_logs\": Array [], \"assertions\": Array []}, \"concepts\": Array []}}, false, false, Waiting { ticket: Ticket { session: 10813452765324189167, generation: 1, serial: 1 }, deadline: 31443 }, false, 3, false, false, false, [true, true])], [(DVec2(0.0, 0.0), Object {\"uid\": String(\"r_01M5FAH9CY98GAJ0R2VE308ZB8\"), \"kind\": String(\"plain\"), \"head\": String(\"My practice note\"), \"organ\": String(\"r_01M5FAHAR89VMTCQVRDH0HP3J3\")}, false)], [(\"Shader Castle\", false, None)], [\"\", \"Task: unknown \u00b7 Progress: unavailable\", \"\", \"2D / 3D\", \"Edit the Record's WGSL extension below. Save / Apply publishes a validated effect. The Record description is unchanged; drafts are kept separately for up to eight selected Records.\", \"Create extension / Energy example\", \"Open\", \"Record slug\", \"Live\", \"Protein\", \"Shader Castle\", \"Free\", \"Assisted\", \"Close\", \"Shader Castle\", \"Assisted \u00b7 disposable practice. Close offers Keep or Discard.\", \"Recall Record, Assertions and Relations views\", \"Waiting for the feature to confirm the result. Skip, Free and Close remain available.\", \"Perform this sample action\", \"Next\", \"Skip\", \"Starting another page discards this disposable example. To retain it, Close and choose Keep first.\", \"Why Lince\", \"Starting Lince\", \"Using Instinct\", \"Workspaces\", \"Canvas navigation\", \"Edit mode and the store\", \"Sands and placement\", \"Plain and editable text\", \"Castle composition\", \"Appearance\", \"Keyboard and accessible navigation\", \"Area shape and reach\", \"Attraction and repulsion\", \"Area presentation effects\", \"Understanding an Area effect\", \"A Record\", \"Assertions and identity\", \"Vocabulary and Ontology\", \"Record, Assertions and Relations views\", \"Facts and work metadata\", \"Protein\", \"Protein Castle and presentation\", \"Areas that change Records\", \"Protein arrangement and motion\", \"Todo\", \"Kanban\", \"Time Castle\", \"Calendar\", \"Operation Sand\", \"Notifications\", \"Frequency and Cadence\", \"Karma and Rule Castle\", \"Daily habit helper\", \"Commands and Signals\", \"Simulation Castle\", \"Fiote\", \"Cell and Organ\", \"Contacts and pairing\", \"Users, Roles and Access Control\", \"Sharing and synchronization\", \"My devices and Karma authority\", \"Mail and delivery\", \"Public Needs and Contributions\", \"Conversations and Messages\", \"Calls and screen sharing\", \"Transfer Castle\", \"Transfers with Karma\", \"Trail and handbook import\", \"Sync and Lingua files\", \"File and blob transfers\", \"Storage and owner backup\", \"File Explorer and IDE\", \"IDE language tools\", \"Document Viewer\", \"Terminal\", \"Dropping and pasting files\", \"Recorder Castle\", \"Sound on Area crossing\", \"Shader Castle\", \"Spatial view and Topology\", \"Custom Castles and the library\", \"Freedoom\", \"Inspection\", \"Information, updates and credits\", \"Laboratory\", \"Connected to Organ\", \"Organ: g_01M5FAH9CY8CFB5YXGF3TDWAGY\", \"Live\", \"Username\", \"Password\", \"Log in\", \"One login unlocks all Areas using this Organ. Passwords are not saved.\", \"Connect again\", \"\u2304\", \"Title only\", \"Identity and description\", \"Planning\", \"Work\", \"Discussion\", \"Record actions\", \"Change presentation\u2026\", \"Undo presentation\", \"Edit Record data\u2026\", \"WGSL effect\u2026\", \"Extensions\u2026\", \"Record WGSL extension\", \"Save / Apply\", \"Reload working\", \"Reset\", \"Disable / Enable\", \"Animation / Still\", \"Freeze snapshot / Resume\", \"Add quantity rule\", \"Follow Record quantity\", \"Compiling WGSL\u2026\", \"Record effects\", \"Selected: Main \u00b7 main\", \"Effect label\", \"New effect ID\", \"New effect label\", \"Create effect from selected\", \"Remove selected effect\", \"Make selected effect the Record default\", \"Use selected effect in this Castle\", \"Save / Apply publishes the selected effect, removals and default choice. Other effect drafts stay local. An explicit missing selection stays unavailable.\", \"Appearance in this Castle\", \"Override this Record's placement\", \"Add numeric input\", \"Authoring mode: surface\", \"Use surface mode\", \"Use mesh mode\", \"Use volume mode\", \"Surface energy bundle preset\", \"Mesh normal-color bundle preset\", \"Volume cloud bundle preset\", \"Preview quantity (does not edit the Record)\", \"Task state: unmapped (configure quantity range)\", \"Progress: unmapped (configure quantity range)\", \"Mappings are opt-in. Start is pending/0%; end is completed/100%. Descending ranges work too. task_state: 0 unknown, 1 pending, 2 active, 3 completed. progress is 0\u20131 when progress_present is 1. Presets do not assign task meaning.\", \"Reward, Reminder and Cleaning replace quantity program rules, retaining your mappings. Cleaning needs an explicit task or progress range; missing quantities stay clean. Other Record presets edit the selected program.\", \"Calm ball\", \"Energy ball\", \"Gradient\", \"Ripple\", \"Grain\", \"Numeric input glow\", \"Reward (mapped task state)\", \"Reminder (mapped task state)\", \"Cleaning goo (mapped task/progress)\", \"Edit program: negative\", \"Edit program: neutral\", \"Edit program: nonnegative\", \"Add program\", \"Remove selected program\", \"WGSL: fn shade(uv, inputs) \u2192 vec4<f32>\", \"Inputs: size, time, delta, mouse, quantity, quantity_present, task_state, effect_strength, motion_allowed, progress, progress_present. Quantity rules use this Record's quantity; first match wins.\", \"Fallback: neutral (choose selected program)\", \"Rule 1: Less (change operator)\", \"Threshold\", \"Program: negative (use selected program)\", \"Move rule earlier\", \"Remove rule\", \"Rule 2: AtLeast (change operator)\", \"Threshold\", \"Program: nonnegative (use selected program)\", \"Move rule earlier\", \"Remove rule\", \"\", \"\"]"
+        },
+        {
+          "name": "lince_interface::native::transfer_castle::stock::tests::stock_controls_review_both_modes_and_require_a_separate_explicit_enable",
+          "milliseconds": 17.269942999999998,
+          "error": "called `Result::unwrap()` on an `Err` value: Error(\"unknown field `request_id`, expected `request`\", line: 0, column: 0)"
+        },
+        {
+          "name": "lince_interface::native::transfer_castle::stock::tests::saved_stock_controls_offer_reviewed_pause_and_replenishment_without_auto_enabling",
+          "milliseconds": 21.372645,
+          "error": "called `Result::unwrap()` on an `Err` value: Error(\"unknown field `request_id`, expected `request`\", line: 0, column: 0)"
+        }
+      ],
+      "stress_complete": true,
+      "environment": "Other agents were compiling; timing failures do not establish an isolated performance regression."
+    },
+    "url": "https://github.com/lince-social/lince/releases/tag/rolling-94-1",
+    "full_voice_acceptance": {
+      "status": "unverified",
+      "reason": "The published live Laboratory has only a greeting scenario. Its native voice action harness is not exposed as a published recorded-audio scenario. A rendered release window was opened, but its accessibility tree exposed only the window frame, so the attempted external control did not establish rendered voice acceptance.",
+      "recommendation": "Expose the existing recorded-audio/native-action workflow as an explicit opt-in Laboratory scenario in a future release."
+    }
+  },
+  "source": {
+    "head": "6a7d4e97e093343dc0497d33482fed8051646802",
+    "working_tree_modified": true,
+    "checks": {
+      "backend_all_targets": "passed",
+      "native_presentation_all_targets": "passed",
+      "final_fiote_cell_all_targets": "passed; warnings denied",
+      "format_and_diff_whitespace": "passed"
+    },
+    "speech_unit_tests": {
+      "passed": 34,
+      "failed": 0,
+      "ignored": 4
+    },
+    "cell_speech_tests": {
+      "passed": 38,
+      "failed": 0,
+      "ignored": 6
+    },
+    "real_normal_service_models": [
+      {
+        "model": "MoonshineTiny",
+        "passed": true,
+        "transcript": "Go forward ten meters.",
+        "strict_reference_match": true,
+        "seconds": 9.65,
+        "silent_tail_seconds": 40,
+        "long_recording_transcript": "Go forward 10 meters",
+        "silence_tail_did_not_add_words": true,
+        "log": "moonshine-tiny-service-final.log"
+      },
+      {
+        "model": "MoonshineSmall",
+        "passed": true,
+        "transcript": "Go forward ten metres.",
+        "strict_reference_match": false,
+        "seconds": 23.44,
+        "silent_tail_seconds": 40,
+        "long_recording_transcript": "Go forward 10 meters.",
+        "silence_tail_did_not_add_words": true,
+        "log": "moonshine-small-service-final.log"
+      }
+    ],
+    "native_ui_tests": {
+      "speech_controls": {
+        "passed": 7,
+        "failed": 0,
+        "ignored": 2,
+        "latest_log": "native-speech-tests-final.log"
+      },
+      "listening_controls": {
+        "passed": 27,
+        "failed": 0,
+        "ignored": 13
+      },
+      "moonshine_dictation_controls": {
+        "passed": true,
+        "seconds": 13.18,
+        "scope": "Actual pinned Tiny model through Import/Stop/transcribe/draft edits/Cancel; no messages created"
+      },
+      "native_authenticated_voice": {
+        "passed": true,
+        "seconds": 105.66,
+        "input": "verified synthetic PCM through acoustic wake gate and native UI controls; no room capture",
+        "recognizer": "MoonshineTiny",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol",
+        "reasoning": "low",
+        "fast": false,
+        "verified": [
+          "wake activation",
+          "first request accepted once",
+          "spoken reply queued and playback finished",
+          "follow-up accepted without another wake phrase",
+          "same recipient and thread",
+          "closing speech ends conversation",
+          "background speech does not cause another delivery"
+        ],
+        "timings_ms": {
+          "first_input": 15659,
+          "first_request_accepted": 22679,
+          "first_reply_saved": 27607,
+          "first_spoken_output_queued": 68733,
+          "first_playback_finished": 73076,
+          "followup_input": 73078,
+          "followup_reply_saved": 81795,
+          "followup_playback_finished": 99515,
+          "conversation_ended": 104681
+        },
+        "scope": "Native component/action harness built from current working tree; this is not the published executable or a personal-voice accuracy test."
+      },
+      "stop_during_playback": {
+        "passed": true,
+        "seconds": 65.52,
+        "verified": "Capture and automatic resumption remain off after playback finishes."
+      }
+    },
+    "native_test_executable_sha256": "d4650970be6e0649aea312166a5c174b89e28bd2fec99e25bb8baea1d8ffc1b6",
+    "implementation": {
+      "module": "fiote::communication::speech::recognition",
+      "local_models": [
+        "Phonon-2",
+        "Moonshine Tiny",
+        "Moonshine Small"
+      ],
+      "shared_features": [
+        "Rust CPU inference",
+        "verified download/import",
+        "persisted model selection",
+        "bounded inference workers",
+        "cancellation retains worker ownership until work ends",
+        "silence filtering before inference and for silent long-recording segments",
+        "normal message dictation",
+        "general Fiote listening"
+      ],
+      "ui": "Shared speech settings provide model selection, download/import and selected-model status.",
+      "publication": "Moonshine integration requires a new application build."
+    },
+    "phonon_regression": {
+      "passed": true,
+      "seconds": 29.73,
+      "verified": [
+        "normal import",
+        "actual English transcription",
+        "request deduplication",
+        "cancellation",
+        "reopening with retained assets and unloaded weights"
+      ],
+      "log": "phonon-service-regression.log"
+    },
+    "cell_test_executable_sha256": "37f3dffedc65f1e2121af3fea6b4c1b5f754ed602f31fbf3a510ded387438487",
+    "files_sha256": {
+      "crates/fiote/src/communication/speech.rs": "b3b978aea328357f200073bc0b967359761ba9e23ebc71fb437d2a1235c92a31",
+      "crates/fiote/src/communication/speech/recognition.rs": "976913d4f1b6da9a6b83f5c5967f958546ed9de540956338fcf03ab248cd9f2e",
+      "crates/fiote/src/communication/speech/recognition/tests.rs": "87db218f49e7e3b8c71a44dfe09b6d0faac1dfd47e20f4169726a9d80ce8f00a",
+      "crates/fiote/src/communication/speech/moonshine.rs": "9bb137f14c58acf3ef76827406ed66225452cbc0b7685691e7e181e93eb1b25c",
+      "crates/cell/src/speech.rs": "6cfbcb881f49b3b059960d240e61fe56cbf6e3fa6d5589e16ea349fe30dc9a07",
+      "crates/cell/src/speech/listening.rs": "a08803a3d04161994bfb816ebc4e56e5f1c92e50d7d738e87a906eb8acc99238",
+      "crates/cell/src/speech/local_tests.rs": "4bff568a5984f7e1ea048aaf787dec9549d0cbaa35d47ac2b452c8616aa5d6cd",
+      "crates/cell/examples/fiote_fixture.rs": "87e1ae31c077a7fba6688828289ac87c2668807634dc58517371990b318e18c9",
+      "crates/interface/src/native/speech.rs": "509d189db186caea9b6465f1dcbcabf25a877010b6d528458c357ee456156060",
+      "crates/interface/src/native/fiote/session/assistant/listening/tests/recorded/live.rs": "2a954062c86c1ed1e217b8d6aba13df20f9d859629dfbdd987be6afb6bc3cd03"
+    },
+    "head_at_report": "6a7d4e97e093343dc0497d33482fed8051646802"
+  },
+  "credentials": {
+    "renewal": "Published application normal locked-vault flow; one retained Laboratory greeting in the original account data. No copied refresh token was used.",
+    "fixtures": "Disposable data; encrypted access-only credentials; protected password files; no credential values in reports."
+  },
+  "limitations": [
+    "The published live Laboratory scenario covers a greeting and normal conversation component state. It does not automate the complete wake/listening flow. Native action-harness voice evidence will be reported separately.",
+    "Moonshine integration is newer than the published executable and needs a new build.",
+    "Supported local architectures run in Rust. Importing arbitrary weights does not implement an unsupported architecture. Compatible transcription endpoints remain a dictation option.",
+    "Raw recognition is imperfect. Preserve original strict references and the accepted Phonon pears/pairs failures in recorded/performance.rs. Dictation review is suitable for exact words and quantities.",
+    "Optional local semantic routing accuracy remains deferred. Prior Laya abstentions and Qwen routing/admission failures do not justify enabling ambient admission; default Fiote/provider fallback remains the supported path.",
+    "Synthetic audio does not establish personal-voice or room-microphone recognition accuracy; the owner retained that optional check.",
+    "The real-account source voice test had a substantial first spoken-response cold start under concurrent compilation: first saved reply at 27.6 s, first output queued at 68.7 s. This run does not establish isolated latency; retaining timings is preferable to claiming instant voice assistance."
+  ],
+  "outcome": "Executed Fiote checks passed; published full voice acceptance remains unverified.",
+  "plan_file_removed": true,
+  "accepted_asr_limitation": {
+    "model": "Phonon-2",
+    "expected": "four pears",
+    "observed": "four pairs",
+    "decision": "Keep the model and original quality assertions; exact details can use Dictate, review/edit, Send.",
+    "preserved_quality_tests": [
+      "actual_near_limit_request_preserves_complete_delivery_and_spoken_reply",
+      "actual_rendered_window_processes_near_limit_voice_without_stalling"
+    ],
+    "status": "Accepted historical model limitation; not rerun or rewritten in this implementation."
+  },
+  "logs_directory": "/home/user/git/lince-fiote-acceptance-20261021/reports",
+  "logs": [
+    "released-laboratory.json",
+    "released-disposable-hello.json",
+    "speech-tests-final.log",
+    "cell-speech-tests.log",
+    "native-speech-tests-final.log",
+    "native-listening-tests.log",
+    "moonshine-native-dictation.log",
+    "moonshine-native-live-voice.log",
+    "moonshine-native-stop.log",
+    "moonshine-tiny-service-final.log",
+    "moonshine-small-service-final.log",
+    "phonon-service-regression.log",
+    "final-check.log"
+  ]
+}

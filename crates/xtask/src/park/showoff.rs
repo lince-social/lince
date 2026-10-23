@@ -18,11 +18,27 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     let mut duration = None;
     let mut outputs = None;
     let mut directory = None;
+    let mut executable = None;
     let mut firefox = OsString::from("firefox");
     let mut terminal = OsString::from("xdg-terminal-exec");
     let mut arguments = arguments.iter();
     while let Some(argument) = arguments.next() {
         match argument.to_str() {
+            Some("--executable") => {
+                let path = PathBuf::from(
+                    arguments
+                        .next()
+                        .ok_or("--executable needs an installed path")?,
+                );
+                if !path.is_absolute() {
+                    return Err("Use an absolute installed executable path".into());
+                }
+                let information = super::validation::inspect_build(&path)?;
+                if information["optimized"] != true {
+                    return Err("Showoff requires a release executable".into());
+                }
+                executable = Some(path);
+            }
             Some("--nested") => nested = true,
             Some("--audit") => audit = true,
             Some("--directory") => {
@@ -50,7 +66,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
             }
             Some("--help" | "-h") => {
                 println!(
-                    "cargo xtask park showoff [--nested] [--audit] [--directory PATH] [--firefox PROGRAM] [--terminal PROGRAM] [--duration SECONDS] [--outputs COUNT]"
+                    "cargo xtask park showoff [--executable PATH] [--nested] [--audit] [--directory PATH] [--firefox PROGRAM] [--terminal PROGRAM] [--duration SECONDS] [--outputs COUNT]"
                 );
                 println!(
                     "Runs the release compositor with a saved showoff workspace and a private Firefox profile. No time limit unless requested for a nested run."
@@ -69,12 +85,9 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     }
     let directory = directory
         .or_else(|| {
-            env::var_os("XDG_STATE_HOME")
-                .map(PathBuf::from)
-                .or_else(|| {
-                    env::var_os("HOME").map(|path| PathBuf::from(path).join(".local/state"))
-                })
-                .map(|path| path.join("lince-park-showoff"))
+            env::current_dir()
+                .ok()
+                .map(|path| path.join("target/park-showoff"))
         })
         .ok_or("Choose --directory for the showoff data")?;
     fs::create_dir_all(&directory)?;
@@ -92,7 +105,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         fs::write(
             &commands,
             serde_json::to_vec_pretty(&json!({"terminal": {
-                "program": "env", "arguments": ["-u", "GBM_BACKENDS_PATH", "-u", "LD_LIBRARY_PATH", "-u", "__EGL_VENDOR_LIBRARY_DIRS", terminal]
+                "program": terminal, "arguments": []
             }}))?,
         )?;
     }
@@ -127,22 +140,31 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     }
     let page = directory.join("browser-test.html");
     fs::write(&page, PAGE)?;
+    fs::write(
+        directory.join("video.webm"),
+        include_bytes!("../../fixtures/showoff.webm"),
+    )?;
     eprintln!("Showoff data: {}", directory.display());
     eprintln!(
         "Release mode; Firefox uses a private profile. Use the showoff controls or Alt+E. Log out with Super+Shift+Escape."
     );
-    let mut command = cargo_command();
-    command
-        .args([
+    let mut command = if let Some(executable) = executable {
+        Command::new(executable)
+    } else {
+        let mut command = cargo_command();
+        command.args([
             "run",
             "--release",
             "--locked",
             "-p",
             "lince",
             "--features",
-            "park",
+            "park,instinct",
             "--",
-        ])
+        ]);
+        command
+    };
+    command
         .arg(if nested { "--park-nested" } else { "--park" })
         .args(["--showoff", "--directory"])
         .arg(&cell)
@@ -154,16 +176,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         command.arg("--park-outputs").arg(outputs);
     }
     command
-        .args([
-            "--",
-            "env",
-            "-u",
-            "GBM_BACKENDS_PATH",
-            "-u",
-            "LD_LIBRARY_PATH",
-            "-u",
-            "__EGL_VENDOR_LIBRARY_DIRS",
-        ])
+        .arg("--")
         .arg(firefox)
         .args(["--no-remote", "--profile"])
         .arg(profile)
@@ -181,7 +194,7 @@ fn example(name: &str) -> Result<PathBuf> {
             "-p",
             "lince-park",
             "--features",
-            "session,server-tests,lince-interface/native-media",
+            "server-tests",
             "--example",
             name,
             "--",
@@ -249,17 +262,19 @@ pub(super) fn ready(arguments: &[OsString]) -> Result<()> {
     Ok(())
 }
 
-const FIREFOX_PREFS: &str = r#"user_pref("browser.aboutwelcome.enabled", false);
+pub(super) const FIREFOX_PREFS: &str = r#"user_pref("browser.aboutwelcome.enabled", false);
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 "#;
 
-const PAGE: &str = r#"<!doctype html>
+pub(super) const PAGE: &str = r#"<!doctype html>
 <html lang="en"><meta charset="utf-8"><title>Firefox · Park showoff</title>
-<style>html{color-scheme:dark;font:18px system-ui;background:#182335;color:#e8eaf1}body{max-width:52rem;margin:3rem auto;padding:1rem}h1{color:#bc9af4}input,button,textarea{font:inherit;padding:.7rem;border:1px solid #7186a3;border-radius:.4rem}textarea{display:block;width:90%;height:8rem;margin:1rem 0}canvas{width:100%;background:#101827;border-radius:.7rem}li{margin:.5rem 0}</style>
+<style>html{color-scheme:dark;font:18px system-ui;background:#182335;color:#e8eaf1}body{max-width:52rem;margin:1rem auto;padding:1rem}h1{color:#bc9af4}input,button,textarea{font:inherit;padding:.7rem;border:1px solid #7186a3;border-radius:.4rem}textarea{display:block;width:90%;height:5rem;margin:1rem 0}canvas,video{width:100%;background:#101827;border-radius:.7rem}video{max-height:min(360px,55vh)}li{margin:.5rem 0}output{display:block;padding:.6rem;font-variant-numeric:tabular-nums}</style>
 <h1>Firefox running inside Park</h1><p>This is a normal Wayland Firefox window using an isolated test profile. Browse normally from its address bar.</p>
 <p><input placeholder="Test keyboard focus here" aria-label="Keyboard focus test"> <button id="count">Clicks: 0</button></p>
 <textarea aria-label="Clipboard and selection test">Edit, select, copy and paste this text. Open another tab or window, resize, tile and fullscreen Firefox.</textarea>
+<video id="video" src="video.webm" controls autoplay muted loop playsinline aria-label="Offline 720p 60 FPS video test"></video>
+<output id="performance" aria-live="off">Waiting for video and animation measurements…</output>
 <canvas id="motion" width="800" height="160" aria-label="Animated browser canvas"></canvas>
 <ul><li>Use Park's Canvas, Tile and Columns controls to change layout.</li><li>Super + H/J/K/L focuses items; add Shift to move them.</li><li>Super + Backspace returns focus to the canvas; Alt + E opens editing.</li><li>Use Scatter physics, drag Sands, add areas, and explore the GLB in 3D.</li><li>This page works offline. Test real sites by typing an address.</li></ul>
-<script>let clicks=0;document.querySelector('#count').onclick=e=>e.target.textContent='Clicks: '+ ++clicks;const c=document.querySelector('canvas'),x=c.getContext('2d');function draw(t){x.clearRect(0,0,800,160);for(let i=0;i<7;i++){x.fillStyle=['#bc9af4','#68c3df','#f0ba66'][i%3];x.beginPath();x.arc(70+i*108,80+Math.sin(t/700+i)*38,18,0,Math.PI*2);x.fill()}requestAnimationFrame(draw)}requestAnimationFrame(draw);</script></html>"#;
+<script>let clicks=0;document.querySelector('#count').onclick=e=>e.target.textContent='Clicks: '+ ++clicks;const c=document.querySelector('canvas'),x=c.getContext('2d'),v=document.querySelector('video'),samples=[];let previous=0,frames=0,videoCallbacks=0,measuredTime=0,measuredVideo=0;const started=performance.now();window.parkMetrics=()=>{const sorted=[...samples].sort((a,b)=>a-b),q=v.getVideoPlaybackQuality();return{seconds:(performance.now()-started)/1000,animationFrames:frames,frameMedianMs:sorted[Math.floor(sorted.length*.5)]||0,frameP95Ms:sorted[Math.floor(sorted.length*.95)]||0,videoFrames:q.totalVideoFrames,videoDroppedFrames:q.droppedVideoFrames,videoCallbacks,videoWidth:v.videoWidth,videoHeight:v.videoHeight,videoTime:v.currentTime,videoPaused:v.paused,videoError:v.error?.message||null}};function draw(t){if(previous){samples.push(t-previous);if(samples.length>600)samples.shift()}previous=t;frames++;x.clearRect(0,0,800,160);for(let i=0;i<7;i++){x.fillStyle=['#bc9af4','#68c3df','#f0ba66'][i%3];x.beginPath();x.arc(70+i*108,80+Math.sin(t/700+i)*38,18,0,Math.PI*2);x.fill()}requestAnimationFrame(draw)}function videoFrame(){videoCallbacks++;v.requestVideoFrameCallback(videoFrame)}if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(videoFrame);v.play().catch(()=>{});setInterval(()=>{const m=parkMetrics(),presented=m.videoFrames-m.videoDroppedFrames,videoFps=(presented-measuredVideo)/(m.seconds-measuredTime);measuredTime=m.seconds;measuredVideo=presented;document.querySelector('#performance').textContent=`Animation: ${(1000/m.frameMedianMs).toFixed(1)} FPS · p95 ${m.frameP95Ms.toFixed(1)} ms · Video: ${m.videoWidth}×${m.videoHeight} at ${videoFps.toFixed(1)} FPS, ${m.videoFrames} frames, ${m.videoDroppedFrames} dropped`},1000);requestAnimationFrame(draw);</script></html>"#;

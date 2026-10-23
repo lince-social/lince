@@ -9035,6 +9035,7 @@ dependencies = [
  "engine",
  "futures",
  "image 0.25.10",
+ "iroh",
  "lince-cell",
  "lince-interface",
  "lince-utils",

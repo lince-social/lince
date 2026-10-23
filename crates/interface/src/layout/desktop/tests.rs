@@ -329,6 +329,33 @@ fn maximize_respects_bars_and_fullscreen_uses_the_output() {
 }
 
 #[test]
+fn maximizing_free_and_floating_items_tracks_usable_space_and_restores_geometry() {
+    for mode in [WorkspaceLayout::Free, WorkspaceLayout::Row, WorkspaceLayout::Column, WorkspaceLayout::Grid, WorkspaceLayout::ScrollingColumns] {
+        for floating in [false, true] {
+            let mut workspace = workspace(1);
+            workspace.set_mode(mode);
+            if floating { workspace.toggle_floating(id(1), item(1).free.rectangle().unwrap()).unwrap(); }
+            let before = workspace.solve(viewport(), viewport()).unwrap().items[0].rectangle;
+            let free = workspace.item(id(1)).unwrap().free;
+            assert!(workspace.toggle_maximized());
+            assert!(workspace.maximized(id(1)));
+            let with_bar = workspace.solve(viewport(), viewport()).unwrap().items[0];
+            assert_eq!(with_bar.rectangle, Rectangle::new([8.0, 32.0], [984.0, 684.0]).unwrap());
+            assert!(!with_bar.floating);
+            let expanded = Rectangle::new([0.0; 2], [1000.0, 748.0]).unwrap();
+            assert_eq!(workspace.solve(expanded, expanded).unwrap().items[0].rectangle, Rectangle::new([8.0; 2], [984.0, 732.0]).unwrap());
+            assert!(workspace.toggle_maximized());
+            assert!(!workspace.maximized(id(1)));
+            assert_eq!(workspace.solve(viewport(), viewport()).unwrap().items[0].rectangle, before);
+            assert_eq!(workspace.item(id(1)).unwrap().free, free);
+            assert!(workspace.valid());
+            workspace.remove(id(1));
+            assert!(workspace.valid());
+        }
+    }
+}
+
+#[test]
 fn saved_layout_round_trips_and_rejects_corrupt_membership() {
     let mut workspace = workspace(4);
     workspace.stack_focused(Direction::Left);

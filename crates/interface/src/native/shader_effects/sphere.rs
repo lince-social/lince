@@ -71,9 +71,7 @@ fn update(world: &mut World) {
         let Some(root) = root(world, owner) else {
             continue;
         };
-        let spatial = world
-            .get::<crate::native::topology::view::View>(root)
-            .is_some_and(|view| view.spatial);
+        let spatial = crate::native::topology::view::spatial(world, root);
         let showing = !disabled(world)
             && world
                 .get::<shader::EffectPreview>(preview)
@@ -192,6 +190,58 @@ fn update(world: &mut World) {
                 Visibility::Hidden
             },
         ));
+    }
+    update_surfaces(world);
+}
+
+fn update_surfaces(world: &mut World) {
+    let surfaces: Vec<_> = world
+        .query::<(Entity, &Background, &crate::native::canvas::CanvasItem)>()
+        .iter(world)
+        .filter(|(owner, _, _)| world.get::<Surface>(*owner).is_some())
+        .map(|(owner, background, item)| (owner, background.preview, item.size))
+        .collect();
+    for (owner, preview, size) in surfaces {
+        let Some(root) = root(world, owner) else {
+            continue;
+        };
+        let spatial = crate::native::topology::view::spatial(world, root);
+        let showing = world
+            .get::<crate::native::topology::presentation::Surface>(owner)
+            .is_some_and(|surface| surface.visible)
+            && crate::native::topology::presentation::displayed(world, owner)
+            && !disabled(world)
+            && world
+                .get::<shader::EffectPreview>(preview)
+                .is_some_and(|preview| !preview.disabled);
+        let placement = crate::native::topology::spatial(world, owner);
+        let position = crate::native::topology::position(world, owner).unwrap_or(DVec3::ZERO)
+            - crate::native::topology::presentation::origin(world, root);
+        let transform = Transform {
+            translation: position.as_vec3(),
+            rotation: placement.rotation().as_quat(),
+            scale: Vec3::new(size.x, placement.depth(size) as f32, size.y),
+        };
+        let placed =
+            shader::spatial::place(world, preview, owner, owner, transform, spatial && showing);
+        if placed
+            && spatial
+            && showing
+            && let Some(visual) = world
+                .get::<crate::native::topology::presentation::Surface>(owner)
+                .map(|surface| surface.visual)
+            && let Some(mut visibility) = world.get_mut::<Visibility>(visual)
+        {
+            *visibility = Visibility::Hidden;
+        }
+        let output = shader::output(world, preview);
+        if let Some(mut image) = world.get_mut::<ImageNode>(output) {
+            image.color = if placed && spatial && showing {
+                Color::NONE
+            } else {
+                Color::WHITE
+            };
+        }
     }
 }
 

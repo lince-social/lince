@@ -66,6 +66,15 @@ impl State {
         Ok(())
     }
 
+    pub fn refresh_registry(&mut self, registry: Vec<Descriptor>) -> Result<(), String> {
+        validate_registry(&registry)?;
+        for placement in &self.snapshot.placements {
+            placement.component.validate_snapshot(&registry)?;
+        }
+        self.registry = registry;
+        Ok(())
+    }
+
     pub fn synchronize(&mut self, mut snapshot: Snapshot) -> Result<(), String> {
         snapshot.revision = self.snapshot.revision;
         snapshot.next_offset = None;
@@ -784,6 +793,50 @@ mod tests {
             mutation,
         }
     }
+    #[test]
+    fn registry_refresh_preserves_receipts_and_rejects_invalid_replacements_atomically() {
+        let mut state = state();
+        let request = mutate(
+            &state,
+            Mutation::RenameWorkspace {
+                workspace: 1,
+                name: "Camera".into(),
+            },
+        );
+        let receipt = state.handle(&request).unwrap();
+        let registry = vec![Descriptor {
+            kind: "video".into(),
+            name: "Video Castle".into(),
+            description: String::new(),
+            settings: BTreeMap::new(),
+            max_bindings: 0,
+            placeable: true,
+            configurable: true,
+            composable: true,
+            unavailable_reason: None,
+        }];
+        state.refresh_registry(registry.clone()).unwrap();
+        assert_eq!(state.handle(&request).unwrap(), receipt);
+        let before = serde_json::to_value(&state).unwrap();
+        assert!(
+            state
+                .refresh_registry(vec![registry[0].clone(), registry[0].clone()])
+                .is_err()
+        );
+        assert_eq!(serde_json::to_value(&state).unwrap(), before);
+        let Response::Receipt { receipt } = receipt else {
+            panic!()
+        };
+        let undo = mutate(
+            &state,
+            Mutation::Undo {
+                receipt: receipt.request_id,
+            },
+        );
+        state.handle(&undo).unwrap();
+        assert_eq!(state.snapshot.workspaces[0].name, "Main");
+    }
+
     #[test]
     fn crud_persists_receipts_rejects_stale_edits_and_preserves_binding() {
         let mut state = state();

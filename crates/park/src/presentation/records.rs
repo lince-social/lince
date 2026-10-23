@@ -334,6 +334,8 @@ impl Records {
         Ok(())
     }
 
+    pub fn pending(&self) -> bool { !self.requests.is_empty() }
+
     pub fn inspect(&mut self, identity: PlacementId) {
         self.errors.remove(&identity);
         self.inspect = Some(identity);

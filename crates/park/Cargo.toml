@@ -11,7 +11,7 @@ description = "Wayland window management and desktop policies for Lince Park."
 graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
 graphics-gate = ["graphics-probe", "dep:bevy", "dep:lince-interface", "lince-interface/ui", "dep:wayland-client", "dep:wayland-protocols", "smithay/backend_winit"]
 server = ["dep:lince-interface", "dep:rustix", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
-server-tests = ["server", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:wayland-protocols-misc", "dep:tempfile"]
+server-tests = ["server", "dep:serde_json", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:wayland-protocols-misc", "dep:tempfile"]
 clipboard-gate = ["server", "dep:bevy_clipboard", "dep:wayland-client"]
 native-presentation = ["graphics-probe", "server", "dep:bevy", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus"]
 native-client-gate = ["native-presentation", "graphics-gate"]
@@ -83,8 +83,12 @@ name = "session_probe"
 required-features = ["server-tests"]
 
 [[example]]
+name = "input_probe"
+required-features = ["server-tests"]
+
+[[example]]
 name = "capture_probe"
-required-features = ["nested", "server-tests"]
+required-features = ["server-tests"]
 
 [[example]]
 name = "synchronization_probe"

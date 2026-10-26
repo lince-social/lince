@@ -1,0 +1,6 @@
+warning: Git tree '/home/user/git/lince-social/lince' is dirty
+    Blocking waiting for file lock on build directory
+   Compiling lince-interface v0.8.0 (/home/user/git/lince-social/lince/crates/interface)
+   Compiling xtask v0.8.0 (/home/user/git/lince-social/lince/crates/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10m 18s
+     Running `target/debug/xtask workspace check institute/fixtures/workspace/stage01/dataset`

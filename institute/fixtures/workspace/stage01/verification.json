@@ -1,0 +1,359 @@
+{
+  "format": "lince-workspace-stage01-verification",
+  "schema": 1,
+  "updated_at": "2026-10-25 17:39:07 UTC",
+  "stage_status": "verified-baseline-inputs-and-specifications",
+  "scope": "Stage 01 baseline and fixture/contract preparation only. Future spatial/guest/anatomy/scientific runtime capabilities remain pending at their owning stages.",
+  "observed_checks": [
+    {
+      "command": "cargo check --locked -p lince-sandbox --example workspace_baseline",
+      "result": "passed",
+      "elapsed": "7m31s",
+      "scope": "Initial native harness compiled; subsequent Tokio-context correction is awaiting its actual run.",
+      "historical": true
+    },
+    {
+      "command": "cargo test --locked -p xtask workspace::tests -- --nocapture",
+      "result": "passed-earlier-run-final-rerun-pending",
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "test_elapsed_seconds": 0.41,
+      "scope": "Fixture generation, deterministic bytes, skin preservation, geometry/geography, paths, rights and contract consistency. Animation-sample preservation and selected starter caps were added after this run; current proof remains pending.",
+      "historical": true
+    },
+    {
+      "command": "cargo xtask workspace prepare institute/fixtures/workspace/stage01/dataset",
+      "result": "passed",
+      "fixture_encoded_bytes": 1636549,
+      "source_buffer_and_decoded_image_lower_bound_bytes": 1356976,
+      "cases": 10,
+      "scenes": 5,
+      "scope": "Fixture integrity/counts, phased replay consistency and source rights metadata. No future runtime capability is certified.",
+      "evidence": "dataset-inspection.json"
+    },
+    {
+      "command": "cargo test --locked -p transport --test workspace_live",
+      "result": "passed",
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "test_elapsed_seconds": 48.46,
+      "scope": "Existing signed workspace edits, concurrent layout edits, retry/reconnect/revocation, capacity and slow-reader/churn behavior; not new public model hosting."
+    },
+    {
+      "command": "cargo test --locked -p engine --test workspace_sync",
+      "result": "passed",
+      "passed": 21,
+      "failed": 0,
+      "ignored": 0,
+      "test_elapsed_seconds": 33.49,
+      "scope": "Current accepted workspace revisions/receipts/drafts, projections, ceilings, original-author review, Area effects and Fiote authority isolation."
+    },
+    {
+      "command": "rustfmt --edition 2024 --check crates/xtask/src/workspace/mod.rs crates/sandbox/examples/workspace_baseline.rs",
+      "result": "passed"
+    },
+    {
+      "command": "cargo test --locked -p xtask workspace::tests -- --nocapture",
+      "result": "passed-before-bounds-strengthening-rerun-pending",
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "test_elapsed_seconds": 0.35,
+      "scope": "Final fixture tests including exact retained animation samples, starter caps, deterministic output, negative geometry/geography/path/rights/contract cases.",
+      "historical": true
+    },
+    {
+      "command": "cargo check --locked -p xtask",
+      "result": "passed",
+      "scope": "Current fixture CLI and related xtask code with workspace warnings denied."
+    },
+    {
+      "command": "nix develop --option eval-cache false .#interface --command ./target/debug/xtask workspace check institute/fixtures/workspace/stage01/dataset",
+      "result": "passed",
+      "evidence": "dataset-recheck.json",
+      "scope": "Reinspection through the built CLI; exact same input counts and runtime-pending boundary."
+    },
+    {
+      "command": "cargo test --locked -p lince-simulation --test effects",
+      "result": "passed",
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "test_elapsed_seconds": 31.06,
+      "scope": "Existing operational projections leave source state unchanged; shell effects remain unexecuted; copied live integrations never attach; captured projected effects replay exactly."
+    },
+    {
+      "command": "cargo test --locked -p xtask workspace::tests -- --nocapture",
+      "result": "passed",
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "test_elapsed_seconds": 0.41,
+      "build_elapsed": "65m02s including shared build and artifact-lock waits",
+      "evidence": "fixture-tests.log",
+      "scope": "Current bounds-strengthened fixture suite: actual POSITION buffers must fit declared bounds; negative cases retain updated matching payload hashes. All prior deterministic/path/rights/reference/doorway/geography/skin/animation/caps checks remain covered."
+    },
+    {
+      "command": "cargo check --locked -p xtask",
+      "result": "passed",
+      "elapsed": "5m20s including shared-build wait",
+      "evidence": "xtask-check.log",
+      "scope": "Current bounds-strengthened fixture CLI with workspace warnings denied."
+    },
+    {
+      "command": "cargo run --locked -p xtask -- workspace check institute/fixtures/workspace/stage01/dataset",
+      "result": "passed",
+      "evidence": [
+        "dataset-recheck.json",
+        "dataset-recheck-build.log"
+      ],
+      "scope": "Current compiled CLI validates the persisted supplied dataset after bounds strengthening; no future runtime capability is certified.",
+      "packed_fixture_bytes": 1636549,
+      "raw_buffers_and_decoded_images_lower_bound_bytes": 1356976,
+      "cases": 10,
+      "scenes": 5,
+      "validation_elapsed_ms": 59.493057
+    }
+  ],
+  "runtime_attempts": [
+    {
+      "command": "cargo run --locked -p lince-sandbox --example workspace_baseline -- <new-output-directory>",
+      "output_directory": ".git/codex-workspace-stage01-20261025/native-baseline-01",
+      "result": "failed-in-harness-startup",
+      "failure": "Native information/sync startup requires a Tokio reactor; the standalone harness had not entered one.",
+      "correction": "Enter a bounded two-thread Tokio runtime before constructing/running the ordinary native app.",
+      "next_attempt": ".git/codex-workspace-stage01-20261025/native-baseline-02",
+      "current_result": "next-attempt-failed-at-drag; later corrected"
+    },
+    {
+      "output_directory": ".git/codex-workspace-stage01-20261025/native-baseline-02",
+      "result": "failed-at-native-drag-assertion",
+      "observations": [
+        "Window and native controls opened; isolated fixture was prepared.",
+        "Injected WindowEvent alone did not supply the window cursor and Mouse PointerInput state consumed by spatial editing."
+      ],
+      "correction": "Set the public window cursor position; inject the Mouse PointerInput stream alongside WindowEvents; target the actual projected Sand corners and capture before-drag.png plus hit/position diagnostics.",
+      "renderer_diagnostic": {
+        "message": "bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key",
+        "scope": "Observed during workspace switching before drag. Impact is unproven; retain for current-baseline/future resource-lifetime investigation rather than treating it as a passed check."
+      },
+      "next_attempt": ".git/codex-workspace-stage01-20261025/native-baseline-03",
+      "current_result": "compile-failed-before-replay"
+    },
+    {
+      "output_directory": ".git/codex-workspace-stage01-20261025/native-baseline-03",
+      "result": "compile-failed-before-replay",
+      "diagnostic": "E0463: cannot find crate for lince_sandbox while compiling the example.",
+      "interpretation": "No corrected native workflow result was produced. Shared build artifacts may have changed; cause is not established.",
+      "next_attempt": ".git/codex-workspace-stage01-20261025/native-baseline-04",
+      "current_result": "compiled-and-ran-drag-failed"
+    },
+    {
+      "output_directory": ".git/codex-workspace-stage01-20261025/native-baseline-04",
+      "result": "compiled-and-ran-drag-failed",
+      "build_elapsed": "22m10s including shared-build waits",
+      "observations": [
+        "The real native window opened and before-drag.png was captured and inspected.",
+        "trace.jsonl reports a null native hit at the projected Sand center [1080,576].",
+        "The inspected screenshot shows that target underneath the General panel, which correctly blocks canvas picking.",
+        "Wayland cursor-warp errors were emitted by the harness cursor-state update; no physical pointer movement was proved.",
+        "The renderer slab allocator diagnostic recurred during workspace switching."
+      ],
+      "correction": "Place the isolated fixture outside the actual settings panel. Verify native hit identity and edit mode before pressing. Update synthetic adapter cursor state without requesting an OS cursor warp; keep real picking/gesture/physics assertions.",
+      "next_attempt": ".git/codex-workspace-stage01-20261025/native-baseline-05",
+      "current_result": "native-hit-and-drag-passed-toggle-check-too-early"
+    },
+    {
+      "output_directory": ".git/codex-workspace-stage01-20261025/native-baseline-05",
+      "result": "native-hit-and-drag-passed-toggle-check-too-early",
+      "build_elapsed": "11m00s including shared-build waits",
+      "observed": {
+        "native_hit_position_canvas_units": [
+          -299.9999694824219,
+          0.009999999776482582,
+          -199.99998474121094
+        ],
+        "edit_mode_enabled": true,
+        "sand_before": [
+          -300,
+          -200
+        ],
+        "sand_after": [
+          -236.00001525878906,
+          -176.00001525878906
+        ]
+      },
+      "qualitative_review": "before-drag.png inspected: Sand and gravity fixture are visible in clear canvas space; General controls remain readable. Later Area/gravity/sleep behavior was not reached.",
+      "failure": "The harness asserted workspace_config::enabled immediately after Activate enqueued the physics action, before PendingActions dispatch.",
+      "source_evidence": "crates/interface/src/native/actions.rs: activate queues Request in PendingActions; flush dispatch runs during the native update. Existing edit-mode tests call app.update after Activate.",
+      "correction": "Verify enabled at frame 36 after submitting at frame 34; ring existing WakeSignal for injected native inputs/actions. Do not force physics or body state.",
+      "residual_diagnostics": [
+        "Renderer slab allocator diagnostic during workspace switching.",
+        "Wayland may still reject a backend cursor warp when another Window change propagates synthetic cursor state; no hardware-pointer measurement is claimed."
+      ],
+      "next_attempt": ".git/codex-workspace-stage01-20261025/native-baseline-06",
+      "current_result": "next-attempt-passed"
+    },
+    {
+      "output_directory": ".git/codex-workspace-stage01-20261025/native-baseline-06",
+      "result": "passed",
+      "exit_code": 0,
+      "build_elapsed": "17m59s including shared-build waits",
+      "evidence": [
+        "baseline/raw-observation.json",
+        "baseline/baseline.json",
+        "baseline/trace.jsonl",
+        "baseline/before-drag.png",
+        "baseline/settled.png",
+        "qualitative-review.json"
+      ],
+      "observed": "Actual native hit/drag, dispatched physics control, configured matching Area attraction, gravity drop, zero awake bodies, exact foreign-workspace position isolation, stable idle position and resource/wake sampling.",
+      "diagnostics": "Existing renderer, Wayland synthetic-input and environment accessibility findings remain recorded in qualitative-review.json."
+    }
+  ],
+  "pending_current_checks": [],
+  "proof_ownership": [
+    {
+      "workflow": "01.W01",
+      "state": "verified-current-native-baseline-with-findings",
+      "proof": "01.P01"
+    },
+    {
+      "workflow": "01.W02",
+      "state": "verified-inputs-and-inspection; future runtime pending at phase owners",
+      "proof": "01.P02"
+    },
+    {
+      "workflow": "01.W03",
+      "state": "verified-specifications-and-review; future runtime pending at phase owners",
+      "proof": "01.P03"
+    }
+  ],
+  "source_snapshot": {
+    "scope": "Selected audited paths captured after the successful run. Concurrent shared-worktree changes prevent claiming an atomic complete source snapshot; binary hash and raw runtime inputs identify this observation.",
+    "sha256": {
+      "Cargo.lock": "62a7296f8b5b1771c5c8dd93ec2ce39a45d6fe56044226e18b3e70b830d6a170",
+      "Cargo.toml": "65818fc364c47d026dd90d5e746d76bdadb5e226d5707edcdd731a8dfde5c844",
+      "crates/cell/src/fiote.rs": "15b91cb355859e14d90b01f305b408735aedfe7f05a7c9da2a0da5c46327d094",
+      "crates/engine/src/fiote_activation.rs": "7ebdbf23baebc8ff0b1418c1fb43248fca42783146e58724dd7bc2afde74c79b",
+      "crates/engine/src/fiote_config.rs": "83a1ac9a0a0abf0a6d9a7c36bb0ef880bc66471fc60426734e9b7d5ac5cdf04a",
+      "crates/engine/src/login_workspace.rs": "145b08aecd8d7a561a9a5fdbca0ea9fec8acef6a14226f63a8928643976a97a4",
+      "crates/engine/src/workspace_sync.rs": "76cd56b469a47b20131021ee9c8feb0f01fb4bd3314ffd0f1d403c2ab66e91bd",
+      "crates/fiote/src/tools/workspace.rs": "33a499b3a8e1aacb119dc2dddb92311b4d3d6f5408e504e4b5b45010cdd3d5d6",
+      "crates/interface/Cargo.toml": "82bfb58b5902e81bd182dd351e5481a431d6f36a6dba614a31d766dbf316bf93",
+      "crates/interface/src/host.rs": "f5cd6a426659ee4cca80c4d8265d7a48c2ac7f77639c7edeb009788c955301a2",
+      "crates/interface/src/native/canvas.rs": "7c40159e4e007a3f479a6abd5f3e47255d989ec0139707d69bb5ffaf2a4ead86",
+      "crates/interface/src/native/canvas_host/snapshot.rs": "9ed3bda9a6f9ed9cb0f1040992b510867721468ab601bf227bd8207122687978",
+      "crates/interface/src/native/canvas_item.rs": "e215800d4db538c51793cb29ab6f641191660af599f9986eb8e0d39678b2bd64",
+      "crates/interface/src/native/fiote/character.rs": "1f7cb15bf0b8b9b7192f597565f1989e78031dac28640bafbc2c638ebd3dd541",
+      "crates/interface/src/native/fiote/character/behavior.rs": "bc7ba69639dfaa8d1764717703bba7e34bcfe5cd8c19325f3a9969cd98f81b3c",
+      "crates/interface/src/native/fiote/character/residency.rs": "03212bb433b9f6d368f5d2f900833208ebd1c51e0a0a7f299fc5de6c6415d155",
+      "crates/interface/src/native/laboratory/isolation.rs": "d7f72e7d5558629ba7b34200e9ee708441d22c36fc7a0651e8317bf67896f453",
+      "crates/interface/src/native/laboratory/resources.rs": "b6221a23894be80910d091ac80db763702a2d99758eeeea96815125ee4444548",
+      "crates/interface/src/native/physics.rs": "e56cb9cda870da3c9ba0ad8ec228a61d9ae41e8ed107d26f80c41fe05891dfc9",
+      "crates/interface/src/native/topology.rs": "6ece30cdb54781496628195cc3d25bc66ca03ce6f7f7272c227edad2f7a22ddc",
+      "crates/interface/src/native/topology/influence.rs": "cc41a442f427034f25377017c07d272fc321b66bf39787752ca0bca907477bfd",
+      "crates/interface/src/native/topology/physics.rs": "392f02a4166f83ef3fff12e34f8293a4d36b9e08f17e57e63b6adce93b363ece",
+      "crates/interface/src/native/topology/presentation.rs": "a6c905edf7889d7eead8e99599f127ec15c445d86898746951840292788701f2",
+      "crates/interface/src/native/topology/surface_budget.rs": "a50c43d5d5b13fd32aacc7bbae39d1af373be7ae8c020fe48a50596e24031fc1",
+      "crates/interface/src/native/topology/terrain.rs": "1404779c8b5683ca9d5a635847e0710b4c61db85dc74b48cf8b90938d72726bf",
+      "crates/interface/src/native/topology/view.rs": "d4e0981b4d904ce2f0cf48b60e8661aecd9c8869410ed5370a865dc03ef14cbe",
+      "crates/interface/src/native/workspace.rs": "7724dbecbcac6dc618fa47fb1afda0bb1ffedd00c3508ccd3ef6841e91267bc2",
+      "crates/interface/src/native/workspace/recovery.rs": "88eba73341b19ecbaa1e480911040853e2c30f25226eb36f81131d783b0e73a7",
+      "crates/interface/src/native/workspace/storage.rs": "1c62376eda4771151ec538378416147ffd918f7d046bdb8f64f904652177594d",
+      "crates/nucleus/src/component/composition.rs": "39b15025340a14b9c3d8f303fda32b960618e8164b1ba4fce0681b55259395c6",
+      "crates/nucleus/src/terrain.rs": "f05d987e0aa14cd73a9f0b1a1ddb20614849a9562b4091ad609dd98c815a2f8d",
+      "crates/resources/Cargo.toml": "b3f127d0f81de22fcde74d06efa1a132994c53c68aa516d3b8f4af26eb1f24a3",
+      "crates/sandbox/Cargo.toml": "10259d8bc3a574fa58fb38c0c827616364e89e630a987484c74139c0d31e74f4",
+      "crates/sandbox/examples/workspace_baseline.rs": "0c67e1a19103541c83f4f9210751e711c1866d2b08aefac1a784a568e5e555d6",
+      "crates/sandbox/src/app.rs": "7386484a76faae3136570bb2bfdc054ff92000ecfb3d39976c6f748e03407005",
+      "crates/simulation/src/scenario.rs": "5c5cb9b3b45b1342d974627d787f6c9639c31f61192d5a3023513670e39c4f04",
+      "crates/simulation/src/worker.rs": "7831e9767407f41878df2fe725e12fd760b419917e51bffcfde7843dc346db6f",
+      "crates/simulation/src/world.rs": "15b2e06d1454ee0b99e2e7a2f64123577b573259d9677537246782eeb565f467",
+      "crates/transport/tests/workspace_live.rs": "9d631cd7265364748629ed7c88f3ad92ec43993218b19b27056fad1522741a52",
+      "crates/xtask/Cargo.toml": "b8cc35368d68b704501741065dfc51f0a68d9fe75174eac20238d4e1383c82b0",
+      "crates/xtask/src/main.rs": "546e7adce60614c6e810da467682f2231666a46c492ceb30ad2b90446aef3f8e",
+      "crates/xtask/src/maintenance/fiote.rs": "690beef3a984af6ff4fda2e14e81267aaef8ccb3ee8c99676d6823d56c502507",
+      "crates/xtask/src/workspace/character.rs": "9861835acf34113240656692c8c765f6b21915dd58bfdb1a55e0d03bf223963e",
+      "crates/xtask/src/workspace/fixtures.rs": "c5cddddd11491a5269899206b0b5da2b7df36d62740a52a5b7b6aeac60df9843",
+      "crates/xtask/src/workspace/geometry.rs": "33bcd714cdc9f7956654ec4fffab546ce1740c6e7d9631f276b2baed4befdae7",
+      "crates/xtask/src/workspace/mod.rs": "5ea89be784cce53b37b681a8cb3e5973d5e755de3b412b87b960a5003d78cbca",
+      "crates/xtask/src/workspace/tests.rs": "6646d7bff7c3907698fe84dce8e15b022687a7cf127552b903eb9bdbba72878b",
+      "crates/xtask/src/workspace/validate.rs": "cd66ebf253727c4ec329572f02b4cbf421eb29d592354452e49537c10435e384",
+      "institute/assets/characters/fiote/CREDITS.txt": "d3d101b0c3120816ea5836fd42fe0871cfd13d6e25f1751ce23ca92b13205e38",
+      "institute/assets/characters/fiote/fiote.glb": "a0f8816d5455671304c312c5d5d8d84911d6da607dfdba134ca9d2ffdc2d5f34"
+    }
+  },
+  "toolchain": {
+    "rustc": "1.96.0",
+    "commit": "ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96",
+    "host": "x86_64-unknown-linux-gnu",
+    "llvm": "22.1.2"
+  },
+  "supporting_entry_examples": "entry-cost-examples.json",
+  "targeted_test_summary": {
+    "last_observed_passed": 36,
+    "last_observed_failed": 0,
+    "unchanged_current_engine_transport_isolation_passed": 28,
+    "fixture_tests_after_bounds_change": "8 passed; 0 failed; 0 ignored; 0.41 seconds; fixture-tests.log",
+    "scope": "No later runtime capability is certified."
+  },
+  "plan_structure_check": {
+    "documents": 22,
+    "retained_workflows": 72,
+    "proof_recipes": 64,
+    "local_links_checked": 666,
+    "milestone_task_workflow_proof_rows": 16,
+    "original_requirements_retained": 35,
+    "unignored_fixture_and_native_artifacts": 27,
+    "audited_source_paths_changed_after_capture": [],
+    "raw_and_reviewed_measurements_equal": true,
+    "current_native_binary_hash_verified": true,
+    "fixture_bytes_and_hashes_verified": true,
+    "later_stages_unchanged_pending_or_deferred": true,
+    "result": "passed"
+  },
+  "qualitative_review": "qualitative-review.json",
+  "native_fixture_selection": {
+    "status": "selected-before-attempt06-example-compilation",
+    "configuration": {
+      "area_side_canvas_units": 900,
+      "simple_attraction_strength": 100000,
+      "reach": "unlimited",
+      "sand_depth_canvas_units": 1,
+      "gravity_canvas_units_per_second_squared": 981,
+      "settled_planar_target_error_limit_canvas_units": 1
+    },
+    "rationale": "The normal bounded Area extends below its plane and can exclude floor-supported Sands. A supported unlimited field avoids that volume mismatch. Existing friction and distance-scaled simple attraction must be accounted for when choosing a fixture expected to converge within one canvas unit.",
+    "independent_reference": {
+      "near_target_acceleration_gain_per_second_squared": 222.22222222222223,
+      "body_and_ground_friction_coefficient": 0.05,
+      "approximate_planar_static_balance_error_canvas_units": 0.27072500000000005,
+      "simple_force_zero_distance_canvas_units": 0.5
+    },
+    "limits": "A reference for selecting this existing native preset, not a scientific material/friction validation or a claim about every Area setting. Production forces and body state remain unmodified."
+  },
+  "native_baseline": {
+    "result": "passed",
+    "evidence": "baseline/baseline.json",
+    "qualitative_review": "reviewed-with-findings",
+    "later_navigation_performance": "not certified; targets unchanged"
+  },
+  "evidence_lifecycle": {
+    "authoritative_current_stage_result": "completion-audit.json, this verification ledger and the general stage registry",
+    "immutable_fixture_contracts": "contracts.json and dataset files preserve the first-consumer specification snapshot, not mutable implementation/run status. Future runtime_evidence placeholders are not production passes.",
+    "first_consumer_stage01": {
+      "C08": {
+        "state": "proved-for-stage01-scope",
+        "evidence": [
+          "baseline/baseline.json",
+          "qualitative-review.json",
+          "completion-audit.json"
+        ],
+        "later_requirement": "Every later implementation still owes its own user/native/backend/failure/resource evidence."
+      }
+    }
+  }
+}

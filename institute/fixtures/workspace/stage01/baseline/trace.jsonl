@@ -1,0 +1,7 @@
+{"action":"prepared_isolated_native_canvas","frame":12,"elapsed_ms":3580.516086,"observed":{"physics_enabled":false,"area_target":[-400.0,0.0],"area_strength":100000.0,"area_side_canvas_units":900.0,"area_reach":"unlimited","sand_start":[-300.0,-200.0],"sand_depth_canvas_units":1.0,"falling_start_elevation_canvas_units":80.0,"falling_depth_canvas_units":10.0}}
+{"action":"native_pointer_target","frame":24,"elapsed_ms":5783.284065,"observed":{"screen":[660.0,326.0006103515625],"position":[-300.0,-200.0]}}
+{"action":"native_pointer_press","frame":26,"elapsed_ms":5927.181253,"observed":{"hit":{"entity":4294966594,"point":[-299.9999694824219,0.009999999776482582,-199.99998474121094]},"window_cursor":[660.0,326.0006103515625],"edit_mode_enabled":true}}
+{"action":"native_drag_observed","frame":32,"elapsed_ms":7102.050818999999,"observed":{"before":[-300.0,-200.0],"after":[-236.00001525878906,-176.00001525878906]}}
+{"action":"native_pointer_drag","frame":32,"elapsed_ms":7102.166311999999,"observed":{"before":[-300.0,-200.0],"after":[-236.00001525878906,-176.00001525878906]}}
+{"action":"native_physics_toggle","frame":36,"elapsed_ms":7552.722732,"observed":{"enabled":true}}
+{"action":"settled","frame":263,"elapsed_ms":31939.352334,"observed":{"bodies":2,"awake_bodies":0,"position":[-399.90997920325,-0.09660770147835326],"falling_elevation":9.99980825228323}}

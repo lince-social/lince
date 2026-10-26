@@ -1,0 +1,104 @@
+{
+  "format": "lince-workspace-stage01-entry-cost-examples",
+  "schema": 1,
+  "scope": "Local author fixture evidence and future entry-card examples, not a public entry manifest or current hosting certification.",
+  "source_manifest": "dataset/manifest.json",
+  "required_selected_profile": {
+    "id": "fixture-public-route-source",
+    "assets": [
+      "globe",
+      "coastline",
+      "local-place",
+      "fixture-license",
+      "credits"
+    ],
+    "encoded_source_bytes": 190210,
+    "exclusions": "Protocol/descriptor overhead, derived runtime products, private content and optional appearances are separate. This selected example profile requires these payloads; a different hosted profile can choose a different closure."
+  },
+  "optional_selected_assets": [
+    {
+      "id": "starter-character",
+      "encoded_source_bytes": 1300232
+    },
+    {
+      "id": "castle",
+      "encoded_source_bytes": 4496
+    },
+    {
+      "id": "solar-context",
+      "encoded_source_bytes": 2680
+    }
+  ],
+  "examples": [
+    {
+      "id": "ready-editor",
+      "principal": "identified editor",
+      "requested_profile": "fixture-public-route-source plus optional assets and permitted restricted interior",
+      "source_byte_cap": 2097152,
+      "known_source_bytes": 1500362,
+      "expected_future_state": "ready if capability and peak-resource admission also pass",
+      "private_annotation": "denied",
+      "source_login": "Own Organ B session required only for its restricted Sand."
+    },
+    {
+      "id": "partial-visitor",
+      "principal": "explicit restricted public visitor",
+      "requested_profile": "fixture-public-route-source with optional character",
+      "source_byte_cap": 262144,
+      "known_required_source_bytes": 190210,
+      "additional_optional_character_bytes": 1300232,
+      "expected_future_state": "partial; required source fits while optional character is withheld by the selected cap",
+      "fallback": "Cheap nonphysical presence; no anatomy/solver download."
+    },
+    {
+      "id": "adjusted-visitor",
+      "principal": "explicit restricted public visitor",
+      "requested_profile": "starter appearance",
+      "offered_profile": "fixture-public-route-source",
+      "source_byte_cap": 262144,
+      "known_requested_source_bytes": 1490442,
+      "known_offered_source_bytes": 190210,
+      "expected_future_state": "adjusted after the visible lower appearance selection; accepted dimensions and rights are unchanged"
+    },
+    {
+      "id": "refused-selected-profile",
+      "principal": "explicit restricted public visitor",
+      "requested_profile": "fixture-public-route-source",
+      "source_byte_cap": 65536,
+      "known_required_source_bytes": 190210,
+      "expected_future_state": "refused for this selected required closure; explain the cap rather than fetch beyond it"
+    },
+    {
+      "id": "warm-visitor",
+      "principal": "explicit restricted public visitor",
+      "requested_profile": "fixture-public-route-source",
+      "verified_currently_permitted_cache": [
+        "globe",
+        "coastline",
+        "local-place",
+        "fixture-license",
+        "credits"
+      ],
+      "additional_source_payload_bytes": 0,
+      "expected_future_state": "ready subject to current admission; metadata and retry overhead remain separately accounted"
+    }
+  ],
+  "currently_unmeasured": {
+    "entry_page_bytes": null,
+    "actual_decode_upload_staging_peak_bytes": null,
+    "actual_gpu_residency_bytes": null,
+    "network_RTT_ms": null,
+    "continuing_source_total_bytes": null,
+    "owner_stage": 5,
+    "interpretation": "Unknown values are not zero. Stage 02 uses the tiny document subset; Stage 05 measures sparse runtime entry and continuing enforcement."
+  },
+  "visibility": "Compute participant costs only from the permitted published closure; never expose hidden workspace totals, restricted asset hashes/counts or host credentials.",
+  "quantitative_assertions": {
+    "required_fits_visitor_cap": true,
+    "required_exceeds_refused_cap": true,
+    "optional_character_exceeds_remaining_visitor_cap": true,
+    "full_editor_sources_fit": true
+  },
+  "runtime_evidence": "pending at owning stages",
+  "total_download_admission": "These byte caps illustrate the source-payload component only. Reserve actual metadata, framing/retry and any additional authorized sources under the participant's total persistent cap before dispatch; all example states also require that admission. Unknown overhead is not zero."
+}

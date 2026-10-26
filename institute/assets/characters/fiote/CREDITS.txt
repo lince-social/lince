@@ -5,8 +5,9 @@ License: MIT; see LICENSE in this directory.
 The connected coat, blended skin weights, paw IK, and neutral 128px fur texture are original Lince assets.
 Motion seams on ears, brows, paws, and tail are colored by Lince's theme tokens at runtime.
 No third-party meshes, textures, fonts, or artwork are embedded.
-Blender is the authoring tool; its application code is not embedded in these assets.
-create-fiote.py reproducibly creates fiote.blend, fiote.glb, and fiote-seated.png.
-export-fiote.py exports fiote.glb and fiote-seated.png from the existing Blender source without replacing it.
-validate-fiote.py checks skin weights, all animation clips, paw targets, and looping seams.
+Native glTF source data under source/ retains the original mesh, skin, materials, texture, and baked animation clips.
+cargo xtask maintenance fiote export packs source/fiote.gltf and source/fiote.bin into fiote.glb.
+cargo xtask maintenance fiote validate checks the exported mesh, skin weights, animation samples, paws, and loop seams.
+cargo xtask maintenance fiote render renders sit_idle to a transparent PNG using the Rust CPU renderer.
+fiote.blend is retained as an archival authoring file and is not used by the native workflow.
 fiote-seated.svg is independently maintained vector artwork of the same character.

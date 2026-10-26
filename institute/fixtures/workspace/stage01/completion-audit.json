@@ -1,0 +1,672 @@
+{
+  "format": "lince-workspace-stage01-completion-audit",
+  "schema": 1,
+  "status": "passed-stage01-defined-scope",
+  "interpretation": "Input/specification verification is scoped to Stage 01; it does not verify future model/scale/guest/anatomy/scientific runtime features. No stage gate is complete while required current proof is pending.",
+  "requirements": [
+    {
+      "id": "01.M01",
+      "requirement": "native baseline replay, idle/resource counters and inspected screenshot",
+      "state": "verified-current-native-baseline-with-findings",
+      "evidence": [
+        "baseline/baseline.json",
+        "baseline/trace.jsonl",
+        "baseline/measurement-interpretation.json",
+        "qualitative-review.json",
+        "verification.json"
+      ]
+    },
+    {
+      "id": "01.M02",
+      "requirement": "bounded geographic and independent fixture data with planned round trip",
+      "state": "verified-inputs-and-scoped-review",
+      "evidence": [
+        "dataset/manifest.json",
+        "dataset-inspection.json",
+        "dataset-recheck.json",
+        "sources.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.M03",
+      "requirement": "native/editor/visitor actions, expected results, thresholds and owned unknowns",
+      "state": "verified-specifications-and-scoped-review",
+      "evidence": [
+        "contracts.json",
+        "hosting.json",
+        "profile.json",
+        "entry-cost-examples.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.M04",
+      "requirement": "bounded character/mechanism metadata and explicit anatomy/science phases",
+      "state": "verified-inputs-and-scoped-review",
+      "evidence": [
+        "dataset-inspection.json",
+        "profile.json",
+        "dataset/optional-reference-anatomy.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.T01",
+      "requirement": "current native/units/assets/revisions/authority/isolation audit",
+      "state": "verified-current-native-baseline-with-findings",
+      "evidence": [
+        "baseline/baseline.json",
+        "baseline/trace.jsonl",
+        "baseline/measurement-interpretation.json",
+        "qualitative-review.json",
+        "verification.json"
+      ]
+    },
+    {
+      "id": "01.T02",
+      "requirement": "selected public/synthetic reference inputs, coarse context, rights and budgets",
+      "state": "verified-inputs-profile-and-actual-device",
+      "evidence": [
+        "dataset/manifest.json",
+        "sources.json",
+        "profile.json",
+        "build-and-machine.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.T03",
+      "requirement": "49 core-applicable decisions, minimum encodings and shared edit/view/Agent/linked-work flows",
+      "state": "verified-specifications-and-scoped-review",
+      "evidence": [
+        "contracts.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.T04",
+      "requirement": "H1\u2013H10/B33\u2013B36 phased hosting and deferred B37 participation",
+      "state": "verified-specifications-and-scoped-review",
+      "evidence": [
+        "hosting.json",
+        "entry-cost-examples.json",
+        "profile.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.T05",
+      "requirement": "independent room and unrelated sparse small/large scene plus metamorphic checks",
+      "state": "verified-inputs-and-scoped-review",
+      "evidence": [
+        "dataset/manifest.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.T06",
+      "requirement": "original character audit, selected starter asset counts/limits and phased B41",
+      "state": "verified-inputs-and-scoped-review",
+      "evidence": [
+        "source-audit.json",
+        "dataset-inspection.json",
+        "profile.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.W01",
+      "requirement": "current workspace baseline",
+      "state": "verified-current-native-baseline-with-findings",
+      "evidence": [
+        "baseline/baseline.json",
+        "baseline/trace.jsonl",
+        "baseline/measurement-interpretation.json",
+        "qualitative-review.json",
+        "verification.json"
+      ]
+    },
+    {
+      "id": "01.W02",
+      "requirement": "inspectable bounded scene inputs",
+      "state": "verified-inputs-and-scoped-review",
+      "evidence": [
+        "dataset/manifest.json",
+        "dataset-inspection.json",
+        "qualitative-review.json",
+        "dataset-recheck.json"
+      ]
+    },
+    {
+      "id": "01.W03",
+      "requirement": "comparable delivery evidence specification",
+      "state": "verified-specifications-and-scoped-review",
+      "evidence": [
+        "contracts.json",
+        "hosting.json",
+        "profile.json",
+        "entry-cost-examples.json",
+        "qualitative-review.json",
+        "dataset-recheck.json"
+      ]
+    },
+    {
+      "id": "01.P01",
+      "requirement": "real native starting point, independent workspace and idle review",
+      "state": "verified-current-native-baseline-with-findings",
+      "evidence": [
+        "baseline/baseline.json",
+        "baseline/trace.jsonl",
+        "baseline/measurement-interpretation.json",
+        "qualitative-review.json",
+        "verification.json"
+      ]
+    },
+    {
+      "id": "01.P02",
+      "requirement": "inputs inspected without certifying future runtime",
+      "state": "verified-inputs-and-scoped-review",
+      "evidence": [
+        "dataset-inspection.json",
+        "dataset-recheck.json",
+        "qualitative-review.json"
+      ]
+    },
+    {
+      "id": "01.P03",
+      "requirement": "falsifiable contract handoff with actual size examples and owned later decisions",
+      "state": "verified-specifications-and-scoped-review",
+      "evidence": [
+        "contracts.json",
+        "hosting.json",
+        "entry-cost-examples.json",
+        "qualitative-review.json",
+        "dataset-recheck.json"
+      ]
+    }
+  ],
+  "nonnegotiable_boundaries": [
+    "Current Sand/Area/gravity/motion cooling must be observed through real native input, not forced result state.",
+    "Cold/warm/offline native-scale and hosted enforcement remain future phase proofs; selected budgets are not measured current performance.",
+    "No new scientific evaluator/dataset selection, compulsory geographic root, universal mesh, extra hardware or model-provider dependency is introduced.",
+    "Evidence unknowns remain explicit with an owning stage; no missing counter/value is silently zero.",
+    "Retain the stage file as its verified handoff and separate workflow capability paragraphs after completion, per the current delivery guidelines."
+  ],
+  "remaining_actions": [],
+  "normative_requirement_audit": [
+    {
+      "id": "R0004",
+      "state": "specified",
+      "evidence": [
+        "contracts.json"
+      ],
+      "scope_and_limits": "Multi-domain intent retained; Stage 01 owns first-consumer specifications and small inputs only.",
+      "original_requirement": "Lince workspaces let people author, import, inspect, combine and simulate models from microscopic structures through materials, pieces, assemblies, buildings, streets, cities, planets and astronomical systems. Smaller supported descriptions can include isotopes, particle populations or physical fields when their domain requires them. Atomic balls are one representation, not the smallest compulsory building block of the file format. Arbitrary addressable extent does not imply populated content, available knowledge or a valid solver at every scale.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0005",
+      "state": "specified",
+      "evidence": [
+        "contracts.json",
+        "hosting.json"
+      ],
+      "scope_and_limits": "Same local/hosted workspace with separate source authority; larger runtime delivery starts at Stage 02.",
+      "original_requirement": "The existing workspace is the unit of use: it can hold flat native content, model documents, independent laboratory roots, spatial views and referenced data from other Organs. Hosting exposes an authorized projection of those same contents to participants. Modeling, ordinary work and multiplayer share persistence, accepted edits, source access, demand and resource policy; no separately named product or compulsory geographic/world root is introduced. Each participant has independent views and local interaction state while accepted shared scopes keep their owning authority.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0006",
+      "state": "input-verified",
+      "evidence": [
+        "dataset/manifest.json",
+        "geometry-reference.json"
+      ],
+      "scope_and_limits": "B25 and B38 have unrelated roots/dimensions; generic runtime scale proof remains Stage 05.",
+      "original_requirement": "Owner clarification, 2026-10-20: scale handling is scene-independent. The ping-pong-ball/Earth/solar-system journey is a reference acceptance example whose required capabilities must work together; its objects, hierarchy and endpoints are not engine facts or fixed zoom stages. The same frame, precision, representation, query, navigation and demand contracts apply to a room-only scene, an invented assembly spanning comparable scale ratios, a microscopic root or another authored world. Scene extent and supported precision/resource profiles bound actual operations; no chosen example establishes a universal smallest object, largest scene or required root. Earth remains available as the geographic preset/data choice already agreed, without allocation in an unrelated scene.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0007",
+      "state": "input-verified",
+      "evidence": [
+        "dataset/manifest.json"
+      ],
+      "scope_and_limits": "Synthetic street and favorite-place proxies; actual offline city coverage remains Stage 06.",
+      "original_requirement": "The priority is an offline personal world: very coarse Earth context, a navigable city, and detailed attractive places the user cares about. Home, work, university and community spaces can have authored interiors, material assignments, mounted Sands and useful behavior while the rest of the world remains simple. Fictional places and alternative designs have the same authoring capabilities. Earth is an optional reference system, not a required root for every model.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0008",
+      "state": "specified",
+      "evidence": [
+        "contracts.json",
+        "profile.json"
+      ],
+      "scope_and_limits": "Direct material choice and independent micro/laboratory endpoints retain distinct deferred purposes.",
+      "original_requirement": "Both directions of work are first-class. A person can assemble a wall from an empirical material and measured dimensions, then add finer evidence later; another can study a crystal and explicitly derive one property used by that wall. Zooming never invents atoms, unseen rooms, survey accuracy or material behavior. Refinement can add geometry, knowledge or a better physical model independently.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0009",
+      "state": "specified",
+      "evidence": [
+        "contracts.json"
+      ],
+      "scope_and_limits": "Shared K/I/E contracts with specialist mathematics, not a universal numerical representation.",
+      "original_requirement": "The architectural goal is a small common model language plus domain implementations. Geometry, material science, CAD, geography, biology and operational workflows share identity, units, frames, selections, dependencies, revisions and results. They retain the representations and algorithms their mathematics requires. A general field interface does not make a molecular force field, a rigid-body force, an electromagnetic field and a stock balance interchangeable.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0010",
+      "state": "specified",
+      "evidence": [
+        "profile.json",
+        "hosting.json"
+      ],
+      "scope_and_limits": "Early scale/hosting and flat fallback retained; new physical sciences deferred.",
+      "original_requirement": "Owner-confirmed delivery emphasis, updated 2026-10-21: shared foundations \u2192 early scene-independent sparse scale/navigation and hosting \u2192 offline locality, authored rooms/caves, low-poly optimization, source comparison, CAD/assemblies, structural microscopic editing and operational composition \u2192 stabilization gate \u2192 deferred material-property evaluation, laboratory experiments and new physical simulation. The paired direct-material, micro-derived-model and independent protein workflows remain required in the deferred tail and share the same implementation. [stage 05](05-stage.md) still proves the optional solar-system/default-Earth/street/house/40 mm ball example and B38 independent scenes early. Default ground has no relief and absent building geometry stays absent until supplied data or user authoring changes it; the globe itself remains curved. Generic behavior must support interactive authored experiences without requiring a separate game architecture.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0019",
+      "state": "verified-stage01-scope",
+      "evidence": [
+        "verification.json",
+        "baseline/baseline.json",
+        "qualitative-review.json"
+      ],
+      "scope_and_limits": "Current native baseline and 36 targeted checks passed; fixtures/contracts and scoped qualitative review are complete. This does not certify future model/navigation/hosting/scientific runtime features.",
+      "original_requirement": "**C08 \u2014 Completion requires intent and evidence.** Every implementation slice proves the relevant user action, backend invariant, native UI, failure handling and resource behavior. A generic extension point or a favorable library benchmark never completes a domain feature.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0068",
+      "state": "source-inspected",
+      "evidence": [
+        "source-audit.json",
+        "verification.json"
+      ],
+      "scope_and_limits": "Paths and limits audited; existing targeted tests passed without certifying larger future workloads.",
+      "original_requirement": "This inspection establishes reuse candidates and present limits. Recheck before coding because the working tree is shared and other work is changing it. No existing subsystem is certified for the larger scope solely by its name.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0082",
+      "state": "specified",
+      "evidence": [
+        "contracts.json"
+      ],
+      "scope_and_limits": "Eight modeling primitive families registered with explicit first consumers.",
+      "original_requirement": "The shared families proposed by this pass are: durable model objects and occurrences; frame/unit transformations; spatial support and named selections; typed quantities and fields; domain relations and constraints; revisioned derivations; representations and detail; and isolated runtime state. The following contracts define their members and behavior before project code changes.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0083",
+      "state": "specified",
+      "evidence": [
+        "hosting.json"
+      ],
+      "scope_and_limits": "H1\u2013H10 attach to shared families and existing authority, without a separate model service.",
+      "original_requirement": "Hosting reuses these families through participant/session authority, permitted query projections, bounded asset delivery and activities. Its H1\u2013H10 requirements attach to L0\u2013L5 and the existing engine/transport/native ownership below. They are cross-boundary contracts, not another model layer or a universal collaboration service outside current workspace policy.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0533",
+      "state": "specified",
+      "evidence": [
+        "contracts.json"
+      ],
+      "scope_and_limits": "Prior art does not select a replacement framework or establish Lince performance.",
+      "original_requirement": "Research checked 2026-10-18. The recommendations below infer useful design boundaries from primary documentation/source; they do not select a replacement database/framework, import vendor benchmarks as Lince targets or authorize copying a codebase. Preserve the native Rust direction and existing accepted-state/asset contracts unless a measured stage proves a missing mechanism.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0550",
+      "state": "specified",
+      "evidence": [
+        "contracts.json",
+        "sources.json"
+      ],
+      "scope_and_limits": "Fixture adapter record declares versions/rights, units/conventions, supported/unsupported operations and phase proofs.",
+      "original_requirement": "Every selected adapter records: supported schema/operations; exact software/build/license/target platforms; units/frames/conventions; source and subelement identity; unsupported/loss behavior; deterministic/tolerance reproducibility; resource/cancellation guarantees; failure and crash recovery; and reference fixtures/results. \u201cLibrary supports X\u201d is not a completed Lince capability until persistence, native interaction and this record pass.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0551",
+      "state": "specified",
+      "evidence": [
+        "contracts.json"
+      ],
+      "scope_and_limits": "Standard bounded GLB inspection selected for the small inputs; no speculative CAD/meshing/science kernel installed.",
+      "original_requirement": "Choose one implementation per initial purpose. A renderer, geometric kernel, mesher and numerical solver solve different problems; selecting all of them at once is unnecessary. Time-box a candidate evaluation to the fixture list and make a recorded selection or fallback decision. A failed optional dependency must not invalidate a saved document or prevent inspecting retained results.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0555",
+      "state": "verified-stage01-scope",
+      "evidence": [
+        "verification.json",
+        "baseline/baseline.json",
+        "qualitative-review.json"
+      ],
+      "scope_and_limits": "Current native baseline and 36 targeted checks passed; fixtures/contracts and scoped qualitative review are complete. This does not certify future model/navigation/hosting/scientific runtime features.",
+      "original_requirement": "Before coding a slice, instantiate its work card in this document with: **intent and exact user action; C/K/I/E/H requirements; inputs and units/frame/revision; accepted outputs and native states; owning module/authority; required/deferred profile operations; dependencies; fixture and reference result; numeric performance/error/resource thresholds; failure/recovery cases; checks/observed evidence; participant/source authority, activity location and resource payer where hosted; and remaining decisions**. Use existing stage tasks and requirements as the specification, not a newly invented summary. A library/API/empty UI scaffold is not completion.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0556",
+      "state": "verified-registry-and-retained-handoff",
+      "evidence": [
+        "handoff-check.json",
+        "verification.json"
+      ],
+      "scope_and_limits": "All required Stage 01 proofs and retained capability paragraphs are present; the general registry is Verified. Later implementation remains Pending/Deferred.",
+      "original_requirement": "The stage registry starts Pending for core delivery and Deferred for the numerical tail. Move to In progress only within agreed implementation authorization, then Verified or Blocked with concrete evidence/reason; use Repair required for a previously verified contract that regresses until its repair passes; retain Deferred for unstarted future scope. Record a completed capability and proof location before removing its implementation checklist, so the remaining document does not lose the governing invariant. The ledger does not add a new permission prompt for routine authorized work. Never mark a feature built solely because a test stub, generic profile slot or tiny unrelated benchmark passes.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0578",
+      "state": "verified-stage01-scope",
+      "evidence": [
+        "verification.json",
+        "baseline/baseline.json",
+        "qualitative-review.json"
+      ],
+      "scope_and_limits": "Current native baseline and 36 targeted checks passed; fixtures/contracts and scoped qualitative review are complete. This does not certify future model/navigation/hosting/scientific runtime features.",
+      "original_requirement": "Each stage has an intention regression: preserve at least one relevant earlier user flow while adding the next shared capability. Broaden checks only for actual changes/failures/unresolved concerns. Performance runs must record build/profile/device/data/accuracy and compare like for like; vendor throughput numbers are not thresholds. Failures change the implementation or explicitly agreed budget, not the meaning of the feature.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0724",
+      "state": "input-verified",
+      "evidence": [
+        "sources.json",
+        "dataset/manifest.json"
+      ],
+      "scope_and_limits": "Public/synthetic inputs require no private home or full atlas upload.",
+      "original_requirement": "These are synthetic/public-test proposals; a real personal place is an additional acceptance fixture, not a prerequisite for reproducible tests.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0775",
+      "state": "actual-device-and-build-recorded",
+      "evidence": [
+        "build-and-machine.json",
+        "baseline/baseline.json"
+      ],
+      "scope_and_limits": "Intel i7-1165G7 / Iris Xe Vulkan Mesa 26.1.2, actual RAM/kernel/toolchain and 1920x1052 compositor viewport recorded. Requested 1280x720 and future optimized profile are separately identified.",
+      "original_requirement": "Proposed baseline profile: Linux desktop/laptop with four CPU cores, 16 GiB system RAM, integrated/shared-memory graphics, 1280\u00d7720 model viewport and SSD. It is a test profile, not an assumption about the owner's hardware. [stage 01](01-stage.md) records the actual device, graphics driver, build/settings and a baseline before changing anything. Add a lower-memory profile only after measuring the first one.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0776",
+      "state": "future-profile",
+      "evidence": [
+        "profile.json"
+      ],
+      "scope_and_limits": "Optional larger city profile remains Stage 06; current source set is 1,636,549 bytes with bounded starter targets.",
+      "original_requirement": "Larger offline city profile \u2014 **Proposed starting value:** Proposed ceiling 8 GiB selected/pinned content and a separately selected cache cap up to 2 GiB \u2014 **Enforcement/evidence:** An optional larger profile for explicit region saving, not an automatic default allocation/download. [stage 05](05-stage.md) uses the much smaller starter/cache profile below; choose coverage/detail from actual bytes",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0777",
+      "state": "selected-target",
+      "evidence": [
+        "profile.json"
+      ],
+      "scope_and_limits": "Starter CPU target is stricter than the later ceiling; source-buffer lower bounds are not peak runtime RAM.",
+      "original_requirement": "Model CPU residency \u2014 **Proposed starting value:** 1 GiB incremental model/view assets and indexes, excluding explicitly launched scientific workers \u2014 **Enforcement/evidence:** Measure decoded data plus job/staging peaks; report total application memory separately",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0778",
+      "state": "selected-target",
+      "evidence": [
+        "profile.json"
+      ],
+      "scope_and_limits": "Starter managed GPU target is stricter than the later ceiling; total GPU use remains unmeasured.",
+      "original_requirement": "Model GPU residency \u2014 **Proposed starting value:** 512 MiB managed model resources \u2014 **Enforcement/evidence:** On integrated graphics this also consumes shared RAM; budget both views together, not once per view",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0779",
+      "state": "targets-selected-current-baseline-observed",
+      "evidence": [
+        "profile.json",
+        "baseline/baseline.json",
+        "baseline/measurement-interpretation.json"
+      ],
+      "scope_and_limits": "Existing development observations are recorded with sample counts/limits and performance findings. Future optimized navigation targets remain unchanged and unverified; unavailable GPU/copy/query/streaming measurements are not zero or a pass.",
+      "original_requirement": "Visible frame latency \u2014 **Proposed starting value:** p95 \u226433.3 ms, p99 \u226450 ms at the baseline viewport \u2014 **Enforcement/evidence:** Target for the documented navigation fixture, not a universal performance claim; record CPU/GPU timing and visual settings",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0780",
+      "state": "targets-selected-current-baseline-observed",
+      "evidence": [
+        "profile.json",
+        "baseline/baseline.json",
+        "baseline/measurement-interpretation.json"
+      ],
+      "scope_and_limits": "Existing development observations are recorded with sample counts/limits and performance findings. Future optimized navigation targets remain unchanged and unverified; unavailable GPU/copy/query/streaming measurements are not zero or a pass.",
+      "original_requirement": "Direct interaction \u2014 **Proposed starting value:** p95 \u2264100 ms visible response; \u2264200 ms for small validated commits, excluding declared background computation \u2014 **Enforcement/evidence:** Preview and commit measured separately; queue/start/finish status for expensive work",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0781",
+      "state": "selected-target",
+      "evidence": [
+        "profile.json"
+      ],
+      "scope_and_limits": "Cold/warm useful model view is Stage 05 evidence; fixture preparation does not prove it.",
+      "original_requirement": "First useful view \u2014 **Proposed starting value:** \u22643 s cold local open, \u22641 s warm after the required root/index is available \u2014 **Enforcement/evidence:** Display useful coarse content without waiting for optional refinements; record asset and OS-cache conditions",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0782",
+      "state": "selected-target",
+      "evidence": [
+        "profile.json"
+      ],
+      "scope_and_limits": "Small-job/decode limits selected before their consuming runtime; actual upload byte/time quota selection remains with Stage 05 implementation.",
+      "original_requirement": "Job scheduling \u2014 **Proposed starting value:** Initially two heavy background jobs, one expensive decode per source, bounded uploads per frame \u2014 **Enforcement/evidence:** Byte/upload/tile caps derive from the fixture; preserve input responsiveness and fair queues",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0783",
+      "state": "selected-target",
+      "evidence": [
+        "profile.json"
+      ],
+      "scope_and_limits": "Acknowledgement, dispatch stop, yield and termination have separate targets.",
+      "original_requirement": "Cancellation \u2014 **Proposed starting value:** Local UI acknowledgement \u2264100 ms, obsolete dispatch stops \u2264250 ms; cooperative workers yield/check \u2264100 ms \u2014 **Enforcement/evidence:** Noncooperative kernels have a process timeout/termination policy, proposed 2 s; pending termination is visible",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0814",
+      "state": "scoped-tests-observed",
+      "evidence": [
+        "verification.json",
+        "geometry-reference.json"
+      ],
+      "scope_and_limits": "Fixture identity/frames/geometry and existing receipt/isolation checks; future numerical validity remains with its owner.",
+      "original_requirement": "Correctness combines geometry/topology validity, stable identity, units/frame/clock transformations, material applicability, mapping, exact accounting, revision conflicts and actual user interactions. Use property/metamorphic tests where meaningful: unit changes preserve physical predictions; rigid frame changes preserve lengths; view magnification does not change physics; permutation preserves identity; equal/opposite additive effects cancel; display simplification does not change accepted mass/stock; origin shifts preserve canonical state.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0821",
+      "state": "scoped-tests-observed",
+      "evidence": [
+        "verification.json"
+      ],
+      "scope_and_limits": "The current eight-test suite passed, including actual-buffer bounds rejection and existing path/rights/parser/reference/geometry negatives; existing authority tests passed. Future delivery/worker boundaries remain with their owning stages.",
+      "original_requirement": "Security checks target actual boundaries: denied edits across UI/API/import/automation; private metadata/index/result disclosure; stale caches after grants change; source/observation forgery; bounded parsers/archives/decoders; integer overflow in shape/offset math; traversal/symlink/duplicate-entry handling; cyclic expansion; unintended network requests; credential scope; executable worker capabilities; cancellation and quota exhaustion. Retained caches/results respect their own rights. Simulations cannot emit operational Actions into the live Cell.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0822",
+      "state": "targets-selected-current-baseline-observed",
+      "evidence": [
+        "profile.json",
+        "baseline/baseline.json",
+        "baseline/measurement-interpretation.json"
+      ],
+      "scope_and_limits": "Existing development observations are recorded with sample counts/limits and performance findings. Future optimized navigation targets remain unchanged and unverified; unavailable GPU/copy/query/streaming measurements are not zero or a pass.",
+      "original_requirement": "Performance separates steady-state frame time, input/commit latency, streaming/decode/upload, queries, save/recovery and solver throughput. Record p95/p99, cancellation latency, CPU/RAM/VRAM, bytes read/transferred, peak staging and released demand/resources after closure. Test one dense room, a sparse city, many instances, overlapping appearance layers and a long navigation session separately.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0827",
+      "state": "native-and-fixture-evidence-reviewed",
+      "evidence": [
+        "baseline/before-drag.png",
+        "baseline/settled.png",
+        "qualitative-review.json",
+        "verification.json"
+      ],
+      "scope_and_limits": "Both actual native images were inspected and the real input/physics/idle replay passed. Future room/cave/character visual quality remains at its owning stages.",
+      "original_requirement": "Run only checks appropriate to changed contracts; retain reproducible cargo xtask/native replay fixtures and inspect rendered room/cave outputs where appearance matters. A headless math test does not establish low-poly visual quality or usable mounted input. Every stage leaves a fixture/result and any blocked or unsupported scope in this plan.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0850",
+      "state": "partially-deferred",
+      "evidence": [
+        "build-and-machine.json",
+        "profile.json"
+      ],
+      "scope_and_limits": "Current device selected here; real city/site selection belongs to Stage 06 and laboratory workloads to Stages 16\u201317.",
+      "original_requirement": "Name the real city/site, target device and storage/error profile replacing public/synthetic B02/B03 and provisional budgets. Define the desired ordinary-use and laboratory workloads independently.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0557",
+      "state": "verified-stage01-scope",
+      "evidence": [
+        "verification.json",
+        "baseline/baseline.json",
+        "qualitative-review.json"
+      ],
+      "scope_and_limits": "Current native baseline and 36 targeted checks passed; fixtures/contracts and scoped qualitative review are complete. This does not certify future model/navigation/hosting/scientific runtime features.",
+      "original_requirement": "**[stage 01](01-stage.md) \u2014 L0 and contracts** \u2014 **Intention and defined deliverable:** Freeze bounded core native/scale/hosting actions, hardware and source rights; retain future science as deferred scope \u2014 **Correctness/failure evidence and performance obligation:** Record pre-change timing/memory/wake-up baseline and core budgets. B01/B03/B05/B13/B15/B19/B20/B22\u2013B36/B38\u2013B40 are used in the stage-specific subsets below. Select B25\u2013B28/B38 small data; B37 and the numerical portions of B07\u2013B09/B11\u2013B12/B16\u2013B18/B21 are catalogued but their scientific datasets/protocols/limits wait for stages [16](16-stage.md)\u2013[21](21-stage.md). No material/lab implementation or dataset selection blocks [stage 01](01-stage.md).",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "R0585",
+      "state": "verified-stage01-scope",
+      "evidence": [
+        "verification.json",
+        "baseline/baseline.json",
+        "qualitative-review.json"
+      ],
+      "scope_and_limits": "Current native baseline and 36 targeted checks passed; fixtures/contracts and scoped qualitative review are complete. This does not certify future model/navigation/hosting/scientific runtime features.",
+      "original_requirement": "executable fixture specifications and a written implementation scope, not a months-long schema project. Unknown data rights, unit conversions or worker trust are recorded decisions; they do not become silent defaults.",
+      "stage01_scope_completed": true
+    },
+    {
+      "id": "01.X01",
+      "state": "selected-target",
+      "evidence": [
+        "profile.json",
+        "dataset-inspection.json"
+      ],
+      "scope_and_limits": "Example budget relationships adopted as targets; no production API or runtime performance pass is inferred.",
+      "original_requirement": "Turn this proposed budget/replay skeleton into measured fixture specifications before dispatch. The numbers are engineering targets, not observed results; the actions require native workflow evidence in their delivery stages. Use this standalone illustrative acceptance example to refine the actual production API and regression; it is not an already implemented Lince interface or sufficient milestone evidence.\n\n  ```rust\n  fn main() {\n      let coarse_earth_bytes = 32_u64 * 1024 * 1024;\n      let fixture_limit_bytes = 64_u64 * 1024 * 1024;\n      let automatic_cache_limit_bytes = 128_u64 * 1024 * 1024;\n      assert!(coarse_earth_bytes <= fixture_limit_bytes);\n      assert!(fixture_limit_bytes <= automatic_cache_limit_bytes);\n      let required_actions = [\n          \"inspect_ball\",\n          \"leave_building\",\n          \"walk_street\",\n          \"view_globe\",\n          \"view_optional_outer_context\",\n          \"return_to_same_ball\",\n          \"repeat_without_geographic_profile\",\n          \"revoke_guest\",\n      ];\n      assert_eq!(required_actions.len(), 8);\n  }\n  ```",
+      "stage01_scope_completed": true
+    }
+  ],
+  "original_plan_requirement_snapshot": {
+    "path": "institute/anicca/workspace/01-stage.md",
+    "sha256_before_completion_compression": "672cddcf26171cc917e2da2acb1bc589b622b89ce0cae1d44180fb08cb701b5c",
+    "interpretation": "Exact original requirement text is retained in the corresponding audit rows. Stage 01 proves its baseline/input/specification subset; consuming implementation remains at the existing named stages."
+  },
+  "verified_at": "2026-10-25 17:39:07 UTC",
+  "later_owned_work": [
+    {
+      "owner_stage": 3,
+      "question": "Pinned big_space fit and runtime cell/residual storage",
+      "decisive_evidence": "Two distant close-up views, moving/origin-shifted frames, exact local source preservation."
+    },
+    {
+      "owner_stage": 5,
+      "question": "Globe/refinement/depth/controller implementation and real provider subset",
+      "decisive_evidence": "B25/B38 inward/outward route, horizon/interior use and starter peaks/release."
+    },
+    {
+      "owner_stage": 6,
+      "question": "Packed container codec/paging and a real saved city",
+      "decisive_evidence": "Authorized closure/resume/packed-directory equivalence and bounded offline route."
+    },
+    {
+      "owner_stage": 10,
+      "question": "Exact CAD adapter",
+      "decisive_evidence": "Existing prescribed bake-off including shape/history, failures, licensing/packaging and whole-path cost."
+    },
+    {
+      "owner_stage": 11,
+      "question": "Reviewed human anatomical reference sources and coverage",
+      "decisive_evidence": "Actual prepared pack counts/rights, named upper-limb mapping, useful pose checks and admitted cost."
+    },
+    {
+      "owner_stage": 16,
+      "question": "Material knowledge sources and applicable property models",
+      "decisive_evidence": "Direct material choice, provenance/conditions/units/conflict/unknown checks; no stage01 dataset selection."
+    },
+    {
+      "owner_stage": 17,
+      "question": "Numerical studies, parameters, workers and tolerances",
+      "decisive_evidence": "Authorized named study with independent references, actual sample/replica/output budgets and applicable model."
+    }
+  ],
+  "known_baseline_findings": [
+    {
+      "id": "BASELINE-RENDER-01",
+      "observation": "Renderer slab allocator use-after-free diagnostic recurred during rapid workspace create/switch; the native replay continued, rendered and passed its assertions.",
+      "owner_stage": 5,
+      "reproduction": "Run the baseline replay; inspect workspace switches and stderr. Determine resource-lifetime impact before future streamed-view acceptance."
+    },
+    {
+      "id": "BASELINE-WAYLAND-01",
+      "observation": "Wayland rejected a backend cursor warp after synthetic adapter cursor state was propagated by another Window change; the injected native input path still hit/dragged correctly.",
+      "owner": "baseline input harness / Stage 05 native interaction evidence",
+      "interpretation": "No physical OS pointer or GPU scanout response is measured."
+    },
+    {
+      "id": "BASELINE-PERF-01",
+      "observation": "Recorded development p95 frame interval is 125.542145 ms; one presented-state drag response is 140.209848 ms. These are not future-profile passes.",
+      "owner_stage": 5
+    },
+    {
+      "id": "BASELINE-LABEL-01",
+      "observation": "Area explanation and selected-Sand title overlap near the target; controls and both workflow objects remain identifiable.",
+      "owner_stage": 4
+    },
+    {
+      "id": "BASELINE-ENV-A11Y",
+      "observation": "The environment did not provide the org.a11y.Status D-Bus service. Native controls and rendering still ran; assistive-technology integration was not exercised.",
+      "owner": "test-environment configuration",
+      "interpretation": "Environment warning, not an accessibility conformance result."
+    }
+  ],
+  "gate_evidence": [
+    "verification.json",
+    "handoff-check.json",
+    "baseline/baseline.json",
+    "baseline/measurement-interpretation.json",
+    "baseline/persistence-observation.json",
+    "qualitative-review.json",
+    "fixture-tests.log",
+    "xtask-check.log",
+    "dataset-recheck.json",
+    "geometry-reference.json"
+  ]
+}

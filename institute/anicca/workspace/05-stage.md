@@ -16,7 +16,11 @@ Finish with the first complete spatial journey. Inspect a ping-pong ball inside 
 
 - [ ] **05.M06.** Reverse the camera rapidly, close a view and revisit offline. Release unneeded RAM/GPU after bounded demand/fences; retain only bounded compressed cache, durable edits and selected offline packs. Record peak/steady costs against the starter profile.
 
+- [ ] **05.M07.** Use a supplied lightweight character in third person to walk the street and enter the same doorway, adjust movement speed/turning and camera follow distance, switch to first person or free Fly inspection and return without changing character identity or dimensions. Keep feet/body support and camera obstruction usable on the bounded fixture; another participant sees permitted presence. No anatomical payload, rig editor or force-driven human dynamics is required.
+
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 04](04-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -55,6 +59,37 @@ Finish with the first complete spatial journey. Inspect a ping-pong ball inside 
 - [ ] **05.T12.** Complete the B33–B36 hosted route: an identified remote editor and restricted public visitor share this same supplied street/house/ball/Sands with independent views/detail budgets; an accepted local customization arrives through a scoped delta/asset change. Reuse verified asset transport behind workspace-principal authorization and bounded control/asset/presence streams. Include a Sand using a separate Organ's public data and another requiring the visitor's own login; missing optional access stays localized. Exercise cap reached, slow reader, frame-origin changes, host disconnect/restart, cached viewing/local drafts, reconnect reconciliation, revoke and last-lease release. Record host and client results against the hosted starter subprofile; this proves hosting/navigation, not shared rigid-body science.
 
 - [ ] **05.T13.** Prove B38 through the same frame/query/refinement/navigation/loader implementation as B25, with the geographic/astronomical profile absent. Parameterize hierarchy bounds, object identities, local units, error and outer context; test forward/reverse navigation, independent view origins, exact local dimension preservation, source/summary changes and last-demand release. Keep the synthetic scene within the same admitted small-fixture budgets, reusing source assets. No name-based dispatch, fixed Earth-relative zoom thresholds, compulsory parent world, global fixed geometric epsilon or hidden provider request may make the test pass.
+
+- [ ] **05.T14.** Extend the existing navigation/presence family with the B41 starter subset: explicit controlled occurrence, first/third-person follow settings, source-defined forward/up/eye/foot anchors, bounded speed/acceleration/turn/step/slope settings and standing/walking presentation where supplied clips support it. Resolve camera obstruction against ready permitted geometry; keep body movement and camera placement separately owned. Free Fly changes the view unless an explicit supported body-control profile is selected. Use the existing query-based controller, offline loader and bounded presence transport; no new joint dynamics, clinical anatomy or mandatory participant collider. Missing required support reconciles visibly, and missing optional appearance uses a cheap fallback.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Traverse a generic sparse scene.** Connect frames, conservative bounds, covering representations and projected-error demand through the existing model/loader. Prove B25 and unrelated B38 with the same implementation; geographic conversion/globe data and optional outer context remain adapters. Add constant/imported/authored surface layers and cheap changed-landmark summaries.
+
+- [ ] **Cycle B — Make the place usable.** Deliver explicit Orbit/Fly/Walk, ready support queries, doorway/interior traversal, readable mounted Sands and the small third-person character profile. Keep body/camera ownership explicit, use available authored clips and reconcile missing support without starting a new dynamics solver.
+
+- [ ] **Cycle C — Host and stress the same journey.** Extend existing entry/authority/asset/presence paths for editor and visitor profiles, other-Organ sign-in and continuing resource admission. Reverse/cancel travel, close views, hit caps, go offline and restart the host; measure transient residency and recovery on the actual route.
+
+- [ ] Preserve these contracts; ball/house/street/globe/solar context and the invented landscape are required example recipes over built-in generic scale, navigation and hosting.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **05.W01 — Recognizable places through continuous scale** | Built-in sparse scene/surface capabilities plus geographic and invented recipes; 05.M01/05.M03/05.M04. Travel both ways, find a custom landmark and reuse relief on blank and geographic roots. | Coarse coverage, horizon, authored silhouette and eventual local detail remain coherent; missing detail is visibly honest. | IDs/dimensions survive; no scene-name/zoom ladder dispatch; empty address growth does not allocate populated content; measure projected error, local precision, active bytes/jobs, seams and frame/input percentiles against the early-scale profile. |
+| **05.W02 — Enter and interact in first/third person** | Built-in navigation/controller/mounted-input subset; 05.M02/05.M07. Walk through the doorway, read a Sand, adjust follow/movement and switch modes. | Usable horizon, camera obstruction, feet/support, turning and content focus; explicit switches preserve supported context. | Body/camera ownership and identity stay separate; absent support reconciles; anatomy/new solver starts = 0; measure input/frame costs, support queries and bounded presence. |
+| **05.W03 — Share a place within permissions and cost** | Built-in hosted entry/streaming; 05.M05. Editor and restricted visitor enter, use independently authenticated content, edit and recover after host loss. | Entry estimates, partial/refused states, cap status and source sign-in are actionable. | Denied disclosure/edits and borrowed credentials = 0; quotas persist through resume; record host/client encoded/decoded/staging peaks, traffic and acceptance/reconnect outcomes. |
+| **05.W04 — Leave, return and stay bounded** | Built-in demand/cache/offline behavior; 05.M06. Reverse cameras, close one/all views and revisit cached data offline. | Useful coarse coverage persists during loading and release; offline gaps remain understandable. | Last-demand resources release within the adopted fence/latency cap; offline remote requests = 0; durable edits survive eviction; measure cold/warm open, RAM/GPU/cache/queue peaks and release time. |
+
+- [ ] **Checks to select.** Property/metamorphic checks vary roots, units, outer bounds and optional Earth data while preserving local dimensions and accepted identity. Integration/fault tests cover poles/dateline, generation reversal, failed decode/device loss, duplicate requests, revoke and slow readers. Native interaction simulation traverses the actual route, switches controls, enters the building, uses mounted input and hosts the same scene; separately benchmark the selected starter profile.
+
+- [ ] **Earlier-work repair.** Reuse 02.W01–02.W03 acceptance/Agent paths, 03.W01/03.W03 precision/content and 04.W01/04.W03 influence/mounts. Repair those contracts before accepting a visually successful scale tour; stage 05 remains supplied-content navigation rather than requiring the later full authoring/CAD/science tools.
+
+## Concrete acceptance replay
+
+- [ ] **05.P01 — One generic scale journey; 05.T01–05.T05/05.T09/05.T10/05.T13 / 05.W01.** Follow B25 from the ball through the supplied interior/street to globe/optional outer context and back; inspect a castle proxy from street and overview, poles/dateline and geographic/blank relief placements. Repeat with B38, geography absent, changed names/units/outer extent and unrelated endpoints. Compare the same local IDs/dimensions/selection before/after; record projected error, seams, address range, unique versus active geometry, visited hierarchy pages and jobs. An enlarged empty root must remain within the same adopted active-work bounds. Review recognizable silhouette, horizon and coherent refinement through motion.
+
+- [ ] **05.P02 — Inhabit the supplied scene; 05.T06/05.T07/05.T14 / 05.W02.** Explicitly switch Orbit/Fly/Walk, traverse the doorway in first/third person, adjust supported speed/follow settings, encounter a camera obstruction and type into a mounted Sand. Remove required support during streaming and inspect the stop/reconcile path. Assert separate camera/body ownership, unchanged dimensions, correct focus and no anatomy/new solver demand. Measure support queries and actual input/frame samples while preserving 04.W01 moving influence and 04.W03 mounts.
+
+- [ ] **05.P03 — Shared travel stays bounded; 05.T08/05.T11/05.T12 / 05.W03/05.W04.** Admit editor and restricted visitor at different detail, use an independent Organ's own-login Sand, deny a private asset, hit a persisted cap, reverse cameras, close one/all views, lose/restart the host and return fully offline. Capture host/client control, presence, asset, decoded/upload/staging and disk counters separately under aggregate admission. Verify no borrowed authority, replayed mutation, offline request or premature shared-lease release; measure cold/warm first-useful view, frame/input percentiles and last-demand release. Review entry estimates, partial/refused states and usable coarse fallback; preserve 02.W01–02.W03 and 03.W03 on the actual route.
 
 ## Worked contract example
 
@@ -389,6 +424,14 @@ Finish with the first complete spatial journey. Inspect a ping-pong ball inside 
 
 - [ ] **R0841.** **Q14 — Scene-independent scale; example-based proof.** The solar-system/Earth/ping-pong-ball route is an integration/acceptance example. Generic frames, units, precision, sparse indexes, purpose-specific representations, navigation and demand work for any supported authored scene, including a room-only root and an invented scene spanning comparable scales. [stage 05](05-stage.md)/B38 proves that separately; no fixed endpoints, required solar/Earth parent, named zoom ladder or inferred physical simulation is built into the engine.
 
+### Lightweight third-person character navigation
+
+- [ ] Keep camera mode, selected body-control profile and visual animation distinct. Store authorized profile/source references through the workspace document path and local camera preferences through the existing view-state path. Do not infer body dimensions from screen size or apply both clip root motion and controller translation to the same motion. The first profile may use in-place supplied animation driven by actual controller displacement; broader editable motion and explicit root-motion ownership are stage 11 work.
+
+- [ ] Retain the existing nonphysical presence contract: a participant avatar is a bounded visible representation and the local Walk controller queries support. Colliding with or pushing shared physical objects requires the separately implemented/granted stage 18 activity. Local character navigation or Fly camera motion cannot acquire Area, operational or physics authority implicitly.
+
+- [ ] Measure the supplied character in the original B25/B38 starter journey and host/client profile, including first/third-person switches, doorway/camera obstruction, reduced motion, hidden/distant presence, cold/offline reopen and last-demand release. The full anatomy package, all animation clips and every other participant's highest detail must remain unallocated unless admitted demand requires them.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications
@@ -421,6 +464,8 @@ Finish with the first complete spatial journey. Inspect a ping-pong ball inside 
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **05.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Use the complete travel-and-use route with multiple semantically meaningful landmarks, working mounted content, two different participant profiles, cold/warm/offline inputs and deliberate source delays/denials. Grow address extent without adding content and grow the interest index without rendering every entry; verify the route, input and resource budget still work.
 
 - [ ] **R0561.** **[stage 05](05-stage.md) — L0/L1/L2/L3/L4, scale/navigation L5 proof** — **Intention and defined deliverable:** Generic continuous traversal of data-defined scene scales; solar/globe/street/house/ball is the geographic reference example, with B38 independent non-geographic/room cases — **Correctness/failure evidence and performance obligation:** B13/B23/B25–B28: explicit Orbit/Fly/Walk, custom proxy/bounds, near/depth and local dimensional precision, optional outer context and standalone flat roots, cold/warm/offline continuity and camera reversal. Measure active bytes/jobs versus extent, frame/input latency, network/decode/upload work and release latency against the early-scale subprofile; no full-population or hidden N-body work. B30 adds supplied-mesh reuse/changed-upload measurements without requiring an exact-CAD tessellator. B33–B36 require an identified remote editor and restricted public visitor, different visual budgets, permitted asset delivery, native cost/preflight states, host limits, other-Organ data and disconnect/revoke recovery on this same route. B38 must reuse that implementation with arbitrary identities, units/bounds and non-geographic endpoints, proving the solar example is not an engine constraint.
@@ -433,6 +478,8 @@ Finish with the first complete spatial journey. Inspect a ping-pong ball inside 
 
 ## Advance gate
 
+- [ ] Verify every local **05.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0621.** the generic implementation navigates both the B25 solar → Earth → street → entered house → ball route and B38 independent non-geographic/room cases continuously in both directions, with explicit modes, visible customization and mounted input. Default relief is flat unless data/authoring changes it. Pass the early-scale resource profile or document a reviewed measured revision. B33–B36 prove identified/public entry and recovery on this same scene. A globe screenshot, disconnected local viewer, hardcoded tour or generic coordinate type is insufficient. Stages [06](06-stage.md)–[14](14-stage.md) extend locality and authoring next; the retained paired physical-material/protein proof is deferred to stages [16](16-stage.md)–[17](17-stage.md) after stabilization.
 
 - [ ] Advance only when **all 05.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -441,17 +488,23 @@ Finish with the first complete spatial journey. Inspect a ping-pong ball inside 
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **05.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

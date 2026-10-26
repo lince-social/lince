@@ -10,7 +10,11 @@ Finish with the same object editable in flat, perspective and numeric views whil
 
 - [ ] **03.M03.** Observe another participant's optional cursor/selection or lightweight avatar in the correct frame. Move independently, opt out and disconnect; presence expires without becoming a colliding body or changing geometry.
 
+- [ ] **03.M04.** Inspect a native Sand/Record view at a spatial attachment, open the same content in a readable flat/HUD presentation and edit it there. The spatial/flat views show the same accepted data and selection while local focus/tool expansion stays independent; returning preserves the original anchor, dimensions and content. Complete the interaction with keyboard/mouse and no model provider or extra device.
+
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 02](02-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -32,6 +36,38 @@ Finish with the same object editable in flat, perspective and numeric views whil
 - [ ] **03.T04.** Prove the same exact authored coordinate/dimension changes retain distinct canonical/derivation identities below 1 nm in a suitable local frame, through unit display, undo and save/reload. Numerical method tolerance may be coarser only when explicitly requested and reported; display rounding or a cache quantum cannot merge the sources. Add this bounded B23/B24 subset without requiring a microscopic solver.
 
 - [ ] **03.T05.** Carry canonical/local-frame identity through the participant view/presence envelope. Implement optional bounded cursor/selection and lightweight-avatar presentation state using I2/I5/I6, with session sequence/expiry and visible opt-out/follow behavior. Reuse view-local origins and keep shared camera bindings explicit; B36 first proves independent views, correct pose/selection mapping, release and no accepted geometry/physical-body mutation.
+
+- [ ] **03.T06.** Separate content/source identity from a presentation's view binding, frame/anchor, layout and tool state. Support model-space attachment and view-local flat/HUD placement through I1/I2/I5 without rewriting canonical pose or physical dimensions. Use existing logical layout/DPI rules for readable screen content and the declared model-unit map for spatial content. Preserve the existing flat workspace as a full interaction path.
+
+- [ ] **03.T07.** Reuse the same source/Record state across supported presentations, with explicit focus/input ownership and bounded demand. Persist user presentation/anchor choices separately from source data; opening another view does not create another model, Record, body or independent accepted state. Closing/hiding a view releases its presentation demand while retaining demand owned by other active views. Later stage 05 streaming and stage 07 application mounts extend this same contract.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Make coordinates durable.** Implement explicit unit/frame/calibration descriptors and precise relative placement behind the durable source contract. Evaluate nearby transforms around a common ancestor; select big_space or the bounded replacement only after the pinned two-view/origin-shift spike. Keep camera magnification and rendering origin separate from authored placement.
+
+- [ ] **Cycle B — Share objects across independent views.** Add orthographic/perspective and numeric tools against the same identities, then spatial/flat/HUD presentations with independent focus/layout/anchors and aggregate demand. Closing one view must preserve another view's source and leases.
+
+- [ ] **Cycle C — Introduce bounded presence.** Map optional cursor/selection/avatar state through canonical frames and session sequence/expiry. Exercise two distant views, origin shifts, opt-out and disconnect without creating physical bodies or accepted geometry edits.
+
+- [ ] Preserve these contracts; a furnishing, microscopic point and distant participant are example inputs to generic frame/view capabilities.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **03.W01 — Precise editing across scale and views** | Built-in frame/unit/numeric/view tools; 03.M01/03.M02. Edit a small feature, switch units, move two distant cameras, undo and reopen. | Numeric controls and picks remain predictable; camera movement does not visibly wobble the local edit. | Authored distinctions below 1 nm remain distinct in the supported fixture; lengths/IDs/canonical state survive origin shifts; record declared local error, conversion round trips and two-view CPU/GPU/input costs. |
+| **03.W02 — Independent participant presence** | Built-in view-local presence; 03.M03. Observe another cursor/avatar, move independently, opt out and disconnect. | Correct apparent position, independent control and disappearance are understandable. | Accepted geometry/body creations from presence = 0; apply sequence/expiry and permitted coverage; measure bytes/rate/retained state within the chosen presence profile. |
+| **03.W03 — One Sand in spatial and readable views** | Built-in presentation bindings; 03.M04. Open spatial content in flat/HUD, edit it, close that view and return. | Readable sizing, focus/input ownership and return to the spatial anchor work through ordinary controls. | One accepted content identity/revision; anchor/dimensions survive; closing demand does not release another active view's assets; record aggregate residency, input latency and last-demand release. |
+
+- [ ] **Checks to select.** Unit/property tests vary units, parent transforms, origin cells and magnification; compare relative evaluation against bounded references. Integration tests save/reload frame descriptors and exercise lease sharing, stale presence and denied projections. Native replay types exact values, switches view modes, picks the same object and transfers focus between spatial/flat content.
+
+- [ ] **Earlier-work repair.** Replay 02.W01 and the affected acceptance/permission cases from 02.W02/02.W03 after coordinate or presentation changes. Save/undo/Agent operations must retain their scope and IDs even when the visible origin, unit display or focused presentation changes.
+
+## Concrete acceptance replay
+
+- [ ] **03.P01 — Precision independent of camera; 03.T01–03.T04 / 03.W01.** Type two distinct sub-nanometer authored values in a suitable local fixture, switch display units, undo and reopen. Open two distant close-up views and shift each render origin while picking the same occurrence/subelement. Compare accepted authored values and physical dimensions before/after view-only changes, and relative transforms against an independently calculated local reference. Record local error, coordinate ranges, view count, conversion/selection latency and aggregate frame/residency cost; review local wobble and numeric editing usability.
+
+- [ ] **03.P02 — Bounded nonphysical presence; 03.T05 / 03.W02.** Publish permitted cursor/avatar state from one participant while another independently navigates a distant frame. Inject reordered/expired packets, opt out and disconnect. Verify frame mapping, sequence/expiry bounds, zero accepted model edits and zero bodies created by presence. Record actual packet size/rate and retained session state against the presence profile; inspect apparent placement and disappearance. Preserve 02.W02 denial/reconnect behavior.
+
+- [ ] **03.P03 — One content source, several presentations; 03.T06/03.T07 / 03.W03.** Type into the spatial Sand through its supported input, open its flat/HUD view, continue editing and close that view while the spatial one remains. Verify one content identity/revision, independent local focus/layout, unchanged spatial anchor/dimensions and correct lease retention. Close the last view and measure release after the declared fences/grace. Review readable sizing and focus return; replay 02.W01 undo/reopen and the affected native/Agent target resolution with the focused presentation changed.
 
 ## Worked contract example
 
@@ -71,6 +107,39 @@ Finish with the same object editable in flat, perspective and numeric views whil
       };
       let delta = nearby_delta_m(a, b, 1024.0).unwrap();
       assert!((delta - 0.001).abs() < 1e-12);
+  }
+  ```
+
+- [ ] **03.X02.** Exercise shared source identity and independent presentation state before stage 07 adds richer mounts/application surfaces. This is an illustrative replay fixture to implement through the real native/Agent services, not a new public command schema or portable workspace encoding. Keep its evidence pending until that workflow passes.
+
+  ```json
+  {
+    "content": "sand:home-tasks",
+    "subject": "record:home-tasks",
+    "presentations": [
+      {
+        "id": "view:spatial",
+        "binding": "model-local anchor",
+        "source": "sand:home-tasks"
+      },
+      {
+        "id": "view:focused",
+        "binding": "view-local flat or HUD",
+        "source": "sand:home-tasks"
+      }
+    ],
+    "actions": [
+      "edit allowed task in focused view",
+      "inspect same accepted revision spatially",
+      "close focused view",
+      "return to original anchor"
+    ],
+    "expected": {
+      "source_copies_created": 0,
+      "canonical_pose_changed": false,
+      "independent_tool_state": true
+    },
+    "verification": "pending"
   }
   ```
 
@@ -152,6 +221,18 @@ Finish with the same object editable in flat, perspective and numeric views whil
 
 - [ ] **R0837.** **Q10 — Optional lightweight shared presence.** Provide optional avatars, cursors and selections using shared view/presentation/anchor/activity primitives. Navigation/local tool state stays participant-owned unless explicitly shared. Physical bodies, live topology/Area effects and operational control need their own supported authorized activity.
 
+### Content and presentation identity
+
+- [ ] Keep content identity, canonical object placement, per-presentation placement and view-local interaction state independently owned. A HUD pin is a presentation choice; it does not move a world object, apply a force or require Earth. A spatial label, flat inspector and focused Sand can refer to the same authorized subject at different readable scales.
+
+- [ ] Preserve one authoritative edit path and source revision across native views; query/select/edit results retain their stable subject/base. Sharing source data does not share another participant's private camera, HUD layout or credentials. Use existing visibility and demand rules for saved presentations rather than implicitly creating mutations when a camera moves.
+
+- [ ] Respect the content adapter's supported presentation/focus behavior. For a source with one active input owner, transferring focus does not duplicate its producer or application process. Use existing compositor/output mapping for application surfaces in stage 07; native content/view contracts do not depend on a projector, camera driver or world model.
+
+### Presence identity and articulated representations
+
+- [ ] Preserve the distinction between participant/Actor identity, the selected model occurrence and its optional visible avatar. Replacing or hiding the appearance does not change grants or create a physical body. Stage 05 adds the first/third-person camera/controller use; stage 11 supplies editable rigs and anatomical representations through these same frame, identity and demand contracts. The richer future appearance is not a prerequisite for this stage's lightweight presence.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications
@@ -168,6 +249,8 @@ Finish with the same object editable in flat, perspective and numeric views whil
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **03.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Inspect and edit small components in two distant authored assemblies while keeping the existing native canvas usable. Vary empty address extent at a fixed populated/active set and measure transforms, view preparation, input response and retained bytes.
 
 - [ ] **R0559.** **[stage 03](03-stage.md) — L2/L3 on admitted L0 work** — **Intention and defined deliverable:** Local/frame/unit-accurate views, numeric controls and presentation magnification on the same subject — **Correctness/failure evidence and performance obligation:** B13/B23 and view replay: origin changes preserve physical state; root specimen needs no Earth/building. Measure transform/view preparation versus active occurrences, p95/p99 and bytes; sparse extent must not allocate its empty volume. Include subnanometer key/source distinctions; fixed-world rounding cannot substitute for a precision contract. B36 starts participant-local camera/frame presence and expiry without source/physics mutation. Prepare B38 parameterized frames/units/origins without a geographic parent or named scale bands.
@@ -178,7 +261,11 @@ Finish with the same object editable in flat, perspective and numeric views whil
 
 - [ ] Run only checks justified by the changed contracts through repository cargo xtask/Nix workflows and `cargo check` with warnings as errors. If a schema change is required, append a new migration/checksum and run the store check/migration guards; never rewrite an old migration. Keep old web code and unrelated changes untouched.
 
+- [ ] **Presentation coherence evidence.** Extend B13/B22/B23/B36 with the same native content across spatial and readable flat/HUD views: actual edit/selection, local focus, save/reload, view close and independent participant state. Record aggregate active-view bytes/work and source reuse, preserving existing frame/input budgets; geometry magnification or a second source copy cannot substitute for the workflow.
+
 ## Advance gate
+
+- [ ] Verify every local **03.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
 
 - [ ] **R0600.** a local millimeter edit and a microscopic magnified inspection remain numerically stable at distant roots. No giant root f64 coordinate is used as the source of truth.
 
@@ -188,17 +275,23 @@ Finish with the same object editable in flat, perspective and numeric views whil
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **03.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

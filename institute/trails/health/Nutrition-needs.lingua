@@ -1,0 +1,640 @@
+Nutrition needs (@nutrition-needs: 0, is #trail, #contains @nutrition-needs-reference, #contains @nutrition-needs-energy, #contains @nutrition-needs-bounds) { r_3EP111RS9CF6TTGX0C3G14FXWK
+Follow @nutrition-needs-reference, @nutrition-needs-energy, then @nutrition-needs-bounds. Select targets before optimizing quantities. This source covers healthy adults aged 19–120, excluding pregnancy and lactation. Other populations require explicit personal or professional targets. References describe groups; they do not measure an individual requirement.
+} r_3EP111RS9CF6TTGX0C3G14FXWK
+
+Choose a reference (@nutrition-needs-reference: 0, #part-of @nutrition-needs) { r_4FZSRDNH431REV9ZYKS946FGX7
+RDA is a planning target designed to cover nearly all healthy people in a reference group. AI is used when evidence cannot establish an RDA. UL is an applicable ceiling. AMDR constrains energy shares from macros. An absent ceiling means no established limit, not evidence that any dose is safe. Select the physiological reference group and age used by the source, then apply personal overrides.
+
+[NIH reference definitions](https://ods.od.nih.gov/HealthInformation/nutrientrecommendations.aspx); [USDA calculator](https://www.nal.usda.gov/human-nutrition-and-food-safety/dri-calculator). Each extension retains its source and scope.
+} r_4FZSRDNH431REV9ZYKS946FGX7
+
+Estimate energy (@nutrition-needs-energy: 0, #part-of @nutrition-needs) { r_62RP3CZY3TNA3BW65ZMA1JG3PA
+Mifflin–St Jeor estimates resting energy: 10 × weight kg + 6.25 × height cm − 5 × age years + reference constant (+5 male; −161 female), in kcal/day. Multiply by an explicitly chosen activity factor for a rough daily planning estimate. The multiplier is a separate assumption. Inspect weight trend and performance; replace with measured or prescribed energy when available.
+
+Protein and carbohydrate supply about 4 kcal/g and fat 9 kcal/g. Food composition energy can differ from these approximations. Daily requirements apply each day; multiplying by seven describes the week, not permission for an empty day.
+
+[Original equation](https://pubmed.ncbi.nlm.nih.gov/2305711/); [adult macro ranges](https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a).
+} r_62RP3CZY3TNA3BW65ZMA1JG3PA
+
+Apply nutrient bounds (@nutrition-needs-bounds: 0, #part-of @nutrition-needs) { r_6RDTZXJJBTNA3BW08MWP2DENNB
+A minimum can be absent; an absent maximum is unlimited. Equal bounds fix a quantity. Keep RAE, RE, retinol, DFE, folic acid, and supplemental quantities distinct. Units are g, mg, ug, or kcal per day; 1 g = 1000 mg and 1 mg = 1000 ug.
+
+Missing, null, unavailable, and trace composition contribute zero, preserving their missing flag. If no selected food has measured iodine, a positive iodine target makes the model infeasible. Add measured composition or explicitly change the target; do not invent coefficients.
+
+The `demeter.reference` extensions hold selection data with inclusive age intervals. Personal selected targets belong to a private plan.
+} r_6RDTZXJJBTNA3BW08MWP2DENNB
+
+Protein (@nutrition-need-protein-g: 0, #part-of @nutrition-needs) { r_6A2EXMR9M7XYW4XWNVWXTG9N88
+Adult reference: 0.8 g/kg/day. The energy-share range is a separate planning constraint.
+} r_6A2EXMR9M7XYW4XWNVWXTG9N88
+
+Extension @nutrition-need-protein-g "demeter.reference" { nutrient "protein_g" unit "g" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 }
+   { sex "male" age_min 31 age_max 50 }
+   { sex "male" age_min 51 age_max 70 }
+   { sex "male" age_min 71 age_max 120 }
+   { sex "female" age_min 19 age_max 30 }
+   { sex "female" age_min 31 age_max 50 }
+   { sex "female" age_min 51 age_max 70 }
+   { sex "female" age_min 71 age_max 120 }
+ ] per_kg "0.8" energy_fraction { lower "0.10" upper "0.35" kcal_per_unit "4" } }
+
+Carbohydrate (@nutrition-need-carbohydrate-by-difference-g: 0, #part-of @nutrition-needs) { r_0A7QRMG6V6JMPGG3018FE87V8B
+The reference concerns digestible carbohydrate. TACO carbohydrate by difference includes fibre; using it is an explicit proxy. Replace with measured digestible carbohydrate when available; do not silently subtract overlapping sugars or starch.
+} r_0A7QRMG6V6JMPGG3018FE87V8B
+
+Extension @nutrition-need-carbohydrate-by-difference-g "demeter.reference" { nutrient "carbohydrate_by_difference_g" unit "g" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "130" }
+   { sex "male" age_min 31 age_max 50 lower "130" }
+   { sex "male" age_min 51 age_max 70 lower "130" }
+   { sex "male" age_min 71 age_max 120 lower "130" }
+   { sex "female" age_min 19 age_max 30 lower "130" }
+   { sex "female" age_min 31 age_max 50 lower "130" }
+   { sex "female" age_min 51 age_max 70 lower "130" }
+   { sex "female" age_min 71 age_max 120 lower "130" }
+ ] energy_fraction { lower "0.45" upper "0.65" kcal_per_unit "4" } }
+
+Fat (@nutrition-need-fat-total-g: 0, #part-of @nutrition-needs) { r_3AKNSXQHZG4HAZASD70NJJXE07
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_3AKNSXQHZG4HAZASD70NJJXE07
+
+Extension @nutrition-need-fat-total-g "demeter.reference" { nutrient "fat_total_g" unit "g" kind "amdr" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 }
+   { sex "male" age_min 31 age_max 50 }
+   { sex "male" age_min 51 age_max 70 }
+   { sex "male" age_min 71 age_max 120 }
+   { sex "female" age_min 19 age_max 30 }
+   { sex "female" age_min 31 age_max 50 }
+   { sex "female" age_min 51 age_max 70 }
+   { sex "female" age_min 71 age_max 120 }
+ ] energy_fraction { lower "0.20" upper "0.35" kcal_per_unit "9" } }
+
+Fibre (@nutrition-need-fiber-g: 0, #part-of @nutrition-needs) { r_21HMV7VNBTNGGQMYTDSV3PB4HH
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_21HMV7VNBTNGGQMYTDSV3PB4HH
+
+Extension @nutrition-need-fiber-g "demeter.reference" { nutrient "fiber_g" unit "g" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "38" }
+   { sex "male" age_min 31 age_max 50 lower "38" }
+   { sex "male" age_min 51 age_max 70 lower "30" }
+   { sex "male" age_min 71 age_max 120 lower "30" }
+   { sex "female" age_min 19 age_max 30 lower "25" }
+   { sex "female" age_min 31 age_max 50 lower "25" }
+   { sex "female" age_min 51 age_max 70 lower "21" }
+   { sex "female" age_min 71 age_max 120 lower "21" }
+ ] }
+
+Total water (@nutrition-need-water-g: 0, #part-of @nutrition-needs) { r_72YFNK0BKTNGGVQ2WD3EMR8M6G
+Includes food moisture, beverages, and drinking water. Add measured drinking water as a food/profile when constraining water. Heat, exertion, and illness change water balance.
+} r_72YFNK0BKTNGGVQ2WD3EMR8M6G
+
+Extension @nutrition-need-water-g "demeter.reference" { nutrient "water_g" unit "g" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "3700" }
+   { sex "male" age_min 31 age_max 50 lower "3700" }
+   { sex "male" age_min 51 age_max 70 lower "3700" }
+   { sex "male" age_min 71 age_max 120 lower "3700" }
+   { sex "female" age_min 19 age_max 30 lower "2700" }
+   { sex "female" age_min 31 age_max 50 lower "2700" }
+   { sex "female" age_min 51 age_max 70 lower "2700" }
+   { sex "female" age_min 71 age_max 120 lower "2700" }
+ ] }
+
+Linoleic acid (@nutrition-need-linoleic-acid-g: 0, #part-of @nutrition-needs) { r_1RTXZ79X8J51PSFDWQ2P7ZD4M4
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_1RTXZ79X8J51PSFDWQ2P7ZD4M4
+
+Extension @nutrition-need-linoleic-acid-g "demeter.reference" { nutrient "linoleic_acid_g" unit "g" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "17" }
+   { sex "male" age_min 31 age_max 50 lower "17" }
+   { sex "male" age_min 51 age_max 70 lower "14" }
+   { sex "male" age_min 71 age_max 120 lower "14" }
+   { sex "female" age_min 19 age_max 30 lower "12" }
+   { sex "female" age_min 31 age_max 50 lower "12" }
+   { sex "female" age_min 51 age_max 70 lower "11" }
+   { sex "female" age_min 71 age_max 120 lower "11" }
+ ] }
+
+Alpha-linolenic acid (@nutrition-need-alpha-linolenic-acid-g: 0, #part-of @nutrition-needs) { r_4TGWF01K9BBMH5DCN2VR1XZ37N
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_4TGWF01K9BBMH5DCN2VR1XZ37N
+
+Extension @nutrition-need-alpha-linolenic-acid-g "demeter.reference" { nutrient "alpha_linolenic_acid_g" unit "g" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fae1-63a0-4048-88ad-3f972639149a" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "1.6" }
+   { sex "male" age_min 31 age_max 50 lower "1.6" }
+   { sex "male" age_min 51 age_max 70 lower "1.6" }
+   { sex "male" age_min 71 age_max 120 lower "1.6" }
+   { sex "female" age_min 19 age_max 30 lower "1.1" }
+   { sex "female" age_min 31 age_max 50 lower "1.1" }
+   { sex "female" age_min 51 age_max 70 lower "1.1" }
+   { sex "female" age_min 71 age_max 120 lower "1.1" }
+ ] }
+
+Vitamin A activity (@nutrition-need-vitamin-a-rae-ug: 0, #part-of @nutrition-needs) { r_0F9FPDA48EGPJHKM28PYS4XB4S
+Use measured RAE. Retinol equivalents (RE) use different carotenoid factors and are not interchangeable.
+} r_0F9FPDA48EGPJHKM28PYS4XB4S
+
+Extension @nutrition-need-vitamin-a-rae-ug "demeter.reference" { nutrient "vitamin_a_rae_ug" unit "ug" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "900" }
+   { sex "male" age_min 31 age_max 50 lower "900" }
+   { sex "male" age_min 51 age_max 70 lower "900" }
+   { sex "male" age_min 71 age_max 120 lower "900" }
+   { sex "female" age_min 19 age_max 30 lower "700" }
+   { sex "female" age_min 31 age_max 50 lower "700" }
+   { sex "female" age_min 51 age_max 70 lower "700" }
+   { sex "female" age_min 71 age_max 120 lower "700" }
+ ] }
+
+Preformed vitamin A ceiling (@nutrition-need-retinol-ug: 0, #part-of @nutrition-needs) { r_2Z50SP2A2KCD4TE7RG2THX7AHB
+This ceiling applies to preformed vitamin A, excluding carotenoids.
+} r_2Z50SP2A2KCD4TE7RG2THX7AHB
+
+Extension @nutrition-need-retinol-ug "demeter.reference" { nutrient "retinol_ug" unit "ug" kind "ul" scope "total" source_url "https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 upper "3000" }
+   { sex "male" age_min 31 age_max 50 upper "3000" }
+   { sex "male" age_min 51 age_max 70 upper "3000" }
+   { sex "male" age_min 71 age_max 120 upper "3000" }
+   { sex "female" age_min 19 age_max 30 upper "3000" }
+   { sex "female" age_min 31 age_max 50 upper "3000" }
+   { sex "female" age_min 51 age_max 70 upper "3000" }
+   { sex "female" age_min 71 age_max 120 upper "3000" }
+ ] }
+
+Vitamin C (@nutrition-need-vitamin-c-mg: 0, #part-of @nutrition-needs) { r_7DWHVBSDM5WG91Q2JQM1457GFG
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_7DWHVBSDM5WG91Q2JQM1457GFG
+
+Extension @nutrition-need-vitamin-c-mg "demeter.reference" { nutrient "vitamin_c_mg" unit "mg" kind "rda" scope "total" source_url "https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "90" upper "2000" }
+   { sex "male" age_min 31 age_max 50 lower "90" upper "2000" }
+   { sex "male" age_min 51 age_max 70 lower "90" upper "2000" }
+   { sex "male" age_min 71 age_max 120 lower "90" upper "2000" }
+   { sex "female" age_min 19 age_max 30 lower "75" upper "2000" }
+   { sex "female" age_min 31 age_max 50 lower "75" upper "2000" }
+   { sex "female" age_min 51 age_max 70 lower "75" upper "2000" }
+   { sex "female" age_min 71 age_max 120 lower "75" upper "2000" }
+ ] }
+
+Vitamin D (@nutrition-need-vitamin-d-total-ug: 0, #part-of @nutrition-needs) { r_14814N8V4GJ37MVVFSFCP9FDAT
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_14814N8V4GJ37MVVFSFCP9FDAT
+
+Extension @nutrition-need-vitamin-d-total-ug "demeter.reference" { nutrient "vitamin_d_total_ug" unit "ug" kind "rda" scope "total" source_url "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "15" upper "100" }
+   { sex "male" age_min 31 age_max 50 lower "15" upper "100" }
+   { sex "male" age_min 51 age_max 70 lower "15" upper "100" }
+   { sex "male" age_min 71 age_max 120 lower "20" upper "100" }
+   { sex "female" age_min 19 age_max 30 lower "15" upper "100" }
+   { sex "female" age_min 31 age_max 50 lower "15" upper "100" }
+   { sex "female" age_min 51 age_max 70 lower "15" upper "100" }
+   { sex "female" age_min 71 age_max 120 lower "20" upper "100" }
+ ] }
+
+Vitamin E (@nutrition-need-vitamin-e-alpha-tocopherol-mg: 0, #part-of @nutrition-needs) { r_671NN074VJSTYAHJF3T2XK1HBN
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_671NN074VJSTYAHJF3T2XK1HBN
+
+Extension @nutrition-need-vitamin-e-alpha-tocopherol-mg "demeter.reference" { nutrient "vitamin_e_alpha_tocopherol_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "15" }
+   { sex "male" age_min 31 age_max 50 lower "15" }
+   { sex "male" age_min 51 age_max 70 lower "15" }
+   { sex "male" age_min 71 age_max 120 lower "15" }
+   { sex "female" age_min 19 age_max 30 lower "15" }
+   { sex "female" age_min 31 age_max 50 lower "15" }
+   { sex "female" age_min 51 age_max 70 lower "15" }
+   { sex "female" age_min 71 age_max 120 lower "15" }
+ ] }
+
+Supplemental vitamin E ceiling (@nutrition-need-vitamin-e-supplemental-mg: 0, #part-of @nutrition-needs) { r_47BK14X0CHDMTGKWZ99WJXQSWV
+Count supplemental alpha-tocopherol, including fortified foods. Do not apply this ceiling to intrinsic food vitamin E.
+} r_47BK14X0CHDMTGKWZ99WJXQSWV
+
+Extension @nutrition-need-vitamin-e-supplemental-mg "demeter.reference" { nutrient "vitamin_e_supplemental_mg" unit "mg" kind "ul" scope "supplemental" source_url "https://ods.od.nih.gov/factsheets/VitaminE-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 upper "1000" }
+   { sex "male" age_min 31 age_max 50 upper "1000" }
+   { sex "male" age_min 51 age_max 70 upper "1000" }
+   { sex "male" age_min 71 age_max 120 upper "1000" }
+   { sex "female" age_min 19 age_max 30 upper "1000" }
+   { sex "female" age_min 31 age_max 50 upper "1000" }
+   { sex "female" age_min 51 age_max 70 upper "1000" }
+   { sex "female" age_min 71 age_max 120 upper "1000" }
+ ] }
+
+Vitamin K (@nutrition-need-vitamin-k-phylloquinone-ug: 0, #part-of @nutrition-needs) { r_3MKHF3702WXPN71R6RMPY92KSP
+Measured phylloquinone contributes conservatively. Do not invent activity conversions for other vitamin K forms.
+} r_3MKHF3702WXPN71R6RMPY92KSP
+
+Extension @nutrition-need-vitamin-k-phylloquinone-ug "demeter.reference" { nutrient "vitamin_k_phylloquinone_ug" unit "ug" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "120" }
+   { sex "male" age_min 31 age_max 50 lower "120" }
+   { sex "male" age_min 51 age_max 70 lower "120" }
+   { sex "male" age_min 71 age_max 120 lower "120" }
+   { sex "female" age_min 19 age_max 30 lower "90" }
+   { sex "female" age_min 31 age_max 50 lower "90" }
+   { sex "female" age_min 51 age_max 70 lower "90" }
+   { sex "female" age_min 71 age_max 120 lower "90" }
+ ] }
+
+Thiamin (@nutrition-need-thiamin-mg: 0, #part-of @nutrition-needs) { r_3RD962D3S2C0HBGNY8G8FJF018
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_3RD962D3S2C0HBGNY8G8FJF018
+
+Extension @nutrition-need-thiamin-mg "demeter.reference" { nutrient "thiamin_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "1.2" }
+   { sex "male" age_min 31 age_max 50 lower "1.2" }
+   { sex "male" age_min 51 age_max 70 lower "1.2" }
+   { sex "male" age_min 71 age_max 120 lower "1.2" }
+   { sex "female" age_min 19 age_max 30 lower "1.1" }
+   { sex "female" age_min 31 age_max 50 lower "1.1" }
+   { sex "female" age_min 51 age_max 70 lower "1.1" }
+   { sex "female" age_min 71 age_max 120 lower "1.1" }
+ ] }
+
+Riboflavin (@nutrition-need-riboflavin-mg: 0, #part-of @nutrition-needs) { r_71GVFD5SPKZ48BD3Q1RYDVQJGW
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_71GVFD5SPKZ48BD3Q1RYDVQJGW
+
+Extension @nutrition-need-riboflavin-mg "demeter.reference" { nutrient "riboflavin_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "1.3" }
+   { sex "male" age_min 31 age_max 50 lower "1.3" }
+   { sex "male" age_min 51 age_max 70 lower "1.3" }
+   { sex "male" age_min 71 age_max 120 lower "1.3" }
+   { sex "female" age_min 19 age_max 30 lower "1.1" }
+   { sex "female" age_min 31 age_max 50 lower "1.1" }
+   { sex "female" age_min 51 age_max 70 lower "1.1" }
+   { sex "female" age_min 71 age_max 120 lower "1.1" }
+ ] }
+
+Niacin (@nutrition-need-niacin-mg: 0, #part-of @nutrition-needs) { r_32MNH3H7C78XSEY9ZS101DVY8T
+RDA is in niacin equivalents; measured preformed niacin contributes conservatively. No automatic tryptophan conversion is assumed.
+} r_32MNH3H7C78XSEY9ZS101DVY8T
+
+Extension @nutrition-need-niacin-mg "demeter.reference" { nutrient "niacin_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "16" }
+   { sex "male" age_min 31 age_max 50 lower "16" }
+   { sex "male" age_min 51 age_max 70 lower "16" }
+   { sex "male" age_min 71 age_max 120 lower "16" }
+   { sex "female" age_min 19 age_max 30 lower "14" }
+   { sex "female" age_min 31 age_max 50 lower "14" }
+   { sex "female" age_min 51 age_max 70 lower "14" }
+   { sex "female" age_min 71 age_max 120 lower "14" }
+ ] }
+
+Added niacin ceiling (@nutrition-need-niacin-added-mg: 0, #part-of @nutrition-needs) { r_472EVY7H9MHGY2C9DPJBSZWXNZ
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_472EVY7H9MHGY2C9DPJBSZWXNZ
+
+Extension @nutrition-need-niacin-added-mg "demeter.reference" { nutrient "niacin_added_mg" unit "mg" kind "ul" scope "fortified_or_supplemental" source_url "https://ods.od.nih.gov/factsheets/Niacin-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 upper "35" }
+   { sex "male" age_min 31 age_max 50 upper "35" }
+   { sex "male" age_min 51 age_max 70 upper "35" }
+   { sex "male" age_min 71 age_max 120 upper "35" }
+   { sex "female" age_min 19 age_max 30 upper "35" }
+   { sex "female" age_min 31 age_max 50 upper "35" }
+   { sex "female" age_min 51 age_max 70 upper "35" }
+   { sex "female" age_min 71 age_max 120 upper "35" }
+ ] }
+
+Vitamin B6 (@nutrition-need-vitamin-b6-mg: 0, #part-of @nutrition-needs) { r_2DC0GW135ZM93Y6EEFH5CA5W2F
+US/Canada DRI ceiling; other authorities use different ceilings. Personal bounds must identify their authority.
+} r_2DC0GW135ZM93Y6EEFH5CA5W2F
+
+Extension @nutrition-need-vitamin-b6-mg "demeter.reference" { nutrient "vitamin_b6_mg" unit "mg" kind "rda" scope "total" source_url "https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "1.3" upper "100" }
+   { sex "male" age_min 31 age_max 50 lower "1.3" upper "100" }
+   { sex "male" age_min 51 age_max 70 lower "1.7" upper "100" }
+   { sex "male" age_min 71 age_max 120 lower "1.7" upper "100" }
+   { sex "female" age_min 19 age_max 30 lower "1.3" upper "100" }
+   { sex "female" age_min 31 age_max 50 lower "1.3" upper "100" }
+   { sex "female" age_min 51 age_max 70 lower "1.5" upper "100" }
+   { sex "female" age_min 71 age_max 120 lower "1.5" upper "100" }
+ ] }
+
+Folate activity (@nutrition-need-folate-dfe-ug: 0, #part-of @nutrition-needs) { r_5FSBFRCA13GAPPCWNCJVMTV9B5
+Use measured dietary folate equivalents (DFE). Natural folate, total folate, and folic acid remain distinct fields.
+} r_5FSBFRCA13GAPPCWNCJVMTV9B5
+
+Extension @nutrition-need-folate-dfe-ug "demeter.reference" { nutrient "folate_dfe_ug" unit "ug" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "400" }
+   { sex "male" age_min 31 age_max 50 lower "400" }
+   { sex "male" age_min 51 age_max 70 lower "400" }
+   { sex "male" age_min 71 age_max 120 lower "400" }
+   { sex "female" age_min 19 age_max 30 lower "400" }
+   { sex "female" age_min 31 age_max 50 lower "400" }
+   { sex "female" age_min 51 age_max 70 lower "400" }
+   { sex "female" age_min 71 age_max 120 lower "400" }
+ ] }
+
+Folic acid ceiling (@nutrition-need-folic-acid-ug: 0, #part-of @nutrition-needs) { r_2WV7WJNCF0YENXF1QSMWMSQGEF
+Ceiling in micrograms of folic acid, excluding natural food folate. Do not apply it to DFE.
+} r_2WV7WJNCF0YENXF1QSMWMSQGEF
+
+Extension @nutrition-need-folic-acid-ug "demeter.reference" { nutrient "folic_acid_ug" unit "ug" kind "ul" scope "fortified_or_supplemental" source_url "https://ods.od.nih.gov/factsheets/Folate-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 upper "1000" }
+   { sex "male" age_min 31 age_max 50 upper "1000" }
+   { sex "male" age_min 51 age_max 70 upper "1000" }
+   { sex "male" age_min 71 age_max 120 upper "1000" }
+   { sex "female" age_min 19 age_max 30 upper "1000" }
+   { sex "female" age_min 31 age_max 50 upper "1000" }
+   { sex "female" age_min 51 age_max 70 upper "1000" }
+   { sex "female" age_min 71 age_max 120 upper "1000" }
+ ] }
+
+Vitamin B12 (@nutrition-need-vitamin-b12-ug: 0, #part-of @nutrition-needs) { r_5JKWVD9CPCNST9G8JV0B23QPVC
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_5JKWVD9CPCNST9G8JV0B23QPVC
+
+Extension @nutrition-need-vitamin-b12-ug "demeter.reference" { nutrient "vitamin_b12_ug" unit "ug" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "2.4" }
+   { sex "male" age_min 31 age_max 50 lower "2.4" }
+   { sex "male" age_min 51 age_max 70 lower "2.4" }
+   { sex "male" age_min 71 age_max 120 lower "2.4" }
+   { sex "female" age_min 19 age_max 30 lower "2.4" }
+   { sex "female" age_min 31 age_max 50 lower "2.4" }
+   { sex "female" age_min 51 age_max 70 lower "2.4" }
+   { sex "female" age_min 71 age_max 120 lower "2.4" }
+ ] }
+
+Pantothenic acid (@nutrition-need-pantothenic-acid-mg: 0, #part-of @nutrition-needs) { r_3Q9WGBV7TQR2KP4D44KVYXC7F3
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_3Q9WGBV7TQR2KP4D44KVYXC7F3
+
+Extension @nutrition-need-pantothenic-acid-mg "demeter.reference" { nutrient "pantothenic_acid_mg" unit "mg" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "5" }
+   { sex "male" age_min 31 age_max 50 lower "5" }
+   { sex "male" age_min 51 age_max 70 lower "5" }
+   { sex "male" age_min 71 age_max 120 lower "5" }
+   { sex "female" age_min 19 age_max 30 lower "5" }
+   { sex "female" age_min 31 age_max 50 lower "5" }
+   { sex "female" age_min 51 age_max 70 lower "5" }
+   { sex "female" age_min 71 age_max 120 lower "5" }
+ ] }
+
+Biotin (@nutrition-need-biotin-ug: 0, #part-of @nutrition-needs) { r_1SEMS7DBW7JYQ688E7B29T9QCQ
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_1SEMS7DBW7JYQ688E7B29T9QCQ
+
+Extension @nutrition-need-biotin-ug "demeter.reference" { nutrient "biotin_ug" unit "ug" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fad5-4dc6-4b97-bd02-955b95d05eda" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "30" }
+   { sex "male" age_min 31 age_max 50 lower "30" }
+   { sex "male" age_min 51 age_max 70 lower "30" }
+   { sex "male" age_min 71 age_max 120 lower "30" }
+   { sex "female" age_min 19 age_max 30 lower "30" }
+   { sex "female" age_min 31 age_max 50 lower "30" }
+   { sex "female" age_min 51 age_max 70 lower "30" }
+   { sex "female" age_min 71 age_max 120 lower "30" }
+ ] }
+
+Choline (@nutrition-need-choline-mg: 0, #part-of @nutrition-needs) { r_1W8P5TZXPC28ACNNE9KR310YJM
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_1W8P5TZXPC28ACNNE9KR310YJM
+
+Extension @nutrition-need-choline-mg "demeter.reference" { nutrient "choline_mg" unit "mg" kind "ai" scope "total" source_url "https://ods.od.nih.gov/factsheets/Choline-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "550" upper "3500" }
+   { sex "male" age_min 31 age_max 50 lower "550" upper "3500" }
+   { sex "male" age_min 51 age_max 70 lower "550" upper "3500" }
+   { sex "male" age_min 71 age_max 120 lower "550" upper "3500" }
+   { sex "female" age_min 19 age_max 30 lower "425" upper "3500" }
+   { sex "female" age_min 31 age_max 50 lower "425" upper "3500" }
+   { sex "female" age_min 51 age_max 70 lower "425" upper "3500" }
+   { sex "female" age_min 71 age_max 120 lower "425" upper "3500" }
+ ] }
+
+Calcium (@nutrition-need-calcium-mg: 0, #part-of @nutrition-needs) { r_4V20PDJYYC9GFMGC845CF8XXF4
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_4V20PDJYYC9GFMGC845CF8XXF4
+
+Extension @nutrition-need-calcium-mg "demeter.reference" { nutrient "calcium_mg" unit "mg" kind "rda" scope "total" source_url "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "1000" upper "2500" }
+   { sex "male" age_min 31 age_max 50 lower "1000" upper "2500" }
+   { sex "male" age_min 51 age_max 70 lower "1000" upper "2000" }
+   { sex "male" age_min 71 age_max 120 lower "1200" upper "2000" }
+   { sex "female" age_min 19 age_max 30 lower "1000" upper "2500" }
+   { sex "female" age_min 31 age_max 50 lower "1000" upper "2500" }
+   { sex "female" age_min 51 age_max 70 lower "1200" upper "2000" }
+   { sex "female" age_min 71 age_max 120 lower "1200" upper "2000" }
+ ] }
+
+Phosphorus (@nutrition-need-phosphorus-mg: 0, #part-of @nutrition-needs) { r_0YPCPSBCPHFYV78RQCGHVJS75H
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_0YPCPSBCPHFYV78RQCGHVJS75H
+
+Extension @nutrition-need-phosphorus-mg "demeter.reference" { nutrient "phosphorus_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "700" upper "4000" }
+   { sex "male" age_min 31 age_max 50 lower "700" upper "4000" }
+   { sex "male" age_min 51 age_max 70 lower "700" upper "4000" }
+   { sex "male" age_min 71 age_max 120 lower "700" upper "3000" }
+   { sex "female" age_min 19 age_max 30 lower "700" upper "4000" }
+   { sex "female" age_min 31 age_max 50 lower "700" upper "4000" }
+   { sex "female" age_min 51 age_max 70 lower "700" upper "4000" }
+   { sex "female" age_min 71 age_max 120 lower "700" upper "3000" }
+ ] }
+
+Magnesium (@nutrition-need-magnesium-mg: 0, #part-of @nutrition-needs) { r_6GA1P8DVD23DGZFZWV67ZZ3GD2
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_6GA1P8DVD23DGZFZWV67ZZ3GD2
+
+Extension @nutrition-need-magnesium-mg "demeter.reference" { nutrient "magnesium_mg" unit "mg" kind "rda" scope "total" source_url "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "400" }
+   { sex "male" age_min 31 age_max 50 lower "420" }
+   { sex "male" age_min 51 age_max 70 lower "420" }
+   { sex "male" age_min 71 age_max 120 lower "420" }
+   { sex "female" age_min 19 age_max 30 lower "310" }
+   { sex "female" age_min 31 age_max 50 lower "320" }
+   { sex "female" age_min 51 age_max 70 lower "320" }
+   { sex "female" age_min 71 age_max 120 lower "320" }
+ ] }
+
+Supplemental magnesium ceiling (@nutrition-need-magnesium-supplemental-mg: 0, #part-of @nutrition-needs) { r_5MQNCVHT28AACC779WYMXNR0XZ
+Supplements and medicines only. Naturally present food and beverage magnesium is excluded.
+} r_5MQNCVHT28AACC779WYMXNR0XZ
+
+Extension @nutrition-need-magnesium-supplemental-mg "demeter.reference" { nutrient "magnesium_supplemental_mg" unit "mg" kind "ul" scope "supplemental" source_url "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 upper "350" }
+   { sex "male" age_min 31 age_max 50 upper "350" }
+   { sex "male" age_min 51 age_max 70 upper "350" }
+   { sex "male" age_min 71 age_max 120 upper "350" }
+   { sex "female" age_min 19 age_max 30 upper "350" }
+   { sex "female" age_min 31 age_max 50 upper "350" }
+   { sex "female" age_min 51 age_max 70 upper "350" }
+   { sex "female" age_min 71 age_max 120 upper "350" }
+ ] }
+
+Iron (@nutrition-need-iron-mg: 0, #part-of @nutrition-needs) { r_57GP3AQ63TNGGNVMVQXNFJZT2Y
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_57GP3AQ63TNGGNVMVQXNFJZT2Y
+
+Extension @nutrition-need-iron-mg "demeter.reference" { nutrient "iron_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "8" upper "45" }
+   { sex "male" age_min 31 age_max 50 lower "8" upper "45" }
+   { sex "male" age_min 51 age_max 70 lower "8" upper "45" }
+   { sex "male" age_min 71 age_max 120 lower "8" upper "45" }
+   { sex "female" age_min 19 age_max 30 lower "18" upper "45" }
+   { sex "female" age_min 31 age_max 50 lower "18" upper "45" }
+   { sex "female" age_min 51 age_max 70 lower "8" upper "45" }
+   { sex "female" age_min 71 age_max 120 lower "8" upper "45" }
+ ] }
+
+Zinc (@nutrition-need-zinc-mg: 0, #part-of @nutrition-needs) { r_4W9P8Q48KTNGGTQZD662KWMR42
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_4W9P8Q48KTNGGTQZD662KWMR42
+
+Extension @nutrition-need-zinc-mg "demeter.reference" { nutrient "zinc_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "11" upper "40" }
+   { sex "male" age_min 31 age_max 50 lower "11" upper "40" }
+   { sex "male" age_min 51 age_max 70 lower "11" upper "40" }
+   { sex "male" age_min 71 age_max 120 lower "11" upper "40" }
+   { sex "female" age_min 19 age_max 30 lower "8" upper "40" }
+   { sex "female" age_min 31 age_max 50 lower "8" upper "40" }
+   { sex "female" age_min 51 age_max 70 lower "8" upper "40" }
+   { sex "female" age_min 71 age_max 120 lower "8" upper "40" }
+ ] }
+
+Copper (@nutrition-need-copper-mg: 0, #part-of @nutrition-needs) { r_1TT02TKJC7HSAZAV4MHNZKQ2WZ
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_1TT02TKJC7HSAZAV4MHNZKQ2WZ
+
+Extension @nutrition-need-copper-mg "demeter.reference" { nutrient "copper_mg" unit "mg" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "0.9" upper "10" }
+   { sex "male" age_min 31 age_max 50 lower "0.9" upper "10" }
+   { sex "male" age_min 51 age_max 70 lower "0.9" upper "10" }
+   { sex "male" age_min 71 age_max 120 lower "0.9" upper "10" }
+   { sex "female" age_min 19 age_max 30 lower "0.9" upper "10" }
+   { sex "female" age_min 31 age_max 50 lower "0.9" upper "10" }
+   { sex "female" age_min 51 age_max 70 lower "0.9" upper "10" }
+   { sex "female" age_min 71 age_max 120 lower "0.9" upper "10" }
+ ] }
+
+Selenium (@nutrition-need-selenium-ug: 0, #part-of @nutrition-needs) { r_640JQ14D8ZB9MS4PS0NQ5VHXVM
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_640JQ14D8ZB9MS4PS0NQ5VHXVM
+
+Extension @nutrition-need-selenium-ug "demeter.reference" { nutrient "selenium_ug" unit "ug" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "55" upper "400" }
+   { sex "male" age_min 31 age_max 50 lower "55" upper "400" }
+   { sex "male" age_min 51 age_max 70 lower "55" upper "400" }
+   { sex "male" age_min 71 age_max 120 lower "55" upper "400" }
+   { sex "female" age_min 19 age_max 30 lower "55" upper "400" }
+   { sex "female" age_min 31 age_max 50 lower "55" upper "400" }
+   { sex "female" age_min 51 age_max 70 lower "55" upper "400" }
+   { sex "female" age_min 71 age_max 120 lower "55" upper "400" }
+ ] }
+
+Iodine (@nutrition-need-iodine-ug: 0, #part-of @nutrition-needs) { r_0BA538GG47A0VY91CNJ4BP70JP
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_0BA538GG47A0VY91CNJ4BP70JP
+
+Extension @nutrition-need-iodine-ug "demeter.reference" { nutrient "iodine_ug" unit "ug" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "150" upper "1100" }
+   { sex "male" age_min 31 age_max 50 lower "150" upper "1100" }
+   { sex "male" age_min 51 age_max 70 lower "150" upper "1100" }
+   { sex "male" age_min 71 age_max 120 lower "150" upper "1100" }
+   { sex "female" age_min 19 age_max 30 lower "150" upper "1100" }
+   { sex "female" age_min 31 age_max 50 lower "150" upper "1100" }
+   { sex "female" age_min 51 age_max 70 lower "150" upper "1100" }
+   { sex "female" age_min 71 age_max 120 lower "150" upper "1100" }
+ ] }
+
+Manganese (@nutrition-need-manganese-mg: 0, #part-of @nutrition-needs) { r_28FV4EKRBBPYMDZ6NNGPG15G7S
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_28FV4EKRBBPYMDZ6NNGPG15G7S
+
+Extension @nutrition-need-manganese-mg "demeter.reference" { nutrient "manganese_mg" unit "mg" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "2.3" upper "11" }
+   { sex "male" age_min 31 age_max 50 lower "2.3" upper "11" }
+   { sex "male" age_min 51 age_max 70 lower "2.3" upper "11" }
+   { sex "male" age_min 71 age_max 120 lower "2.3" upper "11" }
+   { sex "female" age_min 19 age_max 30 lower "1.8" upper "11" }
+   { sex "female" age_min 31 age_max 50 lower "1.8" upper "11" }
+   { sex "female" age_min 51 age_max 70 lower "1.8" upper "11" }
+   { sex "female" age_min 71 age_max 120 lower "1.8" upper "11" }
+ ] }
+
+Molybdenum (@nutrition-need-molybdenum-ug: 0, #part-of @nutrition-needs) { r_5ZJHH648DW9P2DN0X5S686ECH8
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_5ZJHH648DW9P2DN0X5S686ECH8
+
+Extension @nutrition-need-molybdenum-ug "demeter.reference" { nutrient "molybdenum_ug" unit "ug" kind "rda" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "45" upper "2000" }
+   { sex "male" age_min 31 age_max 50 lower "45" upper "2000" }
+   { sex "male" age_min 51 age_max 70 lower "45" upper "2000" }
+   { sex "male" age_min 71 age_max 120 lower "45" upper "2000" }
+   { sex "female" age_min 19 age_max 30 lower "45" upper "2000" }
+   { sex "female" age_min 31 age_max 50 lower "45" upper "2000" }
+   { sex "female" age_min 51 age_max 70 lower "45" upper "2000" }
+   { sex "female" age_min 71 age_max 120 lower "45" upper "2000" }
+ ] }
+
+Chromium (@nutrition-need-chromium-ug: 0, #part-of @nutrition-needs) { r_4S08KWESRTGS4TTSVV7NQ5XT5M
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_4S08KWESRTGS4TTSVV7NQ5XT5M
+
+Extension @nutrition-need-chromium-ug "demeter.reference" { nutrient "chromium_ug" unit "ug" kind "ai" scope "total" source_url "https://ods.od.nih.gov/factsheets/Chromium-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "35" }
+   { sex "male" age_min 31 age_max 50 lower "35" }
+   { sex "male" age_min 51 age_max 70 lower "30" }
+   { sex "male" age_min 71 age_max 120 lower "30" }
+   { sex "female" age_min 19 age_max 30 lower "25" }
+   { sex "female" age_min 31 age_max 50 lower "25" }
+   { sex "female" age_min 51 age_max 70 lower "20" }
+   { sex "female" age_min 71 age_max 120 lower "20" }
+ ] }
+
+Potassium (@nutrition-need-potassium-mg: 0, #part-of @nutrition-needs) { r_5P2ZXK9DKC87G63E3ZD0AA5YXD
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_5P2ZXK9DKC87G63E3ZD0AA5YXD
+
+Extension @nutrition-need-potassium-mg "demeter.reference" { nutrient "potassium_mg" unit "mg" kind "ai" scope "total" source_url "https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "3400" }
+   { sex "male" age_min 31 age_max 50 lower "3400" }
+   { sex "male" age_min 51 age_max 70 lower "3400" }
+   { sex "male" age_min 71 age_max 120 lower "3400" }
+   { sex "female" age_min 19 age_max 30 lower "2600" }
+   { sex "female" age_min 31 age_max 50 lower "2600" }
+   { sex "female" age_min 51 age_max 70 lower "2600" }
+   { sex "female" age_min 71 age_max 120 lower "2600" }
+ ] }
+
+Sodium (@nutrition-need-sodium-mg: 0, #part-of @nutrition-needs) { r_3F2MFZYXC7Z1N70B3NET5HNPTS
+The 2300 mg planning ceiling is a chronic disease risk reduction level (CDRR), not a toxicity UL.
+} r_3F2MFZYXC7Z1N70B3NET5HNPTS
+
+Extension @nutrition-need-sodium-mg "demeter.reference" { nutrient "sodium_mg" unit "mg" kind "ai_cdrr" scope "total" source_url "https://www.nationalacademies.org/read/25353/chapter/2" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "1500" upper "2300" }
+   { sex "male" age_min 31 age_max 50 lower "1500" upper "2300" }
+   { sex "male" age_min 51 age_max 70 lower "1500" upper "2300" }
+   { sex "male" age_min 71 age_max 120 lower "1500" upper "2300" }
+   { sex "female" age_min 19 age_max 30 lower "1500" upper "2300" }
+   { sex "female" age_min 31 age_max 50 lower "1500" upper "2300" }
+   { sex "female" age_min 51 age_max 70 lower "1500" upper "2300" }
+   { sex "female" age_min 71 age_max 120 lower "1500" upper "2300" }
+ ] }
+
+Chloride (@nutrition-need-chloride-mg: 0, #part-of @nutrition-needs) { r_3EN3EQATRT8BN9GJ9PHT1G0NE4
+Read the source reference, select the matching adult case, then inspect your personal bound.
+} r_3EN3EQATRT8BN9GJ9PHT1G0NE4
+
+Extension @nutrition-need-chloride-mg "demeter.reference" { nutrient "chloride_mg" unit "mg" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "2300" upper "3600" }
+   { sex "male" age_min 31 age_max 50 lower "2300" upper "3600" }
+   { sex "male" age_min 51 age_max 70 lower "2000" upper "3600" }
+   { sex "male" age_min 71 age_max 120 lower "1800" upper "3600" }
+   { sex "female" age_min 19 age_max 30 lower "2300" upper "3600" }
+   { sex "female" age_min 31 age_max 50 lower "2300" upper "3600" }
+   { sex "female" age_min 51 age_max 70 lower "2000" upper "3600" }
+   { sex "female" age_min 71 age_max 120 lower "1800" upper "3600" }
+ ] }
+
+Fluoride (@nutrition-need-fluoride-ug: 0, #part-of @nutrition-needs) { r_5J8Y68YVEM09YT9QCA5BCWX624
+Source mg values multiplied by 1000 to match food composition's microgram field.
+} r_5J8Y68YVEM09YT9QCA5BCWX624
+
+Extension @nutrition-need-fluoride-ug "demeter.reference" { nutrient "fluoride_ug" unit "ug" kind "ai" scope "total" source_url "https://www.nationalacademies.org/cdn/materials/9fb9fada-97e1-4f31-a3b4-402a656eee81" jurisdiction "US-Canada DRI" reviewed_on "2026-10-25" cases [
+   { sex "male" age_min 19 age_max 30 lower "4000" upper "10000" }
+   { sex "male" age_min 31 age_max 50 lower "4000" upper "10000" }
+   { sex "male" age_min 51 age_max 70 lower "4000" upper "10000" }
+   { sex "male" age_min 71 age_max 120 lower "4000" upper "10000" }
+   { sex "female" age_min 19 age_max 30 lower "3000" upper "10000" }
+   { sex "female" age_min 31 age_max 50 lower "3000" upper "10000" }
+   { sex "female" age_min 51 age_max 70 lower "3000" upper "10000" }
+   { sex "female" age_min 71 age_max 120 lower "3000" upper "10000" }
+ ] }

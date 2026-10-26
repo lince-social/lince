@@ -1,0 +1,46 @@
+Apology, Crito, and Phaedo of Socrates (@socratic-dialogues: 0, is #book, #part-of "./Plato.lingua#r_00000000000000000000001004", #contains @apology, #contains @crito, #contains @phaedo) { r_00000000000000000000001005
+Plato. Translated by Henry Cary, with an introduction by Edward Brooks.
+} r_00000000000000000000001005
+
+Apology (@apology: 0, #part-of @socratic-dialogues, #source @socratic-dialogues) { r_00000000000000000000001006
+} r_00000000000000000000001006
+
+Crito (@crito: 0, #part-of @socratic-dialogues, #source @socratic-dialogues) { r_00000000000000000000001007
+} r_00000000000000000000001007
+
+Phaedo (@phaedo: 0, #part-of @socratic-dialogues, #source @socratic-dialogues) { r_00000000000000000000001008
+} r_00000000000000000000001008
+
+Extension @socratic-dialogues "lince.resource" {
+ uri "Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ title "Apology, Crito, and Phaedo of Socrates"
+ hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
+ media_type "application/epub+zip"
+ aliases ["gutenberg:13726"]
+ attribution "Plato; translated by Henry Cary; introduction by Edward Brooks. Project Gutenberg ebook 13726."
+ license "Public domain in the USA; see the original book's notices."
+}
+
+Extension @apology "lince.resource" {
+ uri "Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ title "Apology"
+ hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
+ media_type "application/epub+zip"
+ locator { href "OEBPS/247410482567703684_13726-h-0.htm.xhtml" fragment "pgepubid00003" }
+}
+
+Extension @crito "lince.resource" {
+ uri "Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ title "Crito"
+ hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
+ media_type "application/epub+zip"
+ locator { href "OEBPS/247410482567703684_13726-h-0.htm.xhtml" fragment "pgepubid00006" }
+}
+
+Extension @phaedo "lince.resource" {
+ uri "Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ title "Phaedo"
+ hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
+ media_type "application/epub+zip"
+ locator { href "OEBPS/247410482567703684_13726-h-1.htm.xhtml" fragment "pgepubid00010" }
+}

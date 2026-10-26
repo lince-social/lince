@@ -1,0 +1,36 @@
+{
+  "scope": "Saved native snapshot inspected after the successful replay; this is save inspection, not a new reopen/recovery test.",
+  "snapshot_file": ".git/codex-workspace-stage01-20261025/native-baseline-06/interface.snapshots/00001792949090460296.json",
+  "snapshot_sha256": "41756c826170cc167c94f1585e2b633b49ead17ef3b1e418f57d947fadc2bbca",
+  "active_workspace": 1,
+  "sands": {
+    "Other workspace stays still": {
+      "workspace": 2,
+      "position": [
+        -300.0,
+        -200.0
+      ],
+      "elevation": 0.0,
+      "placement_identity": "placement_01M5T1F5J78DFBECBZKFQ59FYZ"
+    },
+    "Gravity and settling": {
+      "workspace": 1,
+      "position": [
+        -350.0,
+        200.0
+      ],
+      "elevation": 9.99980825228323,
+      "placement_identity": "placement_01M5T1F3TR9E4V5FW2B3H2VBBV"
+    },
+    "Move this work": {
+      "workspace": 1,
+      "position": [
+        -399.90997920325,
+        -0.09660770147835326
+      ],
+      "elevation": 0.9998082637476824,
+      "placement_identity": "placement_01M5T1F3TR99S8B9QDKS9XD4TX"
+    }
+  },
+  "result": "saved synthetic positions and workspace isolation match the observed replay"
+}

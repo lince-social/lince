@@ -1,0 +1,11 @@
+{
+  "access": "host-only; do not publish this payload, its hash or membership",
+  "body": "HOST-ONLY-STUDY-NOTES",
+  "is_medical_evidence": false,
+  "pose_pair": [
+    "pose-a",
+    "pose-b"
+  ],
+  "region": "optional-reference-anatomy",
+  "source_status": "synthetic-restricted-fixture"
+}

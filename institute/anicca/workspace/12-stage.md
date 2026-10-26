@@ -14,6 +14,8 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
 
 ## Entry and scope
 
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
+
 - [ ] Confirm the preceding [stage 11](11-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
 - [ ] Recover only the needed completed context from [stage 03 summary](03-stage.md#completion-summary); [stage 04 summary](04-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
@@ -32,6 +34,34 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
 - [ ] **12.T03.** Open/save the protein specimen as its own root with no material/macro/Earth parent. Use the same native inspector/artifact contracts for structure metadata and authored state. Preserve protocol/observable extension points in the requirements; implementation of new measurement experiments/protocol execution and result comparisons waits for deferred [stage 17](17-stage.md).
 
 - [ ] **12.T04.** Test atom/bond/residue reorder, supported mirrored/stereochemical cases, missing/alternate sites, partial occupancies, nonorthogonal cells, duplicate symmetry expansion, invalid cells and stale structural/display jobs. Unsupported sequence-to-structure reconstruction remains an explicit draft/diagnostic. Do not compute density, energy, folding or force-field coverage as an implicit structural edit.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Preserve supported structure precisely.** Implement compact stable atom/site/residue/chain maps and finite/periodic/protein payloads with the declared SDF/CIF/PDBx-mmCIF subsets. Keep source, symmetry/occupancy, charge/species, alternate/missing sites and unsupported/loss information through import and export.
+
+- [ ] **Cycle B — Edit independently through ordinary tools.** Connect spatial/numeric/sequence selection, supported bond/site/cell edits, validation diagnostics, preview, undo and save/reload. Open specimens as roots; physical amount, authored population, periodic display images and magnification remain separate.
+
+- [ ] **Cycle C — Bound expansion and verify semantics.** Exercise reorder, symmetry, nonorthogonal/invalid cells, partial sites and stale display jobs. Admit any explicit supercell display expansion separately; unsupported reconstruction remains a draft and no property/force-field/folding calculation starts implicitly.
+
+- [ ] Preserve these contracts; selected molecules/crystals/proteins are example specimens for built-in structural import/edit/selection capabilities. An independent protein editor is a valid endpoint without a macro consumer.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **12.W01 — Inspect and edit a microscopic structure** | Built-in structural profiles and native tools; 12.M01/12.M02. Select the same sites/residues in spatial/numeric/sequence views, edit, undo and export. | Supported bonds/cell edits, sequence correspondence and invalid/missing data are understandable. | Preserve site/residue IDs, units, stereochemical/symmetry semantics and loss reports for the supported subset; measure actual sites/residues/bytes and import/edit/export/selection latency. |
+| **12.W02 — Work at the micro endpoint independently** | Built-in root/unit/display separation plus specimen recipe; 12.M03. Open directly, change amount/magnification and optionally request bounded display images. | The specimen is usable without Earth/material setup; represented amount versus visible/sample size is clear. | Changing grams/moles alone allocates zero extra sites/workers; explicit expansion respects its separate cap; measure source/display population and active residency. |
+| **12.W03 — Reorder, reopen and preserve partial data** | Built-in identity/validation/persistence; 12.M04. Reorder sites, save/reload and supersede a structural/display operation. | Partial/alternate coverage and unsupported reconstruction stay visible and recoverable. | No identity reassignment or stale publication; missing sites remain missing; preserve source/cell/sequence maps; record rebuild/cancel peaks and zero implicit density/energy/experiment starts. |
+
+- [ ] **Checks to select.** Unit/property tests permute sites/residues, transform units/frames and apply supported symmetry while checking identity and duplicate expansion. Parser/integration tests cover nonorthogonal/invalid cells, alternate/missing sites, partial occupancy, resource bounds and denied sequence metadata. Native replay performs actual point/bond/cell and sequence selection edits through save/export/reopen.
+
+- [ ] **Earlier-work repair.** Retain 03.W01 units/precision, 04.W02 semantic selection and 02.W01 durable source/definition behavior. Verify the specimen does not activate geographic loaders, allocate a Record/ECS entity per microscopic site or change the earlier room/CAD authoring path.
+
+## Concrete acceptance replay
+
+- [ ] **12.P01 — Structural editing is a real endpoint; 12.T01/12.T02 / 12.W01.** Import the bounded finite molecule, nonorthogonal crystal and protein through their declared subsets. Select the same stable sites/residues in spatial/numeric/sequence views, make supported bond/site/cell edits, undo and export/reimport. Compare IDs, units, cell/sequence maps, supported stereochemistry and loss reports with independently specified fixture values. Record real site/residue/bond counts, parser/display bytes and selection/edit/export latency; review missing/alternate/invalid data in actual tools. Preserve 03.W01 local precision and 04.W02 authorized selection.
+
+- [ ] **12.P02 — Amount is not computational population; 12.T03 / 12.W02.** Open the specimen directly with Earth and material consumers absent. Change represented grams/moles and display magnification while holding source/sample fixed, then explicitly request a bounded periodic-image/supercell preview. Assert unchanged authored population and zero scientific/geographic work for amount/view changes; admit the explicit expansion independently. Measure compact source/display allocations and query work as separate quantities. Review direct-root usability and amount/image distinctions; retain 02.W01 save/reopen with no per-site Record/ECS requirement.
+
+- [ ] **12.P03 — Partial structure stays honest; 12.T04 / 12.W03.** Permute atoms/residues, test partial occupancy, missing/alternate sites, duplicate symmetry expansion and invalid cells, and finish an obsolete display job after a newer edit. Compare supported invariants and exported structure against the fixture oracle; reject stale publication without inventing missing atoms or sequence reconstruction. Record validation/cancel/rebuild peaks and explicit unsupported states. Reopen the partial source and verify ordinary room/CAD editing still works with no implicit density, energy, folding or experiment job.
 
 ## Worked contract example
 
@@ -97,6 +127,8 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **12.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Perform an actual supported structure edit and sequence/site selection on bounded rights-reviewed specimens, including partial occupancy, symmetry and alternate/missing sites. Measure import/edit/export/selection by real sites/residues/bytes and verify unrequested images/solver populations are not allocated.
 
 - [ ] **R0568.** **[stage 12](12-stage.md) — L2/L3/L4, structural microscopic L5 proof** — **Intention and defined deliverable:** Bounded independent molecule/crystal/protein structural authoring, without experiment execution — **Correctness/failure evidence and performance obligation:** B08/B18 structural subset plus B22/B23: site/sequence/cell identity, declared SDF/CIF/PDBx subset, draft/undo/export/reload and no macro parent. Measure actual sites/residues/bytes; changing represented amount does not allocate copies. H2/H8 protect specimen/sequence metadata and payloads. Density, tensors, new measurements/protocols and molecular dynamics remain deferred.
@@ -109,6 +141,8 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
 
 ## Advance gate
 
+- [ ] Verify every local **12.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0661.** bounded molecule, crystal and protein fixtures are authored/imported/saved/exported without silently losing supported structure. Independent specimen/laboratory-root authoring is usable without an experiment or macro destination. Invalid/unsupported chemistry remains a draft; opening/editing it starts no force field, folding prediction, property derivation or mole-sized population. Deferred [stage 17](17-stage.md) adds the first laboratory experiment.
 
 - [ ] Advance only when **all 12.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -117,17 +151,23 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **12.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

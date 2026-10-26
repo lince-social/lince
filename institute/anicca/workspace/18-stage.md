@@ -14,7 +14,11 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 - [ ] **18.M05.** Import a body with intrinsic definitions and inherited environment: apply destination gravity once, retain explicit overrides and keep temperature/damage/velocity separate from definition equality.
 
+- [ ] **18.M06.** Configure a bounded articulated mechanism/body from B41 with explicit dynamic joint/contact/mass data and compare it with its authored kinematic pose. Keep one authority for the physical pose, preserve separate visual detail and safely enter/leave the supported physical mode. A visible participant avatar remains nonphysical unless separately admitted; muscle activation and tissue/cloth/hair laws are not implied.
+
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 17](17-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -37,6 +41,38 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 - [ ] **18.T04.** Prove E5/B17/B21 model-adoption behavior on an affected active domain: transfer supported state at a step boundary, restart, defer to the next run or retain the pinned prior model according to the selected policy. Display that outcome; never silently change mass/inertia/history or stop unrelated evolving processes.
 
 - [ ] **18.T05.** Complete B37 for shared rigid/Area interaction: one designated domain authority and fenced run epoch, permitted commands at the supported step boundary, bounded timestamped observations and independent participant visual detail. Show activity location/payer and distinguish observe/interact/start/cancel/compute grants. Test missing client detail, stale input, authority restart, source/collider replacement, avatar presence versus physical body, denied camera-bound effects and separately admitted comparison runs. Preserve the initial cached-view/draft policy on host loss; no visitor automatically takes over physics. Complete B39's live gravity/environment case: an imported body brings its material/behavior definitions, binds inherited gravity once to the destination setting, preserves intrinsic properties and keeps object/run state separate. Verify explicit local overrides and lifecycle pause/retention; Q19/A02 uses the agreed last-usable-version/pending-candidate recovery, pauses unsupported affected evolution safely and offers refresh/restart without a new mandatory editor mode or silent history loss.
+
+- [ ] **18.T06.** Extend stage 11's articulation with explicit rig/source-to-physical-body/joint maps for the selected B41 subset, mass/inertia provenance, motor/actuator parameters and tested state transfer. Resolve animation, kinematic targets, joint motors and dynamic poses through one declared authority/composition order; do not let a render clip overwrite a solver step or apply root motion twice. Prove joint limits, contact, unit/frame transforms, rebind/source changes, restart/host epochs and weak-viewer behavior independently of detailed anatomy. Physical locomotion/control is separately validated; authored walking/flying remains available without it.
+
+- [ ] Recover [stage 11's articulation handoff](11-stage.md#completion-summary) for 18.T06 and open only its required rig/pose/control mapping details. A physical adapter extends the existing authored model instead of replacing its editor or creating a second joint definition.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Admit a single physical domain.** Select supported body modes, mass/inertia evidence, contacts, joints/forces and fixed-step clock controls for a real authored assembly. Separate canonical/render/physical poses, record writer epoch and expose pause/reset/step without changing existing Sand/Area semantics.
+
+- [ ] **Cycle B — Transfer state and compare settings.** Validate supported shape/material/support edits at safe boundaries, preserve last usable results and pause only affected evolution when transfer is unsupported. Compare independent force/clock settings, sleep/wake and destination environment inheritance without duplicated gravity.
+
+- [ ] **Cycle C — Share and articulate safely.** Reuse result/interaction grants for weak observers and authorized participants at different visual detail. Map B41's authored joints to admitted physical bodies explicitly, keep one pose/root writer and prove bounded overload, stale-input rejection and core responsiveness.
+
+- [ ] Preserve these contracts after authorization; hinged/rolling components and an articulated mechanism are example recipes over built-in physical-domain and state-transfer capabilities.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **18.W01 — Operate a physical assembly and compare settings** | Built-in dynamics/domain/clock tools plus room assembly recipe; 18.M01/18.M02. Pause/step a hinge or rolling part, compare force settings and observe sleep/wake. | Physical mode, active domain, clock and overload/paused state are understandable. | Chosen reference/constraint/contact checks pass; independent states do not leak; count bodies/contacts/substeps/wake-ups and measure step/input/idle/peak costs within admitted limits. |
+| **18.W02 — Edit or import without corrupting evolving state** | Built-in state-transfer/environment binding; 18.M03/18.M05. Change a collider/material, import definitions and continue or explicitly restart affected evolution. | Transfer support, retained results and refresh/restart scope are clear. | Last usable source survives unsupported transfer; gravity binds once; intrinsic definitions and velocity/temperature/damage stay distinct; measure safe-boundary replacement, interruption and staging peaks. |
+| **18.W03 — Share authoritative articulated interaction** | Built-in participation/pose authority plus B41 recipe; 18.M04/18.M06. Observer watches, permitted participant interacts and an authored mechanism enters/leaves physical mode. | Authored versus dynamic control, observation-only access and visual detail are distinguishable. | One accepted writer/epoch and one root-motion owner; stale/denied inputs = 0; display LOD/presence cannot alter dynamics; measure observation bytes, admitted solver work and core responsiveness. |
+
+- [ ] **Checks to select.** Unit/reference tests verify supported integration/joint/force cases, units, destination binding and sleep/wake conditions. Integration/fault tests cover edit transfer, epoch loss, delayed input, unsupported handoff, contact overload and separate clocks. Native replay configures the authored assembly, steps/edits it and switches articulated control while a low-budget visitor observes; benchmark active and settled work separately.
+
+- [ ] **Earlier-work repair.** Retain 15.W01–15.W05 core, 11.W03/11.W05 authored articulation and 17.W03 authority/lifetime. Authoring/kinematic walking remains usable when a physical domain is paused or absent; a new dynamics failure is repaired before later numerical work depends on it.
+
+## Concrete acceptance replay
+
+- [ ] **18.P01 — One admitted physical domain first; 18.T01–18.T03 / 18.W01.** After authorization, configure the bounded hinge/rolling assembly from explicit body/mass/inertia/contact/force inputs. Pause/step/reset, compare the chosen reference, reach supported limits, sleep and wake after a force/support change. Add the second clock/force comparison only after the first passes. Compare independent state/step/constraint/contact behavior; count bodies, contacts, substeps and wake-ups with active/settled CPU/input costs. Review domain/clock/overload controls while preserving existing 01.W01 Sand motion cooling and 05.W02 kinematic navigation.
+
+- [ ] **18.P02 — Editing an evolving body has a declared outcome; 18.T04/18.T05 / 18.W02.** Edit/import a supported collider/material/shape while active, exercise valid transfer at the boundary and an unsupported continuation requiring affected pause/refresh. Check the fixture's source/state mapping, retained last usable version, destination gravity applied once and explicit override behavior. Measure interruption, state-transfer/replacement latency and old-new peaks; review the accepted/pending/restart distinction. Preserve 16.W01 material scope and 17.W01 captured adoption without resetting unrelated evolution or accepted history.
+
+- [ ] **18.P03 — Articulation and multiplayer have one writer; 18.T05/18.T06 / 18.W03.** Map the authored B41 mechanism to admitted physical bodies, switch supported control mode and let a permitted participant interact while a weak viewer uses coarser visuals. Inject stale input/epochs, authority restart, denied camera-bound influence and delayed observations. Verify one pose/root authority, no double root motion and no physics/payer grant from mere presence or observation. Record step/observation bytes, constraints and mixed input/frame/peak costs; review actual mode transitions while retaining 11.W03 authored posing and 17.W03 lifetime rules.
 
 ## Worked contract example
 
@@ -160,6 +196,8 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **18.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Use a hinged panel or rolling part in a furnished room/cave, modify support and compare an altered-force case while another participant observes. Measure steps/contacts/substeps/wake-ups, input latency, source replacement and idle cost; a large pile without editing/interaction/recovery is insufficient.
 
 - [ ] **R0574.** **[stage 18](18-stage.md) — deferred L0/L2/L3/L4** — **Intention and defined deliverable:** Additional rigid-body dynamics/joints/altered forces with explicit domain ownership — **Correctness/failure evidence and performance obligation:** B11/B17/B21/B37/B39 live subsets: state transfer/restart/defer, safe support changes, sleep/wake, independent clocks and single-authority permitted interaction. Measure bodies/contacts/substeps/wake-ups and resources; visitor LOD never changes physics. Existing Sand/Area behavior already passed [stage 15](15-stage.md) and must remain usable.
@@ -172,6 +210,8 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 ## Advance gate
 
+- [ ] Verify every local **18.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0700.** a hinged/rolling assembly and loose/mounted Sands behave predictably in a room/cave, survive collider edits, and can be compared under different force settings without shared velocities or altered operational state.
 
 - [ ] Advance only when **all 18.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -180,17 +220,23 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **18.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

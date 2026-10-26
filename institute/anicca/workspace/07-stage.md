@@ -14,7 +14,13 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 
 - [ ] **07.M05.** Use the same native Sand in Sandbox and Park. In Park, additionally mount a live planar application panel with correct focus/hit mapping/popups and recover it when its face disappears; remote pixels/input require separate allowed grants.
 
+- [ ] **07.M06.** Ask Fiote to furnish a permitted room or assemble a simple castle/custom structure using the native operations, reusable definitions and imports already supported here. Inspect/edit the result manually, select several matching copies, undo and save/reload with source lineage intact. Keep another native interaction responsive while the request waits or is cancelled; no learned scene generator or physical equipment is needed.
+
+- [ ] **07.M07.** Customize a supplied character's supported proportions/visual parameters, hair, clothing and accessories through ordinary source/occurrence tools. Preview appearance and attachment changes, continue third-person navigation in the authored room, undo and save/reload without modifying unselected copies or loading internal anatomy. Full rig construction and supported shape-to-bind updates are stage 11 deliverables; unsupported supplied parameters remain explicit.
+
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 06](06-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -31,7 +37,7 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 
 - [ ] **07.T02.** Add purposeful flat/sharp/smooth appearance, readable content placement and native Room/building-element presets. Keep measurement source and render triangulation distinct.
 
-- [ ] **07.T03.** Mount Sands, Record views and supported assigned content/windows through existing lifecycle/input/output paths; preserve explicit gravity/body policy for unmounted content. Verify save/reload and moving the containing space.
+- [ ] **07.T03.** Mount Sands, Record views and supported assigned content/windows through existing lifecycle/input/output paths; preserve explicit gravity/body policy for unmounted content. Verify save/reload and moving the containing space. Reuse stage 03 content/presentation identity when focusing spatial content into flat/HUD controls; retain its source, mount and existing application input owner.
 
 - [ ] **07.T04.** Apply the shared I4 preview protocol to topology/room edits: current requested handles, compatible intermediate geometry, bounded/coalesced work, exact final target, one accepted edit/undo and invalidated-source recovery. Complete the native B31 room/formula subset before CAD extends it.
 
@@ -40,6 +46,39 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 - [ ] **07.T06.** Complete the ordered Park spatial application adapter tasks above through the shared workspace surface/input/mount implementation. Apply H9 to permissioned pixel publication and any supported remote input separately from shared placement, with actual participant authority, focused input ownership, revoke/lock handling and admitted capture/egress. Extend B34/B36 for local/remote room editing, optional shared previews and retained exact final commits; ordinary hosted native Sands already work from [stage 05](05-stage.md).
 
 - [ ] **07.T07.** Complete B40 through the ordinary native editing family: select multiple matching supplied/baked meshes, edit shape/visual appearance once, retain a concise selected/shared scope, prepare compatible editable variants when required, and commit/undo as one supported batch. Preserve original source branches, occurrence transforms/overrides/state and unselected copies; cancel/stale/denied cases leave accepted state honest. Report source geometry reuse and work versus unique groups and occurrences, without a mandatory conversion wizard or domain-specific editor flow.
+
+- [ ] **07.T08.** Complete native scene authoring through the Agent operation/context contracts from stages 02/04. Fiote composes currently supported geometry operations, parametric values, imported/supplied assets and reusable instances with the same precision, scope, preview/final validation and undo as native tools. Show per-request targets, pending work, accepted effects and cancellation; concurrent requests keep their context/result destinations separate and share the admitted pools. Verify manual continuation and provider-unavailable behavior.
+
+- [ ] **07.T09.** Add the bounded B41 appearance subset through existing geometry/material/parameter/attachment/variant commands: select a supplied character, expose its declared editable parameters and permitted compatible garments/hair/accessories, and retain source/rig/anchor references. Use inexpensive attached or supplied skinned geometry with validated declared bindings; visual skinning does not start cloth, hair or tissue physics. Keep shared source versus selected-copy edits explicit, support a cheap missing-appearance fallback and retain original source when an arbitrary edit requires the stage 11 rebind/repair path.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Author and inhabit a small space.** Build the supported vertex/edge/face, snapping/numeric, extrusion and opening tools over existing accepted operations. Preserve source/base layers, stable selections, mounts and support so a room/castle is editable, saveable and walkable through the same scene.
+
+- [ ] **Cycle B — Make repeated edits and previews reliable.** Capture ordinary selected-copy scope, reuse compatible variants and retain recipes. Use bounded compatible preview progress while accepting only the exact final requested input; connect cancellation, stale generations and collaborative conflict to the existing receipts.
+
+- [ ] **Cycle C — Compose supported applications and characters.** Reuse native Sand/Park focus and planar application adapters with explicit placement/pixel/input grants. Let Fiote assemble real supported objects, continue natively and customize a supplied character's declared appearance/attachments without requiring full rig/anatomy editing.
+
+- [ ] Preserve these contracts; furnished rooms/castles and appearance variants are example recipes, while modeling tools, batch scope, mounting and supported customization are built-in.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **07.W01 — Author, furnish and enter a place** | Built-in geometry/mount tools plus room/castle recipe; 07.M01/07.M02. Create an opening, save, find the structure on the overview and walk inside. | Low-poly shape, doorway use, readable content, snapping and active edit scope are coherent. | Source/map layers and calibration remain distinct; undo/reload restores IDs/dimensions; measure changed-only generation/upload, native frame/input/commit costs and retained source bytes. |
+| **07.W02 — Edit copies during bounded previews** | Built-in multi-copy/preview tools; 07.M03/07.M04. Drag one selected group faster than completion, cancel or commit and undo. | Useful preview progression and clear pending/failed state without jumps to old requests. | Unselected changes = 0; final accepted target is exact requested input; stale publication/duplicate acceptance = 0; record queue/scratch/dual-buffer peaks and preview/final latency. |
+| **07.W03 — Use apps and Fiote in the authored room** | Built-in existing adapter and Agent integration; 07.M05/07.M06. Mount a planar app, transfer focus, delegate furnishing and continue editing natively. | Focus, hit mapping, popups, cancellation and repair remain usable while another task waits. | One content/authority/save path; unauthorized pixels/input = 0; deleted supports retain repairable content; record capture/demand/inference work separately from native budgets. |
+| **07.W04 — Customize a supplied character** | Built-in declared appearance controls plus asset recipe; 07.M07. Change supported body/hair/clothing parameters, navigate, undo and reopen. | Supported fit, clipping feedback, attachment compatibility and ordinary scope controls are understandable. | Unselected/shared source changes = 0; incompatible bindings remain explicit; anatomy/physical cloth starts = 0; measure unique asset reuse, changed uploads and starter residency. |
+
+- [ ] **Checks to select.** Unit/property checks validate planar profiles/holes, captured selection, compatible variant keys and preview generations. Integration/fault tests cover invalid geometry, concurrent bases, deleted mounts, cancelled Agent work and revoked Park grants. Native simulations author the doorway, batch-drag, undo/reopen, focus an app and customize the supplied body; review the actual room/castle/appearance output under the original performance profile.
+
+- [ ] **Earlier-work repair.** Retain 04.W01/04.W03 bindings/mounts, 05.W01/05.W02/05.W03 spatial/hosted interaction and 06.W01 offline reuse. Authoring cannot break the already valid supplied-scene journey, simple native controls or provider-unavailable use.
+
+## Concrete acceptance replay
+
+- [ ] **07.P01 — Author a place, then use it; 07.T01–07.T03/07.T05 / 07.W01.** Create walls/floor and a snapped/numerically dimensioned opening through actual vertex/edge/face controls, furnish/mount content, save and walk through it. Place the castle variant at a fixture location, find it on the overview and return inside. Assert source dimensions, stable selections, protected boundary/opening validity, undo/reopen and distinct base/override/calibration. Measure changed mesh ranges, remesh/upload bytes and input/frame/commit cost. Review facets/silhouette from inhabited and distant viewpoints and readable working content; replay 05.W01/05.W02 and 06.W01 with the authored asset.
+
+- [ ] **07.P02 — Scope and final target survive fast editing; 07.T04/07.T07 / 07.W02.** Select a declared subset among repeated furnishings, drag beyond worker throughput, accept one exact final request, undo, then repeat with cancellation, stale base and denied scope. Compare the selected/unselected fixture IDs and exact requested parameters; verify compatible preview progression without stale accepted output. Record unique source groups, occurrences, queue lengths, scratch/old-new buffers, preview latency and commit latency separately. Review whether selected/shared scope and pending/invalid feedback remain simple while preserving 04.W03 mounts.
+
+- [ ] **07.P03 — Compose applications, delegation and appearance; 07.T06/07.T08/07.T09 / 07.W03/07.W04.** In the authored room use the same Sand in Sandbox/Park, focus the supported planar app/popup, delegate furnishing to Fiote, continue natively and customize only one supplied character's declared clothing/hair/parameters. Revoke pixels/input, delete support, cancel the provider and reopen the result. Assert one accepted/content path, captured target scope, valid declared bindings and no anatomy/cloth solver activation. Meter capture/egress/provider work separately from native frame/input budgets, review fit/focus/repair, and retain 02.W03 plus 03.W03 provider-free ordinary use.
 
 ## Worked contract example
 
@@ -218,11 +257,25 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 
 - [ ] **R0882.** Reuse physical-workstation surface assignments and dedicated output windows. Associate measured planar walls/desks with modeled surfaces without changing their calibration merely because the virtual model moves. Curved modeled surfaces do not imply curved physical projection support.
 
-- [ ] **R0883.** Acceptance: create a recognizable room and a cave, place useful content on their walls, save/reload, and move the Room without breaking local mounts. Verify the physical projection mapping separately through the existing calibrated surface path.
+- [ ] **R0883.** Acceptance: create a recognizable room and a cave, place useful content on their walls, save/reload, and move the Room without breaking local mounts. Preserve and check the existing calibrated surface mapping in software where this change touches it. Real equipment validation remains in Ailuros and is not required to complete this Workspace stage.
 
 ### Interoperability: choose by purpose
 
 - [ ] **R1025.** Runtime mesh delivery — **Candidate and documented role:** [Khronos glTF/GLB](https://www.khronos.org/gltf/) targets runtime 3D asset delivery — **Proposed boundary in Lince:** Render geometry/materials; preserve a separate semantic/identity manifest. A GLB does not supply process logic or operational truth.
+
+### Native scene authoring by an Agent
+
+- [ ] Deliver the useful request-to-scene loop with existing authoring primitives and user-editable source. Return exact object/selection/receipt references for further native or Agent changes; do not stop at an explanation, raster preview or script detached from accepted workspace state.
+
+- [ ] Preserve the supported authoring guarantees for Agent-produced content: units/frame, source/rights, geometry validation, resource bounds and stale/cancelled result rejection. Optional future producers can use the existing artifact/candidate path when their capability is implemented; no learned generator, Geist dependency, special placeholder schema or reconstruction milestone is introduced here.
+
+- [ ] Keep the ordinary flat canvas, keyboard/mouse tools and existing compositor/application controls complete. Spatial presentation does not require every external application to expose Lince's model semantics; reuse supported application APIs/input adapters and their grants. Current saved calibration/assigned-output behavior remains independently owned software state; bench hardware validation belongs to [Ailuros](../Ailuros.md) and is not a Workspace gate.
+
+### Supplied character customization
+
+- [ ] Reuse the ordinary inspector, numeric/spatial tools, source variants and attachment lifecycle for character appearance. Supplied proportions may use declared parameters/morphs only within their supported ranges; preserve compatible clothing/hair mappings or show a specific fit/binding issue. Do not silently stretch arbitrary clothing, discard the underlying rig or make all characters share one edited body.
+
+- [ ] Extend the existing asset delivery subset to carry only the skin/morph/clip/attachment features actually required by the supplied fixture, retaining unsupported/loss reports and source rights. Stage 11 extends authoring and mapping repair; do not build a separate character document, wardrobe save system or anatomy-specific permission path here.
 
 ## Fixture specifications owned here
 
@@ -240,6 +293,8 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **07.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Author and furnish the complete room/castle, use its doorway and content, edit a selected group of repeated furnishings, then collaborate with another editor during a drag. Review actual appearance/input screenshots and measure edit/frame/commit/capture costs, not just emitted triangle counts.
 
 - [ ] **R0563.** **[stage 07](07-stage.md) — L2/L3/L4, room L5 proof** — **Intention and defined deliverable:** Native wall/floor/opening edits and mounted content with normal transactions — **Correctness/failure evidence and performance obligation:** B03/B22: one accepted operation under spatial/numeric controls, readable input and stable mounts. Measure preview/commit/frame latency and actual screenshots on named hardware; editing a face cannot rebuild unrelated world assets. B30/B31 add bounded shared-boundary planar triangulation and moving-preview/final-target evidence. B34/B36 cover shared room/formula edits and the ordered Park adapter tasks with separate placement/pixel/input permissions, capture limits and revoke/lock recovery. B40 proves ordinary multi-copy derived-mesh editing, retained source lineage and one supported batch/undo with no conversion wizard.
@@ -250,7 +305,13 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 
 - [ ] Run only checks justified by the changed contracts through repository cargo xtask/Nix workflows and `cargo check` with warnings as errors. If a schema change is required, append a new migration/checksum and run the store check/migration guards; never rewrite an old migration. Keep old web code and unrelated changes untouched.
 
+- [ ] **Agent authoring evidence.** Extend B03/B22/B31/B40 with a configured Fiote provider creating/editing actual permitted scene content, native follow-up editing, selected-copy isolation and undo/reload. Test a request waiting on inference beside an active native edit, two independently targeted requests, cancellation and late/stale output; no response may overwrite another target or block native input. Measure provider delay separately from native feedback under the unchanged stage budgets.
+
+- [ ] **Character appearance evidence.** Exercise ordinary customization of the supplied B41 character in the real room/navigation workflow, selected-copy isolation, failed/incompatible attachment, undo/reload, cancelled/late output, reduced motion and a visitor with a smaller appearance budget. Preserve the existing per-view/native interaction/resource targets and prove internal anatomical geometry is not fetched or decoded by these edits.
+
 ## Advance gate
+
+- [ ] Verify every local **07.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
 
 - [ ] **R0637.** author the room fixture with a passable opening and useful wall content; orthographic/perspective/table selection identifies the same object. Virtual movement leaves calibrated physical outputs unchanged.
 
@@ -260,17 +321,23 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **07.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

@@ -12,9 +12,13 @@ Finish with a small useful native workspace: create repeated objects, edit only 
 
 - [ ] **02.M04.** Interrupt save/transfer/commit acknowledgement and restart/reconnect. Recover the last accepted root and recorded request outcome without duplicate edits, widened grants or automatically submitted offline drafts.
 
+- [ ] **02.M05.** Ask Fiote, acting as an Agent Actor under a bounded delegation, to inspect a permitted part, create an allowed occurrence, change its local placement and undo through the same accepted operation path as native controls. Inspect created/changed IDs, receipts and the executing Actor; deny an out-of-scope edit, supersede/cancel a stale request and reopen the saved result. With the provider unavailable, ordinary native editing still works.
+
 ## Entry and scope
 
-- [ ] Confirm the preceding [stage 01](01-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
+
+- [ ] Before any 02.T implementation, complete the [required isolated Stage 01 resumption check](00-General.md#workspace-resumption-and-isolated-validation) after the owner's other agent work is finished. Confirm the preceding [stage 01](01-stage.md#completion-summary) workflow still passes, its recorded problems have been revisited and a fresh isolated baseline is linked. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); the pending resumption gate or unresolved predecessor blockers keep this stage pending.
 
 - [ ] Recover only the needed completed context from [stage 01 summary](01-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
@@ -33,13 +37,45 @@ Finish with a small useful native workspace: create repeated objects, edit only 
 
 - [ ] **02.T04.** Add the minimum shared typed command/receipt, job-generation record and controlled completion/clock boundaries needed by these cases. Prove retry/idempotency and late-result rejection with B20. Instrument admission/queue/commit bytes and latency; defer unused scheduler/database features.
 
-- [ ] **02.T05.** Expose the same typed operation availability, validation, created/changed stable identities and receipt through native controls and the existing authorized programmatic route. Return a minimal source change set and enforce the new modules' dependency boundaries through the existing check tooling; no additional universal command server or whole-application layer rewrite is required. Extend B01/B20/B22 with equivalent outcomes and denied/stale cases.
+- [ ] **02.T05.** Expose the same typed operation availability, validation, created/changed stable identities and receipt through native controls and the existing authorized programmatic route. Return a minimal source change set and enforce the new modules' dependency boundaries through the existing check tooling; no additional universal command server or whole-application layer rewrite is required. Extend B01/B20/B22 with equivalent outcomes and denied/stale cases. Include Fiote as an Agent client of this same operation path and complete 02.M05 with native UI/result inspection; a generic endpoint alone does not satisfy the Agent workflow.
 
 - [ ] **02.T06.** Extend the existing workspace identity/policy/typed command path to reference the tiny model document without embedding its graph in the live layout. Implement explicit identified and restricted-public principal handling, current viewer/editor/manager/ceiling checks and original-author revalidation. Reuse host configuration and native create/publish/invite/redeem/revoke controls; private hosting and optional public publication are explicit choices. Prove no guest route reaches trusted-local `None` authority and no failed/expired invitation widens access.
 
 - [ ] **02.T07.** Add the minimal bounded entry/profile description, finite tiny-document size/required capability inspection, local cost/status view and reservation needed by B33. Capture authorized projection/manifest generation and actor/device admission in requests/cursors; retain receipts and host/workspace/base in local drafts. Exercise same-identity reconnect, lost replies and revoked-then-regranted admission with B34/B35. [stage 05](05-stage.md) extends this same path to sparse geographic assets and richer resource estimates.
 
 - [ ] **02.T08.** Complete the first B39 definition-closure/reuse subset with the tiny document: import required permitted definitions, reuse verified identical references, preserve conflicting versions and provenance, and show a simple native imported/reused/unavailable summary. Keep definitions, instance overrides and domain/environment bindings distinct. Do not overwrite an existing shared definition by name or initialize a physical solver; Deferred [stage 16](16-stage.md)/[stage 18](18-stage.md) add actual material/gravity behavior to the same contract after [stage 15](15-stage.md); preserve existing implemented behavior and passive definitions early.
+
+- [ ] **02.T09.** Bind Fiote execution to the existing Actor/Agent-role, workspace/Organ policy and delegation concepts. Carry the executing Agent and delegating authority, captured object/parent scope, expected base and request identity through read/edit/job completion and receipts. Native and Agent clients share command validation and operation availability; neither a model answer nor a role label grants access. Revalidate changed/revoked scope at acceptance and preserve honest pending/conflict results.
+
+- [ ] **02.T10.** Expose the current supported operations, typed inputs, readable target identities and result/receipt handles to Fiote through its existing tool/provider integration. Keep action discovery permission-aware and return structured created/changed IDs, diagnostics, pending progress and cancellation. Demonstrate a configured supported provider on B01; use controlled tool-call fixtures for B20 races/retries and denied cases. Keep provider connection, model execution and failure outside the native edit transaction and application startup path.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Establish the smallest durable edit.** Reuse existing IDs/Records and authority boundaries for one definition placed twice, stable occurrence paths and a local override. Connect real native tree/inspector controls, typed expected-base operations, minimal change sets, undo and bounded directory save/reload before expanding the scene.
+
+- [ ] **Cycle B — Prove acceptance and recovery.** Add atomic root publication, required-definition closure/import matching, bounded parsing and crash/retry/conflict cases. Reuse workspace invitations/roles for the tiny document, preserving drafts and recorded request outcomes across lost replies and restart.
+
+- [ ] **Cycle C — Exercise both human and Agent clients.** Bind Fiote's actual tool calls to the same operation availability, captured scope, validation and receipts. Complete authorized edit/undo/native continuation plus denial, cancellation and provider-loss cases; measure native acceptance separately from model latency.
+
+- [ ] Preserve these contracts; room/furnishing data is an example recipe, while document editing, scoped entry and delegated operations are built-in capabilities.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **02.W01 — Reuse, edit and reopen a part** | Built-in model/import tools exercised by a small furnishing recipe; 02.M01/02.M02. Place two copies, edit one, import required definitions, undo and reopen. | Selected/local versus shared scope and imported/reused/unavailable outcomes are understandable in native UI. | Stable identities survive reorder/save; unselected occurrence changes = 0; verified matches reuse and conflicting versions remain distinct; measure retained undo/source bytes, parse peaks and small-commit latency against the adopted profile. |
+| **02.W02 — Enter, conflict and recover** | Built-in scoped hosting/persistence; 02.M03/02.M04. Editor and restricted visitor enter, concurrent bases conflict, then interrupt acceptance/save/acknowledgement. | Conflict/draft/recovery states leave a usable native next action and identify the accepted revision. | Denied accepted mutations = 0; retry duplicates = 0; last valid root survives incomplete publication; grants stay scoped; record entry bytes, queue/commit peaks and restart/reconciliation outcomes. |
+| **02.W03 — Fiote and native edit parity** | Built-in Agent client of the same operation path; 02.M05. Inspect, create, move and undo, then continue natively. | Actual editable outputs, executing Actor and pending/cancelled/provider-unavailable states are visible. | Native/Agent results share validation and IDs; revoked/stale/late applications = 0; receipts survive reopen; separately meter provider work and native input/commit latency. |
+
+- [ ] **Checks to select.** Unit/property checks cover IDs, stable paths, cycles, definition matching and exact change sets. Integration/fault checks interrupt root publication, replies and retries; race revoke/base changes with acceptance. Native interaction simulations create/select/edit/undo/save and inspect returned objects through real services; a configured provider proves the supported Agent journey, with controlled calls for repeatable fault cases.
+
+- [ ] **Earlier-work repair.** Compare existing Sand/Area behavior and baseline edit/idle costs with 01.W01. Fix any bridge or new-document path that disrupts the ordinary flat workspace before advancing; retain stage 01's selected profile instead of adopting a larger allowance silently.
+
+## Concrete acceptance replay
+
+- [ ] **02.P01 — Durable selected-copy editing; 02.T01–02.T03/02.T08 / 02.W01.** Start with one definition placed twice and a Record bound to one occurrence. Select it through native controls, move it numerically, undo/redo, import a matching and a same-name conflicting definition, save and reopen. Compare declared IDs, exact authored values, source reuse and unselected state with the fixture's expected change set. Measure definition/chunk/undo bytes and parse/commit/open peaks, distinguishing reused assets from copies. Review whether local/shared scope and import conflicts have understandable native outcomes.
+
+- [ ] **02.P02 — Acceptance survives faults; 02.T04/02.T06/02.T07 / 02.W02.** Use the local host, identified editor and explicit public visitor. Race two expected-base edits, interrupt publication and lose an accepted reply, then retry/restart/revoke/regrant. Assert one recorded outcome per request, no visitor mutation, no draft auto-submission and recovery of a complete accepted root. Measure bounded entry/control/queue bytes and acceptance/reconnect latency; inspect the actual conflict, retained draft and recovery controls. Re-run the affected 01.W01 interaction through the model bridge.
+
+- [ ] **02.P03 — Agent/native equivalence; 02.T05/02.T09/02.T10 / 02.W03.** Have Fiote inspect/create/move an allowed occurrence; inspect returned IDs/receipts and continue with native undo/edit/save. Repeat using a captured out-of-scope target, revoked delegation, superseded request and absent provider. Compare accepted effects through the same validation boundary, not exact model wording. Record native input/commit latency separately from provider latency/token/network cost and verify ordinary native operation remains usable while the provider waits or fails.
 
 ## Worked contract example
 
@@ -67,6 +103,41 @@ Finish with a small useful native workspace: create repeated objects, edit only 
       assert_eq!(accept_edit(7, 7, true), Outcome::Accepted);
       assert_eq!(accept_edit(7, 8, true), Outcome::Conflict);
       assert_eq!(accept_edit(7, 7, false), Outcome::Denied);
+  }
+  ```
+
+- [ ] **02.X02.** Replay an authorized Agent task and the equivalent native actions with B01/B20/B22, inspecting actual IDs, receipts, cancel/undo and denied outcomes. This is an illustrative replay fixture to implement through the real native/Agent services, not a new public command schema or portable workspace encoding. Keep its evidence pending until that workflow passes.
+
+  ```json
+  {
+    "fixture": "B01",
+    "actor_role": "Agent",
+    "delegation": {
+      "reads": [
+        "definition:chair",
+        "room:starter"
+      ],
+      "writes": [
+        "room:starter"
+      ]
+    },
+    "actions": [
+      "inspect permitted chair definition",
+      "create occurrence in starter room",
+      "change returned occurrence local placement",
+      "undo the placement edit",
+      "attempt an edit in private room"
+    ],
+    "expected": {
+      "same_native_acceptance_path": true,
+      "created_ids_in_receipt": true,
+      "unselected_objects_unchanged": true,
+      "private_room_edit": "denied",
+      "manual_editing_without_provider": "usable"
+    },
+    "verification": "pending",
+    "executing_actor": "actor:fiote",
+    "delegating_actor": "actor:owner"
   }
   ```
 
@@ -396,6 +467,16 @@ Finish with a small useful native workspace: create repeated objects, edit only 
 
 - [ ] **R0858.** **A03 — Agreed: background lifetime.** Pause/checkpoint resumable work when the owner closes the workspace and nothing else explicitly retains it, unless Keep running was enabled. Respect other participants' leases, supported restart capabilities and the admitted lifetime/budget. Looking away is not closing the workspace. See Q16; stages [stage 02](02-stage.md)/[stage 17](17-stage.md)/[stage 18](18-stage.md) and H1/H10.
 
+### Agent Actors and delegated workspace operations
+
+- [ ] Reuse the model/query/command path for an Actor with the Agent role. Retain the delegating Actor/authority alongside the executing Agent; source access and accepted effects follow the applicable current grants. An assigned ongoing activity still needs its declared owner, scope, lifetime and budget. Do not invent implicit owner access, a model-specific authority service or a mandatory Fiote body/avatar.
+
+- [ ] Capture a task's target/base/delegation context before evaluation. A late answer, changed selection, disconnected authority, newer draft or cancelled request cannot redirect a command to another object or widen its scope. Apply ordinary ready/valid output automatically inside the granted task policy and existing review requirements; do not introduce an approval question for each ordinary authorized edit.
+
+- [ ] Keep native and Agent outcomes inspectable through the same accepted revisions, undo/conflict UI and receipts. Agent reasoning, tool invocation and pending previews are distinct from accepted effects; a cancelled task reports what already committed. Undo follows existing current-base/authority rules rather than erasing another Actor's later edit.
+
+- [ ] Keep Agent capability provider-independent. Core modeling, save/load, queries and native tools initialize and remain usable without Fiote or a model download. Existing file/terminal tools can remain separately available under their own grants; they do not replace the shared semantic operation path for the planned native workspace features.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications
@@ -428,6 +509,8 @@ Finish with a small useful native workspace: create repeated objects, edit only 
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **02.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Furnish and annotate a tiny shared room document with reused parts, one local override and mixed-access content. Measure the actual create/edit/undo/save/invite/reconnect flow with concurrent readers; do not substitute an empty manifest or a policy-unit test for entering and editing the workspace.
 
 - [ ] **R0558.** **[stage 02](02-stage.md) — L0/L1, minimum L2/L3** — **Intention and defined deliverable:** Native open/edit/save/undo of a repeated definition; shared typed command/receipt/job-generation boundary — **Correctness/failure evidence and performance obligation:** B01/B15/B20: expected-revision conflict, retry/idempotency, crash-safe root, draft/cancel and stale callback. Small-command latency uses the stated ≤200 ms proposal; record peak commit/replacement bytes and bounded queue behavior. Native/programmatic availability, created IDs and minimal change sets use the same accepted path; dependency checks keep new core code independent of presentation adapters. B33/B34/B35 first prove identified/public admission, invitation/entry metadata, document references, scoped reads/edits and durable reconnect outcomes on this tiny document. B39 begins required-definition import/reuse/conflict/provenance without starting a solver.
@@ -438,7 +521,11 @@ Finish with a small useful native workspace: create repeated objects, edit only 
 
 - [ ] Run only checks justified by the changed contracts through repository cargo xtask/Nix workflows and `cargo check` with warnings as errors. If a schema change is required, append a new migration/checksum and run the store check/migration guards; never rewrite an old migration. Keep old web code and unrelated changes untouched.
 
+- [ ] **Agent workflow evidence.** Extend B01/B20/B22 with native-versus-Agent equivalent edits, visible Actor/receipt attribution, scope expiry/revoke, captured-base conflicts, cancelled/late completion and provider loss. Show real native result/undo/reload for the supported provider workflow; a successful text answer or mocked receipt is insufficient. Meter inference/tool work separately from native input/acceptance and retain the existing budgets.
+
 ## Advance gate
+
+- [ ] Verify every local **02.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
 
 - [ ] **R0594.** a repeated part survives reorder, undo, reload and two competing edit bases with stable identities. A corrupt or incomplete new snapshot cannot destroy the last valid saved root.
 
@@ -448,17 +535,23 @@ Finish with a small useful native workspace: create repeated objects, edit only 
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **02.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

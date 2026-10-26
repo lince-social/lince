@@ -1,0 +1,709 @@
+{
+  "format": "lince-workspace-stage01-contract-decisions",
+  "schema": 1,
+  "status": "selected-first-consumer-contracts-production-implementation-pending",
+  "scope": "Stage 01 specifies first-consumer boundaries and fixture proofs, without building future scientific schemas or a universal framework.",
+  "requirements": [
+    {
+      "id": "C01",
+      "title": "Independent entry points",
+      "normative_owner_stage": 16,
+      "normative_document": "institute/anicca/workspace/16-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Standalone room/specimen roots are core; direct physical-property choice and independent experimental endpoints remain stages 16/17.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C02",
+      "title": "Authoring at any scale",
+      "normative_owner_stage": 17,
+      "normative_document": "institute/anicca/workspace/17-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Core geometry editor exit adopts only ready valid output into captured selected/local scope; later property adoption reuses it at stage 17.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C03",
+      "title": "Laboratory as an end goal",
+      "normative_owner_stage": 17,
+      "normative_document": "institute/anicca/workspace/17-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Register independent laboratory endpoints; build structural specimens at stage 12 and actual protocols/results at stage 17.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C04",
+      "title": "Quantity is separate from computational population",
+      "normative_owner_stage": 12,
+      "normative_document": "institute/anicca/workspace/12-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Amount metadata and explicit authored/display populations stay separate; no amount-times-Avogadro allocation.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C05",
+      "title": "Detail is a spectrum",
+      "normative_owner_stage": 3,
+      "normative_document": "institute/anicca/workspace/03-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Keep source coverage, visual detail, scale, purpose and future numerical fidelity independently selectable.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C06",
+      "title": "Shared mechanisms, specialized mathematics",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Use shared identity/change/frame/selection/artifact/demand contracts with domain-specific mathematics.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C07",
+      "title": "Cost follows requested work",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Inactive profiles have no active data/worker/body/GPU demand; measure actual requested closure and peaks.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C08",
+      "title": "Completion requires intent and evidence",
+      "normative_owner_stage": 1,
+      "normative_document": "institute/anicca/workspace/01-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Advance by working native workflows and observed correctness/quality/resource evidence.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C09",
+      "title": "Scene-independent scale, proved early",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "B25 and unrelated B38 use the same generic scale path, with arbitrary data roots/endpoints.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C10",
+      "title": "Spatial navigation and local usability",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Select Orbit/Fly/Walk explicitly; preserve supported context and street/interior input.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C11",
+      "title": "Sparse demand and durable offline data",
+      "normative_owner_stage": 6,
+      "normative_document": "institute/anicca/workspace/06-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Separate source/offline availability, compressed cache and releasable decoded/GPU residency.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C12",
+      "title": "Flat defaults and shared surface sources",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Use constant fallback, imported relief and authored surfaces through shared support/operators; missing geometry stays absent.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C13",
+      "title": "One local and hosted workspace model",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Local and hosted content share model/commands/persistence; hosting uses authorized projections.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C14",
+      "title": "Participation has an accountable cost",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Show known/unknown costs and enforce continuing device/host/principal admission, including transient peaks.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C15",
+      "title": "Access does not propagate through a reference",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "References/invites never lend source login, metadata, execution, pixels, input or spending authority.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C16",
+      "title": "Shared state has explicit authority and recovery",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Accepted changes retain designated authority/base/epoch; cached viewing/drafts survive loss without automatic mutation replay.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "C17",
+      "title": "Stabilization before additional simulation",
+      "normative_owner_stage": 15,
+      "normative_document": "institute/anicca/workspace/15-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Stabilize the complete core at stage 15 before new physical-material/scientific work.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E1",
+      "title": "Admission, ownership and overload",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Admit bytes/queues/scratch/replacement before dispatch; bounded saturation preserves accepted sources and laws.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E2",
+      "title": "Ordered acceptance with parallel evaluation",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Accept actor/scope/base/request identity coherently, persist receipts and reject stale or revoked completion.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E3",
+      "title": "Compile semantics into numerical work",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Compile demanded typed inputs to compact numerical buffers only when a selected operation needs them.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E4",
+      "title": "Coherent projections and subscriptions",
+      "normative_owner_stage": 4,
+      "normative_document": "institute/anicca/workspace/04-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Initialize coherent authorized projections and apply atomic deltas; gaps reset within bounds and revocation invalidates scope.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E5",
+      "title": "Independent clocks, cadence and numerical fidelity",
+      "normative_owner_stage": 18,
+      "normative_document": "institute/anicca/workspace/18-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Register independent physical-clock/fidelity requirements; no new scientific clock/domain during core delivery.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E6",
+      "title": "Data movement, persistence and devices",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Separate persisted source, decoded/staged/runtime data and retained results; validate bounded transfer and completion.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E7",
+      "title": "Controlled failures and reproducibility",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Capture reproducible real acceptance/storage/job/transport failure schedules; distinguish control replay from numerical reproducibility.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "E8",
+      "title": "Whole-application cost and capability growth",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Budget the whole app across native input, views, jobs and serving; prove one-lane progress and mixed-workload fairness.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H1",
+      "title": "Workspace identity, hosting and invitations",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Reuse workspace identity, publishing/invitation/policy and explicit hosting configuration.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H10",
+      "title": "Disconnect, offline use, reconnection and host recovery",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Retain permitted cached state/drafts, resolve recorded request outcomes and revalidate current grants before explicit reconciliation.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H2",
+      "title": "Principals, scoped access and public visiting",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Represent restricted guest separately from trusted-local None; intersect participant, source and field/payload rights.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H3",
+      "title": "Entry manifest, cost estimate and resource reservation",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Serve bounded permitted entry metadata and finite/unknown costs before detailed transfer; reserve continuing limits.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H4",
+      "title": "Entry, materialization and native states",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Expose ready/adjusted/partial/refused/materializing states in native UI through the same sparse loader.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H5",
+      "title": "Sparse subscriptions and independent delivery policies",
+      "normative_owner_stage": 4,
+      "normative_document": "institute/anicca/workspace/04-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Separate reliable accepted deltas/receipts from replaceable presence and revocable bounded asset streams.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H6",
+      "title": "Collaborative tools, presence and shared behavior",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Reuse captured scope/conflicts/undo/drafts; camera/presence is not physical or accepted mutation authority.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H7",
+      "title": "Shared runs and execution authority",
+      "normative_owner_stage": 17,
+      "normative_document": "institute/anicca/workspace/17-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Register future observe/interact/start/cancel/spending separation and fenced writer; numerical proof begins at stage 17.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H8",
+      "title": "Protein, other Organs and external dependencies",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Keep each Organ's independent Protein login/session/query lifetime; unavailable optional content stays localized.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "H9",
+      "title": "Content validation, execution and application surfaces",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Validate bounded content and capability requirements; import never installs code or grants desktop/input/execution.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "I1",
+      "title": "View and binding",
+      "normative_owner_stage": 3,
+      "normative_document": "institute/anicca/workspace/03-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Views bind to the same accepted subjects with independent camera/focus/clock state and declared frames.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "I2",
+      "title": "Presentation and surface composition",
+      "normative_owner_stage": 7,
+      "normative_document": "institute/anicca/workspace/07-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Spatial/flat/HUD and supported app surfaces reuse source, focus and input ownership; each presentation owns bounded demand.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "I3",
+      "title": "Selection, query and region",
+      "normative_owner_stage": 4,
+      "normative_document": "institute/anicca/workspace/04-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "One permission-aware selection/region query serves scene/tree/numeric/Agent tools; target and region are independent.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "I4",
+      "title": "Tool and transaction",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Native and Agent tools share preview/validate/commit/cancel/undo and explicit captured edit scope.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "I5",
+      "title": "Anchor, attachment and registration",
+      "normative_owner_stage": 4,
+      "normative_document": "institute/anicca/workspace/04-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Mounts/registration retain source selection, frame/local coordinates, follow policy and last usable pose.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "I6",
+      "title": "Demand and activity",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Aggregate demand across views/jobs/participants; last release cancels and frees only that consumer's dependencies.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K1",
+      "title": "Identity, definitions, occurrences and revisions",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Reuse existing UID validation, immutable definition revisions, stable slots/occurrences and optional Record bindings; keep graphs distinct.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K2",
+      "title": "Frames, precision, units and clocks",
+      "normative_owner_stage": 3,
+      "normative_document": "institute/anicca/workspace/03-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Use declared units and relative local frames; stage 03 selects big_space or a bounded replacement from two-view evidence.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K3",
+      "title": "Spatial support, topology, selections and correspondence",
+      "normative_owner_stage": 4,
+      "normative_document": "institute/anicca/workspace/04-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Selection/support queries report source revision and exact/approximate/unsupported status; failed correspondence needs repair.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K4",
+      "title": "Quantities, fields, evidence and unknown values",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Use exact authored/accounting values where required, finite typed numerical buffers and explicit unknown/evidence status.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K5",
+      "title": "Relations, ports and constraints",
+      "normative_owner_stage": 4,
+      "normative_document": "institute/anicca/workspace/04-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Keep containment, attachment, ownership, custody, constraints and future physical laws distinct relation kinds.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K6",
+      "title": "Operators, derivations and incremental evaluation",
+      "normative_owner_stage": 2,
+      "normative_document": "institute/anicca/workspace/02-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Use captured-input derivations, exact keys, changed-only invalidation and bounded generation-checked jobs.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K7",
+      "title": "Representations, quality and scale transitions",
+      "normative_owner_stage": 5,
+      "normative_document": "institute/anicca/workspace/05-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Preserve source with purpose-specific render/pick/support/etc. products; camera detail cannot change accepted facts or future physics.",
+      "runtime_evidence": "pending-at-owning-stage"
+    },
+    {
+      "id": "K8",
+      "title": "Domains, state, observations and scenarios",
+      "normative_owner_stage": 18,
+      "normative_document": "institute/anicca/workspace/18-stage.md",
+      "stage_01_status": "specification-and-phase-registration-only",
+      "core_application_or_deferred_boundary": "Keep source versus evolving state distinct now; new physical domains/clocks/writers are implemented at stage 18.",
+      "runtime_evidence": "pending-at-owning-stage"
+    }
+  ],
+  "ownership": {
+    "pure_model": "A small pure workspace_model module/crate may use pure nucleus types when stage 02 needs it; nucleus must not import workspace_model or UI.",
+    "acceptance_and_persistence": "Existing engine/store/workspace authority and accepted operation paths.",
+    "native_interaction": "Existing interface/native controls, canvas host, views and operation bindings.",
+    "geographic_context": "Map/provider adapters supply CRS/layers; no required Earth root in generic frames/loader.",
+    "delivery": "Existing transport/Cell/Organ source authorization with bounded scoped extensions.",
+    "semantic_sources": "Protein retains per-Organ login/query/subscription ownership.",
+    "specialist_work": "Selected geometry/numerical adapters consume captured inputs and return products; they never own accepted heads or UI.",
+    "stage_01_tooling": "crates/xtask/src/workspace prepares/checks fixture data; its schema and labels are not production model APIs."
+  },
+  "initial_encoding": {
+    "logical_ids": {
+      "choice": "Opaque validated strings through existing nucleus UID conventions, with distinct Rust types for document/definition/slot/occurrence/selection/product at their first consumer.",
+      "stable_occurrence": "root occurrence identity plus stable slot path, captured with composition revision.",
+      "excluded_identity_sources": [
+        "display name",
+        "Bevy Entity",
+        "array position",
+        "triangle index",
+        "world coordinate"
+      ],
+      "dense_elements": "Compact typed local element/site IDs and explicit source mappings, not a Record/ECS object per element.",
+      "actors": "Existing Person/Agent Record identity and delegated scope; no duplicate Actor enum required."
+    },
+    "canonical_revision": {
+      "choice": "Reuse nucleus karma::CanonicalHash/canonical JSON conventions after typed workspace schema/domain tagging.",
+      "observed_current_encoding": "sha256: followed by 64 lowercase hexadecimal digits; canonical JSON domain lince.canonical-json.v1.",
+      "current_constraint": "Existing canonical JSON rejects floating-point JSON numbers; accepted authored/numerical inputs must use exact scalar atoms or typed payload references.",
+      "raw_payload_digest": "Typed raw-file SHA-256 digest over bytes, separate from domain-tagged canonical JSON identity even though both use SHA-256.",
+      "mutable_heads": "An authorized head/envelope references immutable content; hashes do not replace logical identity.",
+      "source_reference": "crates/nucleus/src/karma/canonical.rs"
+    },
+    "scalars": {
+      "exact_authored": {
+        "quantity_kind": "length",
+        "unit": "m",
+        "decimal": "0.04"
+      },
+      "normalization": "Use existing exact decimal parsing/canonicalization for accepted values; retain original UI text separately when useful.",
+      "approximate_numerical": "Finite f32/f64 buffers with explicit component/kind/unit/frame/error and little-endian encoding; optional scalar f64 bit pattern is a fixed-width hex string in canonical descriptors.",
+      "unknowns": [
+        "unknown",
+        "withheld",
+        "missing-coverage",
+        "stale",
+        "not-applicable",
+        "unsupported",
+        "disputed",
+        "confirmed-zero"
+      ],
+      "guard": "No universal world-grid/cache rounding, NaN sentinel or conversion of exact operational balances through GPU floats."
+    },
+    "frames": {
+      "minimum": [
+        "stable frame ID",
+        "optional single parent",
+        "declared unit",
+        "relative placement",
+        "orientation",
+        "source revision",
+        "navigation-up policy separate from gravity"
+      ],
+      "cell_and_residual_candidate": {
+        "cell_index": "signed i128 serialized as decimal text",
+        "cell_size": "positive per-frame exact length, not a fixed world constant",
+        "residual": "bounded local authored exact scalar or declared finite numerical value"
+      },
+      "selection_point": "Stage 03's pinned big_space/two-distant-view spike selects runtime storage and range/error; the durable contract preserves local source precision.",
+      "fixture_boundary": "The stage01 fixture JSON uses explicit relative metre-valued f64 data for inspection; it is not the accepted canonical workspace encoding.",
+      "required_proofs": [
+        "unit display preserves physical dimensions",
+        "origin shifts preserve canonical state",
+        "distinct authored values below 1 nm retain distinct source/derivation identities",
+        "relative evaluation near common ancestry"
+      ]
+    },
+    "binary_payloads": {
+      "minimum_descriptor": [
+        "schema",
+        "numeric/component type",
+        "endianness",
+        "shape/count/stride",
+        "quantity/unit/frame",
+        "sample association",
+        "validity/mapping",
+        "encoded and decoded byte bounds",
+        "typed payload digest"
+      ],
+      "validation": "Checked count/offset/stride multiplication before allocation; bounded decode; finite geometry; error/unsupported status and rights.",
+      "first_payload": "Supported retained mesh source/render data; solver and microscopic dense schemas appear only at their owning stage."
+    }
+  },
+  "directory_minimum": {
+    "editable_name": "name.workspace/",
+    "portable_selected_name": "name.lince-workspace",
+    "first_consumer_stage": 2,
+    "manifest": {
+      "format": "lince.workspace.model",
+      "schema": 1,
+      "required_profiles": [
+        "composition/1",
+        "mesh/1"
+      ],
+      "fields": [
+        "document_id",
+        "parents",
+        "root_occurrences",
+        "descriptor_page_refs",
+        "unit_frame_refs",
+        "required_profiles",
+        "source_license_refs"
+      ],
+      "numeric_values": "Exact scalar atoms or typed binary references, suitable for existing canonical hashing."
+    },
+    "descriptor_pages": {
+      "maximum_encoded_bytes": 65536,
+      "layout": "pages/<typed-canonical-revision>.json",
+      "scope": "Bounded immutable definitions/slots/selection/derivation descriptors; root does not enumerate a world."
+    },
+    "payloads": "payloads/<raw-file-digest>.<declared-format>; original sources and license/provenance are retained within authorized closure.",
+    "head_publication": "Workspace envelope or local HEAD outside the content being hashed. Prepare/check durable chunks and manifest before atomic accepted-root publication; recover previous valid root after interruption.",
+    "outside_portable_snapshot": [
+      "credentials",
+      "live invitations/grants/membership",
+      "resource reservations",
+      "default derived cache",
+      "local draft journal unless explicitly selected"
+    ],
+    "reuse": "Existing local workspace assets and engine/store references; packing is optional and the interoperable selected container is delivered at stage 06."
+  },
+  "native_and_agent_edit_flow": {
+    "first_case": "Create two occurrences of one furnishing/part, select one, edit local placement, undo/save/reopen, import required definitions and compare outcomes.",
+    "scope_default": "Captured selected occurrence or normal captured multi-selection; shared definition updates are explicit.",
+    "minimum_command": [
+      "request/idempotency identity",
+      "executing Actor and delegator if any",
+      "workspace/document/scope",
+      "captured selection",
+      "expected accepted head/base",
+      "typed operation/inputs",
+      "generation where asynchronous"
+    ],
+    "acceptance": "Same native/programmatic validation and current authority intersection, short coherent durable commit, created/changed IDs and recorded receipt.",
+    "long_work": "Capture immutable inputs and admission, release transaction/input loop, publish only if generation/base/scope/rights remain valid.",
+    "editor_exit": "Automatically apply ready valid applicable output to captured scope; pending/invalid/cancelled/stale output preserves previous accepted result and draft.",
+    "import": "Include required permitted definitions; verify source/revision/typed equality, preserve conflicts and provenance, bind inherited environment once at destination, never install code.",
+    "presentation": "One source/Record identity across spatial/flat/HUD, with separate focus/layout/camera/anchor demand.",
+    "fiote": "Use existing Agent/delegation/provider tools; no model call inside edit transaction, startup or per-frame control. Provider loss leaves native use complete.",
+    "linked_work": "Stage 11 emits revisioned selected takeoff; stage 13 refreshes unaccepted derived fields while preserving manual overrides and reconciling accepted commitments.",
+    "required_failures": [
+      "stale expected base",
+      "lost reply/retry",
+      "revoked or expired scope",
+      "cancelled/late job",
+      "incomplete save",
+      "conflicting definition",
+      "unavailable provider/source"
+    ]
+  },
+  "first_adapter_record": {
+    "purpose": "Stage 01 standard GLB fixture preparation/inspection",
+    "selected_library": "Existing xtask gltf =1.4.1, glam =0.33.7 and image =0.25.10",
+    "supported": [
+      "bounded embedded glTF 2.0 triangles",
+      "finite positions/normals/transforms",
+      "skin weights/joints",
+      "selected authored clip buffers",
+      "embedded image dimensions"
+    ],
+    "units": "glTF metre/Y-up with explicit source-to-frame mapping where needed",
+    "identity": "Fixture source labels and verified file bytes, not production accepted model IDs",
+    "source_preservation": "Original full Fiote source stays intact; derived starter repacks two clips and retains source/credits.",
+    "unsupported_claims": [
+      "exact CAD",
+      "physical mesh validity",
+      "medical anatomy",
+      "controller/IK correctness",
+      "actual peak GPU residency",
+      "completed scale navigation"
+    ],
+    "bounds_and_recovery": "Fixture profile caps, local bounded reads, failed output has no verified manifest; existing output directory is never replaced.",
+    "tests": "crates/xtask/src/workspace/tests.rs",
+    "libraries": [
+      {
+        "name": "gltf",
+        "version": "1.4.1",
+        "license": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "glam",
+        "version": "0.33.7",
+        "license": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "image",
+        "version": "0.25.10",
+        "license": "MIT OR Apache-2.0"
+      }
+    ],
+    "targets": {
+      "stage01_verified_target": "Linux x86_64, exact run/build evidence retained separately",
+      "other_targets": "Not certified by this Stage 01 run; future product adapters record their own platform proof."
+    },
+    "reproducibility": {
+      "prepared_bytes": "Two fresh preparations must match byte for byte on the recorded source/build; fixture tests compare every output.",
+      "geometry_tolerance": "Finite fixture transforms and normalized skin weights; waypoint precision targets do not certify future runtime precision.",
+      "identity": "Raw SHA-256 binds exact asset bytes; existing typed canonical revisions bind accepted model sources separately."
+    },
+    "cancellation": {
+      "preparation": "Synchronous bounded offline fixture command; no remote request or scientific worker. Failure does not replace an existing directory. Partial new outputs are unverified.",
+      "inspection": "Bounded individual/aggregate reads and tree/count caps; CLI can be interrupted. No production decoder termination guarantee is inferred."
+    },
+    "failure_recovery": "No accepted production state is mutated. Existing outputs are refused before writing; prepare/check failures retain source assets and return an error. Missing manifest or failed check cannot be used as fixture verification.",
+    "conformance_evidence": "dataset-inspection.json and command/test evidence are produced after actual preparation/check; runtime milestones remain at phase owners."
+  },
+  "alternatives_not_selected": [
+    "A single mesh/voxel/JSON object type for every domain: retain domain payloads behind shared identities/operations instead.",
+    "A database, permission or global scheduler rewrite: extend existing acceptance/session/demand ownership only where the next real slice needs it.",
+    "Using camera zoom or geographic names as scale transitions: B25 and unrelated B38 must use the same implementation.",
+    "Persisting render entities or rounding source values for cache keys: preserve stable source identity and exact captured inputs.",
+    "Canonicalizing arbitrary f64 JSON directly: the current canonical helper requires exact atoms/typed payload references.",
+    "A complete new file-format/kernel/framework implementation in stage 01: freeze this minimum and implement it through the tiny native stage 02 case."
+  ],
+  "remaining_decisions": [
+    {
+      "owner_stage": 3,
+      "question": "Pinned big_space fit and runtime cell/residual storage",
+      "decisive_evidence": "Two distant close-up views, moving/origin-shifted frames, exact local source preservation."
+    },
+    {
+      "owner_stage": 5,
+      "question": "Globe/refinement/depth/controller implementation and real provider subset",
+      "decisive_evidence": "B25/B38 inward/outward route, horizon/interior use and starter peaks/release."
+    },
+    {
+      "owner_stage": 6,
+      "question": "Packed container codec/paging and a real saved city",
+      "decisive_evidence": "Authorized closure/resume/packed-directory equivalence and bounded offline route."
+    },
+    {
+      "owner_stage": 10,
+      "question": "Exact CAD adapter",
+      "decisive_evidence": "Existing prescribed bake-off including shape/history, failures, licensing/packaging and whole-path cost."
+    },
+    {
+      "owner_stage": 11,
+      "question": "Reviewed human anatomical reference sources and coverage",
+      "decisive_evidence": "Actual prepared pack counts/rights, named upper-limb mapping, useful pose checks and admitted cost."
+    },
+    {
+      "owner_stage": 16,
+      "question": "Material knowledge sources and applicable property models",
+      "decisive_evidence": "Direct material choice, provenance/conditions/units/conflict/unknown checks; no stage01 dataset selection."
+    },
+    {
+      "owner_stage": 17,
+      "question": "Numerical studies, parameters, workers and tolerances",
+      "decisive_evidence": "Authorized named study with independent references, actual sample/replica/output budgets and applicable model."
+    }
+  ]
+}

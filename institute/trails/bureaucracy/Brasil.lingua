@@ -1,0 +1,120 @@
+Brasil (@brasil: 0, is #trail, #contains @brasil-income-tax) {
+Understand Brazilian public obligations and the services used to handle them. Start with personal income tax through @brasil-income-tax.
+}
+
+Personal income tax in Brazil (
+    @brasil-income-tax: 0,
+    is #trail,
+    #part-of @brasil,
+    #contains @brasil-ir-basics,
+    #contains @brasil-ir-year,
+    #contains @brasil-ir-documents,
+    #contains @brasil-ir-channels,
+    #contains @brasil-ir-people,
+    #contains @brasil-ir-income,
+    #contains @brasil-ir-monthly,
+    #contains @brasil-ir-assets,
+    #contains @brasil-ir-deductions,
+    #contains @brasil-ir-review,
+    #contains @brasil-ir-submit,
+    #contains @brasil-ir-follow-up,
+    #contains @brasil-ir-help
+) {
+Follow the Records in order to understand the Imposto sobre a Renda da Pessoa Física (IRPF), prepare the annual declaration, and follow its result. Portuguese service names are kept so they can be recognized on official websites and documents.
+
+The ordinary annual declaration for an individual resident in Brazil is the starting point. Business declarations, estates, and departure from Brazil have their own rules. Sources checked on 2026-10-25; use the rules for the exercise being declared whenever a deadline, threshold, deduction, or special situation matters.
+}
+
+What income tax and the annual adjustment mean (@brasil-ir-basics: 0, #part-of @brasil-income-tax) {
+IRPF is the tax; the Declaração de Ajuste Anual reports income, relevant expenses, assets, debts, and tax already paid. Receita Federal administers it. For income subject to annual adjustment, the calculation uses taxable income less permitted deductions and the applicable progressive table: successive portions of the calculation base face different rates. Exempt income and income taxed separately have their own treatment. [Receita Federal: tax tables by year](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/tabelas/tabelas-do-imposto-de-renda/).
+
+An employer may already withhold Imposto de Renda Retido na Fonte (IRRF). The annual adjustment compares the final tax with payments and withholding that can be credited: a shortfall becomes tax to pay, an excess becomes a restituição, and an equal amount leaves no balance. Withholding does not by itself remove the duty to declare. [Receita Federal: annual adjustment and refunds](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/perguntas-frequentes/imposto-de-renda/dirpf/restituicao/restituicao).
+}
+
+Choose the year and check whether filing is required (@brasil-ir-year: 0, #part-of @brasil-income-tax) {
+Ano-calendário is the year the income was received; exercício is the following year's declaration. For example, exercício 2026 reports ano-calendário 2025. Use that exercise's rules and program even when filing late or correcting an older declaration.
+
+Check the complete official list of filing obligations. Triggers include annual income above specified limits, certain asset holdings, taxable capital gains, specified stock-market transactions, rural activity, and situations involving foreign income or becoming resident. A low salary alone does not settle the question. Someone not required to file may still declare, for example to recover eligible withholding. [Receita Federal: who must declare](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/quem).
+
+Check the exercise's filing window before preparing the return. Late mandatory filing can generate a penalty even when no additional income tax is due. [Receita Federal: deadlines](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/prazo).
+}
+
+Gather documents and know where to obtain them (@brasil-ir-documents: 0, #part-of @brasil-income-tax) {
+Create a folder for the ano-calendário. Gather CPF and identification details, the previous declaration and receipt if there is one, and the same relevant information for dependents.
+
+Request informes de rendimentos from every employer or other payer. Download annual tax reports from every bank and brokerage used during the year, including accounts closed during it. These reports separate income, withholding, and balances; an ordinary transaction statement may not provide the same classification.
+
+Obtain an INSS benefit tax statement through Meu INSS when applicable. [INSS: obtaining the income statement](https://www.gov.br/inss/pt-br/assuntos/saiba-como-acessar-o-extrato-do-imposto-de-renda-no-meu-inss).
+
+Collect healthcare and education receipts, health-plan statements showing reimbursements, and proof for other claimed deductions. Keep property and vehicle purchase or sale documents, loan statements, rent records, and records of self-employment, investments, donations, or inheritances relevant to the year. Use supporting documents to resolve differences with imported data. [Receita Federal: annual questions and answers](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/perguntas-e-respostas/dirpf).
+}
+
+Where to prepare the declaration (@brasil-ir-channels: 0, #part-of @brasil-income-tax) {
+Start from Receita Federal's website. Meu Imposto de Renda provides online filing and access to declaration information; it can also be reached through e-CAC. Mobile filing is available through the official Receita Federal app. The online service uses a gov.br account at nível prata or ouro. [Receita Federal: online declaration manual](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/manual-mir).
+
+Alternatively, download the Programa Gerador da Declaração (PGD IRPF) for the correct exercise onto a computer. Check the online/mobile service's restrictions; use the desktop program when your situation requires it. [Receita Federal: official program downloads](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/download/pgd/dirpf/dirpf).
+
+When available, start with the declaração pré-preenchida. It brings in information received from payers and other sources, but you remain responsible for checking, completing, and correcting it. [Receita Federal: pre-filled declaration](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/declaracao-pre-preenchida).
+}
+
+Identify the people included in the declaration (@brasil-ir-people: 0, #part-of @brasil-income-tax) {
+Confirm your identification, address, and relevant family details. Include a dependent only when the legal conditions are met. Being financially supported by someone does not automatically qualify a person as a tax dependent.
+
+Including a dependent also brings their reportable income, payments, and assets into the declaration. Coordinate with the family to avoid duplicate inclusion; check the exceptions for changes in dependency during the year. Compare the overall result before deciding whether an eligible person should be a dependent or file separately. [Receita Federal: eligible dependents](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/perguntas-frequentes/imposto-de-renda/dirpf/deducoes/29-despesa-com-dependente).
+}
+
+Report income by its nature and source (@brasil-ir-income: 0, #part-of @brasil-income-tax) {
+Work through each income source, using the payer's CPF or CNPJ and the amounts from the supporting records. For salaries and benefits, distinguish the taxable amount, eligible social-security contributions, and IRRF. Use the annual informe rather than treating the net amount deposited into your account as gross income.
+
+Keep taxable income, exempt or non-taxable income, and income subject to exclusive or final taxation in their corresponding categories. Bank reports help distinguish an investment's balance from its earnings and withholding. Review the income of dependents as well. [Receita Federal: reporting income](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/manual-mir/rendimentos/rendimentos/).
+}
+
+Check obligations that arise during the year (@brasil-ir-monthly: 0, #part-of @brasil-income-tax) {
+Some income requires action before the annual declaration. For example, taxable self-employment income or rent received from an individual, and certain income received from abroad, may require monthly calculation and payment through Carnê-Leão. Check the income's treatment, record receipts and allowable deductions, and bring the relevant records into the annual declaration. [Receita Federal: Carnê-Leão](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/pagamento/carne-leao/carne-leao).
+
+Selling property or trading investments can also require separate calculations and payments. Foreign investments have specific rules. Identify which rules apply before assuming that entering an annual total settles earlier obligations. [Receita Federal: special income situations](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/preenchimento/).
+}
+
+Describe assets, rights, and debts (@brasil-ir-assets: 0, #part-of @brasil-income-tax) {
+Review reportable bank accounts, investments, property, vehicles, other rights, and debts, including those of dependents. Use the categories, reporting thresholds, and valuation rules for the exercise. Reconcile the requested year-end positions with statements and acquisition or disposal documents. [Receita Federal: patrimônio](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/manual-mir/patrimonio/patrimonio).
+
+Property and vehicles generally follow documented acquisition cost rather than an annual market-price estimate. Follow the specific instructions for improvements, sales, and exceptional valuation regimes. [Receita Federal: acquisition and disposal values](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/dicas).
+
+A financed purchase may require recording amounts paid as part of the asset instead of duplicating the financing as a separate debt. Check the treatment of loans secured by the purchased asset. [Receita Federal: debts and financing](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/manual-mir/patrimonio/dividas-e-onus-reais).
+}
+
+Record payments and understand deductions (@brasil-ir-deductions: 0, #part-of @brasil-income-tax) {
+Enter reportable payments with the recipient's identification and the correct beneficiary. A payment being reportable does not automatically make it deductible. Legal deductions include qualifying health and education expenses, dependents, social-security contributions, and other expenses subject to specific conditions. Check eligibility, annual limits, and proof. [Receita Federal: deductions and supporting documents](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/perguntas-frequentes/imposto-de-renda/dirpf/deducoes/quais-despesas-posso-usar-para).
+
+For healthcare reimbursed in the same ano-calendário, only the eligible unreimbursed portion can support a deduction. Check the specific treatment if reimbursement arrives in a later year. [Receita Federal: medical reimbursements](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/perguntas-e-respostas/dirpf/p-r-irpf-2026-v1-00-2026-04-23.pdf).
+
+After completing the information, compare deduções legais with desconto simplificado in the system. The simplified option replaces the legal deductions with a standard deduction subject to a cap; the two methods cannot be added together. A deduction usually reduces the calculation base, so spending that amount does not mean receiving the same amount back. [Receita Federal: deduction methods](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/regimes).
+}
+
+Review the complete declaration (@brasil-ir-review: 0, #part-of @brasil-income-tax) {
+Compare every imported or typed amount with its document. Check the exercise, CPF and CNPJ numbers, all payers, dependents' income, reimbursements, assets, and tax already paid. Remove duplicate entries when combining imports and manual information.
+
+Read the summary and compare the available deduction methods. Resolve validation errors and investigate warnings before transmitting. A declaration passing validation still needs to reflect the actual documents. [Receita Federal: preparing, reviewing, and sending](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/por-onde-comecar).
+}
+
+Submit, keep the receipt, and handle the balance (@brasil-ir-submit: 0, #part-of @brasil-income-tax) {
+Transmit the declaration through the chosen official platform and save the submitted copy and recibo de entrega. Saving a draft does not submit it. Keep the declaration, receipt, and supporting documents for Receita Federal's retention period, generally five years; retain acquisition records needed for assets still held and documents relevant to unresolved proceedings. Supporting receipts are normally kept rather than attached to the declaration. [Receita Federal: submission and records](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/por-onde-comecar).
+
+For imposto a pagar, arrange payment through the official DARF or available direct-debit option. Check due dates, installment conditions, and any late charges; transmitting the declaration does not itself pay the tax. [Receita Federal: paying the balance](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/pagamento/darf).
+
+For restituição, provide an eligible account belonging to the declarant or use a Pix key that is the declarant's CPF. Check that the chosen details are valid. [Receita Federal: refund banking details](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/restituicao/dados-bancarios).
+}
+
+Follow processing and correct mistakes (@brasil-ir-follow-up: 0, #part-of @brasil-income-tax) {
+Return to Meu Imposto de Renda to follow processing, outstanding amounts, and any refund. If the declaration enters malha fiscal, read the reason and compare the disputed information with your documents. Follow the indicated process for corrections or evidence. [Receita Federal: malha fiscal guidance](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/malha-fiscal).
+
+An eligible correction is made through a declaração retificadora for the same exercise, with the previous receipt number and the complete corrected information. After the filing deadline, the deduction method cannot be changed. A formal inspection can restrict rectification; if an intimação or notification arrives, follow its procedure and deadline. [Receita Federal: rectification](https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/preenchimento/retificadora).
+}
+
+Where to get help (@brasil-ir-help: 0, #part-of @brasil-income-tax) {
+Use Receita Federal's annual Perguntas e Respostas and the online manual for the situation you need to resolve. Receita's service channels handle official questions and account or procedure issues; check the available service and any appointment requirement before visiting an office. [Receita Federal: service channels](https://www.gov.br/receitafederal/pt-br/canais_atendimento).
+
+For help organizing and preparing a declaration, look for a Núcleo de Apoio Contábil e Fiscal (NAF) at a participating educational institution. NAF offers free fiscal assistance to eligible audiences, including low-income individuals; confirm local availability and scope. [Receita Federal: NAF services](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/cidadania-fiscal/naf/servicos).
+
+A contador can prepare a return and assess complex transactions, foreign income, or missing past obligations. When delegating access, use the official authorization or procuração mechanism. [Receita Federal: declaring through an authorized person](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/perguntas-frequentes/imposto-de-renda/dirpf).
+}

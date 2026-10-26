@@ -14,6 +14,8 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 
 ## Entry and scope
 
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
+
 - [ ] Confirm the preceding [stage 15](15-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
 - [ ] Recover only the needed completed context from [stage 15 summary](15-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary); [stage 11 summary](11-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
@@ -33,6 +35,34 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 - [ ] **16.T03.** Import a small rights-reviewed pack with source IDs/revisions, exact unit conversions, methodology, applicability and unknown/conflict states. Keep visual appearance and physical properties separately editable. Extend B39 with actual material-definition reuse, same-name/different-value candidates, independent material state/conditions and an imported object using the destination's compatible environment binding; no global material replacement or duplicate forces.
 
 - [ ] **16.T04.** Implement the first linear-elastic/conduction model descriptors and parameter validation. Test unsupported conditions, conflicting evidence, anisotropic orientation, bad units, missing density and multi-material parts without yet claiming a numerical solver.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Resolve an ordinary material assignment.** Reuse definitions, selected regions, units/conditions and the normal local/shared scope to assign steel/wood or a supported layer. Keep visual appearance, material specification, batch/environment and evolving state distinct.
+
+- [ ] **Cycle B — Admit evidence and offline knowledge.** Load only the selected attributed bounded property pack; preserve conflicting candidates, orientation, applicability and unknown values. Validate unit/quantity kinds and conditions before exposing a candidate, using existing import/admission/rights paths.
+
+- [ ] **Cycle C — Reuse imports and invalidate narrowly.** Exercise compatible definition reuse, local/shared replacement, offline reopen and denial/invalid inputs. Update only affected properties/products and retain the stable workspace with no microscopic or later thermal/dynamics jobs started by lookup.
+
+- [ ] Preserve these contracts after this deferred stage is authorized; the rod/pillar and layered component are example recipes for built-in material/evidence resolution.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **16.W01 — Change a component's physical material directly** | Built-in picker/assignment/evidence tools plus component recipe; 16.M01. Replace steel/wood on selected regions and inspect supported properties/conditions. | Scope, grain/orientation, applicable versus unavailable values and independent appearance are clear. | Unit/kind/conditions and exact selected scope hold; invented/unknown-as-zero properties = 0; measure narrow lookup/commit/invalidation and zero microscopic worker starts. |
+| **16.W02 — Inspect trustworthy partial knowledge offline** | Built-in bounded pack/query validation; 16.M02. Compare sourced candidates and reject incompatible inputs offline. | Provenance, conflict, uncertainty and missing coverage support an informed choice. | Rights/versions/validity remain attached; unsupported/out-of-domain data cannot become an accepted prediction; measure pack/decode/query peaks and zero offline requests. |
+| **16.W03 — Import definitions without changing unrelated behavior** | Built-in definition/state/import reuse; 16.M03/16.M04. Import, reuse or retain conflicts, then reopen and navigate/edit. | Imported/reused/conflicting status and existing environment bindings are understandable. | Name alone cannot replace a definition; viewers cannot edit; new solver starts = 0; record affected changes and mixed native/resource costs against the stable profile. |
+
+- [ ] **Checks to select.** Unit/property tests cover quantity kinds, affine versus difference units, condition ranges, orientation and explicit unknown statuses. Integration/fault cases cover conflicting versions, denied evidence, malformed/oversized packs and changed assignment scope. Native replay uses the normal material dropdown, inspects candidates, undoes/reopens and continues ordinary navigation; lookup timing is measured separately from future numerical work.
+
+- [ ] **Earlier-work repair.** Retain 15.W01–15.W05 and the relevant 02.W01/11.W01/12.W02 definition and amount contracts. Fix regressions in stable core or direct material use before stage 17; no speculative property derivation replaces a missing empirical option.
+
+## Concrete acceptance replay
+
+- [ ] **16.P01 — Direct assignment remains ordinary editing; 16.T01/16.T02 / 16.W01.** After authorization, choose steel then wood for one rod/region through the normal inspector, set supported orientation/conditions, undo and reopen. Inspect candidates and affected products through the same binding command used by other clients. Compare exact selected scope, quantity kinds/units and applicability with the bounded reference pack; unselected copies and independent appearance stay unchanged. Measure lookup/commit/invalidation and native response while confirming zero microscopic/thermal/dynamics jobs. Review scope, grain/orientation and unavailable-value feedback.
+
+- [ ] **16.P02 — Offline evidence can be incomplete; 16.T03 / 16.W02.** Import the attributed pack, disconnect fully and compare conflicting candidates, source methods, temperature/condition ranges and units. Inject incompatible kinds, out-of-domain values, missing density, denied evidence and oversized inputs. Verify each native result against the fixture's expected accepted/rejected/unknown state, including absolute-versus-difference temperature handling. Record pack/index/decode peaks and query latency with zero offline requests. Preserve 06.W01 offline closure and 02.W01 definition/source identity; no convenient zero fills an unknown.
+
+- [ ] **16.P03 — Definitions and evolving state stay separate; 16.T03/16.T04 / 16.W03.** Import verified matching and same-name/different material definitions, assign a supported layered/anisotropic case and inspect invalid parameters. Retain conflicting versions, provenance and destination environment bindings without overwriting independent state. Measure only affected dependents and aggregate stable-workspace costs; exercise the relevant 15.W01–15.W05 workflow beside lookup. Review imported/reused/conflict and unsupported-model status. Keep actual derivation, thermal solve and additional physics pending at their owning stages.
 
 ## Worked contract example
 
@@ -167,6 +197,8 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **16.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Revise the material assignment of a dimensioned rod/pillar and a layered component, compare two evidence candidates and reopen offline. Measure lookup, narrow commit and invalidation of only affected products; prove zero microscopic worker/population demand for the direct picker.
 
 - [ ] **R0572.** **[stage 16](16-stage.md) — deferred L1/L2/L3/L4, ordinary-use L5 proof** — **Intention and defined deliverable:** W01: direct physical-material choice and applicable property/condition/evidence resolution — **Correctness/failure evidence and performance obligation:** B07/B16/B39 material subset: steel/wood swap, conditions/orientation/coverage, local/shared scope and missing/conflicting data. Measure only affected lookup/commit/products and zero microscopic solver demand. Existing hosting commands protect permitted edits; no viewer can invoke an editor's material change.
@@ -179,6 +211,8 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 
 ## Advance gate
 
+- [ ] Verify every local **16.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0682.** direct material assignment works independently and can answer which supported property/model applies, why, and what is missing. B16 proves no hidden microscopic population or solver demand. A saved/exported pack works offline with attribution and cannot invent absent properties.
 
 - [ ] Advance only when **all 16.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -187,17 +221,23 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **16.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

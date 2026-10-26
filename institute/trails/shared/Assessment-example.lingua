@@ -1,0 +1,42 @@
+Philosophy assertion and points example (@assessment-example: 0, #contains @assessment-response, #contains @assessment-points) { r_00000000000000000000006001
+An internal example of answers as assertions. The authored Karma condition checks a particular assertion on a Record and sets five points when that answer is present, or zero when it is absent. Names, interpretation, and point quantities are ordinary data.
+} r_00000000000000000000006001
+
+Which method examines whether a conclusion follows from its premises? (@assessment-response: 0, #points @assessment-points) { r_00000000000000000000006002
+Add an answered assertion pointing to Reasoning, or clear that assertion. The ordinary Assertion editor can also add or remove the answer.
+} r_00000000000000000000006002
+
+Reasoning (@reasoning-answer: 0) { r_00000000000000000000006003
+} r_00000000000000000000006003
+
+Argument question points (@assessment-points: 0, #for @assessment-response) { r_00000000000000000000006004
+The authored condition sets this Record's quantity to five or zero. Repeated answers recompute the same quantity.
+} r_00000000000000000000006004
+
+Extension @assessment-example "lince.source" {
+ instances ["assessment-response" "assessment-points"]
+}
+
+Extension @assessment-example "lince.vocabulary" {
+ definitions { answered "The subject Record's supplied answer is the referenced Record." }
+}
+
+Extension @assessment-response "lince.controls" {
+ actions [
+  { label "Answer: Reasoning" action { action "assert-record" subject "assessment-response" predicate "answered" object "reasoning-answer" } }
+  { label "Clear answer" action { action "retract-record" subject "assessment-response" predicate "answered" object "reasoning-answer" } }
+ ]
+}
+
+Karma assertion-assessment {
+ Rules {
+  Rule recompute-answer-points {
+   quantity 1
+   record @assessment-points
+   condition """has_assertion(@assessment-response, #answered, @reasoning-answer) * 5"""
+   gate always
+   carry value
+   consequences """[{"kind":"set-quantity","value":null}]"""
+  } ^rec_00000000000000000000006001
+ }
+}

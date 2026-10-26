@@ -1,0 +1,27 @@
+Farming (@farming: 0, is #trail, #contains @farming-foundations, #contains @farming-compost, #contains @farming-crops, #contains @farming-orchards, #contains @farming-livestock, #contains @farming-aquatic-foods, #contains @farming-nutrition, #contains @farming-sources) { r_13YG8DNJGT3QRX08G4BAMD92F3
+Grow food, understand the organism, measure the result, return suitable residues to the soil.
+
+Follow @farming-foundations, @farming-compost, @farming-crops, @farming-orchards, then `@farming-livestock`. Use @farming-aquatic-foods for fish and shellfish. @farming-nutrition connects production to Nutrients.lingua without changing its food preparations or nutrient measurements.
+
+Each species Record supplies its identity, planting window, propagation, care, harvest signs, and renewal. Read the shared lifecycle before the species exceptions. Scientific names supply slugs: tomato is `@solanum-lycopersicum`. Cultivars of one species share a Record; hybrids and uncertain food names are identified explicitly.
+
+Temperatures are °C; dimensions are metric. Days are planning ranges, not promises. Species entries state whether time starts at sowing, transplanting, or planting vegetative material. Tree ages start at field planting of nursery stock unless stated otherwise. Climate, cultivar, rootstock, and management change these ranges. Harvest signs decide readiness.
+
+No location is assumed. Use local frost dates, rainfall, soil temperature, day length, and cultivar requirements through `@farming-calendar`. Brazil supplies the food examples; northern-hemisphere source months must be translated into local conditions.
+
+Practice: complete one small bed and one compost batch before expanding. Keep observations in personal Records linked to the lesson; reuse the supplied text without adopting a scoring system.
+} r_13YG8DNJGT3QRX08G4BAMD92F3
+
+Extension @farming "lince.source" {
+ dependencies [
+  { uri "farming/Foundations.lingua" label "Botany, soil, water, and the crop lifecycle" required true }
+  { uri "farming/Compost.lingua" label "Composting and nutrient cycling" required true }
+  { uri "farming/Crops.lingua" label "Vegetables, grains, pulses, herbs, and oilseeds" required true }
+  { uri "farming/Orchards.lingua" label "Fruit, nuts, palms, and perennial crops" required true }
+  { uri "farming/Livestock.lingua" label "Livestock, eggs, milk, and honey" required true }
+  { uri "farming/Aquatic-foods.lingua" label "Aquaculture and wild fisheries" required true }
+  { uri "farming/Nutrition.lingua" label "Species and food preparation links" required true }
+  { uri "farming/Sources.lingua" label "Original agricultural references" required true }
+  { uri "Nutrients.lingua" label "Existing nutrient measurements" required true }
+ ]
+}

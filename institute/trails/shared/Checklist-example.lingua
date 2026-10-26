@@ -1,0 +1,46 @@
+Import "../philosophy/Socratic-dialogues.lingua"
+
+Philosophy checklist example (@checklist-example: 0, #contains @checklist-state) { r_00000000000000000000005001
+An alternative authored checklist. A checked item produces a checked assertion about the assigned reading. There are no levels or percentages in this scheme.
+} r_00000000000000000000005001
+
+Checklist learner (@learner: 0) { r_00000000000000000000005002
+} r_00000000000000000000005002
+
+My argument reconstruction (@checklist-state: 0, #of @learner, #source @apology) { r_00000000000000000000005003
+Read the Apology and write one argument in your own words.
+} r_00000000000000000000005003
+
+Extension @checklist-example "lince.source" {
+ parameters { learner { label "Learner" kind "person" default "actor" } }
+ instances ["checklist-state"]
+}
+
+Extension @checklist-example "lince.vocabulary" {
+ definitions { checked "The learner declares that the linked checklist item has been carried out." }
+}
+
+Extension @checklist-state "lince.controls" {
+ quantities [{ label "Check item" value "1" } { label "Uncheck item" value "0" }]
+}
+
+Karma philosophy-checklist {
+ Rules {
+  Rule checklist-recompute {
+   quantity 1
+   record @checklist-state
+   condition """@checklist-state"""
+   gate >0
+   carry value
+   consequences """[{"kind":"run-action","action":"{\"action\":\"assert-record\",\"subject\":\"learner\",\"predicate\":\"checked\",\"object\":\"apology\",\"quantity\":\"1\"}"}]"""
+  } ^rec_00000000000000000000005001
+  Rule checklist-clear {
+   quantity 1
+   record @checklist-state
+   condition """@checklist-state"""
+   gate ==0
+   carry value
+   consequences """[{"kind":"run-action","action":"{\"action\":\"assert-record\",\"subject\":\"learner\",\"predicate\":\"checked\",\"object\":\"apology\",\"quantity\":\"0\"}"}]"""
+  } ^rec_00000000000000000000005002
+ }
+}

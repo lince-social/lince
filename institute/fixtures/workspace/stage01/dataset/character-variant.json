@@ -1,0 +1,16 @@
+{
+  "future_runtime_owner_stage": 7,
+  "overrides": {
+    "base_color": [
+      0.72,
+      0.22,
+      0.16,
+      1.0
+    ],
+    "material": "fixture-bandana-green",
+    "uniform_visual_scale": 0.9
+  },
+  "scope": "captured-selected-occurrence",
+  "source": "starter-character",
+  "source_retained": true
+}

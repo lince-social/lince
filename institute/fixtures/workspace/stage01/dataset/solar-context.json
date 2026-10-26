@@ -1,0 +1,128 @@
+{
+  "automatic_workers": 0,
+  "bodies": [
+    {
+      "id": "Sun",
+      "position_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "radius_m": 695700000.0
+    },
+    {
+      "id": "Mercury",
+      "position_m": [
+        57900000000.0,
+        0.0,
+        0.0
+      ],
+      "radius_m": 2439500.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Venus",
+      "position_m": [
+        82054754982.17299,
+        70528414024.53026,
+        0.0
+      ],
+      "radius_m": 6052000.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Earth",
+      "position_m": [
+        149600000000.0,
+        0.0,
+        0.0
+      ],
+      "radius_m": 6378137.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Mars",
+      "position_m": [
+        -120956584978.0314,
+        193270547550.45392,
+        0.0
+      ],
+      "radius_m": 3396000.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Jupiter",
+      "position_m": [
+        -743362103851.5392,
+        231246691992.36902,
+        0.0
+      ],
+      "radius_m": 71492000.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Saturn",
+      "position_m": [
+        -1314224452543.7073,
+        -568716175553.4944,
+        0.0
+      ],
+      "radius_m": 60268000.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Uranus",
+      "position_m": [
+        -1253209970227.2488,
+        -2578595309567.4043,
+        0.0
+      ],
+      "radius_m": 25559000.0,
+      "source_status": "rounded-context-with-authored-phase"
+    },
+    {
+      "id": "Neptune",
+      "position_m": [
+        1150291669008.7668,
+        -4366011231800.6035,
+        0.0
+      ],
+      "radius_m": 24764000.0,
+      "source_status": "rounded-context-with-authored-phase"
+    }
+  ],
+  "epoch": "authored-static-context-2026-01-01",
+  "format": "lince-stage01-optional-context",
+  "frame": {
+    "axes": "right-handed authored coplanar context",
+    "id": "solar",
+    "units": "metre"
+  },
+  "optional_attachment": {
+    "child": "earth-site/earth",
+    "parent": "solar",
+    "preserve_child_sources": true,
+    "translation_m": [
+      149600000000.0,
+      0.0,
+      0.0
+    ]
+  },
+  "outer_view": {
+    "eye_m": [
+      0.0,
+      0.0,
+      10000000000000.0
+    ],
+    "frame": "solar",
+    "mode": "Orbit",
+    "target_m": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "schema": 1,
+  "scientific_accuracy": "No ephemeris or orbital dynamics; phases are authored fixture data.",
+  "source": "illustrative-solar-context"
+}

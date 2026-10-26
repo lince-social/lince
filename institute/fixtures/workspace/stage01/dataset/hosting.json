@@ -1,0 +1,667 @@
+{
+  "format": "lince-workspace-stage01-hosting-replay",
+  "schema": 1,
+  "status": "specified-runtime-evidence-pending",
+  "scope": "B33–B36 are phased core proofs over existing workspace/Organ authority. B37 numerical participation stays deferred.",
+  "native_surfaces": [
+    "Workspace create/open/publish/invite/redeem/revoke controls through existing native workspace management.",
+    "Entry card before detailed data: allowed profile, known/unknown sizes, cost, source logins, chosen cap and ready/adjusted/partial/refused state.",
+    "Independent navigation, source status, accepted receipt/history, recoverable draft and explicit reconnect reconciliation.",
+    "Optional presence/follow controls with visible opt-out; no implicit body, execution or desktop grant."
+  ],
+  "participants": [
+    {
+      "id": "host",
+      "principal": "existing trusted local workspace authority",
+      "local_view": "optional",
+      "allowed": [
+        "publish-selected-projection",
+        "manage-invites",
+        "revoke",
+        "authorized-acceptance",
+        "read-host-private-fixtures"
+      ],
+      "cost_owner": "explicit host service budget",
+      "credentials": "Local only; never packaged or forwarded."
+    },
+    {
+      "id": "editor",
+      "principal": "identified participant in its own device/Organ authentication context",
+      "allowed": [
+        "read-published-public-and-editor-interior",
+        "propose-permitted-model-edit",
+        "inspect-own-receipts",
+        "retain-own-drafts"
+      ],
+      "denied": [
+        "read-host-private-annotation",
+        "borrow-host-source-login",
+        "start-worker",
+        "spend-host-budget",
+        "publish-pixels",
+        "send-remote-input"
+      ],
+      "detail_profile": "starter",
+      "source_session": "Own Organ B session when its restricted Sand is used."
+    },
+    {
+      "id": "visitor",
+      "principal": "explicit restricted public guest with bounded admission/session identity",
+      "must_not_map_to": "trusted-local None authority",
+      "allowed": [
+        "read-deliberately-published-closure",
+        "navigate-independent-view",
+        "optional-bounded-presence"
+      ],
+      "denied": [
+        "edit-model-or-record",
+        "read-restricted-interior",
+        "read-host-private-annotation",
+        "enumerate-private-bounds-counts-hashes",
+        "borrow-source-login",
+        "activate-Fiote",
+        "start-worker",
+        "publish-pixels",
+        "send-remote-input"
+      ],
+      "detail_profile": "coarse",
+      "admission": "Available only after the host explicitly enables a public projection; private invitations do not become public."
+    }
+  ],
+  "source_contexts": [
+    {
+      "id": "Organ-A",
+      "purpose": "workspace/model hosting",
+      "session_owner": "each participant",
+      "host_credentials_shared": false
+    },
+    {
+      "id": "Organ-B-public",
+      "purpose": "public Protein Sand data",
+      "session_owner": "independent source context",
+      "optional_unavailable_behavior": "local partial/locked Sand; workspace remains usable"
+    },
+    {
+      "id": "Organ-B-restricted",
+      "purpose": "restricted Protein Sand data",
+      "session_owner": "visitor/editor's own authenticated source context",
+      "host_credentials_shared": false
+    },
+    {
+      "id": "direct-Protein",
+      "purpose": "source use outside hosted workspace",
+      "lifetime": "independent subscription; leaving a hosted view cannot close another ordinary source consumer"
+    }
+  ],
+  "disclosure": {
+    "test_catalogue": "The local Stage 01 manifest includes synthetic restricted assets for testing. It is never served as a public entry manifest or shared whole pack.",
+    "fixture-public": "Permitted public geometry/context/appearance and selected published fields.",
+    "identified-editor": "Separate restricted-interior.glb payload and its permitted fields; not part of visitor closure.",
+    "host-private": "Separate private-annotation.json sentinel payload; omit identity/hash/count/selector metadata from unauthorized projections.",
+    "projection": "Derive an authorized artifact/projection before transfer when a source blob mixes allowed and denied contents. A byte-identical cache hit does not grant access.",
+    "independent_permissions": [
+      "view",
+      "edit/propose",
+      "review/accept",
+      "observe-activity",
+      "interact",
+      "start/cancel",
+      "spend",
+      "publish-pixels",
+      "remote-input"
+    ],
+    "public_cost_total": "Only the permitted selected/published closure; hidden workspace totals remain unavailable rather than leaking private existence.",
+    "revoke": "Recheck admission/generation before serving or attaching new data; preserve only currently permitted cached viewing. Revocation does not claim to erase previously downloaded copies."
+  },
+  "cost_card_fields": [
+    {
+      "field": "published_selected_size",
+      "representation": "known byte count or explicit unknown/partial coverage"
+    },
+    {
+      "field": "additional_download",
+      "representation": "exact allowed missing payload bytes plus separately measured metadata/retry overhead"
+    },
+    {
+      "field": "disk",
+      "representation": "selected offline pins, bounded cache and temporary/resume/replacement bytes"
+    },
+    {
+      "field": "cpu_gpu_peak",
+      "representation": "decoded/source/index/staging/old-new products across all active views; actual versus estimated labeled"
+    },
+    {
+      "field": "continuing_traffic",
+      "representation": "selected asset/presence/source streams, cadence, cap, owner and persistent spent counter"
+    },
+    {
+      "field": "activity",
+      "representation": "required/optional capabilities, source login, local/host execution and explicit owner/payer"
+    },
+    {
+      "field": "preflight",
+      "representation": "cheap capability/budget check; optional bounded trusted benchmark refines estimates without certifying arbitrary content"
+    }
+  ],
+  "states": [
+    {
+      "name": "ready",
+      "meaning": "Required granted closure and capabilities fit the admitted selected profile."
+    },
+    {
+      "name": "adjusted",
+      "meaning": "A visible lower visual/coverage profile fits; accepted facts/physics/authority do not change."
+    },
+    {
+      "name": "partial",
+      "meaning": "Useful required closure is available; optional appearance/source/detail is missing, denied or capped."
+    },
+    {
+      "name": "refused",
+      "meaning": "Required granted capability/support/data cannot fit or be provided; state the concrete reason."
+    },
+    {
+      "name": "materializing",
+      "meaning": "Admitted required products are in progress with bounded queues and useful coarse coverage where valid."
+    },
+    {
+      "name": "offline-draft",
+      "meaning": "Permitted cached viewing and local draft remain usable; no automatic mutation replay or new source/host requests."
+    },
+    {
+      "name": "reconcile",
+      "meaning": "Same authority returns; resolve recorded request outcomes and current grants/base before explicit draft reconciliation."
+    }
+  ],
+  "stream_classes": [
+    {
+      "class": "control-and-receipts",
+      "delivery": "reliable bounded ordered acceptance/deltas; retain outcome identity"
+    },
+    {
+      "class": "asset-pages-and-chunks",
+      "delivery": "permission/generation checked, cancellable bounded ranges with verified artifact/transfer digests"
+    },
+    {
+      "class": "presence",
+      "delivery": "replaceable coalesced samples, one pending sample/participant, max 10 Hz, 20 s expiry"
+    },
+    {
+      "class": "future-results",
+      "delivery": "registered here; selected bounded scientific observation starts at stage 17"
+    }
+  ],
+  "cases": [
+    {
+      "id": "B33",
+      "core_phases": [
+        2,
+        5,
+        6
+      ],
+      "steps": [
+        "Stage 02: create/publish the tiny repeated document, invite/redeem the identified editor and explicitly admit a restricted public visitor.",
+        "Inspect bounded entry metadata and capability/cost states before requesting detailed payloads.",
+        "Stage 05: enter the exact B25 route on host/editor/visitor with independent detail/cameras; edit only through the common actor/base/receipt path.",
+        "Use both a cold cache and verified permitted cached payloads; compare additional bytes with the declared allowed closure.",
+        "Select a visitor cap smaller than an optional character payload but large enough for required coarse entry; show partial appearance and retain usable navigation.",
+        "Stage 06: repeat authorized offline/pinned closure and packed/directory transfer under the same loader and continuing counters."
+      ],
+      "hard": [
+        "no implicit guest edit",
+        "no full-world transfer to compute entry",
+        "no duplicated shared source cost",
+        "continued quotas across manifest/source/reconnect changes"
+      ],
+      "quality": [
+        "actionable cost/profile choice",
+        "useful coarse coverage",
+        "readable progress and partial/refusal reason"
+      ],
+      "metrics": [
+        "entry_page_bytes",
+        "additional_encoded_bytes",
+        "decode_upload_staging_peaks",
+        "host_and_client_input_frame_percentiles",
+        "source_wait_and_RTT_separate"
+      ],
+      "status": "pending",
+      "phase_replays": [
+        {
+          "id": "tiny-document-entry",
+          "native_action": "Host publishes the tiny document, invites/redeems the editor and explicitly enables restricted public admission; both inspect the entry card before opening detail.",
+          "target": "hosting",
+          "expected": [
+            "editor is identified; guest never maps to trusted local authority",
+            "selected allowed closure, required/optional capability and known/unknown cost are visible",
+            "private invite does not enable public access"
+          ],
+          "measured": [
+            "entry_page_bytes",
+            "request_queue_bytes",
+            "admission_and_small_commit_ms"
+          ],
+          "runtime_owner_stage": 2
+        },
+        {
+          "id": "hosted-spatial-entry",
+          "native_action": "Editor and visitor enter B25 at independent detail; visitor selects a cap admitting required coarse entry but excluding optional appearance. Use cold and permitted warm caches.",
+          "target": "home-approach",
+          "expected": [
+            "independent cameras and unchanged accepted dimensions",
+            "partial appearance remains navigable",
+            "additional bytes match authorized missing closure; quotas persist"
+          ],
+          "measured": [
+            "additional_encoded_bytes",
+            "decode_upload_staging_peaks",
+            "host_and_client_frame_input_percentiles"
+          ],
+          "runtime_owner_stage": 5
+        },
+        {
+          "id": "offline-published-closure",
+          "native_action": "Save the permitted route/profile, disconnect fully and move the authorized snapshot through packed/directory transfer with interrupted resume.",
+          "target": "hosting",
+          "expected": [
+            "required closure survives offline",
+            "mixed-rights pack is not disclosed whole",
+            "spent download counters survive resume"
+          ],
+          "measured": [
+            "pinned_and_cache_bytes",
+            "transfer_resume_bytes",
+            "offline_remote_requests = 0"
+          ],
+          "runtime_owner_stage": 6
+        }
+      ],
+      "requirements": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H8"
+      ]
+    },
+    {
+      "id": "B34",
+      "core_phases": [
+        2,
+        4,
+        5,
+        6,
+        7
+      ],
+      "steps": [
+        "Editor may inspect the separate restricted-interior payload; visitor gets only the public closure and cannot infer denied bounds/count/hash/index membership.",
+        "Deny both participants the host-private annotation through direct API, source reference, inspector/selector and whole-pack requests.",
+        "Open Organ B's public Sand, then its restricted Sand; authenticate only with that participant's own source session.",
+        "Revoke a source grant while a decode/transfer is pending; reject new usable delivery/late attachment without disabling unrelated public content.",
+        "Keep ordinary direct Protein usage working independently of the hosted view.",
+        "Exercise placement versus pixel versus remote-input grants separately for a supported Park surface; model viewing supplies none of the latter grants."
+      ],
+      "hard": [
+        "guest never uses trusted-local None",
+        "participant/source/ceiling intersection at acceptance and delivery",
+        "no borrowed host credential",
+        "no partial-view disclosure through a whole private blob"
+      ],
+      "quality": [
+        "localized locked/partial source state",
+        "clear original author/source and native next action"
+      ],
+      "metrics": [
+        "denied_fields_and_bytes_delivered = 0",
+        "bounded_denied_request_work",
+        "per_source_and_participant_stream_bytes"
+      ],
+      "status": "pending",
+      "phase_replays": [
+        {
+          "id": "tiny-model-rights",
+          "native_action": "Try the same permitted and denied model edit as editor and visitor, plus host-private annotation lookup by direct reference.",
+          "target": "private-annotation",
+          "expected": [
+            "visitor edits denied",
+            "host-private annotation and existence metadata denied",
+            "current actor/role/ceiling checks precede acceptance"
+          ],
+          "measured": [
+            "denied_mutations = 0",
+            "denied_fields_and_bytes_delivered = 0",
+            "bounded_denial_work"
+          ],
+          "runtime_owner_stage": 2
+        },
+        {
+          "id": "indexed-disclosure",
+          "native_action": "Query restricted-interior through inspector, selector, bounds and context pages, including a pending query whose grant is revoked.",
+          "target": "restricted-interior",
+          "expected": [
+            "only identified permitted editor sees the interior",
+            "visitor learns no private counts/hashes/bounds/membership",
+            "late old-grant query cannot attach"
+          ],
+          "measured": [
+            "authorized_context_bytes",
+            "denied_fields_and_bytes_delivered = 0",
+            "query_candidates_and_latency"
+          ],
+          "runtime_owner_stage": 4
+        },
+        {
+          "id": "independent-source-login",
+          "native_action": "Open public and restricted Organ B Sands as editor/visitor using each participant's own source session; leave the hosted view while a direct Protein consumer remains.",
+          "target": "personal-places",
+          "expected": [
+            "host credentials are never borrowed",
+            "missing optional source is localized",
+            "direct Protein lifetime remains independent"
+          ],
+          "measured": [
+            "per_source_stream_bytes",
+            "source_wait_ms",
+            "unrelated_native_input_ms"
+          ],
+          "runtime_owner_stage": 5
+        },
+        {
+          "id": "authorized-package-projection",
+          "native_action": "Request the public selected closure from an archive containing restricted inputs and attempt an unauthorized whole-blob fetch.",
+          "target": "hosting",
+          "expected": [
+            "derive an authorized projection or refuse mixed blob",
+            "cached identical bytes do not grant access"
+          ],
+          "measured": [
+            "permitted_transfer_bytes",
+            "denied_fields_and_bytes_delivered = 0",
+            "projection_peak_bytes"
+          ],
+          "runtime_owner_stage": 6
+        },
+        {
+          "id": "separate-pixel-input-grants",
+          "native_action": "Mount the supported Park panel, grant placement without pixels/input, then independently grant/revoke permitted capture and remote input.",
+          "target": "hosting",
+          "expected": [
+            "placement grants neither pixels nor input",
+            "current focused input owner and revoke are enforced"
+          ],
+          "measured": [
+            "denied_pixel_input_events = 0",
+            "capture_egress_bytes",
+            "grant_revoke_latency_ms"
+          ],
+          "runtime_owner_stage": 7
+        }
+      ],
+      "requirements": [
+        "H2",
+        "H5",
+        "H9",
+        "H10"
+      ]
+    },
+    {
+      "id": "B35",
+      "core_phases": [
+        2,
+        5,
+        6
+      ],
+      "steps": [
+        "Lose an accepted commit reply, reconnect and resolve the same request identity to its durable recorded outcome.",
+        "Change invitation/manifest/permission between estimate and entry; revalidate instead of retaining widened authority.",
+        "Revoke/regrant admission during pending transfer or job completion; old epochs cannot attach data or accept writes.",
+        "Interrupt host save/publication and restart; recover the last valid head and receipts, retaining the visitor/editor's permitted cache and local drafts.",
+        "Keep drafts inert until explicit reconciliation; do not replay model edits, Area crossings, Actions or worker starts.",
+        "Seed a partly spent cap, then disconnect/resume/change source; spent bytes are retained and global limits still bound new guest identities."
+      ],
+      "hard": [
+        "accepted edit duplicates = 0",
+        "stale authority/late acceptance = 0",
+        "no automatic writer election or compute donation",
+        "no quota reset or unintended public fallback"
+      ],
+      "quality": [
+        "honest pending/conflict/offline/interrupted state",
+        "recoverable draft and explicit reconciliation"
+      ],
+      "metrics": [
+        "recovery_outcome",
+        "retained_draft_and_receipt_ids",
+        "persistent_spent_bytes",
+        "cancel_and_last_demand_release_ms"
+      ],
+      "status": "pending",
+      "phase_replays": [
+        {
+          "id": "durable-lost-reply",
+          "native_action": "Lose the reply after durable acceptance, retry the same request, interrupt root publication and restart; change invitation/grant between estimate and entry.",
+          "target": "hosting",
+          "expected": [
+            "one durable outcome per request",
+            "recover complete last accepted root",
+            "drafts remain inert and admission is revalidated"
+          ],
+          "measured": [
+            "accepted_edit_duplicates = 0",
+            "retained_receipt_and_draft_ids",
+            "recovery_ms"
+          ],
+          "runtime_owner_stage": 2
+        },
+        {
+          "id": "host-loss-during-travel",
+          "native_action": "Revoke/regrant admission with a transfer pending, exhaust a partly spent cap, lose/restart the host and reconcile explicitly.",
+          "target": "home-approach",
+          "expected": [
+            "old epochs cannot attach data or accept writes",
+            "permitted cache and local draft remain usable",
+            "no mutation replay, physics election or participant compute donation"
+          ],
+          "measured": [
+            "persistent_spent_bytes",
+            "cancel_and_last_demand_release_ms",
+            "stale_acceptance = 0"
+          ],
+          "runtime_owner_stage": 5
+        },
+        {
+          "id": "resume-with-accounting",
+          "native_action": "Resume the interrupted selected pack after reconnect/source change, attempting new guest admissions after the host-wide cap.",
+          "target": "hosting",
+          "expected": [
+            "spent counters do not reset",
+            "host-wide reservations bound aggregate new sessions",
+            "resume binds checked artifact/range and current grants"
+          ],
+          "measured": [
+            "persistent_spent_bytes",
+            "host_pending_bytes",
+            "transfer_resume_and_release_ms"
+          ],
+          "runtime_owner_stage": 6
+        }
+      ],
+      "requirements": [
+        "H1",
+        "H6",
+        "H8",
+        "H10"
+      ]
+    },
+    {
+      "id": "B36",
+      "core_phases": [
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "steps": [
+        "Keep two distant close-up origins and independent navigation/selection while permitted source identity remains coherent.",
+        "Use optional cursor/avatar presence, opt out and expire disconnected samples; presence creates no accepted geometry/body/worker authority.",
+        "Run small native edits while a slow participant receives actual fixture assets and another viewer reverses demand.",
+        "Coalesce replaceable presence, preserve accepted deltas/receipts, and bound slow-reader reset/resnapshot without starving control.",
+        "Drag a shared preview faster than completion; accept only the exact current final input after base/scope checks.",
+        "Close one view then the last relevant view/session; shared demand survives the former and releases after the latter within the profile."
+      ],
+      "hard": [
+        "correct source/frame/epoch",
+        "bounded interest/fanout/queues",
+        "no skipped accepted edit",
+        "display LOD never changes accepted facts or future physical state"
+      ],
+      "quality": [
+        "predictable independent control",
+        "continuous useful preview",
+        "responsive mounted/native input under transfer"
+      ],
+      "metrics": [
+        "control_queue_age",
+        "frame_input_commit_p95_p99",
+        "presence_rate_and_TTL",
+        "unique_shared_work_and_per_participant_cost",
+        "last_demand_release_ms"
+      ],
+      "status": "pending",
+      "phase_replays": [
+        {
+          "id": "independent-framed-presence",
+          "native_action": "Open distant close-up views, publish optional cursor/avatar samples, change origins independently, opt out and expire disconnected samples.",
+          "target": "invented-detail",
+          "expected": [
+            "correct permitted source/frame mapping",
+            "presence changes no accepted geometry/body",
+            "session sequence and expiry enforced"
+          ],
+          "measured": [
+            "presence_rate_bytes_and_TTL",
+            "view_origin_error_m",
+            "created_physical_bodies = 0"
+          ],
+          "runtime_owner_stage": 3
+        },
+        {
+          "id": "interest-and-context",
+          "native_action": "Change independent spatial/semantic interests while a narrow viewer queries shared selection context and loses a field grant.",
+          "target": "hosting",
+          "expected": [
+            "projection filtering precedes disclosure",
+            "bounded pages and fanout; no world scan",
+            "no stale target substitution"
+          ],
+          "measured": [
+            "query_candidates",
+            "context_page_bytes",
+            "denied_fields_and_bytes_delivered = 0"
+          ],
+          "runtime_owner_stage": 4
+        },
+        {
+          "id": "fair-transfer-and-views",
+          "native_action": "Edit native content while one participant receives fixture assets slowly and another reverses demand; close one view then the last.",
+          "target": "home-approach",
+          "expected": [
+            "control/receipts remain reliable",
+            "coalesced presence cannot grow an unbounded queue",
+            "shared demand outlives one view and releases after the last"
+          ],
+          "measured": [
+            "control_queue_age_ms",
+            "frame_input_commit_percentiles",
+            "asset_inflight_bytes",
+            "last_demand_release_ms"
+          ],
+          "runtime_owner_stage": 5
+        },
+        {
+          "id": "bounded-resnapshot",
+          "native_action": "Reconnect a slow reader after its bounded accepted-delta window expires; resnapshot current permitted content and resolve outstanding receipts.",
+          "target": "hosting",
+          "expected": [
+            "accepted state is not skipped",
+            "resnapshot is bounded and authorized",
+            "old retained history/queues do not grow with travel"
+          ],
+          "measured": [
+            "resnapshot_bytes_and_queue_peaks",
+            "recorded_request_outcomes",
+            "native_response_ms"
+          ],
+          "runtime_owner_stage": 6
+        },
+        {
+          "id": "current-final-preview",
+          "native_action": "Drag a shared room edit beyond worker throughput, change scope/base and allow late output, then accept the current final request once.",
+          "target": "personal-places",
+          "expected": [
+            "compatible preview is provisional",
+            "only exact current final input commits",
+            "conflicting drafts remain recoverable"
+          ],
+          "measured": [
+            "stale_publications = 0",
+            "duplicate_acceptance = 0",
+            "preview_and_final_latency_ms",
+            "scratch_dual_buffer_peak_bytes"
+          ],
+          "runtime_owner_stage": 7
+        }
+      ],
+      "requirements": [
+        "H4",
+        "H5",
+        "H6",
+        "I1",
+        "I6"
+      ]
+    }
+  ],
+  "failure_schedule": {
+    "id": "workspace-hosting-reference-01",
+    "seed": 184017,
+    "control_points": [
+      "before_admission",
+      "after_estimate_before_entry",
+      "before_asset_read",
+      "after_decode_before_attach",
+      "before_acceptance",
+      "after_durable_commit_before_reply",
+      "before_root_publication",
+      "before_reconnect_reconciliation"
+    ],
+    "injections": [
+      "lost_reply",
+      "duplicate_request",
+      "late_generation",
+      "source_missing_or_denied",
+      "changed_grant",
+      "slow_reader",
+      "cap_exhaustion",
+      "disk_or_decode_failure",
+      "host_restart"
+    ],
+    "requirements": "Use actual existing acceptance/storage/transport boundaries and record the failing schedule; do not mock successful domain behavior.",
+    "runtime_evidence": "pending at phase owners"
+  },
+  "B37": {
+    "status": "deferred-no-stage01-experiment",
+    "first_runtime_owner_stage": 17,
+    "preserved_contract": [
+      "permitted result viewing without installing solver",
+      "observe/interact/start/cancel/spending separation",
+      "explicit worker/location/payer",
+      "source/run/frame/clock/epoch tags",
+      "one fenced physical writer where needed",
+      "independent visual fidelity",
+      "safe interrupted/restartable state",
+      "no automatic failover or donated compute"
+    ],
+    "datasets_protocols_workers_and_numeric_limits": "Selected only at the authorized deferred study; none are required to complete Stage 01."
+  }
+}

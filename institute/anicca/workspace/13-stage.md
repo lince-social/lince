@@ -12,7 +12,11 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 
 - [ ] **13.M04.** Disconnect/reconnect an external source with late/duplicate evidence, compare source ages and reconcile through authority-owned acceptance. Native forms/tables stay fast without loading detailed 3D assets or a physical-material solver.
 
+- [ ] **13.M05.** Generate linked draft Needs, tasks and proposed Actor assignments from a selected modeled proposal and explicit recipe. Change a source count/dimension and see affected unaccepted derived fields refresh while manual overrides remain. Inspect a reconciliation delta for already accepted assignments, commitments or Transfers; the model edit cannot silently change them. Let Fiote perform the same authorized workflow as an Agent Actor and retain native review/editing.
+
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 12](12-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -32,6 +36,38 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 - [ ] **13.T03.** Reuse F8–F10 for a site/civic workflow: place-linked observations/issues, proposal/review/publication, maintenance/accessibility and selective public offers. Model lifecycle changes and operational completion use their own explicit acceptance policy.
 
 - [ ] **13.T04.** Apply shared geometry/selection/definition/port contracts to one civil corridor/utility or geotechnical data-authoring workflow, with revisioned quantities and declared survey/model error. Store material labels and existing evidence without new property/ground-response calculations. [stage 11](11-stage.md) supplies geometric profiles; unsupported physical civil/manufacturing studies remain named deferred [stage 21](21-stage.md) rows with required operators/data/fixtures and cannot be completed by a room preset.
+
+- [ ] **13.T05.** Implement the model-to-draft-work binding using stage 11's typed source/selection/takeoff outputs and the existing dependency/job/query services. Capture source, recipe, draft-base and override revisions; refresh affected unaccepted derived fields under explicit view/activity demand with visible pending/invalid status. Preserve authored/manual fields and mark conflicts/missing inputs. A cancelled/superseded computation cannot overwrite a newer draft or create duplicate Needs/tasks.
+
+- [ ] **13.T06.** Reconcile changes affecting accepted work through an inspectable source-linked delta and the responsible existing operation/authority. Preserve accepted assignments, commitments, reservations, stock and Transfers until their explicit acceptance/reconciliation path succeeds. Keep partial/cross-Organ outcomes and adjustment receipts visible; deleting source geometry does not delete accepted history. Allow Fiote, as an Agent Actor, to execute only the currently delegated supported operations and retain requester/executor attribution.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Close exact operational transactions.** Reuse accepted quantity/authority/event paths for lots, eligibility, reservations, partial production and delivery. Separate evidence from accepted stock changes and bound retry/idempotency/competition before adding forecasts or linked drafts.
+
+- [ ] **Cycle B — Compose source-linked drafts and scenarios.** Consume stage 11's explicit revisioned takeoff/recipe, derive unaccepted Needs/tasks/assignments and preserve manual overrides. Show reconciliation for accepted commitments/Transfers; keep conditional capacity/stock scenarios isolated from live acceptance.
+
+- [ ] **Cycle C — Review useful work under imperfect sources.** Link site/model selections and evidence to civic maintenance/accessibility proposals, reconnect late/duplicate sources and let delegated Fiote act through the same native review path. Exercise meaningful operations on the selected 10,000-Record workload without loading detailed 3D or new scientific workers.
+
+- [ ] Preserve these contracts; factory delivery, procurement and site repair are example compositions over built-in exact operations, evidence, derived-draft and review primitives.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **13.W01 — Receive, reserve, produce and deliver** | Built-in accepted operations plus production recipe; 13.M01/13.M04. Handle partial work, competing reservations and late/duplicate notifications. | Available/reserved/in-progress/fulfilled quantities, source age and refusal reasons are clear. | Exact balances/eligibility/traceability hold; double-consumption/duplicate acceptance = 0; measure commit/query/subscription cost and bounded reconnect work on meaningful operational Records. |
+| **13.W02 — Inspect an alternative and review a proposal** | Built-in isolated scenario/evidence/review tools plus supply/site recipe; 13.M02/13.M03. Compare delayed supply and submit a maintenance/accessibility proposal. | Limiting assumptions, missing inputs, responsible authority and review outcome are understandable. | Scenario-induced stock/spending/equipment mutations = 0; private reporter/supplier data stays restricted; record bounded scenario/query/native response and geometry-free residency. |
+| **13.W03 — Refresh model-linked work without rewriting commitments** | Built-in derivation/reconciliation plus declared recipe; 13.M05. Change model quantity, retain a manual override and inspect an accepted-work delta, including delegated Fiote use. | Derived/manual/accepted values and reconciliation actions are distinguishable. | Signed Need convention and exact quantities hold; stale draft overwrite/implicit Transfer change = 0; record affected-only invalidation/refresh and native/Agent receipt parity. |
+
+- [ ] **Checks to select.** Unit/property checks cover exact balance conservation, eligibility, signed Needs, derived/manual precedence and recipe revisions. Integration/fault tests race reservations, duplicate/late evidence, base changes and partial fulfillment; ensure scenarios never invoke live Actions. Native replay receives/reserves/produces/delivers, updates a linked draft and reviews a proposal under the operational workload.
+
+- [ ] **Earlier-work repair.** Retain 11.W02 takeoff lineage, 02.W02/02.W03 accepted/Agent authority, 04.W02 selections and 06.W01 offline source status. An operational table or linked-work refresh must remain usable beside earlier spatial authoring and cannot silently consume accepted resources.
+
+## Concrete acceptance replay
+
+- [ ] **13.P01 — Exact operational work under concurrency; 13.T01 / 13.W01.** Through native forms receive a lot, race two eligible reservations, record partial production and delivery, then retry/duplicate notifications and reconnect. Independently enumerate starting stock, accepted movements, reservations and remaining quantities and compare exact balances/traceability after every acceptance. Use meaningful supplier/order/lot relationships in the selected operational workload, not unrelated filler Records. Measure commit/query/subscription latency, indexed candidates, reconnect bytes and retained resources; review available/reserved/fulfilled state. Preserve 02.W02 receipts/authority without loading detailed geometry.
+
+- [ ] **13.P02 — Evidence and alternatives do not become actions; 13.T02–13.T04 / 13.W02.** Run the bounded delayed-supply scenario, inspect assumptions/missing inputs, attach site-linked evidence and submit/review the maintenance/accessibility proposal. Reconnect an external source with late/duplicate observations and a denied field. Compare the supported consequence calculation with an independently specified quantity/calendar case and assert no scenario-induced live Action, stock reservation or spending. Record scenario/query/form costs separately from model display; review responsible authority and evidence/source age while retaining 04.W02 stable selection and 06.W01 offline status.
+
+- [ ] **13.P03 — Derived drafts respect accepted commitments; 13.T05/13.T06 / 13.W03.** Generate draft Needs/tasks from stage 11's explicit takeoff recipe, edit a source count/dimension, preserve a manual override and cancel an obsolete refresh. Inspect and explicitly accept/reject the delta affecting already accepted work; repeat an allowed part through Fiote and inspect receipts natively. Compare expected signed exact quantities, source/recipe/draft revisions and unchanged commitments before reconciliation. Record dirty outputs, refresh/acceptance latency and retained history; review derived/manual/accepted status while preserving 11.W02 lineage and 02.W03 delegated scope.
 
 ## Worked contract example
 
@@ -53,6 +89,57 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
   fn main() {
       assert_eq!(simple_input_gap_days(30_000, 10_000, 5), Some(2));
       assert_eq!(simple_input_gap_days(30_000, 0, 5), None);
+  }
+  ```
+
+- [ ] **13.X02.** Extend B14 with an explicit component-count recipe, live derived drafts, a manual override and previously accepted work. Inspect the actual source-linked delta and authoritative receipts. This is an illustrative replay fixture to implement through the real native/Agent services, not a new public command schema or portable workspace encoding. Keep its evidence pending until that workflow passes.
+
+  ```json
+  {
+    "fixture": "B14",
+    "source": "selection:wall-panels",
+    "recipe": "gross panel-count requirement to signed draft Need; unit panel",
+    "events": [
+      {
+        "source_revision": "r1",
+        "component_count": 4,
+        "derived_requirement_count": 4,
+        "draft_need_quantity": -4
+      },
+      {
+        "accepted_transfer": {
+          "quantity": 2,
+          "unit": "panel",
+          "status": "committed, not fulfilled"
+        },
+        "accepted_actor_assignment": "actor:contractor"
+      },
+      {
+        "source_revision": "r2",
+        "component_count": 6,
+        "derived_requirement_count": 6,
+        "draft_need_quantity": -6
+      },
+      {
+        "manual_requirement_override_count": 5,
+        "reason": "owner supplied requirement override"
+      },
+      {
+        "source_revision": "r3",
+        "component_count": 7
+      }
+    ],
+    "expected": {
+      "latest_derived_requirement_count": 7,
+      "effective_manual_requirement_count": 5,
+      "draft_need_quantity": -5,
+      "accepted_transfer_quantity": 2,
+      "accepted_actor_assignment": "actor:contractor",
+      "availability_balances": "unchanged by draft derivation",
+      "accepted_changes_require": "explicit reconciliation",
+      "duplicate_draft_objects": 0
+    },
+    "verification": "pending"
   }
   ```
 
@@ -254,7 +341,7 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 
 - [ ] **R0992.** Remote side effects can have unknown outcomes after a timeout. Mark them pending/unknown, inspect the remote receipt/state and retry only when the protocol supports safe deduplication. Do not claim exactly-once execution across arbitrary external systems.
 
-- [ ] **R0993.** Give automations debounce/hysteresis where relevant, rate/budget limits, simulation preview, expected revisions, cancellation, audit and revocation. Fiote can interpret evidence and propose operations; it does not bypass these contracts.
+- [ ] **R0993.** Give automations debounce/hysteresis where relevant, rate/budget limits, simulation preview, expected revisions, cancellation, audit and revocation. Fiote participates as an Agent Actor: it can query, propose and execute supported operations within delegated authority through the same accepted path as native controls. Evidence interpretation or an Agent role never bypasses these contracts or changes accepted work by itself.
 
 - [ ] **R0994.** Keep native device safety/interlocks in the responsible equipment system. A Lince Area, camera inference or simulation result must not become a replacement for a certified physical control system.
 
@@ -278,6 +365,18 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 
 - [ ] **R1038.** Imported assets, models, map data, camera data and derived exports need their own rights/attribution metadata. Embedded dependencies require LICENSE and available credits in their Sand. Publicly reachable data is not automatically reusable or redistributable data.
 
+### Live derived work and reconciliation
+
+- [ ] Define a derivation as the selected source revision plus recipe/parameters and explicit output bindings to the draft work plan. Native forms/scene views and Fiote inspect the same lineage, typed units and diagnostics. Create/link Records only for chosen meaningful work subjects; do not allocate a Record/task for every mesh element or atom.
+
+- [ ] Preserve the signed Need/Contribution convention and declared quantity basis: a positive gross component requirement can yield a negative draft Need quantity through the explicit recipe. Accepted stock, reservations, commitments, fulfilled Transfers and remaining availability continue through the existing balance paths. Draft derivation cannot count as delivery, consume inventory or subtract the same commitment twice.
+
+- [ ] Update unaccepted derived fields automatically when their relevant inputs change and the plan/activity retains admitted demand. Preserve explicit manual overrides and independent authored fields; expose a changed underlying derivation beside the override instead of silently replacing it. Bound incremental work through K6/E4/I6, keep pending/partial coverage visible and do not run derivation at render frequency.
+
+- [ ] Treat accepted operational changes as separately owned effects. A new geometry/recipe revision yields a proposed reconciliation delta with source revisions, changed quantities, affected Actors/commitments and diagnostics. Approval/execution follows current scope/base/authority; a prior delegation or geometry edit does not itself approve new spending or a revised Transfer. Preserve native edit/review and permitted Agent execution of the same operations.
+
+- [ ] Retain stable mappings where proven; removed/ambiguous source selections keep accepted work/history and expose repair or an explicit adjustment proposal. Declared recipe assumptions are inspectable and unknown physical properties remain unknown. This bridge provides planning/accounting data, not a new physical prediction or equipment execution path.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications
@@ -285,6 +384,8 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 - [ ] **R0739.** B14 — **Fixture:** Supplier/stock/production/partial delivery and a civic maintenance proposal — **Proof required:** Exact accounting, rights, reconciliation, selective publication and scenario isolation
 
 ## Workflow, correctness and performance evidence
+
+- [ ] Instantiate the local **13.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
 
 - [ ] **Real workload.** Use the proposed 10,000 operational Records as meaningful lots, reservations, processes, deliveries and maintenance evidence. Actually receive/reserve/produce/query/review with partial data and a reconnect; a table that merely paints that many rows is not sufficient.
 
@@ -296,7 +397,11 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 
 - [ ] Run only checks justified by the changed contracts through repository cargo xtask/Nix workflows and `cargo check` with warnings as errors. If a schema change is required, append a new migration/checksum and run the store check/migration guards; never rewrite an old migration. Keep old web code and unrelated changes untouched.
 
+- [ ] **Live-work evidence.** Extend B14/B19/B20/B22 with source/recipe edits, preserved manual overrides, stale/cancelled derivation, removed source selection and repeated/reconnected Agent requests. Compare native and delegated Agent outcomes; inspect actual draft refresh, reconciliation proposals and receipts, and prove accepted assignments/stock/Transfers stay unchanged until their responsible operation accepts the adjustment. Measure only affected work under the existing operational/query budgets.
+
 ## Advance gate
+
+- [ ] Verify every local **13.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
 
 - [ ] **R0666.** factory and civic flows use the same backend invariants, work without detailed 3D assets and do not double-account resources or turn an observation/simulation into an accepted transaction.
 
@@ -306,17 +411,23 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **13.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

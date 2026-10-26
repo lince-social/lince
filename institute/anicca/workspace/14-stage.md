@@ -10,9 +10,11 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 - [ ] **14.M03.** Publish an authorized public maintenance/offer view while retaining private interiors, supplier terms and reporter details. Review competing claims, duplicates, allowed ordering/partial fulfillment and explicit outcome reasons.
 
-- [ ] **14.M04.** Demonstrate shared primitive reuse across two distinct meaningful workflows, such as furnishing a place and coordinating a site repair or factory delivery. Avoid a second save/permission/query/runtime implementation.
+- [ ] **14.M04.** Demonstrate shared primitive reuse across two distinct meaningful workflows, such as furnishing a place and coordinating a site repair or factory delivery. Avoid a second save/permission/query/runtime implementation. Include an Agent Actor acting under delegated scope and the same model-to-draft-work lineage, with visible source authority and no borrowed host credentials.
 
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 13](13-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -28,6 +30,36 @@ Finish with a useful local infrastructure workspace composed from independently 
 - [ ] **14.T01.** Assemble independently governed site/city layers, core F1–F10 operations, observations, queries and existing scoped behaviors into one useful infrastructure workspace. Inspect retained/imported specialist evidence only where available, with its source/revision/status and without starting new science. Verify partial coverage, source ages, denied fields, disconnected work and independent authorities. Exercise H1–H10 core hosting with independent Protein access and separately budgeted existing activities from more than one Organ; no workspace lends private authority or becomes a distributed transaction coordinator. Deferred scientific profiles later regress this same composition.
 
 - [ ] **14.T02.** Prove core domain/asset/Record reuse in at least two distinct workflows without duplicated invariants. Tighten/simplify shared primitives from that evidence before widening a profile. Do not require B21/B37 new scientific domains or coupled solver results to complete this core composition.
+
+- [ ] **14.T03.** Compose the earlier Agent, presentation and linked-work contracts across the current permitted Organ/source boundaries. Verify that native and Fiote requests address the same authorized subjects/results and that delegation never widens source access, publication or accepted operational authority. Keep public-location granularity independent of private precise model anchors through existing publication projections; a coarse public Need does not disclose a private home/room position. Reuse the current policies/query/candidate services and retain partial/offline states.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Compose independently governed sources.** Use existing Protein sessions and workspace projections to show model/site, accepted operational data and source-age evidence from two Organs. Keep authentication, field rights, query lifetimes and partial/offline states independent.
+
+- [ ] **Cycle B — Submit and publish through the responsible authority.** Connect stable selections/evidence to a reviewable change and public maintenance/offer projection. Exercise private interiors, supplier/reporter data, competing claims, duplicate evidence, partial fulfillment and explicit outcome reasons.
+
+- [ ] **Cycle C — Prove shared primitive reuse.** Run furnishing/place work and site-repair/factory-delivery work through the same model/save/query/permission/Agent/demand boundaries under concurrent edits/downloads. Measure composition fairness and cost against the isolated proofs; no new domain-owned authority or runtime is introduced.
+
+- [ ] Preserve these contracts; public civic, factory and place arrangements are example recipes over built-in independent-source, publication and review capabilities.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **14.W01 — Use multiple Organs in one workspace** | Built-in federated source/query/session integration; 14.M01. Inspect a place, operations and source-age evidence with separate sign-ins and an offline source. | Source authority, age, missing access and partial availability remain visible without blocking unrelated work. | Borrowed credentials/unauthorized fields = 0; independent unsubscribe/revoke works; measure per-source/aggregate bytes, query/focus latency and retained demand. |
+| **14.W02 — Propose a change and publish a permitted view** | Built-in review/publication plus civic recipe; 14.M02/14.M03. Submit evidence-linked work and publish only allowed fields. | Proposal versus accepted action, competing claims and outcome reasons are understandable. | No implicit stock/ownership/equipment change; public view excludes private interiors/terms/reporter data; measure projection/query/update costs and authority revalidation under concurrent edits. |
+| **14.W03 — Reuse primitives across distinct workflows** | Required example composition over built-in capabilities; 14.M04. Furnish a place and coordinate a repair/delivery, including delegated Fiote and model-to-work lineage. | Native continuation and cross-workflow selection/source context remain coherent. | Same accepted IDs, operations, save/query/authority/demand contracts serve both; compare isolated versus mixed fairness, input/frame percentiles and resource peaks under the selected profile. |
+
+- [ ] **Checks to select.** Contract/integration tests isolate per-Organ authentication, projections, revocation, source age and subscriptions; fault cases include denied metadata, host loss, late evidence and stale Agent scope. Native replay signs in separately, proposes/reviews/publishes and continues the other workflow during a source failure. Measure mixed load rather than combining isolated benchmark numbers.
+
+- [ ] **Earlier-work repair.** Retain 13.W01–13.W03 operations/drafts, 05.W03 hosted entry, 06.W01 offline places and 07.W01/07.W03 authoring/Agent use. Any composition defect is repaired at its owning earlier contract before this stage claims two-workflow reuse.
+
+## Concrete acceptance replay
+
+- [ ] **14.P01 — Sources keep independent authority and lifetimes; 14.T01 / 14.W01.** Sign in to two Organs from one workspace, inspect permitted place/operational/source-age fields, disconnect one source and revoke a narrower grant while the other remains active. Compare delivered projections with an independently declared per-principal field/asset allowlist; no host credential may satisfy the second sign-in. Measure per-source subscriptions/bytes plus aggregate query/focus/residency costs. Review partial/offline/source-age states and verify one source's close/revoke does not destroy another's leases. Preserve 05.W03 entry and 13.W01 accepted operations.
+
+- [ ] **14.P02 — Public composition respects private detail; 14.T01/14.T03 / 14.W02.** Propose a site/room change with stable evidence, review competing/duplicate claims and publish the permitted maintenance/offer view. Race a source edit or authority change with publication. Assert the exact public allowlist, coarse public location versus private anchor, explicit acceptance outcomes and no implicit ownership/stock/equipment mutation. Record projection/update/candidate work and bounded denied responses; inspect useful native refusal/review controls. Retain 13.W02 evidence isolation and 13.W03 explicit reconciliation.
+
+- [ ] **14.P03 — Shared primitives prove two useful workflows; 14.T02/14.T03 / 14.W03.** Furnish a place and coordinate a repair/delivery using the same accepted model/Record/selection/save/query/Agent path. Let Fiote act within one delegated scope while a person continues the other workflow; lose a provider/source, save and reopen. Inspect actual outputs and lineage, not only shared trait names. Compare isolated and mixed input/frame/query/commit results, per-source queues and aggregate peaks against the adopted profile. Review native continuation/fairness and preserve 07.W01/07.W03 plus the affected 13.W01–13.W03 capabilities.
 
 ## Worked contract example
 
@@ -171,6 +203,8 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **14.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Combine a selected city/site, an operational workflow and a public civic projection with two source authorities and mixed online/offline demand. Exercise real find/inspect/propose/review/publish actions under concurrent edits/downloads; compare fairness and cost against the isolated workflow baselines.
 
 - [ ] **R0570.** **[stage 14](14-stage.md) — L0–L5 core composition proof** — **Intention and defined deliverable:** Independently governed infrastructure and mature core workflows compose without duplicate foundations — **Correctness/failure evidence and performance obligation:** B14/B19/B20 and core B33–B36: partial authority/coverage, mixed offline demand, reusable commands, source rights and measured fairness versus isolated baselines. Existing or imported results are honestly labeled; no new scientific run or coupled physical solver is needed.
@@ -183,6 +217,8 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 ## Advance gate
 
+- [ ] Verify every local **14.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0669.** people inspect local accepted state, model a proposed geometric/operational change, compare supported bounded resource scenarios and submit a reviewable proposal without a giant trusted world model or hidden live side effects. Personal offline modeling remains useful independently. New physics/material accuracy is neither claimed nor required; [stage 15](15-stage.md) stabilizes the delivered core next.
 
 - [ ] Advance only when **all 14.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -191,17 +227,23 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **14.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

@@ -1,0 +1,53 @@
+{
+  "method": "Independent raw GLB JSON/binary inspection using Python stdlib; no gltf crate reader or runtime navigation/physics inference.",
+  "files": {
+    "castle.glb": {
+      "unique_position_vertices": 24,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    },
+    "globe.glb": {
+      "unique_position_vertices": 561,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    },
+    "invented-feature.glb": {
+      "unique_position_vertices": 153,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    },
+    "local-place.glb": {
+      "unique_position_vertices": 349,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    },
+    "mechanism.glb": {
+      "unique_position_vertices": 24,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    },
+    "restricted-interior.glb": {
+      "unique_position_vertices": 24,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    },
+    "starter-character.glb": {
+      "unique_position_vertices": 19633,
+      "maximum_declared_bounds_rounding_excess_local_units": 0.0
+    }
+  },
+  "synthetic_local_dimensions": {
+    "home/ball": {
+      "axis_extents_m": [
+        0.04,
+        0.04,
+        0.04
+      ],
+      "expected_m": 0.04,
+      "allowed_error_m": 1e-06
+    },
+    "arbitrary-seven-mm-feature": {
+      "axis_extents_m": [
+        0.007,
+        0.007,
+        0.007
+      ],
+      "expected_m": 0.007,
+      "allowed_error_m": 1e-07
+    }
+  }
+}

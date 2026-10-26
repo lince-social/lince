@@ -1,0 +1,45 @@
+{
+  "bounds_m": [
+    [
+      -384.0,
+      -1.0,
+      -384.0
+    ],
+    [
+      384.0,
+      50.0,
+      384.0
+    ]
+  ],
+  "composition": "additive source terms; equal opposite terms cancel within declared numeric tolerance",
+  "formula": "amplitude * exp(-(x*x+z*z)/(radius*radius))",
+  "future_runtime_owner_stage": 5,
+  "initially_enabled": false,
+  "parameters": {
+    "amplitude_m": 50.0,
+    "radius_m": 128.0
+  },
+  "placements": [
+    {
+      "frame": "site",
+      "offset_m": [
+        300.0,
+        0.0,
+        300.0
+      ],
+      "scene": "earth-site"
+    },
+    {
+      "frame": "blank-root",
+      "offset_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scene": "blank-grid"
+    }
+  ],
+  "source_status": "authored-synthetic",
+  "source_units": "metre",
+  "support": "height-field-with-declared-bounds"
+}

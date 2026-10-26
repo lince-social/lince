@@ -1,0 +1,83 @@
+Food production and Nutrients (@farming-nutrition: 0, #part-of @farming, #contains @farming-food-identity, #contains @farming-prepared-foods, #contains @farming-dairy-foods, #contains @farming-nonfarm-inputs, #contains @saccharomyces-cerevisiae) { r_6K5MKDYYSKVCXVYQE2YJDXGG2W
+Nutrients.lingua is the supporting food dataset: 463 measured food preparations from TACO and USDA. The Farming species Records link to it with #related-food. That relationship means relevant production context; it does not prove the exact species, cultivar, recipe, or nutrient composition of another harvest.
+
+Keep raw, cooked, canned, dried, milled, fermented, salted, and oil-extracted food entries separate. Water loss, processing, added ingredients, edible bones, and the measured portion can change values substantially. A crop's kg yield is not automatically kg of the edible preparation.
+
+Use @solanum-lycopersicum to learn tomato production, then select the actual raw tomato or tomato-product Record for nutrition. Use @gallus-gallus-domesticus for poultry husbandry, then choose egg, liver, breast, or another measured preparation. No nutrient numbers are copied or assigned as universal species properties.
+
+Every existing food is associated with a species production example, a prepared-food category, an unresolved-identity category, or non-farm inputs. Ambiguity remains visible until the original sample or a supplier provides evidence.
+} r_6K5MKDYYSKVCXVYQE2YJDXGG2W
+
+Food names needing botanical identity (@farming-food-identity: 0, #part-of @farming-nutrition, #related-food @nutrition-br-taco-074, #related-food @nutrition-br-taco-081, #related-food @nutrition-br-taco-102, #related-food @nutrition-br-taco-103, #related-food @nutrition-br-taco-104, #related-food @nutrition-br-taco-108, #related-food @nutrition-br-taco-111, #related-food @nutrition-br-taco-125, #related-food @nutrition-br-taco-126, #related-food @nutrition-br-taco-135, #related-food @nutrition-br-taco-155, #related-food @nutrition-br-taco-156, #related-food @nutrition-br-taco-172, #related-food @nutrition-br-taco-175, #related-food @nutrition-br-taco-177, #related-food @nutrition-br-taco-178, #related-food @nutrition-br-taco-179, #related-food @nutrition-br-taco-180, #related-food @nutrition-br-taco-181, #related-food @nutrition-br-taco-182, #related-food @nutrition-br-taco-203, #related-food @nutrition-br-taco-205, #related-food @nutrition-br-taco-206, #related-food @nutrition-br-taco-207, #related-food @nutrition-br-taco-237, #related-food @nutrition-br-taco-253, #related-food @nutrition-br-taco-471, #related-food @nutrition-br-taco-475, #related-food @nutrition-br-taco-511, #related-food @nutrition-br-taco-585, #related-food @nutrition-br-fdc-170556, #related-food @nutrition-br-fdc-170557, #related-food @nutrition-br-fdc-170072, #related-food @nutrition-br-fdc-168449, #related-food @nutrition-br-fdc-173944, #source @farm-source-panc-identity) { r_2Q8YVZRMSF74MYHGD6XY57YFDK
+| Food name | Check before using a species method |
+| --- | --- |
+| Abóbora and pumpkin seed, unspecified | Several Cucurbita species and hybrids. Compare @cucurbita-pepo, @cucurbita-maxima, and `@cucurbita-moschata`. |
+| Abobrinha paulista | Often @cucurbita-moschata; verify the cultivar rather than assuming all zucchini are `@cucurbita-pepo`. |
+| Acelga | Chinese cabbage can be @brassica-rapa; true chard is `@beta-vulgaris`. |
+| Alfavaca | Several Ocimum species. Compare @ocimum-gratissimum and `@ocimum-basilicum`. |
+| Banana cultivar names | @musa-acuminata ancestry or @musa-acuminata-balbisiana hybrid groups; verify clone and nursery identity. |
+| Café | @coffea-arabica, @coffea-canephora, or a blend. An infusion's measured dilution is part of its food identity. |
+| Canola oil | Food-quality canola can involve @brassica-napus, @brassica-rapa, or other approved cultivar backgrounds; oil name alone does not prove species. |
+| Cará and inhame | @dioscorea-alata and other Dioscorea yams versus @colocasia-esculenta taro. Names vary by region. |
+| Caruru | Several Amaranthus species; @amaranthus-viridis is an identified production example. |
+| Cebolinha | Often @allium-fistulosum, but chives or young @allium-cepa can share the name. |
+| Chicória | Often @cichorium-endivia, sometimes other chicories; almeirão/catalonha commonly use `@cichorium-intybus`. |
+| Erva-doce | @foeniculum-vulgare or @pimpinella-anisum; confirm the ingredient. |
+| Feijão broto | Often @vigna-radiata, sometimes @glycine-max or another pulse; obtain edible-sprouting identity and safe seed. |
+| Jabuticaba | @plinia-cauliflora is one species; several Plinia species supply the food. |
+| Jambo | @syzygium-jambos is one identity; red jambo can be @syzygium-malaccense or another Syzygium. |
+| Jamelão | Commonly @syzygium-cumini; verify identified stock before planting. |
+| Kiwi | @actinidia-deliciosa is one food species; green, gold, and hardy Actinidia differ. |
+| Laranja-lima | Often a low-acid @citrus-sinensis cultivar in Brazil; the market name needs confirmation. |
+| Mexerica Murcott | Usually a tangor hybrid with mandarin and sweet-orange ancestry; not proof of pure `@citrus-reticulata`. |
+| Mostarda | Several Brassica species; compare @brassica-juncea and `@brassica-rapa`. |
+| Pera Park and unspecified ameixa | Confirm cultivar and species before using @pyrus-communis or @prunus-salicina instructions. |
+| Serralha | @sonchus-oleraceus is one edible identity; confirm the plant. |
+| Taioba | Use an identified edible @xanthosoma-taioba clone; related ornamentals are not interchangeable food. |
+| Tremoço | Several Lupinus species and sweet/bitter cultivars; compare @lupinus-albus only after identification. |
+| Tucumã | @astrocaryum-aculeatum and A. vulgare have different identities and production contexts. |
+| Wheat flour and pasta | @triticum-aestivum, @triticum-turgidum-durum, or blends; retain the actual ingredient identity. |
+
+Some clearly conventional names have a #related-food edge to their usual crop despite this remaining uncertainty. That edge is navigational context, not a taxonomic determination of the sample.
+} r_2Q8YVZRMSF74MYHGD6XY57YFDK
+
+Prepared dishes and mixed ingredients (@farming-prepared-foods: 0, #part-of @farming-nutrition, #related-food @nutrition-br-taco-020, #related-food @nutrition-br-taco-029, #related-food @nutrition-br-taco-037, #related-food @nutrition-br-taco-038, #related-food @nutrition-br-taco-040, #related-food @nutrition-br-taco-041, #related-food @nutrition-br-taco-053, #related-food @nutrition-br-taco-061, #related-food @nutrition-br-taco-063, #related-food @nutrition-br-taco-136, #related-food @nutrition-br-taco-154, #related-food @nutrition-br-taco-525, #related-food @nutrition-br-taco-526, #related-food @nutrition-br-taco-527, #related-food @nutrition-br-taco-528, #related-food @nutrition-br-taco-531, #related-food @nutrition-br-taco-532, #related-food @nutrition-br-taco-533, #related-food @nutrition-br-taco-534, #related-food @nutrition-br-taco-535, #related-food @nutrition-br-taco-536, #related-food @nutrition-br-taco-539, #related-food @nutrition-br-taco-540, #related-food @nutrition-br-taco-541, #related-food @nutrition-br-taco-542, #related-food @nutrition-br-taco-543, #related-food @nutrition-br-taco-544, #related-food @nutrition-br-taco-546, #related-food @nutrition-br-taco-549, #related-food @nutrition-br-taco-550, #related-food @nutrition-br-taco-551, #related-food @nutrition-br-taco-552, #related-food @nutrition-br-taco-553, #related-food @nutrition-br-taco-554, #related-food @nutrition-br-taco-555, #related-food @nutrition-br-fdc-168910) { r_63QABAXEE9771GQ0AVYQ1ZE783
+| Food examples | Production starting points; confirm the actual recipe |
+| --- | --- |
+| Canjica with milk, curau | @zea-mays; milk or other additions depend on the recipe. |
+| Bread, toast, lasagne, pasta | @triticum-aestivum or @triticum-turgidum-durum; egg, milk, oil, and fillings vary. |
+| Popcorn with soybean oil | @zea-mays and `@glycine-max`. |
+| Gnocchi | @solanum-tuberosum; flour and egg content vary. |
+| Mixed canned or cooked vegetables | Identify each ingredient; the dish name does not list them. |
+| Acarajé | @vigna-unguiculata and @elaeis-guineensis are common bases; fillings vary. |
+| Arroz carreteiro, baião de dois | @oryza-sativa; identify beef, cowpea, and other ingredients from the actual dish. |
+| Barreado, dobradinha | @bos-taurus as a common base; cuts and other ingredients vary. |
+| Camarão à baiana, cuscuz paulista, vatapá | Resolve shrimp or fish through @farming-fish-identity; cereal, nut, palm-oil, and coconut ingredients vary. |
+| Cuscuz de milho | @zea-mays; salt and additions depend on the measured preparation. |
+| Cuxá | Vinagreira is commonly @hibiscus-sabdariffa; rice, sesame, shrimp, and other ingredients depend on the dish. |
+| Charuto de repolho, quibebe | @brassica-oleracea or the identified Cucurbita cultivar; fillings and additions vary. |
+| Feijão tropeiro, feijoada, virado | @phaseolus-vulgaris with recipe-dependent cassava/maize flour, pork, egg, and greens. |
+| Frango com açafrão | @gallus-gallus-domesticus; identify the actual seasoning, often @curcuma-longa in Brazil rather than true saffron. |
+| Macarrão à bolonhesa | Wheat, @solanum-lycopersicum, and usually @bos-taurus; proportions vary. |
+| Maniçoba, tucupi, tacacá | @manihot-esculenta with dish-specific processing; tacacá often also uses @acmella-oleracea and shrimp. A crop Record is not a safe detoxification recipe. |
+| Tabule | Wheat, @solanum-lycopersicum, @petroselinum-crispum, and recipe-dependent herbs and additions. |
+| Tapioca with butter, vaca atolada | @manihot-esculenta and usually @bos-taurus; confirm the measured food's ingredients. |
+
+A dish association does not authorize copying its nutrient totals to any one ingredient. Weigh the actual edible harvest and select or calculate the actual preparation separately.
+} r_63QABAXEE9771GQ0AVYQ1ZE783
+
+Dairy preparations (@farming-dairy-foods: 0, #part-of @farming-nutrition, #related-food @nutrition-br-taco-261, #related-food @nutrition-br-taco-262, #related-food @nutrition-br-taco-448, #related-food @nutrition-br-taco-449, #related-food @nutrition-br-taco-461, #related-food @nutrition-br-taco-462, #related-food @nutrition-br-taco-463, #related-food @nutrition-br-taco-464, #related-food @nutrition-br-taco-467, #related-food @nutrition-br-taco-469, #related-food @nutrition-br-fdc-171284, #related-food @nutrition-br-fdc-170886, #related-food @nutrition-br-fdc-170887) { r_3XABP2G1T8E5CN97NQW2JB20JT
+Milk explicitly labelled de vaca links to @bos-taurus; milk explicitly de cabra links to `@capra-hircus`. Unspecified yoghurt, cheese, and butter remain prepared dairy foods. Cattle provide a common production example, but the product label and original measurement determine the milk species, fat content, ingredients, and process.
+
+Use @farming-animal-products for milking, cooling, pasteurization, and hygiene. Yoghurt fermentation, cheese curd/whey separation, butter churning, milk concentration, and UHT processing change the food and its composition. A live animal's feed requirement or milk yield does not describe the nutritional value of a particular cheese.
+} r_3XABP2G1T8E5CN97NQW2JB20JT
+
+Salt and drinking water (@farming-nonfarm-inputs: 0, #part-of @farming-nutrition, #related-food @nutrition-br-taco-517, #related-food @nutrition-br-fdc-173647) { r_77WYY2PPRP6Y9P7WM81V1VD6PJ
+Coarse salt is a mineral product; potable tap water is treated drinking water. Neither has a planting or livestock lifecycle. Salt extraction, water treatment, and laboratory verification are separate production processes. Use potable water for harvest washing and food processing; suitability for irrigation alone does not establish drinking-water quality.
+} r_77WYY2PPRP6Y9P7WM81V1VD6PJ
+
+Baker's yeast — Saccharomyces cerevisiae (@saccharomyces-cerevisiae: 0, is #species, #part-of @farming-nutrition, #related-food @nutrition-br-taco-514, #source @farm-source-yeast) { r_6ZEHAD7FZGFDN1Y26Z4BD7XYKX
+A cultivated fungus used in biological baker's yeast, not a plant seed or livestock species. Cells multiply mainly by budding under appropriate culture conditions. Food production starts with a defined clean strain, controlled substrate, temperature, aeration, and contamination checks; biomass is then separated and sold fresh or dried by the producer's process.
+
+For household baking, use a food-grade commercial culture and the recipe's hydration and fermentation conditions. Gas production raises dough; baking completes the food process. Keep fresh yeast cold as labelled, protect dry yeast from moisture, and replace inactive or contaminated stock. A sourdough starter is a mixed microbial community and does not inherit the compressed-yeast tablet's nutrient measurements.
+} r_6ZEHAD7FZGFDN1Y26Z4BD7XYKX

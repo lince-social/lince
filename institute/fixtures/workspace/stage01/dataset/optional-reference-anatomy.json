@@ -1,0 +1,36 @@
+{
+  "actual_source_counts": null,
+  "admission_constraints": {
+    "aggregate_starter_limits_still_apply": true,
+    "requested_pack_encoded_bytes": 67108864,
+    "requested_selected_region_decoded_peak_bytes": 67108864
+  },
+  "availability": "deferred-source-selection",
+  "before_stage_11_implementation": [
+    "Select reviewed source/rights and supported variation.",
+    "Measure actual joints/vertices/weights/morphs/regions/encoded/decoded/staging counts.",
+    "Prepare reference geometry/rig/semantic mappings and freeze pose/error checks.",
+    "Admit only requested coverage within aggregate limits or review the named profile change."
+  ],
+  "claims": "No delivered human anatomy, patient reconstruction, tissue law or diagnosis.",
+  "default_active_bytes": 0,
+  "default_download_bytes": 0,
+  "named_coverage": [
+    "bones",
+    "joints",
+    "ligaments",
+    "tendons",
+    "muscles",
+    "fat",
+    "major vessels",
+    "skin"
+  ],
+  "owner_stage": 11,
+  "reference_pack_profiles": [
+    "male-reference",
+    "female-reference"
+  ],
+  "required_bounded_first_region": "upper limb",
+  "source_dataset": null,
+  "source_rights": null
+}

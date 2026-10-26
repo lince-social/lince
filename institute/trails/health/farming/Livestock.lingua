@@ -1,0 +1,115 @@
+Livestock, eggs, milk, and honey (@farming-livestock: 0, is #trail, #contains @farming-animal-plan, #contains @farming-animal-health, #contains @farming-animal-feed, #contains @farming-animal-products, #contains @gallus-gallus-domesticus, #contains @meleagris-gallopavo, #contains @coturnix-japonica, #contains @bos-taurus, #contains @capra-hircus, #contains @sus-scrofa-domesticus, #contains @ovis-aries, #contains @oryctolagus-cuniculus, #contains @apis-mellifera) { r_7JQED5KAHXM0SXKETE4G4WN7B3
+Keep animals only after feed, water, housing, daily care, veterinary access, manure handling, and the product's processing route are arranged. Plants can wait for a better season; dependent animals need care every day.
+
+Chicken, turkey, quail, cattle, goats, pigs, and honey connect to Nutrients.lingua. Sheep and rabbits are additional husbandry examples; no equivalent nutrient entry is implied.
+} r_7JQED5KAHXM0SXKETE4G4WN7B3
+
+Plan the whole animal cycle (@farming-animal-plan: 0, #part-of @farming-livestock, #source @farm-source-poultry-economics) { r_1RPAB9GCP7GAG4R0DBYGHC19T0
+1. Define the product and production system: eggs, milk, meat, breeding stock, honey, or a combination. Choose an adapted breed or strain and a manageable starting group.
+2. Calculate adult housing, year-round feed and water, handling facilities, shade, ventilation, fencing, labour, and backup care. Include drought and power-failure plans where equipment is essential.
+3. Arrange veterinary and biosecurity plans, traceable healthy stock, manure storage, and permitted processing before purchasing animals.
+4. Decide whether to buy young animals, started growers, or breeding adults. Breeding adds mating, birth or incubation, neonatal care, replacements, and surplus males to the workload.
+5. Record individual or flock identity, source, dates, breeding, births, growth, feed, illness, treatments, mortality, and product lots.
+6. Harvest only healthy eligible products through an appropriate humane and hygienic system. Respect treatment withdrawal periods.
+7. Retain suitable replacements, retire or cull humanely, clean empty housing between groups, and review usable output against all inputs.
+
+Practice: price an entire cycle, including feed to first production and animals that produce no saleable output. [Small-flock production economics](https://www.fao.org/4/y5169e/y5169e09.htm).
+} r_1RPAB9GCP7GAG4R0DBYGHC19T0
+
+Daily health and biosecurity (@farming-animal-health: 0, #part-of @farming-livestock, #source @farm-source-poultry-health) { r_5AY14H459FTYPRT7XG8AKJETWQ
+Observe appetite, water intake, movement, breathing, manure, body condition, injury, and product changes every day. Keep clean water available and housing dry, ventilated, and protected from predators. Correct heat stress, overcrowding, and damp litter promptly.
+
+Isolate incoming and sick animals using a species- and disease-appropriate veterinary plan. Separate species or ages where disease control requires it. Use dedicated footwear and tools, control rodents and wild-animal access, and manage visitors and stock movement.
+
+Plan vaccinations, parasite monitoring, neonatal care, and emergency treatment with a local veterinarian; climate and disease status determine the schedule. Never copy drug doses from a general Trail. Keep treatment identity and withdrawal dates with the animal and product lot. Investigate unusual deaths promptly and use an approved disposal route; do not place carcasses in an ordinary food-scrap compost pile.
+
+Practice: write a daily inspection sheet and an emergency contact route. [Flock health principles](https://www.fao.org/4/y5169e/y5169e07.htm).
+} r_5AY14H459FTYPRT7XG8AKJETWQ
+
+Feed, grazing, and manure (@farming-animal-feed: 0, #part-of @farming-livestock, #source @farm-source-poultry-feed, #source @farm-source-small-ruminant-feed) { r_2VAZTVRXF9XMXQF5ABPZT4YYJG
+Match energy, protein, fibre, minerals, vitamins, and water to species, size, growth, pregnancy, and lactation. Use analysed forage and an appropriate complete ration or professionally balanced diet. Sudden diet changes and mouldy feed can cause serious losses.
+
+Poultry and pigs cannot live productively on grass and scraps alone. Ruminants need adequate effective fibre; goats browsing and sheep grazing still need planned forage and minerals. Sheep require sheep-appropriate minerals because copper tolerance differs. Rabbits need ample suitable fibre and steady diets.
+
+Set grazing pressure from actual forage supply. Allow recovery between grazing periods; keep animals off badly waterlogged soil. Plan dry-season or winter feed before it arrives. Avoid grazing toxic or unidentified plants.
+
+Collect manure with clean bedding, keep runoff out of water and crops, and follow `@farming-manure`. Never feed rotten material just because the farm produces it.
+
+Practice: measure feed and water delivered, refusals, weight or body condition, and product output. [Poultry feed resources](https://www.fao.org/4/y5169e/y5169e04.htm); [small-ruminant nutrition](https://extension.psu.edu/winter-nutrition-for-small-ruminants-gestation-to-weaning).
+} r_2VAZTVRXF9XMXQF5ABPZT4YYJG
+
+Egg, milk, meat, and honey handling (@farming-animal-products: 0, #part-of @farming-livestock, #source @farm-source-milk-safety, #source @farm-source-slaughter) { r_4ZV8ZRFMCN6WX2CQMS2R5P0P0X
+Collect eggs frequently from clean nests; reject cracked or heavily contaminated eggs and follow the local washing and temperature-control system consistently. Keep food eggs separate from incubation eggs.
+
+Milk with clean hands, equipment, teats, and containers. Check udder health, exclude abnormal or withdrawal-period milk, cool promptly, and use a validated pasteurization and dairy-processing method. Cheese and yoghurt do not make unsafe raw milk automatically safe.
+
+Arrange trained humane handling, transport, stunning, slaughter, inspection where required, and rapid hygienic chilling before raising a meat batch. Avoid mixing dirty hide, feathers, digestive contents, and clean carcass surfaces. Use trained personnel and an appropriate facility; this Trail supplies production planning, not an improvised slaughter method.
+
+Harvest only surplus mature honey using clean food equipment. Prevent excess moisture and contamination, preserve colony stores, and keep harvest lots traceable. Honey is unsuitable for infants under one year.
+
+Practice: draw a product flow from animal to consumer, recording temperature controls and dirty-to-clean boundaries. [Milk safety](https://www.fda.gov/food/buy-store-serve-safe-food/dangers-raw-milk-unpasteurized-milk-can-pose-serious-health-risk); [humane slaughter principles](https://www.woah.org/en/what-we-do/standards/codes-and-manuals/terrestrial-code-online-access/).
+} r_4ZV8ZRFMCN6WX2CQMS2R5P0P0X
+
+Chicken — Gallus gallus domesticus (@gallus-gallus-domesticus: 0, is #domestic-subspecies, #part-of @farming-livestock, #source @farm-source-layers, #source @farm-source-incubation, #related-food @nutrition-br-taco-393, #related-food @nutrition-br-taco-394, #related-food @nutrition-br-taco-395, #related-food @nutrition-br-taco-398, #related-food @nutrition-br-taco-399, #related-food @nutrition-br-taco-400, #related-food @nutrition-br-taco-403, #related-food @nutrition-br-taco-404, #related-food @nutrition-br-taco-405, #related-food @nutrition-br-taco-408, #related-food @nutrition-br-taco-409, #related-food @nutrition-br-taco-410, #related-food @nutrition-br-taco-413, #related-food @nutrition-br-taco-414, #related-food @nutrition-br-taco-486, #related-food @nutrition-br-taco-487, #related-food @nutrition-br-taco-488, #related-food @nutrition-br-taco-489, #related-food @nutrition-br-fdc-171054, #related-food @nutrition-br-fdc-173424) { r_4TF77VMQYCM7AS8P7MS96SE2RZ
+Choose layer, meat, or deliberately mixed-purpose stock. Prepare predator-proof ventilated housing, dry litter, feeders, drinkers, perches and nests where appropriate before arrival. Start young chicks with a warm zone near 33–35°C, an escape to cooler space, and gradual reduction guided by behaviour. Supply the correct starter, grower, and later production ration; adult layer feed is unsuitable as a universal chick ration.
+
+Hatching fertile eggs takes about 21 days with properly managed incubation; a rooster is unnecessary for table eggs. Separate breeding decisions from egg production. Layers commonly start around 18–24 weeks; collect eggs daily. Meat strains finish at strain-specific weights and ages: fast broilers and slow caipira systems need different schedules.
+
+Observe weight, legs, litter, feed, water, and mortality. Retain healthy planned replacements, remove birds through a humane processing route, and clean empty housing between batches. [Layer management](https://extension.psu.edu/management-requirements-for-laying-flocks); [incubation](https://extension.msstate.edu/agriculture/livestock/poultry/important-incubation-factors).
+} r_4TF77VMQYCM7AS8P7MS96SE2RZ
+
+Turkey — Meleagris gallopavo (@meleagris-gallopavo: 0, is #species, #part-of @farming-livestock, #source @farm-source-brooding, #source @farm-source-incubation, #related-food @nutrition-br-taco-425, #related-food @nutrition-br-taco-426) { r_5KTR0VE3DNNDBA480BBH82DYT9
+Prepare turkey-appropriate brooding, space, secure range, and feed before buying healthy poults. Confirm they find water and starter promptly; maintain a warm zone and dry footing, adjusting heat by behaviour. Use a turkey starter and growth programme, not an assumed chicken ration. Avoid mixing with chickens where shared parasites and blackhead risk require separation.
+
+Fertile eggs incubate about 28 days; controlled breeding adds management beyond buying poults. Finish meat birds by the selected strain, sex, target weight, leg health, and body condition, commonly over several months rather than one universal date. Weigh a sample and plan processing capacity in advance. Maintain veterinary biosecurity, remove through a trained humane route, and clean and rest the system between groups. Keep breeding replacements only when their mating system and welfare can be supported.
+} r_5KTR0VE3DNNDBA480BBH82DYT9
+
+Japanese quail — Coturnix japonica (@coturnix-japonica: 0, is #species, #part-of @farming-livestock, #source @farm-source-quail, #related-food @nutrition-br-taco-485) { r_73TP0NP9EDP6H7KMXBCEBXPQ8Y
+A common farmed codorna, distinct from bobwhite quail. Use escape-proof housing with safe headroom, suitable flooring, shade, airflow, and protection from predators. Start chicks with species-appropriate heat, non-slip footing, shallow safe drinkers, and a quail/game-bird starter. Adult egg production needs an appropriate breeding or layer ration.
+
+Egg incubation is about 17–18 days; do not use bobwhite's longer schedule. Many strains begin laying around 6–8 weeks under suitable nutrition and light. Collect eggs frequently and separate table eggs from clean fertile incubation eggs. Meat and breeding targets depend on strain and body condition. Track growth, feathering, injuries, egg output, and mortality; keep male ratios compatible with bird welfare. Renew with healthy stock and clean between batches. [Coturnix incubation](https://extension.msstate.edu/sites/default/files/publications/publications/P1182_web.pdf); [feeding quail](https://extension.msstate.edu/sites/default/files/publications/publications/P2383_web.pdf).
+} r_73TP0NP9EDP6H7KMXBCEBXPQ8Y
+
+Cattle — Bos taurus (@bos-taurus: 0, is #species, #part-of @farming-livestock, #source @farm-source-cattle, #source @farm-source-calf, #related-food @nutrition-br-taco-326, #related-food @nutrition-br-taco-327, #related-food @nutrition-br-taco-328, #related-food @nutrition-br-taco-329, #related-food @nutrition-br-taco-332, #related-food @nutrition-br-taco-333, #related-food @nutrition-br-taco-336, #related-food @nutrition-br-taco-337, #related-food @nutrition-br-taco-341, #related-food @nutrition-br-taco-342, #related-food @nutrition-br-taco-345, #related-food @nutrition-br-taco-346, #related-food @nutrition-br-taco-349, #related-food @nutrition-br-taco-350, #related-food @nutrition-br-taco-351, #related-food @nutrition-br-taco-352, #related-food @nutrition-br-taco-355, #related-food @nutrition-br-taco-356, #related-food @nutrition-br-taco-357, #related-food @nutrition-br-taco-358, #related-food @nutrition-br-taco-359, #related-food @nutrition-br-taco-360, #related-food @nutrition-br-taco-363, #related-food @nutrition-br-taco-364, #related-food @nutrition-br-taco-365, #related-food @nutrition-br-taco-366, #related-food @nutrition-br-taco-367, #related-food @nutrition-br-taco-368, #related-food @nutrition-br-taco-369, #related-food @nutrition-br-taco-370, #related-food @nutrition-br-taco-371, #related-food @nutrition-br-taco-372, #related-food @nutrition-br-taco-374, #related-food @nutrition-br-taco-375, #related-food @nutrition-br-taco-376, #related-food @nutrition-br-taco-377, #related-food @nutrition-br-taco-378, #related-food @nutrition-br-taco-379, #related-food @nutrition-br-taco-382, #related-food @nutrition-br-taco-383, #related-food @nutrition-br-taco-456, #related-food @nutrition-br-taco-457, #related-food @nutrition-br-taco-458, #related-food @nutrition-br-taco-459, #related-food @nutrition-br-fdc-172217, #related-food @nutrition-br-fdc-168626) { r_4FN6BNH0B7TJZD6E1HVTXCCNCN
+Domestic cattle include taurine and zebu-derived populations and crosses; the bovine food entries do not identify a breed. Choose a milk, meat, or mixed system fitted to heat, forage, water, handling facilities, and veterinary access. Calculate year-round forage and stocking before purchase; supply shade, suitable minerals, clean water, and safe restraint.
+
+Breed only animals with appropriate size and body condition; record service and pregnancy. Gestation is roughly 283 days. Prepare a clean calving area, monitor without unnecessary disturbance, and arrange urgent help for abnormal labour. Calves need prompt adequate clean colostrum, identification, health observation, and a gradual feeding/weaning programme based on intake and growth.
+
+Dairy production follows calving: milk hygienically, cool promptly, manage udder health, and plan a veterinarian-guided dry period before the next calving. Meat finishing follows measured growth and body condition, not a universal age. Retain sound replacements, maintain reproductive and treatment records, and use a trained humane processing route. Return managed manure through `@farming-manure`.
+} r_4FN6BNH0B7TJZD6E1HVTXCCNCN
+
+Goat — Capra hircus (@capra-hircus: 0, is #species, #part-of @farming-livestock, #source @farm-source-goat, #related-food @nutrition-br-taco-454) { r_6423CSCRT1DQQHX4QHSYA62D2B
+Choose a dairy or meat breed adapted to the site. Provide secure fencing, dry shelter, climbing-safe fixtures, forage/browse, goat-appropriate minerals, clean water, and balanced supplements for production. Inspect feet, body condition, parasite indicators, and udder health; avoid routine parasite dosing without a justified plan.
+
+Separate young males before unwanted matings. Breed by adequate growth and body condition, accounting for seasonal cycling. Gestation is around 150 days. Prepare a clean kidding area; monitor birth, give prompt adequate clean colostrum, check warmth and nursing, and record kid growth. Wean by feed intake and growth, not date alone.
+
+Milk production follows kidding; keep kids' feeding and household milk collection deliberately planned. Milk cleanly, cool promptly, and pasteurize for food use. Retain healthy suitable replacements, renew forage and shelter hygiene, and arrange humane processing or retirement for surplus animals. [Dairy goat production](https://extension.psu.edu/dairy-goat-production).
+} r_6423CSCRT1DQQHX4QHSYA62D2B
+
+Pig — Sus scrofa domesticus (@sus-scrofa-domesticus: 0, is #domestic-subspecies, #part-of @farming-livestock, #source @farm-source-pigs, #related-food @nutrition-br-taco-427, #related-food @nutrition-br-taco-429, #related-food @nutrition-br-taco-432, #related-food @nutrition-br-taco-433, #related-food @nutrition-br-taco-435, #related-food @nutrition-br-taco-436) { r_0S4F61CTFDADBHAH12C0BK3VQJ
+Choose a breeding or grow-finish system before buying pigs. Provide strong fencing, dry lying space, shade, cooling, rooting/enrichment, plentiful water, and a stage-appropriate balanced diet. Forage and kitchen scraps alone do not meet growth needs; follow local feed and disease rules. Prevent manure runoff and contact with wild pigs.
+
+Breeding requires appropriate mature size, safe boar or insemination handling, and pregnancy records. Gestation averages about 114 days. Prepare hygienic farrowing accommodation with a warm piglet area and protection from crushing while meeting the sow's welfare needs. Check breathing, warmth, colostrum access, nursing, and maternal health; obtain veterinary help for problems.
+
+Wean and change diets gradually according to the system. Track weight gain, feed conversion, lameness, and body condition. Finish by target weight, health, and processing capacity. Retain selected replacements, use a trained humane slaughter route, and clean between groups. [Gestation and piglet outcomes](https://extension.psu.edu/how-gestation-shapes-piglet-outcomes).
+} r_0S4F61CTFDADBHAH12C0BK3VQJ
+
+Sheep — Ovis aries (@ovis-aries: 0, is #species, #part-of @farming-livestock, #source @farm-source-sheep) { r_64TG8R9JG7QNFQ90WYPQRQHT9X
+Additional husbandry example. Use a breed fitted to climate, forage, and the meat, milk, or wool objective. Provide flock companionship, secure fencing, dry shelter, clean water, suitable forage, and sheep-specific minerals. Check feet, body condition, parasite burden, and heat stress; shear wool breeds when the system requires it.
+
+Plan mating to match forage and labour; gestation is around 147 days. Prepare a clean lambing area and arrange help for difficult births. Lambs need prompt clean colostrum, warmth, nursing checks, identification, and growth records. Wean when intake and growth support it. Retain sound replacements, adjust feed for late pregnancy and lactation, and use a humane processing route for meat. Clean housing and rotate grazing with actual pasture recovery. [Pregnancy nutrition](https://extension.psu.edu/nutrition-throughout-pregnancy-for-sheep-flocks).
+} r_64TG8R9JG7QNFQ90WYPQRQHT9X
+
+Domestic rabbit — Oryctolagus cuniculus (@oryctolagus-cuniculus: 0, is #species, #part-of @farming-livestock, #source @farm-source-rabbits) { r_332G747KWW6MFGZAZVEV4SV5BS
+Additional husbandry example. Provide secure ventilated housing, dry comfortable resting space, exercise/enrichment, shade, clean water, and a consistent fibre-rich rabbit diet. Heat stress, wet conditions, poor flooring, and abrupt diet changes cause losses. Keep breeding and health records and avoid unplanned mating.
+
+Gestation averages about 31–32 days. Prepare a clean nest box before kindling; inspect kits calmly for warmth and feeding while preserving the nest. Daily observations should not mistake the doe's brief nursing visits for abandonment. Introduce suitable solid feed gradually and wean according to health and intake. Track weights and digestive problems; separate as needed to prevent fighting and breeding. Finish by breed and target condition, retain healthy replacements, and use a trained humane processing route. [Rabbit production](https://extension.psu.edu/rabbit-production).
+} r_332G747KWW6MFGZAZVEV4SV5BS
+
+Honey bee — Apis mellifera (@apis-mellifera: 0, is #species, #part-of @farming-livestock, #source @farm-source-bees, #related-food @nutrition-br-taco-507) { r_1GCVW8Z1C1AEYXBZQCR9FPQBA3
+Honey can also come from other bee species; the nutrition entry does not identify the colony. Start with local training and healthy traceable stock. Place accessible hives with forage, water, airflow, and a flight path that avoids people and livestock; use protective equipment appropriate to local bees.
+
+The colony contains queen, workers, and seasonal drones. Eggs develop through larvae and pupae to adults; a worker takes about 21 days to emerge. Build colony strength before the local nectar flow, provide space, and monitor queen performance, brood, stores, pests, and disease. Time actions by local wet/dry or temperate seasons, not imported month names.
+
+Harvest only mature surplus honey, checking moisture rather than relying solely on capping. Leave sufficient stores and never sell feeding syrup as floral honey. Extract with clean food equipment, label lots, and protect from moisture. Monitor Varroa and other locally relevant threats, using approved methods. Renew queens or split colonies deliberately while preserving viable population and stores. [Seasonal colony management](https://extension.psu.edu/honey-bee-management-throughout-the-seasons).
+} r_1GCVW8Z1C1AEYXBZQCR9FPQBA3

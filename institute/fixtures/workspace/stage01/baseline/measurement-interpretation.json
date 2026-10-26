@@ -1,0 +1,77 @@
+{
+  "scope": "Derived interpretation of the raw native observation; does not change source measurements or future targets.",
+  "planar_target_error_canvas_units": 0.13204844502090868,
+  "gravity_drop_canvas_units": 70.00019174771677,
+  "linux_process_clock_ticks_per_second": 100,
+  "idle_process_cpu_seconds": 0.43,
+  "idle_one_logical_cpu_equivalent_percent": 28.080763245123467,
+  "native_wake_signals_are_not_os_wakes": true,
+  "frame_p95_ms": 125.54214499999999,
+  "frame_p99_ms": 524.06578,
+  "input_response_samples": 1,
+  "input_response_is_not_p95_or_scanout": true,
+  "managed_surface_and_atlas_estimate_bytes": 27526404,
+  "total_gpu_residency": "not measured",
+  "native_stdout_result": "Workspace baseline observed: native drag, Area attraction, gravity, settling, workspace isolation and idle sampling.",
+  "exit_code": 0,
+  "measurement_coverage": [
+    {
+      "metric": "native hit, drag, selected Area, gravity, sleeping, foreign workspace isolation, idle position",
+      "state": "observed-and-asserted",
+      "evidence": "baseline.json, trace.jsonl, reviewed images and persistence-observation.json"
+    },
+    {
+      "metric": "frame interval and CPU update p50/p95/p99",
+      "state": "observed",
+      "samples": 251,
+      "limits": "Development/compositor viewport and instrumentation-heavy active window; not an optimized navigation or GPU-duration result."
+    },
+    {
+      "metric": "native presented-state input response",
+      "state": "one-observed-sample",
+      "limits": "Not p95, physical hardware latency or GPU scanout."
+    },
+    {
+      "metric": "process RSS/HWM/CPU ticks; native wake signals",
+      "state": "observed",
+      "limits": "Process counters include native UI/driver/background activity. Wake signals exclude the measurement wake and are not all OS wakes."
+    },
+    {
+      "metric": "retained source payload, managed surface and font-atlas bytes",
+      "state": "estimated-from-existing-resource-snapshot",
+      "limits": "Not an allocator allocation count, peak staging or total GPU residency."
+    },
+    {
+      "metric": "heap allocation counts, per-Sand CPU and exact GPU duration/residency",
+      "state": "not-instrumented-in-current-native-baseline",
+      "owner_stage": 5,
+      "limits": "Explicitly unavailable; not zero and not a performance pass."
+    },
+    {
+      "metric": "model query, commit, streaming/decode/upload, cancellation, replacement staging and release percentiles",
+      "state": "targets-selected-runtime-not-yet-implemented",
+      "owner_stages": [
+        2,
+        4,
+        5,
+        6
+      ],
+      "limits": "Measure at the named first consumer against profile.json; no generic scheduler or test framework was added solely for these future metrics."
+    },
+    {
+      "metric": "cold/warm/offline useful sparse view and host/client entry/resource cost",
+      "state": "later-runtime-proof",
+      "owner_stages": [
+        5,
+        6
+      ],
+      "limits": "Fixture inspection and current canvas startup do not certify these journeys."
+    },
+    {
+      "metric": "40 mm and 7 mm payload geometry error and input-source bytes",
+      "state": "observed-input-reference-only",
+      "evidence": "../geometry-reference.json and ../dataset-recheck.json",
+      "limits": "Not runtime far-field precision or physical accuracy."
+    }
+  ]
+}

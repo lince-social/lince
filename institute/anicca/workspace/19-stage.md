@@ -14,6 +14,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 
 ## Entry and scope
 
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
+
 - [ ] Confirm the preceding [stage 18](18-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
 - [ ] Recover only the needed completed context from [stage 16 summary](16-stage.md#completion-summary); [stage 17 summary](17-stage.md#completion-summary); [stage 18 summary](18-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
@@ -33,6 +35,34 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 - [ ] **19.T03.** Provide native setup and result views with explicit loads, supports, conditions, scalar/tensor legends, convergence and stale/invalid coverage. Add deformable playback/preview with mappings to source and independently generated render geometry. Apply H7/H8 to shared result viewing and explicitly located workers, using existing observation/admission/disclosure paths; a viewer needs neither solver installation nor raw private inputs when the permitted output contract allows that view.
 
 - [ ] **19.T04.** Verify a patch/uniaxial case, slender cantilever in its applicable regime and an analytic slab heat-flow case; perform mesh/time refinement and balance checks. Keep approximate interactive flexibility labeled separately from these checked continuum models.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Validate elasticity on captured source.** Bind named regions/materials/loads/supports to a selected admissible discretization and solve the patch/bar/cantilever references. Report units, assumptions, mapping, convergence and invalid constraints before presenting deformation as a current result.
+
+- [ ] **Cycle B — Validate conduction and heating separately.** Capture conductivity/capacity/density, initial state, power and boundary conditions. Compare steady slab flux and transient response with independent references, energy balance and mesh/time refinement; choose actual error/work bounds from the named continuum profile.
+
+- [ ] **Cycle C — Integrate failure, offline and weak viewing.** Cancel/exhaust quota, change source/boundaries and reject singular/unsupported inputs through the common job/result statuses. Reopen captured inputs/results offline, share permitted fields and keep stable native editing responsive under worker limits.
+
+- [ ] Preserve these contracts after authorization; a loaded component and heated sample are example studies using built-in continuum setup/mapping/result inspection.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **19.W01 — Inspect a verified elastic result** | Built-in supported elasticity study; 19.M01. Assign regions/loads, solve references and inspect mapped deformation/fields. | Units, deformation display scale, constraints, convergence and excluded regions are understandable. | Reference error and mapping validity meet adopted bounds; compare patch/bar/cantilever quantities under refinement; record DOFs, residuals, time and peak solver/display bytes. |
+| **19.W02 — Inspect verified heat flow and transient heating** | Built-in supported thermal study; 19.M02. Set initial/boundary/source data and compare steady/transient results. | Source power, time, temperature versus motion cooling and incomplete results remain clear. | Unit/sign/energy/time-refinement/reference checks pass chosen bounds; report error versus discretization/time step and worker cost, not color smoothness alone. |
+| **19.W03 — Fail safely, reopen and share results** | Built-in job/status/offline/participation; 19.M03/19.M04. Cancel, invalidate, reopen offline and let a weak visitor inspect allowed fields. | Current/stale/failed/partial status and missing coverage support a safe next action. | Invalid/stale results accepted as current = 0; sources/rights survive; record quota/cancel/seek/transfer peaks and unchanged native interaction under admitted jobs. |
+
+- [ ] **Checks to select.** Independent analytic/reference and unit/property tests cover rigid modes, load/boundary maps, energy and time/mesh convergence in supported regimes. Integration/fault tests cover singular models, missing properties, expired maps, cancellation, quota exhaustion and denied outputs. Native replay authors boundary conditions, runs/inspects both studies and reopens offline; numerical pass evidence accompanies the actual result UI.
+
+- [ ] **Earlier-work repair.** Retain 16.W01/16.W02 property applicability, 17.W03 job isolation, 18.W02 safe source/state handling and 15.W01–15.W05. Source deformation/animation maps may be reused only with valid numerical mappings; this stage does not certify later cloth/hair/nonlinear tissue models.
+
+## Concrete acceptance replay
+
+- [ ] **19.P01 — Elastic results have reference and mapping proof; 19.T01/19.T03/19.T04 / 19.W01.** After authorization, set named material/load/support regions natively and solve the patch/bar/cantilever references in their stated regime. Compare displacement/stress/reactions and rigid modes with independent solutions, inspect source-mapped fields and vary mesh resolution. Record geometry/map revision, units, DOFs, residual/reference error, convergence, time and peak solver/display bytes. Review load/support legends and deformation display scale; a smooth image cannot replace the actual quantity check. Preserve 16.W01 applicability and the accepted source from 10.W01.
+
+- [ ] **19.P02 — Heating is different from steady conduction; 19.T02–19.T04 / 19.W02.** Set conductivity/capacity/density, initial temperature, source power and supported boundaries. Compare steady slab heat flow, the uniform insulated energy reference and a spatially varying transient reference with separate mesh/time refinement. Check temperature/flux/power kinds, source/boundary signs and accumulated energy balance against adopted tolerances. Record time steps, cells/DOFs, numerical error, solve/output peaks and native setup/result cost. Review time/temperature versus existing Sand motion cooling without changing its semantics.
+
+- [ ] **19.P03 — Failed studies remain inspectable, not current; 19.T01/19.T03/19.T04 / 19.W03.** Cancel/exhaust a quota, supply singular supports or missing material data, then change a boundary/source while the old job finishes. Assert explicit failed/partial/stale states and no invalid current-result adoption. Reopen permitted inputs/results offline and share a bounded output with a weak visitor denied raw private inputs. Measure cancellation, transfer/decode/release and mixed native response; inspect understandable recovery. Preserve 17.W03 job authority, 18.W02 source/state handling and affected 15.W01–15.W05 stable work.
 
 ## Worked contract example
 
@@ -80,6 +110,12 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 
 - [ ] **R0820.** Deferred [stage 19](19-stage.md) quantitative checks have explicit reference problems: a uniform linear-elastic bar in axial load gives elongation `ΔL=FL/(EA)` with free lateral boundaries and the specified support; a sufficiently slender, small-deflection cantilever compares tip response to `δ=FL³/(3EI)` within that beam idealization; a homogeneous conduction slab with insulated sides and fixed face temperatures gives `|q|=k|ΔT|/L`. Keep force versus traction and heat flux versus total power distinct (`P=|q|A` for a uniform face). Exclude singular point-load/clamp neighborhoods from false pointwise stress convergence claims. Use an isotropic tensor and proper rigid rotations to verify constitutive invariance before testing anisotropy. Add a separately referenced transient heating case with capacity, source/boundary energy and time refinement before claiming time-dependent heating.
 
+### Deformation views and later body/garment studies
+
+- [ ] Reuse stage 11's accepted reference/pose/region/deformation maps when displaying this stage's admitted mechanical fields, keeping authoring geometry and visual skinning distinct from the numerical discretization. Validate supported load/boundary/source mappings and reject an unmapped tissue or garment region rather than borrowing a nearby vertex or animation weight as a physical constraint.
+
+- [ ] Keep nonlinear physical cloth/hair, active muscles, ligaments/tendons and calibrated tissue/contact studies in [stage 21](21-stage.md#articulated-secondary-motion-and-biomechanical-studies). The linear-elastic patch/cantilever proofs here do not establish cloth drape, tendon force, human tissue accuracy or clinical validity; a detailed body can still be viewed/posed without those calculations.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications
@@ -87,6 +123,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 - [ ] **R0737.** B12 — **Fixture:** Elastic patch/cantilever and conduction slab — **Proof required:** Units, analytical comparison, convergence, balanced quantities and failed-run visibility
 
 ## Workflow, correctness and performance evidence
+
+- [ ] Instantiate the local **19.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
 
 - [ ] **Real workload.** Study a selected authored component under an applicable elastic load and a bounded heated sample, including source/boundary changes and a reference comparison. Sweep numerical resolution/time step against actual quantities of interest, error, time and peak bytes; a colorful stress/temperature mesh alone is not completion.
 
@@ -100,6 +138,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 
 ## Advance gate
 
+- [ ] Verify every local **19.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0706.** repeat bounded elastic, steady-conduction and transient-heating studies offline from captured inputs and obtain their declared quantitative tolerances; incomplete, singular, divergent, unsupported or stale runs cannot appear as passed current results.
 
 - [ ] Advance only when **all 19.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -108,17 +148,23 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **19.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

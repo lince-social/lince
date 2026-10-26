@@ -1,0 +1,259 @@
+{
+  "workflow": "01.W01",
+  "status": "observed",
+  "scope": "Existing native canvas only; future scale, hosting and scientific capabilities are not exercised.",
+  "version": "0.8.0",
+  "machine": {
+    "os": "linux",
+    "architecture": "x86_64",
+    "kernel": "6.18.55",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+    "available_parallelism": 8,
+    "system_memory_kib": 16115836,
+    "build_profile": "development"
+  },
+  "requested_viewport": [
+    1280,
+    720
+  ],
+  "observed_viewport": {
+    "logical_width": 1920.0,
+    "logical_height": 1052.0,
+    "scale_factor": 1.0
+  },
+  "clock": {
+    "physics": "manual 1/60 s per update; existing fixed-step schedule",
+    "timings": "measured wall-clock intervals; update includes native UI and extraction preparation, not GPU duration"
+  },
+  "canvas_units": {
+    "current": "logical canvas units; no physical calibration declared",
+    "display": "zoom maps canvas units to logical pixels",
+    "existing_gravity_canvas_units_per_second_squared": 981.0
+  },
+  "steps": [
+    {
+      "action": "prepared_isolated_native_canvas",
+      "frame": 12,
+      "elapsed_ms": 3580.516086,
+      "observed": {
+        "physics_enabled": false,
+        "area_target": [
+          -400.0,
+          0.0
+        ],
+        "area_strength": 100000.0,
+        "area_side_canvas_units": 900.0,
+        "area_reach": "unlimited",
+        "sand_start": [
+          -300.0,
+          -200.0
+        ],
+        "sand_depth_canvas_units": 1.0,
+        "falling_start_elevation_canvas_units": 80.0,
+        "falling_depth_canvas_units": 10.0
+      }
+    },
+    {
+      "action": "native_pointer_target",
+      "frame": 24,
+      "elapsed_ms": 5783.284065,
+      "observed": {
+        "screen": [
+          660.0,
+          326.0006103515625
+        ],
+        "position": [
+          -300.0,
+          -200.0
+        ]
+      }
+    },
+    {
+      "action": "native_pointer_press",
+      "frame": 26,
+      "elapsed_ms": 5927.181253,
+      "observed": {
+        "hit": {
+          "entity": 4294966594,
+          "point": [
+            -299.9999694824219,
+            0.009999999776482582,
+            -199.99998474121094
+          ]
+        },
+        "window_cursor": [
+          660.0,
+          326.0006103515625
+        ],
+        "edit_mode_enabled": true
+      }
+    },
+    {
+      "action": "native_drag_observed",
+      "frame": 32,
+      "elapsed_ms": 7102.050818999999,
+      "observed": {
+        "before": [
+          -300.0,
+          -200.0
+        ],
+        "after": [
+          -236.00001525878906,
+          -176.00001525878906
+        ]
+      }
+    },
+    {
+      "action": "native_pointer_drag",
+      "frame": 32,
+      "elapsed_ms": 7102.166311999999,
+      "observed": {
+        "before": [
+          -300.0,
+          -200.0
+        ],
+        "after": [
+          -236.00001525878906,
+          -176.00001525878906
+        ]
+      }
+    },
+    {
+      "action": "native_physics_toggle",
+      "frame": 36,
+      "elapsed_ms": 7552.722732,
+      "observed": {
+        "enabled": true
+      }
+    },
+    {
+      "action": "settled",
+      "frame": 263,
+      "elapsed_ms": 31939.352334,
+      "observed": {
+        "bodies": 2,
+        "awake_bodies": 0,
+        "position": [
+          -399.90997920325,
+          -0.09660770147835326
+        ],
+        "falling_elevation": 9.99980825228323
+      }
+    }
+  ],
+  "active_frame_intervals": {
+    "samples": 251,
+    "p50_ms": 105.250818,
+    "p95_ms": 125.54214499999999,
+    "p99_ms": 524.06578
+  },
+  "active_update": {
+    "samples": 251,
+    "p50_ms": 97.498318,
+    "p95_ms": 117.13385699999999,
+    "p99_ms": 204.564618
+  },
+  "native_input_response": {
+    "first_presented_drag_change_ms": 140.209848,
+    "samples": 1,
+    "method": "Adapter-level synthetic window cursor state and native pointer events to presented-state change; no physical OS cursor warp, hardware input or GPU scanout measurement."
+  },
+  "idle": {
+    "observed_ms": 1531.297409,
+    "native_wake_signals": 0,
+    "measurement_wake_signals": 1,
+    "process_cpu_ticks": 43,
+    "awake_bodies": 0,
+    "position_unchanged": true
+  },
+  "process": {
+    "resident_kib": 683252,
+    "peak_resident_kib": 686252
+  },
+  "resources": {
+    "graphics": {
+      "name": "Intel(R) Iris(R) Xe Graphics (TGL GT2)",
+      "backend": "Vulkan",
+      "device_type": "IntegratedGpu",
+      "driver": "Intel open-source Mesa driver",
+      "driver_info": "Mesa 26.1.2",
+      "vendor": 32902,
+      "device": 39497,
+      "status": "Selected graphics device"
+    },
+    "sands": [
+      {
+        "entity": "701v0",
+        "name": "Plain text",
+        "workspace": "Home",
+        "suspended": false,
+        "entities": 2,
+        "ui_nodes": 2,
+        "text_bytes": 14,
+        "glyphs": 14,
+        "image_assets": 0,
+        "retained_image_bytes": 0,
+        "record_json_bytes": 15,
+        "event_sources": 0,
+        "pending_writes": 0,
+        "physics_bodies": 0,
+        "awake_bodies": 0,
+        "startup": []
+      },
+      {
+        "entity": "705v0",
+        "name": "Plain text",
+        "workspace": "Home",
+        "suspended": false,
+        "entities": 2,
+        "ui_nodes": 2,
+        "text_bytes": 20,
+        "glyphs": 20,
+        "image_assets": 0,
+        "retained_image_bytes": 0,
+        "record_json_bytes": 14,
+        "event_sources": 0,
+        "pending_writes": 0,
+        "physics_bodies": 0,
+        "awake_bodies": 0,
+        "startup": []
+      },
+      {
+        "entity": "815v0",
+        "name": "Plain text",
+        "workspace": "Workspace 2",
+        "suspended": false,
+        "entities": 2,
+        "ui_nodes": 2,
+        "text_bytes": 27,
+        "glyphs": 27,
+        "image_assets": 0,
+        "retained_image_bytes": 0,
+        "record_json_bytes": 15,
+        "event_sources": 0,
+        "pending_writes": 0,
+        "physics_bodies": 0,
+        "awake_bodies": 0,
+        "startup": []
+      }
+    ],
+    "unique_image_assets": 0,
+    "retained_image_bytes": 0,
+    "surface_count": 4,
+    "visible_surfaces": 3,
+    "surface_texture_bytes": 13894916,
+    "font_atlas_bytes": 13631488
+  },
+  "measurement_limits": [
+    "Managed texture sizes and retained payloads are estimates, not total GPU residency.",
+    "CPU ticks are Linux process counters; no per-Sand CPU attribution.",
+    "Native wake signals exclude the single measurement wake and are not all OS wake-ups.",
+    "Active timing includes fixture setup, edit-panel/workspace switching and a pre-drag screenshot; it is not an isolated navigation benchmark.",
+    "Shared development-machine load, including concurrent compilation, is uncontrolled and can affect wall-clock timing.",
+    "Development run is baseline evidence, not a future-stage performance pass."
+  ],
+  "qualitative_review": {
+    "status": "pending",
+    "image": "settled.png"
+  }
+}

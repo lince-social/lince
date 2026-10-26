@@ -8,11 +8,13 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 - [ ] **04.M02.** Bind a formula/effect or Area to cursor, an explicitly shared camera or another CanvasItem with a local offset. Move that anchor and see the same bounded effect follow; equal/opposite additive topology terms cancel under the declared composition.
 
-- [ ] **04.M03.** Select the same occurrence/subelement from scene, tree/table and numeric tools, including several matching copies. A stale/denied/deleted selection cannot silently address another object.
+- [ ] **04.M03.** Select the same occurrence/subelement from scene, tree/table and numeric tools, including several matching copies. A stale/denied/deleted selection cannot silently address another object. Let Fiote inspect that permitted selection through structured context and issue the same scoped operation; partial/denied fields and changed selections remain explicit instead of requiring image-based target guessing.
 
 - [ ] **04.M04.** Mount a Sand to a verified wall frame, move/rotate its containing space and remove the supporting face. Content retains identity/last pose and has a usable repair path; ordinary unmounted Sands keep existing gravity.
 
 ## Entry and scope
+
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
 - [ ] Confirm the preceding [stage 03](03-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
@@ -34,6 +36,36 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 - [ ] **04.T04.** Implement correspondence evidence/coverage and selector cardinality for the supports already required here, with explicit occurrence/chart anchors and last-pose repair. A reordered mesh preserves known IDs, and an unsupported split/merge stays unresolved; full CAD construction history and complete analytic-loop transitions are later B29/[stage 10](10-stage.md) work.
 
 - [ ] **04.T05.** Extend existing policy and E4 queries to the model/occurrence/property scopes needed here and authorized spatial/semantic interests. Prove B34/B36 server-side denial for metadata, selection, bounds and partial asset/source references before delivery, including a public guest and a narrower identified viewer. Reuse the same query/anchor path for hosted mounted Sands and Areas; shared visibility never lends operational/host authority. Prepare B40's captured multi-selection/scope and authorized matching-copy queries without a full-world scan. Preserve per-occurrence state and distinguish a selected-set edit from a deliberate shared-definition update.
+
+- [ ] **04.T06.** Build the bounded structured context needed by an authorized Actor: selected subject/occurrence/subelement IDs, captured model or projection base, local frame/units, supported fields/relationships/operations and explicitly requested nearby semantic/spatial results. Reuse E4/I3 queries and existing policy rather than a Fiote scene mirror. Return source/coverage/unsupported status and continuation handles for admitted pages; resolve edits by stable identity and captured context. Acquire context for an explicit task or admitted subscription/automation; camera motion or hover does not request model inference by itself.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Unify selection and spatial queries.** Return occurrence/subelement, representation revision, frame and permission-aware metadata through one shared selection path. Use explicit support capabilities and indexed candidates followed by the appropriate narrow query; preserve unknown/unsupported answers rather than forcing every support into a solid.
+
+- [ ] **Cycle B — Compose regions, targets and anchors.** Extend existing Areas to supported 3D shapes, independent targets and declared sampling/falloff/filter/immunity policies. Bind the same effect to cursor, explicitly shared camera or an item with a local offset; additive topology composition must agree across adapters.
+
+- [ ] **Cycle C — Attach useful content and inspect failures.** Persist a mount's stable selection, local coordinates and source revision; retain last pose when correspondence fails and expose repair. Deliver bounded Fiote selection context and captured multi-selection through the same authorized operations.
+
+- [ ] Preserve these contracts; attraction circles, valleys and wall content are examples over shared region/support/attachment primitives.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **04.W01 — Independent target and moving influence** | Built-in region/target/binding tools exercised by Area/topology recipes; 04.M01/04.M02. Move a target inside a rotated region, offset-bind an effect and move its anchor. | Region boundary, target location, falloff and immunity are understandable while navigating. | Moving only the target preserves region placement; 2D/3D membership agrees with declared policy; equal/opposite additive effects cancel within the selected numeric tolerance; record candidate counts/query latency at fixed active set and larger empty extent. |
+| **04.W02 — Select and act on the same thing** | Built-in scene/tree/numeric/Agent selection; 04.M03. Capture matching copies, inspect structured context and issue a scoped edit. | Selection highlights, partial metadata and denied/stale targets provide clear feedback. | Cross-view target IDs agree; unauthorized/obsolete retargets = 0; per-principal filtering precedes disclosure; measure bounded context bytes and query/edit work. |
+| **04.W03 — Mount, move and repair content** | Built-in attachment tools; 04.M04. Attach a Sand to a wall, move/rotate the room, delete support and repair. | Content remains usable, last pose is visible and repair can be completed without losing it. | Content identity/accepted data survive; only verified correspondence follows; unmounted Sands retain existing gravity; measure affected mapping/rebuild work and mount/query latency. |
+
+- [ ] **Checks to select.** Property tests cover rotated region membership, frame covariance, off-center targets, immunity and additive cancellation. Integration/fault cases cover deleted/split/denied supports, stale picks, changed captured selection and source generations. Native replay draws/resizes a region, moves its target separately, binds/unbinds an offset and repairs a mounted Sand through actual controls.
+
+- [ ] **Earlier-work repair.** Retain 03.W01 precision and 03.W03 shared content, plus relevant 02.W02 authority cases. A query/index optimization must preserve selection identity, units, rights and the existing Area/cooling behavior measured in 01.W01.
+
+## Concrete acceptance replay
+
+- [ ] **04.P01 — Region, target and binding stay independent; 04.T01/04.T02 / 04.W01.** Draw a circle/sphere, put the target near its top and then outside it, rotate the containing frame and move cursor/camera/item anchors with offsets. Compare affected IDs with a small independent membership/filter/immunity oracle. Compose equal/opposite additive topology terms and verify cancellation within the adopted tolerance against the same underlying surface. Hold active candidates fixed while enlarging empty extent; record visited candidates, evaluations and latency, not only visible object count. Review boundary/target/binding legibility.
+
+- [ ] **04.P02 — Captured identity across clients; 04.T04–04.T06 / 04.W02.** Select matching occurrences from scene/tree/numeric controls, obtain bounded Fiote context, then reorder, delete or revoke one captured target before acceptance. Assert consistent target IDs, explicit partial/denied fields and refusal of stale retargeting. Count index candidates, authorized context bytes/pages and changed occurrences; compare with the fixture's permitted selection. Preserve 03.W01 exact units/frames and 02.W02 accepted authority while selections change.
+
+- [ ] **04.P03 — Attachment failure is repairable; 04.T03/04.T04 / 04.W03.** Mount a usable Sand on a wall, rotate/move its room, remove/split the supporting face and repair through native controls. Verify content identity, last accepted pose, verified-only correspondence, undo/reopen and independent ordinary Sand gravity. Measure affected mappings/rebuilds rather than a whole-scene refresh. Review actual reading/input, the unresolved state and a successful repair; retain 03.W03 spatial/flat content identity during the same sequence.
 
 ## Worked contract example
 
@@ -181,6 +213,16 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 - [ ] **R0903.** Acceptance: exercise internal/external influence and containment across a rotated room or cave region, including immunity combined with an off-center target.
 
+### Structured context for workspace Actors
+
+- [ ] Give Fiote and other authorized clients the same typed context used by native selection/inspection: the actual subjects, source revisions, quantities/units, relevant constraints and linked Records within scope. Camera/view context identifies what the request refers to; separately allowed offscreen queries do not require rendering every result or allocating a full world.
+
+- [ ] Bound query fields, candidate sets and dependency expansion through existing grants and admission. A request for what is visible cannot enumerate hidden/private objects, counts or source hashes. Missing detail and stale picks report their status and retain the captured target; they do not silently switch to a similarly named/nearby object. Apply existing source/provider disclosure rules to model-bound context; internal query access does not automatically authorize external publication.
+
+- [ ] Keep optional image/capture evidence separately requested and attributable. Structured workspace access works without a screenshot, scene-recognition model or physical sensor. Imported text/observations do not become instructions or authority for Agent execution.
+
+- [ ] Extend this same structured context in stage 11 for authored articulated selections: source/body/occurrence revision, named anatomical or mechanical regions, rig-to-source relationships, reference/selected poses, joint coordinates/units and attributed user annotations. Query only the permitted requested subset, with source coverage and unknown/ambiguous mappings. Stage 04 establishes the general query/selection path; it does not introduce an anatomy database, motion recognizer or clinical evaluator.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications
@@ -197,6 +239,8 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **04.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Arrange real useful Sands on a room fixture and use camera/item-bound influence while navigating. Combine rotated regions, off-center targets, immunity and mixed participant access; measure indexed candidates and query latency instead of scanning every world object for each capability.
 
 - [ ] **R0560.** **[stage 04](04-stage.md) — L2/L3, selected support adapters in L4** — **Intention and defined deliverable:** Shared selection/region/anchor/mount tools, validated snapping and independent Area destination — **Correctness/failure evidence and performance obligation:** B05/B22/B23: equivalent selection across views, rotated membership, target immobility of region, deleted anchor and denied/stale picks. Record query latency and candidate counts at fixed active-set size; no per-capability full-world scan. B34/B36 add server-enforced per-participant model/selection interest and denied metadata/source cases through the same queries. B40 begins captured multi-selection and authorized matching-copy scope for ordinary editing.
@@ -209,6 +253,8 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 ## Advance gate
 
+- [ ] Verify every local **04.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0606.** a sphere can influence above/below; a wall patch addresses its own surface; moving an off-center target leaves the region unchanged; mounting on a removed face never silently selects another face.
 
 - [ ] Advance only when **all 04.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -217,17 +263,23 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **04.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

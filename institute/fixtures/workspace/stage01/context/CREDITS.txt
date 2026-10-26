@@ -1,0 +1,8 @@
+Made with Natural Earth.
+Source: Natural Earth 1:110m coastline, version 4.1.0.
+Upstream commit: 693f11422f4e08d2da4566b854dda53eb7c39fb3.
+https://www.naturalearthdata.com/downloads/110m-physical-vectors/110m-coastline/
+https://www.naturalearthdata.com/about/terms-of-use/
+The upstream vector data is in the public domain.
+This fixture retains the upstream GeoJSON bytes, including its longitude/latitude coordinates.
+This is schematic global context, not local survey or terrain-elevation data.

@@ -1,0 +1,219 @@
+{
+  "assets": {
+    "castle": {
+      "clips": [],
+      "decoded_rgba_image_bytes": 0,
+      "embedded_source_buffer_bytes": 720,
+      "maximum_vertex_influences": 0,
+      "mesh_definition_triangles": 24,
+      "meshes": 2,
+      "morph_target_sets": 0,
+      "nodes": 15,
+      "scenes": 1,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [],
+      "skin_joints": 0,
+      "unique_position_vertices": 24
+    },
+    "character-variant": {
+      "valid_json": true
+    },
+    "coastline": {
+      "coordinates": 5128,
+      "crs": "longitude/latitude degrees",
+      "features": 134,
+      "height_coverage": "absent"
+    },
+    "contracts": {
+      "registered_requirements": 49,
+      "scope": "Specification coverage only; production implementations remain owned by their stages."
+    },
+    "credits": {
+      "valid_utf8": true
+    },
+    "fixture-license": {
+      "valid_utf8": true
+    },
+    "flat-fallback": {
+      "valid_json": true
+    },
+    "globe": {
+      "clips": [],
+      "decoded_rgba_image_bytes": 0,
+      "embedded_source_buffer_bytes": 24984,
+      "maximum_vertex_influences": 0,
+      "mesh_definition_triangles": 1920,
+      "meshes": 2,
+      "morph_target_sets": 0,
+      "nodes": 1,
+      "scenes": 1,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [],
+      "skin_joints": 0,
+      "unique_position_vertices": 561
+    },
+    "hosting": {
+      "cases": [
+        "B33",
+        "B34",
+        "B35",
+        "B36"
+      ],
+      "participants": [
+        "editor",
+        "host",
+        "visitor"
+      ],
+      "scope": "Phased replay contract consistency, not current hosting runtime verification."
+    },
+    "invented-feature": {
+      "clips": [],
+      "decoded_rgba_image_bytes": 0,
+      "embedded_source_buffer_bytes": 6360,
+      "maximum_vertex_influences": 0,
+      "mesh_definition_triangles": 224,
+      "meshes": 1,
+      "morph_target_sets": 0,
+      "nodes": 1,
+      "scenes": 1,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [],
+      "skin_joints": 0,
+      "unique_position_vertices": 153
+    },
+    "local-place": {
+      "clips": [],
+      "decoded_rgba_image_bytes": 0,
+      "embedded_source_buffer_bytes": 14856,
+      "maximum_vertex_influences": 0,
+      "mesh_definition_triangles": 1140,
+      "meshes": 9,
+      "morph_target_sets": 0,
+      "nodes": 17,
+      "scenes": 2,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [],
+      "skin_joints": 0,
+      "unique_position_vertices": 349
+    },
+    "mechanism": {
+      "clips": [],
+      "decoded_rgba_image_bytes": 0,
+      "embedded_source_buffer_bytes": 720,
+      "maximum_vertex_influences": 0,
+      "mesh_definition_triangles": 24,
+      "meshes": 2,
+      "morph_target_sets": 0,
+      "nodes": 5,
+      "scenes": 1,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [],
+      "skin_joints": 0,
+      "unique_position_vertices": 24
+    },
+    "optional-reference-anatomy": {
+      "valid_json": true
+    },
+    "private-annotation": {
+      "valid_json": true
+    },
+    "relief": {
+      "valid_json": true
+    },
+    "restricted-interior": {
+      "clips": [],
+      "decoded_rgba_image_bytes": 0,
+      "embedded_source_buffer_bytes": 720,
+      "maximum_vertex_influences": 0,
+      "mesh_definition_triangles": 24,
+      "meshes": 2,
+      "morph_target_sets": 0,
+      "nodes": 5,
+      "scenes": 1,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [],
+      "skin_joints": 0,
+      "unique_position_vertices": 24
+    },
+    "solar-context": {
+      "valid_json": true
+    },
+    "sources": {
+      "valid_json": true
+    },
+    "starter-character": {
+      "clips": [
+        "idle",
+        "walk"
+      ],
+      "decoded_rgba_image_bytes": 65536,
+      "embedded_source_buffer_bytes": 1243080,
+      "maximum_vertex_influences": 4,
+      "mesh_definition_triangles": 28448,
+      "meshes": 3,
+      "morph_target_sets": 0,
+      "nodes": 30,
+      "scenes": 1,
+      "scope": "Validated fixture payloads/counts; display error, physical behavior and actual GPU residency need the owning runtime proof.",
+      "skin_joint_names": [
+        "root",
+        "pelvis",
+        "hind_left",
+        "hind_left_lower",
+        "hind_left_paw",
+        "hind_right",
+        "hind_right_lower",
+        "hind_right_paw",
+        "spine",
+        "chest",
+        "front_left",
+        "front_left_lower",
+        "front_left_paw",
+        "front_right",
+        "front_right_lower",
+        "front_right_paw",
+        "neck",
+        "head",
+        "ear_left",
+        "ear_right",
+        "eye_left",
+        "eye_right",
+        "jaw",
+        "tongue",
+        "lid_left",
+        "lid_right",
+        "tail"
+      ],
+      "skin_joints": 27,
+      "unique_position_vertices": 19633
+    }
+  },
+  "audience": "local fixture author; this catalogue includes restricted synthetic assets and is not a public entry manifest",
+  "cases": [
+    "B25",
+    "B26",
+    "B27",
+    "B28",
+    "B33",
+    "B34",
+    "B35",
+    "B36",
+    "B38",
+    "B41"
+  ],
+  "format": "lince-workspace-fixture-inspection",
+  "memory_scope": "Source/decoded-image lower bound only, not actual active peak CPU or GPU residency.",
+  "packed_fixture_bytes": 1636549,
+  "raw_buffers_and_decoded_images_bytes": 1356976,
+  "runtime_workflow_evidence": "pending at the specified owning stages",
+  "scenes": [
+    "blank-grid",
+    "earth-site",
+    "invented-extent",
+    "private-study",
+    "standalone-room"
+  ],
+  "schema": 1,
+  "status": "fixture-integrity-and-replay-specifications-verified",
+  "validation_elapsed_ms": 59.493057
+}

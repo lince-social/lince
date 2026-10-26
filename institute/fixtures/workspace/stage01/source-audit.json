@@ -1,0 +1,188 @@
+{
+  "format": "lince-workspace-stage-evidence",
+  "schema": 1,
+  "stage": "01",
+  "audited_on": "2026-10-25",
+  "status": "stage01-source-inspected-and-current-native-baseline-observed",
+  "scope": "Reuse candidates and current limits; future-stage capabilities are not certified by source inspection.",
+  "families": [
+    {
+      "id": "canvas-units-and-frames",
+      "sources": [
+        "crates/interface/src/native/canvas.rs",
+        "crates/interface/src/native/canvas_item.rs",
+        "crates/interface/src/native/topology.rs",
+        "crates/interface/src/native/topology/view.rs",
+        "crates/interface/src/native/topology/presentation.rs"
+      ],
+      "present": [
+        "CanvasItem positions use DVec2 and dimensions use Vec2.",
+        "CanvasView applies camera-relative center and zoom to logical pixels; MIN_ZOOM=0.0001 and MAX_ZOOM=3.",
+        "Spatial adds elevation, quaternion rotation and depth; flat and perspective views share native canvas items.",
+        "Presentation subtracts the current view origin before converting placements to f32."
+      ],
+      "limits": [
+        "There is no declared physical conversion between a canvas unit and a metre.",
+        "A camera-relative renderer does not yet establish nested high-precision durable frames or independent huge-scale addressability.",
+        "Current zoom/depth/provider limits are implementation limits, not future scene scale levels."
+      ],
+      "next_owner": "03-stage.md"
+    },
+    {
+      "id": "areas-topology-and-physics",
+      "sources": [
+        "crates/interface/src/native/physics.rs",
+        "crates/interface/src/native/topology/physics.rs",
+        "crates/interface/src/native/topology/influence.rs",
+        "crates/interface/src/native/topology/terrain.rs",
+        "crates/nucleus/src/terrain.rs"
+      ],
+      "present": [
+        "WorkspaceStep uses an 8333333 ns fixed step and bounds catch-up to eight ticks per update.",
+        "Existing bodies use workspace/root collision isolation and explicit held/sleeping state.",
+        "MotionTimer blocks while inactive and rings the existing WakeSignal during active motion.",
+        "Existing spatial gravity contributes -981 canvas units per second squared for the current body conventions; this is not declared SI calibration.",
+        "Areas already supply supported influence/filter/immunity behavior, targets and 3D participation.",
+        "TopologyEffect and SpatialBinding already represent formula/preset sources and fixed/cursor/camera/item attachment.",
+        "Terrain has bounded tile generation and source revision/preview behavior."
+      ],
+      "limits": [
+        "Motion settling is computational sleep, not thermodynamic cooling.",
+        "Current height-based floor effects do not represent arbitrary cave/overhang geometry.",
+        "Existing bounds and binding validity limits must be bridged deliberately to future local frames.",
+        "No new physical-material, molecular or continuum solver is required for Stage 01."
+      ],
+      "next_owners": [
+        "04-stage.md",
+        "05-stage.md",
+        "08-stage.md",
+        "18-stage.md"
+      ],
+      "runtime_recipe": "cargo xtask workspace baseline <new-output-directory>",
+      "runtime_status": "passed for the selected native Area/gravity/settling/isolation replay, not every Area configuration or future domain",
+      "runtime_evidence": "baseline/baseline.json"
+    },
+    {
+      "id": "durable-native-and-hosted-edits",
+      "sources": [
+        "crates/interface/src/native/canvas_host/snapshot.rs",
+        "crates/interface/src/native/workspace.rs",
+        "crates/interface/src/native/workspace/storage.rs",
+        "crates/interface/src/native/workspace/recovery.rs",
+        "crates/engine/src/workspace_sync.rs",
+        "crates/engine/src/login_workspace.rs",
+        "crates/transport/tests/workspace_live.rs"
+      ],
+      "present": [
+        "Native workspace persistence retains accepted canvas state and saved revision information through a bounded writer.",
+        "Hosted workspace protocol/schema 2 has validated client declarations, typed operations, expected revisions, proposals/reviews, drafts and history.",
+        "Existing workspace/Record policy and audience checks own acceptance; authenticated source sessions remain separate.",
+        "Existing live transport tests cover signed edits, retries, reconnect and revocation."
+      ],
+      "limits": [
+        "Current hosted layout is not a sparse model document format or a workspace-scoped arbitrary asset server.",
+        "Existing targeted tests verify current acceptance/permissions/transport limits; they do not certify sparse-model workloads.",
+        "Restricted anonymous/public visitor admission and sparse entry cost enforcement are future extensions.",
+        "Trusted-local None authority must not become a guest principal."
+      ],
+      "next_owners": [
+        "02-stage.md",
+        "05-stage.md",
+        "06-stage.md"
+      ]
+    },
+    {
+      "id": "native-resources-and-fiote",
+      "sources": [
+        "crates/interface/src/native/laboratory/resources.rs",
+        "crates/interface/src/native/topology/surface_budget.rs",
+        "crates/interface/src/host.rs",
+        "crates/engine/src/fiote_config.rs",
+        "crates/engine/src/fiote_activation.rs",
+        "crates/cell/src/fiote.rs",
+        "crates/fiote/src/tools/workspace.rs",
+        "crates/nucleus/src/component/composition.rs"
+      ],
+      "present": [
+        "ResourceSnapshot reports retained payloads, managed surfaces, font atlases and selected graphics device.",
+        "The native surface allocator has a shared pixel/byte budget and demand-sensitive residency.",
+        "WakeSignal can be wrapped by the baseline observer without changing application wake semantics.",
+        "Person/Agent Record identity and delegated Fiote conversations already exist.",
+        "Fiote activation explicitly rejects borrowing local automation authority through shared workspace/Record grants.",
+        "Filesystem workspace tools and native component composition are separate existing capabilities."
+      ],
+      "limits": [
+        "Managed texture estimates do not prove total GPU residency or per-Sand GPU/CPU time.",
+        "The existing flat-body resource counter alone does not count every spatial Body; the baseline samples spatial bodies explicitly.",
+        "Existing Fiote tools do not certify all future model operations, semantic context or native/Agent parity.",
+        "Model execution remains outside native edit transactions and startup."
+      ],
+      "next_owners": [
+        "02-stage.md",
+        "04-stage.md",
+        "05-stage.md",
+        "07-stage.md"
+      ]
+    },
+    {
+      "id": "character-source-and-residency",
+      "sources": [
+        "crates/interface/src/native/fiote/character.rs",
+        "crates/interface/src/native/fiote/character/behavior.rs",
+        "crates/interface/src/native/fiote/character/residency.rs",
+        "crates/xtask/src/maintenance/fiote.rs",
+        "institute/assets/characters/fiote/fiote.glb",
+        "institute/assets/characters/fiote/CREDITS.txt"
+      ],
+      "present": [
+        "The original MIT-licensed lynx has a skin/rig and authored activity clips.",
+        "Existing native code handles static/animated preferences, reduced motion, visibility/occlusion, animation state and residency.",
+        "cargo xtask maintenance fiote validate inspects actual mesh, weights, samples and loop seams."
+      ],
+      "limits": [
+        "A conversational portrait/activity loop is not a completed shared character/rig editor or third-person controller.",
+        "The lynx has no claimed human anatomical coverage.",
+        "Optional human reference datasets require their own coverage/rights/admission decision in Stage 11."
+      ],
+      "next_owners": [
+        "05-stage.md",
+        "07-stage.md",
+        "11-stage.md"
+      ]
+    },
+    {
+      "id": "isolated-operational-simulation",
+      "sources": [
+        "crates/simulation/src/scenario.rs",
+        "crates/simulation/src/world.rs",
+        "crates/simulation/src/worker.rs",
+        "crates/interface/src/native/laboratory/isolation.rs"
+      ],
+      "present": [
+        "Existing scenarios validate bounded inputs and use isolated Cell execution.",
+        "The native Laboratory has explicit temporary owner/access isolation."
+      ],
+      "limits": [
+        "Operational scenarios do not provide molecular, thermal, rigid or continuum scientific validity.",
+        "No scientific worker is launched by fixture inspection or ordinary baseline canvas use; native storage and physics wake threads remain separately observable.",
+        "Future numerical datasets/protocols/error limits remain with their deferred owning stages."
+      ],
+      "next_owners": [
+        "13-stage.md",
+        "15-stage.md",
+        "16-stage.md",
+        "17-stage.md",
+        "18-stage.md",
+        "19-stage.md",
+        "20-stage.md",
+        "21-stage.md"
+      ]
+    }
+  ],
+  "verification": {
+    "native_baseline": "passed; baseline/baseline.json and trace.jsonl",
+    "current_source_checks": "36 targeted fixture/engine/transport/isolation tests passed; current xtask check and dataset CLI reinspection passed; verification.json",
+    "resource_and_idle_observations": "recorded; baseline/measurement-interpretation.json; estimates/unavailable counters remain explicit",
+    "qualitative_review": "reviewed with findings; qualitative-review.json"
+  }
+}

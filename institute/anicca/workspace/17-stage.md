@@ -16,6 +16,8 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 
 ## Entry and scope
 
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
+
 - [ ] Confirm the preceding [stage 16](16-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
 - [ ] Recover only the needed completed context from [stage 12 summary](12-stage.md#completion-summary); [stage 16 summary](16-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
@@ -45,6 +47,34 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 - [ ] **17.T08.** Complete the first paired native acceptance replay: direct steel/wood assignment, supported microscopic density edit automatically adopted into the selected local variant, and independent protein result/comparison/export. Test ready/pending/invalid exit, shared-definition isolation, undo/reload and late completion under B20. Keep running-state adoption explicitly pending until the relevant [stage 18](18-stage.md)/[stage 19](19-stage.md) domain supports it.
 
 - [ ] **17.T09.** Start B37 with the actual bounded protocol/result from this stage: one designated execution authority, visible requester/worker/resource payer, permitted observation in another participant's view without its solver, separate start/cancel/spending grants, epoch-tagged results and source-specific disclosure. A disconnected observer does not restart or duplicate the job; current source/adoption changes use the same result-generation checks. Reuse H7 job/observation channels; fresh shared dynamics remains [stage 18](18-stage.md)/[stage 21](21-stage.md) work. Verify Q16's last-owner-view pause/checkpoint and explicit Keep running lifetime/resource behavior, retaining other participants' leases and honest nonrestartable status. Q20/A06 now agrees optional scoped Record in [stage 20](20-stage.md); retain protocol inputs, actual sample/conditions, essential outputs and minimal reproducibility evidence here, without automatic dense recording or a mandatory replay frontend.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Derive one bounded effective model correctly.** Implement the named ideal-cell density and documented stiffness rotation/Voigt–Reuss–Hill subsets using captured units/conditions, occupancy, volume and references. Preserve assumptions, uncertainty, incomplete coverage and exact source/model identities through the existing job/result interface.
+
+- [ ] **Cycle B — Adopt only ready applicable output.** Connect editor exit to captured selected consumer/local-variant scope; revalidate generation/base/conditions and retain previous output for pending/invalid/cancelled/stale states. Keep ordinary empirical material choice available without micro editing.
+
+- [ ] **Cycle C — Run an independent laboratory endpoint.** Set up the selected bounded protein measurement/conformation comparison, inspect plots/control comparison and export evidence. Separate sample/replica/retention costs from represented amount and share permitted results with weak observers through explicit start/cancel/payer/lifetime authority.
+
+- [ ] Preserve these contracts after authorization; effective-material adoption and independent laboratory study are separate valid recipes over built-in derivation/job/result tools.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **17.W01 — Derive and adopt a material candidate** | Built-in selected derivation/adoption plus crystal recipe; 17.M01/17.M02. Edit the micro source, inspect assumptions and leave with ready output or preserved prior state. | Ready/pending/invalid/stale status and affected consumer scope are clear. | Density/tensor/reference checks meet adopted tolerances; no late/out-of-scope application; record actual sample/derivation bytes, error, wall time and adoption latency. |
+| **17.W02 — Complete an independent protein study** | Built-in experiment setup/result inspection plus bounded protocol recipe; 17.M03. Configure, run, compare and export without a macro consumer. | Inputs, controls, plots, incomplete data and the claimed measurement are understandable. | No unclaimed folding/dynamics inference; pin protocol/source/build and independent reference; measure sample/replica/retention counts and error/time/worker peaks within the chosen study cap. |
+| **17.W03 — Observe and compose without sharing execution authority** | Built-in result participation/lifetime plus direct/micro/lab composition; 17.M04/17.M05. Share an allowed result, close/keep work running and continue normal editing. | Observer versus runner/canceller/payer states, progress and interrupted status remain clear. | Denied inputs/execution and amount-driven population allocation = 0; owner/lifetime/quota rules hold; record weak-viewer bytes and stable native latency under admitted jobs. |
+
+- [ ] **Checks to select.** Unit/reference tests verify cell-population/volume density, tensor frame transforms and supported effective-model limits; property tests vary units and represented amount at fixed sample. Integration/fault tests race editor exit with selection/source/grant changes, cancel jobs and exhaust quotas. Native replay completes all three material/direct/lab endpoints and result sharing through actual services.
+
+- [ ] **Earlier-work repair.** Retain 16.W01 direct choice, 12.W01/12.W02 structural independent roots, 02.W03 Agent/job authority and 15.W01–15.W05 core use. Essential scientific evidence is required here; optional selected-activity capture remains stage 20 and cannot block this study.
+
+## Concrete acceptance replay
+
+- [ ] **17.P01 — Derive, then adopt only applicable current output; 17.T01–17.T03/17.T05 / 17.W01.** After authorization, verify ideal density from independently enumerated cell masses/occupancies and determinant volume, then the documented tensor rotation/effective-model references. Edit the captured micro source and exit with ready, pending and invalid candidates. Race source/base/selection/grant changes and late completion; assert only ready applicable current output updates the selected local consumer and undo restores the previous binding. Record numerical/reference error, actual sample bytes, derivation cost and native adoption latency; review affected scope and retained previous-model status.
+
+- [ ] **17.P02 — Finish an independent bounded study; 17.T04/17.T06/17.T07 / 17.W02.** Open the protein root, configure the selected measurement/conformation protocol and control, run, compare actual results and export/reopen evidence. Compare claimed observables with an independent reference and state unsupported folding/dynamics explicitly. Hold numerical sample/replicas fixed while changing represented amount, then admit an explicit sample increase separately. Record protocol/build/data, units, error, sample/output/retention counts and worker peaks; inspect useful setup/plots/results. Preserve 12.W01/12.W02 direct structural use and 16.W01 empirical choice.
+
+- [ ] **17.P03 — Compose endpoints without lending execution; 17.T08/17.T09 / 17.W03.** In one session perform direct material assignment, automatic selected micro adoption and the independent study; let a weak visitor inspect only allowed results. Test denied start/cancel/spending, owner close/Keep running, observer disconnect, quota/cancel and worker interruption. Verify one job/result authority, honest restartability and no denied input transfer or amount-driven population. Measure observation bytes, queue/cancellation/release and core native response against the admitted profile; preserve 15.W01–15.W05 and review requester/worker/payer/lifetime controls.
 
 ## Worked contract example
 
@@ -201,6 +231,8 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **17.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Use a rights-reviewed crystal and protein protocol with reference outputs, actual sample/replica limits and explicit retention. Change represented amount at fixed numerical sample, then deliberately request a larger sample separately; meter adoption, experiment and display costs independently.
 
 - [ ] **R0573.** **[stage 17](17-stage.md) — deferred L0–L5 paired proof** — **Intention and defined deliverable:** W01–W03: direct material use, automatic local micro-derived adoption and a standalone bounded experiment — **Correctness/failure evidence and performance obligation:** B09/B16–B20/B22/B24 and first B37: checked density/tensor derivation, pending/invalid/ready exit, generation races, protocol/results/reference, actual sample/replica/retention budgets and independent endpoint. Reuse authority/admission, Q16 lifetime and Q19 recovery. Q20 optional replay is [stage 20](20-stage.md); retain essential run evidence here without whole-workspace recording.
@@ -213,6 +245,8 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 
 ## Advance gate
 
+- [ ] Verify every local **17.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0693.** W01 ordinary material use, W02 detailed authoring for a consumer and W03 laboratory results all work through shared K/I/E implementations. A laboratory needs no macro destination. One microscopic description supplies a checked reusable property where applicable without atomistic replication per bulk amount. The UI distinguishes structural measurement, imported computed evidence, homogenization, fresh physical prediction and invented behavior.
 
 - [ ] Advance only when **all 17.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -221,17 +255,23 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **17.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

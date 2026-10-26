@@ -1,0 +1,52 @@
+Supply (@supply: 0, is #trail, #contains @liters, #contains @wanted-drinking-water-supply, #contains @drinking-water, #contains @buy-drinking-water) {
+Keep something supplied to a chosen level. Measure what remains, compare it with the wanted supply, and buy the missing amount. This example keeps a target of at least 6 liters of drinking water.
+
+After importing this trail, activate its Karma rules. Update Drinking Water whenever water is consumed or brought home. The rules react to changes in the stock or wanted supply and recompute Buy Drinking Water. Recording a purchase Need does not change the measured stock.
+
+The example starts empty. Replace the starting stock with the amount actually available. To reuse this pattern, choose another supply, its unit, its wanted quantity, and its replenishment Need.
+}
+
+Liters (@liters: 0, is #unit, #part-of @supply) {
+One liter measures liquid volume. Stock, wanted supply, and the purchase Need all use this unit. Fractional quantities are allowed: 1.5 means one and a half liters.
+}
+
+Wanted Drinking Water Supply (@wanted-drinking-water-supply: 6 @liters, #part-of @supply, #for @drinking-water) {
+The amount of drinking water to keep on hand. Start with 6 liters; increase this quantity when a larger reserve is wanted.
+}
+
+Drinking Water (@drinking-water: 0 @liters, #part-of @supply) {
+The measured drinking water currently available. Reduce this quantity as water is used and increase it when water is brought home. Keep it in liters so the comparison uses the same unit as the wanted supply.
+}
+
+Buy Drinking Water (@buy-drinking-water: -6 @liters, #part-of @supply, #supplies @drinking-water) {
+The purchase Need is the wanted supply minus the current quantity, limited to zero when enough water is available. Lince represents a Need with a negative quantity: with 4 liters on hand and a target of 6, this Record becomes -2 liters, meaning buy 2 liters. At 6 liters or above, it becomes 0.
+
+Karma sets the current shortfall each time rather than accumulating repeated Needs. After buying water, update Drinking Water with the actual stock; the purchase Need then shrinks or clears automatically.
+}
+
+Extension @supply "lince.source" {
+    instances ["wanted-drinking-water-supply" "drinking-water" "buy-drinking-water"]
+}
+
+Karma drinking-water-supply {
+    Rules {
+        Rule replenish-drinking-water {
+            quantity 1
+            record @buy-drinking-water
+            condition """-(@wanted-drinking-water-supply - @drinking-water)"""
+            gate <0
+            carry value
+            consequences """[{"kind":"set-quantity"}]"""
+            note "Set the purchase Need to the missing liters, represented as a negative quantity."
+        }
+        Rule clear-drinking-water-need {
+            quantity 1
+            record @buy-drinking-water
+            condition """@drinking-water - @wanted-drinking-water-supply"""
+            gate >=0
+            carry const:0
+            consequences """[{"kind":"set-quantity"}]"""
+            note "Clear the purchase Need when the stock reaches or exceeds the wanted supply."
+        }
+    }
+}

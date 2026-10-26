@@ -1,0 +1,92 @@
+{
+  "format": "lince-workspace-stage01-qualitative-review",
+  "schema": 1,
+  "reviewer": "Codex; direct source/manifest/replay inspection, independent geometry reference and native attempt-04 screenshot inspection",
+  "scope": "Stage 01 evidence readability and input validity. Future visual navigation, hosting, rig editing and scientific quality are not certified.",
+  "source_sha256": {
+    "dataset/manifest.json": "daf599220e142575d991dfb625823d8889aaba7ca6e7cb44958bacd7b43cc376",
+    "contracts.json": "dc54bc5517d03a81220bbe794fdeaf5e22e7649375e4547d4eeec521a150f576",
+    "hosting.json": "76a7f04bdb9ed78bb155ffd99d075d1f6fd3e2ffa9909a0f461aa1093cd7fd1e",
+    "profile.json": "2d70646a4f8828e0d26ed5c1e06f9899fe0a08e575b2272795128ee3897bd37b",
+    "geometry-reference.json": "6e9fe2a016e2e73321607cdc576e003d6904d4aa75743d2c235fd07b589ee9f5"
+  },
+  "workflows": [
+    {
+      "id": "01.W01",
+      "state": "passed-for-existing-native-baseline-with-recorded-findings",
+      "rubric": "Visible test objects; actual native hit and drag in Edit mode; physics control accepted; matching attraction and independent gravity settle; foreign workspace remains unaffected; inspectable active/idle and resource evidence.",
+      "observed": [
+        "Both before-drag.png and settled.png were inspected directly. The text Sands and settings controls are readable and the drag target is outside the General panel.",
+        "The actual pointer hit selected the target; native gesture handling moved it by approximately [64,24] canvas units. The final screenshot shows Physics On and the selected Sand near the attractor.",
+        "The matching Sand settled 0.132048445 canvas units from the target; the elevated Sand fell from 80 to 9.999808252. Both active bodies slept. Runtime assertions verified the other workspace position remained unchanged.",
+        "The idle interval was 1531.297 ms with zero native wake signals and an unchanged settled position. Process CPU remained nonzero; wake signals are not all OS wake-ups.",
+        "The selected-Sand and Area labels partially overlap near the attractor. This is a recorded existing UI readability finding, not a claim of finished future presentation quality."
+      ],
+      "images": {
+        "before-drag.png": "28562160fc733b5e943634dd0a0542e340121b523ede76047ce28b2949288cef",
+        "settled.png": "8b8d3544a7173beff6f1fda4f2c03adc440e6b78412c892a4154bef851b444b9"
+      },
+      "performance_interpretation": "Observed development baseline at 1920x1052 with manual physics clock, screenshot instrumentation and uncontrolled shared-machine load. Future optimized 1280x720 navigation frame/input targets are not certified or changed.",
+      "existing_findings": [
+        {
+          "id": "BASELINE-RENDER-01",
+          "observation": "Renderer slab allocator use-after-free diagnostic recurred during rapid workspace create/switch; the native replay continued, rendered and passed its assertions.",
+          "owner_stage": 5,
+          "reproduction": "Run the baseline replay; inspect workspace switches and stderr. Determine resource-lifetime impact before future streamed-view acceptance."
+        },
+        {
+          "id": "BASELINE-WAYLAND-01",
+          "observation": "Wayland rejected a backend cursor warp after synthetic adapter cursor state was propagated by another Window change; the injected native input path still hit/dragged correctly.",
+          "owner": "baseline input harness / Stage 05 native interaction evidence",
+          "interpretation": "No physical OS pointer or GPU scanout response is measured."
+        },
+        {
+          "id": "BASELINE-PERF-01",
+          "observation": "Recorded development p95 frame interval is 125.542145 ms; one presented-state drag response is 140.209848 ms. These are not future-profile passes.",
+          "owner_stage": 5
+        },
+        {
+          "id": "BASELINE-LABEL-01",
+          "observation": "Area explanation and selected-Sand title overlap near the target; controls and both workflow objects remain identifiable.",
+          "owner_stage": 4
+        },
+        {
+          "id": "BASELINE-ENV-A11Y",
+          "observation": "The environment did not provide the org.a11y.Status D-Bus service. Native controls and rendering still ran; assistive-technology integration was not exercised.",
+          "owner": "test-environment configuration",
+          "interpretation": "Environment warning, not an accessibility conformance result."
+        }
+      ]
+    },
+    {
+      "id": "01.W02",
+      "state": "passed-for-stage01-input-inspection",
+      "rubric": "Identify the inward/outward route, absent coverage, independent roots, small supplied data, legal source attribution and later phase ownership from the artifacts alone.",
+      "observed": [
+        "B25 spells out ball inspection, doorway/interior, mounted content, four place landmarks, outward/reverse travel and optional outer context without changing source identity.",
+        "B38 supplies a room-only root and unrelated sparse structure with its own 7 mm feature and rename/unit/parent-frame comparisons; neither requires Earth.",
+        "Public/synthetic inputs and rights are explicit. The restricted study is synthetic local-author test data, not a public entry catalogue.",
+        "Doorway swept-volume checks and independent actual-buffer bounds/dimensions pass. This establishes supplied fixture shape/validity, not an already implemented Walk controller or attractive future low-poly rendering.",
+        "B41 names the selected small rig/idle-walk/rigid-garment input and a differently articulated mechanism; detailed anatomy selection remains Stage 11 and new force-driven behavior remains deferred."
+      ]
+    },
+    {
+      "id": "01.W03",
+      "state": "passed-for-stage01-specification-review",
+      "rubric": "Locate each proposed native/editor/visitor action, expected result, denial/recovery, quantitative measurement and owning stage; distinguish targets, known source cost, unknown runtime cost and observed evidence.",
+      "observed": [
+        "All ten cases name concrete actions and expected outputs; 49 C/K/I/E contracts name their first consumers.",
+        "B33\u2013B36 include explicit public guest admission, identified editing, separate Organ login, forbidden metadata/pixels/input, lost replies, grant changes, host restart, interest changes and bounded resnapshot.",
+        "Entry examples distinguish ready/adjusted/partial/refused and warm verified cache. Source-asset bytes are measured components; metadata, retries, decoded peak and continuing work remain explicit estimates/unknowns with a phase owner.",
+        "The selected profile gives metric units and governing limits. Native development observations, single input samples and source-buffer lower bounds cannot claim future frame/input percentiles or peak GPU admission.",
+        "Deferred B37 experiment participation and unselected numerical/anatomical details keep their named owning stages; no unused scientific schema or worker is required here."
+      ]
+    }
+  ],
+  "metric_label_interpretation": {
+    "denied_mutations = 0": "Zero successful unauthorized mutations; denied/rejected requests are expected and do not themselves count as a failure.",
+    "denied_pixel_input_events = 0": "Zero unauthorized pixel deliveries or injected remote-input events; rejection counters may be positive.",
+    "denied_fields_and_bytes_delivered = 0": "Zero disclosure of forbidden fields or payload bytes, including existence/count/hash/bounds metadata."
+  },
+  "next_native_review": "Stage 01 review complete; retain the same scoped workflow when later changes affect native input, physics, visibility or resources."
+}

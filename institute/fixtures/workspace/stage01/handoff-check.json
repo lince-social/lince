@@ -1,0 +1,15 @@
+{
+  "documents": 22,
+  "retained_workflows": 72,
+  "proof_recipes": 64,
+  "local_links_checked": 666,
+  "milestone_task_workflow_proof_rows": 16,
+  "original_requirements_retained": 35,
+  "unignored_fixture_and_native_artifacts": 27,
+  "audited_source_paths_changed_after_capture": [],
+  "raw_and_reviewed_measurements_equal": true,
+  "current_native_binary_hash_verified": true,
+  "fixture_bytes_and_hashes_verified": true,
+  "later_stages_unchanged_pending_or_deferred": true,
+  "result": "passed"
+}

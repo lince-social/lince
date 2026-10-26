@@ -1,0 +1,190 @@
+{
+  "format": "lince-workspace-fixture-profile",
+  "schema": 1,
+  "id": "starter-linux-720p",
+  "status": "selected-engineering-targets-not-runtime-results",
+  "implementation_owner": "01-stage.md",
+  "reference": {
+    "os": "Linux",
+    "physical_cpu_cores": 4,
+    "system_ram_bytes": 17179869184,
+    "graphics": "integrated/shared-memory",
+    "viewport_pixels": [
+      1280,
+      720
+    ],
+    "storage": "SSD",
+    "actual_device_evidence": "build-and-machine.json",
+    "graphics_device_and_driver": "recorded by the native baseline",
+    "comparison_rule": "Record actual hardware and build; keep development observations separate from optimized delivery gates."
+  },
+  "limits": {
+    "packed_fixture_bytes": 67108864,
+    "coarse_earth_packed_bytes": 33554432,
+    "optional_solar_metadata_bytes": 1048576,
+    "automatic_compressed_cache_bytes": 134217728,
+    "incremental_model_cpu_peak_bytes": 268435456,
+    "managed_model_gpu_peak_bytes": 134217728,
+    "entry_metadata_page_bytes": 262144,
+    "host_two_remote_sessions_incremental_peak_bytes": 67108864,
+    "heavy_jobs": 2,
+    "expensive_decodes_per_source": 1,
+    "frame_p95_ms": 33.3,
+    "frame_p99_ms": 50,
+    "visible_input_p95_ms": 100,
+    "small_commit_ms": 200,
+    "cold_local_useful_view_ms": 3000,
+    "warm_local_useful_view_ms": 1000,
+    "last_demand_release_ms": 2000,
+    "cancel_ui_ack_ms": 100,
+    "obsolete_dispatch_stop_ms": 250,
+    "cooperative_worker_yield_ms": 100,
+    "noncooperative_worker_termination_ms": 2000,
+    "presence_updates_per_second": 10,
+    "presence_expiry_ms": 20000,
+    "fixture_ball_local_dimension_error_metres": 0.000001,
+    "invented_feature_local_dimension_error_metres": 1e-7,
+    "offline_new_remote_requests": 0,
+    "idle_undemanded_decode_upload_terrain_physics_jobs": 0,
+    "starter_scientific_worker_starts": 0
+  },
+  "fixture_validation_limits": {
+    "manifest_bytes": 262144,
+    "individual_asset_bytes": 8388608,
+    "assets": 32,
+    "scenes": 8,
+    "frames_per_scene": 32,
+    "objects_per_scene": 64,
+    "replay_steps": 256,
+    "gltf_nodes": 256,
+    "gltf_unique_position_vertices": 65536,
+    "gltf_joint_count": 128,
+    "gltf_texture_dimension": 4096,
+    "coastline_features": 256,
+    "coastline_coordinates": 20000
+  },
+  "network_test_profiles": [
+    {
+      "id": "local-reference",
+      "one_way_delay_ms": 0,
+      "bytes_per_second": 10485760,
+      "loss_fraction": 0
+    },
+    {
+      "id": "slow-participant",
+      "one_way_delay_ms": 100,
+      "bytes_per_second": 262144,
+      "loss_fraction": 0.01
+    }
+  ],
+  "hosting_queue_selection": {
+    "control_pending_requests_per_principal": 32,
+    "control_pending_bytes_per_principal": 262144,
+    "control_pending_bytes_host_total": 1048576,
+    "asset_transfers_per_principal": 2,
+    "asset_transfers_host_total": 4,
+    "asset_chunk_bytes": 65536,
+    "asset_inflight_bytes_per_principal": 524288,
+    "asset_inflight_bytes_host_total": 2097152,
+    "presence_pending_samples_per_participant": 1,
+    "presence_sample_bytes": 1024,
+    "quota_semantics": "Reserve within shared device/host budgets before dispatch; reconnect and source changes preserve already spent download counters.",
+    "limit_status": "Fixture parameters for implementation and controlled overload cases; no current transport certification.",
+    "simultaneous_remote_sessions": 2,
+    "control_pending_requests_host_total": 128,
+    "admission_attempts_host_per_minute": 64,
+    "admission_attempts_principal_per_minute": 4,
+    "admission_window_ms": 60000,
+    "limit_scope": "Small Stage 02/05 reference host with one editor and one public visitor. Increasing participants is a separately measured admitted profile, not automatic capacity.",
+    "preflight_benchmark": {
+      "required": false,
+      "trusted_built_in_only": true,
+      "maximum_wall_ms": 200,
+      "maximum_scratch_bytes": 33554432,
+      "result": "Estimate with actual method/device; never a safety or future-performance certificate."
+    },
+    "control_requests_per_principal_per_second": 20,
+    "control_requests_host_per_second": 100,
+    "control_bytes_per_principal_per_second": 262144,
+    "control_bytes_host_per_second": 1048576,
+    "asset_payload_bytes_per_principal_per_second": 1048576,
+    "asset_payload_bytes_host_per_second": 2097152,
+    "maximum_control_queue_age_ms": 1000,
+    "rate_semantics": "Admission limits, separate from simulated link bandwidth/loss. Account aggregate host work and persistent transferred bytes; replacement presence is coalesced."
+  },
+  "measurement_rules": [
+    "Pin fixture/source/build/profile and warm-up/sample conditions.",
+    "Record local processing latency, network RTT and asset waiting separately.",
+    "Measure peak old/new fallback, decode, upload, in-flight and replacement allocations across every active view.",
+    "Report total process RSS separately from incremental model CPU bytes and managed GPU estimates.",
+    "A lower visual profile preserves accepted dimensions, rights, collider/runtime authority and semantic coverage labels.",
+    "Source positional accuracy, numerical preservation and projected visual error are separate quantities.",
+    "Qualitative review covers horizon/interior continuity, readable mounted input, useful low-poly shape and clear partial/repair states.",
+    "A failed target records the responsible queue/product/algorithm and actual result; changes to governing budgets require the existing scope review."
+  ],
+  "deferred": {
+    "material_property_evaluation": 16,
+    "micro_derived_models_and_experiments": 17,
+    "additional_physical_domains": 18,
+    "continuum_and_heating": 19,
+    "optional_activity_recording": 20,
+    "specialist_science": 21,
+    "worker_or_dataset_selection_in_stage_01": false
+  },
+  "character_phase_selection": {
+    "source": "starter-character.glb; original full source remains retained separately",
+    "starter_caps": {
+      "encoded_bytes": 2097152,
+      "decoded_source_and_texture_bytes": 33554432,
+      "staging_bytes": 16777216,
+      "unique_position_vertices": 32768,
+      "skin_joints": 64,
+      "maximum_vertex_influences": 4,
+      "morph_target_sets": 0,
+      "clips": 2,
+      "clip_names": [
+        "idle",
+        "walk"
+      ]
+    },
+    "counts_evidence": "dataset-inspection.json records actual source/rig/clip/texture counts; these caps do not measure runtime deformation or residency.",
+    "pose_tests": [
+      {
+        "stage": 1,
+        "check": "Compare retained source positions, skin weights/joint indices and admitted animation samples exactly; validate finite normalized weights and source transforms."
+      },
+      {
+        "stage": 5,
+        "check": "Use declared eye/foot/forward/up anchors, authored idle/walk transition and support-ready doorway traversal; body/camera remain separately owned."
+      },
+      {
+        "stage": 7,
+        "check": "Selected-copy material/rigid bandana appearance and whole-occurrence scale only for this supplied variant; arbitrary rebind/proportions remain explicit unsupported until stage 11."
+      },
+      {
+        "stage": 11,
+        "check": "Select actual FK/IK residual, binding/deformation error, pose extremes, motion/retarget and protected attachment cases before implementation; compare the differently articulated mechanism through the same commands."
+      }
+    ],
+    "custom_variant": "character-variant.json; original source and unselected copies retained",
+    "mechanism": "mechanism.glb; two links and explicit differently structured ports, no physical joint law",
+    "anatomical_coverage": {
+      "default_bytes": 0,
+      "source_selection_owner_stage": 11,
+      "source": "not selected in Stage 01",
+      "first_region": "upper limb",
+      "coverage_rights_counts_and_pose_mapping": "Required before stage 11 implementation; optional male/female reference packs, not a startup dependency."
+    },
+    "new_force_driven_or_cloth_hair_tissue_behavior": "Deferred to stages 18–21; existing authored animations do not certify a physical law."
+  },
+  "future_core_quality_targets": {
+    "room_authored_dimension_error_m": 0.001,
+    "room_owner_stage": 7,
+    "selected_static_simplification_requested_deviation_m": 0.005,
+    "simplification_owner_stage": 8,
+    "simplification_guarantee": "Report attained error and sampled versus bounded coverage; protected passage/mount validity and qualitative silhouette remain required.",
+    "structural_microscopic_round_trip": "Relative to declared input precision; choose actual bounded SDF/CIF/PDBx fixture and tolerance at stage 12.",
+    "source_registration": "Within declared source/transform uncertainty with withheld checks; no universal geographic centimetre claim.",
+    "status": "Selected initial core targets; achieved runtime results remain pending at phase owners."
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "format": "lince-workspace-fixture-sources",
+  "schema": 1,
+  "sources": [
+    {
+      "id": "original-fixture-geometry",
+      "status": "authored-synthetic",
+      "author": "Lince contributors",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "generator": "crates/xtask/src/workspace/geometry.rs",
+      "accuracy": "Declared synthetic dimensions; no measured real building, street or ownership is implied."
+    },
+    {
+      "id": "natural-earth-coastline",
+      "status": "published-schematic-geographic-data",
+      "version": "4.1.0",
+      "commit": "693f11422f4e08d2da4566b854dda53eb7c39fb3",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/693f11422f4e08d2da4566b854dda53eb7c39fb3/geojson/ne_110m_coastline.geojson",
+      "source_page": "https://www.naturalearthdata.com/downloads/110m-physical-vectors/110m-coastline/",
+      "terms": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "license": "public-domain",
+      "sha256": "851f581ff5ffb844deed8ae1a9ce22e3c4bb3d74fa342cadb5d8e39b41ae7c3c",
+      "encoded_bytes": 139907,
+      "features": 134,
+      "coordinates": "longitude, latitude in degrees; retain original antimeridian endpoints",
+      "accuracy": "1:110m schematic coastline; no local elevation, buildings, road network or survey claim.",
+      "local_file": "context/ne_110m_coastline.geojson"
+    },
+    {
+      "id": "wgs84-reference-ellipsoid",
+      "status": "published-defining-parameters",
+      "url": "https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84",
+      "semi_major_axis_metres": "6378137",
+      "inverse_flattening": "298.257223563",
+      "ecef_basis": "+X equator/prime meridian, +Y completes right-handed ECEF, +Z north pole",
+      "payload_axis_mapping": "glTF (+X,+Y,+Z) maps to ECEF (+X,+Z,-Y); the ellipsoid's short glTF +Y axis becomes ECEF +Z.",
+      "local_relief_metres": 0,
+      "accuracy": "Ellipsoid reference only; no geoid, terrain heights, datum realization, site survey or live rotation is supplied."
+    },
+    {
+      "id": "illustrative-solar-context",
+      "status": "authored-fixed-layout-with-published-nominal-dimensions",
+      "sources": [
+        "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+        "https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html",
+        "https://cneos.jpl.nasa.gov/glossary/au.html"
+      ],
+      "length_unit_metres_per_au": "149597870700",
+      "epoch": "authored-static-context-2026-01-01",
+      "positions": "Arbitrary fixed coplanar phases for the navigation fixture, not positions at the named date.",
+      "accuracy": "Rounded nominal radii/distances for visual context; no ephemeris, orbital integration or physical model.",
+      "automatic_compute": false
+    },
+    {
+      "id": "original-fiote-character",
+      "status": "authored-original-artwork",
+      "author": "Lince contributors",
+      "license": "MIT",
+      "license_file": "institute/assets/characters/fiote/LICENSE",
+      "credits_file": "institute/assets/characters/fiote/CREDITS.txt",
+      "source_file": "institute/assets/characters/fiote/fiote.glb",
+      "source_clips": 17,
+      "source_joints": 27,
+      "source_unique_position_vertices": 19630,
+      "starter_clips": ["idle", "walk"],
+      "starter_derivation": "Repack only required accessors/views and the two admitted clips; add an original rigid neck-bound bandana. Retain full source separately.",
+      "anatomical_coverage": "None; this is a stylized lynx, not a medically accurate human reference."
+    }
+  ]
+}

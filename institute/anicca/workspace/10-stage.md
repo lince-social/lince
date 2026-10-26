@@ -16,6 +16,8 @@ Finish able to design a precise bracket or mounting part for an authored place, 
 
 ## Entry and scope
 
+- [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
+
 - [ ] Confirm the preceding [stage 09](09-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
 
 - [ ] Recover only the needed completed context from [stage 07 summary](07-stage.md#completion-summary); [stage 09 summary](09-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
@@ -36,6 +38,34 @@ Finish able to design a precise bracket or mounting part for an authored place, 
 - [ ] **10.T04.** Add stable semantic feature/face references, validated operation-origin history and explicit ambiguous remapping repair for material regions, mounts and downstream features. Implement complete-boundary/profile selectors with hole/orientation semantics and refusal of partial/duplicate matches; prove the supported B29 subset. Extend B30 surface planning only for selected analytic/trimmed forms, with bounded shared-edge sampling, measured error and CPU fallback. Evaluate GPU execution only on an actual measured gap through the existing Bevy device. Prove the named STEP/render exchange subset and retain original source/feature data with honest loss reports.
 
 - [ ] **10.T05.** Add declared replay/reference outputs, kernel crash/cancel/restart, malicious geometry limits and same-input operation benchmarks for the selected adapters. Include the new manifold-rust candidate only through the bounded mesh comparison; test B24 touching/coplanar/thin-wall/self-difference cases, achieved metric error and topology/correspondence separately. Use B32 to compare analytic/prismatic reductions and general routes against independent references, with units/tolerance/history and whole-operation work recorded. Complete B31 CAD drag previews/final-target acceptance and B24 incremental-versus-from-source checks. Separate exact supported reductions, estimated freeform fitting, unknown correspondence and sampled plausibility. Record actual guarantee levels instead of asserting every kernel is bitwise deterministic. Include required licenses/credits in the CAD Sand. Use H6/B35/B36 with two CAD editors, superseded source/selection, local preview privacy, retained conflicting feature drafts, scoped undo and no automatic stale edit after reconnect; no CAD-specific collaboration server. Extend B40 to supported CAD-derived mesh editing using the same native selected/shared scope, source-variant preparation, provenance and undo, with no false claim that arbitrary sculpting preserves exact constraints.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A — Deliver a dimensioned native part.** Retain the Rust-first sketch/mesh proof while implementing the supported constraint model, DOF/conflict diagnostics, feature dependencies and geometry adapter seam. Keep exact authored parameters separate from view rounding and show capability/tolerance status at each operation.
+
+- [ ] **Cycle B — Select exact evaluation with evidence.** Run the named kernel bake-off on identical profiles/holes/Boolean/history/exchange cases. Compare complete operation cost, geometry references, licensing/packaging, cancellation and crash recovery; record the selected adapter and the consequential rejected alternative before claiming exact CAD.
+
+- [ ] **Cycle C — Revise and exchange under interaction.** Preserve operation lineage and complete profile boundaries, produce bounded useful previews and exact final targets, then exercise STEP subset/loss reports, ordinary selected-copy variants and two-editor conflict repair through existing services.
+
+- [ ] Preserve these contracts; the bracket is a required example recipe, while sketch/constraint/history/exact geometry/exchange tools are built-in and reusable for other parts.
+
+| Retained workflow | Delivery kind and milestone coverage | Qualitative review | Hard assertions and measurements |
+| --- | --- | --- | --- |
+| **10.W01 — Dimension and place a reusable part** | Built-in sketch/feature tools plus bracket recipe; 10.M01/10.M02. Sketch, extrude, cut a hole, instance and revise a dimension. | Dimensions, remaining freedom/conflicts, exact/approximate status and failed features are understandable. | All accepted constraints and selected geometry references pass declared tolerances; preserve exact parameter identity and source history; record full edit/recompute/upload cost, iterations and scratch against the bake-off profile. |
+| **10.W02 — Preserve downstream intent through a revision** | Built-in feature lineage and derived-variant tools; 10.M03/10.M05. Revise an upstream feature referenced by a mount and edit selected copies. | Valid follow, ambiguous repair and a mesh-derived branch's changed status are visible. | Verified complete correspondence alone propagates; holes/boundaries and unselected copies survive; measure affected dependency/index/cache work and compare with from-source rebuilding. |
+| **10.W03 — Preview, exchange and recover** | Built-in preview/exchange/hosted conflict handling; 10.M04. Drag, accept final geometry, export/import and recover a failed or conflicting feature. | Compatible preview progression, loss diagnostics and recoverable drafts support continued modeling. | Stale/final-target errors = 0; kernel failure preserves source; validate supported STEP geometry independently; record cache on/off operation latency, peak bytes, cancellation/crash and two-editor outcomes. |
+
+- [ ] **Checks to select.** Unit/property tests vary units, rigid transforms, constraint gauge/free DOF and subnanometer source changes. Integration/fault tests include thin/tangent/coplanar/failing operations, cache keys, one-lane scheduling, malicious input and kernel termination; compare shape/history with independent references. Native replay edits the bracket, repairs a mount, exchanges it and resolves a concurrent draft; a kernel-only benchmark cannot complete the stage.
+
+- [ ] **Earlier-work repair.** Retain 03.W01 precision, 07.W02 selected-copy/preview scope, 09.W03 authored repair and 02.W02 hosted acceptance. The exact-CAD adapter shares accepted edits and representations with the earlier room/cave tools; each representation keeps its supported purpose and error contract.
+
+## Concrete acceptance replay
+
+- [ ] **10.P01 — A dimensioned part has verified intent; 10.T01–10.T03 / 10.W01.** Sketch/extrude the bracket, cut its hole, instance it in the room and edit a dimension natively and through the shared authorized command. Check all accepted constraints, DOF/branch status, unit conversions and dimensions against the fixture/reference, including under/over-constrained and failed-feature cases. Run the selected kernel candidates on identical operations and tolerance settings; record complete solve/recompute/tessellate/upload time, iterations and peak bytes, not just a Boolean timer. Review useful diagnostics and preserve 03.W01 authored precision.
+
+- [ ] **10.P02 — Downstream identity survives only justified mappings; 10.T04 / 10.W02.** Attach a mount/downstream feature to a face and complete profile containing a hole, change the upstream feature, then test split/merge/partial/ambiguous correspondence. Inspect an ordinary selected-copy mesh variant without changing its original exact source. Assert valid boundary coverage, explicit unresolved consumers and unchanged unselected copies. Compare affected recomputation with the from-source reference; record cache keys/hits, dirty dependencies and source/product bytes. Preserve 07.W02 scope/preview and 09.W03 native repair.
+
+- [ ] **10.P03 — Exact final geometry survives failure and exchange; 10.T05 / 10.W03.** Drag beyond throughput, commit the final target, export/import the supported STEP subset and independently check its shape/units/tolerance. Include thin/touching/coplanar/failing inputs, kernel cancellation/crash and two conflicting editors with a lost reply. Keep accepted source/history and recoverable drafts; stale or approximate previews cannot become an exact final result. Measure cache-on/off end-to-end latency, cancellation/recovery and staging peaks. Review loss reports and native continuation while retaining 02.W02 authority/retry semantics.
 
 ## Worked contract example
 
@@ -242,6 +272,8 @@ Finish able to design a precise bracket or mounting part for an authored place, 
 
 ## Workflow, correctness and performance evidence
 
+- [ ] Instantiate the local **10.W** acceptance rows before their implementation: pin the real fixture/profile, applicable hard assertions/numeric limits, quality rubric and unit/integration/fault/native/performance evidence. Apply the existing owned requirements as well as the matrix. Record each relevant previously verified workflow exercised in composition and any temporary regression/repair; measure through actual services rather than counting checked tasks.
+
 - [ ] **Real workload.** Design and revise a real small bracket with a hole, repeated instances and a mounted object; include tangent/thin-wall/coplanar/failing-feature variants and two editors. Benchmark the complete edit/recompute/upload/exchange/repair path with cache on/off and source rebuild references, not a kernel-only speed claim.
 
 - [ ] **R0566.** **[stage 10](10-stage.md) — L2/L3/L4, CAD L5 proof** — **Intention and defined deliverable:** Retained Rust-first small CAD proof and precise-authoring contract, followed by justified exact geometry and exchange — **Correctness/failure evidence and performance obligation:** B10/B22/B23/B24: constraints/DOF, source/history identity, failed-feature repair and selected adapter/packaging decision. Record operation latency, peak scratch, cancellation/crash outcome and supported tolerance on the same kernel bake-off fixtures. B29–B32 add hybrid solving, lineage/complete profiles, supported analytic display plans, preview continuity, certified reduction and independent geometry references; optional optimizations need measured whole-path benefit. H6/B35/B36 retain two editors' feature drafts and exact final acceptance after source conflicts/reconnect; [stage 10](10-stage.md) uses the existing hosted command path.
@@ -254,6 +286,8 @@ Finish able to design a precise bracket or mounting part for an authored place, 
 
 ## Advance gate
 
+- [ ] Verify every local **10.W** contract and required milestone with both hard assertions/measurements and recorded qualitative review. Confirm all required earlier capabilities still hold using current affected proofs and retained unchanged evidence; close recorded regressions at their owning stages before advancement. Optional examples and deferred calculations remain explicitly scoped, and no required workflow can disappear during summary compression.
+
 - [ ] **R0651.** a dimensioned bracket with a hole can be modified, measured and instanced without breaking its mounting intent. A failed Boolean, kernel crash or renamed face cannot replace a valid accepted solid with corrupt output.
 
 - [ ] Advance only when **all 10.M workflow milestones**, the ordered implementation scope, applicable contract/fixture requirements, native interaction and failure/resource evidence pass together. A task checkbox without its user outcome does not count. Explicitly list unresolved/unsupported/deferred scope; keep this stage blocked/pending when any required outcome fails.
@@ -262,17 +296,23 @@ Finish able to design a precise bracket or mounting part for an authored place, 
 
 ## Completion summary
 
-- [ ] Replace the pending fields below with a compact verified handoff, preferably at most 200 words excluding concrete code/test links. Record the actual APIs/module paths, accepted contract decisions, workflow proofs, measured limits and remaining scope needed next. Update only this stage's registry status in `00-General.md` after its advance gate passes; status stays pending until then.
+- [ ] Keep this handoff factual throughout implementation: record verified slices and evidence while the stage remains pending/in progress, retaining full detail for unfinished scope. After the gate passes, finalize one or two short paragraphs describing what was implemented, actual module/interface ownership and why; include a consequential rejected alternative briefly when useful. Add a distinct compact paragraph for every **10.W** workflow, preserving original milestone IDs, built-in versus recipe scope, required behavior, hard bounds, qualitative criteria and evidence links. Update this stage's registry status in `00-General.md` only with verified evidence; a regression changes current verification to `Repair required` until repaired.
 
   ```yaml
   status: pending
+  gate_verified_against_revision: pending
+  implementation_and_rationale: pending
+  relevant_alternatives_not_chosen: []
+  retained_workflow_contracts: []
   delivered_user_workflows: []
   contract_and_module_changes: []
   fixtures_and_replay_commands: []
   observed_error_latency_and_resource_results: []
+  qualitative_review_results: []
   permission_failure_and_recovery_evidence: []
   remaining_blocked_or_deferred_scope: []
+  current_regressions_and_repair_state: []
   next_stage_context: []
   ```
 
-- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary.
+- [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.

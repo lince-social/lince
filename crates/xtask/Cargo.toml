@@ -5,6 +5,10 @@ edition.workspace = true
 publish = false
 
 [dependencies]
+zip.workspace = true
+glam = "=0.33.7"
+gltf = { version = "=1.4.1", default-features = false, features = ["utils", "names", "extras"] }
+image = { workspace = true }
 reqwest = { workspace = true }
 sha2 = { workspace = true }
 serde = { workspace = true }

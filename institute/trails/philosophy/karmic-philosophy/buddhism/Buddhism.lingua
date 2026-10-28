@@ -1,0 +1,27 @@
+Import "../Karmic-philosophy.lingua"
+Import "readings/Path-and-conduct.lingua"
+
+Buddhism: from the path to sustained inquiry (@buddhism: 0, is #chapter, #part-of @karmic-philosophy, #philosophy @buddhist-path-and-conduct, #buddhism @buddhist-path-and-conduct) { r_7P61Z6HHZNZZ8ND3DHXSFSNRRE
+Begin with Bhikkhu Bodhi’s explanation of the path, establish its central teachings, and then read the discourse collections. Ordinary reading ability is sufficient to start. The opening gives a Pāli-discourse foundation through Theravāda translations and interpretation; later readings introduce other Buddhist traditions in their own settings.
+
+Follow this reading sequence. Each guide names the text to read, explains its question, and carries the understanding forward. Large collections are divided into successive reading sections; the highlighted themes do not replace the rest of the assigned collection.
+
+| Order | Book and first guide | Scope |
+| --- | --- | --- |
+| 1 | [The Noble Eightfold Path](readings/Path-and-conduct.lingua#r_57VHYWATNTSTMPRY0PBMWRR6CS) | Complete book, through three guides |
+| 2 | [Noble Truths, Noble Path](readings/Truths-and-tasks.lingua#r_54ZMTWM29FACEZVHRG8WQPE6HF) | Complete anthology, then a focused return to conditionality |
+| 3 | [Connected Discourses](readings/SN-Verses.lingua#r_4MR016GRHQBMYC1YD8DHAM9PSJ) | All five parts of the Saṃyutta Nikāya |
+| 4 | [Middle Length Discourses](readings/MN-First-fifty.lingua#r_5WR24A6GZ13VJ05P4ZGCBQ6TZB) | All 152 discourses in three divisions |
+| 5 | [Suttanipāta](readings/SNP-First-three.lingua#r_5PVDPVSXQ3WNF32YA1FKQZ4B3G) | Complete discourse collection; commentary as needed for understanding and deeper inquiry |
+| 6 | [Numerical Discourses](readings/AN-Ones-to-threes.lingua#r_6F270NS2RXQMDPF4RSMFZ367MV) | All books, ones through elevens |
+| 7 | [Long Discourses](readings/DN-Training-and-origination.lingua#r_68BHKDFQ4Y2CDWB31NXDTPEGSS) | Selected DN 2, 15, 16, 22, and 31; Walshe’s translation |
+| 8 | [Social and Communal Harmony](readings/Communal-harmony.lingua#r_1BKX3CXYEZ43X3E40A5J7QERN6) | Complete anthology |
+
+This is the authored order of study, not a universal Buddhist curriculum or an order attributed to Bodhi. It keeps practical and ethical training visible from the beginning. Revisit earlier passages as later ones change your understanding. The Dīgha contains important practice instruction, the Aṅguttara contains foundational doctrine, and textual dating remains a question for evidence.
+
+The [core finish](research/Core-completion.lingua#r_562HHAD8ARXMYG8DC0GP1QKYAT) requires connected understanding supported by passages. [Further readings](further-reading/Further-reading.lingua#r_6G06H03HC5H1108GDYNEGQAEQS) open Theravāda commentary, Mahāyāna, Zen, and Tibetan directions. [Sustained inquiry](research/Research-study.lingua#r_5KS9ZFFK5HYPAMBYJQ9ACHF3NJ) and [a defended study](research/Research-completion.lingua#r_7QF5XWQYY7K78XPCQMM068YYE9) provide later scholarly depth. Reading progress alone establishes neither cultivation nor spiritual attainment.
+
+Books are identified in the linked source Records. Most modern editions require a library or owned copy; authorised online alternatives retain their own translation identities and terms. Our explanations connect the readings without substituting for them. Follow `#buddhism` connections through a Protein if useful; no saved query file is required.
+
+**Return:** [Karmic philosophy: Buddhism and Yoga](../Karmic-philosophy.lingua#r_7FERM3385WX5JGT9X04PNCE85Y).
+} r_7P61Z6HHZNZZ8ND3DHXSFSNRRE

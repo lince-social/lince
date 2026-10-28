@@ -65,6 +65,7 @@ pub use layers::LayerSnapshot;
 mod decorations;
 mod outputs;
 pub use outputs::Monitor;
+pub(crate) use outputs::{output_rotation, output_transform};
 mod lock;
 mod popups;
 mod positioner;
@@ -72,13 +73,23 @@ pub use popups::PopupSnapshot;
 mod activation;
 mod foreign;
 mod management;
+pub(crate) mod control;
+#[cfg(feature = "native-presentation")]
+pub use control::HostCommand as ControlHostCommand;
+pub use control::Work as ControlWork;
 mod workspaces;
 pub use workspaces::{WorkspaceEntry, WorkspaceSnapshot};
 mod output_control;
+mod power;
+mod touch;
+mod tablet;
+pub use tablet::Cursor as TabletCursor;
+pub use power::Request as PowerRequest;
 mod capture;
 pub use capture::{CaptureJob, CaptureTarget};
+pub use capture::ContentOwner as CaptureContentOwner;
 pub use output_control::{OutputHead, OutputMode, OutputSettings, OutputRequest};
-#[cfg(feature = "session")]
+#[cfg(feature = "nested")]
 pub(crate) use output_control::validate_catalog as validate_output_catalog;
 mod extensions;
 mod constraints;
@@ -86,6 +97,7 @@ mod damage;
 mod commits;
 mod idle;
 mod ime;
+mod color;
 
 pub struct ClientBuffer {
     backing: Arc<BufferBacking>,
@@ -159,6 +171,7 @@ pub struct SurfaceNode {
     pub input: Option<RegionAttributes>,
     pub layout: SurfaceLayout,
     pub generation: u64,
+    pub color: lince_interface::host::color::Description,
 }
 
 impl SurfaceNode {
@@ -311,6 +324,7 @@ fn input_contains(region: &RegionAttributes, point: [f64; 2]) -> bool {
 }
 
 struct Window {
+    created: Instant,
     minimized: bool,
     role: ToplevelSurface,
     mapped: bool,
@@ -320,6 +334,7 @@ struct Window {
 }
 
 struct ClientState {
+    connected: Arc<AtomicBool>,
     native_canvas: bool,
     compositor: CompositorClientState,
     native_clipboard: bool,
@@ -330,6 +345,7 @@ struct ClientState {
 
 impl ClientState {
     fn release(&self) {
+        self.connected.store(false, Ordering::Release);
         if self.counted.swap(false, Ordering::AcqRel) {
             self.count.fetch_sub(1, Ordering::AcqRel);
         }
@@ -350,8 +366,11 @@ impl Drop for ClientState {
 }
 
 struct State {
+    color: color::Color,
+    control: control::Control,
     capture: capture::Capture,
     output_control: output_control::Control,
+    power: power::Control,
     workspaces: workspaces::Workspaces,
     management: management::Management,
     ime: ime::Ime,
@@ -366,6 +385,8 @@ struct State {
     data: DataDeviceState,
     seats: SeatState<Self>,
     seat: Seat<Self>,
+    touches: HashMap<smithay::backend::input::TouchSlot, WlSurface>,
+    tablets: tablet::Tablets,
     output: Output,
     outputs: BTreeMap<OutputId, outputs::Registered>,
     _outputs: smithay::wayland::output::OutputManagerState,
@@ -378,6 +399,7 @@ struct State {
     window_revision: u64,
     initial_size: [i32; 2],
     cursor: CursorImageStatus,
+    cursor_origin: Option<smithay::reexports::wayland_server::Weak<WlSurface>>,
     _viewporter: ViewporterState,
     layers: layers::Layers,
     dmabuf: buffers::Buffers,
@@ -386,20 +408,26 @@ struct State {
     visuals: HashMap<WlSurface, commits::Visual>,
     callbacks: HashMap<WlSurface, VecDeque<Callbacks>>,
     requests: BTreeMap<SurfaceId, WindowRequest>,
+    #[cfg(feature = "nested")]
+    manipulations: VecDeque<manipulation::Request>,
     popups: popups::Popups,
     authority: VecDeque<input::Authority>,
+    modifiers_pending: bool,
     presented_geometry: Option<lince_interface::host::GeometrySnapshot>,
+    presented_mappings: BTreeMap<OutputId, lince_interface::host::mapping::Mapping>,
     presented_focus: Option<OutputId>,
     activation: smithay::wayland::xdg_activation::XdgActivationState,
-    activations: VecDeque<(SurfaceId, Instant, u64)>,
+    activations: VecDeque<(SurfaceId, Instant, u64, bool)>,
     input_epoch: u64,
     lock: lock::Lock,
     drag_icon: Option<WlSurface>,
+    drag_origin: Option<smithay::reexports::wayland_server::Weak<WlSurface>>,
     dragging: bool,
     data_control: smithay::wayland::selection::wlr_data_control::DataControlState,
     foreign: smithay::wayland::foreign_toplevel_list::ForeignToplevelListState,
     foreign_handles: BTreeMap<SurfaceId, smithay::wayland::foreign_toplevel_list::ForeignToplevelHandle>,
     _relative_pointer: smithay::wayland::relative_pointer::RelativePointerManagerState,
+    _pointer_gestures: smithay::wayland::pointer_gestures::PointerGesturesState,
     shortcuts: smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState,
     shortcut_inhibitors: Vec<smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitor>,
     _pointer_constraints: smithay::wayland::pointer_constraints::PointerConstraintsState,
@@ -408,6 +436,8 @@ struct State {
 }
 
 pub struct Server {
+    #[cfg(feature = "nested")]
+    keyboard_settings: keyboard::Settings,
     #[cfg(feature = "nested")]
     native_client: Option<crate::native_input::client::Client>,
     display: Display<State>,
@@ -454,6 +484,7 @@ impl Server {
         seat.add_keyboard(Default::default(), 25, 500)
             .map_err(|error| io::Error::other(error.to_string()))?;
         seat.add_pointer();
+        seat.add_touch();
         let output = Output::new(
             "Park".into(),
             PhysicalProperties {
@@ -483,8 +514,11 @@ impl Server {
             },
         )]);
         let state = State {
+            color: color::Color::default(),
+            control: control::Control::new(&display.handle()),
             capture: capture::Capture::new(&display.handle()),
             output_control: output_control::Control::new(&display.handle()),
+            power: power::Control::new(&display.handle()),
             workspaces: workspaces::Workspaces::new(&display.handle()),
             management: management::Management::new(&display.handle()),
             damage: HashMap::new(),
@@ -501,6 +535,8 @@ impl Server {
             handle,
             seats,
             seat,
+            touches: HashMap::new(),
+            tablets: tablet::Tablets::new(&display.handle()),
             output,
             outputs,
             surfaces: HashSet::new(),
@@ -512,6 +548,7 @@ impl Server {
             window_revision: 1,
             initial_size: size,
             cursor: CursorImageStatus::default_named(),
+            cursor_origin: None,
             _viewporter: ViewporterState::new::<State>(&display.handle()),
             layers: layers::Layers::new(&display.handle()),
             dmabuf: buffers::Buffers::new(),
@@ -520,9 +557,13 @@ impl Server {
             visuals: HashMap::new(),
             callbacks: HashMap::new(),
             requests: BTreeMap::new(),
+            #[cfg(feature = "nested")]
+            manipulations: VecDeque::new(),
             popups: Default::default(),
             authority: VecDeque::new(),
+            modifiers_pending: false,
             presented_geometry: None,
+            presented_mappings: BTreeMap::new(),
             presented_focus: None,
             activation: smithay::wayland::xdg_activation::XdgActivationState::new::<State>(
                 &display.handle(),
@@ -531,6 +572,7 @@ impl Server {
             input_epoch: 0,
             lock: lock::Lock::new(&display.handle()),
             drag_icon: None,
+            drag_origin: None,
             dragging: false,
             data_control,
             foreign: smithay::wayland::foreign_toplevel_list::ForeignToplevelListState::new_with_filter::<State>(
@@ -539,6 +581,7 @@ impl Server {
             ),
             foreign_handles: BTreeMap::new(),
             _relative_pointer: smithay::wayland::relative_pointer::RelativePointerManagerState::new::<State>(&display.handle()),
+            _pointer_gestures: smithay::wayland::pointer_gestures::PointerGesturesState::new::<State>(&display.handle()),
             shortcuts: smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState::new::<State>(&display.handle()),
             shortcut_inhibitors: Vec::new(),
             _pointer_constraints: smithay::wayland::pointer_constraints::PointerConstraintsState::new::<State>(&display.handle()),
@@ -549,6 +592,8 @@ impl Server {
             native_surface: None,
         };
         let server = Self {
+            #[cfg(feature = "nested")]
+            keyboard_settings: Default::default(),
             #[cfg(feature = "nested")]
             native_client: None,
             display,
@@ -562,6 +607,7 @@ impl Server {
             let mut server = server;
             let (stream, client) = UnixStream::pair()?;
             server.display.handle().insert_client(stream, Arc::new(ClientState {
+                connected: Arc::new(AtomicBool::new(true)),
                 native_canvas: true, native_clipboard: false, capabilities: Vec::new(),
                 compositor: CompositorClientState::default(), count: server.clients.clone(),
                 counted: AtomicBool::new(false),
@@ -645,6 +691,7 @@ impl Server {
         }
         self.clients.fetch_add(1, Ordering::AcqRel);
         let data = Arc::new(ClientState {
+            connected: Arc::new(AtomicBool::new(true)),
             native_canvas: false,
             compositor: CompositorClientState::default(),
             native_clipboard,
@@ -660,22 +707,61 @@ impl Server {
         description: &crate::launch::Description,
         socket: &std::path::Path,
     ) -> io::Result<std::process::Child> {
-        let application = description.application()?;
-        if description.capabilities.is_empty() {
-            return application.spawn(socket);
+        self.spawn_application(crate::launch::Application::from_description(description)?,
+            description.capabilities.clone(), socket, false)
+    }
+
+    #[cfg(any(feature = "nested", test))]
+    pub(crate) fn spawn_foreground_helper(
+        &mut self,
+        description: &crate::launch::Description,
+        socket: &std::path::Path,
+    ) -> io::Result<std::process::Child> {
+        self.spawn_application(crate::launch::Application::from_description(description)?,
+            description.capabilities.clone(), socket, true)
+    }
+
+    #[cfg(any(feature = "nested", test))]
+    pub(crate) fn spawn_foreground(
+        &mut self,
+        application: crate::launch::Application,
+        socket: &std::path::Path,
+    ) -> io::Result<std::process::Child> {
+        self.spawn_application(application, Vec::new(), socket, true)
+    }
+
+    fn spawn_application(
+        &mut self,
+        mut application: crate::launch::Application,
+        capabilities: Vec<crate::launch::Capability>,
+        socket: &std::path::Path,
+        foreground: bool,
+    ) -> io::Result<std::process::Child> {
+        let token = foreground.then(|| self.launch_activation_token()).transpose()?;
+        if let Some(token) = &token {
+            application = application.activation_token(token.as_str().to_owned());
         }
-        let (server, child) = UnixStream::pair()?;
-        let client = self.insert_authorized_client(server, description.capabilities.clone(), false)?;
-        match application.spawn_connected(socket, child) {
-            Ok(child) => Ok(child),
-            Err(error) => {
-                client.kill(&self.state.handle, ProtocolError {
-                    code: 1, object_id: 1, object_interface: "wl_display".into(),
-                    message: "Authorized helper failed to start".into(),
-                });
-                Err(error)
+        let result = (|| {
+            if capabilities.is_empty() {
+                return application.spawn(socket);
             }
+            let (server, child) = UnixStream::pair()?;
+            let client = self.insert_authorized_client(server, capabilities, false)?;
+            match application.spawn_connected(socket, child) {
+                Ok(child) => Ok(child),
+                Err(error) => {
+                    client.kill(&self.state.handle, ProtocolError {
+                        code: 1, object_id: 1, object_interface: "wl_display".into(),
+                        message: "Authorized helper failed to start".into(),
+                    });
+                    Err(error)
+                }
+            }
+        })();
+        if result.is_err() && let Some(token) = token {
+            self.state.activation.remove_token(&token);
         }
+        result
     }
 
     pub fn dispatch(&mut self) -> io::Result<()> {
@@ -694,11 +780,16 @@ impl Server {
             }
         }
         self.display.dispatch_clients(&mut self.state)?;
+        self.state.finish_color_information();
         self.state.sync_foreign();
         self.state.refresh_capture();
         self.state.refresh_shortcut_inhibitors();
         self.state.refresh_constraints();
         self.state.refresh_idle();
+        self.state.refresh_control();
+        self.state.refresh_power();
+        self.state.refresh_touch();
+        self.state.refresh_tablets();
         self.state.popups.manager.cleanup();
         self.state.reconstrain_popups();
         for output in self.state.outputs.values() {
@@ -721,45 +812,8 @@ impl Server {
     pub fn windows(&self) -> Vec<WindowSnapshot> {
         self.state
             .windows
-            .iter()
-            .filter(|(_, window)| window.role.wl_surface().is_alive())
-            .map(|(id, window)| {
-                let surface = window.role.wl_surface();
-                let (title, app_id, client_state) = with_states(surface, |states| {
-                    let metadata = states
-                        .data_map
-                        .get::<XdgToplevelSurfaceData>()
-                        .unwrap()
-                        .lock()
-                        .unwrap_or_else(|error| error.into_inner());
-                    let state = *states
-                        .cached_state
-                        .get::<xdg::SurfaceCachedState>()
-                        .current();
-                    (
-                        bounded(metadata.title.as_deref().unwrap_or_default()),
-                        bounded(metadata.app_id.as_deref().unwrap_or_default()),
-                        state,
-                    )
-                });
-                let nodes = self.state.nodes(surface);
-                WindowSnapshot {
-                    id: *id,
-                    surface: surface.clone(),
-                    mapped: window.mapped,
-                    title,
-                    app_id,
-                    parent: window
-                        .role
-                        .parent()
-                        .and_then(|parent| self.state.id(&parent)),
-                    geometry: client_state.geometry,
-                    minimum: [client_state.min_size.w, client_state.min_size.h],
-                    maximum: [client_state.max_size.w, client_state.max_size.h],
-                    nodes,
-                    popups: self.state.popup_snapshots(surface),
-                }
-            })
+            .keys()
+            .filter_map(|id| self.state.window_snapshot(*id))
             .collect()
     }
 
@@ -783,10 +837,12 @@ impl Server {
         Ok(())
     }
 
-    pub fn close(&mut self, id: SurfaceId) {
-        if let Some(window) = self.state.windows.get(&id) {
+    pub fn close(&mut self, id: SurfaceId) -> bool {
+        if let Some(window) = self.state.windows.get(&id).filter(|window| window.mapped && window.role.wl_surface().is_alive()) {
             window.role.send_close();
+            return true;
         }
+        false
     }
 
     pub fn requests(&mut self) -> Vec<(SurfaceId, WindowRequest)> {
@@ -806,6 +862,26 @@ impl Server {
             .collect()
     }
 
+    #[cfg(feature = "nested")]
+    pub(crate) fn configure_presented_state(
+        &mut self,
+        id: SurfaceId,
+        size: [i32; 2],
+        state: WindowState,
+        presented: bool,
+    ) -> io::Result<()> {
+        let size = if presented {
+            size
+        } else {
+            self.state
+                .windows
+                .get(&id)
+                .ok_or_else(|| io::Error::other("the application window is unavailable"))?
+                .configured_size
+        };
+        self.configure_state(id, size, state)
+    }
+
     pub fn configure_state(
         &mut self,
         id: SurfaceId,
@@ -813,6 +889,9 @@ impl Server {
         state: WindowState,
     ) -> io::Result<()> {
         validate_size(size)?;
+        if state.windowed_fullscreen && !state.fullscreen {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Windowed fullscreen requires fullscreen protocol state"));
+        }
         use smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::State as XdgState;
         let window = self
             .state
@@ -826,6 +905,7 @@ impl Server {
             for (flag, enabled) in [
                 (XdgState::Fullscreen, state.fullscreen),
                 (XdgState::Maximized, state.maximized),
+                (XdgState::Resizing, state.resizing),
             ] {
                 if enabled {
                     pending.states.set(flag);
@@ -880,7 +960,7 @@ impl Server {
                 return;
             }
             #[cfg(feature = "nested")]
-            self.suspend_native_drop();
+            self.native_drop_target(None);
             keyboard.set_focus(&mut self.state, surface.clone(), serial);
             self.state.update_shortcut_focus(surface.as_ref());
             for (window_id, window) in &self.state.windows {
@@ -976,6 +1056,21 @@ fn bounded(value: &str) -> String {
 }
 
 impl State {
+    fn window_snapshot(&self, id: SurfaceId) -> Option<WindowSnapshot> {
+        let window = self.windows.get(&id)?;
+        let surface = window.role.wl_surface();
+        if !surface.is_alive() { return None; }
+        let (title, app_id, client_state) = with_states(surface, |states| {
+            let metadata = states.data_map.get::<XdgToplevelSurfaceData>().unwrap().lock().unwrap_or_else(|error| error.into_inner());
+            let state = *states.cached_state.get::<xdg::SurfaceCachedState>().current();
+            (bounded(metadata.title.as_deref().unwrap_or_default()), bounded(metadata.app_id.as_deref().unwrap_or_default()), state)
+        });
+        Some(WindowSnapshot { id, surface: surface.clone(), mapped: window.mapped, title, app_id,
+            parent: window.role.parent().and_then(|parent| self.id(&parent)), geometry: client_state.geometry,
+            minimum: [client_state.min_size.w, client_state.min_size.h], maximum: [client_state.max_size.w, client_state.max_size.h],
+            nodes: self.nodes(surface), popups: self.popup_snapshots(surface) })
+    }
+
     fn nodes(&self, surface: &WlSurface) -> Vec<SurfaceNode> {
         let mut nodes = Vec::new();
         with_surface_tree_downward(
@@ -1024,6 +1119,7 @@ impl State {
                         input: attributes.input_region.clone(),
                         layout,
                         generation: self.generations.get(surface).copied().unwrap_or(0),
+                        color: states.cached_state.get::<color::SurfaceColor>().current().description.unwrap_or_default(),
                     });
                 }
             },
@@ -1293,6 +1389,7 @@ impl CompositorHandler for State {
                         && surface == root
                         && self.windows[&id].mapped
                     {
+                        self.retire_control_surface(id);
                         let window = self.windows.get_mut(&id).unwrap();
                         window.mapped = false;
                         window.minimized = false;
@@ -1370,7 +1467,8 @@ impl CompositorHandler for State {
             self.layer_commit(&root, unmapped);
             self.popup_commit(&root);
         }
-        if !frame_only && (id.is_some() || self.popups.surfaces.contains_key(&root)) {
+        if !frame_only && (id.is_some() || self.popups.surfaces.contains_key(&root)
+            || self.ime.popups.iter().any(|popup| popup.wl_surface() == &root)) {
             self.changed();
         } else {
             self.presentation_changed();
@@ -1390,6 +1488,7 @@ impl CompositorHandler for State {
         self.remove_layer(surface);
         self.popups.surfaces.remove(surface);
         if let Some(id) = self.id(surface) {
+            self.retire_control_surface(id);
             self.windows.remove(&id);
             self.requests.remove(&id);
         }
@@ -1400,6 +1499,20 @@ impl CompositorHandler for State {
 impl XdgShellHandler for State {
     fn xdg_shell_state(&mut self) -> &mut XdgShellState {
         &mut self.shell
+    }
+
+    #[cfg(feature = "nested")]
+    fn move_request(&mut self, surface: ToplevelSurface, seat: WlSeat, serial: Serial) {
+        self.request_manipulation(surface, seat, serial, None);
+    }
+
+    #[cfg(feature = "nested")]
+    fn resize_request(&mut self, surface: ToplevelSurface, seat: WlSeat, serial: Serial,
+        edges: smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::ResizeEdge,
+    ) {
+        if let Some(edges) = manipulation::edges(edges) {
+            self.request_manipulation(surface, seat, serial, Some(edges));
+        }
     }
 
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
@@ -1417,6 +1530,7 @@ impl XdgShellHandler for State {
         self.windows.insert(
             id,
             Window {
+                created: Instant::now(),
                 minimized: false,
                 role: surface,
                 mapped: false,
@@ -1449,12 +1563,13 @@ impl XdgShellHandler for State {
     fn popup_destroyed(&mut self, surface: PopupSurface) {
         self.popups.surfaces.remove(surface.wl_surface());
         self.buffers.remove(surface.wl_surface());
-        self.presentation_changed();
+        self.changed();
     }
 
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
         self.dismiss_children(surface.wl_surface());
         if let Some(id) = self.id(surface.wl_surface()) {
+            self.retire_control_surface(id);
             self.windows.remove(&id);
             self.requests.remove(&id);
         }
@@ -1553,6 +1668,8 @@ impl ClientDndGrabHandler for State {
         icon: Option<WlSurface>,
         _: Seat<Self>,
     ) {
+        self.drag_origin = self.seat.get_pointer().and_then(|pointer| pointer.current_focus())
+            .and_then(|surface| self.input_root(&surface)).map(|surface| surface.downgrade());
         self.drag_icon = icon;
         self.dragging = true;
         self.presentation_changed();
@@ -1560,6 +1677,7 @@ impl ClientDndGrabHandler for State {
 
     fn dropped(&mut self, _: Option<WlSurface>, _: bool, _: Seat<Self>) {
         self.drag_icon = None;
+        self.drag_origin = None;
         self.dragging = false;
         self.presentation_changed();
     }
@@ -1580,6 +1698,9 @@ impl SeatHandler for State {
         self.update_shortcut_focus(surface);
     }
     fn cursor_image(&mut self, _: &Seat<Self>, image: CursorImageStatus) {
+        self.cursor_origin = if matches!(image, CursorImageStatus::Surface(_)) {
+            self.seat.get_pointer().and_then(|pointer| pointer.current_focus()).map(|surface| surface.downgrade())
+        } else { None };
         self.cursor = image;
         self.presentation_changed();
     }
@@ -1597,4 +1718,9 @@ mod tests;
 
 mod buffers;
 mod input;
+#[cfg(feature = "nested")]
+pub(crate) mod manipulation;
+#[cfg(feature = "nested")]
+mod keyboard;
+mod gestures;
 mod layers;

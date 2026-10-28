@@ -1,0 +1,19 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Nicomachean-Ethics.lingua"
+Import "Practical-wisdom-and-friendship.lingua"
+
+Aristotle: living well, function, and character (@greek-aristotle-good: 0, is #chapter, #part-of @greek-plato-aristotle, #source @greek-source-aristotle, #philosophy @greek-aristotle-judgment, #ancient-greek-philosophy @greek-aristotle-judgment) { r_21YB00AWNRYQ0X2SQ8H0RFRW65
+**Read:** [Nicomachean Ethics](../sources/Nicomachean-Ethics.lingua#r_62ZRER59RNE2H3T9Y081AA4835), Book I, chapters 1–7 and 13, then Book II, chapters 1–6 and 9. Continue through Books I–II to examine the qualifications. The retained edition includes an introduction by J. A. Smith; distinguish that interpretation from Aristotle's text.
+
+**Preparation:** [virtue and happiness in translation](../foundations/Terms-and-translation.lingua#r_1VGPFMXZ4HHAREA3BAHTSSQQ8D). [Gorgias](../socratic/Gorgias.lingua#r_5G884J0SFXCP4YRBFF5C5YSYD2) is a useful comparison concerning living well; its disputed claim can be introduced alongside this reading.
+
+Follow the transition from activities aiming at goods to a proposed highest good for a human life. Reconstruct the function argument in Book I, chapter 7. Ask what must be assumed for an account of characteristic human activity to justify a conclusion about living well.
+
+Book II asks how character develops through action. The mean is related to the person, circumstances, and reason; it is not an instruction to take the numerical midpoint between every pair of alternatives. Compare acquiring a skill with acquiring a disposition to act and take pleasure appropriately.
+
+**Practice:** give a concrete case of fear, anger, or giving. Describe the agent's purpose, circumstances, proposed excess and deficiency, and why a mechanical average would not decide what to do.
+
+**Check:** reconstruct one argument about the good life or character, identify a normative assumption, and offer a serious objection. Distinguish an explanation of how a disposition develops from a justification of its value.
+
+**Next:** [Practical wisdom and friendship](Practical-wisdom-and-friendship.lingua#r_6RZXS4EJH55PRPW61MB33DTCNM). **Further depth:** Book X, chapters 6–8, on happiness and contemplation, compared with the account you reconstructed. **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_21YB00AWNRYQ0X2SQ8H0RFRW65

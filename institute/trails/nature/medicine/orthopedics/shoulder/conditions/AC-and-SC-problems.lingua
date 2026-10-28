@@ -1,0 +1,20 @@
+Import "../../../sources/Shoulder-arthritis-AAOS.lingua"
+Import "../../../sources/Shoulder-trauma-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "Fractures.lingua"
+
+AC and SC problems — distinguish the joints (@shoulder-ac-sc: 0, is #chapter, #part-of @shoulder, #source @med-source-trauma, #source @med-source-arthritis, #medicine @shoulder-fractures, #orthopedics @shoulder-fractures, #shoulder @shoulder-fractures) { r_019WC3RKV49JT71GHN92X7S7D8
+**Read:** [Shoulder fractures and dislocations — AAOS](../../../sources/Shoulder-trauma-AAOS.lingua#r_3PWVRKWPX21FH3M69BKW675ZHM) for traumatic relationships and [Arthritis of the shoulder — AAOS](../../../sources/Shoulder-arthritis-AAOS.lingua#r_7B3XNZ2YPTDVPMN3M6DH7R8S2M) for the distinction between AC and glenohumeral arthritis.
+
+The acromioclavicular joint links the lateral clavicle and acromion. A 'separated shoulder' commonly concerns injury around this relationship and its supporting ligaments. It is different from dislocation of the humeral head from the glenoid.
+
+The sternoclavicular joint links the medial clavicle with the sternum. Its location near important thoracic structures makes significant traumatic displacement a different clinical question from an isolated lateral shoulder complaint. Acute deformity or chest, breathing, or circulation symptoms after injury needs urgent assessment.
+
+Arthritic change, ligament injury, and other processes can affect these joints. Pain reported near a joint is useful information but cannot by itself prove that joint is the source.
+
+**Try:** locate AC and SC on a skeleton, draw the clavicle between them, and explain the supporting roles of the acromioclavicular, coracoclavicular, and costoclavicular ligaments. Translate a report that says 'AC' without silently converting it into a glenohumeral diagnosis.
+
+**Continue:** [Fractures around the shoulder](Fractures.lingua#r_2FNF825ZBCS9EYDWA7QHDF43PW).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_019WC3RKV49JT71GHN92X7S7D8

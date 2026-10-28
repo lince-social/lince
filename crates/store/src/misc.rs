@@ -242,7 +242,10 @@ pub async fn due_effects(pool: &SqlitePool) -> Result<Vec<EffectRow>, StoreError
     due_effects_for_lane(pool, None).await
 }
 
-pub async fn due_effects_for_lane(pool: &SqlitePool, commands: Option<bool>) -> Result<Vec<EffectRow>, StoreError> {
+pub async fn due_effects_for_lane(
+    pool: &SqlitePool,
+    commands: Option<bool>,
+) -> Result<Vec<EffectRow>, StoreError> {
     Ok(
         sqlx::query("SELECT effect.* FROM effect_queue effect WHERE status = 'queued' AND (? IS NULL OR (kind IN ('command', 'signal', 'saved-command')) = ?) AND (? IS NULL OR NOT EXISTS (SELECT 1 FROM effect_queue earlier WHERE earlier.rowid < effect.rowid AND earlier.status IN ('queued', 'running') AND json_extract(earlier.payload, '$.rule') = json_extract(effect.payload, '$.rule') AND json_extract(earlier.payload, '$.revision') = json_extract(effect.payload, '$.revision') AND json_extract(earlier.payload, '$.occurrence.event_id') = json_extract(effect.payload, '$.occurrence.event_id'))) ORDER BY effect.rowid LIMIT 64")
             .bind(commands)

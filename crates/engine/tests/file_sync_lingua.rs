@@ -1066,3 +1066,128 @@ async fn calendar_frequency_definitions_survive_export_and_import() {
     assert_eq!(before.head_revision_hash, after.head_revision_hash);
     std::fs::remove_dir_all(directory).unwrap();
 }
+
+#[tokio::test]
+async fn shared_resource_metadata_round_trips_relative_files_and_conflicts() {
+    let temporary = tempfile::tempdir().unwrap();
+    let directory = temporary.path();
+    let path = directory.join("Source.lingua");
+    let source = "Book (@book: 0) { r_00000000000000000000009901\n} r_00000000000000000000009901\nExtension @book \"lince.resource\" { uri \"book.epub\" media_type \"application/epub+zip\" title \"First edition\" representations [{ label \"Alternative\" uri \"alternative.epub\" media_type \"application/epub+zip\" }] }\n";
+    std::fs::write(&path, source).unwrap();
+    let (engine, organ) = configured(directory).await;
+    let mut state = FileSyncState::new();
+    tick(&engine, directory, &organ, &mut state).await;
+    let uid = "r_00000000000000000000009901";
+    let mut resource = store::records::get_extension(&engine.store.pool, uid, "lince.resource")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        resource["uri"],
+        lince_resources::address(directory.join("book.epub").to_str().unwrap())
+            .unwrap()
+            .as_str()
+    );
+    resource["title"] = serde_json::json!("Local edition");
+    engine
+        .act(
+            Action::SetExtension {
+                target: uid.into(),
+                namespace: "lince.resource".into(),
+                fds: resource.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let report = tick(&engine, directory, &organ, &mut state).await;
+    assert_eq!(report.written_to_disk, [uid]);
+    let text = std::fs::read_to_string(&path).unwrap();
+    let project = anicca::project(&anicca::parse(&text).unwrap()).unwrap();
+    assert_eq!(project.extensions[0].fields["uri"], "book.epub");
+    assert_eq!(
+        project.extensions[0].fields["representations"][0]["uri"],
+        "alternative.epub"
+    );
+    assert_eq!(project.extensions[0].fields["title"], "Local edition");
+    assert!(
+        tick(&engine, directory, &organ, &mut state)
+            .await
+            .written_to_disk
+            .is_empty()
+    );
+    std::fs::write(&path, text.replace("Local edition", "Disk edition")).unwrap();
+    resource["title"] = serde_json::json!("Concurrent edition");
+    engine
+        .act(
+            Action::SetExtension {
+                target: uid.into(),
+                namespace: "lince.resource".into(),
+                fds: resource,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let report = engine
+        .file_sync_tick(directory, &organ, &mut state)
+        .await
+        .unwrap();
+    assert_eq!(report.conflicts.len(), 1, "{report:?}");
+    assert!(report.conflicts[0].reason.contains("metadata both changed"));
+    std::fs::write(
+        &path,
+        "Book (@book: 0) { r_00000000000000000000009901\n} r_00000000000000000000009901\n",
+    )
+    .unwrap();
+    engine
+        .act(
+            Action::SetExtension {
+                target: uid.into(),
+                namespace: "lince.resource".into(),
+                fds: serde_json::json!({}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    tick(&engine, directory, &organ, &mut state).await;
+    assert!(
+        store::records::get_extension(&engine.store.pool, uid, "lince.resource")
+            .await
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[tokio::test]
+async fn uri_assertion_targets_round_trip_relative_to_the_declaring_file() {
+    let engine = Engine::open_memory().await.unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let uid = "r_00000000000000000000009971";
+    let target = "r_00000000000000000000009972";
+    let path = directory.path().join("Parent.lingua");
+    std::fs::write(
+        &path,
+        format!("Parent (@parent: 0, #contains \"./Child.lingua#{target}\") {{ {uid}\n}} {uid}\n"),
+    )
+    .unwrap();
+    let report = engine
+        .import_lingua_directory(directory.path())
+        .await
+        .unwrap();
+    assert!(report.conflicts.is_empty(), "{:?}", report.conflicts);
+    let assertions = store::assertions::for_subjects(&engine.store.pool, &[uid.into()])
+        .await
+        .unwrap();
+    assert_eq!(assertions.len(), 1);
+    assert!(
+        assertions[0]
+            .object_uri
+            .as_deref()
+            .unwrap()
+            .starts_with("file:")
+    );
+    let text = std::fs::read_to_string(path).unwrap();
+    assert!(text.contains("./Child.lingua#") || text.contains("\"Child.lingua#"));
+}

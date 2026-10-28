@@ -161,8 +161,9 @@ fn dispatch(
     requests: Res<ComputeRequests>,
     compute: Res<Compute>,
     cache: Res<PipelineCache>,
+    external: Option<Res<crate::native::capture::render::ExternalPass>>,
 ) {
-    if !requests.0.iter().any(|job| job.run) {
+    if external.is_some() || !requests.0.iter().any(|job| job.run) {
         return;
     }
     let diagnostics = context.diagnostic_recorder();

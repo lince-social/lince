@@ -101,7 +101,8 @@ where
         serde_json::to_string(&input).map_err(|error| StoreError::Encode(Box::new(error)))?;
     let hash = nucleus::fact::sha256_hex(payload.as_bytes());
     let mut tx = crate::write_tx(pool).await?;
-    crate::transfer_replication::require_private_writer(&mut tx, &input.transfer, &input.person).await?;
+    crate::transfer_replication::require_private_writer(&mut tx, &input.transfer, &input.person)
+        .await?;
     if let Some(row) =
         sqlx::query("SELECT * FROM transfer_private_policy_event WHERE request_id = ?")
             .bind(&input.request_id)
@@ -448,7 +449,11 @@ where
         .ok_or_else(|| invalid("only the owner can correct a local application to a live Record"))?;
     let writer: Option<String> = sqlx::query_scalar("SELECT cell_uid FROM transfer_sync_owner WHERE table_name = 'transfer_local_application' AND row_key = json_array(?) AND cell_uid != (SELECT uid FROM record WHERE slug = 'local-cell')")
         .bind(application).fetch_optional(&mut *tx).await?;
-    if let Some(writer) = writer { return Err(invalid(format!("Submit this private correction to its writing Cell {writer}"))); }
+    if let Some(writer) = writer {
+        return Err(invalid(format!(
+            "Submit this private correction to its writing Cell {writer}"
+        )));
+    }
     let previous: Option<(String, String, String)> = sqlx::query_as("SELECT application_uid, person_uid, fact_uid FROM transfer_private_application_correction WHERE request_id = ?")
         .bind(request).fetch_optional(&mut *tx).await?;
     if let Some((previous, owner, fact)) = previous {

@@ -1,0 +1,40 @@
+Import "../Ancient-Greek-Philosophy.lingua"
+Import "Milesians.lingua"
+Import "Heraclitus.lingua"
+Import "Parmenides.lingua"
+Import "Atomists.lingua"
+Import "Pythagoreans.lingua"
+Import "Xenophanes.lingua"
+Import "Zeno-and-Melissus.lingua"
+Import "Empedocles.lingua"
+Import "Anaxagoras.lingua"
+Import "../sources/Presocratics-Fairbanks.lingua"
+Import "../sources/Early-Greek-Philosophy-Burnet.lingua"
+
+Nature and being: questions around the Socratic route (@greek-nature-being: 0, is #chapter, #part-of @ancient-greek-philosophy, #contains @greek-milesians, #contains @greek-heraclitus, #contains @greek-parmenides, #contains @greek-atomists, #contains @greek-pythagoreans, #contains @greek-xenophanes, #contains @greek-eleatic-arguments, #contains @greek-empedocles, #contains @greek-anaxagoras, #source @greek-source-fairbanks, #source @greek-source-burnet, #philosophy @greek-anaxagoras, #ancient-greek-philosophy @greek-anaxagoras, #philosophy @greek-atomists, #ancient-greek-philosophy @greek-atomists, #philosophy @greek-eleatic-arguments, #ancient-greek-philosophy @greek-eleatic-arguments, #philosophy @greek-empedocles, #ancient-greek-philosophy @greek-empedocles, #philosophy @greek-heraclitus, #ancient-greek-philosophy @greek-heraclitus, #philosophy @greek-milesians, #ancient-greek-philosophy @greek-milesians, #philosophy @greek-parmenides, #ancient-greek-philosophy @greek-parmenides, #philosophy @greek-pythagoreans, #ancient-greek-philosophy @greek-pythagoreans, #philosophy @greek-xenophanes, #ancient-greek-philosophy @greek-xenophanes) { r_61M87EN28QQ9AHXT80SPCB0CVH
+Why is there an ordered world? What changes, and what persists? What makes an explanation adequate? These questions let the Socratic reading path cross into nature, mathematics, and metaphysics.
+
+**Entry:** [reading a claim and its reasons](../foundations/Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN). The [chronology](../foundations/Historical-context.lingua#r_06MYG1RZCSZDTVZP581FTCNRSG) and each passage introduce the historical setting. The Socratic sequence is a useful comparison, not a compulsory prerequisite.
+
+Begin with [the Milesians](Milesians.lingua#r_7EYTA9J2KF117SXZDSK71KR7TE), [Heraclitus](Heraclitus.lingua#r_5K10CZBC41P0MXC7M3M1NW8MKY), [Parmenides](Parmenides.lingua#r_7HVRAJY7AF3178NEH1N8BF9NPV), and [the atomists](Atomists.lingua#r_666ZSW8DNDQ45TJKB8K9HKVS5B) for a short path through explanation, change, being, and what persists. Use [Fairbanks' The First Philosophers of Greece](../sources/Presocratics-Fairbanks.lingua#r_0CETPRSWH0WZT8335D8692RNJY) (1898) as the anthology of translated fragments and ancient testimonies, with [Burnet's Early Greek Philosophy](../sources/Early-Greek-Philosophy-Burnet.lingua#r_1DSKX3DB6E343PZHZABGATVK13) (1908) for a historian's reconstruction and the atomist material.
+
+Broaden that path through a question:
+
+| Question | Reading |
+| --- | --- |
+| How can number, proportion, and order explain something? | [Pythagoras and the Pythagoreans](Pythagoreans.lingua#r_2J6KPA7CCD3NY1G0VCAT35Q2NK) |
+| What do human descriptions of the divine reveal about knowledge? | [Xenophanes](Xenophanes.lingua#r_7R4H94PKX5S41NDVCJSZE0N88B) |
+| What could an argument about motion or plurality establish? | [Zeno and Melissus](Zeno-and-Melissus.lingua#r_5WR6CJM0JV5QPDX2P5177J0YT4) |
+| How can change arise from enduring constituents? | [Empedocles](Empedocles.lingua#r_0JDEHV9WCX6YWPPXE64Z26VAMZ) |
+| What does an appeal to mind add to a physical account? | [Anaxagoras](Anaxagoras.lingua#r_2KMHNE6TG1NF6X3Q4SXMBHGWXN) |
+
+For each selection, distinguish a translated fragment, its ancient transmitting context, a report of another thinker's view, and the modern editor's interpretation. Compare a passage in Fairbanks with Burnet before accepting a complete reconstruction; the surviving evidence can be less definite than that reconstruction suggests.
+
+**Outcome:** compare two explanations of change or being, identify the kind of evidence supporting each reconstruction, and state which assumptions the disagreement exposes. The historical accounts are objects of philosophical inquiry rather than replacements for present-day experimental science.
+
+**Return:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3). **Useful crossing:** [Nature, explanation, and scientific models](../questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF).
+
+**Portuguese alternative:** [Os pré-socráticos: fragmentos, doxografia e comentários, Nova Cultural](../sources/Presocratics-Nova-Cultural.lingua#r_6ZA1ENV6PB59E6EGC7MCBS1782). Use the corresponding thinker's section, keeping fragments, ancient reports, and commentary distinct. The guide's question can be investigated in either collection; identify the edition and passage when comparing them.
+
+**Sustained study:** [the fragments and witnesses seminar](../research/seminars/Fragments-and-witnesses.lingua#r_2G2SQREBR27M8SP2KD6KGQKHP5) requires a full evidence dossier and a defended reconstruction; [nature and mind](../research/seminars/Nature-life-and-mind.lingua#r_2PYDKJQM81F9YKYZFJPEDNY150) develops the explanatory questions through Aristotle.
+} r_61M87EN28QQ9AHXT80SPCB0CVH

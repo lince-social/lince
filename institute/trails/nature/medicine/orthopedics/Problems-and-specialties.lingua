@@ -1,0 +1,20 @@
+Import "../sources/Shoulder-problems-AAOS.lingua"
+Import "../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "Assessment-and-referral.lingua"
+Import "Orthopedics.lingua"
+
+Organize problems without assuming one explanation (@ortho-problems: 0, is #chapter, #part-of @orthopedics, #source @med-source-aaos-overview, #source @med-source-ms-ufrgs, #medicine @ortho-assessment, #orthopedics @ortho-assessment) { r_47AQ7SN7GCR0YA0F5HEZ2342YE
+**Read:** [Shoulder pain and common problems — AAOS](../sources/Shoulder-problems-AAOS.lingua#r_506TD94GKTCRNS0XP0W5Q7EWDV) and the introduction and contents of [Ortopedia adulto — Ministério da Saúde and UFRGS](../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78).
+
+A regional complaint can involve traumatic injury, a tendon disorder, joint degeneration, immune-mediated inflammation, infection, altered nerve function, a tumor, or pain referred from elsewhere. Categories help organize questions; a symptom does not allocate itself reliably to one specialty.
+
+Fracture/fratura disrupts bone. Dislocation/luxação loses normal joint contact; subluxation/subluxação is partial or transient loss of that relationship. Arthritis/artrite concerns joint inflammation; osteoarthritis/osteoartrite or artrose describes a particular joint disease. Tendinopathy/tendinopatia, bursitis/bursite, and nerve compression/compressão nervosa describe different possibilities.
+
+The same person can have more than one relevant finding, and an apparent structural abnormality may not explain the current symptoms. Age, trauma, time course, systemic features, and function influence the assessment.
+
+**Try:** classify fictional descriptions as observations, mechanisms, anatomical findings, or proposed diagnoses. Identify at least two categories that would remain plausible when the only information is 'pain when raising the arm'.
+
+**Continue:** [Assessment, urgency, and referral](Assessment-and-referral.lingua#r_5HK59QJYXS19KZVPQHDCAACD1H).
+
+**Return:** [Orthopedics — understanding musculoskeletal problems](Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_47AQ7SN7GCR0YA0F5HEZ2342YE

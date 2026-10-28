@@ -1,0 +1,28 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Asymptomatic-labrum-MRI-study.lingua"
+Import "../../../sources/Biceps-tendinitis-AAOS.lingua"
+Import "../../../sources/SLAP-tears-AAOS.lingua"
+Import "../../../sources/Shoulder-labral-tears-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "../anatomy/Capsule-and-labrum.lingua"
+Import "../anatomy/Tendons-and-bursae.lingua"
+Import "../study/A-rotational-pain-question.lingua"
+Import "Stiff-shoulder.lingua"
+
+Biceps tendon and labral problems (@shoulder-biceps-labrum: 0, is #chapter, #part-of @shoulder, #source @med-source-biceps, #source @med-source-slap, #medicine @shoulder-stiffness, #orthopedics @shoulder-stiffness, #shoulder @shoulder-stiffness, #source @med-source-asymptomatic-labrum, #source @med-source-labrum) { r_7RF8FD4PKGQ1DEBRZ7RZEH98AW
+**Read anatomy, then a precise damage question:** [Biceps tendinitis — AAOS](../../../sources/Biceps-tendinitis-AAOS.lingua#r_7SRA5WJHB8B31WMPFTB6KZH7GC), Anatomy and the symptom/examination account; [Shoulder joint labral tear — AAOS](../../../sources/Shoulder-labral-tears-AAOS.lingua#r_66H3KEN7TXRY1BTNEX5F68DASF), Types of Labral Tears, Symptoms, and Diagnosing a Labral Tear; [SLAP tears — AAOS](../../../sources/SLAP-tears-AAOS.lingua#r_7Q7Z4SMJ3AAWWS09GTDX6R0P0J), the superior-labrum and biceps-attachment description. For a particular finding, return to its anatomical region rather than treating every labral lesion as SLAP.
+
+The long head of the biceps links the superior labral region with a tendon course through the shoulder and along the proximal humerus. The short head has a different proximal attachment. A problem described as 'biceps' needs a location and a specific question.
+
+SLAP names a superior labral lesion extending from anterior to posterior in relation to the biceps attachment. A Bankart lesion concerns a different labral region and is associated with particular instability patterns. These are anatomical descriptions with a clinical context, not words to assign from a click or from pain location alone.
+
+Tendon complaints and labral findings can coexist with other shoulder disorders. An imaging label does not establish which finding matters to an individual's symptoms or whether repair would improve the outcome.
+
+**A focused imaging caution:** [Labral MRI findings without symptoms — Schwartzberg and colleagues](../../../sources/Asymptomatic-labrum-MRI-study.lingua#r_7E5C296ZF4P7MWT3H5B0NXV6H1) studied MRI interpretations in asymptomatic adults aged 45–60. Read Methods, Results, and Discussion to understand why an image label needs context. It neither diagnoses a painful shoulder nor establishes that all labral findings in other ages or after trauma are incidental. [Work through a rotational-pain question with focused readings](../study/A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S) uses this distinction when considering a deep pain or catching account.
+
+**Try:** mark the biceps attachment and superior versus anteroinferior labrum on a drawing. Explain why tenderness, clicking, and an image report would need to be interpreted together rather than treated as three independent confirmations.
+
+**Continue:** [A stiff shoulder — capsulitis and other explanations](Stiff-shoulder.lingua#r_4JWG5NRDXS1ZHGKN05W8J3TAH2).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7RF8FD4PKGQ1DEBRZ7RZEH98AW

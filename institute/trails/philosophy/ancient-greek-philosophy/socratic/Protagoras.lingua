@@ -1,0 +1,21 @@
+Import "Socratic-inquiry.lingua"
+Import "../sources/Protagoras-Jowett.lingua"
+Import "../aristotle/Political-community.lingua"
+Import "Argument-review.lingua"
+Import "Gorgias.lingua"
+
+Protagoras: teaching virtue and the work of a sophist (@greek-protagoras: 0, is #chapter, #part-of @greek-socratic-inquiry, #source @greek-source-protagoras, #philosophy @greek-aristotle-politics, #ancient-greek-philosophy @greek-aristotle-politics, #philosophy @greek-first-review, #ancient-greek-philosophy @greek-first-review, #philosophy @greek-gorgias, #ancient-greek-philosophy @greek-gorgias) { r_6QKC211R791MTAMXSZM0VBS5XN
+**Read:** [Protagoras](../sources/Protagoras-Jowett.lingua#r_0CCC0YE28KF66XW6CWP0K0FED1), translated by Benjamin Jowett. Begin with Hippocrates' wish to become Protagoras' pupil and the account of what the teacher promises. Read the myth and argument about civic education, approximately 320c–328d, then the later examination of virtue, courage, pleasure, and knowledge. Read the full dialogue to follow the changing positions.
+
+**Preparation:** [Meno's question about teaching virtue](Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN) and [an argument reconstructed from its speaker's commitments](../foundations/Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN). Introduce any unfamiliar term alongside the exchange.
+
+Ask what the argument that everyone participates in civic education establishes about specialist teaching. Does the widespread practice of correction show that virtue can be taught, that it is already taught, or that a particular teacher can teach it well? Examine each transition.
+
+Treat Protagoras' speech as Plato's presentation of an interlocutor. Compare the long speech, the question-and-answer exchange, and the interpretation of a poem as different ways of conducting inquiry. The word sophist names a historical setting for teaching and debate; evaluate the actual argument before accepting a caricature of the group.
+
+**Practice:** reconstruct the civic-education argument and give a serious objection. Compare it with Meno and with an example of apprenticeship or public education.
+
+**Check:** explain how the participants' positions change and what the exchange establishes about knowledge and virtue. State one historical claim that the dramatic presentation alone cannot settle.
+
+**Continue:** [Gorgias](Gorgias.lingua#r_5G884J0SFXCP4YRBFF5C5YSYD2) or [Aristotle on education and political association](../aristotle/Political-community.lingua#r_0NZK4NKSQVX9NMTAWRT2XNBATD). **Return:** [Socratic inquiry](Socratic-inquiry.lingua#r_24EDXVJN0ACP2G204JK3KCHW79) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_6QKC211R791MTAMXSZM0VBS5XN

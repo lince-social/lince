@@ -270,9 +270,14 @@ fn close_surface(world: &mut World) {
     world.despawn(owner);
 }
 
+pub(crate) fn close_transport_surface(world: &mut World) {
+    world.init_resource::<State>();
+    close_surface(world);
+}
+
 fn scope(world: &mut World) {
     world.init_resource::<State>();
-    let current = world.resource::<Mobile>().scope_key();
+    let current = crate::transport::scope_key(world);
     if world.resource::<State>().scope != current {
         if let Some(epoch) = world.resource_mut::<State>().locate_epoch.take() {
             crate::location::cancel_locate(epoch);
@@ -325,6 +330,26 @@ pub fn open(world: &mut World, records: Vec<String>) {
     state.invitation = None;
     state.camera = Camera::default();
     reset_geometry(state);
+}
+
+pub(crate) fn transport(world: &mut World, records: Vec<String>) {
+    scope(world);
+    if world.resource::<State>().records != records {
+        let state = &mut *world.resource_mut::<State>();
+        state.records = records;
+        state.auto_center = !state.records.is_empty();
+        state.epoch = state.epoch.wrapping_add(1);
+        state.pending.clear();
+        state.markers.clear();
+        state.rows.clear();
+        state.done = false;
+        state.after = None;
+        state.changed = true;
+    }
+}
+
+fn active(world: &World) -> bool {
+    world.resource::<Mobile>().navigation.current == Page::Map || crate::transport::active(world)
 }
 
 pub fn observe(world: &mut World, invitation: nucleus::location::Invitation) -> Result<(), String> {
@@ -387,7 +412,7 @@ pub fn receive(world: &mut World, message: &cell::ServerMessage) -> bool {
         return true;
     };
     if pending.epoch != world.resource::<State>().epoch
-        || world.resource::<Mobile>().navigation.current != Page::Map
+        || !active(world)
         || world.resource::<State>().sources_open
         || world.resource::<State>().credits_open
     {
@@ -804,7 +829,7 @@ pub fn receive_pack(world: &mut World, epoch: u64, result: Result<String, String
         .picked_pack
         .as_ref()
         .is_some_and(|pick| pick.0 == epoch)
-        || world.resource::<Mobile>().navigation.current != Page::Map
+        || !active(world)
     {
         crate::android::cancel_map_pack(epoch);
         return;
@@ -972,6 +997,8 @@ pub fn render(world: &mut World, _parent: Entity) {
     }
     world.init_resource::<Assets<Image>>();
     world.init_resource::<map_view::Scenes>();
+    let transport = crate::transport::active(world);
+    let compact = transport && !crate::transport::map_tools(world);
     let modal = world.resource::<State>().sources_open
         || world.resource::<State>().credits_open
         || world.resource::<State>().list_open;
@@ -998,6 +1025,9 @@ pub fn render(world: &mut World, _parent: Entity) {
         ))
         .id();
     let controls = lince_interface::controls::row(world, owner);
+    if compact {
+        world.get_mut::<Node>(controls).unwrap().display = Display::None;
+    }
     world.get_mut::<Node>(controls).unwrap().flex_wrap = FlexWrap::Wrap;
     world.get_mut::<Node>(controls).unwrap().max_height = percent(35);
     world.get_mut::<Node>(controls).unwrap().overflow = Overflow::scroll_y();
@@ -1158,6 +1188,9 @@ pub fn render(world: &mut World, _parent: Entity) {
         Pickable::IGNORE,
     ));
     let controls = lince_interface::controls::row(world, owner);
+    if compact {
+        world.get_mut::<Node>(controls).unwrap().display = Display::None;
+    }
     world.get_mut::<Node>(controls).unwrap().flex_wrap = FlexWrap::Wrap;
     world.get_mut::<Node>(controls).unwrap().max_height = percent(25);
     world.get_mut::<Node>(controls).unwrap().overflow = Overflow::scroll_y();
@@ -1228,9 +1261,7 @@ pub fn render(world: &mut World, _parent: Entity) {
 
 pub fn maintain(world: &mut World) {
     scope(world);
-    if world.resource::<Mobile>().navigation.current != Page::Map
-        || !world.resource::<Mobile>().ready
-    {
+    if !active(world) || !world.resource::<Mobile>().ready {
         close_surface(world);
         let state = &mut *world.resource_mut::<State>();
         state.pending.clear();
@@ -1632,6 +1663,9 @@ fn status(world: &World) -> String {
 }
 
 fn query(world: &mut World, size: [u32; 2]) {
+    if crate::transport::active(world) && world.resource::<State>().records.is_empty() {
+        return;
+    }
     if world.resource::<State>().pending.len() >= 4
         || world.resource::<State>().next > Instant::now()
     {

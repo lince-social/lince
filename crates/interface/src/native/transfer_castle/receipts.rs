@@ -557,12 +557,23 @@ pub(super) fn prepare_form(transfer: &Value, occurrence: &Value, person: &str) -
     form.transfer = transfer["uid"].as_str().map(str::to_owned);
     form.revision = transfer["revision"].as_u64();
     form.data["request"]["scope"]["audience"] = json!({"kind":"public"});
-    if let Some(terms) = transfer.pointer("/revision_evidence/current/terms/transfer/public_history").cloned().and_then(|terms| serde_json::from_value::<nucleus::transfer::public_history::Terms>(terms).ok()) {
+    if let Some(terms) = transfer
+        .pointer("/revision_evidence/current/terms/transfer/public_history")
+        .cloned()
+        .and_then(|terms| {
+            serde_json::from_value::<nucleus::transfer::public_history::Terms>(terms).ok()
+        })
+    {
         form.data["request"]["scope"]["audience"] = json!(terms.audience);
         form.data["request"]["scope"]["stages"] = json!(terms.stages);
         form.data["request"]["scope"]["publish_agreed_quantity"] = json!(terms.agreed_quantity);
-        form.data["request"]["scope"]["public_measurements"] = json!(serde_json::to_string(&terms.measurements).unwrap());
-        form.data["request"]["scope"]["expires_at"] = json!((nucleus::execution::now()+chrono::Duration::seconds(i64::from(terms.retention_seconds))).to_rfc3339());
+        form.data["request"]["scope"]["public_measurements"] =
+            json!(serde_json::to_string(&terms.measurements).unwrap());
+        form.data["request"]["scope"]["expires_at"] = json!(
+            (nucleus::execution::now()
+                + chrono::Duration::seconds(i64::from(terms.retention_seconds)))
+            .to_rfc3339()
+        );
         form.review["Original public-history terms"] = json!(terms);
     }
     form.field(
@@ -654,7 +665,11 @@ pub(super) fn prepare_form(transfer: &Value, occurrence: &Value, person: &str) -
             ("receiver".into(), "Receiver Person".into()),
         ]),
     );
-    form.field("/request/scope/use_upfront_terms", "Use original agreed terms (clear for a separately approved renewal or expansion)", FieldKind::Choice(vec!["true".into(), "false".into()]));
+    form.field(
+        "/request/scope/use_upfront_terms",
+        "Use original agreed terms (clear for a separately approved renewal or expansion)",
+        FieldKind::Choice(vec!["true".into(), "false".into()]),
+    );
     super::forms::audience_fields(&mut form, "/request/scope/audience");
     form
 }
@@ -943,8 +958,16 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity) {
         "Open Record and visibility",
         Command::Record(text(&receipt, "record")),
     );
-    if matches!(document["kind"].as_str(),Some("publication"|"proof_fragment")) {
-        crate::native::trust_castle::evidence_serving_controls(world,parent,&text(&receipt,"record"),nucleus::trust_analysis::serving::SourceKind::Receipt);
+    if matches!(
+        document["kind"].as_str(),
+        Some("publication" | "proof_fragment")
+    ) {
+        crate::native::trust_castle::evidence_serving_controls(
+            world,
+            parent,
+            &text(&receipt, "record"),
+            nucleus::trust_analysis::serving::SourceKind::Receipt,
+        );
     }
     let scope = if document["kind"] == "review" {
         &document["value"]["scope"]
@@ -974,7 +997,9 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity) {
         if let Some(object) = summary.as_object_mut() {
             object.remove("source");
         }
-        if let Some(terms) = summary["upfront_terms"].as_object_mut() { terms.remove("nonce"); }
+        if let Some(terms) = summary["upfront_terms"].as_object_mut() {
+            terms.remove("nonce");
+        }
         if let Some(expiry) = scope["expires_at"]
             .as_i64()
             .and_then(|value| chrono::DateTime::from_timestamp(value, 0))
@@ -985,8 +1010,20 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity) {
     }
     if document["kind"] == "review" {
         let approvals = array(&document["value"], "approvals");
-        let upfront = serde_json::from_value::<nucleus::transfer::receipt::Scope>(scope.clone()).map(|scope| scope.upfront_roles().into_iter().map(|role| model::display(&json!(role))).collect::<Vec<_>>()).unwrap_or_default();
-        let covered = approvals.iter().filter_map(|approval| approval["role"].as_str().map(str::to_owned)).chain(upfront.iter().cloned()).collect::<std::collections::BTreeSet<_>>();
+        let upfront = serde_json::from_value::<nucleus::transfer::receipt::Scope>(scope.clone())
+            .map(|scope| {
+                scope
+                    .upfront_roles()
+                    .into_iter()
+                    .map(|role| model::display(&json!(role)))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let covered = approvals
+            .iter()
+            .filter_map(|approval| approval["role"].as_str().map(str::to_owned))
+            .chain(upfront.iter().cloned())
+            .collect::<std::collections::BTreeSet<_>>();
         let personal = array(&document["value"], "person_approvals");
         let targets = array(scope, "public_persons");
         if !targets.is_empty() {
@@ -1025,7 +1062,8 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity) {
             parent,
             &format!(
                 "{} of 3 role authorizations; {} use signed upfront terms. The origin's occurrence attestation remains required.",
-                covered.len(), upfront.len()
+                covered.len(),
+                upfront.len()
             ),
             13.0,
         );

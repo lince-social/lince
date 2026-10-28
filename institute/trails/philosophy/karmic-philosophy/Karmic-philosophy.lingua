@@ -1,0 +1,20 @@
+Import "../Philosophy.lingua"
+Import "buddhism/Buddhism.lingua"
+Import "yoga/Yoga.lingua"
+
+Karmic philosophy: Buddhism and Yoga (@karmic-philosophy: 0, is #chapter, #part-of @philosophy, #philosophy @buddhism, #buddhism @buddhism, #philosophy @yoga, #yoga @yoga) { r_7FERM3385WX5JGT9X04PNCE85Y
+Choose [Buddhism](buddhism/Buddhism.lingua#r_7P61Z6HHZNZZ8ND3DHXSFSNRRE) for the ordered reading from Bhikkhu Bodhi’s account of the path through the discourse collections and later traditions. Choose [Yoga](yoga/Yoga.lingua#r_017AAD0FQ294F8HBVVTQAZ55GH) for a short reading of Iyengar’s Light on Yoga.
+
+These are separate entrances into questions concerning action, discipline, knowledge, suffering, and liberation. Their grouping provides a place to find and compare them; it does not establish that their accounts of karma, self, practice, or liberation are identical.
+
+Return to [Philosophy](../Philosophy.lingua#r_00000000000000000000001001) for shared questions and reading methods. Follow the particular `#buddhism` or `#yoga` assertions for its learning connections. Sources and optional comparisons use their own references.
+
+**Return:** [Philosophy](../Philosophy.lingua#r_00000000000000000000001001).
+} r_7FERM3385WX5JGT9X04PNCE85Y
+
+Extension @karmic-philosophy "lince.vocabulary" {
+ definitions {
+  buddhism "A suggested continuation in the authored Buddhist reading and inquiry. Supporting sources and comparisons use their own predicates."
+  yoga "A suggested continuation in the authored Yoga reading and inquiry. Supporting sources and comparisons use their own predicates."
+ }
+}

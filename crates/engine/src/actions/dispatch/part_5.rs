@@ -625,18 +625,25 @@ impl Engine {
                         .transfer_action_person(actor.as_deref(), person.as_deref(), None)
                         .await?;
                     let promise = promise.trim().to_string();
-                    let original_authority_records = nucleus::transfer::receipt::original_authority_records(
-                        &original_authorities,
-                    ).map_err(EngineError::Consequence)?;
+                    let original_authority_records =
+                        nucleus::transfer::receipt::original_authority_records(
+                            &original_authorities,
+                        )
+                        .map_err(EngineError::Consequence)?;
                     if let Some(replayed) = store::transfers::occurrences_for_activation_request(
                         &self.store.pool,
                         &request_id,
                     )
                     .await?
                     {
-                        let original: nucleus::transfer::TransferActivationEvidence = serde_json::from_str(
-                            replayed.fact.payload.as_deref().ok_or_else(|| EngineError::Consequence("Original activation evidence is unavailable".into()))?
-                        )?;
+                        let original: nucleus::transfer::TransferActivationEvidence =
+                            serde_json::from_str(replayed.fact.payload.as_deref().ok_or_else(
+                                || {
+                                    EngineError::Consequence(
+                                        "Original activation evidence is unavailable".into(),
+                                    )
+                                },
+                            )?)?;
                         if replayed.transfer_uid != transfer
                             || replayed.revision != expected_revision
                             || replayed.actor_person_uid != acting
@@ -649,7 +656,12 @@ impl Engine {
                         outcome.created = Some(replayed.occurrences[0].uid.clone());
                         return Ok(ControlFlow::Break(outcome));
                     }
-                    self.check_transfer_participation_records(&original_authority_records, actor.as_deref(), now).await?;
+                    self.check_transfer_participation_records(
+                        &original_authority_records,
+                        actor.as_deref(),
+                        now,
+                    )
+                    .await?;
                     if store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
                         .await?
                         .is_some()

@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Read pinned Rust version
         id: toolchain
-        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.toolchain.outputs.version }}

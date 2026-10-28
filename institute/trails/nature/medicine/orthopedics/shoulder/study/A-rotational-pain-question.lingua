@@ -1,0 +1,36 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Asymptomatic-labrum-MRI-study.lingua"
+Import "../../../sources/Chronic-shoulder-imaging-ACR.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Internal-impingement-overhead-athletes.lingua"
+Import "../../../sources/Posterior-capsule-strain-study.lingua"
+Import "../../../sources/SLAP-tears-AAOS.lingua"
+Import "../../../sources/Shoulder-labral-tears-AAOS.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "../conditions/Pain-near-end-of-rotation.lingua"
+Import "Examination-and-imaging.lingua"
+Import "Guideline-comparison.lingua"
+Import "Rehabilitation-principles.lingua"
+Import "Research-and-revision.lingua"
+
+Work through a rotational-pain question with focused readings (@shoulder-rotation-case: 0, is #chapter, #part-of @shoulder, #source @med-source-osu, #source @med-source-joint, #source @med-source-labrum, #source @med-source-slap, #source @med-source-asymptomatic-labrum, #source @med-source-acr, #source @med-source-internal-impingement, #source @med-source-capsule-study, #source @med-source-tendinopathy-guideline, #medicine @shoulder-rehabilitation, #orthopedics @shoulder-rehabilitation, #shoulder @shoulder-rehabilitation) { r_5GSTPQ2M46MJAY4PTWARZ8N31S
+Begin after [Pain near the end of rotation — understand the possibilities](../conditions/Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) and [Understand a shoulder examination and an imaging report](Examination-and-imaging.lingua#r_0ESRQBT85AGDQH7Q71TAFFEAQS). This task uses fictional accounts or a published educational case; it does not require provoking or diagnosing your own symptoms. Choose one question and follow the relevant passages rather than rereading every source.
+
+| Question to investigate | Focused assignment | Explain after reading |
+| --- | --- | --- |
+| Which movement and structures are involved? | [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Rotation in Types of Body Movements and Shoulder Joint in Anatomy of Selected Synovial Joints; [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), capsule and ligament passages | humeral versus forearm rotation, starting position, and possible restraints |
+| What might a labral finding mean? | [Shoulder joint labral tear — AAOS](../../../sources/Shoulder-labral-tears-AAOS.lingua#r_66H3KEN7TXRY1BTNEX5F68DASF), Types of Labral Tears, Symptoms, and Diagnosing a Labral Tear; [SLAP tears — AAOS](../../../sources/SLAP-tears-AAOS.lingua#r_7Q7Z4SMJ3AAWWS09GTDX6R0P0J), Anatomy and Diagnosis | location, attachment, overlapping symptoms, and the limits of a clinical label |
+| Does an MRI finding establish the cause of pain? | [Labral MRI findings without symptoms — Schwartzberg and colleagues](../../../sources/Asymptomatic-labrum-MRI-study.lingua#r_7E5C296ZF4P7MWT3H5B0NXV6H1), Methods, Results, and Discussion; [Chronic shoulder pain — ACR imaging criteria](../../../sources/Chronic-shoulder-imaging-ACR.lingua#r_550R5D2ZQEXYS08A98J9M848PG), the scenario appropriate to the suspected structure | population, interpretation, uncertainty, and relevance to the current question |
+| Is a particular end-position mechanism being proposed? | [Internal impingement in overhead athletes — Corpus and colleagues](../../../sources/Internal-impingement-overhead-athletes.lingua#r_39ZZD5X2XJRC9834DBHREBSS9X), Introduction, Pathophysiology and Biomechanics, and Diagnosis; compare [Posterior shoulder tissue strain — Borstad and Dashottar](../../../sources/Posterior-capsule-strain-study.lingua#r_6XDNYGV5BX07M2TJYPE3XSR8AJ), Methods and limitations | what is supported in overhead athletes or laboratory specimens and what cannot be generalized |
+| What evidence supports an option for a specified cuff condition? | [Rotator Cuff Tendinopathy — JOSPT, 2025](../../../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV), scope, assessment, and the relevant management recommendation with its evidence summary | whether the population and outcome match; what remains uncertain |
+
+**Produce a reasoned account:** first describe the movement; then distinguish a symptom, a possible structure, a diagnosis, and an intervention claim. Explain at least one competing account and why the available evidence does not settle it. State what a clinician would need to assess and what a paper could establish. Keep any reproduced image within its licence.
+
+For a broader investigation, read the complete relevant article or guideline, including methods and limitations. A small assigned passage is an entrance into its context, not permission to ignore that context. [Compare guidelines without erasing their populations](Guideline-comparison.lingua#r_23K2GC12JHG2A99BBFJXWYJE0R) and [Investigate a shoulder question and revise the explanation](Research-and-revision.lingua#r_77W5XER9DJRPDS7MK0W82N42MT) develop the full scholarly work.
+
+**Continue:** [Rehabilitation — goals, loading, and meaningful recovery](Rehabilitation-principles.lingua#r_00SXBQ0YTGHC8KRB12XY8B9KAB).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_5GSTPQ2M46MJAY4PTWARZ8N31S

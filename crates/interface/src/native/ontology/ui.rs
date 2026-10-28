@@ -1,4 +1,5 @@
 use super::*;
+use crate::i18n::Token as Tr;
 use crate::native::edit_mode::label;
 
 pub(super) fn populate(world: &mut World, sand: Entity) {
@@ -23,23 +24,23 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
         crate::native::sand_store::SandCredits(CREDITS),
         ChildOf(sand),
     ));
-    let body = panel::frame(world, sand, "Ontology");
+    let body = panel::frame(world, sand, Tr::Ontology.text());
     let tabs = panel::row(world, body);
     for (index, title) in [
-        "Vocabularies",
-        "Concepts and hierarchy",
-        "Record assertions",
-        "Terms and translations",
-        "Record history",
-        "Knowledge sources",
+        Tr::Vocabularies.text(),
+        Tr::ConceptHierarchy.text(),
+        Tr::RecordAssertions.text(),
+        Tr::TermsTranslations.text(),
+        Tr::RecordHistory.text(),
+        Tr::KnowledgeSources.text(),
     ]
     .iter()
     .enumerate()
     {
         panel::button(world, tabs, sand, title, Command::Tab(index));
     }
-    panel::button(world, tabs, sand, "Refresh", Command::Refresh);
-    let status = label(world, body, "Loading ontology…", 12.0);
+    panel::button(world, tabs, sand, Tr::Refresh.text(), Command::Refresh);
+    let status = label(world, body, Tr::LoadingOntology.text(), 12.0);
     let scroll = panel::column(world, body);
     {
         let mut node = world.get_mut::<Node>(scroll).unwrap();
@@ -51,8 +52,20 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
     let editor = panel::column(world, scroll);
     let list = panel::column(world, scroll);
     let navigation = panel::row(world, body);
-    panel::button(world, navigation, sand, "Previous", Command::Page(false));
-    panel::button(world, navigation, sand, "Next", Command::Page(true));
+    panel::button(
+        world,
+        navigation,
+        sand,
+        Tr::Previous.text(),
+        Command::Page(false),
+    );
+    panel::button(
+        world,
+        navigation,
+        sand,
+        Tr::Next.text(),
+        Command::Page(true),
+    );
     world.entity_mut(sand).insert(OntologySand {
         editor,
         list,
@@ -156,7 +169,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         world
             .get_mut::<bevy::text::EditableText>(package)
             .unwrap()
-            .max_characters = Some(store::knowledge::BUNDLE_LIMIT);
+            .max_characters = None;
         panel::button(
             world,
             parent,
@@ -266,7 +279,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         let updates = panel::row(world, parent);
         world.get_mut::<Node>(updates).unwrap().flex_wrap = FlexWrap::Wrap;
         for (name, field) in [
-            ("Title", nucleus::knowledge::UpdateField::Title),
+            (Tr::Title.text(), nucleus::knowledge::UpdateField::Title),
             ("Content", nucleus::knowledge::UpdateField::Content),
             ("Claims", nucleus::knowledge::UpdateField::Claims),
             ("Attribution", nucleus::knowledge::UpdateField::Attribution),
@@ -304,42 +317,35 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         );
         chooser(world, owner, parent, 0, "Source Vocabulary (Lingua)");
         chooser(world, owner, parent, 1, "Stable Concept");
-        let name = panel::field(world, parent, "Term or original name", "");
-        let language = panel::field(
-            world,
-            parent,
-            "Language tag (en, pt-BR, el-Latn; empty for all languages)",
-            "",
-        );
-        let definition = panel::field(world, parent, "Definition (new Concept or new version)", "");
+        let name = panel::field(world, parent, Tr::TermName.text(), "");
+        let language = panel::field(world, parent, Tr::LanguageTag.text(), "");
+        label(world, parent, Tr::VocabularyLanguageHelp.text(), 13.0);
+        let definition = panel::field(world, parent, Tr::DefinitionNew.text(), "");
         let mut view = world.get_mut::<OntologySand>(owner).unwrap();
         view.name = name;
         view.language = language;
         view.definition = definition;
         let controls = panel::row(world, parent);
         for (title, command) in [
-            ("Create a different meaning", Command::Create),
-            ("Save new definition version", Command::ReviseDefinition),
-            ("Inspect meaning and its uses", Command::InspectMeaning(0)),
-            ("Add alternative", Command::AddTerm),
-            ("Edit selected term", Command::EditTerm),
-            ("Remove selected term", Command::RetireTerm),
-            ("Toggle preferred term", Command::Preferred),
-            ("Toggle personal term", Command::Personal),
-            ("Use this display language", Command::Language),
-            ("Use selected wording in this context", Command::PreferTerm),
-            (
-                "Use my entered wording in this context",
-                Command::UseWording,
-            ),
-            ("Hide selected source term", Command::HideTerm(true)),
-            ("Show selected source term", Command::HideTerm(false)),
-            ("Restore original wording", Command::RestoreOriginal),
-            ("Use automatic wording", Command::ResetTerminology),
+            (Tr::CreateMeaning.text(), Command::Create),
+            (Tr::ReviseDefinition.text(), Command::ReviseDefinition),
+            (Tr::InspectMeaning.text(), Command::InspectMeaning(0)),
+            (Tr::AddAlternative.text(), Command::AddTerm),
+            (Tr::EditTerm.text(), Command::EditTerm),
+            (Tr::RemoveTerm.text(), Command::RetireTerm),
+            (Tr::PreferredTerm.text(), Command::Preferred),
+            (Tr::PersonalTerm.text(), Command::Personal),
+            (Tr::UseDisplayLanguage.text(), Command::Language),
+            (Tr::UseContextWording.text(), Command::PreferTerm),
+            (Tr::UseEnteredWording.text(), Command::UseWording),
+            (Tr::HideSourceTerm.text(), Command::HideTerm(true)),
+            (Tr::ShowSourceTerm.text(), Command::HideTerm(false)),
+            (Tr::OriginalWording.text(), Command::RestoreOriginal),
+            (Tr::AutomaticWording.text(), Command::ResetTerminology),
         ] {
             panel::button(world, controls, owner, title, command);
         }
-        label(world, parent, "Feature meanings", 13.0);
+        label(world, parent, Tr::FeatureMeanings.text(), 13.0);
         let features = panel::row(world, parent);
         world.get_mut::<Node>(features).unwrap().flex_wrap = FlexWrap::Wrap;
         for feature in store::vocabulary::FEATURES {
@@ -423,9 +429,9 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
                 Command::AdoptPackage,
             );
             for (title, command) in [
-                ("Export shared translations", Command::ExportTranslations),
-                ("Inspect translation package", Command::PreviewTranslations),
-                ("Add reviewed translations", Command::ImportTranslations),
+                (Tr::ExportTranslations.text(), Command::ExportTranslations),
+                (Tr::InspectTranslations.text(), Command::PreviewTranslations),
+                (Tr::ImportTranslations.text(), Command::ImportTranslations),
             ] {
                 panel::button(world, controls, owner, title, command);
             }

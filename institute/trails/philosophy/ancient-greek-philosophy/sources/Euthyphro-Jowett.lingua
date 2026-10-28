@@ -1,0 +1,15 @@
+Import "Dialogues-Jowett.lingua"
+
+Euthyphro — Jowett's dialogue text (@greek-euthyphro-text: 0, is #reference, #part-of @greek-source-dialogues, #source @greek-source-dialogues) { r_1EH96KVFJX5TD94W0N1A3AYNZ6
+Plato; translated by Benjamin Jowett. Dialogue text in the retained 1892 volume II, opened after the separate introduction.
+
+**Read with:** [Euthyphro guide](../socratic/Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD). **Edition:** [The Dialogues of Plato, volume II](Dialogues-Jowett.lingua#r_1AD7N0E0ZYZ07XSMQWSK5PA5X8). **Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_1EH96KVFJX5TD94W0N1A3AYNZ6
+
+Extension @greek-euthyphro-text "lince.resource" {
+ uri "../books/plato-dialogues-volume-2.epub"
+ title "Euthyphro"
+ hash "9f2d10db68a84f82f32385efa8606ed6824f7cd06018c748955b53d74a12e3cf"
+ media_type "application/epub+zip"
+ locator { href "OEBPS/5392415786123064750_76464-h-7.htm.xhtml" fragment "EUTHYPHRO_DIALOGUE" }
+}

@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+lince-resources.workspace = true
 anyrender = "=0.13.0"
 anyrender_vello_cpu = "=0.17.0"
 base64.workspace = true
@@ -16,6 +17,7 @@ blitz-paint = "=0.3.0-beta.2"
 blitz-traits = "=0.3.0-beta.2"
 hayro = "=0.7.1"
 peniko = "=0.6.1"
+pdfium-render = { version = "=0.9.4", default-features = false, features = ["pdfium_7881", "thread_safe"] }
 rbook = { version = "=0.7.10", default-features = false, features = ["threadsafe"] }
 serde.workspace = true
 zip.workspace = true

@@ -21,8 +21,8 @@ pub async fn offer(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), S
 }
 
 pub async fn accept(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), StoreError> {
-    let mut tx=crate::write_tx(pool).await?;
-    let now=nucleus::execution::now().to_rfc3339();
+    let mut tx = crate::write_tx(pool).await?;
+    let now = nucleus::execution::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO replica_grant (root_record, contact_organ, state, created_at)
          VALUES (?, ?, ?, ?)
@@ -41,7 +41,7 @@ pub async fn accept(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), 
 }
 
 pub async fn revoke(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), StoreError> {
-    let mut tx=crate::write_tx(pool).await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query("DELETE FROM replica_grant WHERE root_record = ? AND contact_organ = ?")
         .bind(root)
         .bind(contact)

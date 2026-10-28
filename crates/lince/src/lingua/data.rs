@@ -370,6 +370,7 @@ async fn render_record(store: &Store, uid: &str) -> Result<String, String> {
         .map_err(|error| error.to_string())?
     {
         assertions.push(anicca::ProjectedAssertion {
+            object_uri: assertion.object_uri,
             predicate: assertion.predicate,
             identity: row.identity_predicate_uid.as_deref() == Some(&assertion.predicate_uid),
             object_slug: assertion.object_uid.clone(),

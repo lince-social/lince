@@ -1,0 +1,23 @@
+Import "../../../Medicine.lingua"
+Import "../../../musculoskeletal/Levers-and-loading.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Shoulder-muscles.lingua"
+Import "../Shoulder.lingua"
+Import "Anatomy-review.lingua"
+Import "Capsular-restraints.lingua"
+
+Shoulder stability, muscle coordination, and load (@shoulder-stability: 0, is #chapter, #part-of @shoulder, #source @med-source-joint, #source @med-source-shoulder-muscles, #medicine @shoulder-anatomy-review, #orthopedics @shoulder-anatomy-review, #shoulder @shoulder-anatomy-review) { r_603S03SRMHDYMCNCKR5MG3EBC9
+**Read selected mechanisms of stability:** [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), the relationships among surfaces, capsule, labrum, ligaments, and cuff; [Shoulder muscles — NCBI Bookshelf](../../../sources/Shoulder-muscles.lingua#r_76PY1TN1ZHB847YGG80ZCB5S50), stabilizing muscle functions. Revisit [Rotation and restraint — why position changes the capsule question](Capsular-restraints.lingua#r_2PW98DPTH66WTKFMPAX35775WE) for position dependence and [Levers, force, stress, and loading](../../../musculoskeletal/Levers-and-loading.lingua#r_11PBB06GFW5E3JY12EVAWF6YJN) for force and moment.
+
+The humeral head and shallow glenoid allow mobility that depends on coordinated supporting tissues and active control. The labrum, capsule, ligaments, joint environment, rotator cuff, and other muscles contribute in position-dependent ways. Stability/estabilidade is more than the presence of one strong ligament.
+
+A muscle force has components whose effects depend on its direction relative to the joint. Cuff activity and scapular control help coordinate the forces generated during elevation. A description such as 'the deltoid lifts the arm' leaves out how the entire system manages the load.
+
+A longer external lever, repeated actions, speed, fatigue, and changing task demands alter the mechanical question. These principles help explain why two activities with the same external weight can feel and function differently; they do not identify a damaged tissue.
+
+**Try:** explain holding an object close to the body and then at arm's length using force and moment. Name anatomical structures involved in both cases. State which claims are mechanical predictions and which would require measurement or clinical assessment.
+
+**Continue:** [Reconstruct a functioning shoulder](Anatomy-review.lingua#r_553DGK77PSSKH55Q7ME3XP92XH).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_603S03SRMHDYMCNCKR5MG3EBC9

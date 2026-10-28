@@ -1,0 +1,17 @@
+Import "../Buddhism.lingua"
+Import "../sources/Pali-reader.lingua"
+Import "Comparing-traditions.lingua"
+
+Textual study: translation, Pāli, and interpretation (@buddhist-textual-study: 0, is #chapter, #part-of @buddhism, #source @buddhist-source-pali-reader, #philosophy @buddhist-comparing-traditions, #buddhism @buddhist-comparing-traditions) { r_5ATB59ZTXZHDEKYE94B3ZR5H74
+Begin with a difficult passage retained from the core. Identify its discourse number, edition, translator, and the sentence whose interpretation matters. Compare two named translations, distinguishing a lexical choice, a grammatical choice, and a philosophical inference. A different English word does not automatically establish a different original reading.
+
+[Bodhi’s Pāli reader](../sources/Pali-reader.lingua#r_6BZHBEETTVZP142JPH44SY0S4P) provides a way to deepen selected discourse readings through grammar and translation. Work through its orientation and examples, then analyse the constructions your chosen claim depends on. Recommend learning Pāli for this work; use other original languages when a later tradition requires them.
+
+**Produce:** a located passage, your supported translation or analysis, competing renderings, the reason for your preferred reading, and the surrounding argument. A glossary equivalent is insufficient when the claim depends on syntax or context.
+
+The Sutta Piṭaka reading here is part of a wider transmitted canon and religious life. Distinguish discourse, monastic discipline, systematic analysis, commentary, and later scholarship when using each as evidence. Introduce further sources as a question requires them; an unread title is not evidence for its contents.
+
+**Continue:** [Compare traditions without erasing their differences](Comparing-traditions.lingua#r_3KS8KCQ806EAZBGBRQ3H51RPY1).
+
+**Return:** [Buddhism: from the path to sustained inquiry](../Buddhism.lingua#r_7P61Z6HHZNZZ8ND3DHXSFSNRRE).
+} r_5ATB59ZTXZHDEKYE94B3ZR5H74

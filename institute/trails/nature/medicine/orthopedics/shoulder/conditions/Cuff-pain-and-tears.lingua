@@ -1,0 +1,22 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Rotator-cuff-guideline-2025.lingua"
+Import "../../../sources/Rotator-cuff-tears-AAOS.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "Calcific-tendinopathy.lingua"
+
+Rotator cuff pain, tendinopathy, and tears (@shoulder-cuff-problems: 0, is #chapter, #part-of @shoulder, #source @med-source-cuff-patient, #source @med-source-tendinopathy-guideline, #source @med-source-cuff-guideline, #medicine @shoulder-calcific, #orthopedics @shoulder-calcific, #shoulder @shoulder-calcific) { r_16SYXGMD8KFKTSXAC8G1HHH4EW
+**Read selected problem descriptions:** [Rotator cuff tears — AAOS](../../../sources/Rotator-cuff-tears-AAOS.lingua#r_5G6SQ0913D89PSPG03A3XYDQ5W), the anatomy, tear descriptions, Symptoms, and Doctor’s Examination sections. Then read only the scope and definitions of [Rotator Cuff Tendinopathy — JOSPT, 2025](../../../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV) and [Management of Rotator Cuff Injuries — AAOS, 2025](../../../sources/Rotator-cuff-guideline-2025.lingua#r_5JCRVDCV75VA441X5FG5S226G3) to identify their different populations. Their full management and evidence sections belong to the later guideline study.
+
+Rotator cuff-related pain describes a clinical problem around the cuff and related region. Tendinopathy/tendinopatia, a partial-thickness tear/ruptura parcial, and a full-thickness tear/ruptura transfixante describe different concepts and findings. A full-thickness tear does not necessarily mean that the tendon has separated across its entire width.
+
+A tear can occur in a traumatic or longer-developing context. Some tears are painless; symptom severity and structural extent cannot be treated as the same measurement. The history, examination, function, and imaging question help determine relevance.
+
+'Impingement' or 'síndrome do impacto' appears in older and current sources with varying meanings. A purely mechanical pinching story should not be assumed to explain every cuff-related complaint or to establish that removing bone will help. The later trial reading examines this reasoning directly.
+
+**Try:** compare a fictional partial-tear report with a fictional full-thickness report. List what each establishes anatomically and what remains unknown about pain, function, progression, and treatment benefit.
+
+**Continue:** [Calcific tendinopathy — a finding and its clinical context](Calcific-tendinopathy.lingua#r_2KW7TDWEPVWRJ8NE03W636FW51).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_16SYXGMD8KFKTSXAC8G1HHH4EW

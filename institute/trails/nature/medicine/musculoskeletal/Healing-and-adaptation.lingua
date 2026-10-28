@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Tendinopathy-guideline-2025.lingua"
+Import "Movement-review.lingua"
+Import "Musculoskeletal-system.lingua"
+
+Healing, adaptation, and return to activity (@msk-healing: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-tendinopathy-guideline, #medicine @msk-review, #orthopedics @msk-review) { r_3XJC6HDDG7SKRW16PM3TX3B5X0
+**Read process before management:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Bone Repair in chapter 6 and Exercise and Muscle Performance in chapter 10. Revisit the earlier tissue injury and inflammation sections. Later, with a defined cuff question, read rehabilitation and prognosis in [Rotator Cuff Tendinopathy — JOSPT, 2025](../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV); those recommendations concern its stated population.
+
+Healing/cicatrização or reparação and adaptation/adaptação describe related changes with different questions. Repair may reconnect tissue; remodeling changes its organization over time. Adaptation can alter capacity in response to repeated demands without an initial major injury.
+
+Bone, cartilage, tendon, muscle, and nerve have different biological conditions and recovery possibilities. The stage of a process cannot be established solely by counting days from the first pain. Surgical repair, a fracture, a tendon complaint, and a neurological condition can require different loading decisions.
+
+Rehabilitation often considers symptoms, movement, strength, endurance, task demands, and participation. Pain reduction and restored tissue properties need not follow identical time courses. Progression is individualized rather than derived from one universal calendar.
+
+**Try:** compare recovery goals for a fictional fracture and a fictional tendon complaint. Explain why the same exercise schedule would need its own justification in each. Reserve actual exercise selection and progression for the person's assessed condition.
+
+**Continue:** [Explain one movement across tissues and scales](Movement-review.lingua#r_2EABDT9ARYZTXZMQMA4C57Z4WY).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_3XJC6HDDG7SKRW16PM3TX3B5X0

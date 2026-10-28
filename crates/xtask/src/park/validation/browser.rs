@@ -1,5 +1,5 @@
 use super::{Result, error};
-use std::{env, ffi::OsString, fs, path::Path, process::Command};
+use std::{env, ffi::OsString, fs, path::{Path, PathBuf}, process::Command};
 
 pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     if arguments.is_empty() || arguments[0] == "--help" {
@@ -8,16 +8,19 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         );
         return Ok(());
     }
-    let executable = Path::new(&arguments[0]);
+    let stamp = super::SystemTime::now().duration_since(super::UNIX_EPOCH).map_err(error)?.as_nanos();
+    let directory = env::current_dir().map_err(error)?.join("target/park-validation/browser").join(format!("{stamp}-{}", std::process::id()));
+    run_into(arguments, &directory).map(|_| ())
+}
+
+pub(super) fn run_into(arguments: &[OsString], directory: &Path) -> Result<PathBuf> {
+    let executable = Path::new(arguments.first().ok_or("Missing installed executable")?);
     if !executable.is_absolute() {
         return Err("Use an absolute installed executable path".into());
     }
     if super::inspect_build(executable)?["optimized"] != true {
         return Err("Installed browser validation requires an optimized executable".into());
     }
-    let directory = env::current_dir()
-        .map_err(error)?
-        .join("target/park-validation/browser");
     let fixtures = directory.join("fixtures");
     fs::create_dir_all(directory.join("bin")).map_err(error)?;
     fs::create_dir_all(&fixtures).map_err(error)?;
@@ -32,11 +35,9 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         include_bytes!("../../../fixtures/showoff.webm"),
     )
     .map_err(error)?;
-    let script = directory.join("browser.py");
-    fs::write(&script, include_str!("browser.py")).map_err(error)?;
-    let mut command = Command::new("python3");
+    let mut command = Command::new(env::current_exe().map_err(error)?);
     command
-        .arg(script)
+        .args(["maintenance", "browser"])
         .args(arguments)
         .arg("--fixtures")
         .arg(fixtures);
@@ -57,9 +58,17 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
             .arg("--capture-probe")
             .arg(directory.join("bin/capture-probe"));
     }
-    let status = command.status().map_err(error)?;
+    super::logged(&mut command, &directory.join("browser-driver.log"))?;
+    let requested = arguments.windows(2).find(|pair| pair[0] == "--seconds").and_then(|pair| pair[1].to_str()?.parse::<u64>().ok()).unwrap_or(75);
+    let (status, _) = super::bounded(&mut command, std::time::Duration::from_secs(requested.saturating_add(900)))?;
     if status.success() {
-        Ok(())
+        let summary: serde_json::Value = serde_json::from_slice(&fs::read(directory.join("browser-driver.log")).map_err(error)?).map_err(error)?;
+        let run = PathBuf::from(summary["directory"].as_str().ok_or("Browser result has no run directory")?);
+        let run = fs::canonicalize(run).map_err(error)?;
+        if !run.starts_with(fs::canonicalize(directory).map_err(error)?.join("runs")) {
+            return Err("Browser result escaped its private run directory".into());
+        }
+        Ok(run)
     } else {
         Err(format!("Installed browser validation failed: {status}"))
     }

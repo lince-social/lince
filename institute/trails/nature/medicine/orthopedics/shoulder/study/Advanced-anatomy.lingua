@@ -1,0 +1,27 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Brachial-plexus.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Internal-impingement-overhead-athletes.lingua"
+Import "../../../sources/Literature-discovery.lingua"
+Import "../../../sources/Posterior-capsule-strain-study.lingua"
+Import "../../../sources/Shoulder-muscles.lingua"
+Import "../../../sources/Upper-limb-nerves.lingua"
+Import "../Shoulder.lingua"
+Import "Guideline-comparison.lingua"
+
+Deepen the anatomy — variants, sections, and source comparison (@shoulder-advanced-anatomy: 0, is #chapter, #part-of @shoulder, #source @med-source-joint, #source @med-source-shoulder-muscles, #source @med-source-upper-limb-nerves, #source @med-source-plexus, #source @med-source-applied, #source @med-source-literature, #medicine @shoulder-guidelines, #orthopedics @shoulder-guidelines, #shoulder @shoulder-guidelines, #source @med-source-capsule-study, #source @med-source-internal-impingement) { r_30CZWWJV2EFKG5SD0DAGSED7E7
+**Read:** the complete anatomical sections of [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), [Shoulder muscles — NCBI Bookshelf](../../../sources/Shoulder-muscles.lingua#r_76PY1TN1ZHB847YGG80ZCB5S50), [Upper-limb nerves — NCBI Bookshelf](../../../sources/Upper-limb-nerves.lingua#r_6G2RDX948Y8KGMDFRV226X4RH6), and [Brachial plexus — NCBI Bookshelf](../../../sources/Brachial-plexus.lingua#r_5RBF38QWEQ2D9CXZAN1ERZ4F8X). Use their references to choose a bounded anatomical study. Revisit [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), chapter 2 review questions and the relevant answer-key section.
+
+Develop the capsuloligamentous anatomy by arm position, the rotator interval, tendon insertions and relationships, labral attachments, and regional neurovascular courses. Compare a representative drawing with cross-sectional or dissection-based material. Distinguish an idealized atlas, a specimen observation, and a measurement made in a population.
+
+Anatomical variation matters, including the distinction between a variant and a lesion. A short chapter cannot represent every configuration. Search [Find and assess medical literature — English and Portuguese](../../../sources/Literature-discovery.lingua#r_1DPBVZC8XSXFB29AYMFDR8FC8S) for the precise structure rather than repeatedly gathering general shoulder summaries.
+
+**Position-dependent tissue study:** read the full [Posterior shoulder tissue strain — Borstad and Dashottar](../../../sources/Posterior-capsule-strain-study.lingua#r_6XDNYGV5BX07M2TJYPE3XSR8AJ) and reconstruct its experimental design before comparing its findings with an atlas. Then read the complete [Internal impingement in overhead athletes — Corpus and colleagues](../../../sources/Internal-impingement-overhead-athletes.lingua#r_39ZZD5X2XJRC9834DBHREBSS9X) review, distinguishing normal contact, proposed pathology, observed associations, and evidence in overhead athletes. Trace one supporting anatomical study and one counterargument or limitation. A laboratory preparation, an athlete population, and a symptomatic individual answer different questions.
+
+**Sustained task:** choose one region, such as the rotator interval or suprascapular nerve course. Compare two independently authored anatomical accounts and a relevant anatomical study; explain agreement, variation, methods, and remaining uncertainty. Produce labeled explanatory views with attribution to any reused open material. Do not invent structures to make sources appear consistent.
+
+**Continue:** [Compare guidelines without erasing their populations](Guideline-comparison.lingua#r_23K2GC12JHG2A99BBFJXWYJE0R).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_30CZWWJV2EFKG5SD0DAGSED7E7

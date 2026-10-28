@@ -1,0 +1,23 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Instabilidade-INTO.lingua"
+Import "../../../sources/Shoulder-instability-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "../anatomy/Ligaments.lingua"
+Import "AC-and-SC-problems.lingua"
+
+Instability, subluxation, and dislocation (@shoulder-instability: 0, is #chapter, #part-of @shoulder, #source @med-source-instability, #source @med-source-into-instability, #medicine @shoulder-ac-sc, #orthopedics @shoulder-ac-sc, #shoulder @shoulder-ac-sc, #source @med-source-joint) { r_4ANS5B79S566BS78A7E9H5X8R6
+**Read the complete introductory instability account:** [Chronic shoulder instability — AAOS](../../../sources/Shoulder-instability-AAOS.lingua#r_3RA0D81T7R9RNSAA0PGZGJX8R1), including causes and clinical assessment; compare [Luxação e instabilidade do ombro — INTO](../../../sources/Instabilidade-INTO.lingua#r_7B33CEPJHRFH5DCM9YKY91Z73C) for Portuguese explanation. Return specifically to the capsule, ligaments, labrum, and bony relationships in [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4) when the anatomical description is unclear.
+
+Laxity/frouxidão describes passive looseness; instability/instabilidade concerns problematic loss of control or symptoms related to the joint's stability. They are related but different. Some people have greater movement without an unstable, painful joint.
+
+Dislocation/luxação is loss of normal joint contact; subluxation/subluxação is partial or transient displacement. Traumatic and atraumatic presentations, direction, recurrence, and associated injuries influence assessment. Capsular, labral, bony, muscle, and neural factors can all be relevant.
+
+A suspected acute dislocation requires timely professional assessment, including possible nerve and vessel injury. Do not attempt to put a shoulder back in place using this reading or an online demonstration.
+
+**Try:** explain why an anterior dislocation, generalized flexibility, and a feeling of slipping during an activity are not interchangeable statements. Draw which structures could be investigated, then identify which claims would require clinical findings rather than an atlas.
+
+**Continue:** [AC and SC problems — distinguish the joints](AC-and-SC-problems.lingua#r_019WC3RKV49JT71GHN92X7S7D8).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4ANS5B79S566BS78A7E9H5X8R6

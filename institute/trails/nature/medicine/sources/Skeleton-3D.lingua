@@ -1,0 +1,22 @@
+Import "../Sources.lingua"
+
+Skeleton in three dimensions — BodyParts3D and OrganUI (@med-source-skeleton-3d: 0, is #reference, #part-of @medicine-sources) { r_60TPBJFQKSVPGQ4TR2TN52GFD0
+A downloadable skeleton for exploring the shoulder girdle in relation to the chest, spine, and upper limb. The model contains 242 bone, cartilage, and disc meshes, including both clavicles, scapulae, and humeri. It supplies spatial context for the bones lesson; muscles, the rotator cuff, and shoulder ligaments require the other readings.
+
+[Download the GLB model, 5.2 MB](https://raw.githubusercontent.com/organui/skeleton-3d/120fc17278559057b37aff516eee89d263b604c6/public/models/skeleton.glb). In Lince, download it once to rotate and zoom the retained copy here. Right-click the model or use the keyboard Menu key or F10 for controls; Escape hides them.
+
+**Explore:** find each clavicle between sternum and scapula. Follow the scapular spine to the acromion, compare the glenoid with the humeral head, and view each shoulder from the front, side, and back. Compare these views with the labeled textbook illustrations. This static atlas does not demonstrate tissue loading or explain an individual's pain.
+
+**Attribution and reuse:** BodyParts3D, © The Database Center for Life Science; OrganUI's adaptation of the 3.0 dataset, shared under [CC BY-SA 2.1 Japan](https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en). OrganUI selected and simplified the meshes, adjusted coordinates and axes, recomputed normals, assigned illustrative colors, and converted them to GLB. Lince references that file unchanged. Preserve the [upstream attribution and modification notice](https://github.com/organui/skeleton-3d/blob/120fc17278559057b37aff516eee89d263b604c6/public/models/ATTRIBUTION.md) when redistributing it or its images. [Original dataset](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html).
+
+**Return:** [Medicine sources](../Sources.lingua#r_2411E1397ZNK740CDA309B881D).
+} r_60TPBJFQKSVPGQ4TR2TN52GFD0
+
+Extension @med-source-skeleton-3d "lince.resource" {
+ uri "https://raw.githubusercontent.com/organui/skeleton-3d/120fc17278559057b37aff516eee89d263b604c6/public/models/skeleton.glb"
+ title "Skeleton — BodyParts3D / OrganUI"
+ hash "ad2b672fa218f734b64b12e6e9290d3d97f560299c7dcf0be6f5fd800b2b8846"
+ media_type "model/gltf-binary"
+ attribution "BodyParts3D, © The Database Center for Life Science. OrganUI adaptation: selected and simplified 242 meshes, adjusted coordinates and axes, recomputed normals, assigned colors, converted to GLB. Referenced unchanged. Attribution and modification notice: https://github.com/organui/skeleton-3d/blob/120fc17278559057b37aff516eee89d263b604c6/public/models/ATTRIBUTION.md"
+ license "https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en"
+}

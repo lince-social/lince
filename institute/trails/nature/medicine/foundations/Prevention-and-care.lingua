@@ -1,0 +1,20 @@
+Import "../Medicine.lingua"
+Import "../sources/LER-DORT.lingua"
+Import "../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "Evidence-and-uncertainty.lingua"
+
+Prevention, rehabilitation, and the organization of care (@med-care: 0, is #chapter, #part-of @medicine, #source @med-source-ms-ufrgs, #source @med-source-work, #medicine @med-evidence) { r_2MCG1WJ8QC0JC9VEDQHR1XB81E
+**Read complete contextual sections:** [Ortopedia adulto — Ministério da Saúde and UFRGS](../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78), Apresentação and Introdução, and the complete occupational-health introduction in [LER and DORT — health and work](../sources/LER-DORT.lingua#r_7V282C48P8KGYC8GMYBTNDXP02). Later read Protocolo 8 in full for the shoulder referral question. A referral protocol, treatment guideline, and textbook have different purposes.
+
+Primary prevention/prevenção primária aims to prevent disease or injury; secondary prevention detects problems early in appropriate circumstances; tertiary prevention reduces consequences of established illness. Avoiding unnecessary investigation or intervention is also part of thoughtful care.
+
+Primary care/atenção primária, specialist services, emergency care, rehabilitation, laboratories, imaging, pharmacies, and surgery are connected parts of a system. Referral/encaminhamento communicates a question and relevant findings. Counter-referral/contrarreferência supports continuity after specialist care. A referral protocol is not a complete treatment textbook.
+
+A person's ability to work, dress, sleep, care for others, and participate in life matters alongside tissue findings. Occupational demands and access to care are part of understanding musculoskeletal problems. A single 'bad posture' explanation rarely represents the full set of exposures and circumstances.
+
+**Try:** map a fictional patient's care from first assessment through rehabilitation. State which information should travel between professionals, and distinguish what is known about the tissues from what is known about the person's daily limitations.
+
+**Continue:** [Read medical evidence and recognize its limits](Evidence-and-uncertainty.lingua#r_23DWDDM1D9GY3JG0GCSS2G5B4W).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2MCG1WJ8QC0JC9VEDQHR1XB81E

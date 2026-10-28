@@ -1,4 +1,4 @@
-Import "../philosophy/Socratic-dialogues.lingua"
+Import "../philosophy/ancient-greek-philosophy/sources/Socratic-dialogues-Cary.lingua"
 
 Philosophy checklist example (@checklist-example: 0, #contains @checklist-state) { r_00000000000000000000005001
 An alternative authored checklist. A checked item produces a checked assertion about the assigned reading. There are no levels or percentages in this scheme.

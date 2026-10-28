@@ -74,6 +74,7 @@ pub struct TypographyPlugin;
 impl Plugin for TypographyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Typography>()
+            .add_plugins(crate::ithkuil::IthkuilPlugin)
             .init_resource::<cjk::Fallback>()
             .add_systems(
                 PostUpdate,

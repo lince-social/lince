@@ -1,0 +1,24 @@
+Import "Reading-tools.lingua"
+Import "../sources/Apology-Cary.lingua"
+Import "../sources/Memorabilia-Dakyns.lingua"
+Import "../socratic/Apology.lingua"
+
+Socrates, Plato, and the evidence of a dialogue (@greek-socrates-sources: 0, is #chapter, #part-of @greek-reading-tools, #source @apology, #source @greek-source-xenophon, #philosophy @greek-apology, #ancient-greek-philosophy @greek-apology) { r_1WAA32AYYPKYVETNZ5JGZ2SHFT
+Socrates left no writings that survive as works authored by him. Our access is through other people's texts, including Plato and Xenophon. A Socratic speech in Plato is therefore evidence of Plato's presentation before it is evidence for the historical Socrates' exact words.
+
+Keep three questions separate:
+
+- What does this character argue in the passage?
+- How does the dialogue's author frame that argument, its audience, and its result?
+- What further evidence would justify attributing that position to the historical person?
+
+This distinction also matters inside a dialogue. The Laws speak through a personified speech in Crito; Diotima's teaching is reported by Socrates in Symposium. Identify these layers before treating a line as the author's own conclusion.
+
+The opening chapters of Xenophon's [Memorabilia](../sources/Memorabilia-Dakyns.lingua#r_6R4K67BD9B740H00FCVTM869A1) offer another defence against accusations. Compare them with [Plato's Apology](../sources/Apology-Cary.lingua#r_00000000000000000000001006). Agreement can strengthen a historical hypothesis, but the texts' different purposes and their authors' interpretive choices still matter. A discrepancy invites investigation rather than an automatic verdict that one author is accurate and the other worthless.
+
+**Practice:** write two sentences about the same exchange. Begin one with “In this dialogue, Socrates argues…” and the other with “The historical Socrates believed…”. State what evidence each sentence would require.
+
+**Use next:** [Compare Plato and Xenophon](../socratic/Xenophon.lingua#r_386T9BE05SXJZK8E0NX7TAYJK8). **Return:** [Reading tools](Reading-tools.lingua#r_5DTAXMW53NH7ABW23PMFSSBQEF) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Continue:** [Apology](../socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4).
+} r_1WAA32AYYPKYVETNZ5JGZ2SHFT

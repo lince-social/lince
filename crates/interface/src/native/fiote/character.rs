@@ -18,6 +18,7 @@ use std::{
 
 mod behavior;
 mod palette;
+mod residency;
 use behavior::{Activity, Behavior};
 use palette::{Binding, Palette, Role};
 
@@ -25,7 +26,6 @@ const SVG: &[u8] =
     include_bytes!("../../../../../institute/assets/characters/fiote/fiote-seated.svg");
 const GLB: &[u8] = include_bytes!("../../../../../institute/assets/characters/fiote/fiote.glb");
 const GLB_PATH: &str = "embedded://fiote/fiote.glb";
-const LAYER: usize = 32;
 const FRAME: Duration = Duration::from_millis(66);
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -59,6 +59,8 @@ struct Character {
     portraits: HashMap<Palette, (u32, Handle<Image>)>,
     loading: Option<Handle<Gltf>>,
     scenes: Vec<Scene>,
+    saved: HashMap<Palette, residency::Saved>,
+    limited_palettes: usize,
     occluded: bool,
     last: Option<Instant>,
     alarm: Option<Instant>,
@@ -78,6 +80,9 @@ struct Scene {
     clips: HashMap<&'static str, (AnimationNodeIndex, f32)>,
     players: Vec<Entity>,
     behavior: Behavior,
+    restored: Vec<(AnimationPlayer, AnimationTransitions)>,
+    paused: HashMap<Entity, AnimationTransitions>,
+    visible: bool,
 }
 
 #[derive(Component)]
@@ -88,6 +93,7 @@ pub struct Metrics {
     pub avatars: usize,
     pub visible_avatars: usize,
     pub animated_scenes: usize,
+    pub limited_palettes: usize,
     pub cached_portraits: usize,
     pub render_target_color_bytes: u64,
     pub motion_materials: usize,
@@ -116,6 +122,7 @@ pub fn metrics(world: &mut World) -> Metrics {
             .min()
             .unwrap_or(0),
         animated_scenes: character.scenes.len(),
+        limited_palettes: character.limited_palettes,
         cached_portraits: character.portraits.len(),
         render_target_color_bytes: character
             .scenes
@@ -149,6 +156,7 @@ pub struct CharacterPlugin;
 
 impl Plugin for CharacterPlugin {
     fn build(&self, app: &mut App) {
+        crate::native::topology::surface_budget::residency::install(app);
         app.world()
             .resource::<EmbeddedAssetRegistry>()
             .insert_asset(
@@ -507,14 +515,14 @@ fn update(world: &mut World) {
         .query_filtered::<Entity, With<Avatar>>()
         .iter(world)
         .collect();
-    let windows_visible = world
+    let (window_visible, window_focused) = world
         .query_filtered::<&Window, With<PrimaryWindow>>()
         .iter(world)
         .next()
-        .is_none_or(|window| window.visible && window.focused);
-    let showing = !world.resource::<Character>().occluded
-        && windows_visible
-        && avatars.iter().any(|entity| visible(world, *entity));
+        .map_or((true, true), |window| (window.visible, window.focused));
+    let content_visible = !world.resource::<Character>().occluded && window_visible;
+    let showing =
+        content_visible && window_focused && avatars.iter().any(|entity| visible(world, *entity));
     let animated = world.resource::<Character>().preferences.animated()
         && !world.resource::<Character>().failure;
     let groups: std::collections::BTreeMap<Palette, Vec<Entity>> =
@@ -530,19 +538,25 @@ fn update(world: &mut World) {
     if !animated || avatars.is_empty() {
         destroy_scene(world);
     } else if showing {
-        let wanted: Vec<Palette> = groups
+        let mut wanted: Vec<Palette> = groups
             .iter()
             .filter(|(_, entities)| entities.iter().any(|entity| visible(world, *entity)))
             .map(|(palette, _)| *palette)
             .collect();
+        let slots = crate::native::render_layers::FIOTE;
+        world.resource_mut::<Character>().limited_palettes = wanted.len().saturating_sub(slots.len);
+        wanted.truncate(slots.len);
         let mut previous = std::mem::take(&mut world.resource_mut::<Character>().scenes);
         let mut scenes = Vec::new();
         for (index, palette) in wanted.iter().enumerate() {
-            let layer = LAYER + index;
+            let layer = slots.get(index).unwrap();
             let position = previous
                 .iter()
                 .position(|scene| scene.palette == *palette)
                 .or_else(|| {
+                    if world.resource::<Character>().saved.contains_key(palette) {
+                        return None;
+                    }
                     groups[palette]
                         .iter()
                         .filter_map(|entity| world.get::<RenderedPalette>(*entity))
@@ -570,7 +584,9 @@ fn update(world: &mut World) {
                 if scene.layer != layer {
                     let children = descendants(world, scene.root);
                     for child in children {
-                        world.entity_mut(child).insert(RenderLayers::layer(layer));
+                        world
+                            .entity_mut(child)
+                            .insert(RenderLayers::none().with(layer));
                     }
                     scene.layer = layer;
                 }
@@ -580,6 +596,7 @@ fn update(world: &mut World) {
             }
         }
         for scene in previous {
+            residency::remember(world, &scene);
             world.entity_mut(scene.root).despawn();
         }
         world.resource_mut::<Character>().scenes = scenes;
@@ -587,36 +604,7 @@ fn update(world: &mut World) {
             destroy_scene(world);
         }
     }
-    let images: Vec<Handle<Image>> = world
-        .resource::<Character>()
-        .scenes
-        .iter()
-        .map(|scene| scene.image.clone())
-        .collect();
-    for image in images {
-        let edge = density(world).clamp(128, 256);
-        let resized = world
-            .resource_mut::<Assets<Image>>()
-            .get_mut(&image)
-            .is_some_and(|mut image| {
-                if image.width() == edge {
-                    return false;
-                }
-                image.resize(Extent3d {
-                    width: edge,
-                    height: edge,
-                    depth_or_array_layers: 1,
-                });
-                true
-            });
-        if resized {
-            let mut character = world.resource_mut::<Character>();
-            character.alarm = None;
-            for scene in &mut character.scenes {
-                scene.rendered = None;
-            }
-        }
-    }
+    residency::synchronize(world, &groups, content_visible);
     for (palette, entities) in &groups {
         let static_image = portrait_for(world, *palette);
         let handle = world
@@ -638,6 +626,10 @@ fn update(world: &mut World) {
         .resource_mut::<Character>()
         .portraits
         .retain(|palette, _| groups.contains_key(palette));
+    world
+        .resource_mut::<Character>()
+        .saved
+        .retain(|palette, _| groups.contains_key(palette));
     animate(world, showing && animated);
     refresh_status(world);
 }
@@ -650,6 +642,8 @@ fn destroy_scene(world: &mut World) {
     let mut character = world.resource_mut::<Character>();
     character.loading = None;
     character.last = None;
+    character.limited_palettes = 0;
+    character.saved.clear();
 }
 
 fn failed(world: &mut World, error: String) {
@@ -719,7 +713,7 @@ fn load_scene(world: &mut World, palette: Palette, layer: usize) -> Option<Scene
         },
         TextureDimension::D2,
         TextureFormat::Rgba8UnormSrgb,
-        RenderAssetUsages::RENDER_WORLD,
+        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
     );
     image.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
         | TextureUsages::COPY_DST
@@ -754,7 +748,11 @@ fn load_scene(world: &mut World, palette: Palette, layer: usize) -> Option<Scene
             }),
             Transform::from_xyz(0.0, 1.35, 5.0).looking_at(Vec3::new(0.0, 1.05, 0.0), Vec3::Y),
             RenderTarget::Image(image.clone().into()),
-            RenderLayers::layer(layer),
+            crate::native::topology::surface_budget::residency::Target {
+                image: image.id(),
+                release: false,
+            },
+            RenderLayers::none().with(layer),
             Tonemapping::None,
             bevy::camera::Exposure::INDOOR,
             Msaa::Off,
@@ -772,10 +770,15 @@ fn load_scene(world: &mut World, palette: Palette, layer: usize) -> Option<Scene
                 ..default()
             },
             Transform::from_translation(position),
-            RenderLayers::layer(layer),
+            RenderLayers::none().with(layer),
             ChildOf(root),
         ));
     }
+    let saved = world.resource_mut::<Character>().saved.remove(&palette);
+    let (behavior, restored) = saved.map_or_else(
+        || (Behavior::default(), Vec::new()),
+        |saved| (saved.behavior, saved.players),
+    );
     Some(Scene {
         palette,
         layer,
@@ -789,7 +792,10 @@ fn load_scene(world: &mut World, palette: Palette, layer: usize) -> Option<Scene
         graph,
         clips,
         players: Vec::new(),
-        behavior: Behavior::default(),
+        behavior,
+        restored,
+        paused: HashMap::new(),
+        visible: true,
     })
 }
 
@@ -831,11 +837,12 @@ fn scene_ready(
     }
     let mut copies = HashMap::new();
     let index = scene.clips[scene.behavior.activity.clip()].0;
+    let mut restored = std::mem::take(&mut scene.restored).into_iter();
     for entity in &descendants {
         let entity = *entity;
         commands
             .entity(entity)
-            .insert((RenderLayers::layer(scene.layer), Pickable::IGNORE));
+            .insert((RenderLayers::none().with(scene.layer), Pickable::IGNORE));
         if let Ok((name, source)) = meshes.get(entity) {
             let handle = copies
                 .entry(source.0.id())
@@ -872,10 +879,7 @@ fn scene_ready(
             commands.entity(entity).insert(MeshMaterial3d(handle));
         }
         if let Ok(mut player) = players.get_mut(entity) {
-            let mut transitions = AnimationTransitions::new();
-            transitions
-                .play(&mut player, index, Duration::ZERO)
-                .repeat();
+            let transitions = residency::restore(&mut player, restored.next(), index);
             commands
                 .entity(entity)
                 .insert((AnimationGraphHandle(scene.graph.clone()), transitions));
@@ -925,8 +929,9 @@ fn animate(world: &mut World, active: bool) {
         return;
     }
     for scene in &mut scenes {
-        scene.running = active;
-        let render_due = active
+        let scene_active = active && scene.visible;
+        scene.running = scene_active;
+        let render_due = scene_active
             && scene.rendered.is_none_or(|last| {
                 now.duration_since(last) >= scene.behavior.activity.frame_period()
             });
@@ -937,10 +942,20 @@ fn animate(world: &mut World, active: bool) {
             camera.is_active = render_due;
         }
         let duration = scene.clips[scene.behavior.activity.clip()].1;
-        let changed = active && !scene.players.is_empty() && scene.behavior.tick(delta, duration);
+        let changed =
+            scene_active && !scene.players.is_empty() && scene.behavior.tick(delta, duration);
         for entity in &scene.players {
+            if scene_active {
+                if let Some(transitions) = scene.paused.remove(entity) {
+                    world.entity_mut(*entity).insert(transitions);
+                }
+            } else if let Some(transitions) =
+                world.entity_mut(*entity).take::<AnimationTransitions>()
+            {
+                scene.paused.insert(*entity, transitions);
+            }
             if let Some(mut player) = world.get_mut::<AnimationPlayer>(*entity) {
-                if active && delta > 0.0 {
+                if scene_active && delta > 0.0 {
                     player.resume_all();
                 } else {
                     player.pause_all();
@@ -998,7 +1013,7 @@ fn refresh_status(world: &mut World) {
     } else {
         "Animated Fiote loads when its bubble is visible"
     };
-    let text = format!(
+    let mut text = format!(
         "{state} · Selected: {} · Reduced motion: {}{}",
         if settings.appearance == Appearance::Static {
             "Static"
@@ -1011,6 +1026,18 @@ fn refresh_status(world: &mut World) {
             .as_ref()
             .map_or(String::new(), |error| format!(" · {error}"))
     );
+    if character.limited_palettes > 0 {
+        text.push_str(&format!(
+            " · Animation limit: {} palettes. {} additional {}.",
+            crate::native::render_layers::FIOTE.len,
+            character.limited_palettes,
+            if character.limited_palettes == 1 {
+                "palette uses a static portrait"
+            } else {
+                "palettes use static portraits"
+            },
+        ));
+    }
     let labels: Vec<Entity> = world
         .query::<&SettingsPanel>()
         .iter(world)

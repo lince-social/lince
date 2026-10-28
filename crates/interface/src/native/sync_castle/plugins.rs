@@ -741,7 +741,8 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if world.get::<Watch>(owner).is_none() && !crate::native::laboratory::blocked(world, owner) {
+        if world.get::<Watch>(owner).is_none() && !crate::native::laboratory::blocked(world, owner)
+        {
             if let (Some(runtime), Ok(handle)) = (
                 crate::native::practice_cells::runtime(world, owner),
                 tokio::runtime::Handle::try_current(),

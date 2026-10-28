@@ -8,6 +8,7 @@ mod area_reach;
 mod area_summary;
 pub(crate) use area_summary::{SummaryAtBottom, SummaryInEditMode};
 pub mod appearance;
+pub(crate) mod compositor;
 pub mod areas;
 pub mod assets;
 mod font_cache;
@@ -18,10 +19,12 @@ pub mod input;
 pub mod output_views;
 pub mod physics;
 pub mod presentation;
+pub(crate) mod previews;
 mod resizing;
 pub mod rooms;
 pub mod splats;
-mod surface_budget;
+mod stacking;
+pub(crate) mod surface_budget;
 pub(crate) mod surface_render;
 pub mod terrain;
 pub mod ui;
@@ -31,6 +34,9 @@ pub struct TopologyPlugin;
 
 impl Plugin for TopologyPlugin {
     fn build(&self, app: &mut App) {
+        if !app.is_plugin_added::<surface_budget::BudgetPlugin>() {
+            app.add_plugins(surface_budget::BudgetPlugin);
+        }
         app.add_plugins(surface_render::SurfaceRenderPlugin)
             .init_resource::<terrain::Terrain>()
             .init_resource::<assets::Imports>()
@@ -56,34 +62,43 @@ impl Plugin for TopologyPlugin {
                     .before(bevy::picking::PickingSystems::Backend),
             )
             .add_systems(
-                Update,
+                PostUpdate,
                 (
+                    view::present,
                     holes::refresh,
                     assets::update,
                     area_summary::update,
                     area_summary::hover,
-                    presentation::synchronize,
-                    appearance::update
-                        .after(crate::native::description::shader::RenderShaderEffects),
-                    areas::update,
-                    area_reach::update,
-                    ui::update,
-                    terrain::draw,
-                    terrain::editor::update,
                 )
                     .chain()
-                    .after(crate::native::workspace::PrepareWorkspaces)
-                    .after(crate::native::physics::SimulateWorkspaces),
+                    .after(crate::native::layout::ResolveFollow)
+                    .before(presentation::synchronize),
+            )
+            .add_systems(
+                PostUpdate,
+                (
+                    appearance::update,
+                    areas::update,
+                    area_reach::update,
+                    terrain::draw,
+                )
+                    .chain()
+                    .after(presentation::synchronize)
+                    .before(bevy::camera::CameraUpdateSystems),
             );
+        compositor::install(app);
         terrain::install(app);
         app.add_plugins(crate::native::physical_workspace::PhysicalWorkspacePlugin);
         app.add_systems(
             Update,
-            rooms::synchronize
-                .after(crate::native::physics::SimulateWorkspaces)
-                .before(presentation::synchronize),
+            rooms::synchronize.after(crate::native::physics::SimulateWorkspaces),
         );
-        app.add_systems(Update, rooms::update_controls.after(ui::update));
+        app.add_systems(
+            Update,
+            (ui::update, rooms::update_controls, terrain::editor::update)
+                .chain()
+                .after(crate::native::physics::SimulateWorkspaces),
+        );
         app.add_systems(
             Update,
             view::synchronize

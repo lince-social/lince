@@ -1,0 +1,20 @@
+Import "../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "../sources/Shoulder-pain-NHS.lingua"
+Import "Orthopedics.lingua"
+Import "shoulder/Shoulder.lingua"
+
+Assessment, urgency, and referral (@ortho-assessment: 0, is #chapter, #part-of @orthopedics, #source @med-source-ms-ufrgs, #source @med-source-nhs, #medicine @shoulder, #orthopedics @shoulder) { r_5HK59QJYXS19KZVPQHDCAACD1H
+**Read:** [Ortopedia adulto — Ministério da Saúde and UFRGS](../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78), introduction and Protocolo 8 — Dor no Ombro; compare [Shoulder pain — public health guidance](../sources/Shoulder-pain-NHS.lingua#r_20XNX6E0TB4XRQ4PC3FJNV5SMK) for public-facing warning symptoms.
+
+A clinical assessment combines history, relevant examination, and selected investigations. Questions include whether the problem requires urgent care, which tissues or systems may be involved, what further information would change management, and what the person needs to do in daily life.
+
+The Brazilian protocol describes information to communicate when referring a patient, including symptoms, duration, functional changes, relevant findings, prior care, and investigations where appropriate. Its referral thresholds concern a professional service context; they are not instructions to wait through an urgent problem or diagnose oneself from a checklist.
+
+A painful shoulder after significant trauma, fever with a hot swollen joint, new neurological or circulation changes, or accompanying chest symptoms changes the question from independent study to timely assessment. In Brazil an emergency call uses SAMU 192; routine access and referral follow the local SUS network or chosen clinical service.
+
+**Try:** write a concise fictional referral question that separates the patient's account, examination findings, tests, and uncertainty. Then begin the regional anatomy before comparing particular shoulder disorders.
+
+**Continue:** [The shoulder — structure, movement, and possible problems](shoulder/Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG).
+
+**Return:** [Orthopedics — understanding musculoskeletal problems](Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_5HK59QJYXS19KZVPQHDCAACD1H

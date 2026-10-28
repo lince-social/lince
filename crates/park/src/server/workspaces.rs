@@ -45,6 +45,10 @@ fn permitted(client: &Client, control: bool) -> bool {
 }
 
 impl Workspaces {
+    pub(super) fn snapshot_entries(&self) -> impl Iterator<Item = lince_interface::host::control::Entry> + '_ {
+        self.snapshot.entries.iter().map(|entry| lince_interface::host::control::Entry::Workspace { id: entry.id, name: entry.name.clone(), active: entry.active, output: None })
+    }
+
     pub(super) fn new(display: &DisplayHandle) -> Self {
         display.create_global::<State, Manager, _>(1, ());
         Self::default()

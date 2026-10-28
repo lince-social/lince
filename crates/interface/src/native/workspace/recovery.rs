@@ -301,6 +301,16 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         "Document Viewer Castles",
         crate::native::document_viewer::SavedDocumentViewer
     );
+    let source_views = castles!(
+        "source_views",
+        "Source views",
+        crate::native::source_view::SavedSourceView
+    );
+    let demeters = castles!(
+        "demeters",
+        "Demeter Castles",
+        crate::native::demeter_castle::SavedDemeterCastle
+    );
     let media = castles!(
         "media",
         "Media Sands",
@@ -370,18 +380,6 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
             }
         }
     };
-    let shortcuts = match values.remove("shortcuts") {
-        None => Default::default(),
-        Some(value) => match serde_json::from_value::<crate::native::shortcuts::Settings>(value) {
-            Ok(settings) if settings.validate().is_ok() => settings,
-            _ => {
-                report
-                    .notes
-                    .push("Shortcut settings could not be restored; using defaults".into());
-                Default::default()
-            }
-        },
-    };
     let canvas_state = match values
         .remove("canvas_state")
         .filter(|value| !value.is_null())
@@ -407,8 +405,27 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         },
         None => None,
     };
+    let mut focus_ids = HashSet::new();
+    let workspace_focus = entries(
+        &mut values,
+        "workspace_focus",
+        "Workspace focus",
+        &mut report,
+        |saved: &crate::native::layout::desktop::focus::Saved| {
+            ids.contains(&saved.workspace) && saved.valid() && focus_ids.insert(saved.workspace)
+        },
+    );
     let document = Document {
-        physical_workspaces: entries(&mut values, "physical_workspaces", "Physical workspaces", &mut report, |saved: &crate::native::physical_workspace::Saved| ids.contains(&saved.workspace) && saved.valid()),
+        workspace_focus,
+        physical_workspaces: entries(
+            &mut values,
+            "physical_workspaces",
+            "Physical workspaces",
+            &mut report,
+            |saved: &crate::native::physical_workspace::Saved| {
+                ids.contains(&saved.workspace) && saved.valid()
+            },
+        ),
         shader_editors,
         shader_settings: values
             .remove("shader_settings")
@@ -422,9 +439,9 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         canvas_id,
         canvas_state,
         recovery: report,
+        snapshot_error: None,
         theme,
         controls,
-        shortcuts,
         active,
         workspaces,
         deleted_workspaces,
@@ -447,6 +464,8 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         transfer_castles,
         recorders,
         documents,
+        source_views,
+        demeters,
         media,
         drawings,
         extension_sands,
@@ -482,32 +501,6 @@ mod tests {
 
     fn load(value: &Value) -> Document {
         decode(&serde_json::to_vec(value).unwrap()).unwrap()
-    }
-
-    #[test]
-    fn invalid_shortcuts_restore_defaults_without_losing_canvas_contents() {
-        for overrides in [
-            json!({"delete-sand": "W"}),
-            json!({"delete-sand": "Escape"}),
-            json!({"delete-sand": "Unknown"}),
-        ] {
-            let mut value = scene();
-            value["sands"] = json!([sand("Keep this note")]);
-            value["shortcuts"] = json!({"overrides": overrides});
-            let restored = load(&value);
-            assert_eq!(
-                restored.shortcuts,
-                crate::native::shortcuts::Settings::default()
-            );
-            assert_eq!(restored.sands[0].texts[0].text, "Keep this note");
-            assert!(
-                restored
-                    .recovery
-                    .notes
-                    .iter()
-                    .any(|note| note.contains("Shortcut"))
-            );
-        }
     }
 
     #[test]

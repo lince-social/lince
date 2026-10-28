@@ -1,0 +1,42 @@
+Import "../../Medicine.lingua"
+Import "../../foundations/Anatomical-directions.lingua"
+Import "../../foundations/Pain.lingua"
+Import "../../musculoskeletal/Synovial-joints.lingua"
+Import "../../musculoskeletal/Tendons-and-ligaments.lingua"
+Import "../../sources/Glenohumeral-joint.lingua"
+Import "../../sources/Z-Anatomy.lingua"
+Import "../Assessment-and-referral.lingua"
+Import "../Orthopedics.lingua"
+Import "anatomy/Bones-and-landmarks.lingua"
+Import "conditions/Pain-near-end-of-rotation.lingua"
+Import "conditions/Shoulder-pain.lingua"
+Import "function/Anatomy-review.lingua"
+Import "function/Capsular-restraints.lingua"
+Import "function/Movements-and-coordination.lingua"
+Import "function/Rotation-and-position.lingua"
+Import "function/Stability-and-load.lingua"
+Import "study/A-rotational-pain-question.lingua"
+Import "study/Examination-and-imaging.lingua"
+Import "study/Rehabilitation-principles.lingua"
+Import "study/Shoulder-review.lingua"
+Import "study/Treatment-evidence.lingua"
+
+The shoulder — structure, movement, and possible problems (@shoulder: 0, is #chapter, #part-of @orthopedics, #source @med-source-model, #source @med-source-joint, #medicine @shoulder-bones, #orthopedics @shoulder-bones, #shoulder @shoulder-bones, #medicine @shoulder-pain, #orthopedics @shoulder-pain, #shoulder @shoulder-pain, #medicine @shoulder-examination, #orthopedics @shoulder-examination, #shoulder @shoulder-examination) { r_3FMFP89VW6PWQDNK5ZHP0WX1AG
+The shoulder/ombro is a coordinated region whose mobility depends on several articulations, muscles, supporting tissues, and neural control. Start with normal structure and movement, then investigate how problems may disturb them.
+
+**Anatomy:** [Shoulder bones and landmarks — ossos e acidentes anatômicos](anatomy/Bones-and-landmarks.lingua#r_7G6SQ2VAXNX6WZ2Z9RRR883VQA) begins the sequence through joints, capsule and labrum, ligaments, tendons and bursae, muscles, nerves, and vessels. Keep an anterior, posterior, and lateral view available. [Z-Anatomy — optional three-dimensional anatomy](../../sources/Z-Anatomy.lingua#r_2HGVZ0CZH2SS1GMB3M82G380EC) offers an optional 3D reference; a model's appearance is an educational representation, not an examination of your own shoulder.
+
+**Function:** [Reaching and rotation — coordinated shoulder movement](function/Movements-and-coordination.lingua#r_4JJ554TJ1W83N879X31M48K6TE) and [Shoulder stability, muscle coordination, and load](function/Stability-and-load.lingua#r_603S03SRMHDYMCNCKR5MG3EBC9) connect those structures to reaching, rotation, and carrying. [Reconstruct a functioning shoulder](function/Anatomy-review.lingua#r_553DGK77PSSKH55Q7ME3XP92XH) checks understanding before the clinical readings.
+
+**Rotation in detail:** [Shoulder rotation — describe the moving bone and starting position](function/Rotation-and-position.lingua#r_7TRW6394Z3JA9CPYPE6SQNPZTT) separates humeral rotation from forearm motion; [Rotation and restraint — why position changes the capsule question](function/Capsular-restraints.lingua#r_2PW98DPTH66WTKFMPAX35775WE) explains position-dependent restraints. [Pain near the end of rotation — understand the possibilities](conditions/Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) then organizes possible explanations for pain near a rotational limit, and [Work through a rotational-pain question with focused readings](study/A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S) provides a table of precise passages for investigating a selected question. Learn the movement before interpreting a symptom or image.
+
+**Possible problems:** [Shoulder pain — begin with the question, not a diagnosis](conditions/Shoulder-pain.lingua#r_6NFPQQ7Z2DAF090E4JVN6MQ0FR) introduces the assessment question, then continues through tendon disorders, stiffness, instability, trauma, arthritis, and nonlocal or systemic causes. These readings explain categories and evidence rather than determining the cause of an individual pain.
+
+**Deeper study:** [Understand a shoulder examination and an imaging report](study/Examination-and-imaging.lingua#r_0ESRQBT85AGDQH7Q71TAFFEAQS), [Rehabilitation — goals, loading, and meaningful recovery](study/Rehabilitation-principles.lingua#r_00SXBQ0YTGHC8KRB12XY8B9KAB), and [Test a plausible treatment against evidence](study/Treatment-evidence.lingua#r_0Y6CMCRFXDGN20QGXNDKS55VXD) lead to [Explain shoulder function and evaluate a clinical claim](study/Shoulder-review.lingua#r_0KVS4CSNH1J97G8XKXEW5183JW), followed by detailed anatomy, guideline comparison, and research with revision.
+
+If terms are unfamiliar, return to [Describe a body — position, direction, and movement](../../foundations/Anatomical-directions.lingua#r_5HMQ29K367TFS69H6C35MZYHVQ), [Joints — cartilage, capsule, synovium, and bursae](../../musculoskeletal/Synovial-joints.lingua#r_4GZFM70631CM2Z5838PJ2X7BJE), [Tendons, ligaments, fascia, and attachments](../../musculoskeletal/Tendons-and-ligaments.lingua#r_39EW7RT1P3JRQAG00BP4MXKDF2), or [Pain — experience, tissue signals, and context](../../foundations/Pain.lingua#r_7VX3R5W6XHV21R7EH2N70PBP35). Urgent symptoms and access to care are introduced in [Medicine — understanding the body and its care](../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65) and [Assessment, urgency, and referral](../Assessment-and-referral.lingua#r_5HK59QJYXS19KZVPQHDCAACD1H); completing readings is never a condition for seeking care.
+
+**Continue:** [Shoulder bones and landmarks — ossos e acidentes anatômicos](anatomy/Bones-and-landmarks.lingua#r_7G6SQ2VAXNX6WZ2Z9RRR883VQA) · [Shoulder pain — begin with the question, not a diagnosis](conditions/Shoulder-pain.lingua#r_6NFPQQ7Z2DAF090E4JVN6MQ0FR) · [Understand a shoulder examination and an imaging report](study/Examination-and-imaging.lingua#r_0ESRQBT85AGDQH7Q71TAFFEAQS).
+
+**Return:** [Orthopedics — understanding musculoskeletal problems](../Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) · [Medicine — understanding the body and its care](../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_3FMFP89VW6PWQDNK5ZHP0WX1AG

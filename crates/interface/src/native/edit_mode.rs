@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 use crate::native::{
     actions::{
         Action, ActionButton, ActionsPlugin, KeyBinding, KeyBindings, Modifiers, WindowActionTarget,
@@ -19,6 +20,17 @@ use bevy::{
 pub use crate::native::canvas_colors::ColorField;
 pub use crate::native::sand_text_editor::TextAction;
 
+mod workspaces;
+
+#[derive(Component)]
+pub(crate) struct FocusScroll;
+
+#[derive(Component)]
+pub(crate) struct FocusScrollGroup;
+
+#[derive(Component)]
+struct FocusScrollRevision(u64);
+
 #[derive(EntityEvent, Clone, Copy)]
 pub struct EditPopupToggle {
     pub entity: Entity,
@@ -39,6 +51,7 @@ pub struct EditMode {
     canvas: bool,
     information: bool,
     shortcuts: bool,
+    park: bool,
     customization: bool,
     pub(crate) areas: bool,
 }
@@ -69,6 +82,7 @@ pub enum EditAction {
     Canvas,
     Information,
     Shortcuts,
+    Park,
     Customization,
     Areas,
     Area(crate::native::area_panel::AreaAction),
@@ -132,6 +146,9 @@ pub enum EditField {
 }
 
 #[derive(Component)]
+struct WorkspaceName(u64);
+
+#[derive(Component)]
 struct StoreFilter {
     input: Entity,
     groups: Vec<StoreFilterGroup>,
@@ -146,6 +163,16 @@ struct StoreFilterGroup {
 pub struct EditModePlugin;
 impl Plugin for EditModePlugin {
     fn build(&self, app: &mut App) {
+        crate::native::layout::desktop::input_settings::install(app);
+        crate::native::layout::desktop::magnification::install(app);
+        crate::native::layout::desktop::pointer_settings::install(app);
+        crate::native::layout::desktop::absolute_settings::install(app);
+        crate::native::layout::desktop::focus::settings::install(app);
+        crate::native::layout::desktop::opening::install(app);
+        crate::native::layout::desktop::control::install(app);
+        crate::native::layout::desktop::gestures::install(app);
+        crate::native::layout::desktop::overview::settings::install(app);
+        crate::native::layout::desktop::external_settings::install(app);
         app.add_plugins(crate::native::custom_castle::LibraryPlugin);
         if !app.is_plugin_added::<ActionsPlugin>() {
             app.add_plugins(ActionsPlugin);
@@ -158,6 +185,9 @@ impl Plugin for EditModePlugin {
         }
         if !app.is_plugin_added::<crate::native::color_picker::ColorPickerPlugin>() {
             app.add_plugins(crate::native::color_picker::ColorPickerPlugin);
+        }
+        if !app.is_plugin_added::<crate::native::shortcuts::EditorPlugin>() {
+            app.add_plugins(crate::native::shortcuts::EditorPlugin);
         }
         app.init_resource::<crate::native::tokens::ThemeSettings>()
             .init_resource::<crate::native::shortcuts::Settings>()
@@ -282,29 +312,28 @@ fn autosave_name(world: &mut World) {
         .iter(world)
         .filter(|(_, mode)| mode.enabled)
         .filter_map(|(root, mode)| {
-            let text = world.get::<EditableText>(mode.name?)?;
+            let field = mode.name?;
+            let workspace = world.get::<WorkspaceName>(field)?.0;
+            let text = world.get::<EditableText>(field)?;
             if text.is_composing() || text.pending_paste.is_some() {
                 return None;
             }
             let name = text.value().to_string();
             let spaces = world.get::<Workspaces>(root)?;
-            let current = spaces
-                .entries
-                .iter()
-                .find(|space| space.id == spaces.active)?;
-            (!name.trim().is_empty() && name.trim() != current.name).then_some((root, name))
+            let current = spaces.entries.iter().find(|space| space.id == workspace)?;
+            (!name.trim().is_empty() && name.trim() != current.name)
+                .then_some((root, workspace, name))
         })
         .collect();
-    for (root, name) in edits {
-        if !workspace::rename(world, root, &name) {
+    for (root, workspace, name) in edits {
+        if !workspace::rename_id(world, root, workspace, &name) {
             continue;
         }
-        let active = world.get::<Workspaces>(root).unwrap().active;
         let labels: Vec<_> = world
             .query::<(&EditControl, &Children)>()
             .iter(world)
             .filter(|(control, _)| {
-                control.root == root && control.action == EditAction::SwitchWorkspace(active)
+                control.root == root && control.action == EditAction::SwitchWorkspace(workspace)
             })
             .flat_map(|(_, children)| children.iter())
             .collect();
@@ -378,24 +407,24 @@ fn filter_store(world: &mut World) {
 
 fn reveal_focus(
     focus: Res<InputFocus>,
-    mut previous: Local<Option<Entity>>,
+    mut previous: Local<(Option<Entity>, Vec<(Entity, Vec2, u64)>)>,
     parents: Query<&ChildOf>,
     geometry: Query<(&ComputedNode, &UiGlobalTransform)>,
     modes: Query<(Entity, &EditMode)>,
     inspectors: Query<(Entity, &crate::native::topology::ui::Inspector)>,
+    modal_lists: Query<Entity, With<FocusScroll>>,
+    groups: Query<(), With<FocusScrollGroup>>,
+    revisions: Query<&FocusScrollRevision>,
+    buttons: Option<Res<ButtonInput<MouseButton>>>,
     mut scrolls: Query<&mut ScrollPosition>,
     wake: Option<Res<crate::native::wake::WakeSignal>>,
 ) {
-    if *previous == focus.get() {
+    if buttons
+        .as_deref()
+        .is_some_and(|buttons| buttons.get_pressed().next().is_some())
+    {
         return;
     }
-    *previous = focus.get();
-    let Some(entity) = focus.get() else {
-        return;
-    };
-    let Ok((node, transform)) = geometry.get(entity) else {
-        return;
-    };
     let panels: Vec<_> = modes
         .iter()
         .filter(|(_, mode)| mode.enabled)
@@ -406,7 +435,52 @@ fn reveal_focus(
                 .filter(|(_, inspector)| modes.get(inspector.0).is_ok_and(|(_, mode)| mode.enabled))
                 .map(|(entity, _)| entity),
         )
+        .chain(modal_lists.iter())
         .collect();
+    let mut ancestors = Vec::new();
+    let mut ancestor = focus.get();
+    for _ in 0..crate::native::layout::MAX_DEPTH {
+        let Some(current) = ancestor else { break };
+        if ancestors.contains(&current) {
+            break;
+        }
+        ancestors.push(current);
+        ancestor = parents.get(current).ok().map(ChildOf::parent);
+    }
+    let mut sizes: Vec<_> = panels
+        .iter()
+        .filter(|entity| ancestors.contains(entity))
+        .filter_map(|entity| {
+            geometry.get(*entity).ok().map(|(node, _)| {
+                (
+                    *entity,
+                    node.size(),
+                    revisions.get(*entity).map_or(0, |revision| revision.0),
+                )
+            })
+        })
+        .collect();
+    sizes.sort_unstable_by_key(|entry| entry.0);
+    if previous.0 == focus.get() && previous.1 == sizes {
+        return;
+    }
+    *previous = (focus.get(), sizes);
+    let Some(entity) = focus.get() else {
+        return;
+    };
+    let Ok((node, transform)) = geometry.get(entity) else {
+        return;
+    };
+    let mut grouped = None;
+    let mut ancestor = Some(entity);
+    for _ in 0..crate::native::layout::MAX_DEPTH {
+        let Some(current) = ancestor else { break };
+        if groups.contains(current) {
+            grouped = geometry.get(current).ok();
+            break;
+        }
+        ancestor = parents.get(current).ok().map(ChildOf::parent);
+    }
     for panel_entity in panels {
         let mut ancestor = entity;
         while let Ok(parent) = parents.get(ancestor) {
@@ -417,6 +491,9 @@ fn reveal_focus(
             let Ok((panel, panel_transform)) = geometry.get(panel_entity) else {
                 break;
             };
+            let (node, transform) = grouped
+                .filter(|(group, _)| group.size().y <= (panel.size().y - 16.0).max(0.0))
+                .unwrap_or((node, transform));
             let top = transform.translation.y - node.size().y * 0.5;
             let bottom = top + node.size().y;
             let panel_top = panel_transform.translation.y - panel.size().y * 0.5 + 8.0;
@@ -456,9 +533,22 @@ fn anchor_close(mut nodes: Query<&mut Node>, closes: Query<Entity, With<EditClos
     }
 }
 
+fn panel_horizontal(root: f32, width: f32, anchor: f32, usable: [f32; 2]) -> (f32, f32) {
+    let left = usable[0].clamp(0.0, root);
+    let end = usable[1].clamp(left, root);
+    let (left, end) = if end > left { (left, end) } else { (0.0, root) };
+    let margin = 12.0_f32.min((end - left) * 0.03);
+    let maximum = (end - left - margin * 2.0).max(1.0);
+    let width = width.clamp(1.0, maximum);
+    let low = root - end + margin;
+    let high = (root - left - margin - width).max(low);
+    (anchor.clamp(low, high), maximum)
+}
+
 fn anchor_panel(
     modes: Query<(Entity, &EditMode)>,
     geometry: Query<(&ComputedNode, &UiGlobalTransform)>,
+    viewports: Query<&crate::native::layout::desktop::HostViewport>,
     mut nodes: Query<&mut Node>,
     wake: Option<Res<crate::native::wake::WakeSignal>>,
 ) {
@@ -469,21 +559,52 @@ fn anchor_panel(
         let Ok((button, transform)) = geometry.get(mode.toggle) else {
             continue;
         };
-        if root_node.size().min_element() <= 0.0 || button.size().min_element() <= 0.0 {
+        if !root_node.size().is_finite()
+            || !button.size().is_finite()
+            || root_node.size().min_element() <= 0.0
+            || button.size().min_element() <= 0.0
+        {
             continue;
         }
         let scale = root_node.inverse_scale_factor();
         let position = transform.translation - root_transform.translation + root_node.size() * 0.5;
-        let right =
-            px(((root_node.size().x - position.x - button.size().x * 0.5) * scale).max(12.0));
+        let anchor = ((root_node.size().x - position.x - button.size().x * 0.5) * scale).max(12.0);
         let bottom = px((root_node.size().y - position.y + button.size().y * 0.5) * scale + 8.0);
-        if let Ok(mut node) = nodes.get_mut(mode.panel)
-            && (node.right != right || node.bottom != bottom)
-        {
-            node.right = right;
-            node.bottom = bottom;
-            if let Some(wake) = &wake {
-                wake.ring();
+        if let Ok(mut node) = nodes.get_mut(mode.panel) {
+            let root_width = root_node.size().x * scale;
+            let usable = viewports
+                .get(root)
+                .ok()
+                .and_then(|viewport| {
+                    viewport.0.usable.map(|usable| {
+                        [
+                            (usable.origin()[0] - viewport.0.bounds.origin()[0]) as f32,
+                            (usable.origin()[0] + usable.size()[0] - viewport.0.bounds.origin()[0])
+                                as f32,
+                        ]
+                    })
+                })
+                .unwrap_or([0.0, root_width]);
+            let width = geometry
+                .get(mode.panel)
+                .ok()
+                .map(|(panel, _)| panel.unrounded_size().x * scale)
+                .filter(|width| *width > 0.0)
+                .unwrap_or_else(|| {
+                    if let Val::Px(width) = node.width {
+                        width
+                    } else {
+                        root_width
+                    }
+                });
+            let (right, maximum) = panel_horizontal(root_width, width, anchor, usable);
+            if node.right != px(right) || node.bottom != bottom || node.max_width != px(maximum) {
+                node.right = px(right);
+                node.bottom = bottom;
+                node.max_width = px(maximum);
+                if let Some(wake) = &wake {
+                    wake.ring();
+                }
             }
         }
     }
@@ -508,15 +629,24 @@ pub(crate) fn setup(world: &mut World) {
                 .insert(crate::native::inspection::Inspection::default());
         }
         let toolbar = crate::native::canvas_controls::toolbar(world, root);
-        let toggle = control(world, root, toolbar, EditAction::Toggle, "Edit mode");
-        world.entity_mut(toggle).insert(Node {
-            width: px(120),
-            justify_content: JustifyContent::Center,
-            padding: UiRect::axes(px(12), px(8)),
-            border: UiRect::all(px(1)),
-            flex_shrink: 0.0,
-            ..default()
-        });
+        let toggle = control(
+            world,
+            root,
+            toolbar,
+            EditAction::Toggle,
+            Tr::EditMode.text(),
+        );
+        world.entity_mut(toggle).insert((
+            crate::native::canvas_controls::ToolbarOrder(0),
+            Node {
+                width: px(120),
+                justify_content: JustifyContent::Center,
+                padding: UiRect::axes(px(12), px(8)),
+                border: UiRect::all(px(1)),
+                flex_shrink: 0.0,
+                ..default()
+            },
+        ));
         let panel = world
             .spawn((
                 crate::native::inspection::InspectionExcluded,
@@ -545,20 +675,7 @@ pub(crate) fn setup(world: &mut World) {
                 TabGroup::modal(),
                 ChildOf(root),
             ))
-            .observe(
-                |mut event: On<Pointer<Scroll>>, mut scrolls: Query<&mut ScrollPosition>| {
-                    if let Ok(mut position) = scrolls.get_mut(event.entity) {
-                        let multiplier = if event.unit == bevy::input::mouse::MouseScrollUnit::Line
-                        {
-                            24.0
-                        } else {
-                            1.0
-                        };
-                        position.0.y -= event.y * multiplier;
-                        event.propagate(false);
-                    }
-                },
-            )
+            .observe(|mut event: On<Pointer<Scroll>>| event.propagate(false))
             .id();
         world.entity_mut(root).insert(EditMode {
             enabled: false,
@@ -573,6 +690,7 @@ pub(crate) fn setup(world: &mut World) {
             canvas: false,
             information: false,
             shortcuts: false,
+            park: false,
             customization: false,
             areas: false,
         });
@@ -622,6 +740,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         return;
     }
     let active_tab = [
+        (mode.park, Some(EditAction::Park)),
         (mode.shortcuts, Some(EditAction::Shortcuts)),
         (mode.information, Some(EditAction::Information)),
         (mode.general, Some(EditAction::General)),
@@ -652,6 +771,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Canvas
             | EditAction::Information
             | EditAction::Shortcuts
+            | EditAction::Park
             | EditAction::Customization
             | EditAction::Credits
             | EditAction::EditSand(_)
@@ -674,6 +794,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Area(_)
             | EditAction::Information
             | EditAction::Shortcuts
+            | EditAction::Park
             | EditAction::Customization
             | EditAction::Credits
             | EditAction::EditSand(_)
@@ -681,6 +802,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         world.get_mut::<EditMode>(root).unwrap().general = action == EditAction::General;
         world.get_mut::<EditMode>(root).unwrap().information = action == EditAction::Information;
         world.get_mut::<EditMode>(root).unwrap().shortcuts = action == EditAction::Shortcuts;
+        world.get_mut::<EditMode>(root).unwrap().park = action == EditAction::Park;
     }
     let mode = world.get::<EditMode>(root).unwrap();
     match action {
@@ -713,9 +835,48 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             set_open(world, root, false);
             return;
         }
-        EditAction::CreateWorkspace => workspace::create(world, root),
+        EditAction::CreateWorkspace => {
+            if let Some(requests) =
+                world.get_resource::<crate::native::layout::desktop::HostRequests>()
+            {
+                if requests
+                    .0
+                    .try_send(crate::host::HostRequest::CreateWorkspace {
+                        owner: root.to_bits(),
+                    })
+                    .is_err()
+                {
+                    crate::native::notifications::report(
+                        world,
+                        "Park",
+                        "Park is busy; try creating the workspace again.",
+                    );
+                }
+            } else {
+                workspace::create(world, root);
+            }
+        }
         EditAction::SwitchWorkspace(id) => {
-            workspace::switch(world, root, id);
+            if let Some(requests) =
+                world.get_resource::<crate::native::layout::desktop::HostRequests>()
+            {
+                if requests
+                    .0
+                    .try_send(crate::host::HostRequest::Workspace {
+                        owner: root.to_bits(),
+                        id,
+                    })
+                    .is_err()
+                {
+                    crate::native::notifications::report(
+                        world,
+                        "Park",
+                        "Park is busy; try switching the workspace again.",
+                    );
+                }
+            } else {
+                workspace::switch(world, root, id);
+            }
         }
         EditAction::SetTrashRetention(days) => {
             if (1..=365).contains(&days) {
@@ -800,7 +961,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             mode.canvas = true;
             mode.credits = false;
         }
-        EditAction::Information | EditAction::Shortcuts => {}
+        EditAction::Information | EditAction::Shortcuts | EditAction::Park => {}
         EditAction::ResetCanvasColors => {
             if !mode.canvas || !crate::native::canvas_colors::save(world, root, true) {
                 return;
@@ -827,6 +988,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Customization
             | EditAction::Information
             | EditAction::Shortcuts
+            | EditAction::Park
             | EditAction::Canvas
             | EditAction::Store
             | EditAction::Credits
@@ -889,6 +1051,7 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
     mode.customization = true;
     mode.information = false;
     mode.shortcuts = false;
+    mode.park = false;
     mode.areas = false;
     mode.canvas = false;
     mode.credits = false;
@@ -945,7 +1108,11 @@ fn set_open(world: &mut World, root: Entity, enabled: bool) {
     } else {
         Display::None
     };
-    let label = if enabled { "Done editing" } else { "Edit mode" };
+    let label = if enabled {
+        Tr::DoneEditing.text()
+    } else {
+        Tr::EditMode.text()
+    };
     world
         .get_mut::<AccessibilityNode>(toggle)
         .unwrap()
@@ -956,6 +1123,11 @@ fn set_open(world: &mut World, root: Entity, enabled: bool) {
         .label = label.into();
     if enabled {
         render_panel(world, root);
+        let first = world.query::<(Entity, &EditControl)>().iter(world)
+            .find_map(|(entity, control)| (control.root == root && control.action == EditAction::General).then_some(entity));
+        if let Some(first) = first {
+            world.resource_mut::<InputFocus>().set(first, FocusCause::Navigated);
+        }
     } else {
         world
             .resource_mut::<InputFocus>()
@@ -1033,6 +1205,7 @@ pub(crate) fn control(
         EditAction::SetTrashRetention(_) => None,
         EditAction::Credits => Some(Icon::Credits),
         EditAction::Information | EditAction::Shortcuts => Some(Icon::Info),
+        EditAction::Park => Some(Icon::General),
         EditAction::General => Some(Icon::General),
         EditAction::Workspaces => Some(Icon::Workspaces),
         EditAction::Store => Some(Icon::Store),
@@ -1163,6 +1336,7 @@ pub(crate) fn builtin_store_entries(
     castle_entries.push(entry);
     let entry = store_group(world, castles_group);
     crate::native::document_viewer::store_entry(world, root, entry);
+    crate::native::demeter_castle::store_entry(world, root, entry);
     castle_entries.push(entry);
     let entry = store_group(world, castles_group);
     crate::native::file_explorer::store_entry(world, root, entry);
@@ -1191,6 +1365,22 @@ pub(crate) fn builtin_store_entries(
     (sand_entries, castle_entries)
 }
 
+pub(crate) fn workspace_changed(world: &mut World, root: Entity) {
+    if world.get::<EditMode>(root).is_some_and(|mode| {
+        mode.enabled
+            && mode
+                .name
+                .is_some_and(|field| world.get::<WorkspaceName>(field).is_some())
+    }) {
+        autosave_name(world);
+        render_panel(world, root);
+    }
+}
+
+pub(crate) fn reorder_workspaces(world: &mut World, root: Entity) {
+    workspaces::reorder(world, root);
+}
+
 pub(crate) fn render_panel(world: &mut World, root: Entity) {
     render_panel_content(world, root);
     let panel = world.get::<EditMode>(root).unwrap().panel;
@@ -1217,6 +1407,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
     let general = mode.general;
     let information = mode.information;
     let shortcuts = mode.shortcuts;
+    let park = mode.park;
     let children: Vec<_> = world
         .get::<Children>(panel)
         .map(|children| children.iter().collect())
@@ -1230,6 +1421,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
             world.despawn(child);
         }
     }
+    world.get_mut::<EditMode>(root).unwrap().name = None;
     world.get_mut::<Node>(panel).unwrap().width = px(if customization { 720 } else { 376 });
     world
         .entity_mut(panel)
@@ -1261,28 +1453,73 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 ChildOf(panel),
             ))
             .id();
-        control(world, root, tabs, EditAction::General, "General");
-        control(world, root, tabs, EditAction::Store, "Sand store");
+        control(world, root, tabs, EditAction::General, Tr::General.text());
+        control(world, root, tabs, EditAction::Store, Tr::SandStore.text());
         control(
             world,
             root,
             tabs,
             EditAction::Customization,
-            "Customization",
+            Tr::Customization.text(),
         );
-        control(world, root, tabs, EditAction::Workspaces, "Workspaces");
-        control(world, root, tabs, EditAction::Information, "Information");
-        control(world, root, tabs, EditAction::Shortcuts, "Shortcuts");
-        control(world, root, tabs, EditAction::Areas, "Areas of influence");
         control(
             world,
             root,
             tabs,
-            EditAction::Credits,
-            "Licenses and credits",
+            EditAction::Workspaces,
+            Tr::Workspaces.text(),
         );
-        let close = control(world, root, tabs, EditAction::Close, "Close edit mode");
+        control(
+            world,
+            root,
+            tabs,
+            EditAction::Information,
+            Tr::Information.text(),
+        );
+        control(
+            world,
+            root,
+            tabs,
+            EditAction::Shortcuts,
+            Tr::Shortcuts.text(),
+        );
+        control(world, root, tabs, EditAction::Park, "Park");
+        control(
+            world,
+            root,
+            tabs,
+            EditAction::Areas,
+            Tr::AreasInfluence.text(),
+        );
+        control(world, root, tabs, EditAction::Credits, Tr::Licenses.text());
+        let close = control(
+            world,
+            root,
+            tabs,
+            EditAction::Close,
+            Tr::CloseEditMode.text(),
+        );
         world.entity_mut(close).insert((EditClose, ZIndex(2)));
+    }
+    if park {
+        label(world, panel, "Park", 22.0);
+        label(world, panel, Tr::ParkSettingsDescription.text(), 14.0);
+        crate::native::layout::desktop::monitors::panel(world, root, panel);
+        crate::native::layout::desktop::magnification::panel(world, root, panel);
+        crate::native::shortcuts::width_settings(world, root, panel);
+        crate::native::topology::surface_budget::panel(world, root, panel);
+        crate::native::layout::desktop::input_settings::panel(world, panel);
+        crate::native::layout::desktop::pointer_settings::panel(world, panel);
+        crate::native::layout::desktop::absolute_settings::panel(world, panel);
+        crate::native::layout::desktop::focus::settings::panel(world, panel);
+        crate::native::layout::desktop::opening::ui::panel(world, root, panel);
+        crate::native::layout::desktop::gestures::panel(world, panel);
+        crate::native::layout::desktop::overview::settings::panel(world, panel);
+        crate::native::layout::desktop::external_settings::panel(world, root, panel);
+        crate::native::layout::desktop::control::panel(world, panel);
+        crate::native::capture::status_panel(world, panel);
+        crate::native::shortcuts::panel(world, panel);
+        return;
     }
     if shortcuts {
         crate::native::shortcuts::panel(world, panel);
@@ -1293,7 +1530,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
         return;
     }
     if general {
-        label(world, panel, "General", 22.0);
+        label(world, panel, Tr::General.text(), 22.0);
         let always_show = world
             .get_resource::<crate::native::canvas_controls::ControlsSettings>()
             .is_some_and(|settings| settings.always_show);
@@ -1303,9 +1540,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
             panel,
             EditAction::ToggleAlwaysShowControls,
             if always_show {
-                "Always show controls: On"
+                Tr::AlwaysControlsOn.text()
             } else {
-                "Always show controls: Off"
+                Tr::AlwaysControlsOff.text()
             },
         );
         crate::native::workspace_config::controls(world, root, panel);
@@ -1325,14 +1562,14 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 world,
                 panel,
                 root,
-                "Edit native component",
+                Tr::EditComponent.text(),
                 crate::native::canvas_host::authoring::inspector::Open(selected),
             );
             crate::native::sand_panel::button(
                 world,
                 panel,
                 root,
-                "Sand surface effect…",
+                Tr::SurfaceEffect.text(),
                 crate::native::shader_effects::OpenSurface(selected),
             );
         }
@@ -1371,18 +1608,18 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 ChildOf(panel),
             ))
             .id();
-        label(world, heading, "Workspace", 22.0);
+        label(world, heading, Tr::Workspace.text(), 22.0);
         control(
             world,
             root,
             heading,
             EditAction::CreateWorkspace,
-            "New workspace",
+            Tr::NewWorkspace.text(),
         );
         let spaces = world.get::<Workspaces>(root).unwrap();
         let active = spaces.active;
         let entries = spaces.entries.clone();
-        world.get_mut::<EditMode>(root).unwrap().name = None;
+        let numbers = workspace::numbers(world, root);
         for entry in &entries {
             let row = world
                 .spawn((
@@ -1394,10 +1631,24 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     ChildOf(panel),
                 ))
                 .id();
+            let number = numbers
+                .iter()
+                .position(|id| *id == entry.id)
+                .map_or_else(|| "·".to_owned(), |index| (index + 1).to_string());
+            let number = label(world, row, &number, 15.0);
+            world.entity_mut(row).insert(workspaces::Row {
+                workspace: entry.id,
+                number,
+            });
             let switch = if entry.id == active {
                 let bundle = text_editor(&entry.name, world.resource::<Typography>(), 0);
                 let editor = world
-                    .spawn((bundle, EditField::WorkspaceName, ChildOf(row)))
+                    .spawn((
+                        bundle,
+                        EditField::WorkspaceName,
+                        WorkspaceName(entry.id),
+                        ChildOf(row),
+                    ))
                     .id();
                 let font = world.resource::<Typography>().text(15.0);
                 world.entity_mut(editor).insert(font);
@@ -1418,8 +1669,28 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     &entry.name,
                 )
             };
-            world.get_mut::<Node>(switch).unwrap().flex_grow = 1.0;
-            world.get_mut::<Node>(switch).unwrap().width = px(0);
+            {
+                let mut node = world.get_mut::<Node>(switch).unwrap();
+                node.flex_grow = 1.0;
+                node.width = px(0);
+                node.min_width = px(0);
+                if entry.id != active {
+                    node.flex_direction = FlexDirection::Column;
+                }
+            }
+            if entry.id != active {
+                let labels: Vec<_> = world.get::<Children>(switch).unwrap().iter().collect();
+                for label in labels {
+                    if world.get::<Text>(label).is_some() {
+                        let mut node = world.get_mut::<Node>(label).unwrap();
+                        node.width = percent(100);
+                        node.min_width = px(0);
+                        world.entity_mut(label).insert(TextLayout::linebreak(
+                            bevy::text::LineBreak::WordOrCharacter,
+                        ));
+                    }
+                }
+            }
             if entries.len() > 1 {
                 control(
                     world,
@@ -1445,7 +1716,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 root,
                 retention_row,
                 EditAction::SetTrashRetention(retention_days - 1),
-                "Keep 1 day less",
+                Tr::LessRetention.text(),
             );
         }
         if retention_days < 365 {
@@ -1454,7 +1725,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 root,
                 retention_row,
                 EditAction::SetTrashRetention(retention_days + 1),
-                "Keep 1 day more",
+                Tr::MoreRetention.text(),
             );
         }
         for entry in trash {
@@ -1495,20 +1766,20 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     root,
                     panel,
                     EditAction::ConfirmRemoveWorkspace,
-                    "Move workspace to Trash",
+                    Tr::TrashWorkspace.text(),
                 );
                 control(
                     world,
                     root,
                     panel,
                     EditAction::CancelRemoveWorkspace,
-                    "Keep workspace",
+                    Tr::KeepWorkspace.text(),
                 );
             }
         }
     } else {
-        label(world, panel, "Sand store", 22.0);
-        label(world, panel, "Filter", 14.0);
+        label(world, panel, Tr::SandStore.text(), 22.0);
+        label(world, panel, Tr::Filter.text(), 14.0);
         let bundle = text_editor("", world.resource::<Typography>(), 0);
         let filter = world
             .spawn((
@@ -1534,7 +1805,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
             crate::native::token_style::border(crate::native::tokens::Token::Accent),
         ));
         if let Some(mut node) = world.get_mut::<AccessibilityNode>(filter) {
-            node.set_label("Filter Sand store");
+            node.set_label(Tr::FilterSandStore.text());
         }
         let sands_heading = label(world, panel, "Sands", 18.0);
         let sands_group = store_group(world, panel);
@@ -1554,7 +1825,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
             .filter(|(_, parent, member, _)| parent.parent() == root && member.0 == active)
             .map(|(entity, _, _, sand)| (entity, sand.kind))
             .collect();
-        let workspace_heading = label(world, panel, "In this workspace", 18.0);
+        let workspace_heading = label(world, panel, Tr::InWorkspace.text(), 18.0);
         let workspace_group = store_group(world, panel);
         let mut workspace_entries = Vec::new();
         for (index, (entity, kind)) in sands.into_iter().enumerate() {
@@ -1653,6 +1924,135 @@ pub(crate) mod tests {
         app.update();
     }
 
+    #[cfg_attr(test, test)]
+    fn panel_anchor_stays_visible_beside_a_leftmost_edit_button_and_reserved_bars() {
+        for (root, width, anchor, usable) in [
+            (360.0, 338.4, 320.0, [0.0, 360.0]),
+            (1280.0, 376.0, 495.0, [0.0, 1280.0]),
+            (360.0, 376.0, 320.0, [80.0, 340.0]),
+            (640.0, 720.0, 600.0, [20.0, 620.0]),
+        ] {
+            let (right, maximum) = super::panel_horizontal(root, width, anchor, usable);
+            let left = root - right - width.min(maximum);
+            assert!(left >= usable[0] - 0.001, "{left} {usable:?}");
+            assert!(root - right <= usable[1] + 0.001);
+            assert!(maximum <= usable[1] - usable[0]);
+        }
+        assert_eq!(
+            super::panel_horizontal(1280.0, 376.0, 495.0, [0.0, 1280.0]).0,
+            495.0
+        );
+    }
+
+    #[test]
+    fn fractional_panel_anchoring_is_independent_of_rounded_pixel_width() {
+        for scale in [0.5, 0.8, 1.0] {
+            let (mut app, root) = fixture();
+            let mode = app.world().get::<EditMode>(root).unwrap();
+            let (panel, toggle) = (mode.panel, mode.toggle);
+            app.world_mut().entity_mut(root).insert((
+                ComputedNode {
+                    size: Vec2::new(360.0, 720.0),
+                    inverse_scale_factor: scale,
+                    ..default()
+                },
+                UiGlobalTransform::from_xy(180.0, 360.0),
+            ));
+            app.world_mut().entity_mut(toggle).insert((
+                ComputedNode {
+                    size: Vec2::splat(40.0),
+                    ..default()
+                },
+                UiGlobalTransform::from_xy(20.0, 690.0),
+            ));
+            for width in [339.0, 338.0, 339.0, 338.0] {
+                app.world_mut().entity_mut(panel).insert(ComputedNode {
+                    size: Vec2::new(width, 656.0),
+                    unrounded_size: Vec2::new(338.4, 656.0),
+                    ..default()
+                });
+                app.update();
+                let node = app.world().get::<Node>(panel).unwrap();
+                let Val::Px(right) = node.right else {
+                    panic!("pixel anchor")
+                };
+                let Val::Px(maximum) = node.max_width else {
+                    panic!("pixel width")
+                };
+                assert!((right - 10.8 * scale).abs() < 0.001);
+                assert!((maximum - 338.4 * scale).abs() < 0.001);
+            }
+        }
+    }
+
+    #[test]
+    fn unrelated_panel_changes_do_not_undo_manual_scrolling_of_a_focused_modal() {
+        let (mut app, root) = fixture();
+        let panel = app
+            .world_mut()
+            .spawn((
+                FocusScroll,
+                ComputedNode {
+                    size: Vec2::new(300.0, 200.0),
+                    ..default()
+                },
+                UiGlobalTransform::from_xy(150.0, 100.0),
+                ScrollPosition::default(),
+                ChildOf(root),
+            ))
+            .id();
+        let field = app
+            .world_mut()
+            .spawn((
+                ComputedNode {
+                    size: Vec2::new(180.0, 30.0),
+                    ..default()
+                },
+                UiGlobalTransform::from_xy(150.0, 500.0),
+                ChildOf(panel),
+            ))
+            .id();
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(field, FocusCause::Navigated);
+        app.update();
+        assert_eq!(app.world().get::<ScrollPosition>(panel).unwrap().0.y, 323.0);
+        app.world_mut()
+            .get_mut::<ScrollPosition>(panel)
+            .unwrap()
+            .0
+            .y = 42.0;
+        let other = app
+            .world_mut()
+            .spawn((
+                FocusScroll,
+                ComputedNode {
+                    size: Vec2::new(300.0, 100.0),
+                    ..default()
+                },
+                UiGlobalTransform::from_xy(150.0, 50.0),
+                ScrollPosition::default(),
+                ChildOf(root),
+            ))
+            .id();
+        for height in [100.0, 200.0, 80.0] {
+            app.world_mut()
+                .get_mut::<ComputedNode>(other)
+                .unwrap()
+                .size
+                .y = height;
+            app.update();
+            assert_eq!(app.world().get::<ScrollPosition>(panel).unwrap().0.y, 42.0);
+        }
+        app.world_mut()
+            .get_mut::<ComputedNode>(panel)
+            .unwrap()
+            .size
+            .y = 100.0;
+        app.update();
+        assert!(app.world().get::<ScrollPosition>(panel).unwrap().0.y > 42.0);
+    }
+
     #[test]
     fn appearance_inspector_scrolls_to_keyboard_focus_only_while_editing() {
         let (mut app, root) = fixture();
@@ -1710,6 +2110,54 @@ pub(crate) mod tests {
             .set(next, FocusCause::Navigated);
         app.update();
         assert_eq!(app.world().get::<ScrollPosition>(panel).unwrap().0.y, 0.0);
+    }
+
+    #[test]
+    fn panel_and_child_wheel_events_use_one_shared_bounded_scroll_path() {
+        let (mut app, root) = fixture();
+        if !app.is_plugin_added::<crate::native::layout::LayoutPlugin>() {
+            app.add_plugins(crate::native::layout::LayoutPlugin);
+        }
+        EditAction::Open.apply(app.world_mut(), root);
+        let panel = app.world().get::<EditMode>(root).unwrap().panel;
+        app.world_mut().entity_mut(panel).insert(ComputedNode {
+            size: Vec2::new(376.0, 400.0),
+            content_size: Vec2::new(376.0, 1000.0),
+            inverse_scale_factor: 1.0,
+            ..default()
+        });
+        let child = app
+            .world_mut()
+            .spawn((Node::default(), ChildOf(panel)))
+            .id();
+        for (target, delta, expected) in [
+            (panel, -30.0, 30.0),
+            (child, -30.0, 60.0),
+            (panel, -10000.0, 600.0),
+            (child, 10000.0, 0.0),
+        ] {
+            app.world_mut().trigger(Pointer::new(
+                bevy::picking::pointer::PointerId::Mouse,
+                bevy::picking::pointer::Location {
+                    target: bevy::camera::NormalizedRenderTarget::Image(
+                        Handle::<Image>::default().into(),
+                    ),
+                    position: Vec2::ZERO,
+                },
+                bevy::picking::events::Scroll {
+                    unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+                    x: 0.0,
+                    y: delta,
+                    phase: bevy::input::touch::TouchPhase::Moved,
+                    hit: bevy::picking::backend::HitData::new(target, 0.0, None, None),
+                },
+                target,
+            ));
+            assert_eq!(
+                app.world().get::<ScrollPosition>(panel).unwrap().0.y,
+                expected
+            );
+        }
     }
 
     #[cfg_attr(test, test)]
@@ -1813,6 +2261,7 @@ pub(crate) mod tests {
             (EditAction::Workspaces, "Workspace"),
             (EditAction::Information, "Information"),
             (EditAction::Shortcuts, "Shortcuts"),
+            (EditAction::Park, "Park"),
             (EditAction::Areas, "Areas"),
             (EditAction::Credits, "Licenses and credits"),
         ];
@@ -1867,6 +2316,7 @@ pub(crate) mod tests {
             EditAction::Store,
             EditAction::Information,
             EditAction::Shortcuts,
+            EditAction::Park,
             EditAction::General,
             EditAction::Areas,
             EditAction::Customization,
@@ -2024,6 +2474,57 @@ pub(crate) mod tests {
         assert_eq!(app.world().get::<Node>(tabs).unwrap().max_height, px(40));
     }
 
+    #[test]
+    fn asynchronous_workspace_switch_saves_the_bound_name_and_refreshes_the_selected_row() {
+        let (mut app, root) = fixture();
+        EditAction::Open.apply(app.world_mut(), root);
+        let field = app.world().get::<EditMode>(root).unwrap().name.unwrap();
+        let mut other = app.world().get::<Workspaces>(root).unwrap().entries[0].clone();
+        other.id = 31;
+        other.name = "Destination".into();
+        app.world_mut()
+            .get_mut::<Workspaces>(root)
+            .unwrap()
+            .entries
+            .push(other);
+        app.world_mut()
+            .get_mut::<EditableText>(field)
+            .unwrap()
+            .editor
+            .set_text("Source draft");
+        assert!(workspace::switch_output(app.world_mut(), root, 31));
+        app.update();
+        let spaces = app.world().get::<Workspaces>(root).unwrap();
+        assert_eq!(spaces.entries[0].name, "Source draft");
+        assert_eq!(spaces.entries[1].name, "Destination");
+        let next = app.world().get::<EditMode>(root).unwrap().name.unwrap();
+        assert_ne!(next, field);
+        assert!(app.world().get_entity(field).is_err());
+        assert_eq!(app.world().get::<WorkspaceName>(next).unwrap().0, 31);
+        assert_eq!(
+            app.world().get::<EditableText>(next).unwrap().value(),
+            "Destination"
+        );
+        EditAction::Park.apply(app.world_mut(), root);
+        let panel = app.world().get::<EditMode>(root).unwrap().panel;
+        assert!(app.world().get::<EditMode>(root).unwrap().name.is_none());
+        let children = app
+            .world()
+            .get::<Children>(panel)
+            .unwrap()
+            .iter()
+            .collect::<Vec<_>>();
+        assert!(workspace::switch_output(app.world_mut(), root, 1));
+        assert_eq!(
+            app.world()
+                .get::<Children>(panel)
+                .unwrap()
+                .iter()
+                .collect::<Vec<_>>(),
+            children
+        );
+    }
+
     #[cfg_attr(test, test)]
     fn workspace_name_saves_from_its_row_and_pointer_focus_has_no_outline() {
         let (mut app, root) = fixture();
@@ -2081,6 +2582,8 @@ pub(crate) mod tests {
         }));
         let other = app.world_mut().spawn(BoxRoot).id();
         app.update();
+        let toggle = app.world().get::<EditMode>(root).unwrap().toggle;
+        app.world_mut().resource_mut::<InputFocus>().set(toggle, FocusCause::Navigated);
         activate(&mut app, root, EditAction::Toggle);
         assert!(draws.load(std::sync::atomic::Ordering::Relaxed) > 0);
         assert!(app.world().get::<EditMode>(root).unwrap().enabled);
@@ -2090,6 +2593,12 @@ pub(crate) mod tests {
             app.world().get::<Node>(panel).unwrap().display,
             Display::Flex
         );
+        let focused = app.world().resource::<InputFocus>().get().unwrap();
+        assert_eq!(app.world().get::<EditControl>(focused).unwrap().root, root);
+        let mut navigation = bevy::ecs::system::SystemState::<bevy::input_focus::tab_navigation::TabNavigation>::new(app.world_mut());
+        let next = navigation.get(app.world()).unwrap().navigate(app.world().resource::<InputFocus>(), bevy::input_focus::tab_navigation::NavAction::Next).unwrap();
+        assert_ne!(next, focused);
+        assert_eq!(app.world().get::<EditControl>(next).unwrap().root, root);
         crate::native::actions::dispatch(
             app.world_mut(),
             root,
@@ -2115,6 +2624,46 @@ pub(crate) mod tests {
             app.world().get::<Workspaces>(root).unwrap().entries.len(),
             1
         );
+    }
+
+    #[test]
+    fn workspace_controls_send_stable_identity_requests_without_changing_park_membership() {
+        use crate::host::HostRequest;
+        use crate::native::layout::desktop::HostRequests;
+
+        let (mut app, root) = fixture();
+        EditAction::Open.apply(app.world_mut(), root);
+        let mut other = app.world().get::<Workspaces>(root).unwrap().entries[0].clone();
+        other.id = 31;
+        other.name = "Second workspace".into();
+        app.world_mut()
+            .get_mut::<Workspaces>(root)
+            .unwrap()
+            .entries
+            .push(other);
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        app.insert_resource(HostRequests(sender));
+        EditAction::SwitchWorkspace(31).apply(app.world_mut(), root);
+        assert_eq!(
+            receiver.try_recv(),
+            Ok(HostRequest::Workspace {
+                owner: root.to_bits(),
+                id: 31
+            })
+        );
+        assert_eq!(app.world().get::<Workspaces>(root).unwrap().active, 1);
+        EditAction::CreateWorkspace.apply(app.world_mut(), root);
+        EditAction::SwitchWorkspace(31).apply(app.world_mut(), root);
+        assert_eq!(
+            receiver.try_recv(),
+            Ok(HostRequest::CreateWorkspace {
+                owner: root.to_bits()
+            })
+        );
+        assert!(receiver.try_recv().is_err());
+        let spaces = app.world().get::<Workspaces>(root).unwrap();
+        assert_eq!(spaces.entries.len(), 2);
+        assert_eq!(spaces.active, 1);
     }
 
     #[cfg_attr(test, test)]
@@ -2475,6 +3024,7 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        panel_anchor_stays_visible_beside_a_leftmost_edit_button_and_reserved_bars,
         all_edit_panel_tabs_activate_render_and_reopen,
         store_cards_have_inert_content_previews_and_all_tabs_have_bottom_space,
         selected_tabs_preserve_content_and_scroll,

@@ -1,0 +1,26 @@
+Import "Questions-and-crossings.lingua"
+Import "../research/Foundation-readiness.lingua"
+Import "../../Philosophy.lingua"
+
+Develop a comparative philosophical investigation (@greek-comparative-inquiry: 0, is #chapter, #part-of @greek-question-crossings, #philosophy @greek-question-crossings, #ancient-greek-philosophy @greek-question-crossings, #philosophy @greek-scholarly-foundation, #ancient-greek-philosophy @greek-scholarly-foundation, #philosophy @philosophy, #ancient-greek-philosophy @philosophy) { r_20BK69Q76HJXAGZ5J1T097X29G
+Choose a question from [the crossings](Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF) and two readings that genuinely disagree or develop it differently. This extends the [first argument review](../socratic/Argument-review.lingua#r_3879MMB9TCFTCMJ2SPYG32ZDS0); read or recover the specific passages before comparing them.
+
+1. State the question and why the proposed answers are alternatives.
+2. Reconstruct each account with its passage, meaning of key terms, reasons, and relevant assumptions.
+3. Identify a shared commitment and a substantive disagreement. Explain whether the disagreement concerns a fact, definition, inference, value, or interpretation.
+4. Present an objection to the stronger account and a response. Revise your initial reconstruction if the response exposes an unfair simplification.
+5. Defend a considered answer or a justified suspension of judgment. State what the comparison has established and what remains open.
+6. Apply the distinction to a new case, explaining where the historical comparison ceases to be sufficient.
+
+**Review:** a reader should be able to find both passages, recognise each position, trace the disagreement, and challenge your conclusion on stated grounds. Use a second reader where possible; if working alone, write the strongest opposing response before revising your own.
+
+Record the result as an essay, an annotated argument map, a dialogue, or a spoken explanation with source notes. The form should make the reasoning and its basis inspectable. Reading a complete book, making a defensible interpretation, and settling a philosophical question are different accomplishments.
+
+**Continue:** revisit a source in full, follow a new [crossing](Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF), or return to [Philosophy](../../Philosophy.lingua#r_00000000000000000000001001) with the next question and its preparation made explicit.
+
+**Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3). **Sources and editions:** [Books](../sources/Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3).
+
+**Survey review:** identify a primary passage and a supported question from each part of [the introductory survey](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3). Choose two for the developed comparison. Record the edition and language; explain a translation difference only where you can support it through the wording or an identified scholarly account.
+
+**Progression:** this comparison completes a foundation task. The [seminar standard](../research/Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q) and [independent project](../research/Independent-research.lingua#r_08YBJ1G76KSJ3QTG42FKCCAV5K) demand sustained primary reading, critical scholarship, Greek analysis, and [review and revision](../research/Criticism-and-revision.lingua#r_5P20QNYEBQPBVGHWV428JXWW8Z) before the full [completion claim](../research/Research-completion.lingua#r_41G7P2Y9HYXMVAF53MV2QYT1CD).
+} r_20BK69Q76HJXAGZ5J1T097X29G

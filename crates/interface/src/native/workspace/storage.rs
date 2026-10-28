@@ -315,6 +315,7 @@ pub(crate) mod tests {
         let mut workspaces = super::super::Workspaces::default().entries;
         workspaces[0].name = name.into();
         Document {
+            workspace_focus: Vec::new(),
             physical_workspaces: Vec::new(),
             shader_editors: Vec::new(),
             shader_settings: Default::default(),
@@ -325,6 +326,7 @@ pub(crate) mod tests {
             hidden_records: Default::default(),
             canvas_state: None,
             recovery: Default::default(),
+            snapshot_error: None,
             assertions: Vec::new(),
             shaders: Vec::new(),
             layouts: Vec::new(),
@@ -337,6 +339,8 @@ pub(crate) mod tests {
             transfer_castles: Vec::new(),
             recorders: Vec::new(),
             documents: Vec::new(),
+            source_views: Vec::new(),
+            demeters: Vec::new(),
             media: Vec::new(),
             drawings: Vec::new(),
             extension_sands: Vec::new(),
@@ -348,7 +352,6 @@ pub(crate) mod tests {
             instincts: Vec::new(),
             theme: Default::default(),
             controls: Default::default(),
-            shortcuts: Default::default(),
             active: 1,
             workspaces,
             sands: Vec::new(),

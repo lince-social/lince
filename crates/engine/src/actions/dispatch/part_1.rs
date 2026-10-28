@@ -14,35 +14,63 @@ impl Engine {
                 Action::SetContactDelivery { target, mode } => {
                     let uid = self.resolve(&target).await?;
                     if !matches!(mode.as_str(), "direct" | "mailbox" | "auto") {
-                        return Err(EngineError::Consequence("Choose direct, mailbox or auto delivery".into()));
+                        return Err(EngineError::Consequence(
+                            "Choose direct, mailbox or auto delivery".into(),
+                        ));
                     }
-                    if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
-                        return Err(EngineError::Consequence("Choose an existing contact".into()));
+                    if store::organs::contact(&self.store.pool, &uid)
+                        .await?
+                        .is_none()
+                    {
+                        return Err(EngineError::Consequence(
+                            "Choose an existing contact".into(),
+                        ));
                     }
                     store::organs::set_mode(&self.store.pool, &uid, &mode).await?;
-                    outcome.facts = self.annotate(uid, actor, serde_json::json!({"delivery":mode}), now).await?;
+                    outcome.facts = self
+                        .annotate(uid, actor, serde_json::json!({"delivery":mode}), now)
+                        .await?;
                 }
                 Action::ReconnectContact { target } => {
                     let uid = self.resolve(&target).await?;
-                    self.transport_for("reconnect a contact")?.reconnect_contact(&uid).await?;
-                    outcome.data = Some(serde_json::json!({"status":"Device list refreshed. Queued work will recheck current permissions before delivery."}));
+                    self.transport_for("reconnect a contact")?
+                        .reconnect_contact(&uid)
+                        .await?;
+                    outcome.data = Some(
+                        serde_json::json!({"status":"Device list refreshed. Queued work will recheck current permissions before delivery."}),
+                    );
                 }
                 Action::SetExtension {
                     target,
                     namespace,
                     fds,
                 } => {
+                    if namespace.starts_with("lince.demeter")
+                        || namespace.starts_with("lince.optimization")
+                    {
+                        return Err(EngineError::Forbidden("Use the Demeter or optimization commands to change managed planning data".into()));
+                    }
                     if namespace == store::people::NAMESPACE {
                         return Err(EngineError::Forbidden("Use Person access controls to change standing or authentication metadata".into()));
                     }
                     if namespace == nucleus::trust_analysis::contacts::NAMESPACE {
                         return Err(EngineError::Forbidden("Use reviewed signed contact disclosures instead of editing their evidence".into()));
                     }
-                    if namespace == nucleus::transfer::outcome::NAMESPACE || namespace == nucleus::transfer::receipt::NAMESPACE {
-                        return Err(EngineError::Forbidden("Use signed outcome reports to change Transfer evidence".into()));
+                    if namespace == nucleus::transfer::outcome::NAMESPACE
+                        || namespace == nucleus::transfer::receipt::NAMESPACE
+                    {
+                        return Err(EngineError::Forbidden(
+                            "Use signed outcome reports to change Transfer evidence".into(),
+                        ));
                     }
-                    if matches!(namespace.as_str(), nucleus::record_extension::SCHEMA_NAMESPACE | nucleus::record_extension::VALUES_NAMESPACE) {
-                        return Err(EngineError::Forbidden("Use the extension editor to change schemas or field values".into()));
+                    if matches!(
+                        namespace.as_str(),
+                        nucleus::record_extension::SCHEMA_NAMESPACE
+                            | nucleus::record_extension::VALUES_NAMESPACE
+                    ) {
+                        return Err(EngineError::Forbidden(
+                            "Use the extension editor to change schemas or field values".into(),
+                        ));
                     }
                     if namespace == "lince.command"
                         && !crate::commands::COMMAND_AUTHORING
@@ -75,17 +103,37 @@ impl Engine {
                         ));
                     }
                     let mut expected_content = None;
+                    if let Some(revision) = nucleus::window_opening::revision(&namespace, &fds)
+                        .map_err(EngineError::Consequence)?
+                    {
+                        let current = store::records::get_extension(&self.store.pool, &uid, &namespace).await?;
+                        let previous = current.as_ref().and_then(|value| value["revision"].as_u64()).unwrap_or(0);
+                        if previous.checked_add(1) != Some(revision) {
+                            return Err(EngineError::Consequence("Opening preferences changed. Reload before saving.".into()));
+                        }
+                        expected_content = Some(current.unwrap_or_default());
+                    }
                     if namespace == nucleus::shader_effect::NAMESPACE {
                         if serde_json::to_vec(&fds)?.len() > 196_608 {
-                            return Err(EngineError::Consequence("WGSL extension is limited to 192 KB.".into()));
+                            return Err(EngineError::Consequence(
+                                "WGSL extension is limited to 192 KB.".into(),
+                            ));
                         }
-                        let extension: nucleus::shader_effect::Extension = serde_json::from_value(fds.clone())
-                            .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                        let extension: nucleus::shader_effect::Extension =
+                            serde_json::from_value(fds.clone())
+                                .map_err(|error| EngineError::Consequence(error.to_string()))?;
                         extension.validate().map_err(EngineError::Consequence)?;
-                        let current = store::records::get_extension(&self.store.pool, &uid, &namespace).await?;
-                        let revision = current.as_ref().and_then(|value| value["revision"].as_u64()).unwrap_or(0);
+                        let current =
+                            store::records::get_extension(&self.store.pool, &uid, &namespace)
+                                .await?;
+                        let revision = current
+                            .as_ref()
+                            .and_then(|value| value["revision"].as_u64())
+                            .unwrap_or(0);
                         if revision.checked_add(1) != Some(extension.revision) {
-                            return Err(EngineError::Consequence("The WGSL extension changed. Reload before saving.".into()));
+                            return Err(EngineError::Consequence(
+                                "The WGSL extension changed. Reload before saving.".into(),
+                            ));
                         }
                         expected_content = Some(current.unwrap_or_default());
                     }
@@ -156,7 +204,18 @@ impl Engine {
                             .await
                             .map(ControlFlow::Break);
                     }
-                    outcome.facts = self.change_record_scalar_as(&uid, crate::record_policy::ScalarChange::Extension { namespace:&namespace, value:&fds, expected:expected_content.as_ref() }, actor.as_deref(), now).await?;
+                    outcome.facts = self
+                        .change_record_scalar_as(
+                            &uid,
+                            crate::record_policy::ScalarChange::Extension {
+                                namespace: &namespace,
+                                value: &fds,
+                                expected: expected_content.as_ref(),
+                            },
+                            actor.as_deref(),
+                            now,
+                        )
+                        .await?;
                 }
                 Action::RenameOrganContact { target, name } => {
                     let uid = self.resolve(&target).await?;
@@ -403,32 +462,79 @@ impl Engine {
                         .await?;
                 }
                 Action::PreviewRecordMove { record, target } => {
-                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can preview Organ moves".into())); }
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can preview Organ moves".into(),
+                        ));
+                    }
                     let (preview, _) = self.preview_record_move(&record, &target).await?;
                     outcome.data = Some(serde_json::to_value(preview)?);
                 }
                 Action::CancelReplicaOffer { root, target } => {
-                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can cancel replica offers".into())); }
-                    if store::replica::state(&self.store.pool, &root, &target).await?.as_deref() != Some(store::replica::OFFERED) { return Err(EngineError::Consequence("This replica offer is no longer pending".into())); }
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can cancel replica offers".into(),
+                        ));
+                    }
+                    if store::replica::state(&self.store.pool, &root, &target)
+                        .await?
+                        .as_deref()
+                        != Some(store::replica::OFFERED)
+                    {
+                        return Err(EngineError::Consequence(
+                            "This replica offer is no longer pending".into(),
+                        ));
+                    }
                     store::replica::revoke(&self.store.pool, &root, &target).await?;
-                    store::offers::remember_outcome(&self.store.pool, store::offers::OfferKind::ReplicaGrant, &root, &target, "cancelled").await?;
+                    store::offers::remember_outcome(
+                        &self.store.pool,
+                        store::offers::OfferKind::ReplicaGrant,
+                        &root,
+                        &target,
+                        "cancelled",
+                    )
+                    .await?;
                     self.notify_query_changed();
                 }
                 Action::PendingOffers => {
-                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can inspect pending Organ offers".into())); }
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can inspect pending Organ offers".into(),
+                        ));
+                    }
                     outcome.data = Some(self.pending_offer_status().await?);
                 }
                 Action::AnswerRecordMove { offer, accept } => {
-                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can answer Organ moves".into())); }
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can answer Organ moves".into(),
+                        ));
+                    }
                     self.answer_record_move(&offer, accept).await?;
                 }
-                Action::MoveRecordTo { record, target, expected_preview } => {
-                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can move Organ data".into())); }
-                    let uid = self.offer_record_move(&record, &target, expected_preview.as_deref()).await?;
-                    outcome.data = Some(serde_json::json!({"offer":uid,"status":"Awaiting explicit acceptance. Source retained locally."}));
+                Action::MoveRecordTo {
+                    record,
+                    target,
+                    expected_preview,
+                } => {
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can move Organ data".into(),
+                        ));
+                    }
+                    let uid = self
+                        .offer_record_move(&record, &target, expected_preview.as_deref())
+                        .await?;
+                    outcome.data = Some(
+                        serde_json::json!({"offer":uid,"status":"Awaiting explicit acceptance. Source retained locally."}),
+                    );
                 }
                 Action::CancelRecordMove { record } => {
-                    if actor.is_some() { return Err(EngineError::Forbidden("Only the local owner can cancel Organ moves".into())); }
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can cancel Organ moves".into(),
+                        ));
+                    }
                     self.cancel_record_move(&record).await?;
                 }
                 Action::ForgetOrganContact { target } => {
@@ -583,7 +689,9 @@ impl Engine {
                             "only a known contact may be given a login".into(),
                         ));
                     }
-                    if let Some(person) = store::logins::person_for_organ(&self.store.pool, &organ_uid).await? {
+                    if let Some(person) =
+                        store::logins::person_for_organ(&self.store.pool, &organ_uid).await?
+                    {
                         outcome.created = Some(person);
                         return Ok(ControlFlow::Continue(outcome));
                     }
@@ -689,11 +797,20 @@ impl Engine {
                     self.rename_roster_cell(&root, &cell_uid, &label).await?;
                 }
                 Action::RosterEnrolToken => {
-                    let root=self.root_signer().await?.ok_or_else(||EngineError::Consequence(
+                    let root = self.root_signer().await?.ok_or_else(|| {
+                        EngineError::Consequence(
                             "the root key is not on this Cell — bring it back to enrol a device"
                                 .into(),
-                        ))?;
-                    if !self.key_chains(&root.actor_uid,&root.public_key_b64()).await? {return Err(EngineError::Forbidden("The configured owner key is not currently recognized".into()));}
+                        )
+                    })?;
+                    if !self
+                        .key_chains(&root.actor_uid, &root.public_key_b64())
+                        .await?
+                    {
+                        return Err(EngineError::Forbidden(
+                            "The configured owner key is not currently recognized".into(),
+                        ));
+                    }
                     let token = self.issue_enrolment_token().await?;
                     let organ = store::organs::local(&self.store.pool)
                         .await?
@@ -811,15 +928,13 @@ impl Engine {
                     label,
                     quota_bytes,
                 } => {
-                    let root_key =
-                        self.current_root_key(&organ_uid).await?
-                            .ok_or_else(|| {
-                                EngineError::Consequence(
+                    let root_key = self.current_root_key(&organ_uid).await?.ok_or_else(|| {
+                        EngineError::Consequence(
                         "no root key is held for that Organ: pair with them before offering to \
                          carry their mail"
                             .into(),
                     )
-                            })?;
+                    })?;
                     let quota = if quota_bytes > 0 {
                         quota_bytes
                     } else {

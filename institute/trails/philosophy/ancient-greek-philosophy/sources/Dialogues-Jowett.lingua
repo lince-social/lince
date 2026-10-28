@@ -1,0 +1,24 @@
+Import "Sources.lingua"
+Import "Euthyphro-Jowett.lingua"
+Import "Meno-Jowett.lingua"
+Import "Gorgias-Jowett.lingua"
+
+The Dialogues of Plato, volume II (@greek-source-dialogues: 0, is #book, #part-of @greek-sources, #contains @greek-euthyphro-text, #contains @greek-meno-text, #contains @greek-gorgias-text) { r_1AD7N0E0ZYZ07XSMQWSK5PA5X8
+Plato; translated into English with analyses and introductions by Benjamin Jowett. Macmillan, 1892.
+
+[Retained EPUB](../books/plato-dialogues-volume-2.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/76464). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
+
+Read [Euthyphro](Euthyphro-Jowett.lingua#r_1EH96KVFJX5TD94W0N1A3AYNZ6), [Meno](Meno-Jowett.lingua#r_0JPD7WWT4EKNFXS3ETCQ0YJ3XP), and [Gorgias](Gorgias-Jowett.lingua#r_3D3G4G9SE2PC96ZWFB8M6ZZR0V) through their dialogue text. Introductions precede several works and offer Jowett's interpretation; keep them distinct from Plato's dialogue. This volume also supplies an alternative translation of Apology, Crito, and Phaedo. The appendices contain further works whose attribution requires separate examination.
+
+**Return:** [Books and editions](Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_1AD7N0E0ZYZ07XSMQWSK5PA5X8
+
+Extension @greek-source-dialogues "lince.resource" {
+ uri "../books/plato-dialogues-volume-2.epub"
+ title "The Dialogues of Plato, volume II"
+ hash "9f2d10db68a84f82f32385efa8606ed6824f7cd06018c748955b53d74a12e3cf"
+ media_type "application/epub+zip"
+ aliases ["gutenberg:76464"]
+ attribution "Plato; translated into English with analyses and introductions by Benjamin Jowett. Macmillan, 1892. Project Gutenberg ebook 76464. Retained 2026-10-26."
+ license "Public domain in the USA; historical edition. Original publication and Project Gutenberg notices retained in the EPUB."
+}

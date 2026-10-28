@@ -427,7 +427,7 @@ impl<'a, H: Host> Evaluator<'a, H> {
                     let namespace: String = serde_json::from_str(&extension.namespace.0)
                         .map_err(|error| self.error(0, error.to_string()))?;
                     self.declarations.insert(
-                        format!("extension:{}:{namespace}", extension.target.slug.0),
+                        format!("extension:{}:{namespace}", extension.target.value()),
                         declaration.clone(),
                     );
                 }

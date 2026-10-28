@@ -1,0 +1,21 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Phaedo-Cary.lingua"
+Import "../questions/Comparative-investigation.lingua"
+Import "../schools/Epicurus.lingua"
+Import "Republic.lingua"
+
+Phaedo: soul, death, and the examination of a proof (@greek-phaedo: 0, is #chapter, #part-of @greek-plato-aristotle, #source @phaedo, #philosophy @greek-comparative-inquiry, #ancient-greek-philosophy @greek-comparative-inquiry, #philosophy @greek-epicurus, #ancient-greek-philosophy @greek-epicurus, #philosophy @greek-republic, #ancient-greek-philosophy @greek-republic) { r_6JFZZP5W43FY7FFQENQNH96AFQ
+**Read:** [Phaedo, translated by Henry Cary](../sources/Phaedo-Cary.lingua#r_00000000000000000000001008). First follow the setting of Socrates' last day and the arguments from opposites and recollection. Read the objections of Simmias and Cebes and the responses before judging the case. Complete the dialogue to relate the arguments to its account of Socrates' death.
+
+**Preparation:** [the trial and examined life](../socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4); [Meno](../socratic/Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN) supports the recollection argument. [Parmenides](../presocratics/Parmenides.lingua#r_7HVRAJY7AF3178NEH1N8BF9NPV) is optional depth for thinking about being and intelligibility.
+
+An argument for survival after death and an account of what makes philosophy a good way to live need to be assessed separately, even when the dialogue connects them. Identify what soul means in each argument and whether the conclusion establishes existence before birth, existence after death, or a stronger claim of immortality.
+
+**Practice:** compare the account of recollection here with the geometrical episode in Meno. Does one argument supply a premise the other lacks? Then reconstruct either the harmony objection or the weaver-and-cloak objection in a form a defender of the soul would recognise.
+
+**Check:** state an argument, an objection, and the response with passage references. Explain whether the response resolves the original problem or changes what must be defended. A moving narrative is relevant to interpretation without replacing the examination of the reasons.
+
+**Continue:** [Republic on appearance and understanding](Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5), [Epicurus on death](../schools/Epicurus.lingua#r_6KHZKEFRKY1J18Z7TSRAJABZQP), or [compare the arguments](../questions/Comparative-investigation.lingua#r_20BK69Q76HJXAGZ5J1T097X29G). **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Another crossing:** read the discussion of Anaxagoras and causes with [the earlier account of mixture and mind](../presocratics/Anaxagoras.lingua#r_2KMHNE6TG1NF6X3Q4SXMBHGWXN) and [Aristotle's kinds of explanation](../aristotle/Nature-causes-and-being.lingua#r_2MGDMPK353BD8MFMFDMA3JPJ9P).
+} r_6JFZZP5W43FY7FFQENQNH96AFQ

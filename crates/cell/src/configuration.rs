@@ -13,6 +13,7 @@ pub struct Contact {
 #[derive(Clone, Debug)]
 pub struct Configuration {
     pub organ_uid: String,
+    pub language: String,
     pub name: String,
     pub address: String,
     pub discovery: Value,
@@ -55,6 +56,10 @@ impl CellRuntime {
             .peer_port;
         Ok(Configuration {
             organ_uid: organ.uid,
+            language: store::config::get(&self.store.pool)
+                .await
+                .map_err(io::Error::other)?
+                .map_or_else(|| "en".into(), |configuration| configuration.language),
             name: organ.head,
             address: organ.body,
             discovery,

@@ -15,6 +15,7 @@ use smithay::{
 };
 
 pub(super) struct Lock {
+    revision: u64,
     state: SessionLockManagerState,
     pub(super) owner: Option<ExtSessionLockV1>,
     confirmation: Option<SessionLocker>,
@@ -24,6 +25,7 @@ pub(super) struct Lock {
 impl Lock {
     pub(super) fn new(handle: &DisplayHandle) -> Self {
         Self {
+            revision: 0,
             state: SessionLockManagerState::new::<State, _>(handle, |_| true),
             owner: None,
             confirmation: None,
@@ -33,6 +35,11 @@ impl Lock {
 }
 
 impl Server {
+    #[cfg(feature = "session")]
+    pub(crate) fn lock_stamp(&self) -> u64 {
+        self.state.lock.revision
+    }
+
     pub fn locked(&self) -> bool {
         self.state.lock.owner.is_some()
     }
@@ -125,13 +132,18 @@ impl SessionLockHandler for State {
         if self.lock.owner.is_some() {
             return;
         }
+        self.lock.revision = self.lock.revision.checked_add(1).expect("session lock generation exhausted");
         self.lock.owner = Some(confirmation.ext_session_lock().clone());
+        self.control.locked(true);
         self.lock.confirmation = Some(confirmation);
         self.stop_capture();
         self.authority.clear();
         self.activations.clear();
+        self.activation.retain_tokens(|_, _| false);
+        self.input_epoch = self.input_epoch.saturating_add(1);
         self.invalidate_workspace_requests();
         self.drag_icon = None;
+        self.drag_origin = None;
         self.dragging = false;
         self.popups.grab = None;
         self.popups.root = None;
@@ -156,6 +168,8 @@ impl SessionLockHandler for State {
     }
 
     fn unlock(&mut self) {
+        self.lock.revision = self.lock.revision.checked_add(1).expect("session lock generation exhausted");
+        self.control.locked(false);
         self.lock.owner = None;
         self.lock.confirmation = None;
         self.lock.surfaces.clear();

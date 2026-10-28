@@ -6,7 +6,9 @@ use sqlx::{Row, Sqlite, SqliteConnection, SqlitePool, Transaction};
 use crate::StoreError;
 
 mod projection;
-pub use projection::{Adjustment, Terms, adjustments, adjustments_on, status, terms, validate_link};
+pub use projection::{
+    Adjustment, Terms, adjustments, adjustments_on, status, terms, validate_link,
+};
 
 fn invalid(value: impl ToString) -> StoreError {
     StoreError::Protocol(value.to_string())

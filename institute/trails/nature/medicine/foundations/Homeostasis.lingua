@@ -1,0 +1,23 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "Body-systems.lingua"
+Import "Chemistry-and-fluids.lingua"
+Import "Reading-from-zero.lingua"
+
+Homeostasis — regulation and changing demands (@med-homeostasis: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #medicine @med-body-systems) { r_1P1X68BT5R9BMY5DC8NQ0NZPVA
+**Read a named section completely:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Homeostasis in the introductory chapter, including feedback examples. Revisit the cell-membrane and transport material in chapter 3. These are returns within the complete chapters 1–4 assigned by [Begin medicine from zero — a substantial reading progression](Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50). Explain one example before adding a new example from the shoulder.
+
+Homeostasis/homeostase describes regulation of the internal environment within viable limits. It is an active process rather than a state of perfect stillness. Receptors detect a change, control processes integrate information, and effectors alter activity. Negative feedback reduces a deviation; positive feedback amplifies a process in a suitable context, as during parts of blood clotting.
+
+Temperature, fluid balance, blood glucose, and acid-base conditions are regulated through interacting systems. A reference range describes observations in a defined setting; it is not a universal dividing line between healthy and ill. Exercise changes oxygen demand, circulation, heat production, and neural control without every change being a disease.
+
+In a shoulder muscle, contraction depends on energy supply, calcium regulation, and nerve activation. A mechanical description therefore has physiological dependencies.
+
+**Work through one example:** warming during activity changes heat production, skin circulation, sweating, and behavior. Identify the regulated variable and each response. At a smaller scale, a muscle fiber controls ion movement across membranes and uses ATP during activation and relaxation. Return to [Chemistry for a living body — water, molecules, ions, and energy](Chemistry-and-fluids.lingua#r_3QGS68JVNCQ89FNB287Z9TXTAT) when the words ion, membrane, or energy are doing unexplained work in your account.
+
+**Try:** diagram one feedback loop, name the variable being regulated, and distinguish a sensor from an effector. Explain why a greater demand can be met by a normal regulatory response, while a similar-looking change in another context can require investigation.
+
+**Continue:** [A map of body systems and medical specialties](Body-systems.lingua#r_3NS6TR2CZKMK44CCKD13MDPMHA).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_1P1X68BT5R9BMY5DC8NQ0NZPVA

@@ -51,22 +51,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Read pinned Rust version
         id: toolchain
-        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.toolchain.outputs.version }}
-      - name: Install native dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            pkg-config clang libclang-dev libfontconfig-dev libpipewire-0.3-dev \
-            libdbus-1-dev libglib2.0-dev libpulse-dev libspeechd-dev libva-dev \
-            libssl-dev libsqlite3-dev libasound2-dev libwayland-dev libxkbcommon-dev \
-            libx11-dev libxcb1-dev libxrandr-dev libxi-dev libxcursor-dev \
-            libgl1-mesa-dev libegl1-mesa-dev libvulkan-dev libgbm-dev libdrm-dev \
-            libudev-dev libinput-dev libseat-dev
+      - uses: cachix/install-nix-action@v31
       - name: Compiler and protocol checks
-        run: cargo xtask park ci
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            pkg-config --atleast-version=0.4.0 libdisplay-info
+            pkg-config --modversion libdisplay-info
+            cargo xtask park ci
+          '
       - name: Record graphics acceptance limits
         run: |
           printf '%s\n' 'Nested GPU/capture smoke: NOT RUN on this hosted job; no active hardware-backed Wayland session is provisioned.' >> "$GITHUB_STEP_SUMMARY"

@@ -392,7 +392,9 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect::<Vec<_>>();
     for owner in owners {
-        if crate::native::laboratory::blocked(world, owner) { continue; }
+        if crate::native::laboratory::blocked(world, owner) {
+            continue;
+        }
         if world.get::<Watch>(owner).is_none() {
             start_watch(world, owner);
         }

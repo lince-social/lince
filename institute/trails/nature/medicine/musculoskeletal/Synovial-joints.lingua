@@ -1,0 +1,20 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "Muscle-and-contraction.lingua"
+Import "Musculoskeletal-system.lingua"
+
+Joints — cartilage, capsule, synovium, and bursae (@msk-joints: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #medicine @msk-muscle, #orthopedics @msk-muscle) { r_4GZFM70631CM2Z5838PJ2X7BJE
+**Read a complete chapter:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 9 on joint classifications, synovial structures, body movements, selected joint anatomy, and development, with its illustrations and review questions. For later shoulder questions, the focused returns are Synovial Joints, Rotation within Types of Body Movements, and Shoulder Joint within Anatomy of Selected Synovial Joints.
+
+An articulation/articulação is a connection between skeletal elements. Fibrous, cartilaginous, and synovial joints differ in structure. A typical synovial joint has articular surfaces, a cavity, an enclosing fibrous capsule, and a synovial lining associated with joint fluid. The synovial membrane/membrana sinovial does not simply cover the articular cartilage.
+
+The capsule/cápsula and its associated ligaments help contain and guide motion. Synovial fluid/líquido sinovial contributes to lubrication and tissue nutrition. Bursae/bursas or bolsas sinoviais reduce friction between selected moving structures; they are not all compartments of the joint cavity. A tendon sheath/bainha tendínea is another specialized arrangement.
+
+A joint's permitted motion depends on surface geometry, surrounding tissues, muscle forces, and control. Mobility and stability are related design questions rather than opposite scores measured by one structure.
+
+**Try:** annotate a synovial joint diagram and locate its capsule, cartilage, lining, fluid, and a nearby bursa. Distinguish tissue edema from a joint effusion.
+
+**Continue:** [Muscle — from sarcomeres to useful force](Muscle-and-contraction.lingua#r_1YRYRC0SFMQW85VT1WTSN1N89D).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4GZFM70631CM2Z5838PJ2X7BJE

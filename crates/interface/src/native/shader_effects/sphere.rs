@@ -34,6 +34,8 @@ pub(super) fn install(app: &mut App) {
                 PostUpdate,
                 update
                     .in_set(super::PlaceSpatialEffects)
+                    .after(crate::native::topology::presentation::synchronize)
+                    .before(bevy::camera::CameraUpdateSystems)
                     .before(bevy::transform::TransformSystems::Propagate),
             );
     }
@@ -159,12 +161,18 @@ fn update(world: &mut World) {
             let mesh = world.resource::<Geometry>().0.clone();
             let material = world
                 .resource_mut::<Assets<SphereMaterial>>()
-                .add(SphereMaterial { image });
+                .add(SphereMaterial {
+                    image: image.clone(),
+                });
             world
                 .spawn((
                     Mesh3d(mesh),
                     MeshMaterial3d(material.clone()),
                     SphereEffect { owner, material },
+                    shader::extent::SurfaceConsumer {
+                        image: image.clone(),
+                        surface: owner,
+                    },
                     RecordSphere(record),
                     Transform::default(),
                     Visibility::Hidden,
@@ -173,6 +181,25 @@ fn update(world: &mut World) {
                 ))
                 .id()
         };
+        let material = world.get::<SphereEffect>(entity).unwrap().material.clone();
+        if world
+            .resource::<Assets<SphereMaterial>>()
+            .get(&material)
+            .is_some_and(|material| material.image != image)
+        {
+            world
+                .resource_mut::<Assets<SphereMaterial>>()
+                .get_mut(&material)
+                .unwrap()
+                .image = image.clone();
+        }
+        let consumer = shader::extent::SurfaceConsumer {
+            image,
+            surface: owner,
+        };
+        if world.get::<shader::extent::SurfaceConsumer>(entity) != Some(&consumer) {
+            world.entity_mut(entity).insert(consumer);
+        }
         let position = crate::native::topology::position(world, owner).unwrap_or(DVec3::ZERO)
             - crate::native::topology::presentation::origin(world, root);
         let rotation = crate::native::topology::spatial(world, record)

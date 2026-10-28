@@ -1,0 +1,23 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "Chemistry-and-fluids.lingua"
+Import "Homeostasis.lingua"
+
+Cells, tissues, organs, and extracellular material (@med-tissues: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #source @med-source-histology, #medicine @med-homeostasis) { r_55X7R8B6AC36G6R6XXPGBF0EQ9
+**Read complete chapters:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 3 on cells and chapter 4 on tissues, including figures and review questions. Revisit [Chemistry for a living body — water, molecules, ions, and energy](Chemistry-and-fluids.lingua#r_3QGS68JVNCQ89FNB287Z9TXTAT) for a molecular term. For Portuguese parallel study, read the complete epithelial and connective tissue chapters in [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS), then its muscle and nervous tissue chapters as those structures are developed. Later returns to an individual tissue use smaller passages.
+
+Cells maintain boundaries, exchange material, use energy, and respond to signals. Their organization and the material between them help determine what a tissue can do. Extracellular matrix/matriz extracelular includes structural proteins and a surrounding hydrated material; tissue is not simply a collection of identical cells.
+
+Four broad tissue families recur throughout medicine: epithelium/epitélio covers and lines surfaces; connective tissue/tecido conjuntivo supports, connects, and transports; muscle/tecido muscular generates force; nervous tissue/tecido nervoso processes and transmits signals. An organ usually combines several families. A tendon contains living cells, matrix, vessels, and nerves; it is not an inert rope.
+
+A microscope section is a prepared slice. Color, magnification, stain, and cutting direction influence what is visible. A dark band in one preparation cannot be interpreted like a dark band in an MRI.
+
+**A bridge into microscopic images:** first locate cell membrane, nucleus, and extracellular space on a labeled illustration. Then distinguish an epithelial surface from a connective-tissue region beneath it. An organized collagen-rich tendon section and a cartilage section have different cells and matrix. This progression explains why a whole-joint image cannot show every microscopic process and why a microscopic change alone cannot describe the person's movement.
+
+**Try:** draw a joint at three scales: the whole region, one tissue, and cells within that tissue. Identify what a gross anatomy image cannot show and what a microscope image cannot explain about whole-body movement.
+
+**Continue:** [Homeostasis — regulation and changing demands](Homeostasis.lingua#r_1P1X68BT5R9BMY5DC8NQ0NZPVA).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_55X7R8B6AC36G6R6XXPGBF0EQ9

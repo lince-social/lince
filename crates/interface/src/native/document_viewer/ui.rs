@@ -47,6 +47,7 @@ pub(super) enum Control {
     Create,
     Open,
     Browse,
+    KeepOffline,
     Previous,
     Next,
     Mode,
@@ -82,6 +83,50 @@ impl Action for Control {
         };
         let (viewport, input, section_input) = (view.viewport, view.input, view.section_input);
         match self {
+            Self::KeepOffline => {
+                let Some(worker) = world.get_resource::<worker::Worker>() else {
+                    return;
+                };
+                let sender = worker.reply_sender.clone();
+                let document = world.get::<DocumentViewer>(owner).unwrap().clone();
+                let path = document.path.clone();
+                let resource = document.resource.or_else(|| {
+                    lince_resources::address(&document.path).ok().map(|uri| {
+                        lince_resources::Resource {
+                            uri: uri.to_string(),
+                            media_type: if view.info.as_ref().is_some_and(|info| info.is_pdf) {
+                                "application/pdf"
+                            } else {
+                                "application/epub+zip"
+                            }
+                            .into(),
+                            ..default()
+                        }
+                    })
+                });
+                let Some(resource) = resource else {
+                    status(world, owner, "Choose a source to keep offline");
+                    return;
+                };
+                let wake = world
+                    .get_resource::<crate::native::wake::WakeSignal>()
+                    .cloned();
+                status(world, owner, "Keeping the complete source offline…");
+                std::thread::spawn(move || {
+                    let result = engine::sources::library()
+                        .map_err(|error| error.to_string())
+                        .and_then(|library| library.fetch(&resource))
+                        .map(|entry| entry.path.to_string_lossy().into_owned());
+                    let _ = sender.send(worker::Reply::Retained {
+                        owner,
+                        path,
+                        result,
+                    });
+                    if let Some(wake) = wake {
+                        wake.ring();
+                    }
+                });
+            }
             Self::Open => {
                 let path = world
                     .get::<EditableText>(input)
@@ -194,7 +239,9 @@ pub(super) fn open(world: &mut World, owner: Entity, path: String) {
         status(world, owner, "Choose a PDF or EPUB file");
         return;
     }
-    let path = if std::path::Path::new(&path).is_relative() {
+    let online =
+        lince_resources::address(&path).is_ok_and(|uri| matches!(uri.scheme(), "http" | "https"));
+    let path = if !online && std::path::Path::new(&path).is_relative() {
         std::env::current_dir()
             .map(|directory| directory.join(&path).to_string_lossy().into_owned())
             .unwrap_or(path)
@@ -205,10 +252,16 @@ pub(super) fn open(world: &mut World, owner: Entity, path: String) {
         return;
     };
     state.path = path.clone();
+    state.resource = online.then(|| lince_resources::Resource {
+        uri: path.clone(),
+        title: path.clone(),
+        ..Default::default()
+    });
     let mut view = world.get_mut::<View>(owner).unwrap();
     view.epoch = view.epoch.wrapping_add(1);
     view.restore = true;
     view.failed = false;
+    view.retention = None;
     let input = view.input;
     world
         .get_mut::<EditableText>(input)

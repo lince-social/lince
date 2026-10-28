@@ -1,0 +1,13 @@
+Import "../Sources.lingua"
+
+Find and assess medical literature — English and Portuguese (@med-source-literature: 0, is #reference, #part-of @medicine-sources) { r_1DPBVZC8XSXFB29AYMFDR8FC8S
+National Library of Medicine, PubMed and PubMed Central; SciELO Network; BIREME, DeCS. Literature-discovery resources.
+
+[Authorized source](https://pubmed.ncbi.nlm.nih.gov/).
+
+PubMed indexes citations; [PubMed Central](https://pmc.ncbi.nlm.nih.gov/) provides an archive of free full text. [SciELO](https://scielo.org/) supports access to research including Portuguese-language medicine. Search a defined question with synonyms and descriptors, then assess the actual study rather than the search ranking. This is selective consultation, not continuous import of entire external collections.
+
+**Access and reuse:** Article licences vary. The [PMC Open Access Subset](https://pmc.ncbi.nlm.nih.gov/tools/openftlist/) identifies material with reuse terms; being in PMC does not itself grant unrestricted reuse. Use an article's own copyright and component notices. No journal archive is copied into the trail.
+
+**Return:** [Medicine sources — books, anatomy, and clinical evidence](../Sources.lingua#r_2411E1397ZNK740CDA309B881D) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_1DPBVZC8XSXFB29AYMFDR8FC8S

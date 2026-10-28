@@ -1,12 +1,12 @@
 mod catalogue;
 pub mod components;
+mod isolation;
+pub mod showoff;
 mod stress;
 mod workspace;
-pub mod showoff;
-mod isolation;
-pub use isolation::{blocked, temporary_owner};
 pub(crate) use isolation::{LaboratoryOwner, OwnerAccess};
-pub(crate) use isolation::{source as owner_source, reserved as reserved_source};
+pub use isolation::{blocked, temporary_owner};
+pub(crate) use isolation::{reserved as reserved_source, source as owner_source};
 
 pub use catalogue::catalogue;
 pub use stress::{Measurement, StressConfig, StressReport};
@@ -232,7 +232,7 @@ pub use headless::{HeadlessReport, run_headless};
 
 mod tests;
 
-pub(crate) fn isolate(world: &mut bevy::prelude::World) {
+pub fn isolate(world: &mut bevy::prelude::World) {
     world.insert_resource(crate::native::notifications::Notifications::new(
         cell::Diagnostics::default(),
     ));

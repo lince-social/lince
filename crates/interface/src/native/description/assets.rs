@@ -291,9 +291,12 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     );
                     if let Some(input) = editable_input(world, entity, &record, &source) {
                         let embedded = world.get::<Children>(entity).unwrap()[0];
+                        let controls = world
+                            .get::<crate::native::embedded_media::Media>(embedded)
+                            .map_or(embedded, |media| media.controls);
                         super::button(
                             world,
-                            embedded,
+                            controls,
                             embedded,
                             "Edit drawing…",
                             crate::native::drawing::EditDescriptionDrawing { input, reference },

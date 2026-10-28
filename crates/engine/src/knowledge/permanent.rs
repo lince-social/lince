@@ -203,11 +203,6 @@ impl Engine {
             let saved = store::knowledge::payload_on(&mut tx, &record_uid).await?;
             let entry = json!({"record_uid":record_uid,"item":item,"mappings":relevant,"definitions":definitions.into_values().collect::<Vec<_>>(),"baseline":baseline,"previous_payload":saved.as_ref().map(|saved|store::knowledge::fingerprint(saved.to_string().as_bytes()))});
             total_bytes += serde_json::to_vec(&entry)?.len();
-            if total_bytes > store::knowledge::BUNDLE_LIMIT {
-                return Err(invalid(
-                    "Save at most 16 MiB of knowledge and dependencies together",
-                ));
-            }
             entries.push(entry);
         }
         let review = nucleus::new_uid("kp");

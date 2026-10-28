@@ -68,14 +68,53 @@ fn material(world: &World, root: Entity, workspace: u64, minimum: DVec2) -> Grou
     }
 }
 
+pub(super) fn refresh_material(world: &mut World, entity: Entity, key: Key) {
+    let definition = material(world, key.0, key.1, key.minimum());
+    if let Some(handle) = world
+        .get::<MeshMaterial3d<GroundMaterial>>(entity)
+        .map(|h| h.0.clone())
+        && let Some(mut assets) = world.get_resource_mut::<Assets<GroundMaterial>>()
+        && assets.get(&handle) != Some(&definition)
+        && let Some(mut material) = assets.get_mut(&handle)
+    {
+        *material = definition;
+    }
+}
+
 fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
+    if tile.clipping.as_ref().is_some_and(Vec::is_empty) {
+        return None;
+    }
+    let view = world
+        .get::<crate::native::workspace::Workspaces>(key.0)?
+        .active;
+    let origin = super::super::presentation::origin(world, key.0);
+    visual_in(
+        world,
+        key,
+        &tile.heights,
+        tile.depth,
+        tile.clipping.is_some(),
+        origin,
+        view,
+    )
+}
+
+pub(super) fn visual_in(
+    world: &mut World,
+    key: Key,
+    heights: &[f64],
+    depth: usize,
+    clipped: bool,
+    origin: DVec3,
+    view: u64,
+) -> Option<Entity> {
     if !world.contains_resource::<Assets<Mesh>>()
         || !world.contains_resource::<Assets<GroundMaterial>>()
     {
         return None;
     }
-    let origin = super::super::presentation::origin(world, key.0);
-    let positions: Vec<_> = vertices(key, &tile.heights)
+    let positions: Vec<_> = vertices(key, heights)
         .iter()
         .map(|p| {
             (*p - DVec3::new(key.minimum().x, 0.0, key.minimum().y))
@@ -92,9 +131,9 @@ fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
             let right = (x + 1).min(GRID);
             let back = z.saturating_sub(1);
             let front = (z + 1).min(GRID);
-            let dx = (tile.heights[z * stride + right] - tile.heights[z * stride + left])
+            let dx = (heights[z * stride + right] - heights[z * stride + left])
                 / ((right - left) as f64 * TILE_SIZE / GRID as f64);
-            let dz = (tile.heights[front * stride + x] - tile.heights[back * stride + x])
+            let dz = (heights[front * stride + x] - heights[back * stride + x])
                 / ((front - back) as f64 * TILE_SIZE / GRID as f64);
             normals.push(
                 Vec3::new(-dx as f32, 1.0, -dz as f32)
@@ -109,10 +148,7 @@ fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
     }
     let mut positions = positions;
     let mut indices: Vec<u32> = triangles().into_iter().flatten().collect();
-    if tile.clipping.as_ref().is_some_and(Vec::is_empty) {
-        return None;
-    }
-    if tile.clipping.is_some() {
+    if clipped {
         let old = positions;
         let old_normals = normals;
         positions = Vec::new();
@@ -123,7 +159,8 @@ fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
             let points = triangle.map(|i| Vec3::from_array(old[i as usize]));
             let flat = points.map(|p| DVec2::new(f64::from(p.x), f64::from(p.z)) + key.minimum());
             let denominator = (flat[1] - flat[0]).perp_dot(flat[2] - flat[0]);
-            for polygon in super::super::holes::pieces(world, key.0, key.1, flat.to_vec()) {
+            for polygon in super::super::holes::pieces_in(world, key.0, view, key.1, flat.to_vec())
+            {
                 for index in 1..polygon.len().saturating_sub(1) {
                     for point in [polygon[0], polygon[index], polygon[index + 1]] {
                         let u = (point - flat[0]).perp_dot(flat[2] - flat[0]) / denominator;
@@ -168,8 +205,7 @@ fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
                 Mesh3d(mesh),
                 MeshMaterial3d(handle),
                 Transform::from_translation(
-                    (DVec3::new(key.minimum().x, -(tile.depth as f64) * 0.2, key.minimum().y)
-                        - origin)
+                    (DVec3::new(key.minimum().x, -(depth as f64) * 0.2, key.minimum().y) - origin)
                         .as_vec3(),
                 ),
                 Visibility::Visible,
@@ -219,10 +255,29 @@ pub fn draw(world: &mut World) {
     let mut terrain = world.remove_resource::<Terrain>().unwrap();
     let collisions = std::mem::take(&mut terrain.tiles);
     terrain.tiles = std::mem::take(&mut terrain.render_tiles);
+    let views = world
+        .get_resource::<super::super::previews::Previews>()
+        .map(|views| views.0.clone())
+        .unwrap_or_default();
     let previews: HashMap<_, _> = world
-        .query::<(Entity, &Preview)>()
+        .query::<(
+            Entity,
+            &Effect,
+            Option<&Preview>,
+            &ChildOf,
+            &crate::native::workspace::WorkspaceMember,
+        )>()
         .iter(world)
-        .map(|(e, p)| (e, p.0.clone()))
+        .filter(|(_, _, preview, parent, member)| {
+            preview.is_some()
+                || views.iter().any(|view| {
+                    view.root == parent.parent()
+                        && super::super::holes::live_in(world, view.root, view.workspace, member.0)
+                })
+        })
+        .map(|(e, effect, preview, _, _)| {
+            (e, preview.map_or_else(|| effect.0.clone(), |p| p.0.clone()))
+        })
         .collect();
     let physical_fields = if previews.is_empty() {
         None
@@ -363,22 +418,13 @@ pub fn draw(world: &mut World) {
                             .get_mut::<Visibility>(entity)
                             .unwrap()
                             .set_if_neq(Visibility::Visible);
-                        let definition = material(world, root, workspace, key.minimum());
-                        if let Some(handle) = world
-                            .get::<MeshMaterial3d<GroundMaterial>>(entity)
-                            .map(|h| h.0.clone())
-                            && let Some(mut assets) =
-                                world.get_resource_mut::<Assets<GroundMaterial>>()
-                            && assets.get(&handle) != Some(&definition)
-                            && let Some(mut material) = assets.get_mut(&handle)
-                        {
-                            *material = definition;
-                        }
+                        refresh_material(world, entity, key);
                     }
                 }
             }
         }
     }
+    super::overview::draw(world, &mut terrain);
     for tile in terrain.tiles.values() {
         if let Some(entity) = tile.visual
             && !visible.contains(&entity)

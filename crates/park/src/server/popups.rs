@@ -237,6 +237,10 @@ impl State {
                             } else {
                                 output.usable.unwrap_or(output.bounds)
                             };
+                            let Some(area) = self.visible_output_rectangle(output.id).and_then(|visible| visible.intersection(area)) else {
+                                self.reject_popup(popup);
+                                return false;
+                            };
                             let scale = std::array::from_fn::<_, 2, _>(|axis| {
                                 item.mapping.canvas.size()[axis] / item.mapping.surface.size()[axis]
                             });
@@ -273,12 +277,20 @@ impl State {
                 .and_then(|id| self.outputs.get(id))
             {
                 let layer = self.layers.surfaces.get(&root).unwrap();
-                let map = smithay::desktop::layer_map_for_output(&output.output);
-                if let Some(geometry) = map.layer_geometry(layer) {
+                let geometry = smithay::desktop::layer_map_for_output(&output.output).layer_geometry(layer);
+                if let Some(geometry) = geometry {
                     bounds = Rectangle::new(
                         (-geometry.loc.x, -geometry.loc.y).into(),
                         super::outputs::logical_size(&output.output).unwrap(),
                     );
+                    if let Some(visible) = self.layers.outputs.get(&root).and_then(|id| self.visible_output_rectangle(*id)) {
+                        let origin = output.output.current_location();
+                        bounds = Rectangle::new(
+                            ((visible.origin()[0] - f64::from(origin.x) - f64::from(geometry.loc.x)).floor() as i32,
+                                (visible.origin()[1] - f64::from(origin.y) - f64::from(geometry.loc.y)).floor() as i32).into(),
+                            (visible.size()[0].ceil().max(1.0) as i32, visible.size()[1].ceil().max(1.0) as i32).into(),
+                        );
+                    }
                 }
             }
             bounds.loc -= offset;
@@ -355,6 +367,7 @@ impl State {
         }
         self.popups.root = Some(root);
         self.popups.grab = Some(grab);
+        self.refresh_control_input();
     }
 
     pub(super) fn popup_snapshots(&self, root: &WlSurface) -> Vec<PopupSnapshot> {

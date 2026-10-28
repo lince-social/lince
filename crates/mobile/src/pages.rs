@@ -11,6 +11,10 @@ use lince_interface::{
 use serde_json::Value;
 
 pub fn render(world: &mut World, parent: Entity, page: Page) {
+    if crate::transport::active(world) {
+        crate::transport::render(world, parent);
+        return;
+    }
     match page {
         Page::Transfers | Page::Transfer(_) | Page::Trust(_, _) => {
             crate::workflows::render(world, parent)

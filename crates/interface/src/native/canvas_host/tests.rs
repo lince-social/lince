@@ -24,6 +24,52 @@ pub(super) fn fixture() -> (App, Entity) {
 }
 
 #[test]
+fn ephemeral_canvas_decorations_do_not_become_authored_placements_or_hide_committed_previews() {
+    let (mut app, root) = fixture();
+    let target = crate::native::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::EditableText,
+        "Committed item",
+        DVec2::ZERO,
+    );
+    let before = capture(app.world_mut(), root).unwrap();
+    app.world_mut()
+        .entity_mut(target)
+        .insert(crate::native::canvas::ItemPreview(CanvasItem {
+            position: DVec2::new(150.0, 250.0),
+            size: Vec2::new(300.0, 400.0),
+        }));
+    let decoration = app
+        .world_mut()
+        .spawn((
+            CanvasItem {
+                position: DVec2::new(400.0, 500.0),
+                size: Vec2::splat(96.0),
+            },
+            WorkspaceMember(1),
+            ChildOf(root),
+            crate::native::canvas_item::Ephemeral,
+        ))
+        .id();
+    let ghost = crate::native::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        SandKind::EditableText,
+        "Temporary copy",
+        DVec2::new(600.0, 700.0),
+    );
+    app.world_mut()
+        .entity_mut(ghost)
+        .insert(crate::native::canvas_item::Ephemeral);
+    assert_eq!(capture(app.world_mut(), root).unwrap(), before);
+    assert!(app.world().get::<Identity>(decoration).is_none());
+    assert!(app.world().get::<Identity>(ghost).is_none());
+}
+
+#[test]
 fn malformed_native_groups_reject_before_changing_widgets() {
     let (mut app, root) = fixture();
     let entity = crate::native::sand_store::spawn_sand(
@@ -388,6 +434,8 @@ fn video_castle_keeps_signal_playback_and_geometry_across_canvas_reload() {
         file: false,
         paused: false,
         position_ms: 0,
+        resource: None,
+        muted: false,
     };
     crate::native::video_castle::restore(app.world_mut(), entity, settings.clone());
     let saved = capture(app.world_mut(), root).unwrap();
@@ -416,6 +464,8 @@ fn video_castle_keeps_paused_file_position_and_rejects_invalid_state_before_spaw
         file: true,
         paused: true,
         position_ms: 4321,
+        resource: None,
+        muted: false,
     };
     let component = ContentKind::Native {
         kind: "video".into(),

@@ -481,8 +481,10 @@ async fn transport_presets_use_saved_addresses_and_reject_invalid_terms_without_
             form.data["invitees"] = json!([passenger]);
             form.data["promises"][0]["item"]["transport"] = json!({"activity":if activity == "Ride" {"ride"} else {"delivery"},"direction":direction,"origin":endpoints[0],"destination":endpoints[1],"count":2,"capacity":2});
             let now = nucleus::execution::now();
-            form.data["promises"][0]["window_start"] = json!((now - chrono::Duration::minutes(5)).to_rfc3339());
-            form.data["promises"][0]["window_end"] = json!((now + chrono::Duration::minutes(30)).to_rfc3339());
+            form.data["promises"][0]["window_start"] =
+                json!((now - chrono::Duration::minutes(5)).to_rfc3339());
+            form.data["promises"][0]["window_end"] =
+                json!((now + chrono::Duration::minutes(30)).to_rfc3339());
             model::bind_preset(&mut form);
             engine.set_signer(owner_key.clone()).await.unwrap();
             for (path, invalid) in [
@@ -600,18 +602,30 @@ async fn hidden_transport_address_refuses_a_valid_draft_without_leaking_its_name
     let (owner, key) = actor(&engine, "Address reader").await;
     let (passenger, _) = actor(&engine, "Other party").await;
     let endpoint = record(&engine, "Secret Street4", nucleus::RecordKind::Plain, 0.0).await;
-    engine
-        .act(
-            Backend::SetPlace {
-                target: endpoint.clone(),
-                lat: -23.5,
-                lon: -46.6,
-                address: Some("Secret Street4".into()),
-            },
-            None,
-        )
-        .await
-        .unwrap();
+    let destination = record(
+        &engine,
+        "Public destination",
+        nucleus::RecordKind::Plain,
+        0.0,
+    )
+    .await;
+    for (target, address, latitude) in [
+        (endpoint.clone(), "Secret Street4", -23.5),
+        (destination.clone(), "Public destination", -23.6),
+    ] {
+        engine
+            .act(
+                Backend::SetPlace {
+                    target,
+                    lat: latitude,
+                    lon: -46.6,
+                    address: Some(address.into()),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
     let role = store::auth::ensure_role(&engine.store.pool, "Transport composer")
         .await
         .unwrap();
@@ -636,10 +650,12 @@ async fn hidden_transport_address_refuses_a_valid_draft_without_leaking_its_name
     let mut form = preset(&owner, "Ride");
     form.data["invitees"] = json!([passenger]);
     form.data["promises"][0]["item"]["transport"]["origin"] = json!(endpoint);
-    form.data["promises"][0]["item"]["transport"]["destination"] = json!(endpoint);
+    form.data["promises"][0]["item"]["transport"]["destination"] = json!(destination);
     let now = nucleus::execution::now();
-    form.data["promises"][0]["window_start"] = json!((now - chrono::Duration::minutes(5)).to_rfc3339());
-    form.data["promises"][0]["window_end"] = json!((now + chrono::Duration::minutes(30)).to_rfc3339());
+    form.data["promises"][0]["window_start"] =
+        json!((now - chrono::Duration::minutes(5)).to_rfc3339());
+    form.data["promises"][0]["window_end"] =
+        json!((now + chrono::Duration::minutes(30)).to_rfc3339());
     model::bind_preset(&mut form);
     let before: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM transfer")
         .fetch_one(&engine.store.pool)

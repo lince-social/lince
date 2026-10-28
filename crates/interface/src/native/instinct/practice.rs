@@ -9,7 +9,7 @@ use bevy::{
     prelude::*,
 };
 use lince_interface::practice::{
-    Effect, LESSONS, LearningProgress, Lesson, Mode, Observation, Operation, Phase, Runner,
+    Effect, LearningProgress, Lesson, Mode, Observation, Operation, Phase, Runner, lessons,
 };
 use std::{
     collections::HashMap,
@@ -416,23 +416,12 @@ pub(crate) struct StartPage {
 }
 
 fn lesson(slug: &str) -> Option<(&'static Lesson, usize)> {
-    let requested = match slug {
-        "learn-areas-of-influence" | "areas-of-influence" => Some((1, 0)),
-        "area-forces" => Some((1, 1)),
-        "protein-presentation" => Some((2, 2)),
-        _ => LESSONS
-            .iter()
-            .position(|lesson| lesson.subject == slug)
-            .map(|index| (index, 0)),
-    };
-    requested
-        .map(|(index, step)| (&LESSONS[index], step))
-        .or_else(|| {
-            lince_interface::handbook::READING
-                .iter()
-                .find(|lesson| lesson.subject == slug)
-                .map(|lesson| (lesson, 0))
-        })
+    let (subject, step) = lince_interface::content::start(slug).unwrap_or((slug, 0));
+    lessons()
+        .iter()
+        .chain(lince_interface::handbook::reading())
+        .find(|lesson| lesson.subject == subject && step < lesson.steps.len())
+        .map(|lesson| (lesson, step))
 }
 
 pub(super) fn root(world: &World, mut owner: Entity) -> Option<Entity> {
@@ -1936,10 +1925,10 @@ fn render(world: &mut World, root: Entity) {
     crate::native::description::button(world, footer, root, "Next", Command::Next);
     crate::native::description::button(world, footer, root, "Skip", Command::Skip);
     if phase == Phase::Complete
-        && let Some(index) = lince_interface::handbook::PAGES
+        && let Some(index) = lince_interface::handbook::pages()
             .iter()
             .position(|page| page.slug == subject || page.reference == Some(subject))
-        && let Some(page) = lince_interface::handbook::PAGES.get(index + 1)
+        && let Some(page) = lince_interface::handbook::pages().get(index + 1)
     {
         let title = world
             .resource::<Content>()
@@ -1972,7 +1961,7 @@ fn render(world: &mut World, root: Entity) {
     let mut node = world.get_mut::<Node>(pages).unwrap();
     node.height = Val::Auto;
     node.max_height = px(120);
-    for page in lince_interface::handbook::PAGES {
+    for page in lince_interface::handbook::pages() {
         let title = world
             .resource::<Content>()
             .0

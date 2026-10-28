@@ -440,8 +440,13 @@ fn database_effect(effect: &store::misc::EffectRow) -> bool {
                 | Action::SetQuantityExact { .. }
                 | Action::SetIdentity { .. }
                 | Action::AssertRecord { .. }
+                | Action::RetractAssertion { .. }
                 | Action::RetractRecord { .. })
         ),
+        "consequence" if serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()).is_ok_and(|consequence|match consequence{
+            Consequence::RunAction{action}=>serde_json::from_str::<Action>(&action).is_ok_and(|action|matches!(action,Action::CaptureEntry{..}|Action::SetQuantityExact{..}|Action::SetIdentity{..}|Action::AssertRecord{..}|Action::RetractRecord{..}|Action::RetractAssertion{..})),
+            _=>false,
+        })=>true,
         "consequence" => matches!(
             serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()),
             Ok(Consequence::SetConcept { .. }

@@ -38,6 +38,7 @@ pub mod grammar {
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum TitleWord {
+        Import(#[rust_sitter::leaf(text = "Import", transform = |v| v.to_string())] String),
         Rules(#[rust_sitter::leaf(text = "Rules", transform = |v| v.to_string())] String),
         Rule(#[rust_sitter::leaf(text = "Rule", transform = |v| v.to_string())] String),
         Title(#[rust_sitter::leaf(text = "title", transform = |v| v.to_string())] String),
@@ -70,7 +71,8 @@ pub mod grammar {
         }
         fn value(&self) -> &str {
             match self {
-                Self::Rules(value)
+                Self::Import(value)
+                | Self::Rules(value)
                 | Self::Rule(value)
                 | Self::Title(value)
                 | Self::Quantity(value)
@@ -137,12 +139,100 @@ pub mod grammar {
     );
 
     #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct Reference {
+    pub struct LocalReference {
         #[rust_sitter::leaf(text = "@")]
         _at: (),
         pub slug: Name,
     }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum Reference {
+        Local(LocalReference),
+        Uri(Text),
+    }
     impl Reference {
+        pub fn new(slug: String) -> Self {
+            Self::Local(LocalReference {
+                _at: (),
+                slug: Name(slug),
+            })
+        }
+        pub fn uri(uri: String) -> Self {
+            Self::Uri(Text(uri))
+        }
+        pub fn value(&self) -> &str {
+            match self {
+                Self::Local(value) => &value.slug.0,
+                Self::Uri(value) => &value.0,
+            }
+        }
+        pub fn is_uri(&self) -> bool {
+            matches!(self, Self::Uri(_))
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Import {
+        pub target: ImportTarget,
+        pub locations: Option<ImportLocations>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ImportTarget {
+        Uri(ImportUri),
+        Local(ImportId),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ImportUri(
+        #[rust_sitter::leaf(pattern = r#"Import[ \t]+\"([^\"\\]|\\.)*\""#, transform = |v| serde_json::from_str(v.trim_start_matches("Import").trim()).expect("quoted import address"))]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ImportId(
+        #[rust_sitter::leaf(pattern = r"Import[ \t]+@[A-Za-z][A-Za-z0-9._-]*", transform = |v| v.split_once('@').expect("import identity").1.to_owned())]
+        pub String,
+    );
+
+    impl ImportTarget {
+        pub fn value(&self) -> &str {
+            match self {
+                Self::Uri(value) => &value.0,
+                Self::Local(value) => &value.0,
+            }
+        }
+        pub fn is_uri(&self) -> bool {
+            matches!(self, Self::Uri(_))
+        }
+        pub fn uri(value: String) -> Self {
+            Self::Uri(ImportUri(value))
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ImportLocations {
+        #[rust_sitter::leaf(text = "from")]
+        _keyword: (),
+        #[rust_sitter::leaf(text = "[")]
+        _open: (),
+        pub values: Vec<ImportLocation>,
+        #[rust_sitter::leaf(text = "]")]
+        _close: (),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ImportLocation {
+        pub value: Text,
+        pub separator: Option<ImportSeparator>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ImportSeparator {
+        #[rust_sitter::leaf(text = ",")]
+        _comma: (),
+    }
+
+    impl LocalReference {
         pub fn new(slug: String) -> Self {
             Self {
                 _at: (),
@@ -158,6 +248,8 @@ pub mod grammar {
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum Declaration {
+        #[rust_sitter::prec_right(10)]
+        Import(Import),
         Frequency(Frequency),
         Karma(Karma),
         Extension(Extension),

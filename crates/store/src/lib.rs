@@ -1,102 +1,103 @@
-pub mod sand_packages;
 pub mod access_snapshot;
 pub mod action_intents;
+pub mod artifact_deliveries;
 pub mod assertions;
 pub mod auth;
 pub mod backoff;
-pub mod budget;
 pub mod blob_sync;
+pub mod budget;
 pub mod cells;
-pub mod peer_delivery;
+pub mod claim_recipes;
 pub mod communication;
 pub mod concepts;
-pub mod vocabulary;
-pub mod knowledge;
 pub mod config;
+pub mod contact_disclosures;
 pub mod contact_rate;
 pub mod contact_share;
-pub mod contact_disclosures;
-pub mod trust_queries;
-pub mod profile_claims;
-pub mod claim_recipes;
-pub mod identity_roots;
-pub mod evidence_serving;
-pub mod evidence_custody;
-pub mod evidence_forwarding;
+pub mod data_visibility;
 pub mod door;
 pub mod entries;
+pub mod evidence_custody;
+pub mod evidence_forwarding;
+pub mod evidence_serving;
 pub mod exact;
 pub mod executor;
 pub mod facts;
 pub mod frequency;
+pub mod identity_roots;
 pub mod invites;
 pub mod karma;
 pub mod karma_bindings;
+pub mod karma_commands;
+pub mod karma_fields;
+pub mod karma_schedules;
+pub mod karma_stages;
+pub mod knowledge;
 pub mod ledger;
 pub mod linguas;
+pub mod location;
 pub mod logins;
 pub mod mail_left;
 pub mod mailbox;
 pub mod message_content;
 pub mod misc;
-pub mod signal_endpoints;
-pub mod signal_streams;
 pub mod offers;
 pub mod operation_receipts;
-pub mod organs;
 pub mod organ_access;
+pub mod organs;
+pub mod peer_delivery;
 pub mod people;
 pub mod person_roles;
 pub mod places;
-pub mod location;
 pub mod private_contacts;
+pub mod profile_claims;
 pub mod projection;
 pub mod read_filter;
+pub mod receipt_events;
+pub mod receipt_references;
+pub mod receipt_sources;
 pub mod record_changes;
 pub mod record_docs;
 pub mod record_move;
 pub mod record_revisions;
 pub mod records;
 pub mod recurrence;
-pub mod karma_fields;
-pub mod karma_schedules;
-pub mod karma_stages;
-pub mod karma_commands;
 pub mod replica;
 pub mod role_permissions;
 pub mod role_policies;
 pub mod roles;
 pub mod roster;
+pub mod sand_packages;
 pub mod seed;
 pub mod senses;
-pub mod social;
 pub mod session_access;
+pub mod signal_endpoints;
+pub mod signal_streams;
+pub mod simulation_checks;
+pub mod snapshot;
+pub mod social;
+pub mod source_locations;
 pub mod sync_activity;
 pub mod sync_apply;
 pub mod sync_ops;
-pub mod snapshot;
-pub mod simulation_checks;
-pub mod transfer_delivery;
-pub mod transfer_replication;
 pub mod transfer_accounting;
-pub mod transfer_effects;
-pub mod transfer_loans;
-pub mod transfer_balances;
-pub mod transfer_stock;
-pub mod transport;
-pub mod transfer_cancellations;
 pub mod transfer_agreement;
-pub mod transfer_outcomes;
-pub mod transfer_evidence;
-pub mod transfer_receipts;
-pub mod receipt_events;
-pub mod receipt_references;
-pub mod receipt_sources;
-pub mod artifact_deliveries;
+pub mod transfer_balances;
+pub mod transfer_cancellations;
 pub mod transfer_children;
+pub mod transfer_delivery;
+pub mod transfer_effects;
+pub mod transfer_evidence;
+pub mod transfer_loans;
+pub mod transfer_outcomes;
+pub mod transfer_receipts;
+pub mod transfer_replication;
+pub mod transfer_stock;
 pub mod transfers;
+pub mod transport;
+pub mod trust_queries;
 pub mod visibility;
-pub mod data_visibility;
+pub mod vocabulary;
 
 use sqlx::SqlitePool;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -116,14 +117,18 @@ pub async fn write_tx(
 ) -> Result<sqlx::Transaction<'static, sqlx::Sqlite>, StoreError> {
     let mut tx = pool.begin_with("BEGIN IMMEDIATE").await?;
     sqlx::query("UPDATE commit_sequence SET value = value + 1 WHERE id = 1")
-        .execute(&mut *tx).await?;
+        .execute(&mut *tx)
+        .await?;
     Ok(tx)
 }
 
 impl Store {
     pub async fn open_readonly(path: &std::path::Path) -> Result<Store, StoreError> {
         if !path.is_file() {
-            return Err(StoreError::Protocol(format!("Lince database does not exist or is not a file: {}", path.display())));
+            return Err(StoreError::Protocol(format!(
+                "Lince database does not exist or is not a file: {}",
+                path.display()
+            )));
         }
         let options = SqliteConnectOptions::new()
             .filename(path)
@@ -139,15 +144,25 @@ impl Store {
             .await?;
         sqlx::query("BEGIN DEFERRED").execute(&pool).await?;
         let migrations = sqlx::migrate!("./migrations");
-        let applied: Vec<(i64, Vec<u8>, bool)> = sqlx::query_as("SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version")
-            .fetch_all(&pool).await?;
-        if applied.len() != migrations.iter().count() || migrations.iter().zip(&applied).any(|(expected, actual)| {
-            expected.version != actual.0 || expected.checksum.as_ref() != actual.1.as_slice() || !actual.2
-        }) {
+        let applied: Vec<(i64, Vec<u8>, bool)> = sqlx::query_as(
+            "SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version",
+        )
+        .fetch_all(&pool)
+        .await?;
+        if applied.len() != migrations.iter().count()
+            || migrations.iter().zip(&applied).any(|(expected, actual)| {
+                expected.version != actual.0
+                    || expected.checksum.as_ref() != actual.1.as_slice()
+                    || !actual.2
+            })
+        {
             return Err(StoreError::Protocol("The database is not a current, valid Lince database; open it with Lince to initialize or migrate it".into()));
         }
-        let _: i64 = sqlx::query_scalar("SELECT count(*) FROM record WHERE kind = 'organ' AND deleted_at IS NULL")
-            .fetch_one(&pool).await?;
+        let _: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM record WHERE kind = 'organ' AND deleted_at IS NULL",
+        )
+        .fetch_one(&pool)
+        .await?;
         Ok(Store { pool })
     }
 

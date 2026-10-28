@@ -1,0 +1,19 @@
+Import "Imaging.lingua"
+Import "../sources/Laboratory-results.lingua"
+Import "../Medicine.lingua"
+
+Tests — uncertainty, reference ranges, and probability (@med-tests: 0, is #chapter, #part-of @medicine, #source @med-source-labs, #medicine @med-imaging) { r_160H6D6EXD4HH4D9DA4J5CT9N7
+**Read:** [Understanding laboratory results — MedlinePlus](../sources/Laboratory-results.lingua#r_25V23BVCGB9VZ631XN4GZS05SA). Follow the distinction between a result, a reference range, and a diagnosis.
+
+A test addresses a question in a person with a particular background probability of disease. Sensitivity/sensibilidade describes detection among people who have the condition; specificity/especificidade describes correct negative results among those who do not. Positive and negative predictive values depend on the population and setting.
+
+**Worked example:** suppose 100 of 1,000 people have a condition. A hypothetical test with 90% sensitivity identifies 90 of those 100. With 90% specificity, it also gives 90 false positives among the other 900. Only half of its positive results represent the condition. These invented numbers explain reasoning; they describe no actual shoulder test.
+
+A reference interval is not an absolute health boundary. Units, collection conditions, laboratory methods, prior results, symptoms, and the question being investigated affect interpretation. Screening/rastreamento and investigation of a symptomatic problem serve different purposes.
+
+**Try:** repeat the calculation with only 10 affected people in 1,000. Explain why a test result can be accurate as a measurement yet insufficient to establish the proposed diagnosis.
+
+**Continue:** [Imaging — what a picture measures](Imaging.lingua#r_0ZC1MBHSRJSYM72P1DPC44KC0B).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_160H6D6EXD4HH4D9DA4J5CT9N7

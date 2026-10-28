@@ -1,0 +1,25 @@
+Import "../Medicine.lingua"
+Import "../foundations/Inflammation-infection-and-repair.lingua"
+Import "../orthopedics/shoulder/conditions/Pain-near-end-of-rotation.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Rotator-cuff-tears-AAOS.lingua"
+Import "../sources/Soft-tissue-injuries-AAOS.lingua"
+Import "Healing-and-adaptation.lingua"
+Import "Musculoskeletal-system.lingua"
+Import "Nerves-and-blood-supply.lingua"
+
+What injury can mean — tissue continuity, loading, and repair (@msk-injury: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-soft-injury, #source @med-source-osu, #source @med-source-cuff-patient, #medicine @msk-supply, #orthopedics @msk-supply) { r_1K5DMQ5W1K2G12AMBV7X48YYHY
+**Read:** [Sprains, strains, and other soft-tissue injuries — AAOS](../sources/Soft-tissue-injuries-AAOS.lingua#r_4F5FBKPMHNDBKFQXZH9FMXNQJP), the complete introductory account and the sections on acute injuries, sprains, strains, and overuse injuries. Pair it with [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Tissue Injury and Aging in chapter 4 and Bone Repair in chapter 6. Use [Inflammation, infection, and repair are different processes](../foundations/Inflammation-infection-and-repair.lingua#r_4CWKE5QM0EFHK2N3AP2Y6WZMX5) and [Healing, adaptation, and return to activity](Healing-and-adaptation.lingua#r_3XJC6HDDG7SKRW16PM3TX3B5X0) to connect the mechanisms.
+
+Mechanical loading can deform tissue without causing a clinically important injury. Injury can alter fibers, attachments, surfaces, cells, or their environment. A sprain/entorse concerns ligament injury; a strain/distensão concerns muscle or tendon. A contusion/contusão, rupture/ruptura, avulsion/avulsão, and joint dislocation/luxação describe other findings or mechanisms. A familiar everyday word such as 'stretched' leaves the tissue, extent, and clinical significance unresolved.
+
+A sudden event and a developing load-related complaint provide different histories. Tendon pain, inflammation, and a structural tear are different observations or concepts. Persistent symptoms do not establish that a tissue is repeatedly tearing, while an image can show a structural alteration without identifying the reason for current pain.
+
+For a capsule or ligament, altered continuity and altered restraint are connected but different questions. For cartilage or labrum, identify the exact surface or attachment. For a tendon, name the muscle, location, and degree of continuity before interpreting the finding.
+
+**Try:** turn 'I rotated too far and damaged the joint' into a description of the event, experienced symptoms, possible affected structures, and unanswered questions. State what is observed and what is inferred. The later [Pain near the end of rotation — understand the possibilities](../orthopedics/shoulder/conditions/Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) applies this reasoning without assigning one diagnosis to that sentence.
+
+**Continue:** [A movement system needs nerves and blood supply](Nerves-and-blood-supply.lingua#r_0B7GSTVKPXTQPSTZVF7SPYGPK1).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_1K5DMQ5W1K2G12AMBV7X48YYHY

@@ -412,7 +412,8 @@ fn update(
     >,
 ) {
     subscriptions.retain(|entity, (id, sender)| {
-        (world.get::<WorkTimer>(*entity).is_some() && !crate::native::laboratory::blocked(world, *entity))
+        (world.get::<WorkTimer>(*entity).is_some()
+            && !crate::native::laboratory::blocked(world, *entity))
             || (!sender.is_closed()
                 && sender
                     .try_send(ClientMessage::Unsubscribe { id: id.clone() })

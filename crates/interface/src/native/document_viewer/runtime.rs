@@ -30,6 +30,22 @@ pub(super) fn update(world: &mut World) {
         .collect();
     for reply in replies {
         match reply {
+            worker::Reply::Retained {
+                owner,
+                path,
+                result,
+            } => {
+                if world
+                    .get::<DocumentViewer>(owner)
+                    .is_some_and(|state| state.path == path)
+                    && let Some(mut view) = world.get_mut::<View>(owner)
+                {
+                    view.retention = Some(match result {
+                        Ok(_) => "Available offline".into(),
+                        Err(error) => format!("Offline retention failed: {error}"),
+                    });
+                }
+            }
             worker::Reply::Pick { owner, path } => {
                 if let Some(mut view) = world.get_mut::<View>(owner) {
                     view.picking = false;
@@ -53,7 +69,16 @@ pub(super) fn update(world: &mut World) {
                         view.layout = Some(rendered.layout);
                         let content = view.content;
                         let count = view.info.as_ref().unwrap().sections.len();
+                        let viewport = view.viewport_size;
+                        let pdf = view.info.as_ref().unwrap().is_pdf;
                         let mut state = world.get_mut::<DocumentViewer>(owner).unwrap();
+                        if let Some(mut position) = rendered.position {
+                            let height = rendered.layout.height as f32 * viewport.x
+                                / rendered.layout.width as f32
+                                * if pdf { state.zoom } else { 1.0 };
+                            position.set_offset(position.fraction * height, height, viewport.y);
+                            *state.position_mut() = position;
+                        }
                         if state.position().section >= count {
                             state.position_mut().section = count - 1;
                             continue;
@@ -293,7 +318,7 @@ fn refresh(world: &mut World, owner: Entity) {
     let section = position.section.min(info.sections.len() - 1);
     let noun = if info.is_pdf { "Page" } else { "Chapter" };
     let message = format!(
-        "{} · {noun} {} / {} · {:.0}% in {} · {:.0}% zoom{}",
+        "{} · {noun} {} / {} · {:.0}% in {} · {:.0}% zoom{}{}",
         info.title,
         section + 1,
         info.sections.len(),
@@ -304,7 +329,10 @@ fn refresh(world: &mut World, owner: Entity) {
             ""
         } else {
             " · Rendering…"
-        }
+        },
+        view.retention
+            .as_ref()
+            .map_or(String::new(), |message| format!(" · {message}"))
     );
     status(world, owner, &message);
     if !missing.is_empty() {
@@ -321,6 +349,9 @@ fn request(world: &mut World, owner: Entity, key: worker::Key, tiles: Vec<u32>) 
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
     let requested = tiles.iter().copied().collect();
+    let document = world.get::<DocumentViewer>(owner).unwrap();
+    let resource = document.resource.clone();
+    let locate = !document.positions.contains_key(&document.path);
     match world
         .resource::<worker::Worker>()
         .sender
@@ -328,6 +359,8 @@ fn request(world: &mut World, owner: Entity, key: worker::Key, tiles: Vec<u32>) 
             owner,
             key,
             tiles,
+            resource,
+            locate,
             wake: wake.clone(),
         })) {
         Ok(()) => {

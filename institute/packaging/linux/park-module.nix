@@ -8,12 +8,13 @@ let
     lib.hasPrefix "/" value
     && lib.take 2 parts != [ "nix" "store" ]
     && !(lib.elem ".." parts);
-  session = if cfg.directory == null && cfg.sessionWrapper == [] then cfg.package else pkgs.runCommand "lince-park-session" {
+  session = if !cfg.withUWSM && cfg.directory == null && cfg.sessionWrapper == [] then cfg.package else pkgs.runCommand "lince-park-session" {
     passthru.providedSessions = [ "lince" ];
   } ''
     mkdir -p "$out/bin" "$out/share/wayland-sessions"
     cat > "$out/bin/lince-park-session" <<'LAUNCHER'
     #!${pkgs.runtimeShell}
+    ${lib.optionalString cfg.withUWSM "export LINCE_PARK_UWSM=${lib.escapeShellArg (lib.getExe config.programs.uwsm.package)}"}
     exec ${lib.escapeShellArgs (cfg.sessionWrapper ++ [ "${cfg.package}/bin/lince-park-session" ]
       ++ lib.optionals (cfg.directory != null) [ "--directory" cfg.directory ])} "$@"
     LAUNCHER
@@ -25,6 +26,11 @@ let
 in {
   options.programs.lince-park = {
     enable = lib.mkEnableOption "the Lince Wayland session";
+    withUWSM = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Use the external UWSM session manager for Park startup and cleanup.";
+    };
     package = lib.mkOption {
       type = lib.types.package;
       default = self.packages.${pkgs.stdenv.hostPlatform.system}.lince-park;
@@ -48,7 +54,15 @@ in {
       message = "Lince Park requires Linux.";
     }];
     environment.systemPackages = [ cfg.package ];
-    services.displayManager.sessionPackages = [ session ];
+    services.displayManager.sessionPackages = lib.optionals (!cfg.withUWSM) [ session ];
+    programs.uwsm = lib.mkIf cfg.withUWSM {
+      enable = true;
+      waylandCompositors.lince = {
+        prettyName = "Lince (Park)";
+        comment = "Lince Wayland desktop";
+        binPath = "${session}/bin/lince-park-session";
+      };
+    };
     hardware.graphics.enable = true;
   };
 }

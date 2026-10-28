@@ -208,7 +208,9 @@ fn key(settings: &Settings) -> String {
 }
 
 fn inspection(world: &World, owner: Entity) -> Option<&Inspection> {
-    if crate::native::laboratory::blocked(world, owner) { return None; }
+    if crate::native::laboratory::blocked(world, owner) {
+        return None;
+    }
     let view = world.get::<View>(owner)?;
     world
         .get_resource::<Runtime>()?

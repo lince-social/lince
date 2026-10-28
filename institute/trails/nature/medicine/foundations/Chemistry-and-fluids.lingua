@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "Cells-and-tissues.lingua"
+
+Chemistry for a living body — water, molecules, ions, and energy (@med-chemistry: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #medicine @med-tissues) { r_3QGS68JVNCQ89FNB287Z9TXTAT
+**Read a complete chapter:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 2, The Chemical Level of Organization, with its figures and review questions. The [OpenStax chapter introduction](https://openstax.org/books/anatomy-and-physiology-2e/pages/2-introduction) provides a web entrance to the corresponding 2e material. Then continue to the entire cellular chapter with [Cells, tissues, organs, and extracellular material](Cells-and-tissues.lingua#r_55X7R8B6AC36G6R6XXPGBF0EQ9).
+
+An atom/átomo is a unit of an element; molecules/moléculas combine atoms. Ions/íons carry electrical charge. Bonds and the surrounding water influence how molecules behave. A chemical name is not evidence that a substance is harmful or beneficial at any amount.
+
+Water/água is a major solvent. Dissolved substances, their concentrations, and the membranes separating compartments matter. Diffusion/difusão describes net spreading associated with a concentration gradient; osmosis/osmose concerns water movement through a selectively permeable barrier. Transport and regulation determine the actual behavior in living tissues. Sodium/sódio, potassium/potássio, calcium/cálcio, and other ions contribute to electrical and chemical processes.
+
+Proteins/proteínas include enzymes, receptors, structural material, and the contractile machinery of muscle. Collagen/colágeno is an important structural protein, not a synonym for every connective tissue. Lipids/lipídios participate in membranes and other functions; carbohydrates/carboidratos and other fuels contribute to energy metabolism. ATP couples energy-releasing and energy-requiring processes. Acid-base conditions and pH affect biological reactions.
+
+**Connect the scales:** a capsule contains matrix and cells; a muscle requires membranes, signals, calcium regulation, and energy. These chemical conditions make their mechanical behavior possible. The aim is a working explanation, not memorizing every chemical structure before learning anatomy.
+
+**Try:** explain the difference between calcium in bone mineral and calcium ions participating in muscle activation. Sketch fluid inside cells, between cells, and within vessels. Name the barrier or compartment involved before describing something as 'fluid in the shoulder'.
+
+**Continue:** [Cells, tissues, organs, and extracellular material](Cells-and-tissues.lingua#r_55X7R8B6AC36G6R6XXPGBF0EQ9).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_3QGS68JVNCQ89FNB287Z9TXTAT

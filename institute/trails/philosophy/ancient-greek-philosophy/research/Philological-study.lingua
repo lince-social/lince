@@ -1,0 +1,27 @@
+Import "Research.lingua"
+Import "../sources/Greek-Grammar-Smyth.lingua"
+Import "../sources/Plato-critical-editions.lingua"
+Import "../sources/Metaphysics-Jaeger.lingua"
+Import "../sources/Plotinus-Henry-Schwyzer.lingua"
+Import "Scholarly-inquiry.lingua"
+
+Philological study: defend a reading of the Greek text (@greek-philological-study: 0, is #chapter, #part-of @greek-scholarly-path, #source @greek-source-smyth, #source @greek-source-plato-critical, #source @greek-source-aristotle-critical, #source @greek-source-plotinus-critical, #philosophy @greek-scholarly-literature, #ancient-greek-philosophy @greek-scholarly-literature) { r_353E4E4WH3BWFHHJNZMPKBPEXF
+**Preparation:** start with [the original-language entrance](../languages/Read-original-texts.lingua#r_1Q07KPDNG2JTY7HRWQY5H6T5MJ) and continue until you can analyse the passages your argument uses. [Smyth's grammar](../sources/Greek-Grammar-Smyth.lingua#r_1HWQDW2XAJNQAXTWS9P0QT57DG) supplies a substantial reference beyond the introductory textbook. The required ability concerns reading and defending selected Greek, with appropriate aids, rather than claiming unaided fluency in the entire corpus.
+
+Choose a coherent argumentative passage, an identified [critical Greek edition of Plato](../sources/Plato-critical-editions.lingua#r_28N1ADM4R3DAG5K2898WPKRXCK) or [Aristotle](../sources/Metaphysics-Jaeger.lingua#r_2MJF84NGSE83J9KWD3B8KBNPZ1), and two identified translations where useful. For Plotinus, use [the corresponding critical edition](../sources/Plotinus-Henry-Schwyzer.lingua#r_3EYTA95ETXPPZFHSN5RJ5Q5EM4). Read the passage within its full argument before extracting a sentence.
+
+**Produce a textual dossier:**
+
+1. Identify work, edition, editor, passage, and the citation system: Stephanus, Bekker, treatise/chapter/section, or the source collection's own numbering.
+2. Supply your translation and analyse the syntax, important word senses, connections, and scope of claims. Explain the grammatical choices your interpretation depends on.
+3. Compare translations and distinguish lexical, syntactic, and philosophical differences.
+4. Read the relevant apparatus entries and editorial signs. If a textual variant affects your argument, explain the competing readings and why the adopted text matters. If the argument does not turn on a variant, explain what you checked.
+5. Identify the quoted passage's transmitting author or dramatic setting, and distinguish direct text from testimony and editorial reconstruction.
+6. State the limits of the evidence and the aids used.
+
+Manuscript collation and palaeography become preparation when a project depends on a claim about witnesses; the first dossier can work with a responsibly used published critical apparatus. A dictionary gloss or an automated translation does not by itself defend the syntax or interpretation.
+
+**Check:** a reader competent in the selected text can challenge the translation and trace your response to the Greek and edition. Revise the dossier after criticism. Apply it within an [advanced seminar](seminars/Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y) and the [research project](Independent-research.lingua#r_08YBJ1G76KSJ3QTG42FKCCAV5K).
+
+**Return:** [Research progression](Research.lingua#r_434NMA510XG7R81DAAG64PZX09) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_353E4E4WH3BWFHHJNZMPKBPEXF

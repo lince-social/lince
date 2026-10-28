@@ -1,0 +1,22 @@
+Import "Seminars.lingua"
+Import "../../sources/Enneads-MacKenna-Page.lingua"
+Import "../../sources/Plotinus-Henry-Schwyzer.lingua"
+Import "../../sources/Plotinus-Gerson.lingua"
+Import "../Independent-research.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: unity, intellect, soul, and later Greek reception (@greek-seminar-late-platonism: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-enneads, #source @greek-source-plotinus-critical, #source @greek-source-plotinus-modern, #philosophy @greek-independent-research, #ancient-greek-philosophy @greek-independent-research, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_1CGS6HJE7MYDP4WEZG2GYYR769
+**Preparation:** [the first Plotinus reading](../../schools/Plotinus.lingua#r_375WTA2HXW04F1FC4FVW20B9N9), the relevant Platonic or Aristotelian problem, and Greek textual analysis.
+
+**Primary corpus:** read the complete connected treatises in [the Enneads](../../sources/Enneads-MacKenna-Page.lingua#r_1Q1GRWKVQMEPBGQH3V7WR9RQP8) needed for the question. A route can begin with I.6, V.1, V.5, and VI.9, using [Henry and Schwyzer's Greek edition](../../sources/Plotinus-Henry-Schwyzer.lingua#r_3EYTA95ETXPPZFHSN5RJ5Q5EM4) and identifying the corresponding translation. Treat the arrangement of the Enneads and a claim about development or chronology as questions requiring their own evidence.
+
+Use [Gerson's monograph](../../sources/Plotinus-Gerson.lingua#r_170Z1XNEHXR1V514CP6AEC0NXB) to enter the scholarly debate, then identify current competing interpretations. The introductory essay on beauty is preparation for this depth rather than a substitute for reading the relevant treatises.
+
+**Choose a dispute:** what an argument about unity establishes; how intellect and its objects are related; how the account connects soul, body, and activity; or how a philosophical ascent differs from a description of a temporal process.
+
+**Required work:** trace the argument across treatises, analyse a disputed Greek passage, distinguish textual evidence from a reconstructed system, and defend a contribution against an informed alternative.
+
+A reception project can follow a precisely identified Platonic argument into Plotinus, or examine Porphyry's introduction to Aristotle through the [Organon edition](../../sources/Organon.lingua#r_2EF6CZDKWTG5TQNGR0VQ3XXR9C). A further Greek, Latin, or Arabic receiving text needs its own edition, relevant language preparation, and a demonstrated link. The crossing serves a bounded question; following that question can reuse Records from other routes.
+
+**Review:** [Common seminar standard](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). **Continue:** [Independent research](../Independent-research.lingua#r_08YBJ1G76KSJ3QTG42FKCCAV5K). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_1CGS6HJE7MYDP4WEZG2GYYR769

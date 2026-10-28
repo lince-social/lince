@@ -1,0 +1,23 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Posterior-capsule-strain-study.lingua"
+Import "../Shoulder.lingua"
+Import "../anatomy/Capsule-and-labrum.lingua"
+Import "../anatomy/Ligaments.lingua"
+Import "Stability-and-load.lingua"
+
+Rotation and restraint — why position changes the capsule question (@shoulder-capsular-mechanics: 0, is #chapter, #part-of @shoulder, #source @med-source-joint, #source @med-source-capsule-study, #medicine @shoulder-stability, #orthopedics @shoulder-stability, #shoulder @shoulder-stability) { r_2PW98DPTH66WTKFMPAX35775WE
+**Read narrow anatomical passages:** in [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), the descriptions of the capsule, glenohumeral ligaments, coracohumeral ligament, and rotator interval. Revisit [Shoulder ligaments — which structures do they connect?](../anatomy/Ligaments.lingua#r_5GPKY72JMMZR8K7KPQB707S44E) and [The capsule, synovium, cartilage, and labrum](../anatomy/Capsule-and-labrum.lingua#r_7CBF6AK860P70ZD4YES5EY36JS). This is a focused return to structures already learned, not a first reading of the whole anatomy chapter.
+
+Rotation changes the relative positions of the humerus, glenoid, capsule, tendons, and neighboring structures. Capsular regions and ligamentous structures participate differently as arm position changes. Passive tissues, active muscle forces, and articular relationships together influence restraint. The capsule is a continuous three-dimensional structure, not a single isolated strap.
+
+A movement range can be influenced by anatomy, tissue properties, muscle activity, the measurement method, and symptoms. A limitation cannot automatically be assigned to one tight capsule region; an apparently large range does not establish injury or symptomatic instability. There is no universal rotation angle that separates a healthy shoulder from a damaged one.
+
+**Later evidence reading:** [Posterior shoulder tissue strain — Borstad and Dashottar](../../../sources/Posterior-capsule-strain-study.lingua#r_6XDNYGV5BX07M2TJYPE3XSR8AJ), Abstract, Methods, Results, and the final limitations discussion, measured posterior tissue strain under controlled cadaver conditions. The relation between movement position and measured strain is an experimental question; identifying a painful tissue in a living person is another. The study's older specimens, preparation, fixed scapula, and measurement method restrict what can be inferred.
+
+**Try:** compare two diagrams with the same amount of rotation but different arm elevation. List what else changed. Explain why an experiment measuring capsule strain cannot tell you whether your pain proves a ligament tear or prescribe how far to stretch.
+
+**Continue:** [Shoulder stability, muscle coordination, and load](Stability-and-load.lingua#r_603S03SRMHDYMCNCKR5MG3EBC9).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2PW98DPTH66WTKFMPAX35775WE

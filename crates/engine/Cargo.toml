@@ -13,6 +13,8 @@ instinct = []
 trust-test-hooks = []
 
 [dependencies]
+lince-practice.workspace = true
+lince-resources = { workspace = true, features = ["publication"] }
 ailuros-protocol = { package = "lince-ailuros-protocol", path = "../ailuros/protocol" }
 futures = { workspace = true }
 tokio-tungstenite = { version = "=0.30.0", features = ["rustls-tls-webpki-roots"] }
@@ -65,8 +67,6 @@ rustix = { version = "=1.1.4", features = ["fs", "process", "time"] }
 
 [build-dependencies]
 sensei = { workspace = true }
-anicca = { workspace = true }
-lince-practice.workspace = true
 
 [lints]
 workspace = true

@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "Levers-and-loading.lingua"
+Import "Musculoskeletal-system.lingua"
+
+Muscle — from sarcomeres to useful force (@msk-muscle: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-histology, #medicine @msk-loading, #orthopedics @msk-loading) { r_1YRYRC0SFMQW85VT1WTSN1N89D
+**Read a complete physiological chapter:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 10, including contraction, energy supply, force production, muscle types, and adaptation. Pair it with the full skeletal-muscle account in [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS). Chapter 11 then applies these processes to named muscles and actions.
+
+Skeletal muscle/músculo estriado esquelético contains fibers with contractile machinery organized into sarcomeres. Neural activation, calcium regulation, ATP availability, and the interaction of contractile proteins contribute to force generation. Muscle size and strength are related but do not describe the same thing.
+
+A motor unit/unidade motora includes a motor neuron and the muscle fibers it supplies. Recruitment and firing patterns influence force. Isometric/isométrica describes force with approximately unchanged muscle length; concentric/concêntrica and eccentric/excêntrica describe active shortening and lengthening. An actively lengthening muscle can be working hard.
+
+Muscle attachments and the path of a tendon influence a joint moment. The same muscle can help move and stabilize a joint, and its effect changes with position and the task. 'Agonist' and 'antagonist' describe a relationship during an action rather than a permanent moral division of muscles.
+
+**Try:** explain how lowering an object can require active muscle force. Connect the cellular explanation to the external load and distinguish fatigue from a structural tear.
+
+**Continue:** [Levers, force, stress, and loading](Levers-and-loading.lingua#r_11PBB06GFW5E3JY12EVAWF6YJN).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_1YRYRC0SFMQW85VT1WTSN1N89D

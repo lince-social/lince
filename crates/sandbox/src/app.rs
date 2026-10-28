@@ -11,6 +11,8 @@ pub fn run_native_interface(
     laboratory: Option<cell::fiote::laboratory::Options>,
     showoff: bool,
 ) -> std::io::Result<()> {
+    tokio::runtime::Handle::current()
+        .block_on(lince_interface::native::app::initialize_language(&runtime))?;
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
@@ -106,6 +108,29 @@ fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
     } else {
         crate::wake::from_proxy(app.world().resource::<bevy::winit::EventLoopProxyWrapper>())
     };
-    app.insert_resource(wake);
+    app.insert_resource(wake)
+        .add_systems(Update, file_drag_support);
     app
+}
+
+fn file_drag_support(
+    mut commands: Commands,
+    handles: Query<
+        &bevy::window::RawHandleWrapper,
+        (
+            With<bevy::window::PrimaryWindow>,
+            Added<bevy::window::RawHandleWrapper>,
+        ),
+    >,
+) {
+    for handle in &handles {
+        let unavailable = matches!(
+            handle.get_window_handle(),
+            raw_window_handle::RawWindowHandle::Wayland(_)
+        );
+        commands.insert_resource(lince_interface::host::FileDragSupport {
+            available: !unavailable,
+            reason: unavailable.then(|| "This window host cannot provide file-drag events in Wayland Sandbox. File-hover activation is available in Park; item dragging and edge scrolling remain available here.".into()),
+        });
+    }
 }

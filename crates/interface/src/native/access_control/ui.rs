@@ -1,4 +1,5 @@
 use super::*;
+use crate::i18n::Token as Tr;
 use crate::native::{
     actions::{Action, ActionButton},
     edit_mode::label,
@@ -601,13 +602,25 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
                 }
             },
         );
-    label(world, sand, "Access Control", 22.0);
-    label(world, sand, "Local Organ · owner connection", 14.0);
+    label(world, sand, Tr::AccessControl.text(), 22.0);
+    label(world, sand, Tr::LocalOwner.text(), 14.0);
     let tabs = row(world, sand);
-    button(world, tabs, sand, "Users", Command::Tab(Tab::Users));
-    button(world, tabs, sand, "Roles", Command::Tab(Tab::Roles));
-    button(world, tabs, sand, "Refresh", Command::Refresh);
-    let status = label(world, sand, "Loading users and Roles…", 14.0);
+    button(
+        world,
+        tabs,
+        sand,
+        Tr::Users.text(),
+        Command::Tab(Tab::Users),
+    );
+    button(
+        world,
+        tabs,
+        sand,
+        Tr::Roles.text(),
+        Command::Tab(Tab::Roles),
+    );
+    button(world, tabs, sand, Tr::Refresh.text(), Command::Refresh);
+    let status = label(world, sand, Tr::LoadingUsers.text(), 14.0);
     let list = column(world, sand);
     let editor = column(world, sand);
     world.entity_mut(sand).insert(AccessControlSand {
@@ -647,7 +660,11 @@ pub(super) fn list(world: &mut World, owner: Entity) {
         heading,
         &format!(
             "{} ({})",
-            if tab == Tab::Users { "Users" } else { "Roles" },
+            if tab == Tab::Users {
+                Tr::Users.text()
+            } else {
+                Tr::Roles.text()
+            },
             rows.len()
         ),
         18.0,
@@ -698,7 +715,13 @@ pub(super) fn list(world: &mut World, owner: Entity) {
     if rows.len() > 8 {
         let controls = row(world, parent);
         if page > 0 {
-            button(world, controls, owner, "Previous", Command::Page(false));
+            button(
+                world,
+                controls,
+                owner,
+                Tr::Previous.text(),
+                Command::Page(false),
+            );
         }
         label(
             world,
@@ -707,7 +730,7 @@ pub(super) fn list(world: &mut World, owner: Entity) {
             14.0,
         );
         if (page + 1) * 8 < rows.len() {
-            button(world, controls, owner, "Next", Command::Page(true));
+            button(world, controls, owner, Tr::Next.text(), Command::Page(true));
         }
     }
     if tab == Tab::Roles && selected.is_some() {
@@ -776,7 +799,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         let username = input(
             world,
             parent,
-            "Username",
+            Tr::Username.text(),
             entry
                 .and_then(|e| e["username"].as_str())
                 .unwrap_or_default(),
@@ -785,7 +808,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         let name = input(
             world,
             parent,
-            "Name",
+            Tr::Name.text(),
             entry.and_then(|e| e["name"].as_str()).unwrap_or_default(),
             500,
         );
@@ -793,9 +816,9 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             world,
             parent,
             if entry.is_some() {
-                "New password · leave blank to keep it"
+                Tr::NewPassword.text()
             } else {
-                "Password"
+                Tr::Password.text()
             },
             "",
             1024,
@@ -877,9 +900,9 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
                 controls,
                 owner,
                 if entry.is_some() {
-                    "Save user details"
+                    Tr::SaveUser.text()
                 } else {
-                    "Create user"
+                    Tr::CreateUser.text()
                 },
                 Command::SaveUser,
             );
@@ -965,10 +988,16 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
                 world,
                 controls,
                 owner,
-                "Delete Role",
+                Tr::DeleteRole.text(),
                 Command::ConfirmDeleteRole,
             );
-            button(world, controls, owner, "Cancel", Command::CancelDeleteRole);
+            button(
+                world,
+                controls,
+                owner,
+                Tr::Cancel.text(),
+                Command::CancelDeleteRole,
+            );
             let permissions = column(world, parent);
             world.entity_mut(owner).insert((
                 RoleForm(field),
@@ -1169,12 +1198,15 @@ fn edit_grant(world: &mut World, owner: Entity, command: &Command) {
                 .to_owned();
             let target = value(world, *target).unwrap_or_default().trim().to_owned();
             if !nucleus::valid_uid(&predicate_uid, "c")
-                || (!target.is_empty() && target != "*" && !nucleus::valid_uid(&target, "r"))
+                || (!target.is_empty()
+                    && target != "*"
+                    && !nucleus::valid_uid(&target, "r")
+                    && !lince_resources::reference::is_uri(&target))
             {
                 status(
                     world,
                     owner,
-                    "Use a Concept UID and an optional Record UID, or * for any readable Record.",
+                    "Use a Concept UID and an optional Record UID or URL, or * for any readable Record.",
                 );
                 return;
             }
@@ -1185,7 +1217,11 @@ fn edit_grant(world: &mut World, owner: Entity, command: &Command) {
                 } else if target == "*" {
                     protein::authority::AssertionTarget::AnyReadableRecord
                 } else {
-                    protein::authority::AssertionTarget::Record(target)
+                    if lince_resources::reference::is_uri(&target) {
+                        protein::authority::AssertionTarget::Uri(target)
+                    } else {
+                        protein::authority::AssertionTarget::Record(target)
+                    }
                 },
                 role: protein::authority::AssertionRole::Ordinary,
                 properties: Default::default(),
@@ -1358,7 +1394,11 @@ pub(super) fn policy_controls(world: &mut World, owner: Entity) {
                     entry,
                     &format!(
                         "{} {} · {:?} · {:?}",
-                        if remove { "Remove" } else { "Add" },
+                        if remove {
+                            Tr::Remove.text()
+                        } else {
+                            Tr::Add.text()
+                        },
                         rule.predicate_uid,
                         rule.target,
                         rule.role
@@ -1447,10 +1487,16 @@ fn standing_editor(world: &mut World, owner: Entity, parent: Entity, state: Valu
         world,
         controls,
         owner,
-        "Soft-delete user",
+        Tr::DeleteUser.text(),
         Command::ConfirmDelete,
     );
-    button(world, controls, owner, "Cancel", Command::CancelDelete);
+    button(
+        world,
+        controls,
+        owner,
+        Tr::Cancel.text(),
+        Command::CancelDelete,
+    );
     world.entity_mut(owner).insert(StandingEditor {
         parent,
         state,

@@ -1,4 +1,4 @@
-Reservations and Tickets (@simple-reservations: 0, is #trail, #contains @reservation-allocations, #contains @reservation-credits, #contains @reservation-guest, #contains @reservation-host, #contains @reservation-place-time, #contains @reservation-offered, #contains @reservation-committed, #contains @reservation-remaining, #contains @reservation-cinema, #contains @reservation-event, #contains @reservation-restaurant, #contains @reservation-admitted, #contains @reservation-choose, #contains @reservation-reserve, #contains @reservation-attend, #contains @reservation-close, #contains @reservation-examples) {
+Reservations and Tickets (@simple-reservations: 0, is #chapter, #contains @reservation-allocations, #contains @reservation-credits, #contains @reservation-guest, #contains @reservation-host, #contains @reservation-place-time, #contains @reservation-offered, #contains @reservation-committed, #contains @reservation-remaining, #contains @reservation-cinema, #contains @reservation-event, #contains @reservation-restaurant, #contains @reservation-admitted, #contains @reservation-choose, #contains @reservation-reserve, #contains @reservation-attend, #contains @reservation-close, #contains @reservation-examples, #reserving-and-attending @reservation-admitted, #reserving-and-attending @reservation-allocations, #reserving-and-attending @reservation-attend, #reserving-and-attending @reservation-choose, #reserving-and-attending @reservation-cinema, #reserving-and-attending @reservation-close, #reserving-and-attending @reservation-committed, #reserving-and-attending @reservation-credits, #reserving-and-attending @reservation-event, #reserving-and-attending @reservation-examples, #reserving-and-attending @reservation-guest, #reserving-and-attending @reservation-host, #reserving-and-attending @reservation-offered, #reserving-and-attending @reservation-place-time, #reserving-and-attending @reservation-remaining, #reserving-and-attending @reservation-reserve, #reserving-and-attending @reservation-restaurant) {
 Reserve a cinema seat, buy an event ticket, or reserve a restaurant table. Each variant identifies a resource, place and time. The examples use cinema seat B7, one concert admission and a restaurant table for four guests.
 
 These ordinary Records contain editable terms and steps. The transfer-template assertion does not allocate a resource or issue a ticket. Create and link actual Transfers after review. Select one variant for the local availability calculation; its quantities illustrate an allocation and do not enforce atomic reservations or admission redemption.
@@ -6,67 +6,67 @@ These ordinary Records contain editable terms and steps. The transfer-template a
 Cinema and concert allocations belong to a specific performance. Restaurant capacity belongs to a table and occupancy interval: four guests at one table are not four independently available tables. Overlap enforcement and ticket validation must be provided by the executing features before promising exclusivity. Follow Choose, Reserve, Attend and Close.
 }
 
-Reservation allocations (@reservation-allocations: 0, #part-of @simple-reservations, is #unit) {
+Reservation allocations (@reservation-allocations: 0, #part-of @simple-reservations, is #unit, #reserving-and-attending @reservation-credits) {
 One allocation of the selected resource for one occurrence or interval. Use only one variant in the local balance.
 }
 
-Example booking credits (@reservation-credits: 0, #part-of @simple-reservations, is #unit) {
+Example booking credits (@reservation-credits: 0, #part-of @simple-reservations, is #unit, #reserving-and-attending @reservation-guest) {
 Fictional unit for the worked exchanges. Replace with the agreed currency. A free reservation needs no payment contribution.
 }
 
-Guest (@reservation-guest: 0, #part-of @simple-reservations, is #role) {
+Guest (@reservation-guest: 0, #part-of @simple-reservations, is #role, #reserving-and-attending @reservation-host) {
 Choose the actual booking Person and authorized admission recipient. This placeholder grants no authority.
 }
 
-Host (@reservation-host: 0, #part-of @simple-reservations, is #role) {
+Host (@reservation-host: 0, #part-of @simple-reservations, is #role, #reserving-and-attending @reservation-place-time) {
 Choose the venue or organizer and authorized signing Person.
 }
 
-Place and time (@reservation-place-time: 0, #part-of @simple-reservations) {
+Place and time (@reservation-place-time: 0, #part-of @simple-reservations, #reserving-and-attending @reservation-offered) {
 Choose saved venue, actual date, timezone, start and end. For a restaurant also identify party size, table and occupancy interval. Different performances or intervals have different allocations.
 }
 
-Offered allocations (@reservation-offered: 1 @reservation-allocations, #part-of @simple-reservations) {
+Offered allocations (@reservation-offered: 1 @reservation-allocations, #part-of @simple-reservations, #reserving-and-attending @reservation-committed) {
 One selected seat, admission allocation or table interval. Do not sum the three variants together.
 }
 
-Committed allocations (@reservation-committed: 0 @reservation-allocations, #part-of @simple-reservations, #for @reservation-offered) {
+Committed allocations (@reservation-committed: 0 @reservation-allocations, #part-of @simple-reservations, #for @reservation-offered, #reserving-and-attending @reservation-remaining) {
 Record active allocations supported by actual Transfers. A proposal is not a confirmed booking. A consumed admission stays allocated for its occurrence.
 }
 
-Remaining allocations (@reservation-remaining: 1 @reservation-allocations, #part-of @simple-reservations, #for @reservation-offered) {
+Remaining allocations (@reservation-remaining: 1 @reservation-allocations, #part-of @simple-reservations, #for @reservation-offered, #reserving-and-attending @reservation-cinema) {
 Karma sets offered minus committed. Negative exposes conflicting example allocations; arithmetic does not provide reservation locking.
 }
 
-Cinema seat (@reservation-cinema: 20 @reservation-credits, #part-of @simple-reservations, is #transfer-template, #giver @reservation-host, #receiver @reservation-guest, #gives: 1 @reservation-allocations, #return-contribution: 20 @reservation-credits, #during @reservation-place-time) {
+Cinema seat (@reservation-cinema: 20 @reservation-credits, #part-of @simple-reservations, is #transfer-template, #giver @reservation-host, #receiver @reservation-guest, #gives: 1 @reservation-allocations, #return-contribution: 20 @reservation-credits, #during @reservation-place-time, #reserving-and-attending @reservation-event) {
 Transfer terms: host provides guest seat B7 for the selected cinema performance at Place and time; guest provides 20 credits. Identify B7 for that performance as the limited contribution. Review reservation, payment and cancellation terms; never promise that allocation twice.
 }
 
-Event admission (@reservation-event: 15 @reservation-credits, #part-of @simple-reservations, is #transfer-template, #giver @reservation-host, #receiver @reservation-guest, #gives: 1 @reservation-allocations, #return-contribution: 15 @reservation-credits, #during @reservation-place-time) {
+Event admission (@reservation-event: 15 @reservation-credits, #part-of @simple-reservations, is #transfer-template, #giver @reservation-host, #receiver @reservation-guest, #gives: 1 @reservation-allocations, #return-contribution: 15 @reservation-credits, #during @reservation-place-time, #reserving-and-attending @reservation-restaurant) {
 Transfer terms: host provides guest one admission to the selected community concert; guest provides 15 credits. Admission is distinct from a numbered seat. Agree how the host recognizes and redeems it. This example does not generate a redeemable credential or implement a gate scanner.
 }
 
-Restaurant table (@reservation-restaurant: 1 @reservation-allocations, #part-of @simple-reservations, is #transfer-template, #giver @reservation-host, #receiver @reservation-guest, #gives: 1 @reservation-allocations, #party-size: 4, #during @reservation-place-time) {
+Restaurant table (@reservation-restaurant: 1 @reservation-allocations, #part-of @simple-reservations, is #transfer-template, #giver @reservation-host, #receiver @reservation-guest, #gives: 1 @reservation-allocations, #party-size: 4, #during @reservation-place-time, #reserving-and-attending @reservation-admitted) {
 Transfer terms: host reserves table 3 for one party of four during the selected 90-minute interval. No payment is required. Agree arrival grace and cancellation terms. Check overlapping intervals and table suitability; a written time window alone does not enforce either.
 }
 
-Admission used (@reservation-admitted: 0 @reservation-allocations, #part-of @simple-reservations) {
+Admission used (@reservation-admitted: 0 @reservation-allocations, #part-of @simple-reservations, #reserving-and-attending @reservation-choose) {
 Set to one only after confirmed attendance or admission. Payment and reservation alone are not attendance. This local demonstration Record is not a credential validation service.
 }
 
-Choose (@reservation-choose: -1, #part-of @simple-reservations, #next @reservation-reserve) {
+Choose (@reservation-choose: -1, #part-of @simple-reservations, #next @reservation-reserve, #reserving-and-attending @reservation-reserve) {
 1. Select one variant. Identify resource, venue, occurrence or interval and actual Persons. Check available allocation and review cost, arrival requirements, cancellation and refunds.
 }
 
-Reserve (@reservation-reserve: -1, #part-of @simple-reservations, #next @reservation-attend) {
+Reserve (@reservation-reserve: -1, #part-of @simple-reservations, #next @reservation-attend, #reserving-and-attending @reservation-attend) {
 2. Create the ordinary Transfer, obtain agreement and reserve its contribution at the reviewed lifecycle point. Set Committed allocations to one only after success. Complete any payment separately and retain the actual booking reference.
 }
 
-Attend (@reservation-attend: -1, #part-of @simple-reservations, #next @reservation-close) {
+Attend (@reservation-attend: -1, #part-of @simple-reservations, #next @reservation-close, #reserving-and-attending @reservation-close) {
 3. Present the agreed reference. Host checks resource, occurrence, recipient and unused admission before confirming attendance. At a restaurant confirm arrival and actual occupancy. Then set Admission used to one.
 }
 
-Close (@reservation-close: -1, #part-of @simple-reservations) {
+Close (@reservation-close: -1, #part-of @simple-reservations, #reserving-and-attending @reservation-examples) {
 4. Record delivery and receipt and settle fulfilled contributions once. Keep used admissions consumed for that occurrence. Cancellation follows agreed release and refunds; a refund request is not a completed refund. Reuse a table only for a checked available interval.
 }
 
@@ -92,3 +92,8 @@ Karma simple-reservations {
     }
 }
 
+Extension @simple-reservations "lince.vocabulary" {
+    definitions {
+        reserving-and-attending "A connection through capacity, terms, reservation, and attendance."
+    }
+}

@@ -1,12 +1,25 @@
 use super::*;
 use crate::server::{CaptureJob, CaptureTarget, WindowSnapshot};
 use lince_smithay_capture::wayland::image_copy_capture::CaptureFailureReason as Failure;
-use smithay::{backend::renderer::{ExportMem, Frame as _, TextureMapping, gles::GlesMapping}, wayland::shm::with_buffer_contents_mut};
+use smithay::{
+    backend::renderer::{ExportMem, Frame as _, TextureMapping, gles::GlesMapping},
+    wayland::shm::with_buffer_contents_mut,
+};
 use std::collections::VecDeque;
+type Mapping = RasterMapping;
+
+fn capture_transform(rotation: lince_interface::host::mapping::QuarterTurn) -> Transform {
+    use lince_interface::host::mapping::QuarterTurn;
+    match rotation { QuarterTurn::Normal => Transform::Flipped180, QuarterTurn::Clockwise90 => Transform::Flipped90,
+        QuarterTurn::UpsideDown => Transform::Flipped, QuarterTurn::Clockwise270 => Transform::Flipped270 }
+}
 
 pub(crate) fn monotonic() -> Duration {
     let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
-    Duration::new(time.tv_sec.max(0) as u64, time.tv_nsec.clamp(0, 999_999_999) as u32)
+    Duration::new(
+        time.tv_sec.max(0) as u64,
+        time.tv_nsec.clamp(0, 999_999_999) as u32,
+    )
 }
 
 #[derive(Clone)]
@@ -21,28 +34,83 @@ pub(crate) struct Cursor {
 
 impl Cursor {
     pub(super) fn hidden() -> Self {
-        Self { pointer: [0.0; 2], hotspot: [0.0; 2], nodes: Vec::new(), bounds: Rectangle::new([0.0; 2], [1.0; 2]).unwrap(), named: false, visible: false }
+        Self {
+            pointer: [0.0; 2],
+            hotspot: [0.0; 2],
+            nodes: Vec::new(),
+            bounds: Rectangle::new([0.0; 2], [1.0; 2]).unwrap(),
+            named: false,
+            visible: false,
+        }
     }
 
-    pub(super) fn new(status: CursorImageStatus, nodes: Vec<SurfaceNode>, pointer: [f64; 2]) -> Self {
-        if pointer.iter().any(|value| !value.is_finite()) { return Self::hidden(); }
+    pub(super) fn new(
+        status: CursorImageStatus,
+        nodes: Vec<SurfaceNode>,
+        pointer: [f64; 2],
+    ) -> Self {
+        if pointer.iter().any(|value| !value.is_finite()) {
+            return Self::hidden();
+        }
         match status {
             CursorImageStatus::Hidden => Self::hidden(),
-            CursorImageStatus::Named(_) => Self { pointer, hotspot: [0.0; 2], nodes: Vec::new(),
-                bounds: Rectangle::new([0.0; 2], [24.0; 2]).unwrap(), named: true, visible: true },
+            CursorImageStatus::Named(_) => Self {
+                pointer,
+                hotspot: [0.0; 2],
+                nodes: Vec::new(),
+                bounds: Rectangle::new([0.0; 2], [24.0; 2]).unwrap(),
+                named: true,
+                visible: true,
+            },
             CursorImageStatus::Surface(surface) => {
-                let hotspot = with_states(&surface, |states| states.data_map.get::<CursorImageSurfaceData>()
-                    .map(|data| data.lock().unwrap_or_else(|error| error.into_inner()).hotspot).unwrap_or_default());
-                let low: [f64; 2] = std::array::from_fn(|axis| nodes.iter().map(|node| f64::from(node.origin[axis])).fold(f64::INFINITY, f64::min));
-                let high: [f64; 2] = std::array::from_fn(|axis| nodes.iter().map(|node| f64::from(node.origin[axis]) + node.layout.size[axis]).fold(f64::NEG_INFINITY, f64::max));
-                let Some(bounds) = Rectangle::new(low, std::array::from_fn(|axis| high[axis] - low[axis])) else { return Self::hidden() };
-                Self { pointer, hotspot: [f64::from(hotspot.x), f64::from(hotspot.y)], nodes, bounds, named: false, visible: true }
+                let hotspot = with_states(&surface, |states| {
+                    states
+                        .data_map
+                        .get::<CursorImageSurfaceData>()
+                        .map(|data| {
+                            data.lock()
+                                .unwrap_or_else(|error| error.into_inner())
+                                .hotspot
+                        })
+                        .unwrap_or_default()
+                });
+                let low: [f64; 2] = std::array::from_fn(|axis| {
+                    nodes
+                        .iter()
+                        .map(|node| f64::from(node.origin[axis]))
+                        .fold(f64::INFINITY, f64::min)
+                });
+                let high: [f64; 2] = std::array::from_fn(|axis| {
+                    nodes
+                        .iter()
+                        .map(|node| f64::from(node.origin[axis]) + node.layout.size[axis])
+                        .fold(f64::NEG_INFINITY, f64::max)
+                });
+                let Some(bounds) =
+                    Rectangle::new(low, std::array::from_fn(|axis| high[axis] - low[axis]))
+                else {
+                    return Self::hidden();
+                };
+                Self {
+                    pointer,
+                    hotspot: [f64::from(hotspot.x), f64::from(hotspot.y)],
+                    nodes,
+                    bounds,
+                    named: false,
+                    visible: true,
+                }
             }
         }
     }
 
     fn rectangle(&self) -> Rectangle {
-        Rectangle::new(std::array::from_fn(|axis| self.pointer[axis] - self.hotspot[axis] + self.bounds.origin()[axis]), self.bounds.size()).unwrap()
+        Rectangle::new(
+            std::array::from_fn(|axis| {
+                self.pointer[axis] - self.hotspot[axis] + self.bounds.origin()[axis]
+            }),
+            self.bounds.size(),
+        )
+        .unwrap()
     }
 }
 
@@ -58,47 +126,112 @@ impl Desktop {
     fn capture_view(&self, target: CaptureTarget) -> Option<View> {
         let id = match target {
             CaptureTarget::Output(id) => id,
-            CaptureTarget::Window(surface) => self.output_frames.iter().find_map(|(id, (frame, _))|
-                frame.frame.geometry.as_ref()?.items.iter().any(|item| item.output == *id && item.id == ItemId::Application(surface)).then_some(*id))?,
+            CaptureTarget::Window(surface) => {
+                self.output_frames.iter().find_map(|(id, (frame, _))| {
+                    frame
+                        .frame
+                        .geometry
+                        .as_ref()?
+                        .items
+                        .iter()
+                        .any(|item| item.output == *id && item.id == ItemId::Application(surface))
+                        .then_some(*id)
+                })?
+            }
         };
         let (frame, scene) = self.output_frames.get(&id)?;
-        Some(View { id, frame: frame.clone(), scene: scene.clone(), time: self.capture_times.get(&id).copied().unwrap_or_else(monotonic) })
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-struct Mapping { origin: [f64; 2], scale: [f64; 2] }
-
-impl Mapping {
-    fn point(self, point: [f64; 2]) -> [f64; 2] { std::array::from_fn(|axis| (point[axis] - self.origin[axis]) * self.scale[axis]) }
-    fn rectangle(self, rectangle: Rectangle) -> Rect<i32, Physical> {
-        let origin = self.point(rectangle.origin());
-        Rect::new((origin[0].round() as i32, origin[1].round() as i32).into(),
-            ((rectangle.size()[0] * self.scale[0]).round().max(1.0) as i32, (rectangle.size()[1] * self.scale[1]).round().max(1.0) as i32).into())
+        Some(View {
+            id,
+            frame: frame.clone(),
+            scene: scene.clone(),
+            time: self
+                .capture_times
+                .get(&id)
+                .copied()
+                .unwrap_or_else(monotonic),
+        })
     }
 }
 
 enum Source {
-    Output { view: View, bounds: Rectangle, mapping: Mapping },
-    Window { window: WindowSnapshot, bounds: Rectangle, view: Option<View> },
+    Output {
+        view: View,
+        bounds: Rectangle,
+        mapping: Mapping,
+        rotation: lince_interface::host::mapping::QuarterTurn,
+    },
+    Window {
+        window: WindowSnapshot,
+        bounds: Rectangle,
+        view: Option<View>,
+    },
 }
 
 impl Source {
-    fn new(desktop: &Desktop, target: CaptureTarget) -> Option<Self> {
+    fn new(desktop: &Desktop, target: CaptureTarget, job: Option<&CaptureJob>) -> Option<Self> {
         match target {
             CaptureTarget::Output(_) => {
-                let view = desktop.capture_view(target)?;
-                if view.scene.locked { return None; }
-                let output = view.frame.frame.geometry.as_ref()?.outputs.iter().find(|output| output.id == view.id)?;
+                let mut view = desktop.capture_view(target)?;
+                if view.scene.locked {
+                    return None;
+                }
+                if let Some(job) = job {
+                    if job.color_revision.is_some_and(|(output, revision)| output != view.id || view.scene.colors.get(&output).copied().unwrap_or(0) != revision) { return None; }
+                    let same_mapping = match (view.frame.frame.input.mappings.get(view.id), job.output_mapping.as_ref()) {
+                        (Some(current), Some(captured)) => current.same_mapping(captured),
+                        (None, None) => true,
+                        _ => false,
+                    };
+                    if !same_mapping { return None; }
+                    let stamp = view.frame.frame.capture_source()?;
+                    if stamp.revision != job.policy_revision || stamp.mapping_revision != job.mapping_revision || stamp.mappings != job.mappings { return None; }
+                    if !job.cursor && (view.frame.frame.capture_dmabuf(view.id, job.policy_revision, job.mapping_revision).is_none()
+                        || !view.frame.frame.capture_ready(view.id).ok()?) { return None; }
+                }
+                view.scene = filtered_scene(desktop, &view);
+                let output = view
+                    .frame
+                    .frame
+                    .geometry
+                    .as_ref()?
+                    .outputs
+                    .iter()
+                    .find(|output| output.id == view.id)?;
                 let bounds = output.bounds;
-                let mapping = Mapping { origin: bounds.origin(), scale: std::array::from_fn(|axis| f64::from(output.physical_size[axis]) / bounds.size()[axis]) };
-                Some(Self::Output { view, bounds, mapping })
+                let rotation = output.rotation;
+                let mapping = Composition::output_raster(Some(&view.frame.frame), view.id, output.raster_mapping()).ok()?;
+                Some(Self::Output {
+                    view,
+                    bounds,
+                    mapping,
+                    rotation,
+                })
             }
             CaptureTarget::Window(id) => {
-                let window = desktop.server.windows().into_iter().find(|window| window.id == id && window.mapped)?;
+                let current = desktop
+                    .server
+                    .windows()
+                    .into_iter()
+                    .find(|window| window.id == id && window.mapped)?;
+                let window = match job.filter(|job| !job.cursor) {
+                    Some(job) => job.window.as_ref().filter(|window| window.id == id && window.surface == current.surface)?.clone(),
+                    None => current,
+                };
                 let bounds = window.bounds()?;
-                let bounds = Rectangle::new([bounds.loc.x, bounds.loc.y], [bounds.size.w, bounds.size.h])?;
-                Some(Self::Window { window, bounds, view: desktop.capture_view(target) })
+                let bounds =
+                    Rectangle::new([bounds.loc.x, bounds.loc.y], [bounds.size.w, bounds.size.h])?;
+                let mut view = desktop.capture_view(target);
+                if let Some(view) = &mut view {
+                    if let Some(job) = job.filter(|job| job.cursor || job.paint_cursor)
+                        && view.frame.frame.capture_source().is_none_or(|stamp| stamp.revision != job.policy_revision || stamp.mapping_revision != job.mapping_revision || stamp.mappings != job.mappings)
+                    { return None; }
+                    view.scene = filtered_scene(desktop, view);
+                }
+                Some(Self::Window {
+                    window,
+                    bounds,
+                    view,
+                })
             }
         }
     }
@@ -106,18 +239,47 @@ impl Source {
     fn cursor(&self) -> Cursor {
         match self {
             Self::Output { view, .. } => view.scene.cursor.clone(),
-            Self::Window { view, .. } => view.as_ref().map_or_else(Cursor::hidden, |view| view.scene.cursor.clone()),
+            Self::Window { view, .. } => view
+                .as_ref()
+                .map_or_else(Cursor::hidden, |view| view.scene.cursor.clone()),
         }
+    }
+
+    fn painted_cursors(&self) -> Vec<Cursor> {
+        let mut cursors = vec![self.cursor()];
+        let view = match self { Self::Output { view, .. } => Some(view), Self::Window { view, .. } => view.as_ref() };
+        if let Some(view) = view { cursors.extend(view.scene.tablets.iter().filter(|tablet| tablet.output == view.id).map(|tablet| tablet.cursor.clone())); }
+        cursors
     }
 
     fn cursor_mapping(&self) -> Option<(Mapping, Rectangle)> {
         match self {
-            Self::Output { mapping, bounds, .. } => Some((*mapping, *bounds)),
-            Self::Window { window, bounds, view: Some(view) } => {
-                let item = view.frame.frame.geometry.as_ref()?.items.iter().find(|item| item.output == view.id && item.id == ItemId::Application(window.id))?;
-                let scale: [f64; 2] = std::array::from_fn(|axis| bounds.size()[axis].ceil() / item.mapping.canvas.size()[axis]);
-                let origin = std::array::from_fn(|axis| item.mapping.canvas.origin()[axis]
-                    - item.mapping.surface.origin()[axis] * item.mapping.canvas.size()[axis] / item.mapping.surface.size()[axis]);
+            Self::Output {
+                mapping, bounds, ..
+            } => Some((*mapping, *bounds)),
+            Self::Window {
+                window,
+                bounds,
+                view: Some(view),
+            } => {
+                let item = view
+                    .frame
+                    .frame
+                    .geometry
+                    .as_ref()?
+                    .items
+                    .iter()
+                    .find(|item| {
+                        item.output == view.id && item.id == ItemId::Application(window.id)
+                    })?;
+                let scale: [f64; 2] = std::array::from_fn(|axis| {
+                    bounds.size()[axis].ceil() / item.mapping.canvas.size()[axis]
+                });
+                let origin = std::array::from_fn(|axis| {
+                    item.mapping.canvas.origin()[axis]
+                        - item.mapping.surface.origin()[axis] * item.mapping.canvas.size()[axis]
+                            / item.mapping.surface.size()[axis]
+                });
                 Some((Mapping { origin, scale }, item.mapping.canvas))
             }
             Self::Window { view: None, .. } => None,
@@ -126,35 +288,123 @@ impl Source {
 
     fn cursor_info(&self) -> ([i32; 2], Option<[i32; 2]>, [i32; 2]) {
         let cursor = self.cursor();
-        let Some((mapping, _)) = self.cursor_mapping().filter(|(_, bounds)| cursor.visible && intersects(*bounds, cursor.rectangle())) else { return ([1, 1], None, [0, 0]) };
+        let Some((mapping, _)) = self
+            .cursor_mapping()
+            .filter(|(_, bounds)| cursor.visible && intersects(*bounds, cursor.rectangle()))
+        else {
+            return ([1, 1], None, [0, 0]);
+        };
         let point = mapping.point(cursor.pointer);
-        let size = std::array::from_fn(|axis| (cursor.bounds.size()[axis] * mapping.scale[axis]).ceil().max(1.0) as i32);
-        let hotspot = std::array::from_fn(|axis| ((cursor.hotspot[axis] - cursor.bounds.origin()[axis]) * mapping.scale[axis]).round() as i32);
+        let size = std::array::from_fn(|axis| {
+            (cursor.bounds.size()[axis] * mapping.scale[axis])
+                .ceil()
+                .max(1.0) as i32
+        });
+        let hotspot = std::array::from_fn(|axis| {
+            ((cursor.hotspot[axis] - cursor.bounds.origin()[axis]) * mapping.scale[axis]).round()
+                as i32
+        });
         let position = Some(point.map(|axis| axis.round() as i32));
         (size, position, hotspot)
     }
 
     fn nodes(&self, job: &CaptureJob) -> Vec<SurfaceNode> {
         let cursor = self.cursor();
-        if job.cursor { return cursor.nodes; }
+        if job.cursor {
+            return cursor.nodes;
+        }
         let mut nodes: Vec<_> = match self {
-            Self::Output { view, .. } => view.scene.layers.iter().filter(|layer| layer.output == view.id).flat_map(|layer| layer.nodes.iter().cloned())
-                .chain(view.scene.popups.iter().filter(|popup| popup.output == view.id).flat_map(|popup| popup.nodes.iter().cloned()))
-                .chain(view.scene.drag.iter().cloned()).collect(),
-            Self::Window { window, .. } => window.nodes.iter().cloned().chain(window.popups.iter().flat_map(|popup| popup.nodes.iter().cloned())).collect(),
+            Self::Output { view, .. } => view
+                .scene
+                .layers
+                .iter()
+                .filter(|layer| layer.output == view.id)
+                .flat_map(|layer| layer.nodes.iter().cloned())
+                .chain(
+                    view.scene
+                        .popups
+                        .iter()
+                        .filter(|popup| popup.output == view.id)
+                        .flat_map(|popup| popup.nodes.iter().cloned()),
+                )
+                .chain(view.scene.drag.iter().cloned())
+                .collect(),
+            Self::Window { window, .. } => window
+                .nodes
+                .iter()
+                .cloned()
+                .chain(
+                    window
+                        .popups
+                        .iter()
+                        .flat_map(|popup| popup.nodes.iter().cloned()),
+                )
+                .collect(),
         };
-        if job.paint_cursor { nodes.extend(cursor.nodes); }
+        if job.paint_cursor {
+            nodes.extend(cursor.nodes);
+            for cursor in self.painted_cursors().into_iter().skip(1) { nodes.extend(cursor.nodes); }
+        }
         nodes
     }
 
-    fn time(&self) -> Duration { match self { Self::Output { view, .. } => view.time, Self::Window { .. } => monotonic() } }
+    fn time(&self) -> Duration {
+        match self {
+            Self::Output { view, .. } => view.time,
+            Self::Window { .. } => monotonic(),
+        }
+    }
+}
+
+fn filtered_scene(desktop: &Desktop, view: &View) -> Arc<Presented> {
+    let gate = desktop.server.capture_policy_gate();
+    let Some(read) = gate.read() else {
+        let mut scene = (*view.scene).clone();
+        scene.popups.clear();
+        scene.drag.clear();
+        scene.cursor = Cursor::hidden();
+        scene.tablets.clear();
+        return Arc::new(scene);
+    };
+    let Some(policy) = view.frame.frame.capture_source().filter(|capture| capture.revision == read.revision()).map(|capture| &capture.policy).or_else(|| read.policy()) else {
+        if view.scene.tablets.is_empty() { return view.scene.clone(); }
+        let mut scene = (*view.scene).clone();
+        scene.tablets.retain(|tablet| desktop.server.tablet_active(tablet.tool));
+        return Arc::new(scene);
+    };
+    let native_private = view.frame.frame.capture_source().is_none_or(|capture| capture.native_private_focus);
+    let mut scene = (*view.scene).clone();
+    scene.popups.retain(|popup| match popup.owner {
+        PopupOwner::Application(surface) => policy.windows.get(&surface) == Some(&false),
+        PopupOwner::Native => !native_private,
+        PopupOwner::Layer(_) => true,
+    });
+    let public = |owner| match owner {
+        crate::server::CaptureContentOwner::Window(surface) => policy.windows.get(&surface) == Some(&false),
+        crate::server::CaptureContentOwner::Native => !native_private,
+        crate::server::CaptureContentOwner::Layer => true,
+        crate::server::CaptureContentOwner::Unknown => false,
+    };
+    if !public(scene.drag_owner) { scene.drag.clear(); }
+    scene.tablets.retain(|tablet| desktop.server.tablet_active(tablet.tool) && (tablet.cursor.named || public(tablet.owner)));
+    if !scene.cursor.named && !public(scene.pointer_owner) {
+        scene.cursor.nodes.clear();
+        scene.cursor.visible = false;
+    }
+    Arc::new(scene)
 }
 
 fn intersects(a: Rectangle, b: Rectangle) -> bool {
-    (0..2).all(|axis| a.origin()[axis] < b.origin()[axis] + b.size()[axis] && b.origin()[axis] < a.origin()[axis] + a.size()[axis])
+    (0..2).all(|axis| {
+        a.origin()[axis] < b.origin()[axis] + b.size()[axis]
+            && b.origin()[axis] < a.origin()[axis] + a.size()[axis]
+    })
 }
 
-struct Waiting { job: CaptureJob, source: Option<Source> }
+struct Waiting {
+    job: CaptureJob,
+    source: Option<Source>,
+}
 
 struct Readback {
     job: Option<CaptureJob>,
@@ -170,7 +420,9 @@ struct Readback {
 
 impl Drop for Readback {
     fn drop(&mut self) {
-        if !self.sync.is_reached() { let _ = self.sync.wait(); }
+        if !self.sync.is_reached() {
+            let _ = self.sync.wait();
+        }
     }
 }
 
@@ -182,25 +434,59 @@ pub(super) struct Captures {
     paused: bool,
 }
 
+impl Captures {
+    pub(super) fn retain_imports(&self, retained: &mut HashSet<(WlSurface, u64)>) {
+        retained.extend(self.imported.iter().cloned());
+    }
+}
+
 impl Composition {
-    pub(crate) fn capture_timeout(&self) -> Option<Duration> {
-        if self.capture.paused { return None; }
-        if self.capture.readbacks.iter().any(|readback| readback.sync.is_reached()) { return Some(Duration::ZERO); }
-        self.capture.waiting.iter().map(|waiting| waiting.job.deadline)
-            .chain(self.capture.readbacks.iter().filter_map(|readback| readback.job.as_ref().map(|job| job.deadline)))
-            .map(|deadline| deadline.saturating_duration_since(Instant::now())).min()
+    #[cfg(all(test, feature = "server-tests"))]
+    pub(crate) fn capture_test_state(&self) -> [usize; 4] {
+        [self.capture.waiting.len(), self.capture.readbacks.len(),
+            self.capture.readbacks.iter().filter(|readback| !readback.sync.is_reached()).count(),
+            self.capture.readbacks.iter().filter(|readback| readback.job.is_none()).count()]
     }
 
-    pub(crate) fn capture(&mut self, renderer: &mut GlesRenderer, desktop: &mut Desktop, active: bool) -> io::Result<()> {
+    pub(crate) fn capture_timeout(&self) -> Option<Duration> {
+        if self.capture.paused {
+            return None;
+        }
+        if self
+            .capture
+            .readbacks
+            .iter()
+            .any(|readback| readback.sync.is_reached())
+        {
+            return Some(Duration::ZERO);
+        }
+        self.capture
+            .waiting
+            .iter()
+            .map(|waiting| waiting.job.deadline)
+            .chain(
+                self.capture
+                    .readbacks
+                    .iter()
+                    .filter_map(|readback| readback.job.as_ref().map(|job| job.deadline)),
+            )
+            .map(|deadline| deadline.saturating_duration_since(Instant::now()))
+            .min()
+    }
+
+    pub(crate) fn capture(
+        &mut self,
+        renderer: &mut GlesRenderer,
+        desktop: &mut Desktop,
+        active: bool,
+    ) -> io::Result<()> {
         desktop.server.capture_suspend(!active);
-        if !active { self.capture.paused = true; return Ok(()); }
-        if std::mem::take(&mut self.capture.paused) {
-            let deadline = Instant::now() + Duration::from_secs(2);
-            for waiting in &mut self.capture.waiting { waiting.job.deadline = deadline; }
-            for readback in &mut self.capture.readbacks { if let Some(job) = &mut readback.job { job.deadline = deadline; } }
+        self.capture.paused = !active;
+        if !active {
+            return Ok(());
         }
         for target in desktop.server.capture_cursor_targets() {
-            if let Some(source) = Source::new(desktop, target) {
+            if let Some(source) = Source::new(desktop, target, None) {
                 let (size, position, _) = source.cursor_info();
                 desktop.server.capture_cursor(target, size, position);
             }
@@ -208,43 +494,79 @@ impl Composition {
         let readbacks = std::mem::take(&mut self.capture.readbacks);
         let mut copied = false;
         for mut readback in readbacks {
-            if let Some(job) = readback.job.as_ref() && let Some(reason) = desktop.server.capture_job_failure(job) {
+            if let Some(job) = readback.job.as_ref()
+                && let Some(reason) = desktop.server.capture_job_failure(job)
+            {
                 readback.job.take().unwrap().frame.fail(reason);
             }
-            if !readback.sync.is_reached() { self.capture.readbacks.push(readback); continue; }
-            let Some(job) = readback.job.take() else { continue };
-            if copied { readback.job = Some(job); self.capture.readbacks.push(readback); continue; }
+            if !readback.sync.is_reached() {
+                self.capture.readbacks.push(readback);
+                continue;
+            }
+            let Some(job) = readback.job.take() else {
+                continue;
+            };
+            if copied {
+                readback.job = Some(job);
+                self.capture.readbacks.push(readback);
+                continue;
+            }
             copied = true;
-            let result = renderer.map_texture(&readback.mapping).map_err(error).and_then(|bytes| write_buffer(&job, bytes, readback.mapping.flipped()));
-            if result.is_ok() {
-                if job.cursor { desktop.server.capture_cursor_ready(job.target, readback.hotspot); }
-                job.frame.success(Transform::Normal, None, readback.time);
-            } else {
-                if let Err(error) = result { eprintln!("Park capture readback: {error}"); }
-                job.frame.fail(Failure::Unknown);
+            match renderer.map_texture(&readback.mapping).map_err(error) {
+                Ok(bytes) => desktop.server.complete_capture(job, readback.time, readback.hotspot,
+                    |job| write_buffer(job, bytes, readback.mapping.flipped())),
+                Err(error) => {
+                    eprintln!("Park capture readback: {error}");
+                    job.frame.fail(Failure::Unknown);
+                }
             }
         }
         for job in desktop.server.capture_jobs() {
-            if self.capture.waiting.len() + self.capture.readbacks.len() >= 8 { job.frame.fail(Failure::Unknown); }
-            else { self.capture.waiting.push_back(Waiting { job, source: None }); }
+            if self.capture.waiting.len() + self.capture.readbacks.len() >= 8 {
+                job.frame.fail(Failure::Unknown);
+            } else {
+                self.capture
+                    .waiting
+                    .push_back(Waiting { job, source: None });
+            }
         }
         let count = self.capture.waiting.len();
         for _ in 0..count {
             let mut waiting = self.capture.waiting.pop_front().unwrap();
             if let Some(reason) = desktop.server.capture_job_failure(&waiting.job) {
-                if matches!(reason, Failure::Unknown) { eprintln!("Park capture timed out; scene available: {}", waiting.source.is_some()); }
+                if matches!(reason, Failure::Unknown) {
+                    eprintln!(
+                        "Park capture timed out; scene available: {}",
+                        waiting.source.is_some()
+                    );
+                }
                 waiting.job.frame.fail(reason);
                 continue;
             }
-            if self.capture.readbacks.len() >= 4 { self.capture.waiting.push_back(waiting); continue; }
-            if waiting.source.is_none() { waiting.source = Source::new(desktop, waiting.job.target); }
-            let Some(source) = waiting.source.as_ref() else { self.capture.waiting.push_back(waiting); continue };
+            if self.capture.readbacks.len() >= 4 {
+                self.capture.waiting.push_back(waiting);
+                continue;
+            }
+            if waiting.source.is_none() {
+                waiting.source = Source::new(desktop, waiting.job.target, Some(&waiting.job));
+            }
+            let Some(source) = waiting.source.as_ref() else {
+                self.capture.waiting.push_back(waiting);
+                continue;
+            };
             if waiting.job.cursor && source.cursor_info().0 != waiting.job.size {
                 waiting.job.frame.fail(Failure::BufferConstraints);
                 continue;
             }
             if let Source::Output { view, .. } = source {
-                let size = view.frame.frame.geometry.as_ref().and_then(|geometry| geometry.outputs.iter().find(|output| output.id == view.id))
+                let size = view
+                    .frame
+                    .frame
+                    .geometry
+                    .as_ref()
+                    .and_then(|geometry| {
+                        geometry.outputs.iter().find(|output| output.id == view.id)
+                    })
                     .map(|output| output.physical_size.map(|size| size as i32));
                 if !waiting.job.cursor && size != Some(waiting.job.size) {
                     waiting.source = None;
@@ -253,21 +575,66 @@ impl Composition {
                 }
             }
             let nodes = source.nodes(&waiting.job);
-            self.capture.imported.extend(nodes.iter().map(|node| (node.surface.clone(), node.content.version)));
+            self.capture.imported.extend(
+                nodes
+                    .iter()
+                    .map(|node| (node.surface.clone(), node.content.version)),
+            );
             let mut ready = true;
+            let mut failed = false;
             for node in &nodes {
-                match self.import(renderer, node) { Ok(imported) => ready &= imported, Err(_) => { ready = false; break; } }
+                let retained = !waiting.job.cursor && matches!(source, Source::Window { window, .. }
+                    if window.nodes.iter().any(|root| root.surface == node.surface && root.content.version == node.content.version));
+                match self.import_source(renderer, node, retained) {
+                    Ok(imported) => ready &= imported,
+                    Err(error) => {
+                        eprintln!("Park capture import: {error}");
+                        failed = true;
+                        ready = false;
+                        break;
+                    }
+                }
             }
-            if !ready { self.capture.waiting.push_back(waiting); continue; }
-            let mut inputs: Vec<_> = nodes.iter().filter_map(|node| self.views.get(&(node.surface.clone(), node.content.version)).map(|view| view.texture.clone())).collect();
+            if failed {
+                waiting.job.frame.fail(Failure::Unknown);
+                continue;
+            }
+            if !ready {
+                #[cfg(test)]
+                if waiting.job.deadline.saturating_duration_since(Instant::now()) < Duration::from_millis(50) {
+                    eprintln!("Capture source remained unready for {:?}: {:?}", waiting.job.target,
+                        nodes.iter().map(|node| (&node.surface, node.content.version, node.content.is_released(),
+                            crate::graphics::retained_capture(&node.content).is_ok_and(|capture| capture.is_some()),
+                            self.views.contains_key(&(node.surface.clone(), node.content.version)))).collect::<Vec<_>>());
+                }
+                self.capture.waiting.push_back(waiting);
+                continue;
+            }
+            let mut inputs: Vec<_> = nodes
+                .iter()
+                .filter_map(|node| {
+                    self.views
+                        .get(&(node.surface.clone(), node.content.version))
+                        .map(|view| view.texture.clone())
+                })
+                .collect();
             let result = self.capture_readback(renderer, &waiting.job, source, &mut inputs);
             match result {
                 Ok((mapping, sync, texture)) => {
                     let source = waiting.source.take().unwrap();
                     let time = source.time();
                     let hotspot = source.cursor_info().2;
-                    let mut readback = Readback { job: Some(waiting.job), mapping, sync, _watch: None, _texture: texture,
-                        _inputs: inputs, _source: source, time, hotspot };
+                    let mut readback = Readback {
+                        job: Some(waiting.job),
+                        mapping,
+                        sync,
+                        _watch: None,
+                        _texture: texture,
+                        _inputs: inputs,
+                        _source: source,
+                        time,
+                        hotspot,
+                    };
                     readback._watch = Some(self.watch(readback.sync.clone())?);
                     self.capture.readbacks.push(readback);
                 }
@@ -277,128 +644,384 @@ impl Composition {
                 }
             }
         }
-        let mut retained: HashSet<_> = self.capture.waiting.iter().filter_map(|waiting| waiting.source.as_ref().map(|source| source.nodes(&waiting.job)))
-            .flatten().map(|node| (node.surface, node.content.version)).collect();
-        retained.extend(self.layers.values().flat_map(|layer| &layer.nodes).chain(self.popups.values().flat_map(|popup| &popup.nodes))
-            .map(|node| (node.surface.clone(), node.content.version)));
-        let obsolete: Vec<_> = self.capture.imported.iter().filter(|key| !retained.contains(*key)).cloned().collect();
+        let mut retained: HashSet<_> = self
+            .capture
+            .waiting
+            .iter()
+            .filter_map(|waiting| {
+                waiting
+                    .source
+                    .as_ref()
+                    .map(|source| source.nodes(&waiting.job))
+            })
+            .flatten()
+            .map(|node| (node.surface, node.content.version))
+            .collect();
+        retained.extend(
+            self.layers
+                .values()
+                .flat_map(|layer| &layer.nodes)
+                .chain(self.popups.values().flat_map(|popup| &popup.nodes))
+                .map(|node| (node.surface.clone(), node.content.version)),
+        );
+        let obsolete: Vec<_> = self
+            .capture
+            .imported
+            .iter()
+            .filter(|key| !retained.contains(*key))
+            .cloned()
+            .collect();
         for key in obsolete {
             self.views.remove(&key);
             self.acquiring.remove(&key);
-            if self.copies.get(&key).is_none_or(|copy| copy.fence.is_reached()) {
+            if self
+                .copies
+                .get(&key)
+                .is_none_or(|copy| copy.fence.is_reached())
+            {
                 self.copies.remove(&key);
                 self.capture.imported.remove(&key);
             }
-            if !self.views.keys().any(|(surface, _)| surface == &key.0) && !self.copies.keys().any(|(surface, _)| surface == &key.0) {
+            if !self.views.keys().any(|(surface, _)| surface == &key.0)
+                && !self.copies.keys().any(|(surface, _)| surface == &key.0)
+            {
                 self.imports.remove(&key.0);
             }
         }
         Ok(())
     }
 
-    fn capture_readback(&self, renderer: &mut GlesRenderer, job: &CaptureJob, source: &Source, inputs: &mut Vec<GlesTexture>)
-        -> io::Result<(GlesMapping, smithay::backend::renderer::sync::SyncPoint, GlesTexture)> {
-        if !renderer.capabilities().contains(&smithay::backend::renderer::gles::Capability::ExportFence) {
-            return Err(io::Error::other("Asynchronous capture requires GPU completion fences"));
+    fn capture_readback(
+        &mut self,
+        renderer: &mut GlesRenderer,
+        job: &CaptureJob,
+        source: &Source,
+        inputs: &mut Vec<GlesTexture>,
+    ) -> io::Result<(
+        GlesMapping,
+        smithay::backend::renderer::sync::SyncPoint,
+        GlesTexture,
+    )> {
+        self.prepare_color(renderer)?;
+        if !renderer
+            .capabilities()
+            .contains(&smithay::backend::renderer::gles::Capability::ExportFence)
+        {
+            return Err(io::Error::other(
+                "Asynchronous capture requires GPU completion fences",
+            ));
         }
         let size: Size<i32, Physical> = (job.size[0], job.size[1]).into();
-        let damage = Rect::from_size(size);
-        let mut texture = renderer.create_buffer(Fourcc::Argb8888, (job.size[0], job.size[1]).into()).map_err(error)?;
-        let native = if !job.cursor && let Source::Output { view, .. } = source {
-            let dmabuf = if view.frame.frame.output.unwrap_or(OutputId(1)) == view.id { view.frame.frame.dmabuf() }
-                else { view.frame.frame.outputs.iter().find(|output| output.id == view.id).ok_or_else(|| io::Error::other("The presented output image is unavailable"))?.dmabuf() };
-            let texture = renderer.import_dmabuf(dmabuf, None).map_err(error)?;
-            inputs.push(texture.clone()); Some(texture)
-        } else { None };
-        let mapping;
-        let sync;
+        let rotation = match source { Source::Output { rotation, .. } if !job.cursor => *rotation, _ => Default::default() };
+        let transform = capture_transform(rotation);
+        let source_size = rotation.source_size(job.size.map(|size| size as u32));
+        let damage = Rect::from_size((source_size[0] as i32, source_size[1] as i32).into());
+        let mut texture = renderer
+            .create_buffer(Fourcc::Argb8888, (job.size[0], job.size[1]).into())
+            .map_err(error)?;
+        let native = if !job.cursor
+            && let Source::Output { view, .. } = source
         {
-            let mut target = renderer.bind(&mut texture).map_err(error)?;
+            let dmabuf = view.frame.frame.capture_dmabuf(view.id, job.policy_revision, job.mapping_revision)
+                .ok_or_else(|| io::Error::other("The privacy-safe output image or its mapping was retired"))?;
+            let texture = renderer.import_dmabuf(dmabuf, None).map_err(error)?;
+            inputs.push(texture.clone());
+            Some(texture)
+        } else {
+            None
+        };
+        let linear = self.linear_color_available();
+        let mut intermediate: Option<GlesTexture> = if linear {
+            let retained = self.capture.readbacks.iter().flat_map(|readback| &readback._inputs)
+                .filter(|texture| texture.format() == Some(Fourcc::Abgr16161616f))
+                .map(|texture| texture.size().w.max(0) as u64 * texture.size().h.max(0) as u64 * 8).sum::<u64>();
+            let bytes = u64::from(source_size[0]).checked_mul(u64::from(source_size[1])).and_then(|pixels| pixels.checked_mul(8));
+            if bytes.and_then(|bytes| retained.checked_add(bytes)).is_none_or(|bytes| bytes > 256 * 1024 * 1024) {
+                return Err(io::Error::other("Linear capture targets exceed the 256 MiB budget"));
+            }
+            Some(renderer.create_buffer(Fourcc::Abgr16161616f, (source_size[0] as i32, source_size[1] as i32).into()).map_err(error)?)
+        } else { None };
+        let render_size = if linear { (source_size[0] as i32, source_size[1] as i32).into() } else { size };
+        let render_transform = if linear { Transform::Normal } else { transform };
+        self.linear_composition = linear;
+        let drawn = (|| -> io::Result<()> {
+            let image = intermediate.as_mut().unwrap_or(&mut texture);
+            let mut target = renderer.bind(image).map_err(error)?;
             {
-                let mut frame = renderer.render(&mut target, size, Transform::Flipped180).map_err(error)?;
-                frame.clear(smithay::backend::renderer::Color32F::TRANSPARENT, &[damage]).map_err(error)?;
+                let mut frame = renderer
+                    .render(&mut target, render_size, render_transform)
+                    .map_err(error)?;
+                frame
+                    .clear(smithay::backend::renderer::Color32F::TRANSPARENT, &[damage])
+                    .map_err(error)?;
                 if job.cursor {
                     let cursor = source.cursor();
-                    if let Some((base, _)) = source.cursor_mapping().filter(|(_, bounds)| cursor.visible && intersects(*bounds, cursor.rectangle())) {
+                    if let Some((base, _)) = source.cursor_mapping().filter(|(_, bounds)| {
+                        cursor.visible && intersects(*bounds, cursor.rectangle())
+                    }) {
                         let origin = cursor.rectangle().origin();
-                        self.capture_cursor_draw(&mut frame, &cursor, Mapping { origin, scale: base.scale }, damage)?;
+                        self.capture_cursor_draw(
+                            &mut frame,
+                            &cursor,
+                            Mapping {
+                                origin,
+                                scale: base.scale,
+                            },
+                            damage,
+                        )?;
                     }
                 } else {
                     match source {
-                        Source::Output { view, mapping, .. } => self.capture_output_draw(&mut frame, view, *mapping, native.as_ref().unwrap(), damage)?,
+                        Source::Output { view, mapping, .. } => {
+                            frame
+                                .clear(
+                                    self.sdr_solid([0.08, 0.08, 0.08, 1.0]),
+                                    &[damage],
+                                )
+                                .map_err(error)?;
+                            self.draw_output(
+                                &mut frame,
+                                Some(&view.frame.frame),
+                                &view.scene,
+                                view.id,
+                                *mapping,
+                                native.as_ref(),
+                                damage,
+                            )?;
+                        }
                         Source::Window { window, bounds, .. } => {
-                            let scale = std::array::from_fn(|axis| f64::from(job.size[axis]) / bounds.size()[axis]);
-                            let origin = std::array::from_fn(|axis| -bounds.origin()[axis] * scale[axis]);
+                            let scale = std::array::from_fn(|axis| {
+                                f64::from(job.size[axis]) / bounds.size()[axis]
+                            });
+                            let origin =
+                                std::array::from_fn(|axis| -bounds.origin()[axis] * scale[axis]);
                             self.draw_scaled(&mut frame, &window.nodes, origin, scale, damage)?;
-                            let parent = window.geometry.map_or(bounds.origin(), |geometry| [f64::from(geometry.loc.x), f64::from(geometry.loc.y)]);
+                            let parent = window.geometry.map_or(bounds.origin(), |geometry| {
+                                [f64::from(geometry.loc.x), f64::from(geometry.loc.y)]
+                            });
                             for popup in window.popups.iter().rev() {
-                                let origin = std::array::from_fn(|axis| (parent[axis] + f64::from(popup.origin[axis]) - bounds.origin()[axis]) * scale[axis]);
+                                let origin = std::array::from_fn(|axis| {
+                                    (parent[axis] + f64::from(popup.origin[axis])
+                                        - bounds.origin()[axis])
+                                        * scale[axis]
+                                });
                                 self.draw_scaled(&mut frame, &popup.nodes, origin, scale, damage)?;
                             }
                         }
                     }
-                    if job.paint_cursor && let Some((mapping, bounds)) = source.cursor_mapping() {
-                        let cursor = source.cursor();
-                        if cursor.visible && intersects(bounds, cursor.rectangle()) { self.capture_cursor_draw(&mut frame, &cursor, mapping, damage)?; }
+                    if job.paint_cursor
+                        && let Some((mapping, bounds)) = source.cursor_mapping()
+                    {
+                        for cursor in source.painted_cursors() {
+                            if cursor.visible && intersects(bounds, cursor.rectangle()) {
+                                self.capture_cursor_draw(&mut frame, &cursor, mapping, damage)?;
+                            }
+                        }
                     }
                     if let Source::Output { view, mapping, .. } = source {
-                        self.draw_scaled(&mut frame, &view.scene.drag, mapping.point(view.scene.cursor.pointer), mapping.scale, damage)?;
+                        self.draw_scaled(
+                            &mut frame,
+                            &view.scene.drag,
+                            mapping.point(view.scene.cursor.pointer),
+                            mapping.scale,
+                            damage,
+                        )?;
                     }
                 }
                 let _ = frame.finish().map_err(error)?;
             }
-            mapping = renderer.copy_framebuffer(&target, Rect::from_size((job.size[0], job.size[1]).into()), Fourcc::Argb8888).map_err(error)?;
-            sync = renderer.render(&mut target, size, Transform::Flipped180).map_err(error)?.finish().map_err(error)?;
+            Ok(())
+        })();
+        self.linear_composition = false;
+        drawn?;
+        if let Some(intermediate) = intermediate {
+            {
+                let mut target = renderer.bind(&mut texture).map_err(error)?;
+                drop(self.encode_output(renderer, &mut target, &intermediate, size, transform, Default::default())?);
+            }
+            inputs.push(intermediate);
+        }
+        let mapping;
+        let sync;
+        {
+            let mut target = renderer.bind(&mut texture).map_err(error)?;
+            mapping = renderer
+                .copy_framebuffer(
+                    &target,
+                    Rect::from_size((job.size[0], job.size[1]).into()),
+                    Fourcc::Argb8888,
+                )
+                .map_err(error)?;
+            sync = renderer
+                .render(&mut target, size, Transform::Normal)
+                .map_err(error)?
+                .finish()
+                .map_err(error)?;
         }
         Ok((mapping, sync, texture))
     }
 
-    fn capture_output_draw(&self, frame: &mut smithay::backend::renderer::gles::GlesFrame<'_, '_>, view: &View, mapping: Mapping,
-        native: &GlesTexture, damage: Rect<i32, Physical>) -> io::Result<()> {
-        let fullscreen = if view.frame.frame.output.unwrap_or(OutputId(1)) == view.id { view.frame.frame.fullscreen }
-            else { view.frame.frame.outputs.iter().find(|output| output.id == view.id).is_some_and(|output| output.fullscreen) };
-        frame.clear(smithay::backend::renderer::Color32F::new(0.08, 0.08, 0.08, 1.0), &[damage]).map_err(error)?;
-        for layer in view.scene.layers.iter().filter(|layer| layer.output == view.id && !fullscreen && matches!(layer.layer, Layer::Background | Layer::Bottom)) {
-            self.draw_scaled(frame, &layer.nodes, mapping.point(layer.origin.map(f64::from)), mapping.scale, damage)?;
-            for popup in view.scene.popups.iter().filter(|popup| popup.output == view.id && popup.owner == PopupOwner::Layer(layer.surface.clone())) { self.capture_popup_draw(frame, popup, mapping, damage)?; }
+    pub(super) fn draw_output(
+        &self,
+        frame: &mut smithay::backend::renderer::gles::GlesFrame<'_, '_>,
+        canvas: Option<&crate::presentation::Frame>,
+        scene: &Presented,
+        id: OutputId,
+        mapping: Mapping,
+        native: Option<&GlesTexture>,
+        damage: Rect<i32, Physical>,
+    ) -> io::Result<()> {
+        let fullscreen = canvas.is_some_and(|canvas| {
+            if canvas.output.unwrap_or(OutputId(1)) == id {
+                canvas.fullscreen
+            } else {
+                canvas
+                    .outputs
+                    .iter()
+                    .find(|output| output.id == id)
+                    .is_some_and(|output| output.fullscreen)
+            }
+        });
+        for layer in scene.layers.iter().filter(|layer| {
+            layer.output == id
+                && !fullscreen
+                && matches!(layer.layer, Layer::Background | Layer::Bottom)
+        }) {
+            self.draw_scaled(
+                frame,
+                &layer.nodes,
+                mapping.point(layer.origin.map(f64::from)),
+                mapping.scale,
+                damage,
+            )?;
+            for popup in scene.popups.iter().filter(|popup| {
+                popup.output == id && popup.owner == PopupOwner::Layer(layer.surface.clone())
+            }) {
+                self.capture_popup_draw(frame, popup, mapping, damage)?;
+            }
         }
-        if let Some((_, clip)) = view.scene.clips.iter().find(|(id, _)| *id == view.id) {
-            let clip = mapping.rectangle(*clip);
-            frame.render_texture_from_to(native, Rect::from_size(native.size().to_f64()), clip, &[Rect::from_size(clip.size)], &[], Transform::Normal, 1.0, None, &[]).map_err(error)?;
+        if let Some(native) = native
+            && let Some((_, clip)) = scene.clips.iter().find(|(output, _)| *output == id)
+        {
+            let pixels = canvas
+                .and_then(|canvas| canvas.geometry.as_ref())
+                .and_then(|geometry| {
+                    geometry
+                        .outputs
+                        .iter()
+                        .find(|output| output.id == id && output.raster == mapping)
+                })
+                .and_then(|output| output.physical_region(*clip));
+            let clip = pixels.map_or_else(
+                || mapping.rectangle(*clip),
+                |(origin, size)| {
+                    Rect::new(
+                        (origin[0], origin[1]).into(),
+                        (size[0] as i32, size[1] as i32).into(),
+                    )
+                },
+            );
+            if let Some(damage) = local_damage(clip, damage) {
+                self.color_canvas(frame, canvas.map_or(Default::default(), |canvas| canvas.encoding))?;
+                let result = frame
+                    .render_texture_from_to(
+                        native,
+                        Rect::from_size(native.size().to_f64()),
+                        clip,
+                        &[damage],
+                        &[],
+                        Transform::Normal,
+                        1.0,
+                        None,
+                        &[],
+                    )
+                    .map_err(error);
+                frame.clear_tex_program_override();
+                result?;
+            }
         }
-        for popup in view.scene.popups.iter().filter(|popup| popup.output == view.id && matches!(popup.owner, PopupOwner::Application(_) | PopupOwner::Native)) { self.capture_popup_draw(frame, popup, mapping, damage)?; }
-        for layer in view.scene.layers.iter().filter(|layer| layer.output == view.id && (layer.layer == Layer::Overlay || !fullscreen && layer.layer == Layer::Top)) {
-            self.draw_scaled(frame, &layer.nodes, mapping.point(layer.origin.map(f64::from)), mapping.scale, damage)?;
-            for popup in view.scene.popups.iter().filter(|popup| popup.output == view.id && popup.owner == PopupOwner::Layer(layer.surface.clone())) { self.capture_popup_draw(frame, popup, mapping, damage)?; }
+        for popup in scene.popups.iter().filter(|popup| {
+            popup.output == id
+                && matches!(popup.owner, PopupOwner::Application(_) | PopupOwner::Native)
+        }) {
+            self.capture_popup_draw(frame, popup, mapping, damage)?;
         }
-        Ok(())
-    }
-
-    fn capture_popup_draw(&self, frame: &mut smithay::backend::renderer::gles::GlesFrame<'_, '_>, popup: &PopupScene, mapping: Mapping, damage: Rect<i32, Physical>) -> io::Result<()> {
-        let scale: [f64; 2] = std::array::from_fn(|axis| popup.mapping.canvas.size()[axis] / popup.mapping.surface.size()[axis]);
-        let origin = mapping.point(std::array::from_fn(|axis| popup.mapping.canvas.origin()[axis] - popup.mapping.surface.origin()[axis] * scale[axis]));
-        for clip in &popup.clips {
-            if let Some(clip) = mapping.rectangle(*clip).intersection(damage) {
-                self.draw_scaled(frame, &popup.nodes, origin, std::array::from_fn(|axis| scale[axis] * mapping.scale[axis]), clip)?;
+        for layer in scene.layers.iter().filter(|layer| {
+            layer.output == id
+                && (layer.layer == Layer::Overlay || !fullscreen && layer.layer == Layer::Top)
+        }) {
+            self.draw_scaled(
+                frame,
+                &layer.nodes,
+                mapping.point(layer.origin.map(f64::from)),
+                mapping.scale,
+                damage,
+            )?;
+            for popup in scene.popups.iter().filter(|popup| {
+                popup.output == id && popup.owner == PopupOwner::Layer(layer.surface.clone())
+            }) {
+                self.capture_popup_draw(frame, popup, mapping, damage)?;
             }
         }
         Ok(())
     }
 
-    fn capture_cursor_draw(&self, frame: &mut smithay::backend::renderer::gles::GlesFrame<'_, '_>, cursor: &Cursor, mapping: Mapping,
-        damage: Rect<i32, Physical>) -> io::Result<()> {
-        if !cursor.visible { return Ok(()); }
+    pub(super) fn capture_popup_draw(
+        &self,
+        frame: &mut smithay::backend::renderer::gles::GlesFrame<'_, '_>,
+        popup: &PopupScene,
+        mapping: Mapping,
+        damage: Rect<i32, Physical>,
+    ) -> io::Result<()> {
+        let scale: [f64; 2] = std::array::from_fn(|axis| {
+            popup.mapping.canvas.size()[axis] / popup.mapping.surface.size()[axis]
+        });
+        let origin = mapping.point(std::array::from_fn(|axis| {
+            popup.mapping.canvas.origin()[axis] - popup.mapping.surface.origin()[axis] * scale[axis]
+        }));
+        for clip in &popup.clips {
+            if let Some(clip) = mapping.rectangle(*clip).intersection(damage) {
+                self.draw_scaled(
+                    frame,
+                    &popup.nodes,
+                    origin,
+                    std::array::from_fn(|axis| scale[axis] * mapping.scale[axis]),
+                    clip,
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) fn capture_cursor_draw(
+        &self,
+        frame: &mut smithay::backend::renderer::gles::GlesFrame<'_, '_>,
+        cursor: &Cursor,
+        mapping: Mapping,
+        damage: Rect<i32, Physical>,
+    ) -> io::Result<()> {
+        if !cursor.visible {
+            return Ok(());
+        }
         if cursor.named {
             for size in [[4.0, 20.0], [14.0, 4.0]] {
                 let rectangle = Rectangle::new(cursor.pointer, size).unwrap();
                 let destination = mapping.rectangle(rectangle);
                 if let Some(damage) = local_damage(destination, damage) {
-                    frame.draw_solid(destination, &[damage], smithay::backend::renderer::Color32F::new(1.0, 1.0, 1.0, 1.0)).map_err(error)?;
+                    frame
+                        .draw_solid(
+                            destination,
+                            &[damage],
+                            self.sdr_solid([1.0, 1.0, 1.0, 1.0]),
+                        )
+                        .map_err(error)?;
                 }
             }
             Ok(())
         } else {
-            let origin = mapping.point(std::array::from_fn(|axis| cursor.pointer[axis] - cursor.hotspot[axis]));
+            let origin = mapping.point(std::array::from_fn(|axis| {
+                cursor.pointer[axis] - cursor.hotspot[axis]
+            }));
             self.draw_scaled(frame, &cursor.nodes, origin, mapping.scale, damage)
         }
     }
@@ -406,61 +1029,126 @@ impl Composition {
 
 fn write_buffer(job: &CaptureJob, pixels: &[u8], flipped: bool) -> io::Result<()> {
     let copied = with_buffer_contents_mut(&job.frame.buffer(), |pointer, length, data| {
-        if [data.width, data.height] != job.size || data.format != smithay::reexports::wayland_server::protocol::wl_shm::Format::Argb8888
-            || job.size.iter().any(|size| *size <= 0) || data.offset < 0 || data.stride < 0 || length > isize::MAX as usize { return false; }
-        let Some((row, height)) = pixel_layout(pixels.len(), job.size, length, data.offset as usize, data.stride as usize) else { return false };
-        if pointer.is_null() { return false; }
+        if [data.width, data.height] != job.size
+            || data.format != smithay::reexports::wayland_server::protocol::wl_shm::Format::Argb8888
+            || job.size.iter().any(|size| *size <= 0)
+            || data.offset < 0
+            || data.stride < 0
+            || length > isize::MAX as usize
+        {
+            return false;
+        }
+        let Some((row, height)) = pixel_layout(
+            pixels.len(),
+            job.size,
+            length,
+            data.offset as usize,
+            data.stride as usize,
+        ) else {
+            return false;
+        };
+        if pointer.is_null() {
+            return false;
+        }
         for y in 0..height {
             let from = if flipped { height - y - 1 } else { y } * row;
             let to = data.offset as usize + y * data.stride as usize;
-            unsafe { std::ptr::copy_nonoverlapping(pixels.as_ptr().add(from), pointer.add(to), row); }
+            unsafe {
+                std::ptr::copy_nonoverlapping(pixels.as_ptr().add(from), pointer.add(to), row);
+            }
         }
         true
-    }).map_err(error)?;
-    if copied { Ok(()) } else { Err(io::Error::other("The capture buffer no longer satisfies its constraints")) }
+    })
+    .map_err(error)?;
+    if copied {
+        Ok(())
+    } else {
+        Err(io::Error::other(
+            "The capture buffer no longer satisfies its constraints",
+        ))
+    }
 }
 
-fn pixel_layout(source: usize, size: [i32; 2], destination: usize, offset: usize, stride: usize) -> Option<(usize, usize)> {
-    if size.iter().any(|size| *size <= 0) { return None; }
+fn pixel_layout(
+    source: usize,
+    size: [i32; 2],
+    destination: usize,
+    offset: usize,
+    stride: usize,
+) -> Option<(usize, usize)> {
+    if size.iter().any(|size| *size <= 0) {
+        return None;
+    }
     let row = (size[0] as usize).checked_mul(4)?;
     let height = size[1] as usize;
     let bytes = row.checked_mul(height)?;
-    let end = stride.checked_mul(height - 1)?.checked_add(row)?.checked_add(offset)?;
+    let end = stride
+        .checked_mul(height - 1)?
+        .checked_add(row)?
+        .checked_add(offset)?;
     (stride >= row && source >= bytes && end <= destination).then_some((row, height))
 }
 
 #[cfg(all(test, feature = "server-tests"))]
 pub(crate) fn probe_window(job: CaptureJob, window: WindowSnapshot) -> io::Result<Vec<u8>> {
     use smithay::backend::egl::{EGLContext, EGLDevice, EGLDisplay};
-    let device = EGLDevice::enumerate().map_err(error)?.find(|device| !device.is_software())
-        .ok_or_else(|| io::Error::other("The capture export probe requires a hardware EGL device"))?;
+    let device = EGLDevice::enumerate()
+        .map_err(error)?
+        .find(|device| !device.is_software())
+        .ok_or_else(|| {
+            io::Error::other("The capture export probe requires a hardware EGL device")
+        })?;
     let display = unsafe { EGLDisplay::new(device) }.map_err(error)?;
     let context = EGLContext::new(&display).map_err(error)?;
     let mut renderer = unsafe { GlesRenderer::new(context) }.map_err(error)?;
     let mut composition = Composition::new(lince_interface::host::WakeSignal::new(|| {}))?;
-    let bounds = window.bounds().ok_or_else(|| io::Error::other("The capture probe window has no content"))?;
+    let bounds = window
+        .bounds()
+        .ok_or_else(|| io::Error::other("The capture probe window has no content"))?;
     let bounds = Rectangle::new([bounds.loc.x, bounds.loc.y], [bounds.size.w, bounds.size.h])
         .ok_or_else(|| io::Error::other("The capture probe window has invalid bounds"))?;
-    let source = Source::Window { window, bounds, view: None };
+    let source = Source::Window {
+        window,
+        bounds,
+        view: None,
+    };
     for node in source.nodes(&job) {
         let deadline = Instant::now() + Duration::from_secs(2);
         while !composition.import(&mut renderer, &node)? {
-            if Instant::now() >= deadline { return Err(io::Error::other("The capture probe client buffer did not become ready")); }
+            if Instant::now() >= deadline {
+                return Err(io::Error::other(
+                    "The capture probe client buffer did not become ready",
+                ));
+            }
             std::thread::sleep(Duration::from_millis(1));
         }
     }
     let mut inputs = Vec::new();
-    let (mapping, fence, _texture) = composition.capture_readback(&mut renderer, &job, &source, &mut inputs)?;
+    let (mapping, fence, _texture) =
+        composition.capture_readback(&mut renderer, &job, &source, &mut inputs)?;
     fence.wait().map_err(error)?;
     let bytes = renderer.map_texture(&mapping).map_err(error)?;
     write_buffer(&job, bytes, mapping.flipped())?;
-    let pixels = smithay::wayland::shm::with_buffer_contents(&job.frame.buffer(), |pointer, length, data| {
-        let count = job.size[0] as usize * job.size[1] as usize * 4;
-        if data.offset < 0 || data.offset as usize + count > length { return None; }
-        let mut pixels = vec![0; count];
-        unsafe { std::ptr::copy_nonoverlapping(pointer.add(data.offset as usize), pixels.as_mut_ptr(), count); }
-        Some(pixels)
-    }).map_err(error)?.ok_or_else(|| io::Error::other("The capture probe destination is unavailable"))?;
+    let pixels = smithay::wayland::shm::with_buffer_contents(
+        &job.frame.buffer(),
+        |pointer, length, data| {
+            let count = job.size[0] as usize * job.size[1] as usize * 4;
+            if data.offset < 0 || data.offset as usize + count > length {
+                return None;
+            }
+            let mut pixels = vec![0; count];
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    pointer.add(data.offset as usize),
+                    pixels.as_mut_ptr(),
+                    count,
+                );
+            }
+            Some(pixels)
+        },
+    )
+    .map_err(error)?
+    .ok_or_else(|| io::Error::other("The capture probe destination is unavailable"))?;
     job.frame.success(Transform::Normal, None, monotonic());
     Ok(pixels)
 }
@@ -468,6 +1156,25 @@ pub(crate) fn probe_window(job: CaptureJob, window: WindowSnapshot) -> io::Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn output_capture_combines_physical_rotation_with_readback_flip_once() {
+        use lince_interface::host::mapping::QuarterTurn;
+        for rotation in [QuarterTurn::Normal, QuarterTurn::Clockwise90, QuarterTurn::UpsideDown, QuarterTurn::Clockwise270] {
+            let physical = match rotation { QuarterTurn::Normal | QuarterTurn::UpsideDown => [1200.0, 800.0], _ => [800.0, 1200.0] };
+            let projection = capture_transform(rotation).matrix() * capture_transform(QuarterTurn::Normal).matrix();
+            for [x, y] in [[0.0, 0.0], [100.0, 200.0], [1200.0, 800.0]] {
+                let point = [x / 600.0 - 1.0, y / 400.0 - 1.0, 1.0];
+                let actual: [f32; 2] = std::array::from_fn(|row| {
+                    let projected: f32 = (0..3).map(|column| projection[column][row] * point[column]).sum();
+                    (projected + 1.0) * physical[row] * 0.5
+                });
+                let expected = match rotation { QuarterTurn::Normal => [x, y], QuarterTurn::Clockwise90 => [800.0 - y, x],
+                    QuarterTurn::UpsideDown => [1200.0 - x, 800.0 - y], QuarterTurn::Clockwise270 => [y, 1200.0 - x] };
+                assert!((0..2).all(|axis| (actual[axis] - expected[axis]).abs() < 0.001), "{rotation:?}: {actual:?} != {expected:?}");
+            }
+        }
+    }
 
     #[test]
     fn capture_buffers_validate_strides_offsets_lengths_and_overflow() {
@@ -483,7 +1190,10 @@ mod tests {
 
     #[test]
     fn capture_coordinates_preserve_output_origin_and_fractional_scale() {
-        let mapping = Mapping { origin: [960.0, 180.0], scale: [1.5, 1.5] };
+        let mapping = Mapping {
+            origin: [960.0, 180.0],
+            scale: [1.5, 1.5],
+        };
         assert_eq!(mapping.point([972.0, 200.0]), [18.0, 30.0]);
         let rectangle = mapping.rectangle(Rectangle::new([972.0, 200.0], [16.0, 24.0]).unwrap());
         assert_eq!(rectangle.loc, (18, 30).into());
@@ -493,10 +1203,19 @@ mod tests {
     #[test]
     fn cursor_can_intersect_an_output_while_its_hotspot_is_outside() {
         let bounds = Rectangle::new([100.0, 0.0], [100.0, 100.0]).unwrap();
-        let cursor = Cursor { pointer: [95.0, 50.0], hotspot: [0.0; 2], nodes: Vec::new(),
-            bounds: Rectangle::new([0.0; 2], [24.0; 2]).unwrap(), named: true, visible: true };
+        let cursor = Cursor {
+            pointer: [95.0, 50.0],
+            hotspot: [0.0; 2],
+            nodes: Vec::new(),
+            bounds: Rectangle::new([0.0; 2], [24.0; 2]).unwrap(),
+            named: true,
+            visible: true,
+        };
         assert!(!bounds.contains(cursor.pointer));
         assert!(intersects(bounds, cursor.rectangle()));
-        assert!(!intersects(bounds, Rectangle::new([76.0, 50.0], [24.0; 2]).unwrap()));
+        assert!(!intersects(
+            bounds,
+            Rectangle::new([76.0, 50.0], [24.0; 2]).unwrap()
+        ));
     }
 }

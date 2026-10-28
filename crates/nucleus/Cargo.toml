@@ -9,6 +9,7 @@ description = "Lince pure core: primitives, expression engine, graphs, frequency
 
 [dependencies]
 anicca = { workspace = true }
+microlp = "=0.6.0"
 naga = { version = "=29.0.4", features = ["wgsl-in"] }
 base64 = { workspace = true }
 regex = { workspace = true }

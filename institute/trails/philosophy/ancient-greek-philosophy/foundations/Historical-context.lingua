@@ -1,0 +1,32 @@
+Import "Reading-tools.lingua"
+Import "../sources/Presocratics-Fairbanks.lingua"
+Import "../sources/Apology-Cary.lingua"
+Import "../sources/Memorabilia-Dakyns.lingua"
+Import "../sources/Early-Greek-Philosophy-Burnet.lingua"
+Import "Read-an-argument.lingua"
+
+People, places, and chronology (@greek-context: 0, is #chapter, #part-of @greek-reading-tools, #source @greek-source-fairbanks, #source @apology, #source @greek-source-xenophon, #source @greek-source-burnet, #philosophy @greek-reading-method, #ancient-greek-philosophy @greek-reading-method) { r_06MYG1RZCSZDTVZP581FTCNRSG
+**Use alongside:** the opening of [Apology](../socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4). The purpose is to locate the dispute before judging its argument.
+
+Greek philosophical activity took place across the Mediterranean, including the Ionian coast of Asia Minor and southern Italy, as well as Athens. The thinkers grouped as Presocratics did not all live before Socrates, and their interests were not confined to one subject. The name groups overlapping inquiries rather than a boundary in the things investigated.
+
+| Setting | Approximate period and connection |
+| --- | --- |
+| Milesian, Pythagorean, Eleatic, and other early inquiries | Sixth and fifth centuries BCE; nature, order, change, being, and explanation |
+| Socrates | About 469–399 BCE; questioning and his trial at Athens |
+| Plato | About 428–348 BCE; dialogues written after Socrates' death, including literary presentations of him |
+| Aristotle | 384–322 BCE; a student of Plato who developed his own investigations |
+| Hellenistic schools | Following Alexander's death in 323 BCE; competing accounts of nature, knowledge, and living well |
+| Epictetus | First and second centuries CE; a Greek-speaking Stoic teacher in the Roman imperial world |
+| Plotinus | About 205–270 CE; a later interpretation of the Platonic tradition, explored through the account of beauty |
+
+BCE dates count down toward the beginning of the common era. This chronology separates the dramatic setting of a dialogue, its composition, and the date of the surviving report. Socrates' trial followed Athens' defeat in the Peloponnesian War and periods of oligarchic rule. Political participation in Athens was restricted; the democratic citizen body did not include everyone living or working there.
+
+For a Portuguese reading of the first dialogues, the bilingual [EdUFPA Apologia / Críton](../sources/Apology-Crito-Nunes.lingua#r_5653D0KAK9093C4VMSTEZJ3MBW) also identifies the Greek text and translation.
+
+For contemporary ancient presentations, read the accusation and defence in the [Apology](../sources/Apology-Cary.lingua#r_00000000000000000000001006) and the descriptions of Socrates in [Memorabilia](../sources/Memorabilia-Dakyns.lingua#r_6R4K67BD9B740H00FCVTM869A1), Book I. For the earlier thinkers, [Fairbanks' source collection](../sources/Presocratics-Fairbanks.lingua#r_0CETPRSWH0WZT8335D8692RNJY) supplies translated fragments and ancient testimonies; [Burnet's historical account](../sources/Early-Greek-Philosophy-Burnet.lingua#r_1DSKX3DB6E343PZHZABGATVK13) supplies another arrangement and interpretation of the evidence. Keep the ancient passage, its transmitting context, and the modern editor's reconstruction distinct.
+
+**Practice:** identify the author, the speaker, the setting, and the question of the first passage. Write one contextual fact that helps interpret it and one conclusion that context alone cannot establish.
+
+**Next:** [Read a dialogue and reconstruct an argument](Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN). **Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_06MYG1RZCSZDTVZP581FTCNRSG

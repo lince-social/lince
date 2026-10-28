@@ -17,10 +17,17 @@ pub const STATE_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectedDocument {
+    pub imports: Vec<ProjectedImport>,
     pub records: Vec<ProjectedRecord>,
     pub frequencies: Vec<ProjectedFrequency>,
     pub rules: Vec<ProjectedRule>,
     pub extensions: Vec<ProjectedExtension>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectedImport {
+    pub target: String,
+    pub locations: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +50,7 @@ pub struct ProjectedRecord {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectedAssertion {
+    pub object_uri: Option<String>,
     pub predicate: String,
     pub identity: bool,
     pub object_slug: Option<String>,
@@ -216,6 +224,28 @@ pub fn format(document: &Document) -> String {
             output.push('\n');
         }
         match declaration {
+            Declaration::Import(value) => {
+                write!(
+                    output,
+                    "Import {}",
+                    if value.target.is_uri() {
+                        quoted(value.target.value())
+                    } else {
+                        format!("@{}", value.target.value())
+                    }
+                )
+                .unwrap();
+                if let Some(locations) = &value.locations {
+                    let values = locations
+                        .values
+                        .iter()
+                        .map(|value| quoted(&value.value.0))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    write!(output, " from [{values}]").unwrap();
+                }
+                output.push('\n');
+            }
             Declaration::Record(record) => format_record(&mut output, record),
             Declaration::Frequency(frequency) => format_frequency(&mut output, frequency),
             Declaration::Karma(karma) => format_karma(&mut output, karma),
@@ -381,7 +411,7 @@ pub fn bind_reference_uids(
                     }
                 }
             }
-            Declaration::Frequency(_) | Declaration::Statement(_) => {}
+            Declaration::Import(_) | Declaration::Frequency(_) | Declaration::Statement(_) => {}
             Declaration::Extension(value) => require_reference(&value.target, identities)?,
         }
     }
@@ -392,12 +422,15 @@ fn require_reference(
     reference: &ast::Reference,
     identities: &BTreeMap<String, String>,
 ) -> Result<(), Diagnostic> {
+    if reference.is_uri() {
+        return Ok(());
+    }
     identities
-        .get(&reference.slug.0)
+        .get(reference.value())
         .ok_or_else(|| {
             diagnostic(format!(
                 "reference slug `{}` does not resolve",
-                reference.slug.0
+                reference.value()
             ))
         })
         .map(|_| ())
@@ -485,6 +518,7 @@ fn minted(source: &str, kind: &'static str, prefix: &str, name: &str, ordinal: u
 pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
     use ast::{FrequencyField, RecordField, RuleField};
     let mut output = ProjectedDocument {
+        imports: Vec::new(),
         records: Vec::new(),
         frequencies: Vec::new(),
         rules: Vec::new(),
@@ -492,17 +526,30 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
     };
     for declaration in &document.declarations {
         match declaration {
+            Declaration::Import(value) => output.imports.push(ProjectedImport {
+                target: if value.target.is_uri() {
+                    value.target.value().to_owned()
+                } else {
+                    format!("@{}", value.target.value())
+                },
+                locations: value
+                    .locations
+                    .as_ref()
+                    .map(|locations| {
+                        locations
+                            .values
+                            .iter()
+                            .map(|value| value.value.0.clone())
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            }),
             Declaration::Statement(_) => {
                 return Err(diagnostic(
                     "Script statements require `lince lingua FILE`; import and sync do not execute scripts",
                 ));
             }
-            Declaration::Extension(value) => output.extensions.push(ProjectedExtension {
-                target_slug: value.target.slug.0.clone(),
-                target_uid: None,
-                namespace: extension::text(&value.namespace)?,
-                fields: extension::object(&value.fields, 0)?,
-            }),
+            Declaration::Extension(value) => output.extensions.push(extension::project(value)?),
             Declaration::Record(record) => {
                 let mut assertions = Vec::new();
                 let mut identity_count = 0usize;
@@ -513,6 +560,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                             assertions.push(ProjectedAssertion {
                                 predicate: value.predicate.0.clone(),
                                 identity: true,
+                                object_uri: None,
                                 object_slug: None,
                                 object_uid: None,
                                 quantity: None,
@@ -522,7 +570,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         RecordField::Assertion(value) => {
                             let (object_slug, quantity, unit) = match &value.tail {
                                 Some(ast::AssertionTail::Link(link)) => (
-                                    Some(link.target.slug.0.clone()),
+                                    (!link.target.is_uri()).then(|| link.target.value().to_owned()),
                                     link.amount.as_ref().map(|v| v.quantity.value.0.clone()),
                                     link.amount
                                         .as_ref()
@@ -539,6 +587,14 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                             assertions.push(ProjectedAssertion {
                                 predicate: value.predicate.0.clone(),
                                 identity: false,
+                                object_uri: match &value.tail {
+                                    Some(ast::AssertionTail::Link(link))
+                                        if link.target.is_uri() =>
+                                    {
+                                        Some(link.target.value().to_owned())
+                                    }
+                                    _ => None,
+                                },
                                 object_slug,
                                 object_uid: None,
                                 quantity,
@@ -672,11 +728,11 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                                 })?
                             }
                             RuleField::Frequency(value) => {
-                                frequency_slug = Some(value.value.slug.0.clone());
+                                frequency_slug = Some(value.value.value().to_owned());
                                 frequency_uid = None
                             }
                             RuleField::Record(value) => {
-                                record_slug = Some(value.value.slug.0.clone());
+                                record_slug = Some(value.value.value().to_owned());
                                 record_uid = None
                             }
                             RuleField::Condition(value) => condition = Some(value.value.0.clone()),
@@ -934,6 +990,19 @@ pub fn set_record_runtime(
         for assertion in assertions {
             let field = if assertion.identity {
                 RecordField::identity(assertion.predicate.clone())
+            } else if let Some(uri) = &assertion.object_uri {
+                let mut field = RecordField::link(
+                    assertion.predicate.clone(),
+                    String::new(),
+                    assertion.quantity.clone(),
+                    assertion.unit.clone(),
+                );
+                if let RecordField::Assertion(value) = &mut field
+                    && let Some(ast::AssertionTail::Link(link)) = &mut value.tail
+                {
+                    link.target = ast::Reference::uri(uri.clone());
+                }
+                field
             } else if let Some(slug) = &assertion.object_slug {
                 RecordField::link(
                     assertion.predicate.clone(),
@@ -966,7 +1035,7 @@ fn record_field_key(field: &ast::RecordField) -> String {
         RecordField::Identity(value) => format!("identity:{}", value.predicate.0),
         RecordField::Assertion(value) => {
             let tail = match &value.tail {
-                Some(ast::AssertionTail::Link(link)) => format!("@{}", link.target.slug.0),
+                Some(ast::AssertionTail::Link(link)) => reference(&link.target),
                 Some(ast::AssertionTail::Amount(_)) => "amount".to_string(),
                 None => "assertion".to_string(),
             };
@@ -1098,8 +1167,10 @@ fn validate_document<'a>(
     use ast::{FrequencyField, RecordField, RuleField};
     for declaration in &document.declarations {
         match declaration {
-            Declaration::Statement(_) => {}
-            Declaration::Extension(value) => references.push((value.target.slug.0.clone(), path)),
+            Declaration::Import(_) | Declaration::Statement(_) => {}
+            Declaration::Extension(value) => {
+                references.push((value.target.value().to_owned(), path))
+            }
             Declaration::Record(record) => {
                 let title = record.title.value();
                 let label = record.header.subject.slug().unwrap_or(&title);
@@ -1143,7 +1214,9 @@ fn validate_document<'a>(
                     if let RecordField::Assertion(field) = &item.field
                         && let Some(ast::AssertionTail::Link(link)) = &field.tail
                     {
-                        references.push((link.target.slug.0.clone(), path));
+                        if !link.target.is_uri() {
+                            references.push((link.target.value().to_owned(), path));
+                        }
                     }
                 }
             }
@@ -1208,11 +1281,15 @@ fn validate_document<'a>(
                                 "quantity"
                             }
                             RuleField::Frequency(field) => {
-                                references.push((field.value.slug.0.clone(), path));
+                                if !field.value.is_uri() {
+                                    references.push((field.value.value().to_owned(), path));
+                                }
                                 "frequency"
                             }
                             RuleField::Record(field) => {
-                                references.push((field.value.slug.0.clone(), path));
+                                if !field.value.is_uri() {
+                                    references.push((field.value.value().to_owned(), path));
+                                }
                                 "record"
                             }
                             RuleField::Condition(_) => "condition",
@@ -1311,7 +1388,11 @@ fn quantity(value: &ast::Quantity) -> String {
     )
 }
 fn reference(value: &ast::Reference) -> String {
-    format!("@{}", value.slug.0)
+    if value.is_uri() {
+        quoted(value.value())
+    } else {
+        format!("@{}", value.value())
+    }
 }
 
 fn record_boundary_line(line: &str) -> Option<(usize, &str)> {

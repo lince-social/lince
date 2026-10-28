@@ -12,7 +12,10 @@ impl Engine {
             let mut outcome = ActionOutcome::default();
             match action {
                 Action::SignalEndpoints { request } => {
-                    outcome.data = Some(self.signal_endpoint_request(request, actor.as_deref(), now).await?);
+                    outcome.data = Some(
+                        self.signal_endpoint_request(request, actor.as_deref(), now)
+                            .await?,
+                    );
                 }
                 Action::AddParty {
                     transfer,
@@ -192,14 +195,24 @@ impl Engine {
                     outcome.facts = self.settle_all_local(&transfer, &person, now).await?;
                 }
                 action @ Action::SetPlace { .. } => {
-                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
+                    outcome = self
+                        .edit_record_relations_as(action, actor.as_deref(), now)
+                        .await?;
                 }
                 Action::GrantVisibility {
                     subject_kind,
                     subject,
                     target,
                 } => {
-                    outcome = self.grant_record_visibility_as(&subject_kind, subject.as_deref(), &target, actor.as_deref(), now).await?;
+                    outcome = self
+                        .grant_record_visibility_as(
+                            &subject_kind,
+                            subject.as_deref(),
+                            &target,
+                            actor.as_deref(),
+                            now,
+                        )
+                        .await?;
                 }
                 Action::SaveProtein { slug, head, ast } => {
                     validate_saved_protein_shape(&ast)?;
@@ -210,14 +223,20 @@ impl Engine {
                     protein::validate(&parsed).map_err(|error| {
                         EngineError::Consequence(format!("invalid Protein: {error}"))
                     })?;
-                    let before=serde_json::to_value(&parsed)?;
-                    let bound=serde_json::to_value(protein::bind_meanings(&self.store,&parsed,actor.as_deref()).await?)?;
-                    let mut ast=ast;
-                    for key in ["where","order"] {
-                        if before[key]!=bound[key] {ast[key]=bound[key].clone();}
+                    let before = serde_json::to_value(&parsed)?;
+                    let bound = serde_json::to_value(
+                        protein::bind_meanings(&self.store, &parsed, actor.as_deref()).await?,
+                    )?;
+                    let mut ast = ast;
+                    for key in ["where", "order"] {
+                        if before[key] != bound[key] {
+                            ast[key] = bound[key].clone();
+                        }
                     }
-                    for key in ["links","relation_context"] {
-                        if before["include"][key]!=bound["include"][key] {ast["include"][key]=bound["include"][key].clone();}
+                    for key in ["links", "relation_context"] {
+                        if before["include"][key] != bound["include"][key] {
+                            ast["include"][key] = bound["include"][key].clone();
+                        }
                     }
                     let body = serde_json::to_string_pretty(&ast).unwrap_or_default();
                     let uid = match store::records::resolve(&self.store.pool, &slug).await? {
@@ -259,7 +278,7 @@ impl Engine {
                     };
                     store::records::set_extension(&self.store.pool, &uid, "lince.protein", &ast)
                         .await?;
-                    outcome.data=Some(serde_json::json!({"query":ast}));
+                    outcome.data = Some(serde_json::json!({"query":ast}));
                     outcome.created = Some(uid);
                 }
                 Action::CreateKarmaProgram {

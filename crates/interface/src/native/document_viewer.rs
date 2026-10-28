@@ -1,4 +1,5 @@
 mod credits;
+pub(crate) use credits::CREDITS;
 mod persistence;
 mod runtime;
 #[cfg(test)]
@@ -16,6 +17,8 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Component, Clone, Serialize, Deserialize)]
 pub struct DocumentViewer {
     pub path: String,
+    #[serde(default)]
+    pub resource: Option<lince_resources::Resource>,
     pub positions: BTreeMap<String, Position>,
     pub zoom: f32,
 }
@@ -24,6 +27,7 @@ impl Default for DocumentViewer {
     fn default() -> Self {
         Self {
             path: String::new(),
+            resource: None,
             positions: BTreeMap::new(),
             zoom: 1.0,
         }
@@ -31,6 +35,13 @@ impl Default for DocumentViewer {
 }
 
 impl DocumentViewer {
+    pub fn with_resource(resource: lince_resources::Resource) -> Self {
+        Self {
+            path: resource.uri.clone(),
+            resource: Some(resource),
+            ..default()
+        }
+    }
     pub fn with_path(path: impl Into<String>) -> Self {
         Self {
             path: path.into(),
@@ -44,6 +55,10 @@ impl DocumentViewer {
 
     pub fn valid(&self) -> bool {
         valid_path(&self.path)
+            && self
+                .resource
+                .as_ref()
+                .is_none_or(|resource| resource.validate().is_ok())
             && self.positions.len() <= 128
             && self
                 .positions
@@ -62,7 +77,7 @@ impl DocumentViewer {
 }
 
 fn valid_path(path: &str) -> bool {
-    path.len() <= 4096 && !path.contains('\0')
+    path.len() <= 8192 && !path.contains('\0')
 }
 
 #[derive(Component)]
@@ -84,6 +99,7 @@ struct View {
     requested: BTreeSet<u32>,
     viewport_size: Vec2,
     picking: bool,
+    retention: Option<String>,
 }
 
 pub struct DocumentViewerPlugin;
@@ -118,7 +134,6 @@ pub fn spawn(
     position: DVec2,
     document: DocumentViewer,
 ) -> Entity {
-    let path = document.path.clone();
     let owner = world
         .spawn((
             crate::native::castle::Castle,
@@ -143,26 +158,136 @@ pub fn spawn(
         ))
         .id();
     crate::native::edit_mode::label(world, owner, "Document Viewer Castle", 24.0);
-    let row = ui::row(world, owner);
+    populate(world, owner, owner);
+    owner
+}
+
+pub(crate) fn embedded(
+    world: &mut World,
+    parent: Entity,
+    controls: Entity,
+    resource: lince_resources::Resource,
+) -> Entity {
+    let owner = world
+        .spawn((
+            DocumentViewer::with_resource(resource),
+            Node {
+                width: percent(100),
+                height: px(560),
+                flex_direction: FlexDirection::Column,
+                flex_shrink: 0.0,
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            crate::native::sand_store::SandCredits(CREDITS),
+            ChildOf(parent),
+        ))
+        .id();
+    populate(world, owner, controls);
+    let viewport = world.get::<View>(owner).unwrap().viewport;
+    world
+        .entity_mut(viewport)
+        .insert((
+            InlineViewport(owner),
+            crate::native::embedded_media::OwnsMediaScroll,
+        ))
+        .observe(inline_scroll);
+    owner
+}
+
+#[derive(Component)]
+struct InlineViewport(Entity);
+
+fn inline_scroll(
+    mut event: On<Pointer<Scroll>>,
+    viewports: Query<&InlineViewport>,
+    mut commands: Commands,
+) {
+    let Ok(viewport) = viewports.get(event.entity) else {
+        return;
+    };
+    let owner = viewport.0;
+    let factor = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
+        24.0
+    } else {
+        1.0
+    };
+    let delta = -Vec2::new(event.x, event.y) * factor;
+    let pointer = event.pointer_id;
+    let location = event.pointer_location.clone();
+    let input = event.event().clone();
+    event.propagate(false);
+    commands.queue(move |world: &mut World| {
+        if !scroll_inline(world, owner, delta)
+            && let Some(parent) = world.get::<ChildOf>(owner).map(ChildOf::parent)
+        {
+            world.trigger(Pointer::new(pointer, location, input, parent));
+        }
+    });
+}
+
+fn scroll_inline(world: &mut World, owner: Entity, delta: Vec2) -> bool {
+    let Some(view) = world.get::<View>(owner) else {
+        return false;
+    };
+    let Some(layout) = view.layout else {
+        return false;
+    };
+    let state = world.get::<DocumentViewer>(owner).unwrap();
+    let count = view.info.as_ref().map_or(0, |info| info.sections.len());
+    let viewport = view.viewport;
+    let width = runtime::display_width(state, view);
+    let height = layout.height as f32 * width / layout.width as f32;
+    let maximum = Vec2::new(
+        (width - view.viewport_size.x).max(0.0),
+        (height - view.viewport_size.y).max(0.0),
+    );
+    let old = world.get::<ScrollPosition>(viewport).unwrap().0;
+    let next = (old + delta).clamp(Vec2::ZERO, maximum);
+    if next != old {
+        world.get_mut::<ScrollPosition>(viewport).unwrap().0 = next;
+        return true;
+    }
+    let section = state.position().section;
+    let forward = delta.y > 0.0;
+    if delta.y != 0.0 && ((forward && section + 1 < count) || (!forward && section > 0)) {
+        let position = world
+            .get_mut::<DocumentViewer>(owner)
+            .unwrap()
+            .into_inner()
+            .position_mut();
+        position.section = if forward { section + 1 } else { section - 1 };
+        position.fraction = if forward { 0.0 } else { 1.0 };
+        world.get_mut::<View>(owner).unwrap().restore = true;
+        world.get_mut::<View>(owner).unwrap().layout = None;
+        return true;
+    }
+    false
+}
+
+fn populate(world: &mut World, owner: Entity, controls: Entity) {
+    let path = world.get::<DocumentViewer>(owner).unwrap().path.clone();
+    let row = ui::row(world, controls);
     let input = ui::input(world, row, "PDF or EPUB file path", &path, 4096);
     world.get_mut::<Node>(input).unwrap().flex_grow = 1.0;
     ui::button(world, row, owner, "Open", ui::Control::Open);
     ui::button(world, row, owner, "Browse…", ui::Control::Browse);
-    let controls = ui::row(world, owner);
-    ui::button(world, controls, owner, "Previous", ui::Control::Previous);
-    ui::button(world, controls, owner, "Next", ui::Control::Next);
-    let mode = ui::button(world, controls, owner, "Scroll mode", ui::Control::Mode);
+    ui::button(world, row, owner, "Keep offline", ui::Control::KeepOffline);
+    let toolbar = ui::row(world, controls);
+    ui::button(world, toolbar, owner, "Previous", ui::Control::Previous);
+    ui::button(world, toolbar, owner, "Next", ui::Control::Next);
+    let mode = ui::button(world, toolbar, owner, "Scroll mode", ui::Control::Mode);
     let mode_label = world.get::<Children>(mode).unwrap()[0];
-    ui::button(world, controls, owner, "−", ui::Control::Zoom(-0.25));
-    ui::button(world, controls, owner, "+", ui::Control::Zoom(0.25));
-    let navigation = ui::row(world, owner);
+    ui::button(world, toolbar, owner, "−", ui::Control::Zoom(-0.25));
+    ui::button(world, toolbar, owner, "+", ui::Control::Zoom(0.25));
+    let navigation = ui::row(world, controls);
     crate::native::edit_mode::label(world, navigation, "PDF page / EPUB chapter", 13.0);
     let section_input = ui::input(world, navigation, "Page or chapter number", "1", 6);
     world.get_mut::<Node>(section_input).unwrap().width = px(65);
     ui::button(world, navigation, owner, "Go", ui::Control::Go);
     let status = crate::native::edit_mode::label(
         world,
-        owner,
+        controls,
         "Open a PDF or EPUB. Your place is saved with the workspace.",
         13.0,
     );
@@ -203,6 +328,7 @@ pub fn spawn(
         mode_label,
         section_input,
         info: None,
+        retention: None,
         layout: None,
         key: None,
         busy: false,
@@ -214,7 +340,6 @@ pub fn spawn(
         viewport_size: Vec2::ZERO,
         picking: false,
     });
-    owner
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {

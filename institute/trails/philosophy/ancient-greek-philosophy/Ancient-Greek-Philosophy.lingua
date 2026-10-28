@@ -1,0 +1,80 @@
+Import "../Philosophy.lingua"
+Import "foundations/Reading-tools.lingua"
+Import "socratic/Socratic-inquiry.lingua"
+Import "presocratics/Nature-and-being.lingua"
+Import "Plato-and-Aristotle.lingua"
+Import "schools/Schools-of-life.lingua"
+Import "questions/Questions-and-crossings.lingua"
+Import "sources/Sources.lingua"
+Import "research/Research.lingua"
+
+Ancient Greek philosophy: inquiry, knowledge, and living well (@ancient-greek-philosophy: 0, is #chapter, #part-of @philosophy, #contains @greek-reading-tools, #contains @greek-socratic-inquiry, #contains @greek-nature-being, #contains @greek-plato-aristotle, #contains @greek-schools-life, #contains @greek-question-crossings, #contains @greek-sources, #contains @greek-scholarly-path, #source @greek-sources, #philosophy @greek-nature-being, #ancient-greek-philosophy @greek-nature-being, #philosophy @greek-plato-aristotle, #ancient-greek-philosophy @greek-plato-aristotle, #philosophy @greek-question-crossings, #ancient-greek-philosophy @greek-question-crossings, #philosophy @greek-reading-tools, #ancient-greek-philosophy @greek-reading-tools, #philosophy @greek-scholarly-path, #ancient-greek-philosophy @greek-scholarly-path, #philosophy @greek-schools-life, #ancient-greek-philosophy @greek-schools-life, #philosophy @greek-socratic-inquiry, #ancient-greek-philosophy @greek-socratic-inquiry) { r_464ZHR7ZYC234A0XX2QEW47VB3
+Learn philosophy through questions and arguments in Greek texts, from the earlier inquiries into nature through Socrates, Plato, Aristotle, the Hellenistic schools, and later Greek Platonism. Begin with Plato's Socratic dialogues and follow the questions into the wider tradition.
+
+**Entry:** ordinary reading ability and willingness to explain a passage in your own words. [Reading tools](foundations/Reading-tools.lingua#r_5DTAXMW53NH7ABW23PMFSSBQEF) supplies context, vocabulary, and argument reconstruction alongside the text. The retained core is in English; [Portuguese alternatives](sources/Portuguese-editions.lingua#r_3DABDPGKRDSM682Q2NYDEVX4Z8) accompany the corresponding readings. Each guide introduces the preparation it actually uses.
+
+**Progression:** begin by reconstructing an argument, comparing an objection, and defending a considered response. The survey establishes a foundation. Full study completion requires [working Greek, sustained seminars, an independent research contribution, and informed criticism and revision](research/Research-completion.lingua#r_41G7P2Y9HYXMVAF53MV2QYT1CD).
+
+### First route
+
+| Step | Read with its guide | Question carried forward |
+| --- | --- | --- |
+| 1 | [Apology](socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4) | Why examine a life, and what does an admission of ignorance accomplish? |
+| 2 | [Euthyphro](socratic/Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD) | What makes a definition adequate, and does approval make something right? |
+| 3 | [Crito](socratic/Crito.lingua#r_54N10WGKCSCKW6XM202PCG7ZDH) | What could justify acting against a law or accepting its demand? |
+| 4 | [Meno](socratic/Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN) | How can inquiry begin when the answer is unknown? |
+| 5 | [Gorgias](socratic/Gorgias.lingua#r_5G884J0SFXCP4YRBFF5C5YSYD2) | What separates persuasion, knowledge, power, and a good life? |
+| 6 | [Xenophon's Memorabilia](socratic/Xenophon.lingua#r_386T9BE05SXJZK8E0NX7TAYJK8) | What changes when another author presents Socrates? |
+| Review | [Reconstruct and challenge an argument](socratic/Argument-review.lingua#r_3879MMB9TCFTCMJ2SPYG32ZDS0) | What do the passages justify, and what remains unsettled? |
+
+Take one dialogue at a time. Each guide names a first selection, a purpose for reading the complete work, the preparation it uses, questions, and a check on understanding. The sequence is pedagogical; it makes no claim about Plato's order of composition.
+
+### Foundation survey
+
+Use this sequence for a broad first pass, reading the first selections named by each guide. It establishes the foundation stage. Direct entrance by question uses the same passages and preparation; the later [research progression](research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09) sets the full completion standard.
+
+| Part | Read with its guides | Basis to carry forward |
+| --- | --- | --- |
+| Socratic inquiry and teaching | The first route above; [Protagoras](socratic/Protagoras.lingua#r_6QKC211R791MTAMXSZM0VBS5XN) for civic education | A question, an argument, an objection, and the difference between a speaker and an author |
+| Earlier Greek thought | [The fragments and ancient testimonies](presocratics/Nature-and-being.lingua#r_61M87EN28QQ9AHXT80SPCB0CVH) | Accounts of nature, change, being, number, and their surviving evidence |
+| Plato beyond the first dialogues | [Phaedo](plato/Phaedo.lingua#r_6JFZZP5W43FY7FFQENQNH96AFQ), [Republic](plato/Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5), [Theaetetus](plato/Theaetetus.lingua#r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N), and [Symposium](plato/Symposium.lingua#r_5NMHFGWX7QGRJ65XQDFFEG9K8B) | Compare knowledge, reality, justice, desire, and the way a dialogue develops a problem |
+| Aristotle's methods and explanations | [Concepts and inference](aristotle/Logic-and-demonstration.lingua#r_1SRR6TVQ8CC029F7QK6PKPM1X9); [nature, causes, and being](aristotle/Nature-causes-and-being.lingua#r_2MGDMPK353BD8MFMFDMA3JPJ9P) | Distinguish a classification, a valid inference, and an explanatory account |
+| Aristotle on life, community, and art | [Character](aristotle/Living-well-and-character.lingua#r_21YB00AWNRYQ0X2SQ8H0RFRW65), [practical judgment](aristotle/Practical-wisdom-and-friendship.lingua#r_6RZXS4EJH55PRPW61MB33DTCNM), [Politics](aristotle/Political-community.lingua#r_0NZK4NKSQVX9NMTAWRT2XNBATD), and [Poetics](aristotle/Poetry-and-representation.lingua#r_5PBR5GVV367JEK4PF94Q2YJKBE) | Explain how reasons, purposes, institutions, and form enter an account |
+| Schools and ways of life | [The Cynics](schools/Cynics.lingua#r_0R2YCT14QC77FB489JPCD107SZ), [Epicurus](schools/Epicurus.lingua#r_6KHZKEFRKY1J18Z7TSRAJABZQP), [Epictetus](schools/Epictetus.lingua#r_35EWPVCFYNWZ0DYG5R5HM05TC2), and [the sceptics](schools/Sceptics.lingua#r_6KEA1AHWJRDT3ZN8VJQTK06ZFK) | Compare their commitments about nature, knowledge, agency, and living well |
+| Later Platonism | [Plotinus on beauty](schools/Plotinus.lingua#r_375WTA2HXW04F1FC4FVW20B9N9) | Examine how a later author develops and changes a Platonic question |
+| Comparative investigation | [Defend and review a comparison](questions/Comparative-investigation.lingua#r_20BK69Q76HJXAGZ5J1T097X29G) | Locate both accounts, reconstruct their reasoning, and defend a response with its limits |
+
+At this introductory depth, explain the question and an argument from each part, compare two positions fairly, and identify a difficulty your interpretation has not resolved. The scope of the claim should match the passages and work completed.
+
+**Language progression:** begin Ancient Greek alongside the first readings if you wish, using [Peek's introductory book](sources/Ancient-Greek-Peek.lingua#r_1D87YRHMAM7FHZH3VCDY9JTHGX) and [the first application](languages/Read-original-texts.lingua#r_1Q07KPDNG2JTY7HRWQY5H6T5MJ). Working command of the relevant Greek becomes required for the [textual dossier](research/Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF) and research completion.
+
+### From foundation to full completion
+
+| Stage | Work |
+| --- | --- |
+| Foundation readiness | [Show what the survey has established](research/Foundation-readiness.lingua#r_2P555101Z0VGGZ14M12HRWKSYY) |
+| Textual command | [Defend a reading of the Greek text and its editorial evidence](research/Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF) |
+| Research literature | [Reconstruct competing interpretations and a current debate](research/Scholarly-inquiry.lingua#r_2FEBDJ8R5JDHXX54TSATY2CRVZ) |
+| Advanced study | [Choose two different seminar families](research/seminars/Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y) and meet the [sustained-study standard](research/Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q) |
+| Independent contribution | [Investigate a bounded problem through the primary texts and scholarship](research/Independent-research.lingua#r_08YBJ1G76KSJ3QTG42FKCCAV5K) |
+| Examination and revision | [Respond to informed independent criticism and revise the work](research/Criticism-and-revision.lingua#r_5P20QNYEBQPBVGHWV428JXWW8Z) |
+| Terminal claim | [Check the full portfolio and research evidence](research/Research-completion.lingua#r_41G7P2Y9HYXMVAF53MV2QYT1CD) |
+
+The seminars branch and reconnect: earlier evidence, Plato's being and knowledge, desire and education, Aristotle's substance, nature and mind, action and politics, Hellenistic disputes, and later Platonism. Deepen a chosen problem through complete relevant works and critical scholarship. Reuse demonstrated preparation from any appropriate route and explain the integration.
+
+[Academic benchmarks](sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) inform this progression; its required work and completion criteria are authored for Lince. Begin with the accessible dialogues, and name each completed stage at its actual depth.
+
+### Choose a continuation
+
+| Interest | Follow | Preparation |
+| --- | --- | --- |
+| Pre-Socratic fragments, nature, change, and being | [Nature and being](presocratics/Nature-and-being.lingua#r_61M87EN28QQ9AHXT80SPCB0CVH) | The reading method; the necessary context is introduced there |
+| Knowledge, logic, nature, justice, life, politics, and art | [Plato and Aristotle](Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) | Each reading names its own useful earlier dialogue |
+| Desire, agency, tranquillity, and doubt | [Schools of life](schools/Schools-of-life.lingua#r_58ENCWSNQARKCDXEP8FVWY9507) | An argument reconstruction; selected Socratic comparisons are linked alongside |
+| Scholarly specialisation and research | [Research progression](research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09) | Foundation abilities, followed by the preparation the chosen problem uses |
+| A question across several fields | [Questions and crossings](questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF) | Choose the relevant readings rather than completing every branch |
+
+Use [Books and editions](sources/Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3) to choose a language and translation, open retained books, or find an external text or a library/owned edition. Sources identify their actual access and reuse terms. The retained EPUBs are together in `books/`; keep the relevant source Records and books together when transferring an offline selection. Additional external editions identify their own access requirements.
+
+**Return:** [Philosophy](../Philosophy.lingua#r_00000000000000000000001001)
+} r_464ZHR7ZYC234A0XX2QEW47VB3

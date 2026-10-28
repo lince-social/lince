@@ -1,0 +1,24 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Physics.lingua"
+Import "../sources/Metaphysics.lingua"
+Import "Living-well-and-character.lingua"
+Import "Political-community.lingua"
+Import "../questions/Comparative-investigation.lingua"
+
+Aristotle: nature, causes, and being (@greek-aristotle-nature-being: 0, is #chapter, #part-of @greek-plato-aristotle, #source @greek-source-physics, #source @greek-source-metaphysics, #philosophy @greek-aristotle-good, #ancient-greek-philosophy @greek-aristotle-good, #philosophy @greek-aristotle-politics, #ancient-greek-philosophy @greek-aristotle-politics, #philosophy @greek-comparative-inquiry, #ancient-greek-philosophy @greek-comparative-inquiry) { r_2MGDMPK353BD8MFMFDMA3JPJ9P
+**Read:** [Physics](../sources/Physics.lingua#r_28F5HPQPVG9TWZ7P62276DQ2DX), Book II, chapters 1–3 and 7–9; then [Metaphysics](../sources/Metaphysics.lingua#r_1TR6T0Z46ZT00NNMWG6SXG46KF), Book I, chapters 1–3, and Book IV, chapters 1–4. Book VII, chapters 1–3 supplies further depth concerning substance.
+
+**Preparation:** [different kinds of explanation](../presocratics/Anaxagoras.lingua#r_2KMHNE6TG1NF6X3Q4SXMBHGWXN) or a concrete distinction between what something consists of and how it changes. [Categories](Logic-and-demonstration.lingua#r_1SRR6TVQ8CC029F7QK6PKPM1X9) supports the later discussion of substance and can be read alongside.
+
+In Physics, distinguish a natural thing's account of change from the account of an artifact. Reconstruct what Aristotle calls material, formal, moving or efficient, and final causes. The question each answers matters more than memorising four names.
+
+For a clay vessel, distinguish its material, form, production, and proposed purpose. Then ask what must be defended when an account of purposes is extended to a living organism or a natural process. These readings examine an ancient explanation rather than substituting it for a present experimental result.
+
+Metaphysics asks about being and the principles of an inquiry into it. Follow the defence of the principle of non-contradiction: identify what the interlocutor must mean or concede for the discussion to proceed.
+
+**Practice:** compare a physical condition enabling an action with a reason for choosing it. Connect the distinction with [Phaedo's discussion of causes](../plato/Phaedo.lingua#r_6JFZZP5W43FY7FFQENQNH96AFQ). Then reconstruct a short argument from Book IV and propose an objection to one step.
+
+**Check:** distinguish the kinds of inquiry and explanation, cite the passage, and state a limitation of your example. Explain which assumption needs further argument.
+
+**Continue:** [Living well and character](Living-well-and-character.lingua#r_21YB00AWNRYQ0X2SQ8H0RFRW65), [political association](Political-community.lingua#r_0NZK4NKSQVX9NMTAWRT2XNBATD), or [a comparison of explanations](../questions/Comparative-investigation.lingua#r_20BK69Q76HJXAGZ5J1T097X29G). **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_2MGDMPK353BD8MFMFDMA3JPJ9P

@@ -1,0 +1,25 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Shoulder-muscles.lingua"
+Import "../../../sources/Z-Anatomy.lingua"
+Import "../Shoulder.lingua"
+Import "Arm-and-chest-muscles.lingua"
+
+The rotator cuff — manguito rotador (@shoulder-cuff: 0, is #chapter, #part-of @shoulder, #source @med-source-shoulder-muscles, #source @med-source-joint, #source @med-source-model, #medicine @shoulder-arm-muscles, #orthopedics @shoulder-arm-muscles, #shoulder @shoulder-arm-muscles) { r_5TB0T7JY5RTYV4A8ENCA0H18B4
+**Read a muscle group in depth:** [Shoulder muscles — NCBI Bookshelf](../../../sources/Shoulder-muscles.lingua#r_76PY1TN1ZHB847YGG80ZCB5S50), the complete descriptions of the four rotator cuff muscles, including attachments, function, and innervation. Compare their capsular relationships with [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4). Use [Z-Anatomy — optional three-dimensional anatomy](../../../sources/Z-Anatomy.lingua#r_2HGVZ0CZH2SS1GMB3M82G380EC) for a changed viewpoint; the later problem reading narrows to one tendon or attachment where needed.
+
+| Muscle | Portuguese names encountered | Principal anatomical relationship and action |
+| --- | --- | --- |
+| Supraspinatus | supraespinal; supraespinhoso | supraspinous fossa to greater tubercle; contributes to abduction and stability |
+| Infraspinatus | infraespinal; infraespinhoso | infraspinous fossa to greater tubercle; external rotation and stability |
+| Teres minor | redondo menor | lateral scapular region to greater tubercle; external rotation and stability |
+| Subscapularis | subescapular | subscapular fossa to lesser tubercle; internal rotation and stability |
+
+The cuff contributes coordinated compression and control of the humeral head while other muscles generate substantial movement forces. It is not just four independent pull-cords, and supraspinatus is not active only during a fixed initial segment of elevation.
+
+**Try:** identify which muscles are anterior and posterior to the joint, then infer their rotation effects from their courses. Check the inference against the source. Distinguish the tendon, muscle belly, attachment, and nerve supply when reading a report about one cuff structure.
+
+**Continue:** [Deltoid, chest, back, and arm muscles](Arm-and-chest-muscles.lingua#r_29ZESWE2QXQS55PVRECZAGRBP7).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_5TB0T7JY5RTYV4A8ENCA0H18B4

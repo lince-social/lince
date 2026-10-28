@@ -134,6 +134,7 @@ toml = { workspace = true, optional = true }
 sensei = { workspace = true }
 
 [dev-dependencies]
+utils.workspace = true
 iroh = { workspace = true }
 store = { workspace = true }
 nucleus = { workspace = true }
@@ -269,6 +270,10 @@ name = "laboratory_smoke"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "language_demo"
+required-features = ["native-runtime"]
+
+[[example]]
 name = "canvas_render_smoke"
 required-features = ["native-runtime"]
 
@@ -361,6 +366,10 @@ name = "workspace_canvas_audit"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "workspace_baseline"
+required-features = ["native-runtime"]
+
+[[example]]
 name = "record_castle_visual"
 required-features = ["native-runtime"]
 
@@ -374,4 +383,12 @@ required-features = ["native-runtime"]
 
 [[example]]
 name = "vocabulary_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "trail_visual"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "demeter_visual"
 required-features = ["native-runtime"]

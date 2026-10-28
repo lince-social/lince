@@ -1,5 +1,77 @@
 use super::*;
 
+pub fn lifecycle_forms(transfer: &Value, person: &str) -> Vec<Form> {
+    let mut forms = Vec::new();
+    if capability(transfer, "edit_terms") && transfer["visibility"] == "hidden" {
+        let mut form = Form::action(
+            "Discard unused draft",
+            action_base(transfer, "discard-transfer-draft", person),
+        );
+        form.review = json!({"Operation":"Discard this unpublished, unaddressed draft. Signed history is retained; eligibility and revision are checked again when applying."});
+        forms.push(form);
+    }
+    for occurrence in array(transfer, "occurrences") {
+        if capability(occurrence, "propose_cancellation")
+            && occurrence["action_payloads"]["propose_cancellation"].is_object()
+        {
+            let mut form = Form::action(
+                "Propose cancelling the remainder",
+                occurrence["action_payloads"]["propose_cancellation"].clone(),
+            );
+            form.review = json!({"Occurrence":occurrence["uid"],"Operation":"Propose cancellation of the exact remaining amount. Other parties retain their agreement choices.","Remaining amount":form.data["expected_remaining_quantity"]});
+            forms.push(form);
+        }
+        for cancellation in array(occurrence, "cancellations") {
+            if capability(cancellation, "apply_cancellation")
+                && cancellation["action_payloads"]["apply_cancellation"].is_object()
+            {
+                let mut form = Form::action(
+                    "Complete agreed cancellation",
+                    cancellation["action_payloads"]["apply_cancellation"].clone(),
+                );
+                form.review = json!({"Cancellation":cancellation["uid"],"Amount":cancellation["quantity"],"Operation":"Apply the agreed cancellation while retaining signed history."});
+                forms.push(form);
+            }
+        }
+    }
+    for form in &mut forms {
+        form.actor = Some(person.into());
+        form.transfer = transfer["uid"].as_str().map(str::to_owned);
+        form.revision = transfer["revision"].as_u64();
+        form.data["person"] = json!(person);
+    }
+    forms
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+
+    #[test]
+    fn disposal_and_cancellation_keep_capabilities_revisions_and_exact_remainders() {
+        let mut transfer = json!({"uid":"trip","revision":7,"visibility":"hidden",
+        "capabilities":{"edit_terms":true},"occurrences":[{
+            "uid":"delivery","capabilities":{"propose_cancellation":true},
+            "action_payloads":{"propose_cancellation":{"action":"propose-transfer-cancellation","transfer":"trip","occurrence":"delivery","expected_revision":7,"expected_remaining_quantity":"0.000000000000000001"}},
+            "cancellations":[]
+        }]});
+        let forms = lifecycle_forms(&transfer, "me");
+        assert_eq!(forms.len(), 2);
+        assert_eq!(forms[0].data["action"], "discard-transfer-draft");
+        let cancellation = forms[1].payload().unwrap();
+        assert_eq!(
+            cancellation["expected_remaining_quantity"],
+            "0.000000000000000001"
+        );
+        assert_eq!(cancellation["expected_revision"], 7);
+        assert_eq!(cancellation["person"], "me");
+        assert_eq!(forms[1].revision, Some(7));
+        transfer["visibility"] = json!("participants");
+        transfer["occurrences"][0]["capabilities"]["propose_cancellation"] = json!(false);
+        assert!(lifecycle_forms(&transfer, "me").is_empty());
+    }
+}
+
 pub fn outcome_forms(transfer: &Value, person: &str) -> Vec<Form> {
     let mut forms = Vec::new();
     for promise in array(transfer, "promises") {

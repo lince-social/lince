@@ -14,6 +14,7 @@ mod receipts;
 mod runtime;
 pub(crate) mod tests;
 mod transport;
+mod transport_workspace;
 mod ui;
 mod workflows;
 
@@ -21,6 +22,7 @@ pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>)
     tests::laboratory_cases(cases);
     workflows::tests::laboratory_cases(cases);
     audience::tests::laboratory_cases(cases);
+    transport_workspace::laboratory_cases(cases);
 }
 
 use bevy::{math::DVec2, prelude::*};
@@ -48,6 +50,7 @@ pub struct TransferCastle {
     pub form: Option<Form>,
     #[serde(default)]
     pub shared_simulation: Option<String>,
+    pub workflow: crate::transfers::workspace::Workspace,
 }
 
 impl Default for TransferCastle {
@@ -62,6 +65,7 @@ impl Default for TransferCastle {
             person: String::new(),
             form: None,
             shared_simulation: None,
+            workflow: Default::default(),
         }
     }
 }
@@ -91,6 +95,8 @@ struct View {
     receipt_file_job: Option<String>,
     receipt_list: Value,
     receipt_export: Option<String>,
+    transport: Option<Entity>,
+    header: Entity,
 }
 
 #[derive(Component)]
@@ -242,6 +248,8 @@ pub fn spawn(
         receipt_file_job: None,
         receipt_list: Value::Null,
         receipt_export: None,
+        transport: None,
+        header,
     });
     ui::render(world, owner);
     forms::render(world, owner);

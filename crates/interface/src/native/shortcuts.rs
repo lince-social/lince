@@ -1,92 +1,409 @@
 use bevy::prelude::*;
 
+mod commands;
+mod pointer;
+pub use pointer::{PointerBinding, PointerChord};
+pub(crate) mod configuration;
+mod editor;
+mod widths;
+pub(crate) use editor::capture_entry;
+pub(crate) use editor::{CaptureInput, EditorPlugin, panel};
+pub use editor::{KeyboardModalTrigger, keyboard_capturing, keyboard_owned};
+pub(crate) use widths::panel as width_settings;
+pub(crate) use widths::ratio as size_ratio;
 mod model;
 pub(crate) mod tests;
-pub(crate) use model::{Settings, Shortcut};
+pub(crate) use model::Scope;
+pub use model::{Settings, Shortcut};
 
 #[derive(Component)]
 pub(crate) struct ConfiguredBindings(pub Vec<crate::native::actions::KeyBinding>);
+
+#[derive(Resource, Default)]
+struct DesktopKeys {
+    consumed: std::collections::HashMap<(Entity, KeyCode), Option<crate::host::DesktopAction>>,
+    forwarded: bevy::ecs::message::Messages<bevy::input::keyboard::KeyboardInput>,
+    dispatcher: Option<bevy::ecs::system::SystemId>,
+}
+
+fn scoped_binding(
+    world: &World,
+    root: Entity,
+    key: KeyCode,
+    modifiers: crate::native::actions::Modifiers,
+) -> bool {
+    let mut cursor = world
+        .get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get())
+        .or(Some(root));
+    for _ in 0..crate::native::layout::MAX_DEPTH {
+        let Some(entity) = cursor else { break };
+        if world
+            .get::<crate::native::actions::KeyBindings>(entity)
+            .is_some_and(|bindings| {
+                bindings
+                    .0
+                    .iter()
+                    .any(|binding| binding.key == key && binding.modifiers == modifiers)
+            })
+        {
+            return true;
+        }
+        if entity == root {
+            return false;
+        }
+        cursor = world
+            .get::<ChildOf>(entity)
+            .map(ChildOf::parent)
+            .or(Some(root));
+    }
+    false
+}
+
+pub(crate) fn desktop_input(world: &mut World) {
+    use crate::native::actions::Modifiers;
+    use bevy::{
+        ecs::message::Messages, input::keyboard::KeyboardInput, input_focus::dispatch_focused_input,
+    };
+    world.init_resource::<DesktopKeys>();
+    let mut state = world.remove_resource::<DesktopKeys>().unwrap();
+    let input = crate::native::keyboard::take(world);
+    let Some(mut original) = world.remove_resource::<Messages<KeyboardInput>>() else {
+        world.insert_resource(state);
+        return;
+    };
+    original.clear();
+    if state.dispatcher.is_none() {
+        state.dispatcher = Some(world.register_system(dispatch_focused_input::<KeyboardInput>));
+    }
+    state.forwarded.update();
+    world.insert_resource(std::mem::take(&mut state.forwarded));
+    for prepared in input {
+        world.insert_resource(crate::native::keyboard::Dispatch {
+            window: prepared.input.window,
+            modifiers: prepared.modifiers,
+            held: prepared.held.clone(),
+        });
+        dispatch_key(world, &mut state, prepared);
+        world.remove_resource::<crate::native::keyboard::Dispatch>();
+    }
+    if let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() {
+        state
+            .consumed
+            .retain(|(window, key), _| world.get_entity(*window).is_ok() && keys.pressed(*key));
+    }
+    state.forwarded = world.remove_resource::<Messages<KeyboardInput>>().unwrap();
+    world.insert_resource(original);
+    crate::native::keyboard::logical(
+        world,
+        crate::native::keyboard::current(world).unwrap_or(Modifiers::NONE),
+    );
+    world.insert_resource(state);
+}
+
+fn dispatch_key(
+    world: &mut World,
+    state: &mut DesktopKeys,
+    prepared: crate::native::keyboard::PreparedKey,
+) {
+    use crate::native::actions::WindowActionTarget;
+    use bevy::{ecs::message::Messages, input::keyboard::KeyboardInput};
+    let event = &prepared.input;
+    if editor::dispatch_input(world, event) {
+        if !event.state.is_pressed() {
+            state.consumed.remove(&(event.window, event.key_code));
+        }
+        return;
+    }
+    let modifiers = prepared.modifiers;
+    let identity = (event.window, event.key_code);
+    if crate::native::layout::desktop::manipulation::pointer::keyboard(world, &prepared) {
+        if event.state.is_pressed() {
+            state.consumed.entry(identity).or_insert(None);
+        } else {
+            state.consumed.remove(&identity);
+        }
+        return;
+    }
+    let previous = state.consumed.get(&identity).copied();
+    let binding = active_desktop_bindings(world)
+        .into_iter()
+        .find(|binding| binding.key == event.key_code && binding.modifiers == modifiers);
+    let root = world
+        .get::<WindowActionTarget>(event.window)
+        .map(|target| target.0)
+        .filter(|root| {
+            world
+                .get::<crate::native::canvas::CanvasView>(*root)
+                .is_some()
+        })
+        .filter(|_| {
+            world
+                .get::<Window>(event.window)
+                .is_none_or(|window| window.focused)
+        });
+    if let Some(root) = root
+        && crate::native::layout::desktop::recent::key(
+            world,
+            root,
+            &prepared,
+            binding.is_some_and(|binding| binding.action.is_recent()),
+        )
+    {
+        if event.state.is_pressed() {
+            state.consumed.entry(identity).or_insert(None);
+        } else {
+            state.consumed.remove(&identity);
+        }
+        return;
+    }
+    if !event.state.is_pressed() && previous.is_some() {
+        state.consumed.remove(&identity);
+        return;
+    }
+    if event.state.is_pressed()
+        && let Some(binding) = binding
+        && let Some(root) = root
+        && !scoped_binding(world, root, event.key_code, modifiers)
+        && (previous.is_none() && !event.repeat
+            || binding.repeat && event.repeat && previous == Some(Some(binding.action)))
+    {
+        state.consumed.insert(identity, Some(binding.action));
+        crate::native::actions![binding.action].run(world, root);
+    } else if previous.is_some() {
+        return;
+    } else {
+        if world
+            .get::<Window>(event.window)
+            .is_some_and(|window| !window.focused)
+        {
+            return;
+        }
+        crate::native::keyboard::logical(world, modifiers);
+        world
+            .resource_mut::<Messages<KeyboardInput>>()
+            .write(event.clone());
+        if let Err(error) = world.run_system(state.dispatcher.unwrap()) {
+            crate::native::notifications::report(world, "Keyboard", &error.to_string());
+        }
+        world.resource_mut::<Messages<KeyboardInput>>().clear();
+    }
+}
+
+#[derive(Resource, Default)]
+pub(crate) struct KeyboardModalOwner(pub Option<Entity>);
+
+pub fn keyboard_owner(world: &World) -> Option<Entity> {
+    world.get_resource::<KeyboardModalOwner>().and_then(|owner| owner.0)
+}
+
+pub(crate) fn input_eligible(world: &World, root: Entity, canvas: &str, target: Entity) -> bool {
+    use crate::native::workspace::{Workspaces, WorkspaceMember};
+    if world.get_resource::<crate::host::input::InputActivity>().is_some_and(|activity| !activity.active()) { return false; }
+    let Some(spaces) = world.get::<Workspaces>(root).filter(|spaces| spaces.canvas_id == canvas) else { return false; };
+    let mut ancestor = Some(target);
+    for _ in 0..crate::native::layout::MAX_DEPTH {
+        let Some(entity) = ancestor else { return false; };
+        if world.get_entity(entity).is_err()
+            || world.get::<WorkspaceMember>(entity).is_some_and(|member| member.0 != spaces.active)
+            || world.get::<Node>(entity).is_some_and(|node| node.display == Display::None)
+            || world.get::<Visibility>(entity).is_some_and(|visibility| *visibility == Visibility::Hidden)
+            || world.get::<InheritedVisibility>(entity).is_some_and(|visibility| !visibility.get())
+            || world.get::<bevy::ui::InteractionDisabled>(entity).is_some()
+        { return false; }
+        if entity == root { return true; }
+        ancestor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+    }
+    false
+}
+
+pub(crate) fn own_keyboard(world: &mut World, overlay: Entity) {
+    world.init_resource::<KeyboardModalOwner>();
+    world.resource_mut::<KeyboardModalOwner>().0 = Some(overlay);
+}
+
+pub(crate) fn release_keyboard(world: &mut World, overlay: Entity) {
+    if let Some(mut owner) = world.get_resource_mut::<KeyboardModalOwner>()
+        && owner.0 == Some(overlay)
+    {
+        owner.0 = None;
+    }
+    editor::quarantine(world);
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct DesktopBinding {
     pub key: KeyCode,
     pub modifiers: crate::native::actions::Modifiers,
     pub action: crate::host::DesktopAction,
+    pub repeat: bool,
+}
+
+impl Shortcut {
+    pub(crate) fn desktop_action(self) -> Option<crate::host::DesktopAction> {
+        use crate::host::{DesktopAction as A, Direction as D};
+        Some(match self {
+            Self::Overview => A::ToggleOverview,
+            Self::DesktopEdit => A::ToggleEdit,
+            Self::Unfocus => A::ToggleFocus,
+            Self::RecentNext => A::RecentNext,
+            Self::RecentPrevious => A::RecentPrevious,
+            Self::FocusLeft => A::Focus(D::Left),
+            Self::FocusDown => A::Focus(D::Down),
+            Self::FocusUp => A::Focus(D::Up),
+            Self::FocusRight => A::Focus(D::Right),
+            Self::MoveLeft => A::Move(D::Left),
+            Self::MoveDown => A::Move(D::Down),
+            Self::MoveUp => A::Move(D::Up),
+            Self::MoveRight => A::Move(D::Right),
+            Self::Terminal => A::OpenTerminal,
+            Self::Launcher => A::OpenLauncher,
+            Self::Lock => A::Lock,
+            Self::Logout => A::Logout,
+            Self::External(action) => A::External(action),
+            Self::Tiling => A::ToggleTiling,
+            Self::CycleWidth => A::CycleItemWidth,
+            Self::ShrinkWidth => A::Resize(D::Left),
+            Self::GrowWidth => A::Resize(D::Right),
+            Self::ShrinkHeight => A::Resize(D::Up),
+            Self::GrowHeight => A::Resize(D::Down),
+            Self::CycleRowHeight => A::CycleRowHeight,
+            Self::Float => A::ToggleFloating,
+            Self::Fullscreen => A::ToggleFullscreen,
+            Self::WindowedFullscreen => A::ToggleWindowedFullscreen,
+            Self::CompactCreate => A::CreateCompactGroup,
+            Self::CompactAdd => A::AddCompactMembers,
+            Self::CompactNext => A::NextCompactMember,
+            Self::CompactPrevious => A::PreviousCompactMember,
+            Self::CompactEarlier => A::MoveCompactMember(D::Left),
+            Self::CompactLater => A::MoveCompactMember(D::Right),
+            Self::CompactDetach => A::DetachCompactMember,
+            Self::CompactDissolve => A::DissolveCompactGroup,
+            Self::ScratchMark => A::MarkScratch,
+            Self::ScratchShow => A::ShowScratch,
+            Self::ScratchHide => A::HideScratch,
+            Self::ScratchUnmark => A::UnmarkScratch,
+            Self::MagnifyIncrease => A::Magnify(crate::host::magnification::Adjustment::Increase),
+            Self::MagnifyDecrease => A::Magnify(crate::host::magnification::Adjustment::Decrease),
+            Self::MagnifyReset => A::Magnify(crate::host::magnification::Adjustment::Reset),
+            Self::Maximize => A::ToggleMaximized,
+            Self::DesktopOperation => A::OpenOperation,
+            Self::FocusLeftArrow => A::Focus(D::Left),
+            Self::FocusDownArrow => A::Focus(D::Down),
+            Self::FocusUpArrow => A::Focus(D::Up),
+            Self::FocusRightArrow => A::Focus(D::Right),
+            Self::Close => A::Close,
+            Self::Workspace1 => A::Workspace(1),
+            Self::Workspace2 => A::Workspace(2),
+            Self::Workspace3 => A::Workspace(3),
+            Self::Workspace4 => A::Workspace(4),
+            Self::Workspace5 => A::Workspace(5),
+            Self::Workspace6 => A::Workspace(6),
+            Self::Workspace7 => A::Workspace(7),
+            Self::Workspace8 => A::Workspace(8),
+            Self::Workspace9 => A::Workspace(9),
+            Self::WorkspacePrevious => A::PreviousWorkspace,
+            Self::WorkspaceNext => A::NextWorkspace,
+            Self::WorkspaceEarlier => A::MoveWorkspaceEarlier,
+            Self::WorkspaceLater => A::MoveWorkspaceLater,
+            Self::MoveWorkspace1 => A::MoveToWorkspace(1),
+            Self::MoveWorkspace2 => A::MoveToWorkspace(2),
+            Self::MoveWorkspace3 => A::MoveToWorkspace(3),
+            Self::MoveWorkspace4 => A::MoveToWorkspace(4),
+            Self::MoveWorkspace5 => A::MoveToWorkspace(5),
+            Self::MoveWorkspace6 => A::MoveToWorkspace(6),
+            Self::MoveWorkspace7 => A::MoveToWorkspace(7),
+            Self::MoveWorkspace8 => A::MoveToWorkspace(8),
+            Self::MoveWorkspace9 => A::MoveToWorkspace(9),
+            Self::WindowRecord => A::InspectWindowRecord,
+            Self::ReapplyOpening => A::ReapplyOpeningRules,
+            Self::FocusMonitorLeft => A::FocusOutput(D::Left),
+            Self::FocusMonitorDown => A::FocusOutput(D::Down),
+            Self::FocusMonitorUp => A::FocusOutput(D::Up),
+            Self::FocusMonitorRight => A::FocusOutput(D::Right),
+            Self::MoveMonitorLeft => A::MoveToOutput(D::Left),
+            Self::MoveMonitorDown => A::MoveToOutput(D::Down),
+            Self::MoveMonitorUp => A::MoveToOutput(D::Up),
+            Self::MoveMonitorRight => A::MoveToOutput(D::Right),
+            Self::RowMonitorLeft => A::MoveRowToOutput(D::Left),
+            Self::RowMonitorDown => A::MoveRowToOutput(D::Down),
+            Self::RowMonitorUp => A::MoveRowToOutput(D::Up),
+            Self::RowMonitorRight => A::MoveRowToOutput(D::Right),
+            Self::WorkspaceMonitorLeft => A::MoveWorkspaceToOutput(D::Left),
+            Self::WorkspaceMonitorDown => A::MoveWorkspaceToOutput(D::Down),
+            Self::WorkspaceMonitorUp => A::MoveWorkspaceToOutput(D::Up),
+            Self::WorkspaceMonitorRight => A::MoveWorkspaceToOutput(D::Right),
+            _ => return None,
+        })
+    }
 }
 
 pub fn desktop_bindings(world: &World) -> Vec<DesktopBinding> {
-    use crate::host::{DesktopAction as A, Direction as D};
     let defaults = Settings::default();
     let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
-    [
-        (Shortcut::Unfocus, A::Unfocus),
-        (Shortcut::FocusLeft, A::Focus(D::Left)),
-        (Shortcut::FocusDown, A::Focus(D::Down)),
-        (Shortcut::FocusUp, A::Focus(D::Up)),
-        (Shortcut::FocusRight, A::Focus(D::Right)),
-        (Shortcut::MoveLeft, A::Move(D::Left)),
-        (Shortcut::MoveDown, A::Move(D::Down)),
-        (Shortcut::MoveUp, A::Move(D::Up)),
-        (Shortcut::MoveRight, A::Move(D::Right)),
-        (Shortcut::StackLeft, A::Stack(D::Left)),
-        (Shortcut::StackRight, A::Stack(D::Right)),
-        (Shortcut::Terminal, A::OpenTerminal),
-        (Shortcut::Launcher, A::OpenLauncher),
-        (Shortcut::Lock, A::Lock),
-        (Shortcut::Logout, A::Logout),
-        (Shortcut::Float, A::ToggleFloating),
-        (Shortcut::Fullscreen, A::ToggleFullscreen),
-        (Shortcut::Maximize, A::ToggleMaximized),
-        (Shortcut::DesktopOperation, A::OpenOperation),
-        (Shortcut::FocusLeftArrow, A::Focus(D::Left)),
-        (Shortcut::FocusDownArrow, A::Focus(D::Down)),
-        (Shortcut::FocusUpArrow, A::Focus(D::Up)),
-        (Shortcut::FocusRightArrow, A::Focus(D::Right)),
-        (Shortcut::Close, A::Close),
-        (Shortcut::Workspace1, A::Workspace(1)),
-        (Shortcut::Workspace2, A::Workspace(2)),
-        (Shortcut::Workspace3, A::Workspace(3)),
-        (Shortcut::Workspace4, A::Workspace(4)),
-        (Shortcut::Workspace5, A::Workspace(5)),
-        (Shortcut::Workspace6, A::Workspace(6)),
-        (Shortcut::Workspace7, A::Workspace(7)),
-        (Shortcut::Workspace8, A::Workspace(8)),
-        (Shortcut::Workspace9, A::Workspace(9)),
-        (Shortcut::WindowRecord, A::InspectWindowRecord),
-        (Shortcut::FocusMonitorLeft, A::FocusOutput(D::Left)),
-        (Shortcut::FocusMonitorDown, A::FocusOutput(D::Down)),
-        (Shortcut::FocusMonitorUp, A::FocusOutput(D::Up)),
-        (Shortcut::FocusMonitorRight, A::FocusOutput(D::Right)),
-        (Shortcut::MoveMonitorLeft, A::MoveToOutput(D::Left)),
-        (Shortcut::MoveMonitorDown, A::MoveToOutput(D::Down)),
-        (Shortcut::MoveMonitorUp, A::MoveToOutput(D::Up)),
-        (Shortcut::MoveMonitorRight, A::MoveToOutput(D::Right)),
-        (
-            Shortcut::WorkspaceMonitorLeft,
-            A::MoveWorkspaceToOutput(D::Left),
-        ),
-        (
-            Shortcut::WorkspaceMonitorDown,
-            A::MoveWorkspaceToOutput(D::Down),
-        ),
-        (
-            Shortcut::WorkspaceMonitorUp,
-            A::MoveWorkspaceToOutput(D::Up),
-        ),
-        (
-            Shortcut::WorkspaceMonitorRight,
-            A::MoveWorkspaceToOutput(D::Right),
-        ),
-    ]
-    .into_iter()
-    .filter_map(|(shortcut, action)| {
-        settings.chord(shortcut).map(|chord| DesktopBinding {
-            key: chord.key,
-            modifiers: chord.modifiers,
-            action,
+    Shortcut::ALL
+        .into_iter()
+        .filter_map(|shortcut| {
+            let action = shortcut.desktop_action()?;
+            let chord = settings.chord(shortcut)?;
+            Some(DesktopBinding {
+                key: chord.key,
+                modifiers: chord.modifiers,
+                action,
+                repeat: shortcut.repeats(),
+            })
         })
-    })
-    .collect()
+        .collect()
+}
+
+pub fn active_desktop_bindings(world: &World) -> Vec<DesktopBinding> {
+    active_bindings(world, desktop_bindings(world))
+}
+
+fn active_bindings(world: &World, bindings: Vec<DesktopBinding>) -> Vec<DesktopBinding> {
+    let hosted = world.contains_resource::<crate::native::layout::desktop::HostRequests>();
+    let owned = keyboard_owned(world);
+    let overview = crate::native::layout::desktop::overview::active(world);
+    let recent = crate::native::layout::desktop::recent::active(world);
+    bindings
+        .into_iter()
+        .filter(|binding| {
+            (!binding.action.requires_host() || hosted)
+                && (!owned
+                    || overview && binding.action == crate::host::DesktopAction::ToggleOverview
+                    || recent && binding.action.is_recent())
+        })
+        .collect()
+}
+
+pub fn binding_snapshot(world: &World) -> (Vec<DesktopBinding>, Vec<DesktopBinding>) {
+    let hosted = world.contains_resource::<crate::native::layout::desktop::HostRequests>();
+    let all = desktop_bindings(world);
+    let hardware = all.iter().copied().filter(|binding| {
+        hosted && matches!(binding.action, crate::host::DesktopAction::External(action) if action.lockable())
+    }).collect();
+    (active_bindings(world, all), hardware)
+}
+
+pub fn pointer_bindings(world: &World) -> Vec<PointerBinding> {
+    if keyboard_owned(world) {
+        return Vec::new();
+    }
+    let defaults = Settings::default();
+    let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
+    Shortcut::ALL
+        .into_iter()
+        .filter_map(|shortcut| {
+            Some(PointerBinding {
+                operation: shortcut.pointer_action()?,
+                chord: settings.pointer(shortcut)?,
+            })
+        })
+        .collect()
+}
+
+pub(crate) fn edit_binding(world: &mut World, root: Entity, shortcut: Shortcut) {
+    editor::edit(world, root, shortcut);
 }
 
 pub(crate) fn install(world: &mut World, root: Entity) {
@@ -123,11 +440,13 @@ pub(crate) fn install(world: &mut World, root: Entity) {
         }
     }
     for binding in desktop_bindings(world) {
-        bindings.push(KeyBinding::new(
+        let mut configured = KeyBinding::new(
             binding.key,
             binding.modifiers,
             crate::native::actions![binding.action],
-        ));
+        );
+        configured.repeat = binding.repeat;
+        bindings.push(configured);
     }
     world.entity_mut(root).insert(ConfiguredBindings(bindings));
 }
@@ -151,10 +470,25 @@ pub(crate) fn pressed(world: &World, shortcut: Shortcut, keys: &ButtonInput<KeyC
         .get_resource::<Settings>()
         .unwrap_or(&defaults)
         .chord(shortcut)
-        .is_some_and(|chord| chord.pressed(keys))
+        .is_some_and(|chord| {
+            if let Some(modifiers) = crate::native::keyboard::current(world) {
+                keys.pressed(chord.key) && modifiers == chord.modifiers
+            } else if let Some(keyboard) =
+                world.get_resource::<crate::host::input::KeyboardSnapshot>()
+            {
+                keys.pressed(chord.key)
+                    && crate::native::actions::Modifiers::pressed_for(keys, Some(keyboard))
+                        == chord.modifiers
+            } else {
+                chord.pressed(keys)
+            }
+        })
 }
 
 pub(crate) fn editing_text(world: &World) -> bool {
+    if keyboard_owned(world) {
+        return true;
+    }
     let mut target = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|f| f.get());
@@ -165,97 +499,6 @@ pub(crate) fn editing_text(world: &World) -> bool {
         target = world.get::<ChildOf>(entity).map(ChildOf::parent);
     }
     false
-}
-
-#[derive(Component)]
-struct BindingRow {
-    shortcut: Shortcut,
-    editor: Entity,
-    active: Entity,
-    status: Entity,
-}
-
-#[derive(Clone, Copy)]
-enum Change {
-    Save,
-    Reset,
-    Unbind,
-    ResetAll,
-}
-
-impl crate::native::actions::Action for Change {
-    fn apply(&self, world: &mut World, target: Entity) {
-        if matches!(self, Self::ResetAll) {
-            *world.resource_mut::<Settings>() = Settings::default();
-            let rows: Vec<_> = world
-                .query_filtered::<Entity, With<BindingRow>>()
-                .iter(world)
-                .collect();
-            for row in rows {
-                refresh_row(world, row, "Restored default binding.");
-            }
-        } else {
-            let Some(row) = world.get::<BindingRow>(target) else {
-                return;
-            };
-            let shortcut = row.shortcut;
-            let editor = row.editor;
-            let status = row.status;
-            let result = match self {
-                Self::Save => {
-                    let Some(text) = world.get::<bevy::text::EditableText>(editor) else {
-                        return;
-                    };
-                    let value = text.value().to_string();
-                    world.resource_mut::<Settings>().set(shortcut, &value)
-                }
-                Self::Reset => world.resource_mut::<Settings>().reset(shortcut),
-                Self::Unbind => world.resource_mut::<Settings>().set(shortcut, "Unbound"),
-                Self::ResetAll => unreachable!(),
-            };
-            match result {
-                Ok(()) => refresh_row(world, target, "Saved."),
-                Err(error) => {
-                    if let Some(mut text) = world.get_mut::<Text>(status) {
-                        text.0 = error;
-                    }
-                }
-            }
-        }
-        synchronize(world);
-    }
-}
-
-fn refresh_row(world: &mut World, row: Entity, message: &str) {
-    let Some(row) = world.get::<BindingRow>(row) else {
-        return;
-    };
-    let (shortcut, editor, active, status) = (row.shortcut, row.editor, row.active, row.status);
-    let value = world.resource::<Settings>().text(shortcut).to_string();
-    if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(editor) {
-        text.editor.set_text(&value);
-    }
-    if let Some(mut text) = world.get_mut::<Text>(active) {
-        text.0 = format!("Active: {value}");
-    }
-    if let Some(mut text) = world.get_mut::<Text>(status) {
-        text.0 = message.into();
-    }
-}
-
-fn control(world: &mut World, parent: Entity, target: Entity, action: Change, value: &str) {
-    let button = world
-        .spawn((
-            crate::native::sand::button(0),
-            crate::native::actions::ActionButton::new(target, crate::native::actions![action]),
-            Node {
-                padding: UiRect::axes(px(10), px(7)),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    crate::native::edit_mode::label(world, button, value, 14.0);
 }
 
 pub const GROUPS: &[(&str, &[(&str, &str)])] = &[
@@ -359,86 +602,3 @@ pub const GROUPS: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
 ];
-
-pub(crate) fn panel(world: &mut World, parent: Entity) {
-    crate::native::edit_mode::label(world, parent, "Shortcuts", 22.0);
-    crate::native::edit_mode::label(
-        world,
-        parent,
-        "Enter a key such as Delete, F2 or Ctrl+Shift+D, then Save. Use Unbind to disable an action. Text editing, focus navigation and Escape keep their standard keys. Deletion and 3D movement only run outside text fields.",
-        14.0,
-    );
-    control(
-        world,
-        parent,
-        parent,
-        Change::ResetAll,
-        "Reset all shortcuts",
-    );
-    for shortcut in Shortcut::ALL {
-        let row = world
-            .spawn((
-                Node {
-                    flex_direction: FlexDirection::Column,
-                    row_gap: px(4),
-                    flex_shrink: 0.0,
-                    ..default()
-                },
-                ChildOf(parent),
-            ))
-            .id();
-        crate::native::edit_mode::label(world, row, shortcut.label(), 16.0);
-        let value = world.resource::<Settings>().text(shortcut).to_string();
-        let active = crate::native::edit_mode::label(world, row, &format!("Active: {value}"), 14.0);
-        let controls = world
-            .spawn((
-                Node {
-                    column_gap: px(6),
-                    row_gap: px(4),
-                    flex_wrap: FlexWrap::Wrap,
-                    flex_shrink: 0.0,
-                    ..default()
-                },
-                ChildOf(row),
-            ))
-            .id();
-        let bundle = crate::native::sand::text_editor(
-            &value,
-            world.resource::<crate::native::theme::Typography>(),
-            0,
-        );
-        let editor = world
-            .spawn((
-                bundle,
-                bevy::a11y::AccessibilityNode::default(),
-                ChildOf(controls),
-            ))
-            .id();
-        world.get_mut::<Node>(editor).unwrap().width = px(180);
-        let mut text = world.get_mut::<bevy::text::EditableText>(editor).unwrap();
-        text.allow_newlines = false;
-        text.visible_lines = Some(1.0);
-        text.max_characters = Some(80);
-        world
-            .get_mut::<bevy::a11y::AccessibilityNode>(editor)
-            .unwrap()
-            .set_label(format!("{} shortcut", shortcut.label()));
-        control(world, controls, row, Change::Save, "Save");
-        control(world, controls, row, Change::Reset, "Reset");
-        control(world, controls, row, Change::Unbind, "Unbind");
-        let status = crate::native::edit_mode::label(world, row, "", 14.0);
-        world.entity_mut(row).insert(BindingRow {
-            shortcut,
-            editor,
-            active,
-            status,
-        });
-    }
-    crate::native::edit_mode::label(world, parent, "Cheat sheet", 22.0);
-    for (group, shortcuts) in GROUPS {
-        crate::native::edit_mode::label(world, parent, group, 18.0);
-        for (keys, description) in *shortcuts {
-            crate::native::edit_mode::label(world, parent, &format!("{keys}\n{description}"), 14.0);
-        }
-    }
-}

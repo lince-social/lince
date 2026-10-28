@@ -1,0 +1,36 @@
+Import "Ancient-Greek-Philosophy.lingua"
+Import "plato/Phaedo.lingua"
+Import "plato/Republic.lingua"
+Import "plato/Symposium.lingua"
+Import "aristotle/Living-well-and-character.lingua"
+Import "aristotle/Practical-wisdom-and-friendship.lingua"
+Import "plato/Theaetetus.lingua"
+Import "aristotle/Logic-and-demonstration.lingua"
+Import "aristotle/Nature-causes-and-being.lingua"
+Import "aristotle/Political-community.lingua"
+Import "aristotle/Poetry-and-representation.lingua"
+
+Plato and Aristotle: deepen a question (@greek-plato-aristotle: 0, is #chapter, #part-of @ancient-greek-philosophy, #contains @greek-phaedo, #contains @greek-republic, #contains @greek-symposium, #contains @greek-aristotle-good, #contains @greek-aristotle-judgment, #contains @greek-theaetetus, #contains @greek-aristotle-logic, #contains @greek-aristotle-nature-being, #contains @greek-aristotle-politics, #contains @greek-aristotle-poetics, #philosophy @greek-aristotle-good, #ancient-greek-philosophy @greek-aristotle-good, #philosophy @greek-aristotle-judgment, #ancient-greek-philosophy @greek-aristotle-judgment, #philosophy @greek-aristotle-logic, #ancient-greek-philosophy @greek-aristotle-logic, #philosophy @greek-aristotle-nature-being, #ancient-greek-philosophy @greek-aristotle-nature-being, #philosophy @greek-aristotle-poetics, #ancient-greek-philosophy @greek-aristotle-poetics, #philosophy @greek-aristotle-politics, #ancient-greek-philosophy @greek-aristotle-politics, #philosophy @greek-phaedo, #ancient-greek-philosophy @greek-phaedo, #philosophy @greek-republic, #ancient-greek-philosophy @greek-republic, #philosophy @greek-symposium, #ancient-greek-philosophy @greek-symposium, #philosophy @greek-theaetetus, #ancient-greek-philosophy @greek-theaetetus) { r_6Z4HA576BYZD1JVJ66TJE0QQJE
+Choose a question from the first reading path and deepen it. Each guide states its own preparation and reading boundary.
+
+| Question | Reading | Useful preparation |
+| --- | --- | --- |
+| Soul, death, and an argument's limits | [Phaedo](plato/Phaedo.lingua#r_6JFZZP5W43FY7FFQENQNH96AFQ) | Apology's setting; Meno for the recollection discussion |
+| Justice, education, and knowledge | [Republic](plato/Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5) | Crito or Gorgias for justice; Meno for learning |
+| Love, beauty, and the desire to know | [Symposium](plato/Symposium.lingua#r_5NMHFGWX7QGRJ65XQDFFEG9K8B) | Reading a speech as a situated argument |
+| The good life and character | [Nicomachean Ethics, Books I–II](aristotle/Living-well-and-character.lingua#r_21YB00AWNRYQ0X2SQ8H0RFRW65) | Gorgias offers a useful comparison |
+| Deliberation, practical wisdom, and friendship | [Nicomachean Ethics, Books VI and VIII–IX](aristotle/Practical-wisdom-and-friendship.lingua#r_6RZXS4EJH55PRPW61MB33DTCNM) | The questions and terms from Books I–II |
+| What knowledge requires | [Theaetetus](plato/Theaetetus.lingua#r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N) | Meno and the difference between an example and a definition |
+| Concepts, inference, and demonstration | [Aristotle's logical treatises](aristotle/Logic-and-demonstration.lingua#r_1SRR6TVQ8CC029F7QK6PKPM1X9) | A claim, its reasons, and an ordinary-language inference |
+| Nature, causes, and being | [Physics and Metaphysics](aristotle/Nature-causes-and-being.lingua#r_2MGDMPK353BD8MFMFDMA3JPJ9P) | The question of explanation; Categories for further work on substance |
+| Political association and citizenship | [Politics](aristotle/Political-community.lingua#r_0NZK4NKSQVX9NMTAWRT2XNBATD) | A question about civic obligation or living well |
+| Poetry, representation, and form | [Poetics](aristotle/Poetry-and-representation.lingua#r_5PBR5GVV367JEK4PF94Q2YJKBE) | Reading a work and supporting an interpretation |
+
+A reading need not settle every argument before another becomes useful. When a difficulty depends on a definition, a geometrical idea, or the interpretation of a speaker, return to that precise preparation.
+
+**Outcome:** compare accounts of a chosen problem and assess a substantive argument, including the assumptions on which your comparison depends.
+
+**Return:** [Ancient Greek philosophy](Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3). **Reading tools:** [Preparation and method](foundations/Reading-tools.lingua#r_5DTAXMW53NH7ABW23PMFSSBQEF).
+
+**Sustained study:** follow [Plato on being and knowledge](research/seminars/Plato-being-and-knowledge.lingua#r_34WRXN1SRY8SZVRKRV7X3X9QWA), [desire and education](research/seminars/Plato-desire-and-education.lingua#r_3JBRV526ZZD7AK2YJJZESWWGFR), [substance and predication](research/seminars/Aristotle-substance.lingua#r_3B9A85Q4MC2K5NN4W1X1BQYEE5), [nature and mind](research/seminars/Nature-life-and-mind.lingua#r_2PYDKJQM81F9YKYZFJPEDNY150), or [action and community](research/seminars/Action-and-political-life.lingua#r_433AESW7TGW0Y78QJSTW4MEXQJ). These are advanced routes with the [seminar requirements](research/Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q).
+} r_6Z4HA576BYZD1JVJ66TJE0QQJE

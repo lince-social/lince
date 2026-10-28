@@ -48,7 +48,7 @@ jobs:
       - name: Read pinned Rust version
         id: toolchain
         shell: bash
-        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
 
       - name: Setup Rust
         id: rust
@@ -116,7 +116,7 @@ jobs:
           mkdir -p target
           cargo xtask park release --target "$BUILD_TARGET" > target/release-build-info.json
           if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
-            python3 institute/packaging/linux/check-build-info.py target/release-build-info.json
+            bash institute/packaging/linux/check-build-info.sh target/release-build-info.json
           fi
         shell: bash
 
@@ -130,7 +130,7 @@ jobs:
         run: |
           mkdir -p target
           cargo xtask park release --target "$BUILD_TARGET" --headless > target/release-build-info.json
-          python3 -c 'import json; info=json.load(open("target/release-build-info.json")); assert info["optimized"] is True; assert info["features"] == {"ui": False, "instinct": True, "park": False}'
+          jq -e '.optimized == true and .features == {ui: false, instinct: true, park: false}' target/release-build-info.json >/dev/null
 
       - name: Save compiled crates
         if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
@@ -154,7 +154,7 @@ jobs:
           set -euo pipefail
           mkdir -p binary-artifacts package/lince/bin
           if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
-            PYTHONDONTWRITEBYTECODE=1 python3 institute/packaging/linux/package.py \
+            bash institute/packaging/linux/package.sh \
               "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
             exit 0
           fi
@@ -336,55 +336,7 @@ jobs:
       - name: Package prebuilt Nix flake
         shell: bash
         run: |
-          python3 - <<'PY'
-          import base64
-          import hashlib
-          import json
-          import os
-          from pathlib import Path
-          import tarfile
-          import tempfile
-          import tomllib
-
-          artifacts = Path('release-artifacts')
-          asset = artifacts / 'lince-x86_64-unknown-linux-gnu.tar.gz'
-          checksum = hashlib.sha256(asset.read_bytes()).digest()
-          version = tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version']
-          with tarfile.open(asset) as archive:
-              build_info = json.load(archive.extractfile('lince/build-info.json'))
-          if build_info['features'] != {'ui': True, 'instinct': True, 'park': True}:
-              raise SystemExit('Linux GUI artifact lacks Park capabilities')
-          if build_info['revision'] != os.environ['GITHUB_SHA'] or build_info['version'] != version:
-              raise SystemExit('Linux GUI artifact identity does not match release')
-          release = {
-              'features': build_info['features'],
-              'target': build_info['target'],
-              'version': version,
-              'revision': os.environ['GITHUB_SHA'],
-              'url': f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/main-binary/{asset.name}",
-              'hash': 'sha256-' + base64.b64encode(checksum).decode(),
-          }
-          with tempfile.TemporaryDirectory() as temporary:
-              root = Path(temporary) / 'lince'
-              root.mkdir()
-              for name in ('flake.nix', 'flake.lock', 'Cargo.toml'):
-                  (root / name).write_bytes(Path(name).read_bytes())
-              (root / 'institute' / 'server').mkdir(parents=True)
-              (root / 'institute' / 'server' / 'configuration.nix').write_bytes(Path('institute/server/configuration.nix').read_bytes())
-              (root / 'institute' / 'anicca').mkdir(parents=True)
-              (root / 'institute' / 'anicca' / 'Lince.lingua').write_bytes(Path('institute/anicca/Lince.lingua').read_bytes())
-              for source in Path('institute/packaging').rglob('*'):
-                  if source.is_file():
-                      destination = root / source
-                      destination.parent.mkdir(parents=True, exist_ok=True)
-                      destination.write_bytes(source.read_bytes())
-              (root / 'binary.json').write_text(json.dumps(release, indent=2) + '\n')
-              destination = artifacts / 'lince-flake.tar.gz'
-              with tarfile.open(destination, 'w:gz') as archive:
-                  archive.add(root, arcname='lince')
-          digest = hashlib.sha256(destination.read_bytes()).hexdigest()
-          (artifacts / 'lince-flake.tar.gz.sha256').write_text(f'{digest}  {destination.name}\n')
-          PY
+          bash institute/packaging/linux/package-flake.sh
 
       - name: Publish main binaries for NixOS
         env:

@@ -1,0 +1,23 @@
+Import "Seminars.lingua"
+Import "../../sources/Republic-Jowett.lingua"
+Import "../../sources/Symposium-Jowett.lingua"
+Import "../../sources/Desire-Merker.lingua"
+Import "../../sources/Plato-critical-editions.lingua"
+Import "Action-and-political-life.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: Plato on desire, soul, virtue, and education (@greek-seminar-plato-ethics: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-republic, #source @greek-source-symposium, #source @greek-source-merker, #source @greek-source-plato-critical, #philosophy @greek-seminar-ethics-politics, #ancient-greek-philosophy @greek-seminar-ethics-politics, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_3JBRV526ZZD7AK2YJJZESWWGFR
+**Preparation:** [Symposium](../../plato/Symposium.lingua#r_5NMHFGWX7QGRJ65XQDFFEG9K8B), [Republic](../../plato/Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5), and a defended account of speakers, definitions, and arguments.
+
+**Primary corpus:** read Symposium in full and follow the connected argument of Republic IV, VIII–IX and its relation to education. Gorgias and Protagoras supply comparisons about desire, power, pleasure, and knowledge. A project can extend to Phaedrus, Lysis, or Laws when the additional text serves its question.
+
+**Lexical problem:** examine eros, philia, epithymia, and boulesis in their actual sentences. Ask which distinctions a translation preserves when it uses love, affection, appetite, desire, wish, or will. Use [Merker's study of desire](../../sources/Desire-Merker.lingua#r_4VJ745X9FCY3MY2FB5G9KKA0GC) and the [advanced undergraduate bibliography](../../sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) as starting points, then reconstruct the scholarship relevant to the selected issue.
+
+**Choose a dispute:** whether the education of desire changes its object, its organisation, or its relation to reason; how psychic order supports a claim about virtue; or what connects a good soul with a proposed political arrangement. Distinguish the literary and dramatic evidence from the philosophical argument without discarding either.
+
+**Required work:** a lexical dossier comparing passages and translations, an interpretation of a complete argumentative sequence, a confrontation between serious scholarly accounts, and a defended conclusion. Explain the step connecting a claim about psychology to an ethical or political recommendation.
+
+**Crossing:** compare a bounded question with [Aristotle's moral education](Action-and-political-life.lingua#r_433AESW7TGW0Y78QJSTW4MEXQJ). Identify the shared problem and a difference that prevents an easy assimilation of the authors.
+
+**Review:** [Common seminar standard](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_3JBRV526ZZD7AK2YJJZESWWGFR

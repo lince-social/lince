@@ -11,7 +11,10 @@ use tokio::{
     task::JoinHandle,
 };
 
+mod recovery;
 mod speech_scope;
+
+pub use recovery::reconnect;
 
 pub const RECORDS: &str = "interface-records";
 pub const CONNECTION: &str = "interface-connection";
@@ -81,8 +84,12 @@ impl SpeechCancellation {
     pub(crate) fn send(&self, request: cell::speech::Request) -> Result<String, String> {
         if !matches!(
             &request,
-            cell::speech::Request::Cancel { .. } | cell::speech::Request::StopListening { .. } | cell::speech::Request::PauseListening { .. }
-                | cell::speech::Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { .. } }
+            cell::speech::Request::Cancel { .. }
+                | cell::speech::Request::StopListening { .. }
+                | cell::speech::Request::PauseListening { .. }
+                | cell::speech::Request::Voice {
+                    request: cell::fiote_communication::speech::voice::Request::Cancel { .. }
+                }
         ) {
             return Err("This channel only cancels speech work.".into());
         }
@@ -372,11 +379,7 @@ fn drain(
                     && !bridge.reported_closed
                 {
                     bridge.reported_closed = true;
-                    messages.write(CellMessage(ServerMessage::Error {
-                        id: CONNECTION.into(),
-                        message: "The connection to this Cell stopped. Your drafts are still here. Quit and reopen Lince to reconnect.".into(),
-                        code: Some("connection_closed".into()),
-                    }));
+                    messages.write(recovery::disconnected());
                     wake.ring();
                 }
                 return;
@@ -868,9 +871,16 @@ pub(crate) mod tests {
         assert!(wakes.load(Ordering::SeqCst) > 0);
         let mut app = App::new();
         crate::native::laboratory::isolate(app.world_mut());
+        let notices = cell::Diagnostics::default();
         app.add_message::<CellMessage>()
             .insert_resource(wake)
-            .add_systems(Update, drain);
+            .insert_resource(crate::native::notifications::Notifications::new(
+                notices.clone(),
+            ))
+            .add_systems(
+                Update,
+                (drain, crate::native::notifications::cell_connection).chain(),
+            );
         app.world_mut().insert_non_send(bridge);
         let mut cursor = bevy::ecs::message::MessageCursor::<CellMessage>::default();
         app.update();
@@ -882,6 +892,10 @@ pub(crate) mod tests {
                 .count(),
             0
         );
+        let notices = notices.snapshot().1;
+        assert_eq!(notices.len(), 1);
+        assert_eq!(notices[0].occurrences, 1);
+        assert!(notices[0].message.contains("Your drafts are still here"));
     }
 
     #[cfg_attr(test, tokio::test)]

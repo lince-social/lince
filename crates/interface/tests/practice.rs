@@ -1,7 +1,12 @@
 use lince_interface::practice::*;
 
 fn runner() -> Runner {
-    Runner::start(1, &LESSONS[0], Mode::Assisted, LearningProgress::default())
+    Runner::start(
+        1,
+        &lessons()[0],
+        Mode::Assisted,
+        LearningProgress::default(),
+    )
 }
 
 fn ticket(effect: Effect) -> Ticket {
@@ -47,7 +52,7 @@ fn skip_close_and_chapter_changes_invalidate_late_responses() {
             }
             1 => runner.close(),
             _ => {
-                assert!(runner.select(&LESSONS[3], 2));
+                assert!(runner.select(&lessons()[3], 2));
             }
         }
         let phase = runner.phase.clone();
@@ -95,7 +100,7 @@ fn modes_and_missing_targets_release_restrictions_and_recovery_is_independent() 
 
 #[test]
 fn every_lesson_starts_directly_and_skip_is_never_verified_practice() {
-    for lesson in LESSONS {
+    for lesson in lessons() {
         for mode in [Mode::Free, Mode::Assisted] {
             let mut runner = Runner::start(1, lesson, mode, LearningProgress::default());
             assert_eq!(runner.current(), lesson.steps.first());
@@ -156,9 +161,9 @@ fn unavailable_hardware_inspection_is_visited_and_never_practiced() {
 }
 #[test]
 fn foundations_refer_to_earlier_pages_without_creating_progress_locks() {
-    for (index, page) in lince_interface::handbook::PAGES.iter().enumerate() {
+    for (index, page) in lince_interface::handbook::pages().iter().enumerate() {
         for earlier in lince_interface::handbook::foundations(page.slug) {
-            let position = lince_interface::handbook::PAGES
+            let position = lince_interface::handbook::pages()
                 .iter()
                 .position(|page| page.slug == *earlier)
                 .unwrap();

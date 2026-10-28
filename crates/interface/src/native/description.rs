@@ -7,6 +7,13 @@ pub(crate) mod shader;
 pub(crate) mod tests;
 mod transclusion;
 
+pub(crate) fn source_sender(
+    world: &World,
+    source: &Source,
+) -> Option<tokio::sync::mpsc::Sender<cell::ClientMessage>> {
+    live::sender(world, source)
+}
+
 pub const SHADER_EXAMPLE: &str = shader::BALL;
 
 use crate::native::{
@@ -17,6 +24,26 @@ use crate::native::{
 use bevy::{prelude::*, text::EditableText};
 
 pub const CREDITS: &[crate::native::credits::Attribution] = &[
+    crate::native::credits::Attribution {
+        name: "Chrono",
+        author: "Kang Seonghoon and contributors",
+        license: crate::native::credits::CHRONO_LICENSE,
+    },
+    crate::native::credits::Attribution {
+        name: "Tempfile",
+        author: "Steven Allen and contributors",
+        license: include_str!("../../licenses/native/document/tempfile-MIT.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "URL",
+        author: "The rust-url developers",
+        license: include_str!("../../licenses/native/url-MIT.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "BLAKE3",
+        author: "Jack O'Connor, Samuel Neves and contributors",
+        license: include_str!("../../licenses/native/document/blake3-CC0.txt"),
+    },
     crate::native::credits::Attribution {
         name: "Naga",
         author: "The gfx-rs developers",
@@ -111,6 +138,7 @@ pub struct DescriptionPlugin;
 impl Plugin for DescriptionPlugin {
     fn build(&self, app: &mut App) {
         shader::install(app);
+        crate::native::embedded_media::install(app);
         app.add_systems(
             Update,
             (
@@ -485,8 +513,12 @@ impl Action for Link {
             .reference
             .trim()
             .trim_start_matches("record:")
-            .trim_start_matches(['@', '#']);
-        if reference.contains("://") {
+            .trim_start_matches('@');
+        if lince_resources::reference::is_address(reference)
+            || reference.contains(".lingua#")
+            || reference.starts_with('#')
+        {
+            crate::native::source_view::open_reference(world, &self.context, reference);
             return;
         }
         let mut cursor = Some(self.context.owner);
@@ -505,12 +537,27 @@ impl Action for Link {
                 .get::<crate::native::workspace::Workspaces>(entity)
                 .is_some()
             {
-                crate::native::full_record::open(
-                    world,
-                    entity,
-                    reference,
-                    self.context.source.clone(),
-                );
+                let mut current = Some(self.context.owner);
+                let mut scoped = false;
+                while let Some(owner) = current {
+                    scoped |= world
+                        .get::<crate::native::source_view::ReferenceBase>(owner)
+                        .is_some()
+                        || world
+                            .get::<crate::native::protein_area::RecordBinding>(owner)
+                            .is_some();
+                    current = world.get::<ChildOf>(owner).map(ChildOf::parent);
+                }
+                if scoped || lince_resources::reference::record_uid(reference) {
+                    crate::native::source_view::open_reference(world, &self.context, reference);
+                } else {
+                    crate::native::full_record::open(
+                        world,
+                        entity,
+                        reference,
+                        self.context.source.clone(),
+                    );
+                }
                 return;
             }
             cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
@@ -548,4 +595,38 @@ pub fn heading(world: &mut World, parent: Entity, text: &str, size: f32) {
     let entity = crate::native::edit_mode::label(world, parent, text, size);
     world.get_mut::<TextFont>(entity).unwrap().font = font.into();
     world.get_mut::<Node>(entity).unwrap().width = percent(100);
+}
+
+pub(crate) fn open_web(world: &mut World, owner: Entity, uri: &str) {
+    let mut cursor = Some(owner);
+    let mut root = None;
+    while let Some(entity) = cursor {
+        if world
+            .get::<crate::native::workspace::Workspaces>(entity)
+            .is_some()
+        {
+            root = Some(entity);
+            break;
+        }
+        cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+    }
+    if let Some(root) = root {
+        let workspace = world
+            .get::<crate::native::workspace::Workspaces>(root)
+            .map_or(1, |spaces| spaces.active);
+        let position = world
+            .get::<crate::native::canvas::CanvasView>(root)
+            .map_or(bevy::math::DVec2::ZERO, |view| view.center);
+        crate::native::media_sand::spawn(
+            world,
+            root,
+            workspace,
+            position,
+            crate::native::media_sand::MediaSand::Link { url: uri.into() },
+        );
+    }
+}
+
+pub(crate) fn external_transclusion(world: &mut World, entity: Entity, data: &serde_json::Value) {
+    transclusion::external(world, entity, data);
 }

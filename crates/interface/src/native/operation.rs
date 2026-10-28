@@ -2,6 +2,8 @@ use crate::native::{
     actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},
     cell_bridge::{CellMessage, RECORDS, ReceiveCell},
     edit_mode::{EditAction, label},
+    layout::desktop::CommandContext,
+    shortcuts::{Settings, Shortcut},
     theme::Typography,
 };
 use bevy::{
@@ -15,13 +17,17 @@ use std::collections::{BTreeMap, HashMap};
 
 pub(crate) const SIZE: Vec2 = Vec2::new(520.0, 40.0);
 
-const HELP: &str = "Operation cheat sheet\n@slug: set a Record’s quantity to zero.\n/: find commands.\nUp / Down: choose a suggestion.\nTab or click: complete the input.\nEnter: send the operation.\nEscape: leave Operation.\n/help: open the full cheat sheet.";
+const HELP: &str = "Operation reference\n@slug: set a Record’s quantity to zero.\n/: find commands.\nUp / Down: choose a suggestion.\nTab or click: complete the input.\nEnter: send the operation.\nEscape: leave Operation.\n/help: open keyboard shortcuts and the interaction reference.";
 
 const COMMANDS: &[(&str, &str, EditAction)] = &[
-    ("/edit", "Open edit mode", EditAction::Open),
-    ("/help", "Open the cheat sheet", EditAction::Shortcuts),
+    (
+        "/help",
+        "Open keyboard shortcuts and the interaction reference",
+        EditAction::Shortcuts,
+    ),
     ("/store", "Open the Sand store", EditAction::Store),
     ("/workspaces", "Open workspaces", EditAction::Workspaces),
+    ("/park", "Open Park settings", EditAction::Park),
 ];
 
 #[derive(Resource, Default)]
@@ -65,6 +71,10 @@ pub struct OperationSand {
     query: String,
     revision: u64,
     items: Vec<(String, String)>,
+    context: Option<CommandContext>,
+    rows: Vec<(Entity, Entity)>,
+    reveal_selection: bool,
+    command_error: bool,
     selected: usize,
     pending: Option<(String, String)>,
     last_saved: Option<String>,
@@ -96,6 +106,10 @@ impl Plugin for OperationPlugin {
                     .chain()
                     .after(bevy::text::EditableTextSystems)
                     .before(crate::native::actions::ApplyActions),
+            )
+            .add_systems(
+                PostUpdate,
+                reveal_selection.after(bevy::ui::UiSystems::Layout),
             );
     }
 }
@@ -181,6 +195,7 @@ impl Action for OperationAction {
                 if !state.items.is_empty() {
                     let count = state.items.len();
                     state.selected = (state.selected + if next { 1 } else { count - 1 }) % count;
+                    state.reveal_selection = true;
                 }
                 render_suggestions(world, sand);
                 world
@@ -225,6 +240,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     let input = world
         .spawn((
             bundle,
+            Name::new("operation.input"),
             OperationInput(sand),
             AccessibilityNode::default(),
             crate::native::icons::Tooltip(HELP.into()),
@@ -297,15 +313,25 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     let suggestions = world
         .spawn((
             Node {
+                width: percent(100),
+                min_width: px(0),
                 flex_direction: FlexDirection::Column,
                 row_gap: px(4),
+                flex_shrink: 0.0,
                 ..default()
             },
+            Name::new("operation.suggestions"),
             ChildOf(feedback),
         ))
         .id();
     let status = label(world, feedback, "", 14.0);
+    world
+        .entity_mut(status)
+        .insert(Name::new("operation.status"));
     world.get_mut::<Node>(status).unwrap().display = Display::None;
+    world.entity_mut(status).insert(TextLayout::linebreak(
+        bevy::text::LineBreak::WordOrCharacter,
+    ));
     world.entity_mut(sand).insert(OperationSand {
         root,
         input,
@@ -315,6 +341,10 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         query: String::new(),
         revision: u64::MAX,
         items: Vec::new(),
+        context: None,
+        rows: Vec::new(),
+        reveal_selection: true,
+        command_error: false,
         selected: 0,
         pending: None,
         last_saved: None,
@@ -335,12 +365,14 @@ fn action_button(
     sand: Entity,
     action: OperationAction,
     title: &str,
-) {
+) -> (Entity, Entity) {
     let button = world
         .spawn((
             crate::native::sand::button(0),
             ActionButton::new(sand, crate::native::actions![action]),
             Node {
+                width: percent(100),
+                min_width: px(0),
                 padding: UiRect::all(px(6)),
                 flex_shrink: 0.0,
                 ..default()
@@ -352,7 +384,14 @@ fn action_button(
         .get_mut::<AccessibilityNode>(button)
         .unwrap()
         .set_label(title);
-    label(world, button, title, 14.0);
+    let text = label(world, button, title, 14.0);
+    world.get_mut::<Node>(text).unwrap().width = percent(100);
+    world.get_mut::<Node>(text).unwrap().min_width = px(0);
+    world.get_mut::<Node>(text).unwrap().flex_shrink = 1.0;
+    world.entity_mut(text).insert(TextLayout::linebreak(
+        bevy::text::LineBreak::WordOrCharacter,
+    ));
+    (button, text)
 }
 
 fn close(world: &mut World, sand: Entity) {
@@ -378,8 +417,11 @@ fn close(world: &mut World, sand: Entity) {
     }
 }
 
-fn suggestions(catalog: &Catalog, query: &str) -> Vec<(String, String)> {
+fn suggestions(world: &World, owner: Entity, query: &str) -> Vec<(String, String)> {
     if let Some(prefix) = query.strip_prefix('@') {
+        let Some(catalog) = catalog(world, owner) else {
+            return Vec::new();
+        };
         catalog
             .records
             .range(prefix.to_owned()..)
@@ -388,16 +430,29 @@ fn suggestions(catalog: &Catalog, query: &str) -> Vec<(String, String)> {
             .map(|(slug, (_, head))| (format!("@{slug}"), head.clone()))
             .collect()
     } else if query.starts_with('/') {
+        let root = world
+            .get::<OperationSand>(owner)
+            .map_or(owner, |state| state.root);
+        let context = CommandContext::new(world, root);
+        let defaults = Settings::default();
+        let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
         COMMANDS
             .iter()
             .filter(|(command, _, _)| command.starts_with(query))
             .map(|(command, title, _)| ((*command).into(), (*title).into()))
-            .chain(
-                crate::native::layout::desktop::COMMANDS
-                    .iter()
-                    .filter(|(command, _, _)| command.starts_with(query))
-                    .map(|(command, title, _)| ((*command).into(), (*title).into())),
-            )
+            .chain(Shortcut::ALL.into_iter().filter_map(|shortcut| {
+                let path = shortcut.operation_path()?;
+                path.starts_with(query).then(|| {
+                    (
+                        path.into(),
+                        shortcut.help(
+                            settings,
+                            context,
+                            world.get_resource::<crate::host::input::KeyboardSnapshot>(),
+                        ),
+                    )
+                })
+            }))
             .collect()
     } else {
         Vec::new()
@@ -422,6 +477,11 @@ fn pending_text(text: &EditableText) -> bool {
 }
 
 fn refresh(world: &mut World) {
+    let bindings_changed = world
+        .get_resource_ref::<Settings>()
+        .is_some_and(|settings| settings.is_changed())
+        || world.is_resource_changed::<crate::host::input::KeyboardSnapshot>();
+    let mut contexts = HashMap::new();
     let edits: Vec<_> = world
         .query::<(Entity, &OperationSand)>()
         .iter(world)
@@ -432,14 +492,19 @@ fn refresh(world: &mut World) {
             }
             let query = text.value().to_string();
             let revision = catalog(world, sand).map_or(0, |catalog| catalog.revision);
-            (query != state.query || revision != state.revision).then(|| (sand, query, revision))
+            let context = *contexts
+                .entry(state.root)
+                .or_insert_with(|| CommandContext::new(world, state.root));
+            (query != state.query
+                || revision != state.revision
+                || state.context != Some(context)
+                || bindings_changed)
+                .then(|| (sand, query, revision, context))
         })
         .collect();
-    for (sand, query, revision) in edits {
+    for (sand, query, revision, context) in edits {
+        let items = suggestions(world, sand, query.trim());
         let catalog = catalog(world, sand);
-        let items = catalog
-            .map(|catalog| suggestions(catalog, query.trim()))
-            .unwrap_or_default();
         let message =
             if query.trim().starts_with('@') && catalog.is_none_or(|catalog| !catalog.ready) {
                 catalog
@@ -453,18 +518,28 @@ fn refresh(world: &mut World) {
             };
         let mut state = world.get_mut::<OperationSand>(sand).unwrap();
         let changed = state.query != query;
+        let clear_command_error =
+            state.command_error && (state.context != Some(context) || bindings_changed);
+        let selected = (!changed)
+            .then(|| state.items.get(state.selected).map(|item| item.0.clone()))
+            .flatten();
         state.query = query;
         state.revision = revision;
+        state.context = Some(context);
         state.items = items;
-        state.selected = 0;
+        state.selected = selected
+            .and_then(|selected| state.items.iter().position(|item| item.0 == selected))
+            .unwrap_or(0);
+        state.reveal_selection |= changed;
         let status = state.status;
         let idle = world.get::<Text>(status).is_some_and(|text| {
             text.0.is_empty() || text.0 == "Loading Records…" || text.0.starts_with("No matches.")
         });
         if world.get::<OperationSand>(sand).unwrap().pending.is_none()
-            && (changed || idle && !message.is_empty())
+            && (changed || clear_command_error || idle && !message.is_empty())
         {
             self::status(world, sand, message);
+            world.get_mut::<OperationSand>(sand).unwrap().command_error = false;
         }
         render_suggestions(world, sand);
     }
@@ -475,7 +550,12 @@ fn render_suggestions(world: &mut World, sand: Entity) {
     let parent = state.suggestions;
     let items = state.items.clone();
     let selected = state.selected;
-    world.entity_mut(parent).despawn_children();
+    let mut rows = state.rows.clone();
+    while rows.len() > items.len() {
+        if let Some((button, _)) = rows.pop() {
+            world.despawn(button);
+        }
+    }
     world.get_mut::<Node>(parent).unwrap().display = if items.is_empty() {
         Display::None
     } else {
@@ -483,13 +563,72 @@ fn render_suggestions(world: &mut World, sand: Entity) {
     };
     for (index, (value, title)) in items.iter().enumerate() {
         let marker = if index == selected { "› " } else { "" };
-        action_button(
-            world,
-            parent,
-            sand,
-            OperationAction::Choose(index),
-            &format!("{marker}{value} — {title}"),
-        );
+        let brief = Shortcut::from_operation(value).map(|shortcut| {
+            let defaults = Settings::default();
+            shortcut.caption(
+                world.get_resource::<Settings>().unwrap_or(&defaults),
+                world.get_resource::<crate::host::input::KeyboardSnapshot>(),
+            )
+        });
+        let caption = format!("{marker}{value} — {}", brief.as_deref().unwrap_or(title));
+        let help = format!("{value} — {title}");
+        let button = if let Some((button, text)) = rows.get(index).copied() {
+            if let Some(mut value) = world.get_mut::<Text>(text)
+                && value.0 != caption
+            {
+                value.0 = caption.clone();
+            }
+            button
+        } else {
+            let row = action_button(
+                world,
+                parent,
+                sand,
+                OperationAction::Choose(index),
+                &caption,
+            );
+            rows.push(row);
+            row.0
+        };
+        if let Some(mut node) = world.get_mut::<AccessibilityNode>(button) {
+            node.set_label(help.as_str());
+            node.set_selected(index == selected);
+        }
+        if world
+            .get::<crate::native::icons::Tooltip>(button)
+            .is_none_or(|tooltip| tooltip.0 != help)
+        {
+            world
+                .entity_mut(button)
+                .insert(crate::native::icons::Tooltip(help));
+        }
+    }
+    world.get_mut::<OperationSand>(sand).unwrap().rows = rows;
+}
+
+fn reveal_selection(world: &mut World) {
+    if world
+        .get_resource::<ButtonInput<MouseButton>>()
+        .is_some_and(|buttons| buttons.get_pressed().next().is_some())
+    {
+        return;
+    }
+    let pending: Vec<_> = world
+        .query::<(Entity, &OperationSand)>()
+        .iter(world)
+        .filter(|(_, state)| state.reveal_selection)
+        .filter_map(|(entity, state)| {
+            let target = state.rows.get(state.selected)?.0;
+            Some((entity, state.feedback, target))
+        })
+        .collect();
+    for (entity, viewport, target) in pending {
+        if crate::native::scroll_sand::reveal(world, viewport, target, 8.0).is_some() {
+            world
+                .get_mut::<OperationSand>(entity)
+                .unwrap()
+                .reveal_selection = false;
+        }
     }
 }
 
@@ -546,23 +685,28 @@ fn submit(world: &mut World, sand: Entity) {
     if state.pending.is_some() {
         return;
     }
+    let (input, root) = (state.input, state.root);
     let query = world
-        .get::<EditableText>(state.input)
+        .get::<EditableText>(input)
         .unwrap()
         .value()
         .to_string();
     let value = query.trim();
-    if let Some((_, _, action)) = crate::native::layout::desktop::COMMANDS
-        .iter()
-        .find(|(command, _, _)| *command == value)
-    {
-        let root = state.root;
+    world.get_mut::<OperationSand>(sand).unwrap().command_error = false;
+    if let Some(shortcut) = Shortcut::from_operation(value) {
+        if let Some(reason) = CommandContext::new(world, root).shortcut(shortcut) {
+            status(world, sand, reason);
+            world.get_mut::<OperationSand>(sand).unwrap().command_error = true;
+            return;
+        }
+        let Some(action) = shortcut.desktop_action() else {
+            return;
+        };
         close(world, sand);
         action.apply(world, root);
         return;
     }
     if let Some((_, _, action)) = COMMANDS.iter().find(|(command, _, _)| *command == value) {
-        let root = state.root;
         close(world, sand);
         EditAction::Open.apply(world, root);
         action.apply(world, root);

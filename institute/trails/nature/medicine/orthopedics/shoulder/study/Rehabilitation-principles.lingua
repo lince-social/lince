@@ -1,0 +1,18 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "Treatment-evidence.lingua"
+
+Rehabilitation — goals, loading, and meaningful recovery (@shoulder-rehabilitation: 0, is #chapter, #part-of @shoulder, #source @med-source-tendinopathy-guideline, #medicine @shoulder-treatment-evidence, #orthopedics @shoulder-treatment-evidence, #shoulder @shoulder-treatment-evidence) { r_00SXBQ0YTGHC8KRB12XY8B9KAB
+**Read a focused management block:** [Rotator Cuff Tendinopathy — JOSPT, 2025](../../../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV), patient education, active rehabilitation, prognosis, and return-to-function recommendations together with their evidence summaries. Start by rereading its scope. The later full-guideline study places these selected recommendations in the complete methods and evidence context.
+
+Rehabilitation can address movement, strength, endurance, confidence, task demands, and participation. An active rehabilitation program has evidence in this defined clinical context. It does not provide one exercise dose suitable for an unassessed fracture, unstable joint, recent repair, neurological disorder, or every painful shoulder.
+
+Goals should concern what the person needs to do, how progress is measured, tolerability, and when the plan should be reassessed. Pain, range, measured strength, and ability to work or sleep provide different information. Improvement in one does not prove that every tissue has returned to its former state.
+
+**Study task:** compare the goals and constraints of a fictional nonsurgical tendon case with those after a tendon repair. Identify the information a clinician would need before selecting exercises or progression. Explain the principles without prescribing a personal program from the reading.
+
+**Continue:** [Test a plausible treatment against evidence](Treatment-evidence.lingua#r_0Y6CMCRFXDGN20QGXNDKS55VXD).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_00SXBQ0YTGHC8KRB12XY8B9KAB

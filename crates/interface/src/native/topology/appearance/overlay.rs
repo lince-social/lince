@@ -64,6 +64,10 @@ pub(super) fn update(
                 Pickable::IGNORE,
                 ChildOf(visual),
                 super::super::presentation::VisualOwner(owner),
+                crate::native::description::shader::extent::SurfaceConsumer {
+                    image: image.clone(),
+                    surface: owner,
+                },
                 NotShadowCaster,
             ))
             .id();
@@ -118,6 +122,10 @@ pub(super) fn update(
             depth_bias: 1.0,
             ..default()
         };
+        world
+            .get_mut::<crate::native::description::shader::extent::SurfaceConsumer>(overlay.entity)
+            .unwrap()
+            .image = key.2.clone();
         overlay.last = Some(key);
     }
     let mesh = world.get::<Mesh3d>(painted.plate).unwrap().clone();

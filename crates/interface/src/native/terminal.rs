@@ -302,7 +302,10 @@ fn open(world: &mut World, owner: Entity) -> Result<(), String> {
     )?;
     let sender = crate::native::practice_cells::sender(world, owner)
         .ok_or("The terminal connection is unavailable")?;
-    world.resource_mut::<Sessions>().0.insert(owner, (id.clone(), sender));
+    world
+        .resource_mut::<Sessions>()
+        .0
+        .insert(owner, (id.clone(), sender));
     let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
     terminal.session = Some(id);
     terminal.worker = Some(worker);
@@ -350,8 +353,10 @@ fn update(
         .map(|(entity, (id, sender))| (*entity, id.clone(), sender.clone()))
         .collect();
     for (entity, id, sender) in removed {
-        if !matches!(sender.try_send(ClientMessage::TerminalClose { id }),
-            Err(tokio::sync::mpsc::error::TrySendError::Full(_))) {
+        if !matches!(
+            sender.try_send(ClientMessage::TerminalClose { id }),
+            Err(tokio::sync::mpsc::error::TrySendError::Full(_))
+        ) {
             world.resource_mut::<Sessions>().0.remove(&entity);
         }
     }

@@ -1,0 +1,30 @@
+Import "../Medicine.lingua"
+Import "../sources/DeCS.lingua"
+Import "../sources/Medical-Terminology-2e.lingua"
+Import "../sources/Medical-word-parts.lingua"
+Import "Anatomical-directions.lingua"
+
+Medical language — English and português brasileiro (@med-language: 0, is #chapter, #part-of @medicine, #source @med-source-words, #source @med-source-decs, #medicine @med-directions, #source @med-source-terminology) { r_0009F6GFVE924WDKJ5J1F996TT
+**Read a complete introduction:** [Medical Terminology 2e — Open RN](../sources/Medical-Terminology-2e.lingua#r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q), chapters 1–2 including the written learning activities and glossaries. Use [Medical word parts — MedlinePlus](../sources/Medical-word-parts.lingua#r_59RYBJSBG5J7J0B7YJZGBMFPWA) as a lookup alongside the book, and [DeCS — Descritores em Ciências da Saúde](../sources/DeCS.lingua#r_32JDHQDTBG260AEJ12TP8WRY1G) to compare descriptors across languages. Begin chapter 1 now and carry the whole-body language in chapter 2 through the following anatomical-direction reading.
+
+A medical word can name a structure, symptom, process, finding, or intervention. Learning its parts helps reading, but does not establish what is happening in a particular person. Arthralgia names joint pain; it does not by itself establish arthritis.
+
+| English | Português brasileiro | Meaning in this reading |
+| --- | --- | --- |
+| anatomy / physiology | anatomia / fisiologia | structure / function |
+| tissue / organ | tecido / órgão | organized cells and extracellular material / a body structure with coordinated functions |
+| symptom / sign | sintoma / sinal | an experienced complaint / a finding observed or measured |
+| injury / lesion | lesão / lesão | harm to a structure / an abnormal alteration, whose meaning depends on context |
+| diagnosis / prognosis | diagnóstico / prognóstico | identification of a condition / its expected course |
+| acute / chronic | agudo / crônico | time-course descriptions, with thresholds that depend on the condition |
+| inflammation / infection | inflamação / infecção | a tissue response / a process involving infectious agents |
+| benign / malignant | benigno / maligno | terms describing biological behavior, especially of tumors |
+
+Recognize osteo-/osso, arthro-/articulação, myo-/músculo, neuro-/nervo, and chondro-/cartilagem. The endings -itis/-ite, -algia, -pathy/-patia, and -ectomy/-ectomia suggest inflammation, pain, disorder, and surgical removal. Usage has historical exceptions: a word ending in -itis is not proof that inflammation fully explains the problem.
+
+**Try:** translate an unfamiliar sentence into ordinary language. Separate what was observed, what was inferred, and which words still need a definition.
+
+**Continue:** [Describe a body — position, direction, and movement](Anatomical-directions.lingua#r_5HMQ29K367TFS69H6C35MZYHVQ).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_0009F6GFVE924WDKJ5J1F996TT

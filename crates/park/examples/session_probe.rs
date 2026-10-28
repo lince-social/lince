@@ -1,10 +1,16 @@
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::args().any(|argument| argument == "--help") {
-        println!("session_probe: bounded native window lifecycle acceptance on WAYLAND_DISPLAY");
+    let arguments = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if arguments.first().is_some_and(|argument| argument == "--help") {
+        println!("session_probe [--hold-until RELEASE_FILE]: bounded native window lifecycle acceptance on WAYLAND_DISPLAY");
         return Ok(());
     }
-    client::run()?;
+    let release = match arguments.as_slice() {
+        [] => None,
+        [option, path] if option == "--hold-until" => Some(std::path::Path::new(path)),
+        _ => return Err("Use session_probe [--hold-until RELEASE_FILE]".into()),
+    };
+    client::run(release)?;
     Ok(())
 }
 
@@ -45,7 +51,7 @@ mod client {
         Sync,
     }
 
-    pub(super) fn run() -> io::Result<()> {
+    pub(super) fn run(release: Option<&std::path::Path>) -> io::Result<()> {
         let connection = Connection::connect_to_env().map_err(io::Error::other)?;
         let mut queue = connection.new_event_queue();
         let qh = queue.handle();
@@ -63,6 +69,17 @@ mod client {
         }
         until(&connection, &mut queue, &mut state, |state| state.windows.iter().all(|window| window.frames > 0))?;
         println!("PASS: two native windows configured and received presentation callbacks");
+        if let Some(release) = release {
+            use std::os::unix::fs::OpenOptionsExt;
+            if !release.is_absolute() || release.exists() || release.with_extension("ready").exists() {
+                return Err(io::Error::other("The native-window hold needs a new absolute private release path"));
+            }
+            let mut ready = std::fs::OpenOptions::new().create_new(true).write(true).mode(0o600).open(release.with_extension("pending"))?;
+            ready.write_all(std::process::id().to_string().as_bytes())?;
+            ready.sync_all()?;
+            std::fs::rename(release.with_extension("pending"), release.with_extension("ready"))?;
+            until_before(&connection, &mut queue, &mut state, |state| release.is_file() && state.windows.iter().all(|window| window.frames > 0), Instant::now() + Duration::from_secs(60))?;
+        }
         let before = state.windows[0].frames;
         eprintln!("Checking fullscreen entry on the first window while the second is focused");
         state.windows[0].role.set_fullscreen(None);
@@ -96,7 +113,10 @@ mod client {
     }
 
     fn until(connection: &Connection, queue: &mut EventQueue<State>, state: &mut State, finished: impl Fn(&State) -> bool) -> io::Result<()> {
-        let deadline = Instant::now() + Duration::from_secs(12);
+        until_before(connection, queue, state, finished, Instant::now() + Duration::from_secs(12))
+    }
+
+    fn until_before(connection: &Connection, queue: &mut EventQueue<State>, state: &mut State, finished: impl Fn(&State) -> bool, deadline: Instant) -> io::Result<()> {
         loop {
             queue.dispatch_pending(state).map_err(io::Error::other)?;
             if let Some(error) = state.failure.take() {

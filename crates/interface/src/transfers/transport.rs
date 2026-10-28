@@ -104,7 +104,7 @@ pub fn initialize(form: &mut Form) {
     if !matches!(form.preset.as_str(), "Ride" | "Delivery") {
         return;
     }
-    form.data["promises"][0]["item"]["transport"] = json!({"activity":if form.preset=="Ride" {"ride"} else {"delivery"},"direction":"offer","origin":"","destination":"","count":1,"capacity":1});
+    form.data["promises"][0]["item"]["transport"] = json!({"activity":if form.preset=="Ride" {"ride"} else {"delivery"},"direction":"offer","origin":"","destination":"","via":[],"count":1,"capacity":1});
     for field in ["location", "quantity"] {
         form.data["promises"][0]["item"]["disclosure"][field] =
             json!({"scope":"participants","people":[]});

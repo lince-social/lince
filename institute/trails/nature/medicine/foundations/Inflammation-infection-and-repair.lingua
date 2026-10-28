@@ -1,0 +1,20 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "Pain.lingua"
+
+Inflammation, infection, and repair are different processes (@med-inflammation: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #source @med-source-histology, #medicine @med-pain) { r_4CWKE5QM0EFHK2N3AP2Y6WZMX5
+**Read selected sections after the tissue chapters:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Tissue Injury and Aging in chapter 4 and the inflammation and immune-response discussions in chapter 21. Complete chapter 21 as part of the broader physiological reading. In [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS), revisit connective-tissue cells and matrix for the microscopic account.
+
+Inflammation/inflamação is a coordinated response involving cells, chemical signals, and vascular changes. It can follow injury, infection, immune reactions, or other triggers. Infection/infecção concerns infectious agents and their interaction with the host. Inflammation alone does not establish infection, and antibiotics do not treat every painful or inflamed tissue.
+
+Edema/edema is excess fluid in tissue spaces. Effusion/derrame articular is excess fluid within a joint cavity. Fibrosis/fibrose describes increased fibrous connective tissue; repair can restore continuity without recreating the exact original organization. Processes often described as inflammatory, proliferative, and remodeling phases overlap rather than following an identical calendar in every tissue.
+
+Autoimmunity/autoimunidade, degeneration/degeneração, ischemia/isquemia, and neoplasia/neoplasia name other processes used in differential diagnosis. None can be identified reliably just by the sound of a symptom word.
+
+**Try:** explain how a twisted joint could become swollen without infection. Then explain why a hot swollen joint with fever changes the urgency of clinical assessment. Use the distinction rather than assigning yourself a diagnosis.
+
+**Continue:** [Pain — experience, tissue signals, and context](Pain.lingua#r_7VX3R5W6XHV21R7EH2N70PBP35).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4CWKE5QM0EFHK2N3AP2Y6WZMX5

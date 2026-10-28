@@ -134,7 +134,9 @@ fn drain(world: &mut World) {
                 world.resource_mut::<InterfaceWindowSettings>().tray_enabled = available;
                 if !available {
                     let hidden = state.saved_window.is_some()
-                        || world.query_filtered::<&Window, With<PrimaryWindow>>().iter(world)
+                        || world
+                            .query_filtered::<&Window, With<PrimaryWindow>>()
+                            .iter(world)
                             .any(|window| !window.visible);
                     if hidden {
                         world.write_message(AppExit::Success);
@@ -423,16 +425,20 @@ pub(crate) mod tests {
         for close_suspends in [false, true] {
             for already_closed in [false, true] {
                 let (mut app, window, sender) = fixture();
-                app.world_mut().resource_mut::<InterfaceWindowSettings>().close_suspends = close_suspends;
+                app.world_mut()
+                    .resource_mut::<InterfaceWindowSettings>()
+                    .close_suspends = close_suspends;
                 if already_closed {
-                    app.world_mut().write_message(WindowCloseRequested { window });
+                    app.world_mut()
+                        .write_message(WindowCloseRequested { window });
                     app.update();
                     assert_eq!(app.should_exit(), None);
                 }
                 sender.send(TrayMessage::Available(false));
                 app.update();
                 if !already_closed {
-                    app.world_mut().write_message(WindowCloseRequested { window });
+                    app.world_mut()
+                        .write_message(WindowCloseRequested { window });
                     app.update();
                 }
                 assert_eq!(app.should_exit(), Some(AppExit::Success));
@@ -445,10 +451,15 @@ pub(crate) mod tests {
         let (mut app, window, sender) = fixture();
         sender.send(TrayMessage::Available(false));
         app.update();
-        assert!(!app.world().resource::<InterfaceWindowSettings>().tray_enabled);
+        assert!(
+            !app.world()
+                .resource::<InterfaceWindowSettings>()
+                .tray_enabled
+        );
         sender.send(TrayMessage::Available(true));
         app.update();
-        app.world_mut().write_message(WindowCloseRequested { window });
+        app.world_mut()
+            .write_message(WindowCloseRequested { window });
         app.update();
         assert_eq!(app.should_exit(), None);
         assert!(app.world().get::<Window>(window).is_none());

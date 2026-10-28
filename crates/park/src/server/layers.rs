@@ -50,14 +50,22 @@ impl Server {
             .outputs
             .iter()
             .flat_map(|(id, registered)| {
-                let map = layer_map_for_output(&registered.output);
-                map.layers()
-                    .filter(|layer| self.state.buffers.contains_key(layer.wl_surface()))
-                    .map(|layer| {
-                        let location = map
-                            .layer_geometry(layer)
-                            .map(|geometry| geometry.loc)
-                            .unwrap_or_default();
+                let layers = {
+                    let map = layer_map_for_output(&registered.output);
+                    map.layers()
+                        .filter(|layer| self.state.buffers.contains_key(layer.wl_surface()))
+                        .map(|layer| {
+                            let location = map
+                                .layer_geometry(layer)
+                                .map(|geometry| geometry.loc)
+                                .unwrap_or_default();
+                            (layer.clone(), location)
+                        })
+                        .collect::<Vec<_>>()
+                };
+                layers
+                    .into_iter()
+                    .map(|(layer, location)| {
                         LayerSnapshot {
                             output: *id,
                             surface: layer.wl_surface().clone(),

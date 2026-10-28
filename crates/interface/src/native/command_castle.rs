@@ -237,7 +237,9 @@ impl Action for Control {
         let Some(castle) = world.get::<CommandCastle>(owner) else {
             return;
         };
-        if castle.binding.source != Source::Local || crate::native::laboratory::blocked(world, owner) {
+        if castle.binding.source != Source::Local
+            || crate::native::laboratory::blocked(world, owner)
+        {
             return;
         }
         let status = castle.status;

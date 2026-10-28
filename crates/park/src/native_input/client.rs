@@ -70,7 +70,12 @@ impl Client {
 
     pub(crate) fn drop_target(&mut self, target: Option<transfer::Target>) { self.state.dnd.target(target); }
 
-    pub(crate) fn suspend_drop(&mut self) { self.state.dnd.suspend(); }
+    pub(crate) fn suspend_drop(&mut self) {
+        self.state.dnd.invalidate_hover();
+        self.state.dnd.suspend();
+    }
+
+    pub(crate) fn file_drag(&self) -> Option<u64> { self.state.dnd.file_drag() }
 
     pub(crate) fn finish_drop(&mut self, token: u64, accepted: bool) {
         if let Some(event) = self.state.dnd.finished(token, accepted) { self.state.event(event); }
@@ -81,7 +86,12 @@ impl Client {
     pub(crate) fn ready(&self) -> bool { self.state.surface.is_some() && self.state.keymap.is_some() }
 
     pub(crate) fn editor(&mut self, editor: Option<Editor>) {
-        if self.state.requested.as_ref().map(|editor| editor.owner) != editor.as_ref().map(|editor| editor.owner) {
+        let changed = match (&self.state.requested, &editor) {
+            (Some(old), Some(new)) => !old.same_owner(new),
+            (None, None) => false,
+            _ => true,
+        };
+        if changed {
             self.state.dnd.suspend();
         }
         self.state.requested = editor;
@@ -156,8 +166,11 @@ impl State {
         if self.text.is_none() { return; }
         let requested = self.entered.then(|| self.requested.clone()).flatten();
         if requested == self.sent { return; }
-        let changed_owner = self.sent.as_ref().map(|editor| (editor.owner, editor.sensitive))
-            != requested.as_ref().map(|editor| (editor.owner, editor.sensitive));
+        if self.sent.as_ref().zip(requested.as_ref()).is_some_and(|(old, new)| old.same_text(new)) {
+            self.sent = requested;
+            return;
+        }
+        let changed_owner = self.sent.as_ref().zip(requested.as_ref()).is_none_or(|(old, new)| !old.same_owner(new));
         if changed_owner && self.sent.is_some() {
             self.text.as_ref().unwrap().disable();
             self.commit(None);
@@ -237,7 +250,7 @@ impl Dispatch<zwp_text_input_v3::ZwpTextInputV3, ()> for State {
                 let pending = std::mem::take(&mut state.pending);
                 if state.entered && !pending.invalid && serial == state.serial
                     && let Some(context) = state.commits.iter().find(|(id, _)| *id == serial).and_then(|(_, editor)| editor.clone())
-                    && state.requested.as_ref() == Some(&context)
+                    && state.requested.as_ref().is_some_and(|requested| requested.same_text(&context))
                 {
                     state.event(Event::Edit(Edit { context, preedit: Some(pending.preedit.unwrap_or_default()), commit: pending.commit, delete: pending.delete }));
                 }

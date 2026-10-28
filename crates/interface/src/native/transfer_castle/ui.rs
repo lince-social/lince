@@ -10,6 +10,7 @@ struct Input {
 #[derive(Clone)]
 pub(super) enum Command {
     Create,
+    Transport,
     New(String),
     Refresh,
     Select(String),
@@ -82,6 +83,17 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::Transport => {
+                let scope = super::transport_workspace::scope(world, owner);
+                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
+                if castle.form.is_some() {
+                    status(world, owner, "Save or cancel the open form first");
+                    return;
+                }
+                let selection = castle.selected.clone();
+                castle.workflow.enter(&scope, &selection);
+                castle.selected.clear();
+            }
             Self::SimulateChildren => {
                 let rows = world.get::<View>(owner).unwrap().rows.clone();
                 let root = world.get::<TransferCastle>(owner).unwrap().selected.clone();
@@ -585,6 +597,9 @@ pub(super) fn inputs(world: &mut World) {
 
 pub(super) fn render(world: &mut World, owner: Entity) {
     audience::capture(world, owner);
+    if super::transport_workspace::render(world, owner) {
+        return;
+    }
     let castle = world.get::<TransferCastle>(owner).unwrap().clone();
     let view = world.get::<View>(owner).unwrap();
     let (controls, summary, list, detail, page) = (
@@ -601,6 +616,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     clear(world, summary);
     clear(world, list);
     clear(world, detail);
+    button(world, controls, owner, "Transport", Command::Transport);
     crate::native::trust_castle::entry_controls(world, controls);
     for (mine, label) in [(false, "All"), (true, "Mine")] {
         let count = rows

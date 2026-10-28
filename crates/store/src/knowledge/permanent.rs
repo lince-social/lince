@@ -7,7 +7,8 @@ use sqlx::{Row, Sqlite, Transaction};
 pub const KNOWLEDGE_NAMESPACE: &str = "lince.knowledge";
 pub const REFERENCE_NAMESPACE: &str = "lince.knowledge.reference";
 pub const IMPORT_NAMESPACE: &str = "lince.knowledge.import";
-pub const BUNDLE_LIMIT: usize = 16 * 1024 * 1024;
+pub const MAX_KNOWLEDGE_PARTS: usize =
+    nucleus::knowledge::ITEM_LIMIT.div_ceil(256 * 1024) * nucleus::knowledge::DEPENDENCY_LIMIT;
 
 pub fn fingerprint(bytes: &[u8]) -> String {
     Sha384::digest(bytes)
@@ -102,11 +103,6 @@ pub async fn save_payload_on(
 ) -> Result<(), StoreError> {
     super::validate_item(item)?;
     let text = serde_json::to_string(payload).map_err(|error| invalid(&error.to_string()))?;
-    if text.len() > BUNDLE_LIMIT {
-        return Err(invalid(
-            "A saved knowledge dependency bundle can contain at most 16 MiB",
-        ));
-    }
     let mut boundaries = vec![0];
     let mut last = 0;
     for (index, _) in text.char_indices() {
@@ -137,7 +133,7 @@ pub async fn save_payload_on(
         )
         .await?;
     }
-    for index in count..old_count.min(64) {
+    for index in count..old_count.min(MAX_KNOWLEDGE_PARTS) {
         crate::records::set_extension_on(
             tx,
             record,
@@ -167,7 +163,7 @@ pub async fn payload_on(
         serde_json::from_str(&raw).map_err(|error| invalid(&error.to_string()))?;
     let count = manifest["parts"]
         .as_u64()
-        .filter(|count| *count > 0 && *count <= 64)
+        .filter(|count| *count > 0 && *count <= MAX_KNOWLEDGE_PARTS as u64)
         .ok_or_else(|| invalid("Saved knowledge has an invalid content manifest"))?;
     if manifest["format"] != 1 {
         return Err(invalid("Unsupported saved knowledge format"));
@@ -187,9 +183,6 @@ pub async fn payload_on(
         let part = part["text"]
             .as_str()
             .ok_or_else(|| invalid("Saved knowledge has an invalid content part"))?;
-        if text.len() + part.len() > BUNDLE_LIMIT {
-            return Err(invalid("Saved knowledge exceeds its dependency limits"));
-        }
         text.push_str(part);
     }
     if manifest["sha384"].as_str() != Some(fingerprint(text.as_bytes()).as_str()) {

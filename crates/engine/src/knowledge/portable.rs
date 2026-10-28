@@ -17,7 +17,6 @@ impl Engine {
         let mut queue = VecDeque::from([record.to_owned()]);
         let mut visited = HashSet::new();
         let mut records = Vec::new();
-        let mut size = 0;
         while let Some(uid) = queue.pop_front() {
             if !visited.insert(uid.clone()) {
                 continue;
@@ -58,12 +57,6 @@ impl Engine {
                 .ok_or_else(|| invalid("Invalid saved knowledge"))?
                 .remove("local_baseline");
             let entry = json!({"uid":uid,"payload":payload});
-            size += serde_json::to_vec(&entry)?.len();
-            if size > store::knowledge::BUNDLE_LIMIT {
-                return Err(invalid(
-                    "Export at most 16 MiB of knowledge and dependencies together",
-                ));
-            }
             records.push(entry);
         }
         let origin: String = store::sqlx::query_scalar(
@@ -83,9 +76,6 @@ impl Engine {
         organ: &str,
         actor: Option<&str>,
     ) -> Result<Value, EngineError> {
-        if raw.len() > store::knowledge::BUNDLE_LIMIT {
-            return Err(invalid("Import a knowledge bundle of at most 16 MiB"));
-        }
         let package: Value = serde_json::from_str(raw)?;
         if package["format"] != 1 || package["kind"] != "knowledge_bundle" {
             return Err(invalid("Choose a supported knowledge dependency bundle"));

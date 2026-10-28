@@ -7,6 +7,8 @@ use bevy::{
 };
 use std::time::Duration;
 
+pub mod editing;
+
 pub const BUTTON_BORDER_WIDTH: f32 = 1.0;
 
 #[derive(Component)]
@@ -150,8 +152,37 @@ pub fn clear(world: &mut World, parent: Entity) {
     }
 }
 
-pub fn status(world: &mut World, entity: Entity, message: impl Into<String>) {
-    if let Some(mut text) = world.get_mut::<Text>(entity) {
-        text.set_if_neq(Text::new(message.into()));
+pub fn status(world: &mut World, entity: Entity, message: impl AsRef<str>) {
+    let message = message.as_ref();
+    if let Some(mut text) = world.get_mut::<Text>(entity)
+        && text.0 != message
+        && !crate::i18n::native_text(message).is_some_and(|script| text.0 == script.encoding())
+    {
+        text.0.clear();
+        text.0.push_str(message);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unchanged_status_preserves_storage_and_does_not_mark_text_changed() {
+        let mut world = World::new();
+        let entity = world.spawn(Text::new("Saved.")).id();
+        world.clear_trackers();
+        let original = world.get::<Text>(entity).unwrap().0.as_ptr();
+        for _ in 0..1000 {
+            status(&mut world, entity, "Saved.");
+        }
+        let text = world.entity(entity).get_ref::<Text>().unwrap();
+        assert_eq!(text.0.as_ptr(), original);
+        assert!(!text.is_changed());
+        status(&mut world, entity, "Ready");
+        let text = world.entity(entity).get_ref::<Text>().unwrap();
+        assert_eq!(text.0, "Ready");
+        assert_eq!(text.0.as_ptr(), original);
+        assert!(text.is_changed());
     }
 }

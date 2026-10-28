@@ -430,6 +430,12 @@ pub(crate) struct SavedAssertion {
     castle: AssertionCastle,
 }
 
+impl crate::native::sand_placement::scratch::Saved for SavedAssertion {
+    fn normalize_scratch(&mut self, homes: &crate::native::sand_placement::scratch::Homes) {
+        crate::native::sand_placement::scratch::Saved::normalize_scratch(&mut self.frame, homes);
+    }
+}
+
 impl SavedAssertion {
     pub fn valid(&self) -> bool {
         self.frame.valid() && self.castle.selection.as_ref().is_none_or(Selection::valid)

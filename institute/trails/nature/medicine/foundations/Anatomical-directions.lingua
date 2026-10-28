@@ -1,0 +1,31 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Glenohumeral-joint.lingua"
+Import "../sources/Medical-Terminology-2e.lingua"
+Import "Cells-and-tissues.lingua"
+Import "Chemistry-and-fluids.lingua"
+
+Describe a body — position, direction, and movement (@med-directions: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #source @med-source-joint, #medicine @med-chemistry, #source @med-source-terminology) { r_5HMQ29K367TFS69H6C35MZYHVQ
+**Read and revisit:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), the complete introductory body chapter, with particular attention here to Anatomical Terminology and Medical Imaging. In [Medical Terminology 2e — Open RN](../sources/Medical-Terminology-2e.lingua#r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q), revisit sections 2.6–2.7 on reference position, directions, and planes after completing chapter 2. The shoulder illustrations are an application of this vocabulary, not the first prerequisite.
+
+Anatomical descriptions use a reference position: standing, facing forward, arms at the sides, palms forward. Right and left belong to the person described. An image viewed from the front therefore puts that person's right on the viewer's left.
+
+| English | Português brasileiro |
+| --- | --- |
+| superior / inferior | superior / inferior |
+| anterior / posterior | anterior / posterior |
+| medial / lateral | medial / lateral |
+| proximal / distal | proximal / distal |
+| superficial / deep | superficial / profundo |
+| sagittal / frontal / transverse plane | plano sagital / frontal ou coronal / transversal ou axial |
+
+Proximal and distal describe position along a limb relative to its attachment. Medial and lateral refer to the body's midline. A slice through a body is a section; its appearance depends on its plane and level.
+
+Flexion/flexão and extension/extensão describe bending-related movements; abduction/abdução and adduction/adução describe movement away from and toward the reference midline. Internal and external rotation are rotação interna and externa. Their precise description depends on the joint and starting position.
+
+**Try:** describe the elbow relative to the shoulder and wrist, then explain why a posterior view reverses the apparent arrangement seen in an anterior view. Draw a coordinate frame before interpreting a scan.
+
+**Continue:** [Chemistry for a living body — water, molecules, ions, and energy](Chemistry-and-fluids.lingua#r_3QGS68JVNCQ89FNB287Z9TXTAT).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_5HMQ29K367TFS69H6C35MZYHVQ

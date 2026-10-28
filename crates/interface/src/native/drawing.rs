@@ -316,6 +316,12 @@ fn content(
         crate::native::description::Rendered,
         crate::native::sand_store::SandCredits(crate::native::description::CREDITS),
     ));
+    let chrome = world
+        .get::<crate::native::embedded_media::Media>(owner)
+        .map_or(owner, |media| media.controls);
+    let media_content = world
+        .get::<crate::native::embedded_media::Media>(owner)
+        .map_or(owner, |media| media.content);
     let controls = world
         .spawn((
             Node {
@@ -324,7 +330,7 @@ fn content(
                 row_gap: px(4),
                 ..default()
             },
-            ChildOf(owner),
+            ChildOf(chrome),
         ))
         .id();
     if editable {
@@ -355,7 +361,7 @@ fn content(
             BackgroundColor(Color::WHITE),
             RelativeCursorPosition::default(),
             DrawingSurface,
-            ChildOf(owner),
+            ChildOf(media_content),
         ))
         .id();
     let outputs = world
@@ -366,7 +372,7 @@ fn content(
                 row_gap: px(4),
                 ..default()
             },
-            ChildOf(owner),
+            ChildOf(chrome),
         ))
         .id();
     for (title, action) in [
@@ -407,7 +413,7 @@ fn content(
     }
     let status = crate::native::edit_mode::label(
         world,
-        owner,
+        chrome,
         if editable {
             "Draw on the white surface. Native copies keep editable strokes."
         } else {
@@ -525,17 +531,8 @@ pub fn spawn(
 }
 
 pub(crate) fn embedded(world: &mut World, parent: Entity, drawing: Drawing) {
-    let owner = world
-        .spawn((
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(6),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
+    let frame = crate::native::embedded_media::frame(world, parent, "Drawing");
+    let owner = frame.owner;
     content(world, owner, drawing, false, None);
 }
 
@@ -916,6 +913,8 @@ pub(crate) struct SavedDrawing {
     placement: crate::native::sand_placement::Placement,
     tokens: crate::native::tokens::TokenOverrides,
 }
+
+crate::native::sand_placement::scratch::saved!(SavedDrawing);
 
 impl SavedDrawing {
     pub(crate) fn valid(&self) -> bool {

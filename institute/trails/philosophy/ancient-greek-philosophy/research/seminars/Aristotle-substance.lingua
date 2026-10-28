@@ -1,0 +1,26 @@
+Import "Seminars.lingua"
+Import "../../sources/Metaphysics-Jaeger.lingua"
+Import "../../sources/Metaphysics.lingua"
+Import "../../sources/Organon.lingua"
+Import "../../sources/Primary-Ousia-Loux.lingua"
+Import "Nature-life-and-mind.lingua"
+Import "Plato-being-and-knowledge.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: Aristotle on substance, predication, and explanatory unity (@greek-seminar-aristotle-being: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-aristotle-critical, #source @greek-source-metaphysics, #source @greek-source-organon, #source @greek-source-loux, #philosophy @greek-seminar-nature-mind, #ancient-greek-philosophy @greek-seminar-nature-mind, #philosophy @greek-seminar-plato-being, #ancient-greek-philosophy @greek-seminar-plato-being, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_3B9A85Q4MC2K5NN4W1X1BQYEE5
+**Preparation:** [Categories and the Analytics](../../aristotle/Logic-and-demonstration.lingua#r_1SRR6TVQ8CC029F7QK6PKPM1X9), [the first metaphysical readings](../../aristotle/Nature-causes-and-being.lingua#r_2MGDMPK353BD8MFMFDMA3JPJ9P), and the Greek dossier.
+
+**Primary corpus:** read Metaphysics VII–IX as connected books, in relation to the questions of III and the principles examined in IV. Use Categories 1–5 for the comparison concerning substance and predication, and the relevant Posterior Analytics passages when the argument concerns definition or demonstration.
+
+Use [Jaeger's critical Greek edition](../../sources/Metaphysics-Jaeger.lingua#r_2MJF84NGSE83J9KWD3B8KBNPZ1) alongside the identified [translation](../../sources/Metaphysics.lingua#r_1TR6T0Z46ZT00NNMWG6SXG46KF). Use [Loux's Primary Ousia](../../sources/Primary-Ousia-Loux.lingua#r_1T3SW7QAK4FKG98YMZ6J83F28J) as a sustained modern argument concerning Metaphysics VII–VIII, and establish the current interpretive dispute through competing research articles; use the [literature method](../Scholarly-inquiry.lingua#r_2FEBDJ8R5JDHXX54TSATY2CRVZ) to make that choice explicit.
+
+**Choose a question:** whether form, matter, or the compound is primary in a selected argument; how the account relates universal predication to an individual substance; how a definition explains unity; or what actuality and potentiality contribute to the account.
+
+Trace different uses of substance and “said of” before forcing one formula onto every work. Compare an interpretation locating a genuine change of position with one defending a consistent distinction, and identify the passages that could decide the disagreement.
+
+**Required work:** a reconstruction of the relevant book-length sequence, Greek analysis of a disputed passage, a map of the interpretive alternatives, and a defended contribution. Explain which conclusion your text establishes and which broader reconstruction still needs evidence.
+
+**Crossings:** [Nature and living activity](Nature-life-and-mind.lingua#r_2PYDKJQM81F9YKYZFJPEDNY150); [Plato on being and predication](Plato-being-and-knowledge.lingua#r_34WRXN1SRY8SZVRKRV7X3X9QWA); a bounded reception study concerning substance or demonstration.
+
+**Review:** [Common seminar standard](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_3B9A85Q4MC2K5NN4W1X1BQYEE5

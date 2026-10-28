@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "Musculoskeletal-system.lingua"
+Import "Tendons-and-ligaments.lingua"
+
+Cartilage — surfaces, support, and specialized tissue (@msk-cartilage: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-histology, #medicine @msk-tendons, #orthopedics @msk-tendons) { r_1212QHQGQ75Z2D2QSZZC58F56Q
+**Read a full tissue account, then a smaller application:** [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS), the complete cartilage chapter, including hyaline, elastic, and fibrocartilage; in [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), revisit the cartilage discussion in connective tissue and the articular surfaces in chapter 9. Use the later labrum reading to distinguish a rim from a joint-surface covering.
+
+Cartilage/cartilagem contains chondrocytes/condrócitos embedded in matrix. Hyaline, elastic, and fibrocartilage have different organization and roles. The articular cartilage/cartilagem articular at a typical synovial joint provides a specialized surface; it is different from the fibrocartilaginous rim of the shoulder labrum.
+
+Cartilage's matrix and water contribute to its response to compression. Typical articular cartilage lacks its own blood vessels, and its nutrition and repair differ from those of vascularized tissues. Avoid imagining it as a replaceable layer of rubber with the same behavior throughout life.
+
+A labrum/lábio articular, meniscus/menisco, tendon/tendão, and ligament/ligamento are not interchangeable names for cushioning. Their location, tissue composition, and functions differ.
+
+**Try:** compare an articular surface and a labral rim in a shoulder illustration. Explain why 'cartilage injury' is too broad to tell us which structure was affected or what its clinical importance might be.
+
+**Continue:** [Tendons, ligaments, fascia, and attachments](Tendons-and-ligaments.lingua#r_39EW7RT1P3JRQAG00BP4MXKDF2).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_1212QHQGQ75Z2D2QSZZC58F56Q

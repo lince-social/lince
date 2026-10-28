@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 use bevy::{a11y::AccessibilityNode, prelude::*};
 pub(crate) mod sync;
 use cell::information::{
@@ -202,7 +203,7 @@ pub(crate) fn open_button(world: &mut World, parent: Entity, target: Entity) {
         world,
         parent,
         target,
-        "Open Information",
+        Tr::OpenInformation.text(),
         crate::native::actions![OpenInformation],
     );
 }
@@ -252,12 +253,12 @@ fn render(world: &mut World) {
     for (panel, root) in panels {
         world.entity_mut(panel).despawn_children();
         world.get_mut::<InformationPanel>(panel).unwrap().revision = Some(revision);
-        label(world, panel, "Information", 22.0);
+        label(world, panel, Tr::Information.text(), 22.0);
         action_button(
             world,
             panel,
             root,
-            "Laboratory",
+            Tr::Laboratory.text(),
             crate::native::actions![crate::native::laboratory::LaboratoryAction::Open],
         );
         let Some(state) = &state else {
@@ -270,9 +271,9 @@ fn render(world: &mut World) {
             continue;
         };
         for (name, value) in [
-            ("Version", state.version.clone()),
+            (Tr::Version.text(), state.version.clone()),
             (
-                "Commit",
+                Tr::Commit.text(),
                 if state.revision == "unknown" {
                     "Unstamped build — updates cannot be compared".into()
                 } else {
@@ -357,7 +358,7 @@ fn render(world: &mut World) {
                     world,
                     panel,
                     root,
-                    "Download and restart",
+                    Tr::DownloadRestart.text(),
                     crate::native::actions![UpdateAction(UpdateCommand::DownloadAndRestart)],
                 );
             }
@@ -382,7 +383,7 @@ fn render(world: &mut World) {
                 world,
                 panel,
                 root,
-                "Check for updates",
+                Tr::CheckUpdates.text(),
                 crate::native::actions![UpdateAction(UpdateCommand::Check)],
             );
             if !state.server {

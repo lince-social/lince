@@ -18,6 +18,26 @@ pub(super) struct Controls {
     deltas: Vec<[f64; 4]>,
 }
 
+#[cfg(feature = "nested")]
+impl Controls {
+    pub(super) fn pointer_lock(&self, surface: &wl_surface::WlSurface, seat: &wl_seat::WlSeat, qh: &QueueHandle<Client>) -> (wl_pointer::WlPointer, Locked, Relative) {
+        let pointer = seat.get_pointer(qh, ());
+        let locked = self.constraints.as_ref().unwrap().lock_pointer(surface, &pointer, None, constraints::Lifetime::Persistent, qh, ());
+        let relative = self.relative.as_ref().unwrap().get_relative_pointer(&pointer, qh, ());
+        (pointer, locked, relative)
+    }
+
+    pub(super) fn pointer_confinement(&self, surface: &wl_surface::WlSurface, seat: &wl_seat::WlSeat, region: &wl_region::WlRegion, qh: &QueueHandle<Client>) -> (wl_pointer::WlPointer, Confined) {
+        let pointer = seat.get_pointer(qh, ());
+        let confined = self.constraints.as_ref().unwrap().confine_pointer(surface, &pointer, Some(region), constraints::Lifetime::Persistent, qh, ());
+        (pointer, confined)
+    }
+
+    pub(super) fn lock_events(&self) -> &[bool] { &self.locked }
+
+    pub(super) fn relative_deltas(&self) -> &[[f64; 4]] { &self.deltas }
+}
+
 pub(super) fn bind(state: &mut Client, registry: &wl_registry::WlRegistry, name: u32, interface: &str, qh: &QueueHandle<Client>) {
     match interface {
         "zwp_pointer_constraints_v1" => state.controls.constraints = Some(registry.bind(name, 1, qh, ())),
@@ -31,6 +51,13 @@ delegate_noop!(Client: ignore Constraints);
 delegate_noop!(Client: ignore Confined);
 delegate_noop!(Client: ignore RelativeManager);
 delegate_noop!(Client: ignore InhibitManager);
+
+#[cfg(feature = "nested")]
+pub(super) fn shortcuts_inhibitor(harness: &Harness, window: &Window) -> Inhibitor {
+    harness.client.controls.inhibit.as_ref().unwrap().inhibit_shortcuts(
+        &window.surface, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
+    )
+}
 
 impl Dispatch<Locked, ()> for Client {
     fn event(state: &mut Self, _: &Locked, event: locked::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {

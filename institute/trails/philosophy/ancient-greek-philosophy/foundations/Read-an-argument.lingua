@@ -1,0 +1,23 @@
+Import "Reading-tools.lingua"
+Import "../socratic/Apology.lingua"
+
+Read a dialogue and reconstruct an argument (@greek-reading-method: 0, is #chapter, #part-of @greek-reading-tools, #philosophy @greek-apology, #ancient-greek-philosophy @greek-apology) { r_4GMQCKPBF9BCSKDK0KPN013EBN
+A dialogue presents an encounter: speakers pursue purposes, concede claims, change direction, tell stories, and sometimes fail to agree. Read the exchange before extracting a doctrine.
+
+1. Read a short exchange without the translator's introduction. Name the question and the speaker making the claim.
+2. Separate the proposed answer from the reasons supporting it. Paraphrase each reason without making it stronger than the text.
+3. Identify a definition, example, concession, or unstated assumption on which the reasoning depends.
+4. Follow the reply: does it challenge the reason's truth, the inference, the meaning of a term, or the relevance of the answer?
+5. Give the strongest objection you can support. Try a revised answer that addresses it.
+6. Return to the passage. Explain what your reconstruction preserves and where its interpretation could be challenged.
+
+A conclusion is what the argument seeks to establish. Premises supply its stated reasons. A valid inference would preserve truth if its premises were true; that alone does not establish that the premises are true. A counterexample tests a general claim with a case the claim cannot accommodate. Use these ideas with the first exchange before pursuing formal notation.
+
+For example, a definition of courage as never retreating must face an organised retreat made to protect others. The case challenges that definition; it does not prove a complete alternative theory of courage. This is a practice example written for the study, not a quotation from Plato.
+
+**Keep a reading note:** work and translation; passage; question; proposed answer; reasons; assumption; objection; response; remaining difficulty. A paragraph or a diagram can do this. If a text has no printed section numbers, record its dialogue or book, chapter, speaker, and distinctive opening words. Plato's Stephanus references are shared across many editions; use them where the selected edition actually prints them. Never substitute a reader's screen page for an edition-independent reference.
+
+**Check:** another person should be able to locate the passage, recognise the argument in your paraphrase, and explain your objection without guessing what you meant.
+
+**Next:** [Apology](../socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4). **Preparation on demand:** [Terms and translation](Terms-and-translation.lingua#r_1VGPFMXZ4HHAREA3BAHTSSQQ8D). **Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_4GMQCKPBF9BCSKDK0KPN013EBN

@@ -276,6 +276,8 @@ pub(crate) struct Saved {
     pub tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(Saved);
+
 impl Saved {
     pub fn valid(&self) -> bool {
         self.config.valid()

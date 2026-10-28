@@ -15,9 +15,19 @@ pub(super) fn hardware() -> Value {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
             let path = entry.path();
-            if name.strip_prefix("card").is_some_and(|suffix| !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit())) {
-                let driver = fs::canonicalize(path.join("device/driver")).ok().and_then(|driver| driver.file_name().map(|name| name.to_string_lossy().into_owned()));
-                let version = driver.as_ref().and_then(|driver| read(Path::new("/sys/module").join(driver).join("version")));
+            if name.strip_prefix("card").is_some_and(|suffix| {
+                !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit())
+            }) {
+                let driver = fs::canonicalize(path.join("device/driver"))
+                    .ok()
+                    .and_then(|driver| {
+                        driver
+                            .file_name()
+                            .map(|name| name.to_string_lossy().into_owned())
+                    });
+                let version = driver
+                    .as_ref()
+                    .and_then(|driver| read(Path::new("/sys/module").join(driver).join("version")));
                 cards.push(json!({"name": name, "driver": driver, "driver_version": version,
                     "vendor": read(path.join("device/vendor")), "device": read(path.join("device/device")), "revision": read(path.join("device/revision"))}));
             } else if name.starts_with("card") && path.join("status").is_file() {

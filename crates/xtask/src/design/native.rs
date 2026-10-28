@@ -158,9 +158,11 @@ mod tests {
 
     #[test]
     fn native_preview_rejects_unknown_components_before_starting_cargo() {
-        assert!(run(Path::new("/missing"), "unknown", None, true, false)
-            .unwrap_err()
-            .contains("Unknown component"));
+        assert!(
+            run(Path::new("/missing"), "unknown", None, true, false)
+                .unwrap_err()
+                .contains("Unknown component")
+        );
     }
 
     #[cfg(unix)]

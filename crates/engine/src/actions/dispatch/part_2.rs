@@ -576,7 +576,16 @@ impl Engine {
                 }
                 Action::CreateLingua { name, visibility } => {
                     outcome.created = Some(
-                        store::linguas::create(&self.store.pool, &name, store::organs::local(&self.store.pool).await?.map(|organ| organ.uid).as_deref(), &visibility).await?,
+                        store::linguas::create(
+                            &self.store.pool,
+                            &name,
+                            store::organs::local(&self.store.pool)
+                                .await?
+                                .map(|organ| organ.uid)
+                                .as_deref(),
+                            &visibility,
+                        )
+                        .await?,
                     );
                 }
                 Action::RenameLingua { lingua, name } => {
@@ -584,7 +593,8 @@ impl Engine {
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid)
+                        .await?;
                     drop(ownership);
                     store::linguas::rename(&self.store.pool, &lingua_uid, &name).await?;
                 }
@@ -593,15 +603,20 @@ impl Engine {
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid)
+                        .await?;
                     drop(ownership);
                     if lingua_uid == store::linguas::LOCAL_UID {
                         return Err(EngineError::Consequence(
                             "the local Lingua is the ontology's permanent private home".into(),
                         ));
                     }
-                    if let Err(error) = store::linguas::delete(&self.store.pool, &lingua_uid).await {
-                        if error.as_database_error().is_some_and(|error| error.is_foreign_key_violation()) {
+                    if let Err(error) = store::linguas::delete(&self.store.pool, &lingua_uid).await
+                    {
+                        if error
+                            .as_database_error()
+                            .is_some_and(|error| error.is_foreign_key_violation())
+                        {
                             return Err(EngineError::Conflict { code: "lingua_in_use", message: "This Vocabulary is the source of retained Concepts. Remove adopted entries or retire their terms while preserving the source.".into() });
                         }
                         return Err(error.into());
@@ -612,12 +627,14 @@ impl Engine {
                     name,
                     parents,
                 } => {
-                    self.require_permission(actor.as_deref(), "permission:assign").await?;
+                    self.require_permission(actor.as_deref(), "permission:assign")
+                        .await?;
                     let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid)
+                        .await?;
                     drop(ownership);
                     let mut parent_uids = Vec::new();
                     for p in &parents {
@@ -634,22 +651,26 @@ impl Engine {
                     );
                 }
                 Action::RenameConcept { concept, name } => {
-                    self.require_permission(actor.as_deref(), "permission:assign").await?;
+                    self.require_permission(actor.as_deref(), "permission:assign")
+                        .await?;
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_concept_on(&mut ownership, &concept_uid).await?;
+                    store::vocabulary::require_local_concept_on(&mut ownership, &concept_uid)
+                        .await?;
                     drop(ownership);
                     store::concepts::rename(&self.store.pool, &concept_uid, &name).await?;
                 }
                 Action::DeleteConcept { concept } => {
-                    self.require_permission(actor.as_deref(), "permission:assign").await?;
+                    self.require_permission(actor.as_deref(), "permission:assign")
+                        .await?;
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(concept))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_concept_on(&mut ownership, &concept_uid).await?;
+                    store::vocabulary::require_local_concept_on(&mut ownership, &concept_uid)
+                        .await?;
                     drop(ownership);
                     match store::concepts::delete(&self.store.pool, &concept_uid).await {
                         Err(error)
@@ -673,7 +694,8 @@ impl Engine {
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid)
+                        .await?;
                     drop(ownership);
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
@@ -685,7 +707,8 @@ impl Engine {
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
                     let mut ownership = self.store.pool.acquire().await?;
-                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid).await?;
+                    store::vocabulary::require_local_vocabulary_on(&mut ownership, &lingua_uid)
+                        .await?;
                     drop(ownership);
                     let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                         .await?
@@ -722,12 +745,18 @@ impl Engine {
                 } => {
                     let subject_uid = self.resolve(&subject).await?;
                     let object_uid = match object {
-                        Some(object) => Some(self.resolve(&object).await?),
+                        Some(object) if lince_resources::reference::is_uri(&object) => Some(
+                            lince_resources::address(&object)
+                                .map_err(|error| EngineError::Consequence(error))?
+                                .to_string(),
+                        ),
+                        Some(object) => Some(self.assertion_object(&subject_uid, &object).await?),
                         None => None,
                     };
-                    let predicate_uid = store::vocabulary::resolve(&self.store.pool, &predicate, actor.as_deref())
-                        .await?
-                        .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
+                    let predicate_uid =
+                        store::vocabulary::resolve(&self.store.pool, &predicate, actor.as_deref())
+                            .await?
+                            .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
                     outcome = self
                         .change_record(
                             crate::record_change::Request {
@@ -743,7 +772,9 @@ impl Engine {
                             actor.as_deref(),
                         )
                         .await?;
-                    if object_uid.is_some()
+                    if object_uid
+                        .as_deref()
+                        .is_some_and(|object| !lince_resources::reference::is_uri(object))
                         && is_order_like(&self.store.pool, &predicate_uid).await?
                     {
                         for cycle in kind_cycles(&self.store.pool, &predicate_uid).await? {
@@ -762,10 +793,14 @@ impl Engine {
                     }
                 }
                 Action::PreviewInstinct => {
-                    outcome.data = Some(serde_json::to_value(self.preview_instinct(actor.as_deref()).await?)?);
+                    outcome.data = Some(serde_json::to_value(
+                        self.preview_instinct(actor.as_deref()).await?,
+                    )?);
                 }
                 Action::ImportInstinct { fingerprint } => {
-                    outcome = self.import_instinct(&fingerprint, actor.as_deref(), now).await?;
+                    outcome = self
+                        .import_instinct(&fingerprint, actor.as_deref(), now)
+                        .await?;
                 }
                 Action::ConfigureFiote {
                     target,
@@ -811,7 +846,8 @@ impl Engine {
                         }
                         None => None,
                     };
-                    let actor_concept = store::vocabulary::feature_write(&self.store.pool, "actor").await?;
+                    let actor_concept =
+                        store::vocabulary::feature_write(&self.store.pool, "actor").await?;
                     for child in ["person", "agent"] {
                         let uid = store::vocabulary::feature_write(&self.store.pool, child).await?;
                         store::concepts::add_parent(&self.store.pool, &uid, &actor_concept).await?;
@@ -874,13 +910,19 @@ impl Engine {
                         .await?;
                 }
                 action @ Action::RefineAssertion { .. } => {
-                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
+                    outcome = self
+                        .edit_record_relations_as(action, actor.as_deref(), now)
+                        .await?;
                 }
                 action @ Action::RetractRecord { .. } => {
-                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
+                    outcome = self
+                        .edit_record_relations_as(action, actor.as_deref(), now)
+                        .await?;
                 }
                 action @ Action::SetIdentity { .. } => {
-                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
+                    outcome = self
+                        .edit_record_relations_as(action, actor.as_deref(), now)
+                        .await?;
                 }
                 _ => {
                     return Err(EngineError::Consequence(

@@ -1,0 +1,21 @@
+Import "../../../sources/Avaliacao-do-ombro-MSD.lingua"
+Import "../../../sources/Brachial-plexus.lingua"
+Import "../../../sources/Upper-limb-nerves.lingua"
+Import "../Shoulder.lingua"
+Import "Infection-and-systemic-illness.lingua"
+
+Nerve disorders and pain referred to the shoulder (@shoulder-referred: 0, is #chapter, #part-of @shoulder, #source @med-source-msd-shoulder, #source @med-source-upper-limb-nerves, #source @med-source-plexus, #medicine @shoulder-systemic, #orthopedics @shoulder-systemic, #shoulder @shoulder-systemic) { r_7BFZ7QKTEBQWTCQD9A60VXWDH5
+**Read:** the neck and shoulder relationships in [Avaliação do ombro — Manual MSD](../../../sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X), then [Upper-limb nerves — NCBI Bookshelf](../../../sources/Upper-limb-nerves.lingua#r_6G2RDX948Y8KGMDFRV226X4RH6) and [Brachial plexus — NCBI Bookshelf](../../../sources/Brachial-plexus.lingua#r_5RBF38QWEQ2D9CXZAN1ERZ4F8X) for the anatomy.
+
+Pain experienced at the shoulder can arise from the shoulder region or be referred from elsewhere, including cervical structures. A spinal-root disorder and a peripheral nerve disorder occupy different points in the network. Altered sensation, strength, reflexes, and other findings help distinguish possibilities; a distribution drawn in an atlas is an approximation.
+
+Suprascapular, axillary, long thoracic, and accessory nerve disorders can affect different muscle functions. Scapular prominence or weakness has a differential diagnosis rather than a single automatic explanation. Significant new neurological change warrants clinical assessment.
+
+Shoulder or arm pain associated with chest discomfort, breathlessness, or other systemic symptoms changes the urgency of the question. Do not assume an orthopedic cause because pain is felt near a joint.
+
+**Try:** trace a hypothetical signal interruption at a root and at a named nerve. Compare their possible territories, then state why anatomy alone cannot identify the cause of an individual's symptoms.
+
+**Continue:** [Infection, systemic illness, and important alternatives](Infection-and-systemic-illness.lingua#r_6MTTQSKBBTMPNTD9DYFNVD32SH).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7BFZ7QKTEBQWTCQD9A60VXWDH5

@@ -1,0 +1,25 @@
+Import "../Medicine.lingua"
+Import "../Sources.lingua"
+
+Medical Terminology 2e — Open RN (@med-source-terminology: 0, is #book, #part-of @medicine-sources) { r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q
+Open Resources for Nursing, Open RN; edited by Kimberly Ernstmeyer and Elizabeth Christman. Medical Terminology, 2nd edition. Chippewa Valley Technical College/WisTech Open, 2024. English. Ebook ISBN 9781957068060.
+
+[Publisher edition](https://wtcs.pressbooks.pub/medterm/) · [NCBI Bookshelf](https://www.ncbi.nlm.nih.gov/sites/books/NBK607454/) · [Download PDF](https://www.ncbi.nlm.nih.gov/sites/books/NBK607454/pdf/Bookshelf_NBK607454.pdf).
+
+**Substantial first reading:** chapters 1–2 in full, including the written activities and glossaries. Later read chapters 13–14 in full for skeletal and muscular terminology, and the relevant parts of chapter 16 for nervous-system language. All 17 chapters form an optional whole-book reading across medical fields. This is a terminology textbook with anatomical and clinical context, not a substitute for the main anatomy and physiology book or a treatment reference.
+
+The NCBI PDF has 996 file pages and preserves the 2024 edition notices. Printed pagination differs. Some interactive activities and videos require the linked web edition; the PDF explains their absence. Use the [NCBI-hosted PDF](https://www.ncbi.nlm.nih.gov/sites/books/NBK607454/pdf/Bookshelf_NBK607454.pdf) for offline reading.
+
+**Access and reuse:** copyright 2024 Open RN/WisTech Open; CC BY 4.0 except where otherwise noted. Credit the title, contributors, edition, publisher, and source, and preserve component notices. [Licence](https://creativecommons.org/licenses/by/4.0/).
+
+**Return:** [Medicine sources — books, anatomy, and clinical evidence](../Sources.lingua#r_2411E1397ZNK740CDA309B881D) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q
+
+Extension @med-source-terminology "lince.resource" {
+ uri "https://www.ncbi.nlm.nih.gov/sites/books/NBK607454/pdf/Bookshelf_NBK607454.pdf"
+ title "Medical Terminology 2e — Open RN, 2024"
+ hash "e631d223a8c17f1ef18f76061b8239f5c5dde9a2caf77c5ecc550eb9fb0ed03f"
+ media_type "application/pdf"
+ attribution "Open Resources for Nursing (Open RN); editors Kimberly Ernstmeyer and Elizabeth Christman. Medical Terminology, second edition, Chippewa Valley Technical College/WisTech Open, 2024."
+ license "https://creativecommons.org/licenses/by/4.0/"
+}

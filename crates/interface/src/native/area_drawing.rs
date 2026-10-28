@@ -29,7 +29,10 @@ impl Plugin for AreaDrawingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Redraw>().add_systems(
             PostUpdate,
-            (dirty, draw).chain().before(bevy::ui::UiSystems::Prepare),
+            (dirty, draw)
+                .chain()
+                .after(bevy::camera::CameraUpdateSystems)
+                .before(bevy::ui::UiSystems::Prepare),
         );
     }
 }

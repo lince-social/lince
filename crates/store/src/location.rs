@@ -85,7 +85,10 @@ pub async fn transfer_ended(pool: &SqlitePool, transfer: &str) -> Result<bool, S
     if terminal {
         return Ok(true);
     }
-    if crate::transport::journey(pool, transfer).await?.is_some_and(|journey|journey.expired || journey.all_finished) {
+    if crate::transport::journey(pool, transfer)
+        .await?
+        .is_some_and(|journey| journey.expired || journey.all_finished)
+    {
         return Ok(true);
     }
     Ok(crate::transfer_agreement::read(pool, transfer)

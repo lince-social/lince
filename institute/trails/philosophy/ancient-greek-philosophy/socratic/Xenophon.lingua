@@ -1,0 +1,18 @@
+Import "Socratic-inquiry.lingua"
+Import "../sources/Memorabilia-Dakyns.lingua"
+Import "../sources/Apology-Cary.lingua"
+Import "Argument-review.lingua"
+
+Compare Plato and Xenophon (@greek-xenophon: 0, is #chapter, #part-of @greek-socratic-inquiry, #source @greek-source-xenophon, #source @apology, #philosophy @greek-first-review, #ancient-greek-philosophy @greek-first-review) { r_386T9BE05SXJZK8E0NX7TAYJK8
+**Read:** Xenophon's [Memorabilia](../sources/Memorabilia-Dakyns.lingua#r_6R4K67BD9B740H00FCVTM869A1), Book I, chapters 1–2, alongside the defence and account of inquiry in [Plato's Apology](../sources/Apology-Cary.lingua#r_00000000000000000000001006). Continue into another conversation in Memorabilia to see how the portrait develops; Book IV, chapter 6 is useful for attention to definitions and discussion.
+
+**Preparation:** [author, character, and historical claim](../foundations/Socrates-and-his-sources.lingua#r_1WAA32AYYPKYVETNZ5JGZ2SHFT). If entering directly, read the selected Apology passages alongside rather than completing the entire first path.
+
+Both works defend Socrates, but a defence selects and organises material for a purpose. Describe which accusations each author addresses, how each presents Socrates' activity, and what counts as an answer. A more practical example or a more elaborate philosophical argument does not by itself prove historical accuracy.
+
+**Practice:** take the claim that questioning makes people better. Find one passage in each author relevant to it. Record the speaker, the action described, the reason offered, and what an alternative explanation would be.
+
+**Check:** write a comparison with one meaningful agreement, one difference in emphasis or argument, and one historical question the comparison cannot settle. Separate evidence, interpretation, and an unanswered question.
+
+**Next:** [First argument review](Argument-review.lingua#r_3879MMB9TCFTCMJ2SPYG32ZDS0). **Further depth:** compare ancient reporting in [Diogenes on the sceptics](../schools/Sceptics.lingua#r_6KEA1AHWJRDT3ZN8VJQTK06ZFK) with the treatment of early thinkers in [Nature and being](../presocratics/Nature-and-being.lingua#r_61M87EN28QQ9AHXT80SPCB0CVH). **Return:** [First reading path](Socratic-inquiry.lingua#r_24EDXVJN0ACP2G204JK3KCHW79) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_386T9BE05SXJZK8E0NX7TAYJK8

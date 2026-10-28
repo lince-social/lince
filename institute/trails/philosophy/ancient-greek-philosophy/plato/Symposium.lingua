@@ -1,0 +1,21 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Symposium-Jowett.lingua"
+Import "../aristotle/Practical-wisdom-and-friendship.lingua"
+Import "../aristotle/Logic-and-demonstration.lingua"
+Import "../schools/Epicurus.lingua"
+
+Symposium: love, beauty, and the desire to know (@greek-symposium: 0, is #chapter, #part-of @greek-plato-aristotle, #source @greek-source-symposium, #philosophy @greek-aristotle-judgment, #ancient-greek-philosophy @greek-aristotle-judgment, #philosophy @greek-aristotle-logic, #ancient-greek-philosophy @greek-aristotle-logic, #philosophy @greek-epicurus, #ancient-greek-philosophy @greek-epicurus) { r_5NMHFGWX7QGRJ65XQDFFEG9K8B
+**Read:** [Symposium, translated by Benjamin Jowett](../sources/Symposium-Jowett.lingua#r_475VMK1BGF0K12WYA6VG06CT7B). First read the gathering and competing speeches, then Socrates' questioning of Agathon and his report of Diotima's account. Finish with Alcibiades' arrival and speech before interpreting the dialogue as a whole. The central exchange and report occupy approximately 199c–212b in Stephanus references.
+
+**Preparation:** [speaker, author, and reported speech](../foundations/Socrates-and-his-sources.lingua#r_1WAA32AYYPKYVETNZ5JGZ2SHFT). The [definition exercise](../socratic/Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD) helps examine what an account of love is meant to explain.
+
+Compare love as a lack or desire with love as possession, benefit, admiration, or the pursuit of enduring goods. In the ascent associated with Diotima, ask what connects particular attachments, practices, forms of understanding, and beauty. Distinguish describing the movement from justifying its ordering.
+
+**Practice:** reconstruct a disagreement between two speeches. Then assess how Alcibiades' portrait of Socrates supports, complicates, or challenges an interpretation of the preceding account. Use the dialogue's form as part of the evidence.
+
+**Check:** explain one argument about desire and one difficulty in the passage's proposed development. Identify which claims belong to Socrates' report of Diotima rather than silently attributing all of them to every speaker or to the historical Socrates.
+
+**Crossings:** literary form, aesthetics, ethics, and the relation between desire and inquiry. Compare [Epicurus on desires](../schools/Epicurus.lingua#r_6KHZKEFRKY1J18Z7TSRAJABZQP) or [Aristotle on friendship](../aristotle/Practical-wisdom-and-friendship.lingua#r_6RZXS4EJH55PRPW61MB33DTCNM). **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Further crossings:** [Aristotle's account of representation](../aristotle/Poetry-and-representation.lingua#r_5PBR5GVV367JEK4PF94Q2YJKBE) and [Plotinus' interpretation of beauty](../schools/Plotinus.lingua#r_375WTA2HXW04F1FC4FVW20B9N9).
+} r_5NMHFGWX7QGRJ65XQDFFEG9K8B

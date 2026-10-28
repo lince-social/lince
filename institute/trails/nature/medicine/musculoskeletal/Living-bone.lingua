@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "Cartilage.lingua"
+Import "Musculoskeletal-system.lingua"
+
+Bone — living tissue with mechanical functions (@msk-bone: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-histology, #medicine @msk-cartilage, #orthopedics @msk-cartilage) { r_4DKXDP3A991W1WBQ4Y1E38S6HW
+**Read a complete chapter:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 6 on bone tissue, organization, remodeling, and repair, with its review questions. Read the full bone-tissue chapter in [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS) for Portuguese microscopic study. Chapter 7 on the axial skeleton and chapter 8 on the appendicular skeleton continue the broader skeletal block.
+
+Bone/osso combines mineralized matrix with living cells, vessels, and nerves. Cortical or compact bone forms dense regions; trabecular or spongy bone organizes internal struts. Osteoblasts help form matrix, osteoclasts resorb bone, and osteocytes participate in its maintenance and sensing environment. Bone marrow/medula óssea is not the spinal cord/medula espinal.
+
+Periosteum/periósteo covers much of the outer surface; articular cartilage covers relevant joint surfaces. Bone geometry, material organization, and loading all affect mechanical behavior. Bone strength is not captured by one photograph or one density measurement.
+
+A fracture disrupts continuity; remodeling and repair depend on more than joining two rigid pieces. Blood supply, stability, tissue condition, and the person's broader health matter.
+
+**Try:** identify cortex, trabeculae, marrow, periosteum, and articular surface on an annotated long-bone section. Explain why a tendon attachment, a joint surface, and the shaft have different structural demands.
+
+**Continue:** [Cartilage — surfaces, support, and specialized tissue](Cartilage.lingua#r_1212QHQGQ75Z2D2QSZZC58F56Q).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4DKXDP3A991W1WBQ4Y1E38S6HW

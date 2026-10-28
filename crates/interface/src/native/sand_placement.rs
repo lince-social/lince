@@ -7,6 +7,8 @@ use crate::native::{
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
 
+pub(crate) mod scratch;
+
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Pinned {
     pub anchor: [f64; 2],
@@ -62,6 +64,8 @@ pub struct Placement {
     pub backend_component: Option<crate::native::component_push::Placed>,
     #[serde(default)]
     pub layout: Option<crate::native::layout::LayoutBox>,
+    #[serde(default)]
+    pub transient_parent: Option<[u8; 16]>,
     #[serde(default)]
     pub events: crate::native::scoped_events::EventBoundary,
     pub pinned: Option<Pinned>,
@@ -132,6 +136,10 @@ impl Placement {
             layout: world
                 .get::<crate::native::layout::LayoutBox>(entity)
                 .copied(),
+            transient_parent: world.get::<crate::native::layout::desktop::TransientParent>(entity)
+                .filter(|parent| world.get::<crate::native::layout::LayoutBox>(entity).is_some() && world.get::<crate::native::layout::desktop::ApplicationWindow>(parent.0).is_none())
+                .and_then(|parent| world.get::<crate::native::layout::LayoutBox>(parent.0)).map(|layout| layout.id)
+                .or_else(|| world.get::<crate::native::layout::desktop::RestoredTransient>(entity).map(|parent| parent.0)),
             events: world
                 .get::<crate::native::scoped_events::EventBoundary>(entity)
                 .cloned()
@@ -226,6 +234,9 @@ impl Placement {
                 world.entity_mut(entity).insert(Pickable::default());
             }
         }
+        if let Some(parent) = self.transient_parent {
+            world.entity_mut(entity).insert(crate::native::layout::desktop::RestoredTransient(parent));
+        }
         world.entity_mut(entity).insert(self.events);
         world.entity_mut(entity).insert(ZIndex(self.order));
         world.entity_mut(entity).insert(self.spatial);
@@ -281,6 +292,7 @@ impl Placement {
                 .is_none_or(crate::native::component_push::Placed::valid)
             && self.pinned.is_none_or(|pin| pin.valid())
             && self.layout.is_none_or(|layout| layout.valid())
+            && self.transient_parent.is_none_or(|parent| parent != [0; 16] && self.layout.is_some_and(|layout| layout.id != parent))
             && self.events.valid()
             && self.spatial.valid()
             && self.group_pose.is_none_or(|pose| pose.valid())

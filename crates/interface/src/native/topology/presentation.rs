@@ -1,5 +1,4 @@
 use super::{
-    spatial,
     surface_budget::{self, Request, dimensions},
     surface_render::{SurfaceCapture, SurfacePass},
 };
@@ -17,7 +16,9 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
     ui::experimental::GhostNode,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
+
+mod root;
 
 #[derive(Component)]
 pub struct Surface {
@@ -35,7 +36,33 @@ pub struct Surface {
 }
 
 #[derive(Component)]
-struct DisplayedImage(Handle<Image>);
+pub(super) struct DisplayedImage(pub(super) Handle<Image>);
+
+#[derive(Component, Default)]
+struct RetainedImages(BTreeSet<bevy::asset::AssetId<Image>>);
+
+pub(crate) fn capture_images(world: &mut World) -> Vec<bevy::asset::AssetId<Image>> {
+    world.query_filtered::<(&Surface, Option<&DisplayedImage>, Option<&RetainedImages>), Allow<Disabled>>()
+        .iter(world)
+        .flat_map(|(surface, displayed, retained)| std::iter::once(surface.image.id())
+            .chain(displayed.map(|image| image.0.id()))
+            .chain(retained.into_iter().flat_map(|retained| retained.0.iter().copied())))
+        .collect()
+}
+
+pub(crate) fn capture_aliases(world: &mut World) -> Vec<(Entity, bevy::asset::AssetId<Image>, bevy::asset::AssetId<Image>)> {
+    world.query_filtered::<(Entity, &Surface, Option<&DisplayedImage>, Option<&RetainedImages>), Allow<Disabled>>()
+        .iter(world)
+        .filter(|(owner, surface, _, _)| world.get::<VisualOwner>(surface.camera).is_some_and(|source| source.0 == *owner)
+            && world.get::<SurfaceCapture>(surface.camera).is_some_and(|capture| capture.0 == surface.image)
+            && world.get::<RenderTarget>(surface.camera).is_some_and(|target| matches!(target,
+                RenderTarget::Image(image) if image.handle == surface.image)))
+        .flat_map(|(_, surface, displayed, retained)| displayed.into_iter().map(|displayed| displayed.0.id())
+            .chain(retained.into_iter().flat_map(|retained| retained.0.iter().copied()))
+            .filter(move |image| *image != surface.image.id())
+            .map(move |image| (surface.camera, surface.image.id(), image)))
+        .collect()
+}
 
 #[derive(Component)]
 pub struct VisualOwner(pub Entity);
@@ -126,7 +153,7 @@ fn request(
                 entity,
                 item,
                 UVec2::from_array(output.physical_size),
-                1.0,
+                output.raster.scale[0] as f32,
             );
             if other.visible {
                 result.density = if result.visible {
@@ -137,6 +164,15 @@ fn request(
                 result.visible = true;
             }
         }
+    }
+    if let Some(density) = super::previews::demand(world, root, entity, item) {
+        let density = density * if result.text { 2.0 } else { 1.0 };
+        result.density = if result.visible {
+            result.density.max(density)
+        } else {
+            density
+        };
+        result.visible = true;
     }
     result
 }
@@ -176,6 +212,9 @@ fn request_in(
         previous,
         visible: active,
         text: has_text(world, entity),
+        exact: world
+            .get::<crate::native::layout::desktop::ApplicationWindow>(entity)
+            .is_some(),
     };
     if !active || !item.size.is_finite() || item.size.min_element() <= 0.0 {
         request.visible = false;
@@ -189,7 +228,7 @@ fn request_in(
         .copied()
         .unwrap_or_default();
     view.spatial = super::view::spatial(world, root);
-    let placement = spatial(world, entity);
+    let placement = crate::native::canvas::presented_spatial(world, entity);
     let depth =
         if let Some(settings) = world.get::<crate::native::time_castle::TimeSettings>(entity) {
             (f64::from(item.size.min_element()) * 0.18 * settings.0.horizon_ms as f64
@@ -260,7 +299,7 @@ fn request_in(
     request
 }
 
-fn image(size: UVec2) -> Image {
+fn image(size: UVec2, format: TextureFormat) -> Image {
     let mut image = Image::new_uninit(
         Extent3d {
             width: size.x,
@@ -268,7 +307,7 @@ fn image(size: UVec2) -> Image {
             depth_or_array_layers: 1,
         },
         TextureDimension::D2,
-        TextureFormat::Rgba8UnormSrgb,
+        format,
         RenderAssetUsages::RENDER_WORLD,
     );
     image.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
@@ -278,9 +317,17 @@ fn image(size: UVec2) -> Image {
     image
 }
 
-pub fn synchronize(world: &mut World) {
+struct NativePlan {
+    physical_size: UVec2,
+    roots: Vec<Entity>,
+    entities: Vec<(Entity, CanvasItem, Entity, u64)>,
+    requests: Vec<Request>,
+    priorities: Vec<u8>,
+}
+
+fn collect(world: &mut World) -> Option<NativePlan> {
     if !ready(world) {
-        return;
+        return None;
     }
     super::holes::refresh(world);
     let viewport = world.query::<&Window>().iter(world).next().map(|window| {
@@ -289,8 +336,139 @@ pub fn synchronize(world: &mut World) {
             window.resolution.scale_factor(),
         )
     });
-    let Some((physical_size, scale_factor)) = viewport else {
+    let (physical_size, scale_factor) = viewport?;
+    let roots: Vec<_> = world
+        .query_filtered::<Entity, (With<Workspaces>, Allow<Disabled>)>()
+        .iter(world)
+        .collect();
+    let entities: Vec<_> = world
+        .query_filtered::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember), Allow<Disabled>>()
+        .iter(world)
+        .filter(|(_, _, parent, _)| roots.contains(&parent.parent()))
+        .map(|(entity, item, parent, member)| {
+            (
+                entity,
+                world
+                    .get::<crate::native::canvas::ItemPreview>(entity)
+                    .map_or(*item, |preview| preview.0),
+                parent.parent(),
+                member.0,
+            )
+        })
+        .collect();
+    let mut requests = Vec::with_capacity(entities.len());
+    let mut priorities = Vec::with_capacity(entities.len());
+    for (entity, item, root, workspace) in &entities {
+        let mut demand = request(world, *root, *entity, item, physical_size, scale_factor);
+        demand.visible &= world.get::<super::assets::ImportedAsset>(*entity).is_none()
+            && (world.get::<super::terrain::Effect>(*entity).is_none()
+                || world
+                    .get::<crate::native::edit_mode::EditMode>(*root)
+                    .is_some_and(|mode| mode.enabled))
+            && world
+                .get::<crate::native::sand_placement::Pinned>(*entity)
+                .is_none();
+        let spaces = world.get::<Workspaces>(*root).unwrap();
+        let focused = spaces.active == *workspace
+            && world
+                .get::<crate::native::layout::desktop::Managed>(*entity)
+                .is_some_and(|managed| {
+                    spaces
+                        .entries
+                        .iter()
+                        .find(|entry| entry.id == *workspace)
+                        .is_some_and(|entry| entry.desktop.focused() == Some(managed.id))
+                });
+        let presented = spaces.active == *workspace
+            || world
+                .get_resource::<crate::native::output_views::OutputViews>()
+                .is_some_and(|views| {
+                    views.applies_to(*root)
+                        && views
+                            .outputs
+                            .iter()
+                            .any(|output| output.workspace == *workspace)
+                });
+        priorities.push(if focused {
+            5
+        } else if !presented {
+            0
+        } else if demand.text {
+            2
+        } else {
+            1
+        });
+        requests.push(demand);
+    }
+    Some(NativePlan {
+        physical_size,
+        roots,
+        entities,
+        requests,
+        priorities,
+    })
+}
+
+pub fn synchronize(world: &mut World) {
+    let native = collect(world);
+    let demands: HashMap<_, _> = native
+        .iter()
+        .flat_map(|plan| {
+            plan.entities
+                .iter()
+                .zip(&plan.requests)
+                .zip(&plan.priorities)
+                .map(|(((entity, _, _, _), request), priority)| (*entity, (*request, *priority)))
+        })
+        .collect();
+    let effects = crate::native::description::shader::extent::requests(world, &demands);
+    let native_count = native.as_ref().map_or(0, |plan| plan.entities.len());
+    let entries: Vec<_> = native
+        .iter()
+        .flat_map(|plan| {
+            plan.requests
+                .iter()
+                .zip(&plan.priorities)
+                .map(|(request, priority)| surface_budget::Entry {
+                    request: *request,
+                    priority: *priority,
+                    bytes_per_pixel: 8,
+                })
+        })
+        .chain(effects.iter().map(|(_, entry)| *entry))
+        .collect();
+    let maximum = world
+        .get_resource::<bevy::render::renderer::RenderDevice>()
+        .map_or(4096, |device| device.limits().max_texture_dimension_2d);
+    let grants = surface_budget::allocate(&entries, surface_budget::BYTE_BUDGET, maximum);
+    world.insert_resource(surface_budget::Diagnostics {
+        granted_bytes: entries
+            .iter()
+            .zip(&grants)
+            .map(|(entry, grant)| surface_budget::bytes(*entry, grant.pixels))
+            .sum(),
+        limited_targets: grants
+            .iter()
+            .filter(|grant| grant.device_limited || grant.budget_limited)
+            .count(),
+        maximum_extent: maximum,
+    });
+    crate::native::description::shader::extent::apply(world, &effects, &grants[native_count..]);
+    let Some(NativePlan {
+        physical_size,
+        roots,
+        entities,
+        requests,
+        priorities: _,
+    }) = native
+    else {
+        crate::native::description::shader::update_effects(world);
         return;
+    };
+    let format = if world.contains_resource::<crate::native::app::LinearOutput>() {
+        TextureFormat::Rgba16Float
+    } else {
+        TextureFormat::Rgba8UnormSrgb
     };
     if !world.contains_resource::<SurfaceAssets>() {
         let cube = world.resource_mut::<Assets<Mesh>>().add(Cuboid::default());
@@ -303,53 +481,9 @@ pub fn synchronize(world: &mut World) {
             });
         world.insert_resource(SurfaceAssets { cube, side });
     }
-    let roots: Vec<_> = world
-        .query_filtered::<(Entity, &Workspaces), Allow<Disabled>>()
-        .iter(world)
-        .map(|(e, _)| e)
-        .collect();
     for root in &roots {
-        if world.get::<Disabled>(*root).is_some() {
-            continue;
-        }
-        if world.get::<SpatialRoot>(*root).is_none() {
-            world
-                .entity_mut(*root)
-                .remove::<(Node, BackgroundColor)>()
-                .insert((
-                    GhostNode,
-                    SpatialRoot,
-                    Transform::default(),
-                    Visibility::default(),
-                ));
-        }
-        if let Some(mut node) = world.get_mut::<ComputedNode>(*root) {
-            if node.size != physical_size.as_vec2() || node.content_size != physical_size.as_vec2()
-            {
-                node.size = physical_size.as_vec2();
-                node.content_size = node.size;
-            }
-        }
-        let target = world.query_filtered::<&ComputedUiRenderTargetInfo, With<crate::native::canvas_controls::CanvasToolbar>>().iter(world).next().copied();
-        if let Some(target) = target {
-            if let Some(mut current) = world.get_mut::<ComputedUiRenderTargetInfo>(*root) {
-                current.set_if_neq(target);
-            } else {
-                world.entity_mut(*root).insert(target);
-            }
-        }
-        if let Some(mut transform) = world.get_mut::<UiGlobalTransform>(*root) {
-            transform.set_if_neq(UiGlobalTransform::from(Affine2::from_translation(
-                physical_size.as_vec2() * 0.5,
-            )));
-        }
+        root::synchronize(world, *root, physical_size);
     }
-    let entities: Vec<_> = world
-        .query_filtered::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember), Allow<Disabled>>()
-        .iter(world)
-        .filter(|(_, _, p, _)| roots.contains(&p.parent()))
-        .map(|(e, item, p, member)| (e, *item, p.parent(), member.0))
-        .collect();
     let living: HashSet<_> = entities.iter().map(|(e, _, _, _)| *e).collect();
     let stale: Vec<_> = world
         .query::<(Entity, &VisualOwner)>()
@@ -362,25 +496,17 @@ pub fn synchronize(world: &mut World) {
             entity.despawn();
         }
     }
-    let requests: Vec<_> = entities
-        .iter()
-        .map(|(entity, item, root, _)| {
-            let mut request = request(world, *root, *entity, item, physical_size, scale_factor);
-            request.visible &= world.get::<super::assets::ImportedAsset>(*entity).is_none()
-                && (world.get::<super::terrain::Effect>(*entity).is_none()
-                    || world
-                        .get::<crate::native::edit_mode::EditMode>(*root)
-                        .is_some_and(|m| m.enabled))
-                && world
-                    .get::<crate::native::sand_placement::Pinned>(*entity)
-                    .is_none();
-            request
-        })
-        .collect();
-    let resolutions = surface_budget::plan(&requests, surface_budget::PIXEL_BUDGET);
-    for (((entity, item, root, _), request), (pixels, density)) in
-        entities.into_iter().zip(requests).zip(resolutions)
+    for (((entity, item, root, _), request), grant) in entities
+        .into_iter()
+        .zip(requests)
+        .zip(&grants[..native_count])
     {
+        let pixels = grant.pixels.max(UVec2::ONE);
+        let density = if grant.pixels == UVec2::ZERO {
+            1.0
+        } else {
+            grant.density
+        };
         if !item.size.is_finite() || item.size.min_element() <= 0.0 {
             continue;
         }
@@ -388,6 +514,9 @@ pub fn synchronize(world: &mut World) {
             .get::<crate::native::sand_placement::Pinned>(entity)
             .is_some()
         {
+            world
+                .entity_mut(entity)
+                .remove::<surface_budget::NativeRaster>();
             if let Some(surface) = world.entity_mut(entity).take::<Surface>() {
                 world.despawn(surface.camera);
                 world.despawn(surface.visual);
@@ -405,14 +534,14 @@ pub fn synchronize(world: &mut World) {
         {
             continue;
         }
-        let visible = request.visible;
+        let visible = request.visible && grant.pixels != UVec2::ZERO;
         if world.get::<Surface>(entity).is_none() {
-            let image = world.resource_mut::<Assets<Image>>().add(image(pixels));
+            let image = world.resource_mut::<Assets<Image>>().add(image(pixels, format));
             let camera = world
                 .spawn((
                     Camera2d,
                     Camera {
-                        order: -1,
+                        order: -3,
                         is_active: visible,
                         clear_color: ClearColorConfig::Custom(Color::NONE),
                         ..default()
@@ -420,6 +549,10 @@ pub fn synchronize(world: &mut World) {
                     Msaa::Off,
                     CameraRenderGraph::new(SurfacePass),
                     SurfaceCapture(image.clone()),
+                    surface_budget::residency::Target {
+                        image: image.id(),
+                        release: !visible,
+                    },
                     RenderTarget::Image(ImageRenderTarget {
                         handle: image.clone(),
                         scale_factor: density,
@@ -429,6 +562,7 @@ pub fn synchronize(world: &mut World) {
                 ))
                 .remove::<bevy::camera::visibility::VisibleEntities>()
                 .id();
+            crate::native::app::configure_output_color(world, camera, &image);
             let material = world
                 .resource_mut::<Assets<StandardMaterial>>()
                 .add(StandardMaterial {
@@ -464,6 +598,7 @@ pub fn synchronize(world: &mut World) {
             let face = world
                 .spawn((
                     Mesh3d(rectangle),
+                    super::compositor::SurfaceFace,
                     Pickable::IGNORE,
                     MeshMaterial3d(material.clone()),
                     Visibility::Inherited,
@@ -503,10 +638,20 @@ pub fn synchronize(world: &mut World) {
             surface.pixels,
         );
         let material = surface.material.clone();
-        if pixels != old_pixels {
-            image_handle = world.resource_mut::<Assets<Image>>().add(image(pixels));
+        if pixels != old_pixels || world.resource::<Assets<Image>>().get(&image_handle)
+            .is_none_or(|image| image.texture_descriptor.format != format)
+        {
+            let previous = image_handle.id();
+            if let Some(mut retained) = world.get_mut::<RetainedImages>(entity) { retained.0.insert(previous); }
+            else { world.entity_mut(entity).insert(RetainedImages(BTreeSet::from([previous]))); }
+            image_handle = world.resource_mut::<Assets<Image>>().add(image(pixels, format));
             world.get_mut::<Surface>(entity).unwrap().image = image_handle.clone();
             world.get_mut::<SurfaceCapture>(camera).unwrap().0 = image_handle.clone();
+        }
+        crate::native::app::configure_output_color(world, camera, &image_handle);
+        if let Some(retained) = world.get::<RetainedImages>(entity) {
+            let live: BTreeSet<_> = retained.0.iter().copied().filter(|image| world.resource::<Assets<Image>>().get(*image).is_some()).collect();
+            if live != retained.0 { world.get_mut::<RetainedImages>(entity).unwrap().0 = live; }
         }
         if world
             .get::<DisplayedImage>(entity)
@@ -547,7 +692,24 @@ pub fn synchronize(world: &mut World) {
         if target_changed {
             world.entity_mut(camera).insert(target);
         }
-        let placement = spatial(world, entity);
+        if let Some(mut monitor) = world.get_mut::<surface_budget::residency::Target>(camera) {
+            if monitor.image != image_handle.id() {
+                monitor.image = image_handle.id();
+            }
+            if monitor.release == visible {
+                monitor.release = !visible;
+            }
+        }
+        let raster = surface_budget::NativeRaster {
+            pixels,
+            requested: grant.requested,
+            device_limited: grant.device_limited,
+            budget_limited: grant.budget_limited,
+        };
+        if world.get::<surface_budget::NativeRaster>(entity) != Some(&raster) {
+            world.entity_mut(entity).insert(raster);
+        }
+        let placement = crate::native::canvas::presented_spatial(world, entity);
         let area = world
             .get::<crate::native::area::InfluenceArea>(entity)
             .is_some();
@@ -557,7 +719,8 @@ pub fn synchronize(world: &mut World) {
             1.0
         } * world
             .get::<SurfaceOpacity>(entity)
-            .map_or(1.0, |opacity| opacity.0.clamp(0.0, 1.0));
+            .map_or(1.0, |opacity| opacity.0.clamp(0.0, 1.0))
+            * world.get::<crate::native::shader_effects::compositor::Opacity>(entity).map_or(1.0, |opacity| opacity.0);
         let mut materials = world.resource_mut::<Assets<StandardMaterial>>();
         if materials.get(&material).unwrap().base_color.alpha() != opacity {
             materials.get_mut(&material).unwrap().base_color =
@@ -571,6 +734,9 @@ pub fn synchronize(world: &mut World) {
             .is_some()
             || area
             || arrow
+            || world
+                .get::<crate::native::layout::desktop::manipulation::Outline>(entity)
+                .is_some()
             || !super::view::spatial(world, root);
         let boundary = world.get::<super::rooms::Room>(entity).is_some()
             && world.get::<super::appearance::Material>(entity).is_none()
@@ -667,6 +833,14 @@ pub fn synchronize(world: &mut World) {
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
             .with_scale(Vec3::new(clipped_size.x, clipped_size.y, 1.0)),
         );
+        let plane = super::stacking::Plane::new(
+            placement.rotation() * bevy::math::DVec3::Y,
+            transform
+                .compute_affine()
+                .transform_point3(world.get::<Transform>(face).unwrap().translation)
+                .as_dvec3(),
+        );
+        super::stacking::synchronize(world, entity, face, plane);
         let displayed_ready = world
             .get::<DisplayedImage>(entity)
             .is_some_and(|displayed| {
@@ -704,6 +878,7 @@ pub fn synchronize(world: &mut World) {
     }
     super::holes::backgrounds(world);
     super::output_views::synchronize(world);
+    crate::native::description::shader::update_effects(world);
 }
 
 pub fn displayed(world: &World, entity: Entity) -> bool {
@@ -721,8 +896,9 @@ pub fn projected_corners(world: &World, entity: Entity) -> Option<[[f64; 2]; 4]>
     let camera = world
         .get_entity(world.get_resource::<SceneCamera>()?.0)
         .ok()?;
-    let (camera, transform) = (camera.get::<Camera>()?, camera.get::<GlobalTransform>()?);
-    let face = world.get::<GlobalTransform>(surface.face)?;
+    let transform = super::view::current_transform(world, camera.id())?;
+    let camera = camera.get::<Camera>()?;
+    let face = super::view::current_transform(world, surface.face)?;
     let mut corners = [[0.0; 2]; 4];
     for (index, uv) in [Vec2::ZERO, Vec2::X, Vec2::ONE, Vec2::Y]
         .into_iter()
@@ -731,7 +907,7 @@ pub fn projected_corners(world: &World, entity: Entity) -> Option<[[f64; 2]; 4]>
         let uv = (uv - surface.uv.min) / surface.uv.size();
         let point = face.transform_point(Vec3::new(uv.x - 0.5, 0.5 - uv.y, 0.0));
         corners[index] = camera
-            .world_to_viewport(transform, point)
+            .world_to_viewport(&transform, point)
             .ok()?
             .as_dvec2()
             .to_array();
@@ -740,7 +916,7 @@ pub fn projected_corners(world: &World, entity: Entity) -> Option<[[f64; 2]; 4]>
 }
 
 pub fn bounds(world: &World, entity: Entity) -> Option<Rect> {
-    let Some(item) = world.get::<CanvasItem>(entity) else {
+    let Some(item) = crate::native::canvas::presented(world, entity) else {
         return content_bounds(world, entity);
     };
     let root = world.get::<ChildOf>(entity)?.parent();
@@ -754,8 +930,9 @@ pub fn bounds(world: &World, entity: Entity) -> Option<Rect> {
     let camera = world
         .get_entity(world.get_resource::<SceneCamera>()?.0)
         .ok()?;
-    let (camera, transform) = (camera.get::<Camera>()?, camera.get::<GlobalTransform>()?);
-    let placement = spatial(world, entity);
+    let transform = super::view::current_transform(world, camera.id())?;
+    let camera = camera.get::<Camera>()?;
+    let placement = crate::native::canvas::presented_spatial(world, entity);
     let origin = origin(world, root);
     let (offset, clip) = crate::native::layout::viewport::clip(world, entity);
     if clip.size().min_element() <= 0.0 {
@@ -797,7 +974,8 @@ pub fn bounds(world: &World, entity: Entity) -> Option<Rect> {
                     - placement.rotation()
                         * bevy::math::DVec3::new(f64::from(offset.x), 0.0, f64::from(offset.y))
                     + placement.rotation() * bevy::math::DVec3::new(x, y, z);
-                if let Ok(point) = camera.world_to_viewport(transform, (point - origin).as_vec3()) {
+                if let Ok(point) = camera.world_to_viewport(&transform, (point - origin).as_vec3())
+                {
                     min = min.min(point);
                     max = max.max(point);
                 }
@@ -823,8 +1001,9 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
     let camera = world
         .get_entity(world.get_resource::<SceneCamera>()?.0)
         .ok()?;
-    let (camera, camera_transform) = (camera.get::<Camera>()?, camera.get::<GlobalTransform>()?);
-    let face = world.get::<GlobalTransform>(surface.face)?;
+    let camera_transform = super::view::current_transform(world, camera.id())?;
+    let camera = camera.get::<Camera>()?;
+    let face = super::view::current_transform(world, surface.face)?;
     let a = transform
         .transform_point2(-node.size() * 0.5)
         .clamp(Vec2::ZERO, surface.pixels.as_vec2());
@@ -837,7 +1016,7 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
         let uv = (point / surface.pixels.as_vec2()).clamp(surface.uv.min, surface.uv.max);
         let uv = (uv - surface.uv.min) / surface.uv.size();
         let point = face.transform_point(Vec3::new(uv.x - 0.5, 0.5 - uv.y, 0.0));
-        if let Ok(point) = camera.world_to_viewport(camera_transform, point) {
+        if let Ok(point) = camera.world_to_viewport(&camera_transform, point) {
             min = min.min(point);
             max = max.max(point);
         }
@@ -1202,6 +1381,40 @@ mod tests {
             )
             .visible
         );
+    }
+
+    #[test]
+    fn a_displayed_capture_alias_requires_its_current_producer_target_and_visual_owner() {
+        let mut world = World::new();
+        let mut images = Assets::<Image>::default();
+        let current = images.add(Image::default());
+        let retained = images.add(Image::default());
+        let owner = world.spawn_empty().id();
+        let unrelated = world.spawn_empty().id();
+        let camera = world.spawn((Camera { is_active: false, ..default() }, RenderTarget::Image(current.clone().into()),
+            SurfaceCapture(current.clone()), VisualOwner(owner))).id();
+        world.entity_mut(owner).insert((Surface {
+            camera, image: current.clone(), visual: owner, body: owner, face: owner,
+            size: Vec2::splat(100.0), pixels: UVec2::splat(100), density: 1.0,
+            material: Handle::default(), uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE), visible: true,
+        }, DisplayedImage(retained.clone())));
+        assert_eq!(capture_aliases(&mut world), [(camera, current.id(), retained.id())]);
+        world.get_mut::<VisualOwner>(camera).unwrap().0 = unrelated;
+        assert!(capture_aliases(&mut world).is_empty());
+        world.get_mut::<VisualOwner>(camera).unwrap().0 = owner;
+        world.get_mut::<SurfaceCapture>(camera).unwrap().0 = retained.clone();
+        assert!(capture_aliases(&mut world).is_empty());
+        world.get_mut::<SurfaceCapture>(camera).unwrap().0 = current.clone();
+        world.entity_mut(camera).insert(RenderTarget::None { size: UVec2::splat(100) });
+        assert!(capture_aliases(&mut world).is_empty());
+        world.entity_mut(camera).insert(RenderTarget::Image(current.clone().into()));
+        assert_eq!(capture_aliases(&mut world), [(camera, current.id(), retained.id())]);
+        world.get_mut::<DisplayedImage>(owner).unwrap().0 = current;
+        assert!(capture_aliases(&mut world).is_empty());
+        world.entity_mut(owner).insert(RetainedImages(BTreeSet::from([retained.id()])));
+        assert_eq!(capture_aliases(&mut world), [(camera, world.get::<Surface>(owner).unwrap().image.id(), retained.id())]);
+        world.entity_mut(owner).remove::<RetainedImages>();
+        assert!(capture_aliases(&mut world).is_empty());
     }
 
     #[test]

@@ -134,6 +134,7 @@ mod tests {
                 file: true,
                 paused: false,
                 position_ms: 100,
+                ..default()
             },
             &output,
             &wake,

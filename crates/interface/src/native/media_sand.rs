@@ -14,6 +14,21 @@ use std::{
 pub(crate) const MAX_BYTES: u64 = 64 * 1024 * 1024;
 const CREDITS: &[crate::native::credits::Attribution] = &[
     crate::native::credits::Attribution {
+        name: "Chrono",
+        author: "Kang Seonghoon and contributors",
+        license: crate::native::credits::CHRONO_LICENSE,
+    },
+    crate::native::credits::Attribution {
+        name: "Tempfile",
+        author: "Steven Allen and contributors",
+        license: include_str!("../../licenses/native/document/tempfile-MIT.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "BLAKE3",
+        author: "Jack O'Connor, Samuel Neves and contributors",
+        license: include_str!("../../licenses/native/document/blake3-CC0.txt"),
+    },
+    crate::native::credits::Attribution {
         name: "Image",
         author: "The image-rs developers",
         license: include_str!("../../licenses/native/image-MIT.txt"),
@@ -38,6 +53,7 @@ const CREDITS: &[crate::native::credits::Attribution] = &[
 #[derive(Component, Clone, Serialize, Deserialize)]
 pub enum MediaSand {
     Image { path: String },
+    ImageSource { resource: lince_resources::Resource },
     Link { url: String },
 }
 
@@ -45,6 +61,9 @@ impl MediaSand {
     pub(crate) fn valid(&self) -> bool {
         match self {
             Self::Image { path } => !path.is_empty() && path.len() <= 4096 && !path.contains('\0'),
+            Self::ImageSource { resource } => {
+                resource.media_type.starts_with("image/") && resource.validate().is_ok()
+            }
             Self::Link { url } => web_url(url).is_ok(),
         }
     }
@@ -99,6 +118,10 @@ pub(crate) fn decode(path: &Path) -> Result<Pixels, String> {
     if bytes.len() as u64 > MAX_BYTES {
         return Err("Images are limited to 64 MiB.".into());
     }
+    decode_bytes(bytes)
+}
+
+fn decode_bytes(bytes: Vec<u8>) -> Result<Pixels, String> {
     let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
         .with_guessed_format()
         .map_err(|error| error.to_string())?;
@@ -150,6 +173,44 @@ pub(crate) fn image(world: &mut World, pixels: Pixels) -> Handle<Image> {
     ))
 }
 
+pub(crate) fn decode_resource(
+    library: &lince_resources::Library,
+    resource: &lince_resources::Resource,
+) -> Result<Pixels, String> {
+    let mut reader = lince_resources::RangeReader::open(library.clone(), resource)?;
+    if reader.len() > MAX_BYTES {
+        return Err("Images are limited to 64 MiB".into());
+    }
+    let mut bytes = Vec::new();
+    reader
+        .read_to_end(&mut bytes)
+        .map_err(|error| error.to_string())?;
+    if resource
+        .hash
+        .as_ref()
+        .is_some_and(|hash| !hash.eq_ignore_ascii_case(&lince_resources::fingerprint(&bytes)))
+    {
+        return Err("The image does not match its content hash".into());
+    }
+    let pixels = decode_bytes(bytes)?;
+    if let Some(region) = resource.locator.region {
+        let tile = lince_document::crop(
+            lince_document::Tile {
+                width: pixels.width,
+                height: pixels.height,
+                rgba: pixels.rgba,
+            },
+            region,
+        )?;
+        return Ok(Pixels {
+            width: tile.width,
+            height: tile.height,
+            rgba: tile.rgba,
+        });
+    }
+    Ok(pixels)
+}
+
 #[derive(Component)]
 struct View {
     image: Entity,
@@ -163,18 +224,25 @@ type Reply = (Entity, Result<Pixels, String>);
 
 #[derive(Resource)]
 struct Worker {
-    sender: mpsc::SyncSender<(Entity, String, Option<crate::native::wake::WakeSignal>)>,
+    sender: mpsc::SyncSender<(Entity, MediaSand, Option<crate::native::wake::WakeSignal>)>,
     replies: Mutex<mpsc::Receiver<Reply>>,
 }
 
 impl Default for Worker {
     fn default() -> Self {
         let (sender, jobs) =
-            mpsc::sync_channel::<(Entity, String, Option<crate::native::wake::WakeSignal>)>(4);
+            mpsc::sync_channel::<(Entity, MediaSand, Option<crate::native::wake::WakeSignal>)>(4);
         let (output, replies) = mpsc::sync_channel(2);
         std::thread::spawn(move || {
-            while let Ok((owner, path, wake)) = jobs.recv() {
-                if output.send((owner, decode(Path::new(&path)))).is_err() {
+            while let Ok((owner, sand, wake)) = jobs.recv() {
+                let result = match sand {
+                    MediaSand::Image { path } => decode(Path::new(&path)),
+                    MediaSand::ImageSource { resource } => engine::sources::library()
+                        .map_err(|error| error.to_string())
+                        .and_then(|library| decode_resource(&library, &resource)),
+                    MediaSand::Link { .. } => Err("Choose an image source".into()),
+                };
+                if output.send((owner, result)).is_err() {
                     break;
                 }
                 if let Some(wake) = wake {
@@ -227,22 +295,22 @@ fn update(world: &mut World) {
         .query::<(Entity, &MediaSand, &View)>()
         .iter(world)
         .filter_map(|(entity, sand, view)| match sand {
-            MediaSand::Image { path }
+            MediaSand::Image { .. } | MediaSand::ImageSource { .. }
                 if !view.requested && !crate::native::laboratory::suspended(world, entity) =>
             {
-                Some((entity, path.clone()))
+                Some((entity, sand.clone()))
             }
             _ => None,
         })
         .collect();
-    for (entity, path) in pending {
+    for (entity, sand) in pending {
         let wake = world
             .get_resource::<crate::native::wake::WakeSignal>()
             .cloned();
         if world
             .resource::<Worker>()
             .sender
-            .try_send((entity, path, wake.clone()))
+            .try_send((entity, sand, wake.clone()))
             .is_ok()
         {
             world.get_mut::<View>(entity).unwrap().requested = true;
@@ -272,7 +340,10 @@ pub fn spawn(
     position: DVec2,
     sand: MediaSand,
 ) -> Entity {
-    let is_image = matches!(sand, MediaSand::Image { .. });
+    let is_image = matches!(
+        sand,
+        MediaSand::Image { .. } | MediaSand::ImageSource { .. }
+    );
     let title = if is_image { "Image Sand" } else { "Link Sand" };
     let size = if is_image {
         Vec2::new(520.0, 420.0)
@@ -301,11 +372,16 @@ pub fn spawn(
         .id();
     crate::native::edit_mode::label(world, owner, title, 22.0);
     match sand {
-        MediaSand::Image { path } => {
-            let name = Path::new(&path)
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy();
+        image @ (MediaSand::Image { .. } | MediaSand::ImageSource { .. }) => {
+            let name = match &image {
+                MediaSand::Image { path } => Path::new(path)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned(),
+                MediaSand::ImageSource { resource } => resource.title.clone(),
+                MediaSand::Link { .. } => unreachable!(),
+            };
             crate::native::edit_mode::label(world, owner, &name, 13.0);
             let status = crate::native::edit_mode::label(world, owner, "Opening image…", 12.0);
             let viewport = world
@@ -416,6 +492,8 @@ pub(crate) struct SavedMedia {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedMedia);
+
 impl SavedMedia {
     pub(crate) fn valid(&self) -> bool {
         self.sand.valid()
@@ -459,7 +537,7 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMedia> {
         .filter(|(entity, parent, ..)| {
             parent.parent() == root
                 && world
-                    .get::<crate::native::external_drop::Preview>(*entity)
+                    .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
         })
         .map(|(entity, _, member, item, sand)| SavedMedia {
@@ -471,4 +549,52 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMedia> {
             tokens: crate::native::token_style::overrides(world, entity),
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn referenced_images_verify_content_crop_and_reuse_retained_files() {
+        let temporary = tempfile::tempdir().unwrap();
+        let path = temporary.path().join("figure.png");
+        image::RgbaImage::from_pixel(20, 10, image::Rgba([10, 20, 30, 255]))
+            .save(&path)
+            .unwrap();
+        let library = lince_resources::Library::new(temporary.path().join("library"));
+        let resource = lince_resources::Resource {
+            uri: lince_resources::address(path.to_str().unwrap())
+                .unwrap()
+                .to_string(),
+            media_type: "image/png".into(),
+            hash: Some(lince_resources::fingerprint(&std::fs::read(&path).unwrap())),
+            locator: lince_resources::Locator {
+                region: Some([0.25, 0.2, 0.5, 0.5]),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        assert!(
+            decode_resource(
+                &library,
+                &lince_resources::Resource {
+                    hash: Some("0".repeat(64)),
+                    ..resource.clone()
+                }
+            )
+            .is_err()
+        );
+        let first = decode_resource(&library, &resource).unwrap();
+        assert_eq!((first.width, first.height), (10, 5));
+        std::fs::remove_file(&path).unwrap();
+        assert_eq!(
+            decode_resource(&library, &resource).unwrap().rgba,
+            first.rgba
+        );
+        let sand = MediaSand::ImageSource { resource };
+        let restored: MediaSand =
+            serde_json::from_value(serde_json::to_value(sand).unwrap()).unwrap();
+        assert!(restored.valid());
+    }
 }

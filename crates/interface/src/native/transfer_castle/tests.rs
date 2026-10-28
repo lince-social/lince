@@ -3,14 +3,35 @@ use super::*;
 #[cfg_attr(test, test)]
 fn transfer_party_opens_the_actual_person_experience_without_discovery() {
     let mut app = app();
-    let root = app.world_mut().spawn(crate::native::workspace::Workspaces::default()).id();
+    let root = app
+        .world_mut()
+        .spawn(crate::native::workspace::Workspaces::default())
+        .id();
     let person = nucleus::new_uid("r");
-    let owner = spawn(app.world_mut(), root, 1, DVec2::ZERO, TransferCastle {person:person.clone(), ..Default::default()});
+    let owner = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::ZERO,
+        TransferCastle {
+            person: person.clone(),
+            ..Default::default()
+        },
+    );
     app.world_mut().get_mut::<View>(owner).unwrap().context = json!({"viewer":{"local":true}});
     let parent = app.world().get::<View>(owner).unwrap().detail;
     let actor = nucleus::new_uid("r");
-    detail::render(app.world_mut(), owner, parent, &json!({"uid":nucleus::new_uid("r"),"revision":1,"head":"One journey","parties":[{"actor":actor,"actor_head":"Driver"}],"promises":[],"occurrences":[]}));
-    crate::native::trust_castle::tests::assert_subject_entry(app.world_mut(), parent, nucleus::trust_analysis::Identity::Person(actor));
+    detail::render(
+        app.world_mut(),
+        owner,
+        parent,
+        &json!({"uid":nucleus::new_uid("r"),"revision":1,"head":"One journey","parties":[{"actor":actor,"actor_head":"Driver"}],"promises":[],"occurrences":[]}),
+    );
+    crate::native::trust_castle::tests::assert_subject_entry(
+        app.world_mut(),
+        parent,
+        nucleus::trust_analysis::Identity::Person(actor),
+    );
 }
 
 #[cfg_attr(test, test)]
@@ -174,10 +195,13 @@ fn presets_produce_typed_actions_and_validation_keeps_invalid_input() {
         }
         if matches!(preset, "Ride" | "Delivery") {
             form.data["promises"][0]["item"]["transport"]["origin"] = json!(nucleus::new_uid("r"));
-            form.data["promises"][0]["item"]["transport"]["destination"] = json!(nucleus::new_uid("r"));
+            form.data["promises"][0]["item"]["transport"]["destination"] =
+                json!(nucleus::new_uid("r"));
             let now = nucleus::execution::now();
-            form.data["promises"][0]["window_start"] = json!((now - chrono::Duration::minutes(5)).to_rfc3339());
-            form.data["promises"][0]["window_end"] = json!((now + chrono::Duration::minutes(30)).to_rfc3339());
+            form.data["promises"][0]["window_start"] =
+                json!((now - chrono::Duration::minutes(5)).to_rfc3339());
+            form.data["promises"][0]["window_end"] =
+                json!((now + chrono::Duration::minutes(30)).to_rfc3339());
         }
         let action = form.payload().unwrap();
         let parsed: engine::actions::Action = serde_json::from_value(action.clone()).unwrap();
@@ -810,20 +834,59 @@ fn public_event_forms_review_only_the_projection_and_keep_source_references_priv
     let mut eligible = receipt.clone();
     let now = nucleus::execution::now().timestamp();
     let scope = nucleus::transfer::receipt::Scope {
-        audience:nucleus::trust_analysis::contacts::Audience::Public, upfront_terms:None,
-        public_persons:Vec::new(), original_authorities:Vec::new(), party_attribution:nucleus::transfer::receipt::PartyAttribution::LaterOrganEndorsement,
-        source:nucleus::transfer::receipt::Source { origin:origin.clone(), occurrence:commitment.clone(), activated_at:now-20, agreement_revision:1, agreement_commitment:commitment.clone(), activation_commitment:commitment },
-        giver:origin, receiver:nucleus::new_uid("r"), measurements:Vec::new(), stages:vec![nucleus::transfer::receipt::Stage::Settled], agreed_quantity:None, canonical_unit:None, issued_at:now-10, expires_at:now+86400,
+        audience: nucleus::trust_analysis::contacts::Audience::Public,
+        upfront_terms: None,
+        public_persons: Vec::new(),
+        original_authorities: Vec::new(),
+        party_attribution: nucleus::transfer::receipt::PartyAttribution::LaterOrganEndorsement,
+        source: nucleus::transfer::receipt::Source {
+            origin: origin.clone(),
+            occurrence: commitment.clone(),
+            activated_at: now - 20,
+            agreement_revision: 1,
+            agreement_commitment: commitment.clone(),
+            activation_commitment: commitment,
+        },
+        giver: origin,
+        receiver: nucleus::new_uid("r"),
+        measurements: Vec::new(),
+        stages: vec![nucleus::transfer::receipt::Stage::Settled],
+        agreed_quantity: None,
+        canonical_unit: None,
+        issued_at: now - 10,
+        expires_at: now + 86400,
     };
-    let approvals = [nucleus::transfer::receipt::ApprovalRole::Origin,nucleus::transfer::receipt::ApprovalRole::Giver,nucleus::transfer::receipt::ApprovalRole::Receiver].into_iter().map(|role| nucleus::transfer::receipt::Approval {role,issued_at:now,key_id:"test".into(),signature:"a".repeat(88)}).collect::<Vec<_>>();
-    eligible["document"] = json!(nucleus::transfer::receipt::Document::Review(nucleus::transfer::receipt::Review { scope, approvals, person_approvals:Vec::new(), authorities:Vec::new() }));
+    let approvals = [
+        nucleus::transfer::receipt::ApprovalRole::Origin,
+        nucleus::transfer::receipt::ApprovalRole::Giver,
+        nucleus::transfer::receipt::ApprovalRole::Receiver,
+    ]
+    .into_iter()
+    .map(|role| nucleus::transfer::receipt::Approval {
+        role,
+        issued_at: now,
+        key_id: "test".into(),
+        signature: "a".repeat(88),
+    })
+    .collect::<Vec<_>>();
+    eligible["document"] = json!(nucleus::transfer::receipt::Document::Review(
+        nucleus::transfer::receipt::Review {
+            scope,
+            approvals,
+            person_approvals: Vec::new(),
+            authorities: Vec::new()
+        }
+    ));
     app.world_mut().get_mut::<View>(owner).unwrap().receipt = Some(eligible.clone());
     assert!(receipts::current_receipt(app.world(), owner, &occurrence).is_some());
     assert!(
         receipts::current_receipt(app.world(), owner, &json!({"uid":nucleus::new_uid("toc")}))
             .is_none()
     );
-    eligible["document"]["value"]["approvals"].as_array_mut().unwrap().pop();
+    eligible["document"]["value"]["approvals"]
+        .as_array_mut()
+        .unwrap()
+        .pop();
     app.world_mut().get_mut::<View>(owner).unwrap().receipt = Some(eligible);
     assert!(receipts::current_receipt(app.world(), owner, &occurrence).is_none());
 }
@@ -1348,22 +1411,57 @@ fn public_history_form_keeps_nonce_stable_and_requires_explicit_audience_and_ren
     form.data["public_history"] = json!(terms);
     form.step = Some(3);
     forms::composer_fields(&mut form);
-    assert_eq!(form.fields.iter().find(|field| field.path == "/public_history/retention_seconds").unwrap().value, "365d");
-    form.fields.iter_mut().find(|field| field.path == "/public_history/retention_seconds").unwrap().value = "24h".into();
-    form.fields.iter_mut().find(|field| field.path == "/public_history/audience/kind").unwrap().value = "selected".into();
+    assert_eq!(
+        form.fields
+            .iter()
+            .find(|field| field.path == "/public_history/retention_seconds")
+            .unwrap()
+            .value,
+        "365d"
+    );
+    form.fields
+        .iter_mut()
+        .find(|field| field.path == "/public_history/retention_seconds")
+        .unwrap()
+        .value = "24h".into();
+    form.fields
+        .iter_mut()
+        .find(|field| field.path == "/public_history/audience/kind")
+        .unwrap()
+        .value = "selected".into();
     form.commit_fields().unwrap();
     forms::composer_fields(&mut form);
-    form.fields.iter_mut().find(|field| field.path == "/public_history/audience/viewers").unwrap().value = format!("person:{person}");
+    form.fields
+        .iter_mut()
+        .find(|field| field.path == "/public_history/audience/viewers")
+        .unwrap()
+        .value = format!("person:{person}");
     form.commit_fields().unwrap();
     assert_eq!(form.data["public_history"]["nonce"], terms.nonce);
     assert_eq!(form.data["public_history"]["retention_seconds"], 86400);
-    assert_eq!(form.data["public_history"]["audience"]["viewers"], json!([{"kind":"person","uid":person}]));
-    let selected: nucleus::transfer::public_history::Terms = serde_json::from_value(form.data["public_history"].clone()).unwrap();
+    assert_eq!(
+        form.data["public_history"]["audience"]["viewers"],
+        json!([{"kind":"person","uid":person}])
+    );
+    let selected: nucleus::transfer::public_history::Terms =
+        serde_json::from_value(form.data["public_history"].clone()).unwrap();
     selected.validate().unwrap();
-    let scope = receipts::prepare_form(&json!({"uid":nucleus::new_uid("r"),"revision":1,"revision_evidence":{"current":{"terms":{"transfer":{"public_history":selected}}}}}), &json!({"uid":nucleus::new_uid("toc")}), &person);
-    assert_eq!(scope.data["request"]["scope"]["audience"]["kind"], "selected");
+    let scope = receipts::prepare_form(
+        &json!({"uid":nucleus::new_uid("r"),"revision":1,"revision_evidence":{"current":{"terms":{"transfer":{"public_history":selected}}}}}),
+        &json!({"uid":nucleus::new_uid("toc")}),
+        &person,
+    );
+    assert_eq!(
+        scope.data["request"]["scope"]["audience"]["kind"],
+        "selected"
+    );
     assert_eq!(scope.data["request"]["scope"]["use_upfront_terms"], true);
-    assert!(scope.fields.iter().any(|field| field.path == "/request/scope/use_upfront_terms"));
+    assert!(
+        scope
+            .fields
+            .iter()
+            .any(|field| field.path == "/request/scope/use_upfront_terms")
+    );
     let mut wrong = form.data["public_history"].clone();
     wrong.as_object_mut().unwrap().remove("nonce");
     assert!(serde_json::from_value::<nucleus::transfer::public_history::Terms>(wrong).is_err());

@@ -47,7 +47,12 @@ fn invalid(message: impl Into<String>) -> EngineError {
 }
 
 impl Draft {
-    pub(crate) fn matches(&self, predicate: &protein::Predicate, family: &HashSet<String>, quantity: DecimalValue) -> Option<bool> {
+    pub(crate) fn matches(
+        &self,
+        predicate: &protein::Predicate,
+        family: &HashSet<String>,
+        quantity: DecimalValue,
+    ) -> Option<bool> {
         self.matches_kind(predicate, family, quantity, RecordKind::Plain)
     }
 
@@ -101,9 +106,19 @@ impl Draft {
                 .as_ref()
                 .is_some_and(|slug| slug.is_empty() || slug.len() > 128 || slug.trim() != slug)
             || self.assertions.iter().any(|assertion| {
+                if assertion.object.as_ref().is_some_and(|value| {
+                    value.is_empty()
+                        || value.len()
+                            > if lince_resources::reference::is_uri(value) {
+                                8192
+                            } else {
+                                128
+                            }
+                }) {
+                    return true;
+                }
                 [&assertion.predicate]
                     .into_iter()
-                    .chain(assertion.object.iter())
                     .chain(assertion.unit.iter())
                     .chain(assertion.quantity.iter())
                     .any(|value| value.is_empty() || value.len() > 128)
@@ -127,18 +142,30 @@ impl Engine {
         actor: Option<String>,
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
-        self.create_record_draft_kind(draft, RecordKind::Plain, actor, now).await
+        self.create_record_draft_kind(draft, RecordKind::Plain, actor, now)
+            .await
     }
 
-    pub(crate) async fn create_record_draft_kind(&self, mut draft: Draft, kind: RecordKind, actor: Option<String>, now: DateTime<Utc>) -> Result<ActionOutcome, EngineError> {
-        self.require_permission(actor.as_deref(), "record:create").await?;
+    pub(crate) async fn create_record_draft_kind(
+        &self,
+        mut draft: Draft,
+        kind: RecordKind,
+        actor: Option<String>,
+        now: DateTime<Utc>,
+    ) -> Result<ActionOutcome, EngineError> {
+        self.require_permission(actor.as_deref(), "record:create")
+            .await?;
         let quantity = draft.validate()?;
         let payload = serde_json::to_string(&(kind, &draft)).map_err(EngineError::Json)?;
         let mut family = HashSet::new();
         for assertion in &mut draft.assertions {
-            assertion.predicate = store::vocabulary::resolve(&self.store.pool, &assertion.predicate, actor.as_deref())
-                .await?
-                .ok_or_else(|| invalid("Choose an existing assertion"))?;
+            assertion.predicate = store::vocabulary::resolve(
+                &self.store.pool,
+                &assertion.predicate,
+                actor.as_deref(),
+            )
+            .await?
+            .ok_or_else(|| invalid("Choose an existing assertion"))?;
             if assertion.object.is_none() {
                 family.extend(
                     store::concepts::ancestors_including(&self.store.pool, &assertion.predicate)
@@ -146,11 +173,22 @@ impl Engine {
                 );
             }
             if let Some(object) = &mut assertion.object {
-                *object = self.resolve(object).await?;
-                if !self.may_read_record(actor.as_deref(), object).await? {
-                    return Err(EngineError::Forbidden(
-                        "The related Record is not visible".into(),
-                    ));
+                if lince_resources::reference::is_address(object) {
+                    if !lince_resources::reference::is_uri(object)
+                        && !std::path::Path::new(object).is_absolute()
+                    {
+                        return Err(invalid("A relative reference needs a declaring document"));
+                    }
+                    *object = lince_resources::address(object)
+                        .map_err(invalid)?
+                        .to_string();
+                } else {
+                    *object = self.resolve(object).await?;
+                    if !self.may_read_record(actor.as_deref(), object).await? {
+                        return Err(EngineError::Forbidden(
+                            "The related Record is not visible".into(),
+                        ));
+                    }
                 }
             }
             if let Some(unit) = &mut assertion.unit {
@@ -172,7 +210,13 @@ impl Engine {
                     ));
                 }
             }
-            if let Some(policy) = protein::role_authority::policy_for(&self.store, actor, Some(protein::authority::Operation::Create)).await? {
+            if let Some(policy) = protein::role_authority::policy_for(
+                &self.store,
+                actor,
+                Some(protein::authority::Operation::Create),
+            )
+            .await?
+            {
                 {
                     use protein::authority::{
                         AssertionProperty, AssertionRole, AssertionTarget, ExtensionProperty,
@@ -213,8 +257,13 @@ impl Engine {
                                     grant.predicate_uid == assertion.predicate
                                         && grant.role == AssertionRole::Ordinary
                                         && match (&grant.target, &assertion.object) {
-                                            (AssertionTarget::Unary, None)
-                                            | (AssertionTarget::AnyReadableRecord, Some(_)) => true,
+                                            (AssertionTarget::Unary, None) => true,
+                                            (AssertionTarget::Uri(expected), Some(actual)) => {
+                                                expected == actual
+                                            }
+                                            (AssertionTarget::AnyReadableRecord, Some(actual)) => {
+                                                !lince_resources::reference::is_uri(actual)
+                                            }
                                             (AssertionTarget::Record(a), Some(b)) => a == b,
                                             _ => false,
                                         }
@@ -239,7 +288,14 @@ impl Engine {
             .ok_or_else(|| invalid("The local Organ is unavailable"))?;
         let signer = self.signer.lock().await.clone();
         let mut tx = store::write_tx(&self.store.pool).await?;
-        let checkpoint = self.record_checkpoint_on(&mut tx, actor.as_deref(), vec![draft.uid.clone()], protein::authority::Operation::Create).await?;
+        let checkpoint = self
+            .record_checkpoint_on(
+                &mut tx,
+                actor.as_deref(),
+                vec![draft.uid.clone()],
+                protein::authority::Operation::Create,
+            )
+            .await?;
         let previous: Option<(String, String)> = store::sqlx::query_as("SELECT payload, record_uid FROM record_change_receipt WHERE actor = ? AND change_uid = ?")
             .bind(actor.as_deref().unwrap_or("")).bind(&draft.uid).fetch_optional(&mut *tx).await?;
         if let Some((previous, uid)) = previous {
@@ -268,25 +324,33 @@ impl Engine {
         )
         .await?;
         for assertion in draft.assertions {
-            store::assertions::insert_tx(
-                &mut tx,
-                &nucleus::new_uid("a"),
-                store::assertions::NewAssertion {
-                    subject_uid: &draft.uid,
-                    predicate_uid: &assertion.predicate,
-                    object_uid: assertion.object.as_deref(),
-                    role: store::assertions::AssertionRole::Ordinary,
-                    quantity: assertion
-                        .quantity
-                        .as_deref()
-                        .map(DecimalValue::parse_inferred)
-                        .transpose()
-                        .map_err(|_| invalid("Enter an exact assertion quantity"))?,
-                    unit_uid: assertion.unit.as_deref(),
-                    asserted_by: actor.as_deref(),
-                },
-            )
-            .await?;
+            let uri = assertion
+                .object
+                .as_deref()
+                .filter(|value| lince_resources::reference::is_uri(value));
+            let new = store::assertions::NewAssertion {
+                subject_uid: &draft.uid,
+                predicate_uid: &assertion.predicate,
+                object_uid: assertion
+                    .object
+                    .as_deref()
+                    .filter(|value| !lince_resources::reference::is_uri(value)),
+                role: store::assertions::AssertionRole::Ordinary,
+                quantity: assertion
+                    .quantity
+                    .as_deref()
+                    .map(DecimalValue::parse_inferred)
+                    .transpose()
+                    .map_err(|_| invalid("Enter an exact assertion quantity"))?,
+                unit_uid: assertion.unit.as_deref(),
+                asserted_by: actor.as_deref(),
+            };
+            let uid = nucleus::new_uid("a");
+            if let Some(uri) = uri {
+                store::assertions::insert_uri_tx(&mut tx, &uid, new, uri).await?;
+            } else {
+                store::assertions::insert_tx(&mut tx, &uid, new).await?;
+            }
         }
         store::records::set_extension_on(&mut tx, &draft.uid, "work", &draft.work).await?;
         let fact = crate::append::append_one_in_transaction(
@@ -301,7 +365,9 @@ impl Engine {
         .await?;
         store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)")
             .bind(actor.as_deref().unwrap_or("")).bind(&draft.uid).bind(&draft.uid).bind(payload).bind(json!({"created":draft.uid}).to_string()).execute(&mut *tx).await?;
-        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
+        if let Some(checkpoint) = checkpoint {
+            checkpoint.finish(&mut tx, Default::default()).await?;
+        }
         tx.commit().await?;
         let facts = if let Some(fact) = fact {
             self.observe_committed_fact(fact, now).await?

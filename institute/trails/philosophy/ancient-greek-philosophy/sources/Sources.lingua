@@ -1,0 +1,49 @@
+Import "../Ancient-Greek-Philosophy.lingua"
+Import "Dialogues-Jowett.lingua"
+Import "Memorabilia-Dakyns.lingua"
+Import "Republic-Jowett.lingua"
+Import "Symposium-Jowett.lingua"
+Import "Presocratics-Fairbanks.lingua"
+Import "Early-Greek-Philosophy-Burnet.lingua"
+Import "Nicomachean-Ethics.lingua"
+Import "Lives-and-Opinions-Yonge.lingua"
+Import "Epictetus-Long.lingua"
+Import "Further-primary-readings.lingua"
+Import "Portuguese-editions.lingua"
+Import "../languages/Ancient-Greek.lingua"
+Import "Scholarship.lingua"
+
+Ancient Greek philosophy: books, editions, and retained readings (@greek-sources: 0, is #chapter, #part-of @ancient-greek-philosophy, #contains @greek-source-dialogues, #contains @greek-source-xenophon, #contains @greek-source-republic, #contains @greek-source-symposium, #contains @greek-source-fairbanks, #contains @greek-source-burnet, #contains @greek-source-aristotle, #contains @greek-source-diogenes, #contains @greek-source-epictetus, #contains @greek-further-sources, #contains @greek-portuguese-editions, #contains @greek-language-sources, #contains @greek-scholarly-sources) { r_6R0NA5RTH31HV871Y0RMF96WX3
+Several editions can support the same question. Identify the work, translator, language, edition, and selected passage in a reading note. The guide's reasoning and exercise can be used with a corresponding passage in another translation.
+
+| Collection | What it supplies | Access |
+| --- | --- | --- |
+| Retained English editions below | The first Socratic route, earlier fragments, Plato, Aristotle's ethics, and the schools | Local EPUBs with source identity and original notices |
+| [Further Greek primary readings](Further-primary-readings.lingua#r_6JNQVRM8BSTH1VW99AFPR4G5QM) | Sophists, knowledge, logic, nature, metaphysics, politics, poetry, and Plotinus | Retained EPUBs and identified external texts or digitisations |
+| [Portuguese editions](Portuguese-editions.lingua#r_3DABDPGKRDSM682Q2NYDEVX4Z8) | Nova Cultural's Pre-Socratics; EdUFPA's Apologia / Críton; Dinucci and Julien's Encheirídion | Library or owned editions and an open repository translation |
+| [Ancient Greek language](../languages/Ancient-Greek.lingua#r_1XJQDKNZ29XC8S5CD8GS4YK3EH) | Peek's introductory textbook and optional reading practice | Open publisher reference, CC BY 4.0 |
+| [Scholarly sources and editions](Scholarship.lingua#r_1S04GF22D5C3FNCB78GN1XQ7KT) | Critical Greek texts, sustained commentaries, research debates, and academic benchmarks | Retained Sophist; identified external texts and publisher/library editions |
+
+Offline reading uses the works marked retained. Each further source identifies its access and reuse terms so a selected edition can be obtained and retained appropriately. A catalogue identifies a particular edition; the book itself supplies the reading text.
+
+| Retained English edition | Use in this study |
+| --- | --- |
+| [Plato, Apology, Crito, and Phaedo; Henry Cary; introduction by Edward Brooks](Socratic-dialogues-Cary.lingua#r_00000000000000000000001005) | Socrates' trial, civic obligations, soul, and death |
+| [Plato, Dialogues, volume II; Benjamin Jowett, 1892](Dialogues-Jowett.lingua#r_1AD7N0E0ZYZ07XSMQWSK5PA5X8) | Euthyphro, Meno, and Gorgias; comparison translation for Apology, Crito, and Phaedo |
+| [Xenophon, Memorabilia; H. G. Dakyns](Memorabilia-Dakyns.lingua#r_6R4K67BD9B740H00FCVTM869A1) | Another author's Socrates and the interpretation of evidence |
+| [Plato, Republic; Benjamin Jowett](Republic-Jowett.lingua#r_2K96NK6GTRV5ZT0DD1DWJA9BZF) | Justice, education, and knowledge |
+| [Plato, Symposium; Benjamin Jowett](Symposium-Jowett.lingua#r_475VMK1BGF0K12WYA6VG06CT7B) | Love, beauty, and literary form |
+| [Arthur Fairbanks, The First Philosophers of Greece, 1898](Presocratics-Fairbanks.lingua#r_0CETPRSWH0WZT8335D8692RNJY) | English translations of Pre-Socratic fragments and ancient testimony; the source collection for the earlier Greek readings |
+| [John Burnet, Early Greek Philosophy, second edition, 1908](Early-Greek-Philosophy-Burnet.lingua#r_1DSKX3DB6E343PZHZABGATVK13) | Translated fragments, ancient reports, and a historian's reconstruction |
+| [Aristotle, Nicomachean Ethics; introduction by J. A. Smith](Nicomachean-Ethics.lingua#r_62ZRER59RNE2H3T9Y081AA4835) | Living well, character, practical wisdom, and friendship |
+| [Diogenes Laertius, Lives and Opinions; C. D. Yonge](Lives-and-Opinions-Yonge.lingua#r_2MZ8K8NBGJSS2844MJ7DDGR849) | Epicurus' preserved letters and maxims; reports concerning the schools |
+| [Epictetus, selected Discourses and Encheiridion; George Long](Epictetus-Long.lingua#r_5VCYFDR3KPWTJ3T35X5MW4T4BD) | Stoic judgment, agency, and duties |
+
+The guides supply original questions, context, and connecting explanations. Ancient testimony, a translated fragment, a dialogue, a later biography, and an editor's interpretation carry different kinds of evidence. Examine the selection, wording, and assumptions in Fairbanks, Burnet, the Nova Cultural commentary, and the old introductions against the passages they discuss.
+
+Start with the primary selection, compare a second account or translation, and explain what the comparison changes in the argument. Keep the edition's page or section and its ancient transmitting source where available; fragment numbering and transliteration can differ between collections.
+
+**Editorial responsibility:** Lince Institute Philosophy content contributors. Source selection checked 2026-10-26. Review a guide when a reader cannot locate its passage, an attribution or interpretation is challenged, a retained artifact is replaced, or a connection relies on an unstated prerequisite. Record the edition change, check the affected exercises and locators, and preserve a reader's ability to identify the edition used.
+
+**Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3). **Reading method:** [Evidence, interpretation, and an argument](../foundations/Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN).
+} r_6R0NA5RTH31HV871Y0RMF96WX3

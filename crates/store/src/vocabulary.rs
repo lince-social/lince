@@ -1,16 +1,16 @@
 mod features;
 mod preferences;
 mod publications;
+mod references;
 mod translations;
 mod versions;
-mod references;
 
 pub use features::*;
 pub use preferences::*;
 pub use publications::*;
+pub use references::*;
 pub use translations::*;
 pub use versions::*;
-pub use references::*;
 
 use crate::StoreError;
 use nucleus::vocabulary::{SAVED_LOCATION_ROLE_UID, Source, Term};

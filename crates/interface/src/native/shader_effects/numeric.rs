@@ -137,7 +137,10 @@ pub(super) fn update(world: &mut World) {
         .query::<(Entity, &shader::EffectPreview, &Context)>()
         .iter(world)
         .filter_map(|(entity, preview, context)| {
-            if preview.disabled || disabled(world) || crate::native::laboratory::blocked(world, entity) {
+            if preview.disabled
+                || disabled(world)
+                || crate::native::laboratory::blocked(world, entity)
+            {
                 return None;
             }
             let effect = shader::working(world, entity)?;

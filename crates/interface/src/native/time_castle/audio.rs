@@ -51,7 +51,9 @@ enum Change {
 
 impl Action for Change {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::blocked(world, owner) { return; }
+        if crate::native::laboratory::blocked(world, owner) {
+            return;
+        }
         match self {
             Self::Mode(mode) => {
                 if let Some(mut settings) = world.get_mut::<TimeSettings>(owner) {
@@ -135,7 +137,11 @@ pub(super) fn update(world: &mut World) {
     let owners: Vec<_> = world
         .query::<(Entity, &TimeSettings, &View)>()
         .iter(world)
-        .filter(|(entity, settings, _)| !crate::native::laboratory::blocked(world, *entity) && settings.0.sound.mode != Mode::Off && settings.0.valid())
+        .filter(|(entity, settings, _)| {
+            !crate::native::laboratory::blocked(world, *entity)
+                && settings.0.sound.mode != Mode::Off
+                && settings.0.valid()
+        })
         .map(|(entity, _, _)| entity)
         .collect();
     if !owners.is_empty() {

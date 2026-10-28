@@ -1,0 +1,68 @@
+Import "Medicine.lingua"
+Import "foundations/Reading-from-zero.lingua"
+Import "sources/AO-Surgery-Reference.lingua"
+Import "sources/Anatomy-and-Physiology.lingua"
+Import "sources/Applied-Human-Anatomy.lingua"
+Import "sources/Asymptomatic-labrum-MRI-study.lingua"
+Import "sources/Avaliacao-do-ombro-MSD.lingua"
+Import "sources/Biceps-tendinitis-AAOS.lingua"
+Import "sources/Brachial-plexus.lingua"
+Import "sources/Chronic-shoulder-imaging-ACR.lingua"
+Import "sources/DeCS.lingua"
+Import "sources/FIMPACT-ten-year.lingua"
+Import "sources/Frozen-shoulder-AAOS.lingua"
+Import "sources/Glenohumeral-joint.lingua"
+Import "sources/Histologia-Montanari.lingua"
+Import "sources/Instabilidade-INTO.lingua"
+Import "sources/Internal-impingement-overhead-athletes.lingua"
+Import "sources/LER-DORT.lingua"
+Import "sources/Laboratory-results.lingua"
+Import "sources/Literature-discovery.lingua"
+Import "sources/Medical-Terminology-2e.lingua"
+Import "sources/Medical-word-parts.lingua"
+Import "sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "sources/Pain-terminology.lingua"
+Import "sources/Posterior-capsule-strain-study.lingua"
+Import "sources/Rotator-cuff-guideline-2025.lingua"
+Import "sources/Rotator-cuff-tears-AAOS.lingua"
+Import "sources/SLAP-tears-AAOS.lingua"
+Import "sources/Shoulder-anatomy.lingua"
+Import "sources/Shoulder-arthritis-AAOS.lingua"
+Import "sources/Shoulder-instability-AAOS.lingua"
+Import "sources/Shoulder-labral-tears-AAOS.lingua"
+Import "sources/Shoulder-muscles.lingua"
+Import "sources/Shoulder-pain-NHS.lingua"
+Import "sources/Shoulder-problems-AAOS.lingua"
+Import "sources/Shoulder-trauma-AAOS.lingua"
+Import "sources/Skeleton-3D.lingua"
+Import "sources/Soft-tissue-injuries-AAOS.lingua"
+Import "sources/Tendinopathy-guideline-2025.lingua"
+Import "sources/Tendinopatia-MSD.lingua"
+Import "sources/Upper-limb-nerves.lingua"
+Import "sources/Z-Anatomy.lingua"
+
+Medicine sources — books, anatomy, and clinical evidence (@medicine-sources: 0, is #chapter, #part-of @medicine) { r_2411E1397ZNK740CDA309B881D
+For spatial anatomy, [Skeleton in three dimensions — BodyParts3D and OrganUI](sources/Skeleton-3D.lingua#r_60TPBJFQKSVPGQ4TR2TN52GFD0) provides an optional downloadable model with both shoulder girdles.
+
+Use the source attached to each reading for its specific question. The introductory spine is [Anatomy & Physiology — Oregon State University](sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N); [Histologia — Tatiana Montanari](sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS) offers Portuguese tissue study. [Applied Human Anatomy — Nolan and McNamara](sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K) is an English exercise manual available for download for deeper anatomical work, not a substitute for an illustrated explanatory textbook.
+
+**Sustained beginning:** [Begin medicine from zero — a substantial reading progression](foundations/Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50) assigns complete textbook blocks and whole-book continuations. [Medical Terminology 2e — Open RN](sources/Medical-Terminology-2e.lingua#r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q) is a second downloadable book for learning the language; [Sprains, strains, and other soft-tissue injuries — AAOS](sources/Soft-tissue-injuries-AAOS.lingua#r_4F5FBKPMHNDBKFQXZH9FMXNQJP) introduces injury categories before the regional problem readings.
+
+**Focused joint and rotation sources:** [Shoulder joint labral tear — AAOS](sources/Shoulder-labral-tears-AAOS.lingua#r_66H3KEN7TXRY1BTNEX5F68DASF) distinguishes labral regions; [Posterior shoulder tissue strain — Borstad and Dashottar](sources/Posterior-capsule-strain-study.lingua#r_6XDNYGV5BX07M2TJYPE3XSR8AJ) examines position and tissue strain; [Internal impingement in overhead athletes — Corpus and colleagues](sources/Internal-impingement-overhead-athletes.lingua#r_39ZZD5X2XJRC9834DBHREBSS9X) concerns overhead-athlete mechanisms; [Labral MRI findings without symptoms — Schwartzberg and colleagues](sources/Asymptomatic-labrum-MRI-study.lingua#r_7E5C296ZF4P7MWT3H5B0NXV6H1) supports appraisal of an imaging finding. These sources answer different questions and are assigned only where useful.
+
+**Language and shared foundations:** [Medical word parts — MedlinePlus](sources/Medical-word-parts.lingua#r_59RYBJSBG5J7J0B7YJZGBMFPWA), [DeCS — Descritores em Ciências da Saúde](sources/DeCS.lingua#r_32JDHQDTBG260AEJ12TP8WRY1G), [Understanding laboratory results — MedlinePlus](sources/Laboratory-results.lingua#r_25V23BVCGB9VZ631XN4GZS05SA), and [Pain terminology — IASP](sources/Pain-terminology.lingua#r_4V7XHP0R3Y4QQVN47RD1YEVZCV).
+
+**Shoulder anatomy:** [Shoulder anatomy — NCBI Bookshelf](sources/Shoulder-anatomy.lingua#r_0AXZG4YT3Y8GYC5XDH0S52HWZ4), [Glenohumeral joint — NCBI Bookshelf](sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), [Shoulder muscles — NCBI Bookshelf](sources/Shoulder-muscles.lingua#r_76PY1TN1ZHB847YGG80ZCB5S50), [Upper-limb nerves — NCBI Bookshelf](sources/Upper-limb-nerves.lingua#r_6G2RDX948Y8KGMDFRV226X4RH6), [Brachial plexus — NCBI Bookshelf](sources/Brachial-plexus.lingua#r_5RBF38QWEQ2D9CXZAN1ERZ4F8X), and the optional [Z-Anatomy — optional three-dimensional anatomy](sources/Z-Anatomy.lingua#r_2HGVZ0CZH2SS1GMB3M82G380EC).
+
+**Clinical introductions:** [Shoulder pain and common problems — AAOS](sources/Shoulder-problems-AAOS.lingua#r_506TD94GKTCRNS0XP0W5Q7EWDV), [Rotator cuff tears — AAOS](sources/Rotator-cuff-tears-AAOS.lingua#r_5G6SQ0913D89PSPG03A3XYDQ5W), [Frozen shoulder — AAOS](sources/Frozen-shoulder-AAOS.lingua#r_0S11NBE3K6SNW505KKMQC4M12Q), [Chronic shoulder instability — AAOS](sources/Shoulder-instability-AAOS.lingua#r_3RA0D81T7R9RNSAA0PGZGJX8R1), [Biceps tendinitis — AAOS](sources/Biceps-tendinitis-AAOS.lingua#r_7SRA5WJHB8B31WMPFTB6KZH7GC), [SLAP tears — AAOS](sources/SLAP-tears-AAOS.lingua#r_7Q7Z4SMJ3AAWWS09GTDX6R0P0J), [Shoulder fractures and dislocations — AAOS](sources/Shoulder-trauma-AAOS.lingua#r_3PWVRKWPX21FH3M69BKW675ZHM), and [Arthritis of the shoulder — AAOS](sources/Shoulder-arthritis-AAOS.lingua#r_7B3XNZ2YPTDVPMN3M6DH7R8S2M).
+
+**Portuguese and Brazilian care:** [Avaliação do ombro — Manual MSD](sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X), [Tendinopatia — Manual MSD](sources/Tendinopatia-MSD.lingua#r_2MM3SQQ0YD4SGZECQFBYRZNQQF), [Ortopedia adulto — Ministério da Saúde and UFRGS](sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78), [Luxação e instabilidade do ombro — INTO](sources/Instabilidade-INTO.lingua#r_7B33CEPJHRFH5DCM9YKY91Z73C), and [LER and DORT — health and work](sources/LER-DORT.lingua#r_7V282C48P8KGYC8GMYBTNDXP02). [Shoulder pain — public health guidance](sources/Shoulder-pain-NHS.lingua#r_20XNX6E0TB4XRQ4PC3FJNV5SMK) provides accessible warning-symptom reading; its UK access instructions are not Brazilian service instructions.
+
+**Professional depth:** [Rotator Cuff Tendinopathy — JOSPT, 2025](sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV), [Management of Rotator Cuff Injuries — AAOS, 2025](sources/Rotator-cuff-guideline-2025.lingua#r_5JCRVDCV75VA441X5FG5S226G3), [Chronic shoulder pain — ACR imaging criteria](sources/Chronic-shoulder-imaging-ACR.lingua#r_550R5D2ZQEXYS08A98J9M848PG), [FIMPACT — ten-year placebo-surgery comparison](sources/FIMPACT-ten-year.lingua#r_467SRCDKYQD418N93SZG3635D8), and [AO Surgery Reference — professional fracture study](sources/AO-Surgery-Reference.lingua#r_7JMB37SYAHK0879T2SJTQT11Z7). [Find and assess medical literature — English and Portuguese](sources/Literature-discovery.lingua#r_1DPBVZC8XSXFB29AYMFDR8FC8S) supports focused research in English and Portuguese.
+
+The source descriptions distinguish openly licensed works from freely readable copyrighted references. Preserve edition notices and component-specific credits. Applied Human Anatomy, 2022, and Medical Terminology 2e, 2024, are referenced through their authorized PDF downloads. External material is consulted through its authorized source. Clinical reading does not require accepting every source's simplified explanation; compare mechanisms and recommendations with their evidence.
+
+Access and source metadata were checked on 28 October 2026 where the hosts could be reached. Some institutional sites block automated access; those references remain external rather than being represented as downloaded or fully inspected editions.
+
+**Return:** [Medicine — understanding the body and its care](Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2411E1397ZNK740CDA309B881D

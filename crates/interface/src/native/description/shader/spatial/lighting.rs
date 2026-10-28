@@ -35,7 +35,9 @@ pub(super) fn install(app: &mut App) {
     app.init_resource::<Styles>().add_systems(
         PostUpdate,
         update
+            .after(crate::native::topology::presentation::synchronize)
             .after(crate::native::shader_effects::PlaceSpatialEffects)
+            .before(bevy::camera::CameraUpdateSystems)
             .before(bevy::transform::TransformSystems::Propagate),
     );
 }
@@ -249,7 +251,11 @@ fn update(world: &mut World) {
                         ..default()
                     },
                     Transform::from_xyz(3.0, 4.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-                    RenderLayers::from_layers(&(64..128).collect::<Vec<_>>()),
+                    RenderLayers::from_layers(
+                        &crate::native::render_layers::SHADERS
+                            .indices()
+                            .collect::<Vec<_>>(),
+                    ),
                 ))
                 .id(),
         );

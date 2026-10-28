@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../orthopedics/shoulder/study/Examination-and-imaging.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Chronic-shoulder-imaging-ACR.lingua"
+Import "Medicines-and-decisions.lingua"
+
+Imaging — what a picture measures (@med-imaging: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #source @med-source-acr, #medicine @med-medicines) { r_0ZC1MBHSRJSYM72P1DPC44KC0B
+**Read a complete introductory section:** Medical Imaging in [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 1. Then use labeled examples in the shoulder sources to recognize what each modality shows. Save the scenario-specific tables in [Chronic shoulder pain — ACR imaging criteria](../sources/Chronic-shoulder-imaging-ACR.lingua#r_550R5D2ZQEXYS08A98J9M848PG) for [Understand a shoulder examination and an imaging report](../orthopedics/shoulder/study/Examination-and-imaging.lingua#r_0ESRQBT85AGDQH7Q71TAFFEAQS), once the structures and clinical question are clear.
+
+Radiography/radiografia uses X-rays and is particularly useful for many bone and alignment questions. CT/tomografia computadorizada also uses ionizing radiation and reconstructs cross-sectional information. Ultrasound/ultrassonografia uses sound waves and can examine selected soft tissues during movement. MRI/ressonância magnética uses magnetic fields and radiofrequency signals to produce images with contrast that depends on the sequence and tissue properties.
+
+A brighter area is not a universal code for inflammation or injury. Modality, plane, sequence, position, and technical quality matter. An imaging finding/achado de imagem may be relevant, incidental, or uncertain in a particular clinical setting.
+
+Choosing a study depends on what needs to be answered, previous findings, suitability, risk, and whether the result could change care. More expensive or more detailed does not automatically mean more useful.
+
+**Try:** compare a labeled shoulder drawing, radiograph, and MRI illustration. Identify which structures are directly visible and which you are inferring. Keep image recognition distinct from professional interpretation.
+
+**Continue:** [Medicines, procedures, benefits, and harms](Medicines-and-decisions.lingua#r_58YGVDEPBKQN0P5BG517VNZSDK).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_0ZC1MBHSRJSYM72P1DPC44KC0B

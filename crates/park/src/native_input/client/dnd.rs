@@ -5,7 +5,7 @@ use wayland_client::{Connection, Dispatch, Proxy, QueueHandle, WEnum, delegate_n
     protocol::{wl_data_device, wl_data_device_manager::{self, DndAction}, wl_data_offer, wl_seat}};
 
 struct Offer { object: wl_data_offer::WlDataOffer, mimes: Vec<String>, copy: bool, assigned: bool }
-struct Active { offer: wl_data_offer::WlDataOffer, serial: u32, point: [f64; 2], mime: Option<String> }
+struct Active { offer: wl_data_offer::WlDataOffer, serial: u32, point: [f64; 2], mime: Option<String>, hover: Option<u64> }
 struct Pending {
     token: u64, offer: wl_data_offer::WlDataOffer, mime: String, target: Target,
     cancelled: Arc<AtomicBool>, deadline: Instant, delivered: bool,
@@ -21,9 +21,21 @@ pub(super) struct Dnd {
     active: Option<Active>,
     pending: Option<Pending>,
     next_token: u64,
+    next_hover: u64,
 }
 
 impl Dnd {
+    pub(super) fn file_drag(&self) -> Option<u64> {
+        let active = self.active.as_ref()?;
+        self.offers.iter().any(|offer| offer.object == active.offer && offer.object.is_alive()
+            && offer.mimes.iter().any(|mime| transfer::mime_kind(mime) == Some(Kind::Uri)))
+            .then_some(active.hover).flatten()
+    }
+
+    pub(super) fn invalidate_hover(&mut self) {
+        if let Some(active) = &mut self.active { active.hover = None; }
+    }
+
     pub(super) fn initialize(&mut self, seat: Option<&wl_seat::WlSeat>, qh: &QueueHandle<State>) {
         if self.device.is_none() && let (Some(manager), Some(seat)) = (&self.manager, seat) {
             self.device = Some(manager.get_data_device(seat, qh, ()));
@@ -161,7 +173,9 @@ impl Dispatch<wl_data_device::WlDataDevice, ()> for State {
                 if state.surface.as_ref() == Some(&surface) && let Some(offer) = id {
                     if let Some(stored) = state.dnd.offers.iter_mut().find(|stored| stored.object == offer) { stored.assigned = true; }
                     if offer.version() >= 3 { offer.set_actions(DndAction::Copy, DndAction::Copy); }
-                    state.dnd.active = Some(Active { offer, serial, point: [x, y], mime: None });
+                    let hover = state.dnd.next_hover.checked_add(1);
+                    if let Some(token) = hover { state.dnd.next_hover = token; }
+                    state.dnd.active = Some(Active { offer, serial, point: [x, y], mime: None, hover });
                     state.dnd.negotiate();
                 }
                 state.dnd.prune();

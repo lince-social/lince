@@ -1,0 +1,27 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../Shoulder.lingua"
+Import "Capsular-restraints.lingua"
+
+Shoulder rotation — describe the moving bone and starting position (@shoulder-rotation: 0, is #chapter, #part-of @shoulder, #source @med-source-osu, #source @med-source-applied, #source @med-source-joint, #medicine @shoulder-capsular-mechanics, #orthopedics @shoulder-capsular-mechanics, #shoulder @shoulder-capsular-mechanics) { r_7TRW6394Z3JA9CPYPE6SQNPZTT
+**Read selected material carefully:** [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Types of Body Movements, specifically Rotation, and the shoulder section of Anatomy of Selected Synovial Joints. The [OpenStax movement section](https://openstax.org/books/anatomy-and-physiology-2e/pages/9-5-types-of-body-movements) supplies illustrated examples. In [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), chapter 2, read Movement items 10–11 on printed page 33 as anatomical questions. Draw the actions and identify muscles; its resisted examination instructions are for suitable supervised study.
+
+Internal rotation/rotação interna and external rotation/rotação externa describe rotation of the humerus relative to the scapula. With the upper arm beside the trunk and elbow bent, the forearm can act as a visible pointer. Raising the upper arm changes the reference position and the relationships around the joint. A description such as 'turning the arm out' needs that starting position to be intelligible.
+
+Pronation/pronação and supination/supinação turn the forearm through the radioulnar relationships. They can move the palm without the same rotation of the humerus. Trunk rotation and scapular motion can also change where the hand ends up. A palm direction alone therefore cannot identify a shoulder movement.
+
+| Describe | Why it changes the question |
+| --- | --- |
+| upper arm beside the body, forward, or out to the side | changes joint position and tissue relationships |
+| elbow and forearm orientation | helps separate humeral rotation from forearm movement |
+| active motion, assisted motion, or an external load | changes how movement and force are produced |
+| direction and the part of the movement at which a symptom appears | gives more useful information than 'too rotated' |
+
+**Try with drawings:** compare shoulder rotation with the upper arm at the side and elevated, then compare forearm supination while the upper arm stays still. Use an already observed daily movement to describe a symptom; do not find the limit by pushing a painful joint.
+
+**Continue:** [Rotation and restraint — why position changes the capsule question](Capsular-restraints.lingua#r_2PW98DPTH66WTKFMPAX35775WE).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7TRW6394Z3JA9CPYPE6SQNPZTT

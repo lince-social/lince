@@ -68,6 +68,25 @@ fn notice(app: &App, sand: Entity) -> &str {
     &app.world().get::<Text>(status).unwrap().0
 }
 
+fn shortcuts_panel_open(app: &App, root: Entity) -> bool {
+    let panel = app
+        .world()
+        .get::<crate::native::edit_mode::EditMode>(root)
+        .unwrap()
+        .panel;
+    app.world().get::<Children>(panel).is_some_and(|children| {
+        children.iter().any(|entity| {
+            app.world()
+                .get::<Name>(entity)
+                .is_some_and(|name| name.as_str() == "shortcuts.title")
+                && app
+                    .world()
+                    .get::<Text>(entity)
+                    .is_some_and(|text| text.0 == crate::i18n::Token::Shortcuts.text())
+        })
+    })
+}
+
 #[test]
 fn compact_sand_has_inline_help_and_submits_with_enter() {
     let (mut app, root, window) = fixture();
@@ -127,12 +146,7 @@ fn compact_sand_has_inline_help_and_submits_with_enter() {
     key(&mut app, window, KeyCode::Tab, ButtonState::Pressed);
     app.update();
     key(&mut app, window, KeyCode::Enter, ButtonState::Pressed);
-    assert!(
-        app.world_mut()
-            .query::<&Text>()
-            .iter(app.world())
-            .any(|text| text.0 == "Cheat sheet")
-    );
+    assert!(shortcuts_panel_open(&app, root));
     assert!(app.world().get::<OperationSand>(sand).is_some());
     app.update();
     assert_eq!(
@@ -230,19 +244,9 @@ fn suggestions_narrow_complete_and_refresh_without_mutating_records() {
     enter(&mut app, sand, "/help");
     OperationAction::Submit.apply(app.world_mut(), sand);
     assert!(app.world().get::<Popup>(root).is_none());
-    assert!(
-        app.world_mut()
-            .query::<&Text>()
-            .iter(app.world())
-            .any(|text| text.0 == "Cheat sheet")
-    );
+    assert!(shortcuts_panel_open(&app, root));
     EditAction::General.apply(app.world_mut(), root);
-    assert!(
-        !app.world_mut()
-            .query::<&Text>()
-            .iter(app.world())
-            .any(|text| text.0 == "Cheat sheet")
-    );
+    assert!(!shortcuts_panel_open(&app, root));
 }
 
 #[test]
@@ -254,9 +258,15 @@ fn autocomplete_is_bounded_and_pending_text_does_not_submit() {
             (index.to_string(), String::new()),
         );
     }
-    assert_eq!(suggestions(&catalog, "@record-099").len(), 6);
-    assert_eq!(suggestions(&catalog, "@record-09999")[0].0, "@record-09999");
-    assert!(suggestions(&catalog, "@absent").is_empty());
+    let mut world = World::new();
+    world.insert_resource(catalog);
+    let owner = world.spawn_empty().id();
+    assert_eq!(suggestions(&world, owner, "@record-099").len(), 6);
+    assert_eq!(
+        suggestions(&world, owner, "@record-09999")[0].0,
+        "@record-09999"
+    );
+    assert!(suggestions(&world, owner, "@absent").is_empty());
     let (mut app, root, _) = fixture();
     OpenOperation.apply(app.world_mut(), root);
     let sand = app.world().get::<Popup>(root).unwrap().panel;
@@ -290,6 +300,112 @@ fn autocomplete_is_bounded_and_pending_text_does_not_submit() {
             .value()
             .to_string(),
         "/help"
+    );
+}
+
+#[test]
+fn shared_commands_explain_unavailability_and_preserve_the_draft_and_rows_on_live_refresh() {
+    let (mut app, root, _) = fixture();
+    OpenOperation.apply(app.world_mut(), root);
+    let sand = app.world().get::<Popup>(root).unwrap().panel;
+    enter(&mut app, sand, "/launch/terminal");
+    let state = app.world().get::<OperationSand>(sand).unwrap();
+    let input = state.input;
+    let rows = state.rows.clone();
+    let original_caption = app.world().get::<Text>(rows[0].1).unwrap().0.clone();
+    let feedback = state.feedback;
+    assert_eq!(rows.len(), 1);
+    assert!(state.items[0].1.contains(Shortcut::Terminal.label()));
+    assert!(state.items[0].1.contains("requires a Park session"));
+    assert!(
+        app.world()
+            .get::<crate::native::icons::Tooltip>(rows[0].0)
+            .unwrap()
+            .0
+            .contains("requires a Park session")
+    );
+    assert!(!original_caption.contains("requires a Park session"));
+    app.world_mut()
+        .get_mut::<ScrollPosition>(feedback)
+        .unwrap()
+        .0
+        .y = 13.0;
+    OperationAction::Submit.apply(app.world_mut(), sand);
+    assert_eq!(app.world().get::<Popup>(root).unwrap().panel, sand);
+    assert!(notice(&app, sand).contains("requires a Park session"));
+    assert_eq!(
+        app.world().get::<EditableText>(input).unwrap().value(),
+        "/launch/terminal"
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(input));
+    let (sender, receiver) = std::sync::mpsc::sync_channel(4);
+    app.world_mut()
+        .insert_resource(crate::native::layout::desktop::HostRequests(sender));
+    app.update();
+    assert_eq!(
+        app.world().get::<Text>(rows[0].1).unwrap().0,
+        original_caption
+    );
+    assert!(
+        !app.world()
+            .get::<crate::native::icons::Tooltip>(rows[0].0)
+            .unwrap()
+            .0
+            .contains("requires a Park session")
+    );
+    app.world_mut()
+        .resource_mut::<Settings>()
+        .set(Shortcut::Terminal, "Mod+F2")
+        .unwrap();
+    app.update();
+    let state = app.world().get::<OperationSand>(sand).unwrap();
+    assert_eq!(state.rows, rows);
+    assert!(state.items[0].1.contains("Mod+F2"));
+    assert!(!state.items[0].1.contains("requires a Park session"));
+    assert!(notice(&app, sand).is_empty());
+    assert_eq!(
+        app.world().get::<ScrollPosition>(feedback).unwrap().0.y,
+        13.0
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(input));
+    OperationAction::Submit.apply(app.world_mut(), sand);
+    assert!(app.world().get::<Popup>(root).is_none());
+    assert!(matches!(
+        receiver.try_recv().unwrap(),
+        crate::host::HostRequest::Action(crate::host::DesktopAction::OpenTerminal)
+    ));
+}
+
+#[test]
+fn operation_edit_is_a_single_registry_command_and_layout_errors_keep_operation_open() {
+    let (mut app, root, _) = fixture();
+    OpenOperation.apply(app.world_mut(), root);
+    let sand = app.world().get::<Popup>(root).unwrap().panel;
+    enter(&mut app, sand, "/edit");
+    let state = app.world().get::<OperationSand>(sand).unwrap();
+    assert_eq!(
+        state.items.iter().filter(|item| item.0 == "/edit").count(),
+        1
+    );
+    OperationAction::Submit.apply(app.world_mut(), sand);
+    assert!(
+        app.world()
+            .get::<crate::native::edit_mode::EditMode>(root)
+            .unwrap()
+            .enabled
+    );
+    OpenOperation.apply(app.world_mut(), root);
+    let sand = app.world().get::<Popup>(root).unwrap().panel;
+    enter(&mut app, sand, "/item/width");
+    OperationAction::Submit.apply(app.world_mut(), sand);
+    assert!(notice(&app, sand).contains("No eligible item"));
+    assert_eq!(app.world().get::<Popup>(root).unwrap().panel, sand);
+    assert_eq!(
+        app.world()
+            .get::<crate::native::canvas::CanvasView>(root)
+            .unwrap()
+            .center,
+        bevy::math::DVec2::ZERO
     );
 }
 

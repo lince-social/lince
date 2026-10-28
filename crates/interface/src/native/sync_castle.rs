@@ -256,6 +256,36 @@ fn button(world: &mut World, parent: Entity, owner: Entity, name: &str, command:
     );
 }
 
+pub fn open_source(world: &mut World, root: Entity, uri: &str) -> Entity {
+    let workspace = world
+        .get::<crate::native::workspace::Workspaces>(root)
+        .map_or(1, |spaces| spaces.active);
+    let sand = crate::native::sand_store::spawn_sand(
+        world,
+        root,
+        workspace,
+        crate::native::sand_store::SandKind::Sync,
+        "",
+        bevy::math::DVec2::ZERO,
+    );
+    let children = world
+        .get::<Children>(sand)
+        .map(|children| children.iter().collect::<Vec<_>>())
+        .unwrap_or_default();
+    for child in children {
+        if world
+            .get::<crate::native::source_view::SourceView>(child)
+            .is_some()
+        {
+            crate::native::source_view::set_source(world, child, uri);
+            return child;
+        }
+    }
+    let owner = crate::native::source_view::exchange(world, sand, uri);
+    crate::native::source_view::set_source(world, owner, uri);
+    owner
+}
+
 pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
     world.init_resource::<Requests>();
     world
@@ -374,6 +404,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         names: Default::default(),
     });
     set_enabled(world, sand, false);
+    crate::native::source_view::exchange(world, sand, "");
     blobs::populate(world, sand);
     offers::populate(world, sand);
     plugins::populate(world, sand);

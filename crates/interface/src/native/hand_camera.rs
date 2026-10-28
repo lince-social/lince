@@ -22,6 +22,7 @@ struct Controls {
     root: Entity,
     sand: Entity,
     status: Entity,
+    preview: Entity,
 }
 
 type Sample = Result<(Instant, Option<Point>), String>;
@@ -31,7 +32,10 @@ struct Session {
     root: Entity,
     workspace: u64,
     stop: Arc<AtomicBool>,
+    analysis: Arc<AtomicBool>,
     latest: Arc<Mutex<Option<Sample>>>,
+    frame: Arc<Mutex<Option<image::RgbImage>>>,
+    image: Option<Handle<Image>>,
     task: tokio::task::JoinHandle<()>,
     last_frame: Option<Instant>,
 }
@@ -48,6 +52,8 @@ struct Runtime {
     motion: PanTracker,
     epoch: Instant,
     status: String,
+    camera_index: u32,
+    analysis: bool,
 }
 
 impl Default for Runtime {
@@ -57,13 +63,15 @@ impl Default for Runtime {
             motion: PanTracker::default(),
             epoch: Instant::now(),
             status: "Off".into(),
+            camera_index: 0,
+            analysis: false,
         }
     }
 }
 
 pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
     if let Some(mut item) = world.get_mut::<crate::native::canvas::CanvasItem>(sand) {
-        item.size = Vec2::new(460.0, 220.0);
+        item.size = Vec2::new(640.0, 430.0);
     }
     let body = crate::native::sand_panel::frame(world, sand, "Hand Camera Castle");
     crate::native::edit_mode::label(
@@ -73,12 +81,32 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         14.0,
     );
     let row = crate::native::sand_panel::row(world, body);
+    crate::native::sand_panel::button(world, row, body, "Previous camera", CameraIndex(false));
+    crate::native::sand_panel::button(world, row, body, "Next camera", CameraIndex(true));
     crate::native::sand_panel::button(world, row, body, "Enable camera", Control(true));
     crate::native::sand_panel::button(world, row, body, "Disable camera", Control(false));
+    let row = crate::native::sand_panel::row(world, body);
+    crate::native::sand_panel::button(world, row, body, "Enable hand analysis", Analysis(true));
+    crate::native::sand_panel::button(world, row, body, "Disable hand analysis", Analysis(false));
     let status = crate::native::edit_mode::label(world, body, "Off", 13.0);
-    world
-        .entity_mut(body)
-        .insert(Controls { root, sand, status });
+    let preview = world
+        .spawn((
+            ChildOf(body),
+            ImageNode::default(),
+            Node {
+                width: px(320),
+                height: px(240),
+                flex_shrink: 0.0,
+                ..default()
+            },
+        ))
+        .id();
+    world.entity_mut(body).insert(Controls {
+        root,
+        sand,
+        status,
+        preview,
+    });
     world.entity_mut(sand).insert((
         crate::native::castle::Castle,
         crate::native::sand_store::SandCredits(CREDITS),
@@ -106,6 +134,47 @@ const CREDITS: &[crate::native::credits::Attribution] = &[
 
 #[derive(Clone, Copy)]
 struct Control(bool);
+
+#[derive(Clone, Copy)]
+struct CameraIndex(bool);
+
+impl crate::native::actions::Action for CameraIndex {
+    fn apply(&self, world: &mut World, _: Entity) {
+        world.init_resource::<Runtime>();
+        let mut runtime = world.resource_mut::<Runtime>();
+        if runtime.session.is_some() {
+            runtime.status = "Stop the camera before changing its index".into();
+            return;
+        }
+        runtime.camera_index = if self.0 {
+            runtime.camera_index.saturating_add(1).min(255)
+        } else {
+            runtime.camera_index.saturating_sub(1)
+        };
+        runtime.status = format!("Camera index {}", runtime.camera_index);
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Analysis(bool);
+
+impl crate::native::actions::Action for Analysis {
+    fn apply(&self, world: &mut World, _: Entity) {
+        world.init_resource::<Runtime>();
+        let mut runtime = world.resource_mut::<Runtime>();
+        runtime.analysis = self.0;
+        if let Some(session) = &runtime.session {
+            session.analysis.store(self.0, Ordering::Relaxed);
+        }
+        runtime.motion.reset();
+        runtime.status = if self.0 {
+            "Hand analysis enabled"
+        } else {
+            "Hand analysis disabled"
+        }
+        .into();
+    }
+}
 
 impl crate::native::actions::Action for Control {
     fn apply(&self, world: &mut World, owner: Entity) {
@@ -156,12 +225,17 @@ impl crate::native::actions::Action for Control {
             return;
         };
         let stop = Arc::new(AtomicBool::new(false));
+        let analysis = Arc::new(AtomicBool::new(world.resource::<Runtime>().analysis));
+        let index = world.resource::<Runtime>().camera_index;
         let latest = Arc::new(Mutex::new(None));
+        let frame = Arc::new(Mutex::new(None));
         let wake = world
             .get_resource::<crate::native::wake::WakeSignal>()
             .cloned();
         let worker_stop = stop.clone();
+        let worker_analysis = analysis.clone();
         let worker_latest = latest.clone();
+        let worker_frame = frame.clone();
         let task = handle.spawn_blocking(move || {
             let publish = |sample| {
                 if let Ok(mut latest) = worker_latest.lock() {
@@ -171,7 +245,13 @@ impl crate::native::actions::Action for Control {
                     wake.ring();
                 }
             };
-            if let Err(error) = capture(&worker_stop, &publish) {
+            if let Err(error) = capture(
+                index,
+                &worker_stop,
+                &worker_analysis,
+                &worker_frame,
+                &publish,
+            ) {
                 publish(Err(error));
             }
         });
@@ -183,7 +263,10 @@ impl crate::native::actions::Action for Control {
             root,
             workspace,
             stop,
+            analysis,
             latest,
+            frame,
+            image: None,
             task,
             last_frame: None,
         });
@@ -194,7 +277,13 @@ fn model_directory() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.cache-lince-hand")
 }
 
-fn capture(stop: &AtomicBool, publish: &impl Fn(Sample)) -> Result<(), String> {
+fn capture(
+    index: u32,
+    stop: &AtomicBool,
+    analysis: &AtomicBool,
+    preview: &Mutex<Option<image::RgbImage>>,
+    publish: &impl Fn(Sample),
+) -> Result<(), String> {
     use nokhwa::{
         Camera,
         pixel_format::RgbFormat,
@@ -203,14 +292,14 @@ fn capture(stop: &AtomicBool, publish: &impl Fn(Sample)) -> Result<(), String> {
             Resolution,
         },
     };
-    let tracker = HandTracker::load(&model_directory())?;
+    let mut tracker = None;
     if stop.load(Ordering::Relaxed) {
         return Ok(());
     }
     let format = RequestedFormat::new::<RgbFormat>(RequestedFormatType::Closest(
         CameraFormat::new(Resolution::new(640, 480), FrameFormat::YUYV, 30),
     ));
-    let mut camera = Camera::new(CameraIndex::Index(0), format).map_err(|e| e.to_string())?;
+    let mut camera = Camera::new(CameraIndex::Index(index), format).map_err(|e| e.to_string())?;
     if u64::from(camera.resolution().width()) * u64::from(camera.resolution().height()) > 4_000_000
     {
         return Err("Camera resolution is too large".into());
@@ -223,7 +312,21 @@ fn capture(stop: &AtomicBool, publish: &impl Fn(Sample)) -> Result<(), String> {
             .map_err(|e| e.to_string())?
             .decode_image::<RgbFormat>()
             .map_err(|e| e.to_string())?;
-        let point = tracker.open_hand(&image)?.map(|p| [1.0 - p[0], p[1]]);
+        let point = if analysis.load(Ordering::Relaxed) {
+            if tracker.is_none() {
+                tracker = Some(HandTracker::load(&model_directory())?);
+            }
+            tracker
+                .as_ref()
+                .unwrap()
+                .open_hand(&image)?
+                .map(|p| [1.0 - p[0], p[1]])
+        } else {
+            None
+        };
+        if let Ok(mut frame) = preview.lock() {
+            *frame = Some(image);
+        }
         if !stop.load(Ordering::Relaxed) {
             publish(Ok((started, point)));
         }
@@ -261,8 +364,60 @@ fn tick(world: &mut World) {
             .lock()
             .ok()
             .and_then(|mut latest| latest.take());
+        let frame = session.frame.lock().ok().and_then(|mut frame| frame.take());
+        if session.stop.load(Ordering::Relaxed) {
+            if let Some(preview) = world
+                .get::<Controls>(session.owner)
+                .map(|controls| controls.preview)
+                && let Some(mut node) = world.get_mut::<ImageNode>(preview)
+            {
+                node.image = Handle::default();
+            }
+            if let Some(handle) = session.image.take()
+                && let Some(mut images) = world.get_resource_mut::<Assets<Image>>()
+            {
+                images.remove(handle.id());
+            }
+        }
+        if !session.stop.load(Ordering::Relaxed)
+            && let Some(frame) = frame
+            && world.contains_resource::<Assets<Image>>()
+            && let Some(preview) = world
+                .get::<Controls>(session.owner)
+                .map(|controls| controls.preview)
+        {
+            let (width, height) = frame.dimensions();
+            let image = Image::new(
+                bevy::render::render_resource::Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                },
+                bevy::render::render_resource::TextureDimension::D2,
+                image::DynamicImage::ImageRgb8(frame).to_rgba8().into_raw(),
+                bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
+                bevy::asset::RenderAssetUsages::MAIN_WORLD
+                    | bevy::asset::RenderAssetUsages::RENDER_WORLD,
+            );
+            let handle = if let Some(handle) = session.image.clone() {
+                if let Some(mut existing) = world.resource_mut::<Assets<Image>>().get_mut(&handle) {
+                    *existing = image;
+                }
+                handle
+            } else {
+                let handle = world.resource_mut::<Assets<Image>>().add(image);
+                session.image = Some(handle.clone());
+                handle
+            };
+            if let Some(mut node) = world.get_mut::<ImageNode>(preview) {
+                node.image = handle;
+            }
+        }
         if session.stop.load(Ordering::Relaxed) {
             runtime.motion.reset();
+        } else if !runtime.analysis && !matches!(sample, Some(Err(_))) {
+            runtime.motion.reset();
+            runtime.status = "Camera on · hand analysis disabled".into();
         } else if let Some(sample) = sample {
             match sample {
                 Err(error) => {
@@ -321,6 +476,18 @@ fn tick(world: &mut World) {
             if !session.stop.load(Ordering::Relaxed) {
                 runtime.status = "Camera stopped".into();
             }
+            if let Some(preview) = world
+                .get::<Controls>(session.owner)
+                .map(|controls| controls.preview)
+                && let Some(mut node) = world.get_mut::<ImageNode>(preview)
+            {
+                node.image = Handle::default();
+            }
+            if let Some(handle) = session.image.take()
+                && let Some(mut images) = world.get_resource_mut::<Assets<Image>>()
+            {
+                images.remove(handle.id());
+            }
         } else {
             runtime.session = Some(session);
         }
@@ -344,6 +511,23 @@ fn tick(world: &mut World) {
 mod tests {
     use super::*;
     use crate::native::actions::Action;
+
+    #[test]
+    fn camera_selection_and_analysis_are_independent() {
+        let mut app = crate::native::sand_panel::tests::app();
+        app.add_plugins(HandCameraPlugin);
+        let owner = app.world_mut().spawn_empty().id();
+        CameraIndex(true).apply(app.world_mut(), owner);
+        assert_eq!(app.world().resource::<Runtime>().camera_index, 1);
+        Analysis(true).apply(app.world_mut(), owner);
+        assert!(app.world().resource::<Runtime>().analysis);
+        assert!(app.world().resource::<Runtime>().session.is_none());
+        Analysis(false).apply(app.world_mut(), owner);
+        CameraIndex(false).apply(app.world_mut(), owner);
+        let runtime = app.world().resource::<Runtime>();
+        assert!(!runtime.analysis);
+        assert_eq!(runtime.camera_index, 0);
+    }
 
     #[test]
     fn castle_is_disabled_on_creation_and_uses_the_existing_store_kind() {
@@ -442,10 +626,14 @@ mod tests {
                 root,
                 workspace: 1,
                 stop: stop.clone(),
+                analysis: Arc::new(AtomicBool::new(true)),
                 latest: latest.clone(),
+                frame: Arc::new(Mutex::new(None)),
+                image: None,
                 task: executor.spawn(std::future::pending()),
                 last_frame: None,
             });
+            runtime.analysis = true;
         }
         *latest.lock().unwrap() = Some(Ok((epoch, Some([0.5, 0.5]))));
         app.update();

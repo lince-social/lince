@@ -53,6 +53,7 @@ fn assertion(number: u128, subject: u128, predicate: u128, object: Option<u128>)
         subject_uid: r(subject),
         predicate_uid: c(predicate),
         object_uid: object.map(r),
+        object_uri: None,
         role: AssertionRole::Ordinary,
         quantity: None,
         unit_uid: None,
@@ -80,6 +81,7 @@ fn fixture() -> GraphSnapshot {
             })
             .collect(),
         assertions: vec![assertion(1, 3, 1, None), assertion(2, 4, 2, None)],
+        resolved_links: Default::default(),
         places: BTreeSet::new(),
     }
 }

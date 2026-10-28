@@ -12,7 +12,9 @@ impl Engine {
             let mut outcome = ActionOutcome::default();
             match action {
                 action @ Action::SetAssertionOrder { .. } => {
-                    outcome = self.edit_record_relations_as(action, actor.as_deref(), now).await?;
+                    outcome = self
+                        .edit_record_relations_as(action, actor.as_deref(), now)
+                        .await?;
                 }
                 Action::CreateThread { target, head } => {
                     let _thread_guard = self.thread_creation_lock.lock().await;
@@ -64,7 +66,8 @@ impl Engine {
                         replica_root.as_deref(),
                     )
                     .await?;
-                    let thread_of = store::vocabulary::feature_write(&self.store.pool, "thread").await?;
+                    let thread_of =
+                        store::vocabulary::feature_write(&self.store.pool, "thread").await?;
                     store::assertions::assert(
                         &self.store.pool,
                         store::assertions::NewAssertion {

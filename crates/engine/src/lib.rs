@@ -25,6 +25,8 @@ pub mod communication;
 pub mod component_presentation;
 pub mod custom_component;
 pub mod directory;
+pub mod demeter;
+pub mod optimization;
 pub mod effects;
 pub mod enrolment;
 pub mod error;
@@ -53,6 +55,7 @@ mod karma_transfer_inspection;
 mod karma_transfer_stages;
 mod karma_transfers;
 pub mod knowledge;
+pub mod sources;
 pub mod lingua_file;
 pub mod location;
 pub mod login;
@@ -136,6 +139,7 @@ use tokio::sync::{Mutex, broadcast, watch};
 pub use error::EngineError;
 
 pub struct Engine {
+    pub(crate) meal_runtime: optimization::Runtime,
     pub(crate) knowledge: knowledge::Runtime,
     pub signal_streams: signal_streams::Runtime,
     pub projection: projection::Controller,
@@ -260,6 +264,7 @@ impl Engine {
             component_presentations,
             canvas: Default::default(),
             fiote_availability: Default::default(),
+            meal_runtime: Default::default(),
             query_changed,
             signer: Mutex::new(None),
             social_network: std::sync::Mutex::new(None),

@@ -1,0 +1,36 @@
+Import "Sources.lingua"
+
+The First Philosophers of Greece (@greek-source-fairbanks: 0, is #book, #part-of @greek-sources) { r_0CETPRSWH0WZT8335D8692RNJY
+Arthur Fairbanks, editor and translator. The First Philosophers of Greece: An Edition and Translation of the Remaining Fragments of the Pre-Sokratic Philosophers, Together with a Translation of the More Important Accounts of Their Opinions Contained in the Early Epitomes of Their Works. London: Kegan Paul, Trench, Trübner & Co., 1898.
+
+[Retained EPUB](../books/fairbanks-first-philosophers-of-greece.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/78670). Greek texts with English translations, critical notes, and ancient testimonies. Project Gutenberg identifies this edition as public domain in the USA; the original notices and production credits remain in the retained file.
+
+Use this anthology to examine fragments and the passages through which later authors preserve or describe the earlier thinkers. Doxography is the collection of reports about thinkers' views. A fragment, its transmitting author's context, and an editor's reconstruction supply different kinds of evidence.
+
+| Chapters in this edition | Guided readings |
+| --- | --- |
+| I–III: Thales, Anaximandros, Anaximenes | [The Milesians](../presocratics/Milesians.lingua#r_7EYTA9J2KF117SXZDSK71KR7TE) |
+| IV: Herakleitos | [Change and intelligible order](../presocratics/Heraclitus.lingua#r_5K10CZBC41P0MXC7M3M1NW8MKY) |
+| V: Xenophanes | [Divinity, human perspectives, and knowledge](../presocratics/Xenophanes.lingua#r_7R4H94PKX5S41NDVCJSZE0N88B) |
+| VI: Parmenides | [Being and the force of an argument](../presocratics/Parmenides.lingua#r_7HVRAJY7AF3178NEH1N8BF9NPV) |
+| VII–VIII: Zeno and Melissos | [Motion, plurality, and argument](../presocratics/Zeno-and-Melissus.lingua#r_5WR6CJM0JV5QPDX2P5177J0YT4) |
+| IX: Pythagoras and the Pythagoreans | [Number, order, and explanation](../presocratics/Pythagoreans.lingua#r_2J6KPA7CCD3NY1G0VCAT35Q2NK) |
+| X: Empedokles | [Roots, mixture, and transformation](../presocratics/Empedocles.lingua#r_0JDEHV9WCX6YWPPXE64Z26VAMZ) |
+| XI: Anaxagoras | [Mixture, mind, and explanation](../presocratics/Anaxagoras.lingua#r_2KMHNE6TG1NF6X3Q4SXMBHGWXN) |
+
+Open the named chapter from the EPUB contents. Greek passages and critical notes precede the English translation in several chapters; the English reading does not require learning Greek first. Fairbanks' spellings differ from some guide titles. Include the edition, chapter or printed page, fragment number where supplied, and ancient transmitting source in your notes: numbering and editorial groupings belong to a particular edition.
+
+Compare a chosen passage with [Burnet's historical interpretation](Early-Greek-Philosophy-Burnet.lingua#r_1DSKX3DB6E343PZHZABGATVK13), examining what each editor translates, selects, or infers. This 1898 collection makes substantial evidence available; later discoveries and scholarship can change a reconstruction.
+
+**Return:** [Books and editions](Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3) · [Pre-Socratic readings](../presocratics/Nature-and-being.lingua#r_61M87EN28QQ9AHXT80SPCB0CVH) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_0CETPRSWH0WZT8335D8692RNJY
+
+Extension @greek-source-fairbanks "lince.resource" {
+ uri "../books/fairbanks-first-philosophers-of-greece.epub"
+ title "The First Philosophers of Greece"
+ hash "1316f26c8674f39defadc369c2c8e5f9cc4b3682480d576528ba75ff5100c9df"
+ media_type "application/epub+zip"
+ aliases ["gutenberg:78670"]
+ attribution "Arthur Fairbanks, editor and translator. The First Philosophers of Greece. Kegan Paul, Trench, Trübner & Co., 1898. Project Gutenberg ebook 78670. Retained 2026-10-26."
+ license "Public domain in the USA; historical edition. Original publication and Project Gutenberg notices retained in the EPUB."
+}

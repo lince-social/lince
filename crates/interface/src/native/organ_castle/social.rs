@@ -298,29 +298,109 @@ fn compose(world: &mut World, owner: Entity, parent: Entity, record: Option<&str
     ];
     if draft["transport"].is_object() {
         let transport = &draft["transport"];
-        label(world, parent, "Only the reviewed approximate areas and pickup window are public. Precise addresses and private Record links are omitted. Publishing does not agree a Transfer or start sharing.");
-        for (name, area) in [("Origin", &transport["origin"]), ("Destination", &transport["destination"])] {
-            label(world, parent, &format!("{name}: {:.5}, {:.5}", area["latitude_e5"].as_i64().unwrap_or_default() as f64 / 100_000.0, area["longitude_e5"].as_i64().unwrap_or_default() as f64 / 100_000.0));
+        label(
+            world,
+            parent,
+            "Only the reviewed approximate areas and pickup window are public. Precise addresses and private Record links are omitted. Publishing does not agree a Transfer or start sharing.",
+        );
+        for (name, area) in [
+            ("Origin", &transport["origin"]),
+            ("Destination", &transport["destination"]),
+        ] {
+            label(
+                world,
+                parent,
+                &format!(
+                    "{name}: {:.5}, {:.5}",
+                    area["latitude_e5"].as_i64().unwrap_or_default() as f64 / 100_000.0,
+                    area["longitude_e5"].as_i64().unwrap_or_default() as f64 / 100_000.0
+                ),
+            );
         }
         fields.extend([
-            Field("/request/draft/transport/origin/radius_metres", "Public origin radius (metres, at least 1000)", Kind::Number, transport["origin"]["radius_metres"].clone()),
-            Field("/request/draft/transport/destination/radius_metres", "Public destination radius (metres, at least 1000)", Kind::Number, transport["destination"]["radius_metres"].clone()),
-            Field("/request/draft/transport/immediate", "Immediate request (ends after 15 minutes)", boolean(), transport["immediate"].clone()),
+            Field(
+                "/request/draft/transport/origin/radius_metres",
+                "Public origin radius (metres, at least 1000)",
+                Kind::Number,
+                transport["origin"]["radius_metres"].clone(),
+            ),
+            Field(
+                "/request/draft/transport/destination/radius_metres",
+                "Public destination radius (metres, at least 1000)",
+                Kind::Number,
+                transport["destination"]["radius_metres"].clone(),
+            ),
+            Field(
+                "/request/draft/transport/immediate",
+                "Immediate request (ends after 15 minutes)",
+                boolean(),
+                transport["immediate"].clone(),
+            ),
         ]);
-        for (caption, field) in [("Pickup starts", "window_start"), ("Pickup ends", "window_end")] {
-            let time = transport[field].as_i64().and_then(|time| chrono::DateTime::from_timestamp(time, 0)).map(|time| time.to_rfc3339()).unwrap_or_default();
+        for (caption, field) in [
+            ("Pickup starts", "window_start"),
+            ("Pickup ends", "window_end"),
+        ] {
+            let time = transport[field]
+                .as_i64()
+                .and_then(|time| chrono::DateTime::from_timestamp(time, 0))
+                .map(|time| time.to_rfc3339())
+                .unwrap_or_default();
             label(world, parent, &format!("{caption}: {time}"));
         }
         let query = json!({"text":"","direction":draft["direction"],"transport":{"activity":transport["activity"],"origin":transport["origin"],"destination":transport["destination"],"window_start":transport["window_start"],"window_end":transport["window_end"]}});
-        form(world, owner, parent, "Find transport for these areas", action(json!({"command":"search","query":query,"services":[]})), vec![
-            Field("/request/query/direction", "Need or offer", choices(&["need", "contribution"]), draft["direction"].clone()),
-            Field("/request/query/transport/activity", "Transport activity", choices(&["ride", "delivery"]), transport["activity"].clone()),
-            Field("/request/query/transport/origin/radius_metres", "Search origin radius (metres)", Kind::Number, transport["origin"]["radius_metres"].clone()),
-            Field("/request/query/transport/destination/radius_metres", "Search destination radius (metres)", Kind::Number, transport["destination"]["radius_metres"].clone()),
-            Field("/request/query/transport/window_start", "After (date, time, timezone; optional)", Kind::DateTime, transport["window_start"].clone()),
-            Field("/request/query/transport/window_end", "Before (date, time, timezone; optional)", Kind::DateTime, transport["window_end"].clone()),
-            Field("/request/services", "Optional directory endpoints", Kind::TextList, json!([])),
-        ], None);
+        form(
+            world,
+            owner,
+            parent,
+            "Find transport for these areas",
+            action(json!({"command":"search","query":query,"services":[]})),
+            vec![
+                Field(
+                    "/request/query/direction",
+                    "Need or offer",
+                    choices(&["need", "contribution"]),
+                    draft["direction"].clone(),
+                ),
+                Field(
+                    "/request/query/transport/activity",
+                    "Transport activity",
+                    choices(&["ride", "delivery"]),
+                    transport["activity"].clone(),
+                ),
+                Field(
+                    "/request/query/transport/origin/radius_metres",
+                    "Search origin radius (metres)",
+                    Kind::Number,
+                    transport["origin"]["radius_metres"].clone(),
+                ),
+                Field(
+                    "/request/query/transport/destination/radius_metres",
+                    "Search destination radius (metres)",
+                    Kind::Number,
+                    transport["destination"]["radius_metres"].clone(),
+                ),
+                Field(
+                    "/request/query/transport/window_start",
+                    "After (date, time, timezone; optional)",
+                    Kind::DateTime,
+                    transport["window_start"].clone(),
+                ),
+                Field(
+                    "/request/query/transport/window_end",
+                    "Before (date, time, timezone; optional)",
+                    Kind::DateTime,
+                    transport["window_end"].clone(),
+                ),
+                Field(
+                    "/request/services",
+                    "Optional directory endpoints",
+                    Kind::TextList,
+                    json!([]),
+                ),
+            ],
+            None,
+        );
     }
     form(
         world,
@@ -513,7 +593,11 @@ pub(super) fn profile(world: &mut World, owner: Entity, parent: Entity, saved: &
         ),
     );
     disable_edit_form(world, save, can_edit);
-    if can_edit && let Some(organ) = saved["editor"]["organ"].as_str().or_else(|| saved["published"]["authority"]["organ"].as_str()) {
+    if can_edit
+        && let Some(organ) = saved["editor"]["organ"]
+            .as_str()
+            .or_else(|| saved["published"]["authority"]["organ"].as_str())
+    {
         profile_claims::editor(world, owner, parent, save, organ);
     }
     form(
@@ -613,7 +697,9 @@ pub(super) fn profile_confirmation(world: &mut World, parent: Entity, request: &
 }
 
 pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &Value) {
-    if profile_claims::choices(world, owner, parent, value) { return; }
+    if profile_claims::choices(world, owner, parent, value) {
+        return;
+    }
     if let Some(delivery) = value.get("private_delivery") {
         resend::view(world, owner, parent, delivery, value["can_edit"] == true);
         return;
@@ -811,7 +897,11 @@ pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &V
             );
             for message in request["messages"].as_array().into_iter().flatten().rev() {
                 label(world, parent, message["body"].as_str().unwrap_or_default());
-                crate::native::location::invitation_controls(world,parent,message["body"].as_str().unwrap_or_default());
+                crate::native::location::invitation_controls(
+                    world,
+                    parent,
+                    message["body"].as_str().unwrap_or_default(),
+                );
                 if let Some(stage) = message["delivery"]["stage"].as_str() {
                     label(
                         world,
@@ -1564,7 +1654,12 @@ pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &V
         }
         profile_claims::cards(world, parent, &profile["fields"]);
         if let Some(organ) = profile["authority"]["organ"].as_str() {
-            crate::native::trust_castle::subject_controls(world, parent, owner, nucleus::trust_analysis::Identity::Organ(organ.into()));
+            crate::native::trust_castle::subject_controls(
+                world,
+                parent,
+                owner,
+                nucleus::trust_analysis::Identity::Organ(organ.into()),
+            );
         }
     }
 }
@@ -1967,7 +2062,12 @@ fn server_form(world: &mut World, owner: Entity, parent: Entity, choice: &Value,
                 Kind::Text,
                 choice["operator"].clone(),
             ),
-            Field("/request/choice/organ","Recognized Organ identity (required to enable the helper)",Kind::OptionalText,choice["organ"].clone()),
+            Field(
+                "/request/choice/organ",
+                "Recognized Organ identity (required to enable the helper)",
+                Kind::OptionalText,
+                choice["organ"].clone(),
+            ),
             Field(
                 "/request/choice/publication",
                 "Offer for future publication",
@@ -2110,8 +2210,18 @@ fn servers_view(world: &mut World, owner: Entity, parent: Entity, servers: &Valu
         &serde_json::to_value(nucleus::social::ServerChoice::default()).unwrap(),
         can_edit,
     );
-    label(world,parent,"The Institute helper is optional and starts disabled. Supply a recognized Organ and its pinned representative endpoint. It uses an ordinary Lince discovery service; enabling it grants no reliability weight, private data, custody or forwarding permission.");
-    server_form(world,owner,parent,&serde_json::to_value(nucleus::social::ServerChoice::institute_helper()).unwrap(),can_edit);
+    label(
+        world,
+        parent,
+        "The Institute helper is optional and starts disabled. Supply a recognized Organ and its pinned representative endpoint. It uses an ordinary Lince discovery service; enabling it grants no reliability weight, private data, custody or forwarding permission.",
+    );
+    server_form(
+        world,
+        owner,
+        parent,
+        &serde_json::to_value(nucleus::social::ServerChoice::institute_helper()).unwrap(),
+        can_edit,
+    );
     for choice in servers.as_array().into_iter().flatten() {
         label(
             world,

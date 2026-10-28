@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-exclude = ["crates/vendor/parley"]
+exclude = ["crates/vendor/parley", "crates/vendor/smithay"]
 members = [
     "crates/lince",
     "crates/utils",
@@ -16,8 +16,11 @@ members = [
     "crates/park",
     "crates/practice",
     "crates/interface",
+    "crates/i18n",
+    "crates/ithkuil",
     "crates/mobile",
     "crates/document",
+    "crates/resources",
     "crates/editor",
     "crates/fiote",
     "crates/cell",
@@ -55,6 +58,9 @@ repository = "https://github.com/lince-social/lince"
 homepage = "https://lince.social"
 
 [workspace.dependencies]
+lince-i18n = { version = "=0.8.0", path = "crates/i18n" }
+lince-ithkuil = { version = "=0.8.0", path = "crates/ithkuil" }
+tnil = "=0.1.3"
 lince = { version = "=0.8.0", path = "crates/lince" }
 utils = { version = "=0.8.0", path = "crates/utils", package = "lince-utils" }
 cell = { version = "=0.8.0", path = "crates/cell", package = "lince-cell" }
@@ -64,6 +70,7 @@ lince-interface = { version = "=0.8.0", path = "crates/interface", default-featu
 lince-practice = { version = "=0.8.0", path = "crates/practice" }
 lince-map = { version = "=0.8.0", path = "crates/map" }
 lince-media = { version = "=0.8.0", path = "crates/media" }
+lince-resources = { version = "=0.8.0", path = "crates/resources" }
 lince-facade = { version = "=0.8.0", path = "crates/facade" }
 anicca = { version = "=0.8.0", path = "crates/anicca" }
 nucleus = { version = "=0.8.0", path = "crates/nucleus" }
@@ -157,6 +164,7 @@ zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
 parley = { path = "crates/vendor/parley" }
+smithay = { path = "crates/vendor/smithay" }
 
 [patch."https://github.com/Studio-Sadola/flexaudio"]
 flexaudio-mic = { path = "crates/vendor/flexaudio-mic" }

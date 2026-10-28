@@ -23,6 +23,12 @@ You can download the latest release binary from the builds, or if you want to co
 cargo run
 ```
 
+# Workspace development
+
+Workspace Stage 01 was built and tested while many other agents and builds were running on the same machine. Its recorded measurements and problems need another pass with workspace as the only active development/build/test workload. The owner will finish the other agents' work before resuming workspace; future workspace implementation and testing use that isolated arrangement.
+
+Before starting Stage 02, complete the [required isolated resumption check](institute/anicca/workspace/00-General.md#workspace-resumption-and-isolated-validation): review all Stage 01 findings and setup adjustments, rerun the relevant workflows, and establish fresh performance and behavior evidence. Preserve the original observations; resource contention is a possible influence, not an established explanation for every problem.
+
 # Disclaimer
 
 Lince is a non-profit project and crowdfunding is the source of development compensation: [Patreon](https://www.patreon.com/lince_social).

@@ -183,22 +183,51 @@ pub fn mount(world: &mut World, parent: Entity, record: &str, data: Data) -> Ent
     panel
 }
 
-pub fn mount_policy_draft(world: &mut World, parent: Entity, mut context: Context, policy: Policy, exclusions: bool) -> Entity {
+pub fn mount_policy_draft(
+    world: &mut World,
+    parent: Entity,
+    mut context: Context,
+    policy: Policy,
+    exclusions: bool,
+) -> Entity {
     context.saved = None;
     context.data = Data::Record;
-    let entity = world.spawn((ChildOf(parent), Node { width: percent(100), flex_direction: FlexDirection::Column, row_gap: px(8), ..default() })).id();
+    let entity = world
+        .spawn((
+            ChildOf(parent),
+            Node {
+                width: percent(100),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(8),
+                ..default()
+            },
+        ))
+        .id();
     world.entity_mut(entity).insert(Panel {
-        draft: Some(exclusions), owner: entity, record: context.record_uid.clone(), data: Data::Record,
-        context: Some(context), include: policy.include.iter().map(Rule::from).collect(), exclude: policy.exclude.iter().map(Rule::from).collect(),
-        fields: vec![], radius_fields: vec![], pending: None, notice: "Draft only; review all stages before enabling".into(),
-        choosing_record: false, choosing_organs: None, show_credits: false,
+        draft: Some(exclusions),
+        owner: entity,
+        record: context.record_uid.clone(),
+        data: Data::Record,
+        context: Some(context),
+        include: policy.include.iter().map(Rule::from).collect(),
+        exclude: policy.exclude.iter().map(Rule::from).collect(),
+        fields: vec![],
+        radius_fields: vec![],
+        pending: None,
+        notice: "Draft only; review all stages before enabling".into(),
+        choosing_record: false,
+        choosing_organs: None,
+        show_credits: false,
     });
     draw(world, entity);
     entity
 }
 
 pub fn edited_policy(world: &mut World, entity: Entity) -> Result<Policy, String> {
-    let mut panel = world.entity_mut(entity).take::<Panel>().ok_or("Visibility draft unavailable")?;
+    let mut panel = world
+        .entity_mut(entity)
+        .take::<Panel>()
+        .ok_or("Visibility draft unavailable")?;
     read_fields(world, &mut panel);
     let result = policy(&panel);
     world.entity_mut(entity).insert(panel);
@@ -363,41 +392,41 @@ fn draw(world: &mut World, entity: Entity) {
         "Any matching include allows access. Any matching exclusion denies it. Lower proximity means a closer Organ.",
     );
     if panel.draft.is_none() {
-    button(world, entity, entity, "Choose Record", Intent::ChooseRecord);
-    if let Some(context) = &panel.context {
-        if let Some(record) = context
-            .records
-            .iter()
-            .find(|record| record.uid == panel.record)
-        {
-            label(world, entity, format!("Record: {}", record.label));
-        }
-        if panel.choosing_record {
-            for record in &context.records {
-                button(
-                    world,
-                    entity,
-                    entity,
-                    &record.label,
-                    Intent::Record(record.uid.clone()),
-                );
+        button(world, entity, entity, "Choose Record", Intent::ChooseRecord);
+        if let Some(context) = &panel.context {
+            if let Some(record) = context
+                .records
+                .iter()
+                .find(|record| record.uid == panel.record)
+            {
+                label(world, entity, format!("Record: {}", record.label));
+            }
+            if panel.choosing_record {
+                for record in &context.records {
+                    button(
+                        world,
+                        entity,
+                        entity,
+                        &record.label,
+                        Intent::Record(record.uid.clone()),
+                    );
+                }
             }
         }
-    }
-    let row = controls::row(world, entity);
-    for (data, caption) in [
-        (Data::Record, "Record data"),
-        (Data::Place, "Saved place"),
-        (Data::LiveLocation, "Live location"),
-    ] {
-        button(
-            world,
-            row,
-            entity,
-            &format!("{}{}", if data == panel.data { "✓ " } else { "" }, caption),
-            Intent::Data(data),
-        );
-    }
+        let row = controls::row(world, entity);
+        for (data, caption) in [
+            (Data::Record, "Record data"),
+            (Data::Place, "Saved place"),
+            (Data::LiveLocation, "Live location"),
+        ] {
+            button(
+                world,
+                row,
+                entity,
+                &format!("{}{}", if data == panel.data { "✓ " } else { "" }, caption),
+                Intent::Data(data),
+            );
+        }
     }
     label(
         world,
@@ -415,7 +444,9 @@ fn draw(world: &mut World, entity: Entity) {
         },
     );
     for exclude in [false, true] {
-        if panel.draft.is_some_and(|side| side != exclude) { continue; }
+        if panel.draft.is_some_and(|side| side != exclude) {
+            continue;
+        }
         label(
             world,
             entity,
@@ -715,7 +746,17 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
         return;
     };
     read_fields(world, &mut panel);
-    if panel.pending.is_some() || panel.draft.is_some() && matches!(&intent, Intent::Save | Intent::Refresh | Intent::ChooseRecord | Intent::Record(_) | Intent::Data(_)) {
+    if panel.pending.is_some()
+        || panel.draft.is_some()
+            && matches!(
+                &intent,
+                Intent::Save
+                    | Intent::Refresh
+                    | Intent::ChooseRecord
+                    | Intent::Record(_)
+                    | Intent::Data(_)
+            )
+    {
         world.entity_mut(entity).insert(panel);
         return;
     }

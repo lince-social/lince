@@ -247,7 +247,7 @@ fn problem(message: &str) -> io::Error {
     io::Error::other(message)
 }
 
-fn document(bytes: &[u8], glb: bool) -> io::Result<serde_json::Value> {
+pub(crate) fn document(bytes: &[u8], glb: bool) -> io::Result<serde_json::Value> {
     let json = if glb {
         if bytes.len() < 20
             || &bytes[..4] != b"glTF"
@@ -324,7 +324,7 @@ fn resource_path(uri: &str) -> io::Result<PathBuf> {
     Ok(path)
 }
 
-fn resources(value: &serde_json::Value, found: &mut BTreeSet<PathBuf>) -> io::Result<()> {
+pub(crate) fn resources(value: &serde_json::Value, found: &mut BTreeSet<PathBuf>) -> io::Result<()> {
     match value {
         serde_json::Value::Object(object) => {
             for (key, value) in object {
@@ -1363,7 +1363,7 @@ pub fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAsset> {
         .filter(|(entity, _, _, _, p)| {
             p.parent() == root
                 && world
-                    .get::<crate::native::external_drop::Preview>(*entity)
+                    .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
         })
         .map(|(e, asset, item, member, _)| SavedAsset {

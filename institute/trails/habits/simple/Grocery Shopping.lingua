@@ -1,4 +1,4 @@
-Grocery Shopping (@simple-grocery-shopping: 0, is #trail, #contains @grocery-kilograms, #contains @grocery-credits, #contains @grocery-shopper, #contains @grocery-shop, #contains @grocery-wanted-rice, #contains @grocery-rice, #contains @grocery-buy-rice, #contains @grocery-wanted-beans, #contains @grocery-beans, #contains @grocery-buy-beans, #contains @grocery-rice-price, #contains @grocery-beans-price, #contains @grocery-exchange, #contains @grocery-prepare, #contains @grocery-agree, #contains @grocery-receive, #contains @grocery-reconcile, #contains @grocery-examples) {
+Grocery Shopping (@simple-grocery-shopping: 0, is #chapter, #contains @grocery-kilograms, #contains @grocery-credits, #contains @grocery-shopper, #contains @grocery-shop, #contains @grocery-wanted-rice, #contains @grocery-rice, #contains @grocery-buy-rice, #contains @grocery-wanted-beans, #contains @grocery-beans, #contains @grocery-buy-beans, #contains @grocery-rice-price, #contains @grocery-beans-price, #contains @grocery-exchange, #contains @grocery-prepare, #contains @grocery-agree, #contains @grocery-receive, #contains @grocery-reconcile, #contains @grocery-examples, #buying-groceries @grocery-agree, #buying-groceries @grocery-beans, #buying-groceries @grocery-beans-price, #buying-groceries @grocery-buy-beans, #buying-groceries @grocery-buy-rice, #buying-groceries @grocery-credits, #buying-groceries @grocery-examples, #buying-groceries @grocery-exchange, #buying-groceries @grocery-kilograms, #buying-groceries @grocery-prepare, #buying-groceries @grocery-receive, #buying-groceries @grocery-reconcile, #buying-groceries @grocery-rice, #buying-groceries @grocery-rice-price, #buying-groceries @grocery-shop, #buying-groceries @grocery-shopper, #buying-groceries @grocery-wanted-beans, #buying-groceries @grocery-wanted-rice) {
 Buy rice and beans from one shop. Start with one kilogram of rice and no beans; aim to keep three kilograms of rice and two kilograms of beans. The worked basket buys two kilograms of each for fourteen example credits.
 
 Edit the Records, then optionally activate Karma to maintain purchase Needs from measured stock. The rules do not order goods, accept substitutions, pay or change stock. The transfer-template Record contains terms to review in an ordinary Sale or Trade Transfer; importing it does not create that Transfer. Link the actual Transfer here.
@@ -6,71 +6,71 @@ Edit the Records, then optionally activate Karma to maintain purchase Needs from
 Follow Prepare, Agree, Receive and Reconcile. Keep fulfillment and payment evidence in the actual Transfer. Collect at the shop for this example; delivery can be a separate Transport Transfer.
 }
 
-Grocery kilograms (@grocery-kilograms: 0, #part-of @simple-grocery-shopping, is #unit) {
+Grocery kilograms (@grocery-kilograms: 0, #part-of @simple-grocery-shopping, is #unit, #buying-groceries @grocery-credits) {
 One kilogram of the named food. Rice and beans have separate stock despite sharing a mass unit.
 }
 
-Example grocery credits (@grocery-credits: 0, #part-of @simple-grocery-shopping, is #unit) {
+Example grocery credits (@grocery-credits: 0, #part-of @simple-grocery-shopping, is #unit, #buying-groceries @grocery-shopper) {
 Fictional exchange unit. Replace with the agreed currency or contribution.
 }
 
-Shopper (@grocery-shopper: 0, #part-of @simple-grocery-shopping, is #role) {
+Shopper (@grocery-shopper: 0, #part-of @simple-grocery-shopping, is #role, #buying-groceries @grocery-shop) {
 Choose the Person receiving groceries and providing the return contribution. This is a role placeholder.
 }
 
-Shop (@grocery-shop: 0, #part-of @simple-grocery-shopping, is #role) {
+Shop (@grocery-shop: 0, #part-of @simple-grocery-shopping, is #role, #buying-groceries @grocery-wanted-rice) {
 Example: the neighborhood cooperative. Choose the seller, authorized signing Person and collection place. This placeholder is not a seller account.
 }
 
-Wanted rice (@grocery-wanted-rice: 3 @grocery-kilograms, #part-of @simple-grocery-shopping, #for @grocery-rice) {
+Wanted rice (@grocery-wanted-rice: 3 @grocery-kilograms, #part-of @simple-grocery-shopping, #for @grocery-rice, #buying-groceries @grocery-rice) {
 Target rice stock. Edit before preparing the basket.
 }
 
-Rice stock (@grocery-rice: 1 @grocery-kilograms, #part-of @simple-grocery-shopping) {
+Rice stock (@grocery-rice: 1 @grocery-kilograms, #part-of @simple-grocery-shopping, #buying-groceries @grocery-buy-rice) {
 Measured rice at home. Apply actual received Transfer quantities once, or record fresh measured stock manually; do not do both. Payment or agreement does not add stock.
 }
 
-Buy rice (@grocery-buy-rice: -2 @grocery-kilograms, #part-of @simple-grocery-shopping, #supplies @grocery-rice) {
+Buy rice (@grocery-buy-rice: -2 @grocery-kilograms, #part-of @simple-grocery-shopping, #supplies @grocery-rice, #buying-groceries @grocery-wanted-beans) {
 Negative rice shortfall, maintained by Karma.
 }
 
-Wanted beans (@grocery-wanted-beans: 2 @grocery-kilograms, #part-of @simple-grocery-shopping, #for @grocery-beans) {
+Wanted beans (@grocery-wanted-beans: 2 @grocery-kilograms, #part-of @simple-grocery-shopping, #for @grocery-beans, #buying-groceries @grocery-beans) {
 Target bean stock.
 }
 
-Bean stock (@grocery-beans: 0 @grocery-kilograms, #part-of @simple-grocery-shopping) {
+Bean stock (@grocery-beans: 0 @grocery-kilograms, #part-of @simple-grocery-shopping, #buying-groceries @grocery-buy-beans) {
 Measured beans at home. Update actual received quantity using one accounting path.
 }
 
-Buy beans (@grocery-buy-beans: -2 @grocery-kilograms, #part-of @simple-grocery-shopping, #supplies @grocery-beans) {
+Buy beans (@grocery-buy-beans: -2 @grocery-kilograms, #part-of @simple-grocery-shopping, #supplies @grocery-beans, #buying-groceries @grocery-rice-price) {
 Negative bean shortfall, maintained by Karma.
 }
 
-Rice price per kilogram (@grocery-rice-price: 4 @grocery-credits, #part-of @simple-grocery-shopping, #for @grocery-rice) {
+Rice price per kilogram (@grocery-rice-price: 4 @grocery-credits, #part-of @simple-grocery-shopping, #for @grocery-rice, #buying-groceries @grocery-beans-price) {
 Example quotation: four credits for one kilogram of rice. This is not the total basket price.
 }
 
-Bean price per kilogram (@grocery-beans-price: 3 @grocery-credits, #part-of @simple-grocery-shopping, #for @grocery-beans) {
+Bean price per kilogram (@grocery-beans-price: 3 @grocery-credits, #part-of @simple-grocery-shopping, #for @grocery-beans, #buying-groceries @grocery-exchange) {
 Example quotation: three credits for one kilogram of beans.
 }
 
-Basket exchange (@grocery-exchange: 14 @grocery-credits, #part-of @simple-grocery-shopping, is #transfer-template, #for @grocery-buy-rice, #for @grocery-buy-beans, #giver @grocery-shop, #receiver @grocery-shopper, #gives: 2 @grocery-rice, #gives: 2 @grocery-beans, #return-contribution: 14 @grocery-credits) {
+Basket exchange (@grocery-exchange: 14 @grocery-credits, #part-of @simple-grocery-shopping, is #transfer-template, #for @grocery-buy-rice, #for @grocery-buy-beans, #giver @grocery-shop, #receiver @grocery-shopper, #gives: 2 @grocery-rice, #gives: 2 @grocery-beans, #return-contribution: 14 @grocery-credits, #buying-groceries @grocery-prepare) {
 Transfer terms: shop gives shopper 2 kilograms of rice and 2 kilograms of beans; shopper gives shop 14 credits, calculated as 2 times 4 plus 2 times 3. Make the foods separate contributions in one reviewed Transfer. Edit quantities and total together for another basket; the saved quotation does not rewrite agreed terms.
 }
 
-Prepare (@grocery-prepare: -1, #part-of @simple-grocery-shopping, #next @grocery-agree) {
+Prepare (@grocery-prepare: -1, #part-of @simple-grocery-shopping, #next @grocery-agree, #buying-groceries @grocery-agree) {
 1. Measure stock, choose targets and seller, inspect Needs and request actual available products and prices. Agree collection place and time. Review food identity and relevant restrictions.
 }
 
-Agree (@grocery-agree: -1, #part-of @simple-grocery-shopping, #next @grocery-receive) {
+Agree (@grocery-agree: -1, #part-of @simple-grocery-shopping, #next @grocery-receive, #buying-groceries @grocery-receive) {
 2. Create the Sale or Trade draft, bind actual Persons and contributions, and agree the current revision. Review availability, units, quantities, total and payment terms. Substitutions and price changes require another reviewed agreement.
 }
 
-Receive (@grocery-receive: -1, #part-of @simple-grocery-shopping, #next @grocery-reconcile) {
+Receive (@grocery-receive: -1, #part-of @simple-grocery-shopping, #next @grocery-reconcile, #buying-groceries @grocery-reconcile) {
 3. Inspect the food actually handed over. Record delivery and receipt and settle actual fulfilled quantities, including partial receipts. Payment is a separate contribution; an agreed payment does not establish an external payment.
 }
 
-Reconcile (@grocery-reconcile: -1, #part-of @simple-grocery-shopping) {
+Reconcile (@grocery-reconcile: -1, #part-of @simple-grocery-shopping, #buying-groceries @grocery-examples) {
 4. Apply received quantities once to the correct stock Records, or enter a fresh measurement. Karma recomputes remaining Needs. Keep unfulfilled quantities outstanding or explicitly cancel them in the Transfer. Prepare another basket if needed.
 }
 
@@ -123,3 +123,8 @@ Karma simple-grocery-shopping {
     }
 }
 
+Extension @simple-grocery-shopping "lince.vocabulary" {
+    definitions {
+        buying-groceries "A connection through grocery quantities, terms, and the steps of an agreed purchase."
+    }
+}

@@ -1,0 +1,26 @@
+Import "../../../Medicine.lingua"
+Import "../../../foundations/Pain.lingua"
+Import "../../../sources/Avaliacao-do-ombro-MSD.lingua"
+Import "../../../sources/Shoulder-problems-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "Cuff-pain-and-tears.lingua"
+Import "Instability.lingua"
+Import "Nerve-and-referred-pain.lingua"
+Import "Pain-near-end-of-rotation.lingua"
+Import "Stiff-shoulder.lingua"
+
+Shoulder pain — begin with the question, not a diagnosis (@shoulder-pain: 0, is #chapter, #part-of @shoulder, #source @med-source-aaos-overview, #source @med-source-msd-shoulder, #medicine @shoulder-rotation-pain, #orthopedics @shoulder-rotation-pain, #shoulder @shoulder-rotation-pain, #medicine @shoulder-stiffness, #orthopedics @shoulder-stiffness, #shoulder @shoulder-stiffness, #medicine @shoulder-instability, #orthopedics @shoulder-instability, #shoulder @shoulder-instability, #medicine @shoulder-referred, #orthopedics @shoulder-referred, #shoulder @shoulder-referred) { r_6NFPQQ7Z2DAF090E4JVN6MQ0FR
+**Read a complete clinical introduction:** [Shoulder pain and common problems — AAOS](../../../sources/Shoulder-problems-AAOS.lingua#r_506TD94GKTCRNS0XP0W5Q7EWDV), including the history and examination discussion. Then read Exame do ombro and Distúrbios do ombro in [Avaliação do ombro — Manual MSD](../../../sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X), using the normal anatomy to interpret its terms. [Pain near the end of rotation — understand the possibilities](Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) will narrow this broad account to a positional complaint.
+
+Describe onset, trauma, location, course, stiffness, perceived weakness, altered sensation, relevant activities, and effects on daily life. Pain felt over the lateral upper arm is not a direct drawing of which structure is involved. More than one finding can be present.
+
+The next readings compare cuff-related complaints, calcific tendinopathy, biceps and labrum problems, stiffness, instability, AC and SC disorders, fractures, arthritis, and neurological or systemic causes. Their overlapping descriptions explain why history and examination matter.
+
+Active movement is produced by the person's muscles; passive movement is produced by an examiner moving the region. A difference between them can inform assessment but does not establish one diagnosis. Pain-limited effort and reduced strength also need to be distinguished.
+
+**Try:** write two plausible explanations for a fictional report of difficulty reaching overhead. For each, state what information is missing. Use the safety and care links in [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65) for urgent symptoms; do not attempt to confirm a diagnosis by repeatedly provoking pain.
+
+**Continue:** [Pain near the end of rotation — understand the possibilities](Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) · [A stiff shoulder — capsulitis and other explanations](Stiff-shoulder.lingua#r_4JWG5NRDXS1ZHGKN05W8J3TAH2) · [Instability, subluxation, and dislocation](Instability.lingua#r_4ANS5B79S566BS78A7E9H5X8R6) · [Nerve disorders and pain referred to the shoulder](Nerve-and-referred-pain.lingua#r_7BFZ7QKTEBQWTCQD9A60VXWDH5).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_6NFPQQ7Z2DAF090E4JVN6MQ0FR

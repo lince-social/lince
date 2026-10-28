@@ -1,0 +1,21 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Biceps-tendinitis-AAOS.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../Shoulder.lingua"
+Import "Rotator-cuff.lingua"
+
+Tendons and bursae around the shoulder (@shoulder-tendons-bursae: 0, is #chapter, #part-of @shoulder, #source @med-source-joint, #source @med-source-biceps, #medicine @shoulder-cuff, #orthopedics @shoulder-cuff, #shoulder @shoulder-cuff) { r_7DKM33EF1Z12EGVQRS5VREJQV3
+**Read selected neighboring-structure passages:** [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), rotator interval, long biceps tendon, and bursae. In [Biceps tendinitis — AAOS](../../../sources/Biceps-tendinitis-AAOS.lingua#r_7SRA5WJHB8B31WMPFTB6KZH7GC), read Anatomy first; defer its treatment discussion until the clinical question is defined. Revisit the distinction between bursa, capsule, tendon sheath, and joint cavity from chapter 9.
+
+The rotator cuff tendons blend with the capsule around much of the glenohumeral joint. The long head of the biceps tendon passes from its superior attachment near the labrum into the anterior intertubercular groove. It is distinct from the short head, whose proximal attachment is at the coracoid.
+
+The subacromial-subdeltoid bursal region lies between the cuff and overlying structures. Bursal fluid and joint fluid are not automatically in one continuous cavity. Other recesses and bursae have their own anatomical relationships, which become important when studying ultrasound or MRI.
+
+The rotator interval is a region between supraspinatus and subscapularis tendons with associated capsular and ligamentous structures. It is not an empty gap.
+
+**Try:** use an anterior and a lateral view to trace the long biceps tendon, supraspinatus tendon, acromion, and bursa. Explain how a report can describe a tendon finding and a bursal finding separately. Avoid assuming that either establishes the cause of pain by itself.
+
+**Continue:** [The rotator cuff — manguito rotador](Rotator-cuff.lingua#r_5TB0T7JY5RTYV4A8ENCA0H18B4).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7DKM33EF1Z12EGVQRS5VREJQV3

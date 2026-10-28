@@ -1,0 +1,35 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Applied-Human-Anatomy.lingua"
+Import "../sources/DeCS.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "../sources/Medical-Terminology-2e.lingua"
+Import "Anatomical-directions.lingua"
+Import "Cells-and-tissues.lingua"
+Import "Chemistry-and-fluids.lingua"
+Import "Medical-language.lingua"
+
+Begin medicine from zero — a substantial reading progression (@med-reading-from-zero: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #source @med-source-terminology, #source @med-source-histology, #source @med-source-decs, #source @med-source-applied, #medicine @med-language) { r_4FA8H4RKD8T52WY2Z1B8S7XQ50
+Use [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N) as the main anatomy and physiology book. Its openly licensed 2019 Oregon State adaptation and the linked OpenStax 2e alternative belong to the same textbook family. Choose an edition for sustained reading; use named section titles when their numbering differs. The guides connect the material rather than replacing a textbook with short summaries.
+
+**First sustained reading:** read chapters 1–4 completely, with their illustrations and review questions: the body's organization and terminology, chemistry, cells, and tissues. Pair them with chapters 1–2 of [Medical Terminology 2e — Open RN](../sources/Medical-Terminology-2e.lingua#r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q), also complete, including the written learning activities. Use [Medical language — English and português brasileiro](Medical-language.lingua#r_0009F6GFVE924WDKJ5J1F996TT), [Describe a body — position, direction, and movement](Anatomical-directions.lingua#r_5HMQ29K367TFS69H6C35MZYHVQ), [Chemistry for a living body — water, molecules, ions, and energy](Chemistry-and-fluids.lingua#r_3QGS68JVNCQ89FNB287Z9TXTAT), and [Cells, tissues, organs, and extracellular material](Cells-and-tissues.lingua#r_55X7R8B6AC36G6R6XXPGBF0EQ9) as guides while reading. A word lookup supports this work; it is not the whole assignment.
+
+| As the Records deepen | Book-scale reading to undertake | What should become understandable |
+| --- | --- | --- |
+| Shared medical foundation | Anatomy & Physiology 1–4, complete | biological scale, reference directions, chemistry, membranes, and tissue families |
+| Musculoskeletal structure and control | Anatomy & Physiology 6–14, complete, in successive readings | the skeleton, joints, muscle, peripheral pathways, and sensory-motor control |
+| Integrating the rest of the body | Anatomy & Physiology 17–22 and 24–26, complete for the broader medicine reading | hormonal regulation, blood, circulation, immunity, respiration, metabolism, fluid balance, and renal regulation |
+| Orthopedic language | Medical Terminology 13–14, complete; revisit chapter 16 for relevant nerve terminology | bone, joint, muscle, injury, examination, and procedure language |
+| Regional anatomy | Applied Human Anatomy chapter 2; later the full manual for other regions | sustained anatomical reasoning and recognition of related regions |
+| Shoulder mechanisms and problems | the precise sections assigned by the shoulder Records | changing joint position, tissue relationships, possible disorders, and evidence limits |
+
+The Record sequence supplies the working order and returns to difficult topics. Spread each block over the corresponding readings; a later assignment to one paragraph means revisit that paragraph, not discard the earlier chapters. Draw a structure, explain a process, and attempt the review questions before checking the text.
+
+**Whole-book continuation:** for a broad medical foundation, complete the remaining Anatomy & Physiology chapters as well, covering skin, autonomic control, neurological examination, digestion, reproduction, and development. Medical Terminology can also be read through all 17 chapters for language across specialties. These are substantial recommendations that can continue alongside the shoulder study; the shoulder explanations link the foundations they actually use.
+
+**Portuguese reading:** in [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS), read the complete chapters on epithelial, connective, cartilaginous, bone, muscle, and nervous tissues, including their atlas images. Its whole text and atlas supports later organ study. Use [DeCS — Descritores em Ciências da Saúde](../sources/DeCS.lingua#r_32JDHQDTBG260AEJ12TP8WRY1G) to connect English terms with Brazilian usage. The chapter names, rather than an assumed matching page number, identify this assignment.
+
+**Continue:** [Medical language — English and português brasileiro](Medical-language.lingua#r_0009F6GFVE924WDKJ5J1F996TT).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4FA8H4RKD8T52WY2Z1B8S7XQ50

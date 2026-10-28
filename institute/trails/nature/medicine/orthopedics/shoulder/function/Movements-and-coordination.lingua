@@ -1,0 +1,24 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Shoulder-anatomy.lingua"
+Import "../Shoulder.lingua"
+Import "Rotation-and-position.lingua"
+Import "Stability-and-load.lingua"
+
+Reaching and rotation — coordinated shoulder movement (@shoulder-coordination: 0, is #chapter, #part-of @shoulder, #source @med-source-shoulder-anatomy, #source @med-source-joint, #source @med-source-applied, #medicine @shoulder-rotation, #orthopedics @shoulder-rotation, #shoulder @shoulder-rotation, #source @med-source-osu) { r_4JJ554TJ1W83N879X31M48K6TE
+**Read function after anatomy:** the functional and movement accounts in [Shoulder anatomy — NCBI Bookshelf](../../../sources/Shoulder-anatomy.lingua#r_0AXZG4YT3Y8GYC5XDH0S52HWZ4) and [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4). Revisit Rotation within [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Types of Body Movements. In [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), chapter 2 Movement items 1–6, printed pages 31–32, use the prompts to explain coordinated scapular and arm movement on drawings.
+
+Arm elevation combines glenohumeral motion with scapular and clavicular motion. Scapulohumeral rhythm/ritmo escapuloumeral describes this coordination. A simple ratio is a teaching approximation; it should not be used as a universal measurement of normal movement across tasks, people, and phases.
+
+Flexion and abduction describe reference directions; everyday reaching often occurs between idealized planes. Internal and external rotation depend on the humerus relative to the scapula and on the position in which they are measured. Reaching behind the back combines movements and cannot isolate one tendon.
+
+The thorax, trunk, elbow, and forearm also influence where the hand reaches. A change in the hand's endpoint does not by itself tell us which joint changed.
+
+**Try:** compare successive drawings of overhead reaching. Mark humerus, scapula, clavicle, and thorax in each. Explain which relationships change, then state what the drawings omit about muscle activity and forces. Observation of comfortable motion is optional; do not reproduce painful movements as a test.
+
+**Continue:** [Shoulder rotation — describe the moving bone and starting position](Rotation-and-position.lingua#r_7TRW6394Z3JA9CPYPE6SQNPZTT).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4JJ554TJ1W83N879X31M48K6TE

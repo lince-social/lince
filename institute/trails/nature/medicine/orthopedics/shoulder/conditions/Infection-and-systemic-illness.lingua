@@ -1,0 +1,21 @@
+Import "../../../sources/Shoulder-problems-AAOS.lingua"
+Import "../../../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "../../../sources/Shoulder-pain-NHS.lingua"
+Import "../Shoulder.lingua"
+Import "../study/Examination-and-imaging.lingua"
+
+Infection, systemic illness, and important alternatives (@shoulder-systemic: 0, is #chapter, #part-of @shoulder, #source @med-source-ms-ufrgs, #source @med-source-nhs, #source @med-source-aaos-overview, #medicine @shoulder-examination, #orthopedics @shoulder-examination, #shoulder @shoulder-examination) { r_6MTTQSKBBTMPNTD9DYFNVD32SH
+**Read:** the urgency discussion and osteomyelitis section in [Ortopedia adulto — Ministério da Saúde and UFRGS](../../../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78), alongside [Shoulder pain — public health guidance](../../../sources/Shoulder-pain-NHS.lingua#r_20XNX6E0TB4XRQ4PC3FJNV5SMK) and the other causes in [Shoulder pain and common problems — AAOS](../../../sources/Shoulder-problems-AAOS.lingua#r_506TD94GKTCRNS0XP0W5Q7EWDV).
+
+A shoulder complaint is not always an isolated tendon or movement problem. Infection, immune-mediated disease, malignancy, vascular problems, and referred pain can require a different investigation. These are alternatives to remember in context, not reasons to assume that every common pain is dangerous.
+
+A hot, swollen, severely painful region with fever or feeling unwell needs urgent assessment. Major trauma, marked new weakness or loss of sensation, circulation changes, and associated chest or breathing symptoms also change priorities. The absence of one feature does not by itself exclude a serious condition.
+
+A diagnostic process uses the whole clinical picture and appropriate tests. A public educational reading cannot supply a complete triage rule or provide reassurance about a specific unexamined complaint.
+
+**Try:** revisit a fictional history and identify which added information would change the urgency or direct attention outside the shoulder. Separate a warning that calls for assessment from a claim that a particular disease has already been identified.
+
+**Continue:** [Understand a shoulder examination and an imaging report](../study/Examination-and-imaging.lingua#r_0ESRQBT85AGDQH7Q71TAFFEAQS).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_6MTTQSKBBTMPNTD9DYFNVD32SH

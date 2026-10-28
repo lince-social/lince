@@ -12,11 +12,20 @@ pub struct Settings {
     pub file: bool,
     pub paused: bool,
     pub position_ms: u64,
+    #[serde(default)]
+    pub resource: Option<lince_resources::Resource>,
+    #[serde(default)]
+    pub muted: bool,
 }
 
 impl Settings {
     pub fn valid(&self) -> bool {
-        self.source.len() <= 4096 && !self.source.contains('\0')
+        self.source.len() <= 4096
+            && !self.source.contains('\0')
+            && self
+                .resource
+                .as_ref()
+                .is_none_or(|resource| resource.validate().is_ok())
     }
 }
 
@@ -46,18 +55,44 @@ struct Frame {
 
 type Reply = Arc<Mutex<Option<Frame>>>;
 
+#[derive(Component)]
+struct EmbeddedPoster(Entity);
+
 struct Session {
     task: tokio::task::JoinHandle<()>,
     reply: Reply,
+    cancel: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl Drop for Session {
     fn drop(&mut self) {
+        self.cancel
+            .store(true, std::sync::atomic::Ordering::Relaxed);
         self.task.abort();
     }
 }
 
 const CREDITS: &[crate::native::credits::Attribution] = &[
+    crate::native::credits::Attribution {
+        name: "FFmpeg",
+        author: "The FFmpeg developers · https://ffmpeg.org · external media decoder",
+        license: include_str!("../../licenses/native/ffmpeg-GPLv3.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "CPAL",
+        author: "The CPAL contributors",
+        license: include_str!("../../licenses/native/cpal-Apache-2.0.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "BLAKE3",
+        author: "Jack O'Connor, Samuel Neves and contributors",
+        license: include_str!("../../licenses/native/document/blake3-CC0.txt"),
+    },
+    crate::native::credits::Attribution {
+        name: "Reqwest",
+        author: "Sean McArthur and contributors",
+        license: include_str!("../../licenses/native/reqwest-MIT.txt"),
+    },
     crate::native::credits::Attribution {
         name: "Tokio",
         author: "Tokio contributors",
@@ -111,7 +146,14 @@ pub fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
     let source = panel::field(world, body, "Signal slug or video file", &settings.source);
     let row = panel::row(world, body);
     panel::button(world, row, body, "Open Signal", Control::Open(false));
-    panel::button(world, row, body, "Open GIF video", Control::Open(true));
+    panel::button(
+        world,
+        row,
+        body,
+        "Open video file / URL",
+        Control::Open(true),
+    );
+    panel::button(world, row, body, "Mute / unmute", Control::Mute);
     panel::button(world, row, body, "Pause / resume", Control::Pause);
     let seek = panel::field(
         world,
@@ -204,6 +246,96 @@ pub(crate) fn open_signal(world: &mut World, sand: Entity, source: String) {
     );
 }
 
+pub(crate) fn embedded(
+    world: &mut World,
+    frame: crate::native::embedded_media::Frame,
+    resource: lince_resources::Resource,
+) {
+    let body = frame.content;
+    let controls = frame.controls;
+    let source = panel::field(world, controls, "Media source", &resource.uri);
+    let seek = panel::field(
+        world,
+        controls,
+        "Position (seconds)",
+        &(resource.locator.start_ms.unwrap_or(0) / 1000).to_string(),
+    );
+    let url = panel::field(world, controls, "Upstream URL", "");
+    let status = crate::native::edit_mode::label(world, controls, "Paused", 13.0);
+    let row = panel::row(world, controls);
+    panel::button(world, row, body, "Play / pause", Control::Pause);
+    panel::button(world, row, body, "Mute / unmute", Control::Mute);
+    panel::button(world, row, body, "Seek", Control::Seek);
+    panel::credits(world, controls, controls, CREDITS);
+    let audio = resource.media_type.starts_with("audio/");
+    let viewport = world
+        .spawn((
+            Node {
+                width: percent(100),
+                height: px(if audio { 48.0 } else { 360.0 }),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                overflow: Overflow::clip(),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(body),
+        ))
+        .id();
+    let image = world
+        .spawn((
+            ImageNode::default(),
+            Node {
+                width: px(1),
+                height: px(1),
+                ..default()
+            },
+            ChildOf(viewport),
+        ))
+        .id();
+    if audio {
+        crate::native::edit_mode::label(
+            world,
+            viewport,
+            "Audio · right-click for playback controls",
+            14.0,
+        );
+    } else {
+        let poster = panel::column(world, viewport);
+        world.get_mut::<Node>(poster).unwrap().position_type = PositionType::Absolute;
+        world.get_mut::<Node>(poster).unwrap().width = percent(100);
+        world.get_mut::<Node>(poster).unwrap().height = percent(100);
+        crate::native::resource_preview::spawn(world, poster, &resource);
+        world.entity_mut(body).insert(EmbeddedPoster(poster));
+    }
+    world.entity_mut(body).insert((
+        Settings {
+            source: resource.uri.clone(),
+            file: true,
+            paused: true,
+            position_ms: resource.locator.start_ms.unwrap_or(0),
+            resource: Some(resource),
+            ..default()
+        },
+        crate::native::sand_store::SandCredits(CREDITS),
+        View {
+            root: frame.owner,
+            sand: body,
+            source,
+            url,
+            seek,
+            status,
+            image,
+            viewport,
+            handle: Handle::default(),
+            ratio: 16.0 / 9.0,
+            session: None,
+            last: None,
+            skipped: 0,
+        },
+    ));
+}
+
 pub(crate) fn restore(world: &mut World, sand: Entity, settings: Settings) {
     let views: Vec<_> = world
         .query::<(Entity, &View)>()
@@ -228,6 +360,7 @@ pub(crate) fn restore(world: &mut World, sand: Entity, settings: Settings) {
 enum Control {
     Open(bool),
     Pause,
+    Mute,
     Seek,
     Configure(Option<&'static str>),
 }
@@ -256,12 +389,19 @@ impl crate::native::actions::Action for Control {
                     file: *file,
                     paused: false,
                     position_ms: 0,
+                    ..default()
                 });
                 stop(world, owner);
             }
             Self::Pause => {
                 if let Some(mut settings) = world.get_mut::<Settings>(sand) {
                     settings.paused = !settings.paused;
+                }
+                stop(world, owner);
+            }
+            Self::Mute => {
+                if let Some(mut settings) = world.get_mut::<Settings>(sand) {
+                    settings.muted = !settings.muted;
                 }
                 stop(world, owner);
             }
@@ -300,6 +440,7 @@ impl crate::native::actions::Action for Control {
                     file: false,
                     paused: true,
                     position_ms: 0,
+                    ..default()
                 });
                 let reply: Reply = Default::default();
                 let output = reply.clone();
@@ -351,7 +492,11 @@ impl crate::native::actions::Action for Control {
                         &wake,
                     );
                 });
-                world.get_mut::<View>(owner).unwrap().session = Some(Session { task, reply });
+                world.get_mut::<View>(owner).unwrap().session = Some(Session {
+                    task,
+                    reply,
+                    cancel: Default::default(),
+                });
             }
         }
     }
@@ -367,8 +512,14 @@ fn stop(world: &mut World, owner: Entity) {
     let Some(mut view) = world.get_mut::<View>(owner) else {
         return;
     };
+    let root = view.root;
     view.session = None;
-    clear_image(world, owner);
+    if world
+        .get::<crate::native::embedded_media::Media>(root)
+        .is_none()
+    {
+        clear_image(world, owner);
+    }
 }
 
 fn clear_image(world: &mut World, owner: Entity) {
@@ -387,9 +538,19 @@ fn clear_image(world: &mut World, owner: Entity) {
 }
 
 fn visible(world: &mut World, root: Entity, sand: Entity) -> bool {
-    if crate::native::laboratory::blocked(world, sand)
-    {
+    if crate::native::laboratory::blocked(world, sand) {
         return false;
+    }
+    if world
+        .get::<crate::native::embedded_media::Media>(root)
+        .is_some()
+    {
+        return world
+            .get::<ComputedNode>(sand)
+            .is_some_and(|node| !node.is_empty())
+            && world
+                .get::<InheritedVisibility>(sand)
+                .is_none_or(|value| value.get());
     }
     if world
         .get::<Node>(sand)
@@ -398,11 +559,30 @@ fn visible(world: &mut World, root: Entity, sand: Entity) -> bool {
         return false;
     }
     if let Some(member) = world.get::<crate::native::workspace::WorkspaceMember>(sand)
-        && let Some(views) = world.get_resource::<crate::native::output_views::OutputViews>().filter(|views| views.applies_to(root)) {
-        let Some(output) = views.outputs.iter().find(|output| output.workspace == member.0 && output.usable.is_some()) else { return false };
-        let Some(item) = world.get::<crate::native::canvas::CanvasItem>(sand) else { return false };
+        && let Some(views) = world
+            .get_resource::<crate::native::output_views::OutputViews>()
+            .filter(|views| views.applies_to(root))
+    {
+        let Some(output) = views
+            .outputs
+            .iter()
+            .find(|output| output.workspace == member.0 && output.usable.is_some())
+        else {
+            return false;
+        };
+        let Some(item) = world.get::<crate::native::canvas::CanvasItem>(sand) else {
+            return false;
+        };
         let canvas = crate::native::output_views::canvas(world, root, member.0);
-        return canvas.screen_position(item, Vec2::new(output.bounds.size()[0] as f32, output.bounds.size()[1] as f32)).is_some();
+        return canvas
+            .screen_position(
+                item,
+                Vec2::new(
+                    output.bounds.size()[0] as f32,
+                    output.bounds.size()[1] as f32,
+                ),
+            )
+            .is_some();
     }
     if world
         .get::<crate::native::workspace::WorkspaceMember>(sand)
@@ -478,6 +658,9 @@ fn update(world: &mut World) {
                 settings.position_ms = position;
             }
             if let Some(pixels) = frame.pixels {
+                if let Some(poster) = world.entity_mut(owner).take::<EmbeddedPoster>() {
+                    world.despawn(poster.0);
+                }
                 let ratio = pixels.width as f32 / pixels.height as f32;
                 let replacement = upload(world, old.clone(), pixels);
                 if let Some(mut node) = world.get_mut::<ImageNode>(image) {
@@ -518,9 +701,17 @@ fn update(world: &mut World) {
             let wake = world
                 .get_resource::<crate::native::wake::WakeSignal>()
                 .cloned();
+            let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let stopped = cancel.clone();
             let task = handle.spawn(async move {
                 let result = if settings.file {
-                    file::play(&settings, &output, &wake).await
+                    if settings.resource.is_none()
+                        && settings.source.to_ascii_lowercase().ends_with(".gif")
+                    {
+                        file::play(&settings, &output, &wake).await
+                    } else {
+                        standard::play(settings, output.clone(), wake.clone(), stopped).await
+                    }
                 } else {
                     watch_signal(runtime.0.engine, settings.source, &output, &wake).await
                 };
@@ -537,7 +728,11 @@ fn update(world: &mut World) {
                     );
                 }
             });
-            world.get_mut::<View>(owner).unwrap().session = Some(Session { task, reply });
+            world.get_mut::<View>(owner).unwrap().session = Some(Session {
+                task,
+                reply,
+                cancel,
+            });
         } else if view
             .last
             .is_some_and(|last| last.elapsed() > Duration::from_secs(2))
@@ -704,5 +899,6 @@ fn upload(
 }
 
 mod file;
+mod standard;
 #[cfg(test)]
 mod tests;

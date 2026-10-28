@@ -127,6 +127,7 @@ impl Presentation {
                     .world_mut()
                     .entity_mut(entity)
                     .insert(native::layout::desktop::TransientParent(parent));
+                self.app.world_mut().entity_mut(entity).remove::<native::layout::desktop::opening::Decision>();
             } else {
                 self.app
                     .world_mut()
@@ -170,6 +171,30 @@ impl Presentation {
             layout.rules.axes[axis].size = layout.rules.axes[axis]
                 .size
                 .clamp(layout.rules.axes[axis].min, layout.rules.axes[axis].max);
+        }
+        if snapshot.parent.is_none()
+            && world.get::<native::layout::desktop::ApplicationOpeningPending>(window.entity).is_some()
+            && world.get::<native::layout::desktop::opening::Decision>(window.entity).is_some_and(|decision| !decision.retained)
+            && let Some(parent) = world.get::<ChildOf>(window.entity).map(ChildOf::parent)
+            && let Some(workspace) = world.get::<native::workspace::WorkspaceMember>(window.entity).map(|member| member.0)
+        {
+            let canvas = native::output_views::canvas(world, parent, workspace);
+            let viewport = world.get_resource::<native::output_views::OutputViews>()
+                .filter(|views| views.applies_to(parent)).and_then(|views| views.outputs.iter().find(|output| output.workspace == workspace))
+                .map(|output| (output.usable.unwrap_or(output.bounds), output.bounds));
+            let available = viewport.map(|(usable, _)| usable.size());
+            let center = viewport.map_or(canvas.center, |(usable, bounds)| canvas.center + bevy::math::DVec2::from_array(
+                std::array::from_fn(|axis| (usable.origin()[axis] - bounds.origin()[axis]
+                    + (usable.size()[axis] - bounds.size()[axis]) * 0.5) / canvas.zoom)));
+            for axis in 0..2 {
+                let preferred = [bounds.size.w, bounds.size.h][axis];
+                let preferred = available.map_or(preferred, |size| preferred.min(size[axis] / canvas.zoom));
+                layout.rules.axes[axis].size = (preferred as f32).clamp(layout.rules.axes[axis].min, layout.rules.axes[axis].max);
+            }
+            if let Some(mut item) = world.get_mut::<native::canvas::CanvasItem>(window.entity) {
+                item.position = center;
+                item.size = Vec2::new(layout.rules.axes[0].size, layout.rules.axes[1].size);
+            }
         }
         if world.get::<native::layout::LayoutBox>(window.entity) != Some(&layout) {
             world.entity_mut(window.entity).insert(layout);
@@ -306,7 +331,13 @@ fn place(
     if world.get::<ZIndex>(view.entity) != Some(&order) {
         world.entity_mut(view.entity).insert(order);
     }
+    let color = if world.contains_resource::<native::app::LinearOutput>() { source.color.native_uniforms() } else { source.color.uniforms() };
+    let [color_red, color_green, color_blue, color_curve] = color.map(Vec4::from_array);
     let mapping = Mapping {
+        color_red,
+        color_green,
+        color_blue,
+        color_curve,
         u: Vec4::new(
             source.layout.uv_origin[0],
             source.layout.uv_x[0],

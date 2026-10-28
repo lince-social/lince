@@ -1,0 +1,21 @@
+Import "../foundations/Reading-tools.lingua"
+Import "../sources/Ancient-Greek-Peek.lingua"
+Import "../research/Philological-study.lingua"
+
+Ancient Greek: the first application and later research (@greek-reading-originals: 0, is #chapter, #part-of @greek-reading-tools, #source @greek-source-ancient-greek, #philosophy @greek-philological-study, #ancient-greek-philosophy @greek-philological-study) { r_1Q07KPDNG2JTY7HRWQY5H6T5MJ
+**Recommendation:** if you want to deepen your reading of the arguments, learn Ancient Greek. It helps you compare translations and examine distinctions in the words and sentences of the original. Start with [Philip S. Peek, Ancient Greek I: A 21st Century Approach](../sources/Ancient-Greek-Peek.lingua#r_1D87YRHMAM7FHZH3VCDY9JTHGX).
+
+**Entry:** begin with the alphabet and reading conventions. Follow modules 1–3, then continue through the textbook's ordered grammar and reading practice. Introduce vocabulary and the role of endings before interpreting a clause. The philosophical readings already provide a route in translation while this study progresses.
+
+**First application:** choose one short passage already read in a dialogue. The [EdUFPA Apologia / Críton](../sources/Apology-Crito-Nunes.lingua#r_5653D0KAK9093C4VMSTEZJ3MBW) has parallel Greek and Portuguese, and [Fairbanks](../sources/Presocratics-Fairbanks.lingua#r_0CETPRSWH0WZT8335D8692RNJY) supplies Greek with English for many fragments.
+
+Use this sequence: identify the work and passage; read the Greek aloud using the chosen pronunciation convention; identify the main verb, participants, and connections between clauses; compare two translations; explain the interpretation each translation makes. Consult the textbook before using an unfamiliar construction as evidence.
+
+**Check:** identify a grammatical or lexical reason for a proposed reading and state where your present knowledge is insufficient. A dictionary equivalent by itself cannot decide how a term functions in an argument. Compare logos, aretē, or psychē only in an actual sentence and its context.
+
+Continue the same philosophical question through [the crossings](../questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF). **Return:** [Reading tools](../foundations/Reading-tools.lingua#r_5DTAXMW53NH7ABW23PMFSSBQEF) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Later standard:** this first application is preparation for [the scholarly Greek dossier](../research/Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF), which requires a defended translation, syntax, relevant editorial evidence, and criticism. Prior competence can satisfy that requirement through demonstrated work; beginning the philosophy study remains possible in translation.
+
+**Continue:** [Defend a reading of the Greek text](../research/Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF).
+} r_1Q07KPDNG2JTY7HRWQY5H6T5MJ

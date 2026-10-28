@@ -1,4 +1,4 @@
-Circular Tool Sharing (@simple-tool-sharing: 0, is #trail, #contains @tool-items, #contains @tool-owner, #contains @tool-first-borrower, #contains @tool-second-borrower, #contains @tool-drill, #contains @tool-place, #contains @tool-intervals, #contains @tool-out, #contains @tool-repair, #contains @tool-available, #contains @tool-return-need, #contains @tool-condition, #contains @tool-first-loan, #contains @tool-second-loan, #contains @tool-prepare, #contains @tool-lend, #contains @tool-return, #contains @tool-inspect, #contains @tool-circulate, #contains @tool-examples) {
+Circular Tool Sharing (@simple-tool-sharing: 0, is #chapter, #contains @tool-items, #contains @tool-owner, #contains @tool-first-borrower, #contains @tool-second-borrower, #contains @tool-drill, #contains @tool-place, #contains @tool-intervals, #contains @tool-out, #contains @tool-repair, #contains @tool-available, #contains @tool-return-need, #contains @tool-condition, #contains @tool-first-loan, #contains @tool-second-loan, #contains @tool-prepare, #contains @tool-lend, #contains @tool-return, #contains @tool-inspect, #contains @tool-circulate, #contains @tool-examples, #sharing-tools @tool-available, #sharing-tools @tool-circulate, #sharing-tools @tool-condition, #sharing-tools @tool-drill, #sharing-tools @tool-examples, #sharing-tools @tool-first-borrower, #sharing-tools @tool-first-loan, #sharing-tools @tool-inspect, #sharing-tools @tool-intervals, #sharing-tools @tool-items, #sharing-tools @tool-lend, #sharing-tools @tool-out, #sharing-tools @tool-owner, #sharing-tools @tool-place, #sharing-tools @tool-prepare, #sharing-tools @tool-repair, #sharing-tools @tool-return, #sharing-tools @tool-return-need, #sharing-tools @tool-second-borrower, #sharing-tools @tool-second-loan) {
 Circulate one identified drill from its owner to a first borrower, back for inspection, then to a second borrower. Edit role placeholders, tool identity, place and intervals before use.
 
 These ordinary Records contain terms and steps for separate loan Transfers linked to the same tool. A transfer-template assertion does not create a loan, change custody or schedule a handover. Use the existing temporary-loan and reviewed extension features to create actual Transfers and link them here.
@@ -6,79 +6,79 @@ These ordinary Records contain terms and steps for separate loan Transfers linke
 Follow Prepare, Lend, Return, Inspect and Circulate. Optional Karma derives local availability and a return Need from recorded custody and repair state. A deadline is not physical return: custody remains outstanding until confirmed handback. Check custody, inspection and conflicting intervals before another loan, even when scheduled availability has expired.
 }
 
-Tool items (@tool-items: 0, #part-of @simple-tool-sharing, is #unit) {
+Tool items (@tool-items: 0, #part-of @simple-tool-sharing, is #unit, #sharing-tools @tool-owner) {
 One identifiable tool. Keep its identity and accessory list across handovers.
 }
 
-Owner (@tool-owner: 0, #part-of @simple-tool-sharing, is #role) {
+Owner (@tool-owner: 0, #part-of @simple-tool-sharing, is #role, #sharing-tools @tool-first-borrower) {
 Choose the actual Person owning and lending the drill. A role placeholder is not a signing identity.
 }
 
-First borrower (@tool-first-borrower: 0, #part-of @simple-tool-sharing, is #role) {
+First borrower (@tool-first-borrower: 0, #part-of @simple-tool-sharing, is #role, #sharing-tools @tool-second-borrower) {
 Choose the first borrowing Person, who reviews care, return and extension terms.
 }
 
-Second borrower (@tool-second-borrower: 0, #part-of @simple-tool-sharing, is #role) {
+Second borrower (@tool-second-borrower: 0, #part-of @simple-tool-sharing, is #role, #sharing-tools @tool-drill) {
 Choose the next borrowing Person. Their requested interval does not establish readiness for handover.
 }
 
-Shared drill (@tool-drill: 1 @tool-items, #part-of @simple-tool-sharing) {
+Shared drill (@tool-drill: 1 @tool-items, #part-of @simple-tool-sharing, #sharing-tools @tool-place) {
 Example: workshop drill D1, battery, charger and bit set. Replace with actual identity and accessories. Ownership stays with the owner during loans.
 }
 
-Pickup and return place (@tool-place: 0, #part-of @simple-tool-sharing) {
+Pickup and return place (@tool-place: 0, #part-of @simple-tool-sharing, #sharing-tools @tool-intervals) {
 Example: the community workshop desk. Agree saved location, opening times and who can confirm custody changes.
 }
 
-Loan intervals (@tool-intervals: 0, #part-of @simple-tool-sharing) {
+Loan intervals (@tool-intervals: 0, #part-of @simple-tool-sharing, #sharing-tools @tool-out) {
 Choose actual timezone-qualified start and end for each loan. Leave time for return and inspection. Use actual loan interval and extension terms. No automatic deadline return is authored here.
 }
 
-Tools out (@tool-out: 0 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill) {
+Tools out (@tool-out: 0 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill, #sharing-tools @tool-repair) {
 Actual tools in borrower custody. Set to one after confirmed handover; clear only after confirmed physical return. An expired interval or unconfirmed return claim does not clear custody.
 }
 
-Tools held for repair (@tool-repair: 0 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill) {
+Tools held for repair (@tool-repair: 0 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill, #sharing-tools @tool-available) {
 Returned tools unavailable after a failed inspection. Set to one on a damaged return and clear only after repair and inspection. Count separately from tools still out.
 }
 
-Tools available (@tool-available: 1 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill) {
+Tools available (@tool-available: 1 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill, #sharing-tools @tool-return-need) {
 Karma sets owned minus out minus repair holds. One means locally available subject to actual interval and reservation checks. Negative exposes inconsistent counts. This calculation does not override Transfer reservations.
 }
 
-Return drill (@tool-return-need: 0 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill) {
+Return drill (@tool-return-need: 0 @tool-items, #part-of @simple-tool-sharing, #for @tool-drill, #sharing-tools @tool-condition) {
 Karma sets negative tools still out. It stays -1 after an overdue deadline and clears only after confirmed custody changes Tools out to zero.
 }
 
-Condition and accessories (@tool-condition: 0, #part-of @simple-tool-sharing, #for @tool-drill) {
+Condition and accessories (@tool-condition: 0, #part-of @simple-tool-sharing, #for @tool-drill, #sharing-tools @tool-first-loan) {
 Record condition and accessory list before handover; attach agreed evidence as ordinary Records or resources. Compare the same list on return. An empty condition note is not a passed inspection.
 }
 
-First loan (@tool-first-loan: 1 @tool-items, #part-of @simple-tool-sharing, is #transfer-template, #for @tool-drill, #from @tool-owner, #to @tool-first-borrower, #gives: 1 @tool-drill, #at @tool-place, #during @tool-intervals) {
+First loan (@tool-first-loan: 1 @tool-items, #part-of @simple-tool-sharing, is #transfer-template, #for @tool-drill, #from @tool-owner, #to @tool-first-borrower, #gives: 1 @tool-drill, #at @tool-place, #during @tool-intervals, #sharing-tools @tool-second-loan) {
 Transfer terms: owner lends D1 with its accessories to First borrower for the first Loan interval, with collection and return at Pickup and return place. No payment or deposit. Use temporary-loan terms, record actual delivery and receipt, and review any later extension with the relevant parties.
 }
 
-Second loan (@tool-second-loan: 1 @tool-items, #part-of @simple-tool-sharing, is #transfer-template, #for @tool-drill, #from @tool-owner, #to @tool-second-borrower, #after @tool-inspect, #gives: 1 @tool-drill, #at @tool-place, #during @tool-intervals) {
+Second loan (@tool-second-loan: 1 @tool-items, #part-of @simple-tool-sharing, is #transfer-template, #for @tool-drill, #from @tool-owner, #to @tool-second-borrower, #after @tool-inspect, #gives: 1 @tool-drill, #at @tool-place, #during @tool-intervals, #sharing-tools @tool-prepare) {
 Transfer terms: after confirmed return and inspection, owner lends the same drill to Second borrower for a checked non-overlapping interval under the agreed care and return terms. A late first return blocks handover. Negotiate changed dates instead of treating a deadline as proof of return.
 }
 
-Prepare (@tool-prepare: -1, #part-of @simple-tool-sharing, #next @tool-lend) {
+Prepare (@tool-prepare: -1, #part-of @simple-tool-sharing, #next @tool-lend, #sharing-tools @tool-lend) {
 1. Identify the tool and accessories, inspect condition, choose actual Persons, place and intervals, and agree care, return, damage and extension terms. Confirm owner custody and no conflicting reservation.
 }
 
-Lend (@tool-lend: -1, #part-of @simple-tool-sharing, #next @tool-return) {
+Lend (@tool-lend: -1, #part-of @simple-tool-sharing, #next @tool-return, #sharing-tools @tool-return) {
 2. Create and agree First loan. At handover both parties record delivery and receipt and compare condition and accessories. Then set Tools out to one; available becomes zero and Return drill becomes -1.
 }
 
-Return (@tool-return: -1, #part-of @simple-tool-sharing, #next @tool-inspect) {
+Return (@tool-return: -1, #part-of @simple-tool-sharing, #next @tool-inspect, #sharing-tools @tool-inspect) {
 3. Borrower brings the tool back; receiving owner confirms custody. Keep Tools out at one while overdue, disputed or unconfirmed. Review extensions in the actual loan. On a damaged return record the repair hold before clearing Tools out.
 }
 
-Inspect (@tool-inspect: -1, #part-of @simple-tool-sharing, #next @tool-circulate) {
+Inspect (@tool-inspect: -1, #part-of @simple-tool-sharing, #next @tool-circulate, #sharing-tools @tool-circulate) {
 4. Compare condition and accessories with handover evidence. Working return: out zero, repair zero. Damaged return: out zero, repair one, physically returned but unavailable. Record disputes and agreed remedies separately.
 }
 
-Circulate (@tool-circulate: -1, #part-of @simple-tool-sharing) {
+Circulate (@tool-circulate: -1, #part-of @simple-tool-sharing, #sharing-tools @tool-examples) {
 5. Begin Second loan after confirmed return, passed inspection and actual interval checks. Keep separate Transfer evidence for each borrower linked to the same tool. Direct borrower-to-borrower handover requires owner agreement and explicit custody transitions.
 }
 
@@ -113,3 +113,8 @@ Karma simple-tool-sharing {
     }
 }
 
+Extension @simple-tool-sharing "lince.vocabulary" {
+    definitions {
+        sharing-tools "A connection through tool availability, lending, use, return, and maintenance."
+    }
+}

@@ -1,0 +1,24 @@
+Import "Seminars.lingua"
+Import "../../sources/Sophist-Jowett.lingua"
+Import "../../sources/Plato-critical-editions.lingua"
+Import "../../sources/Sophist-Cordero.lingua"
+Import "../../sources/Theaetetus-Levett-Burnyeat.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: Plato on being, difference, falsehood, and knowledge (@greek-seminar-plato-being: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-sophist, #source @greek-source-plato-critical, #source @greek-source-cordero, #source @greek-source-theaetetus-modern, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_34WRXN1SRY8SZVRKRV7X3X9QWA
+**Preparation:** [Parmenides](../../presocratics/Parmenides.lingua#r_7HVRAJY7AF3178NEH1N8BF9NPV), [Theaetetus](../../plato/Theaetetus.lingua#r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N), Republic VI–VII, and the textual and literature dossiers.
+
+**Backbone:** read [Sophist](../../sources/Sophist-Jowett.lingua#r_4B67CBBBRAQS5SCS5M5K8RGXXR) as a complete dialogue; read the connected arguments of Republic VI–VII and the relevant surviving poem of Parmenides. This combination follows an actual [graduate bibliography benchmark](../../sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP); the investigation and assessment below are Lince's authored route.
+
+Use the [critical Greek text](../../sources/Plato-critical-editions.lingua#r_28N1ADM4R3DAG5K2898WPKRXCK) and [Cordero's translated commentary](../../sources/Sophist-Cordero.lingua#r_5MPQY66DGXV4RRE8GCWCCKJ952) or a justified scholarly equivalent. Return to [Theaetetus](../../sources/Theaetetus-Levett-Burnyeat.lingua#r_615423T7F74G6W17SFHWMSMDV9) when the problem depends on knowledge, judgment, or an account.
+
+**Choose a precise dispute:** the relation between Parmenides' difficulty and the Stranger's account; the roles of the greatest kinds; the distinction between being different and an absolute absence of being; or how a statement can be false. Read the argument about predication and combination in the whole dialogue, including its investigation of the sophist.
+
+Reconstruct competing interpretations of the uses of “is”, participation, identity, and difference. A modern formalisation can test an inference, but it must explain which features of the Greek and dialogue it preserves. Distinguish that reconstruction from a claim that Plato already held the later formal theory.
+
+**Required work:** a Greek commentary on a decisive exchange, an argument map across the complete Sophist, an account of two competing readings, and a defended thesis about what the text establishes. Explain how the earlier Parmenidean or epistemological comparison changes the argument.
+
+**Further depth:** Plato's Parmenides and Philebus, using an identified edition and a question about criticism of forms, unity and plurality, or dialectical method.
+
+**Review:** [Common seminar standard](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_34WRXN1SRY8SZVRKRV7X3X9QWA

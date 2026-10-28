@@ -1,0 +1,36 @@
+Import "Reading-tools.lingua"
+Import "../sources/Socratic-dialogues-Cary.lingua"
+Import "../sources/Dialogues-Jowett.lingua"
+Import "../socratic/Apology.lingua"
+
+Terms, translation, and useful distinctions (@greek-terms: 0, is #chapter, #part-of @greek-reading-tools, #source @socratic-dialogues, #source @greek-source-dialogues, #philosophy @greek-apology, #ancient-greek-philosophy @greek-apology) { r_1VGPFMXZ4HHAREA3BAHTSSQQ8D
+Consult the relevant row while reading. English words in these older translations can carry meanings different from their everyday use.
+
+| Expression | First working meaning | Caution or question |
+| --- | --- | --- |
+| Apology | A defence speech | The title does not mean an admission followed by regret |
+| Virtue; aretē | Excellence or a quality through which something functions or lives well | Ask whose excellence, in what activity, and under which account of the good |
+| Happiness; eudaimonia | Living or doing well over a life | Consider whether the author means a feeling, activity, condition, or complete life |
+| Piety; holiness | The disputed religious or moral excellence in Euthyphro | Do not assume the dialogue has already supplied a successful definition |
+| Soul; psychē | The subject of life, thought, character, or survival in the particular argument | Different passages make different commitments |
+| Opinion and knowledge | A distinction requiring an account of truth and its basis | Correct belief may guide action without settling why it is knowledge |
+| Nature; physis | The nature or arising of a thing, according to the inquiry | Do not silently identify it with the modern university discipline of physics |
+| Account; logos | An account, explanation, argument, or reason in context | One English equivalent will not fit every use |
+| Elenchus | Examination or refutation through questions and answers | Showing a tension in someone's commitments is not automatically a complete positive theory |
+| Aporia | A difficulty or impasse reached in inquiry | An unresolved ending can expose what needs further thought |
+| Dialectic | Inquiry developed through the examination of claims and replies | Its meaning and method vary across authors and works |
+| Sophist and rhetoric | Historically situated teaching and persuasive practices | Read Plato's characterisation critically; a dramatic opponent is not a whole profession |
+| Substance; ousia | What a passage treats as a primary being or basis for predication | Compare Categories and Metaphysics before giving it one fixed English meaning |
+| Mind; intellect; nous | An explanatory or cognitive role in the argument | Anaxagoras and later authors can make different commitments |
+| Representation; mimesis | The activity examined in the particular account of poetry or art | Read its role in Poetics before equating it with mere copying |
+
+**Practice:** take a sentence containing virtue, knowledge, or happiness. Explain how its argument changes if the term means something else. Keep a small glossary tied to passages rather than assigning one final meaning to the entire tradition.
+
+**Compare translations:** Cary's [Socratic dialogues](../sources/Socratic-dialogues-Cary.lingua#r_00000000000000000000001005) and Jowett's [Dialogues, volume II](../sources/Dialogues-Jowett.lingua#r_1AD7N0E0ZYZ07XSMQWSK5PA5X8) overlap in Apology, Crito, and Phaedo. Compare one exchange and identify a difference in wording. Explain whether it changes the argument or simply its readability. Translation differences alone do not settle which interpretation is correct.
+
+**Return:** [Reading tools](Reading-tools.lingua#r_5DTAXMW53NH7ABW23PMFSSBQEF) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Language depth:** [Ancient Greek study](../languages/Read-original-texts.lingua#r_1Q07KPDNG2JTY7HRWQY5H6T5MJ) supplies a way to investigate these differences through a sentence and its grammar. **Portuguese comparison:** [Edition choices](../sources/Portuguese-editions.lingua#r_3DABDPGKRDSM682Q2NYDEVX4Z8).
+
+**Continue:** [Apology](../socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4).
+} r_1VGPFMXZ4HHAREA3BAHTSSQQ8D

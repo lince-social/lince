@@ -1,0 +1,17 @@
+Import "Socratic-dialogues-Cary.lingua"
+
+Crito (@crito: 0, #part-of @socratic-dialogues, #source @socratic-dialogues) { r_00000000000000000000001007
+Plato; translated by Henry Cary in the retained [Apology, Crito, and Phaedo of Socrates](Socratic-dialogues-Cary.lingua#r_00000000000000000000001005).
+
+**Read with:** [Crito guide](../socratic/Crito.lingua#r_54N10WGKCSCKW6XM202PCG7ZDH), which supplies the question, preparation, passage selection, practice, and next readings.
+
+**Return:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) · [Plato](../plato/Plato.lingua#r_00000000000000000000001004).
+} r_00000000000000000000001007
+
+Extension @crito "lince.resource" {
+ uri "../books/Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ title "Crito"
+ hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
+ media_type "application/epub+zip"
+ locator { href "OEBPS/247410482567703684_13726-h-0.htm.xhtml" fragment "pgepubid00006" }
+}

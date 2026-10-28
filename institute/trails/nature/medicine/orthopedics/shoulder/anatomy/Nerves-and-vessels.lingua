@@ -1,0 +1,31 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Brachial-plexus.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Upper-limb-nerves.lingua"
+Import "../Shoulder.lingua"
+Import "../function/Movements-and-coordination.lingua"
+
+Shoulder nerves, vessels, and neighboring regions (@shoulder-neurovascular: 0, is #chapter, #part-of @shoulder, #source @med-source-upper-limb-nerves, #source @med-source-plexus, #source @med-source-joint, #medicine @shoulder-coordination, #orthopedics @shoulder-coordination, #shoulder @shoulder-coordination, #source @med-source-applied) { r_3RAGE6CVYFEN9H9HBMPYD128JG
+**Read regional pathways, then selected branches:** [Brachial plexus — NCBI Bookshelf](../../../sources/Brachial-plexus.lingua#r_5RBF38QWEQ2D9CXZAN1ERZ4F8X), the complete network overview; [Upper-limb nerves — NCBI Bookshelf](../../../sources/Upper-limb-nerves.lingua#r_6G2RDX948Y8KGMDFRV226X4RH6), the branches supplying the shoulder and scapular muscles; [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), blood supply and regional neurovascular relationships. In [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), use chapter 2 review questions 8–12 for arterial anatomy and 16–27 for the axilla and relevant nerves.
+
+The brachial plexus/plexo braquial usually draws on C5–T1 spinal nerve contributions and supplies much of the upper limb. Follow roots, trunks, divisions, cords, and named branches as levels of one network rather than interchangeable labels.
+
+| Nerve | Relationship to identify |
+| --- | --- |
+| Suprascapular/supraescapular | supraspinatus and infraspinatus |
+| Axillary/axilar | deltoid and teres minor; course near the surgical neck of the humerus |
+| Upper and lower subscapular/subescapulares | subscapularis; lower branch also supplies teres major |
+| Long thoracic/torácico longo | serratus anterior |
+| Thoracodorsal/toracodorsal | latissimus dorsi |
+| Dorsal scapular/dorsal da escápula | rhomboids and part of levator scapulae supply |
+| Accessory/accessório, cranial nerve XI | motor supply to trapezius; not a brachial plexus branch |
+
+Trace the subclavian-to-axillary arterial route and the major scapular and circumflex humeral relationships. Veins and axillary lymphatic drainage complete the supply-and-return picture. Selected structures in an atlas do not show every branch or variation.
+
+**Try:** connect a muscle to its nerve and then to the network level being described. Explain why a spinal-root problem and a peripheral nerve injury can produce overlapping complaints while requiring different evidence.
+
+**Continue:** [Reaching and rotation — coordinated shoulder movement](../function/Movements-and-coordination.lingua#r_4JJ554TJ1W83N879X31M48K6TE).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_3RAGE6CVYFEN9H9HBMPYD128JG

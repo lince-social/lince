@@ -50,7 +50,11 @@ impl Plugin for AreaTargetPlugin {
                     .after(generate_hovermap)
                     .before(crate::native::canvas_selection::SelectInput),
             )
-            .add_systems(PostUpdate, draw.before(bevy::ui::UiSystems::Prepare));
+            .add_systems(
+                PostUpdate,
+                draw.after(bevy::camera::CameraUpdateSystems)
+                    .before(bevy::ui::UiSystems::Prepare),
+            );
     }
 }
 
@@ -74,7 +78,7 @@ fn camera(world: &World, root: Entity) -> Option<(Entity, Mat4, Mat4, Rect)> {
         .0;
     Some((
         entity,
-        world.get::<GlobalTransform>(entity)?.to_matrix(),
+        crate::native::topology::view::current_transform(world, entity)?.to_matrix(),
         world.get::<Camera>(entity)?.clip_from_view(),
         world.get::<Camera>(entity)?.logical_viewport_rect()?,
     ))
@@ -94,7 +98,10 @@ fn projected(world: &World, handle: Handle, size: Vec2) -> Option<Vec2> {
             - crate::native::topology::presentation::origin(world, handle.root);
         world
             .get::<Camera>(entity)?
-            .world_to_viewport(world.get::<GlobalTransform>(entity)?, point.as_vec3())
+            .world_to_viewport(
+                &crate::native::topology::view::current_transform(world, entity)?,
+                point.as_vec3(),
+            )
             .ok()
     } else {
         let view = world.get::<CanvasView>(handle.root)?;
@@ -620,6 +627,7 @@ pub(crate) mod tests {
                         },
                         ..default()
                     },
+                    transform,
                     GlobalTransform::from(transform),
                 ))
                 .id();

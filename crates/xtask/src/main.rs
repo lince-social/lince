@@ -8,10 +8,13 @@ mod ailuros;
 mod android;
 mod android_clean;
 mod android_smoke;
+mod content;
 mod design;
 mod hand_models;
+mod maintenance;
 mod park;
 mod prune;
+mod workspace;
 
 type Result<T> = std::result::Result<T, String>;
 
@@ -71,6 +74,9 @@ fn dispatch() -> Result<()> {
                     .arg(caller_directory.join(&extra[0])),
             )
         }
+        Some("content") => content::package(&root, &caller_directory, &extra),
+        Some("maintenance") => maintenance::dispatch(&root, &extra),
+        Some("workspace") => workspace::dispatch(&root, &caller_directory, &extra),
         Some("ailuros") => ailuros::dispatch(&extra),
         Some("lingua") => {
             let expression_mode = extra.first().is_some_and(|argument| argument == "eval");
@@ -250,7 +256,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <ailuros|lingua|design|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
+                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."

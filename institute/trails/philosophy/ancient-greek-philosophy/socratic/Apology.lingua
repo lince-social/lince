@@ -1,0 +1,26 @@
+Import "Socratic-inquiry.lingua"
+Import "../sources/Apology-Cary.lingua"
+Import "Euthyphro.lingua"
+
+Apology: why examine a life? (@greek-apology: 0, is #chapter, #part-of @greek-socratic-inquiry, #source @apology, #philosophy @greek-euthyphro, #ancient-greek-philosophy @greek-euthyphro) { r_0DWAPFJNVYT6WNTRT46ZVK82X4
+**Read:** [Apology, translated by Henry Cary](../sources/Apology-Cary.lingua#r_00000000000000000000001006). First follow the oracle story and Socrates' examination of people reputed wise, then his defence of continuing the inquiry despite danger. Read the whole speech through the verdict and his final address. In editions with Stephanus references, the first passages are approximately 20c–24b and 28b–32e.
+
+**Portuguese alternative:** [Apologia de Sócrates / Críton, translated by Carlos Alberto Nunes](../sources/Apology-Crito-Nunes.lingua#r_5653D0KAK9093C4VMSTEZJ3MBW). Use the corresponding dialogue and the same guide questions; note the edition and translator when comparing an exchange.
+
+**Preparation:** [Athens and the trial](../foundations/Historical-context.lingua#r_06MYG1RZCSZDTVZP581FTCNRSG); the difference between a defence speech and an apology in today's everyday sense. Consult [argument reconstruction](../foundations/Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN) as you work.
+
+Socrates' account of questioning examines what people claim to know. Distinguish recognising a limit from claiming that nothing can be known. Ask how the account of his activity answers an accusation, supports a way of life, and presents a character to the jury. These purposes can overlap without being the same argument.
+
+**Questions for the first note:**
+
+- What does the oracle story initially make puzzling, and how does Socrates interpret it?
+- What does he claim to discover when questioning politicians, poets, and craftspeople? Does a failure outside one expertise discredit the expertise itself?
+- Which reasons support continuing to question? Where does he appeal to duty, benefit, or the condition of his soul?
+- What objection could a fellow citizen make to the activity as he describes it?
+
+**Check:** reconstruct one argument for continuing the examined life. Separate its reasons from Socrates' courage in presenting it. Explain why admirable conduct alone would not establish every premise.
+
+**Bridge:** the defence gives a reason to question; [Euthyphro](Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD) lets you examine how questioning works. [Crito](Crito.lingua#r_54N10WGKCSCKW6XM202PCG7ZDH) later tests the relationship between this activity and civic obligation.
+
+**Next:** [Euthyphro](Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD). **Return:** [First reading path](Socratic-inquiry.lingua#r_24EDXVJN0ACP2G204JK3KCHW79) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_0DWAPFJNVYT6WNTRT46ZVK82X4

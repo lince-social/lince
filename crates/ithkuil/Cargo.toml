@@ -1,0 +1,18 @@
+[package]
+name = "lince-ithkuil"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+description = "New Ithkuil native script encoding and an embedded OpenType glyph renderer."
+
+[dependencies]
+tnil = { workspace = true }
+
+[dev-dependencies]
+rustybuzz = "=0.20.1"
+sha2 = { workspace = true }
+
+[lints]
+workspace = true

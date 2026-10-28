@@ -1,0 +1,18 @@
+Import "../Ancient-Greek-Philosophy.lingua"
+Import "Historical-context.lingua"
+Import "Read-an-argument.lingua"
+Import "Terms-and-translation.lingua"
+Import "Socrates-and-his-sources.lingua"
+Import "../languages/Read-original-texts.lingua"
+
+Reading tools for Greek philosophy (@greek-reading-tools: 0, is #chapter, #part-of @ancient-greek-philosophy, #contains @greek-context, #contains @greek-reading-method, #contains @greek-terms, #contains @greek-socrates-sources, #contains @greek-reading-originals, #philosophy @greek-context, #ancient-greek-philosophy @greek-context, #philosophy @greek-reading-method, #ancient-greek-philosophy @greek-reading-method, #philosophy @greek-reading-originals, #ancient-greek-philosophy @greek-reading-originals, #philosophy @greek-socrates-sources, #ancient-greek-philosophy @greek-socrates-sources, #philosophy @greek-terms, #ancient-greek-philosophy @greek-terms) { r_5DTAXMW53NH7ABW23PMFSSBQEF
+Start with [people, places, and chronology](Historical-context.lingua#r_06MYG1RZCSZDTVZP581FTCNRSG), then use [the reading method](Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN) with [Apology](../socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4). Consult [terms and translation](Terms-and-translation.lingua#r_1VGPFMXZ4HHAREA3BAHTSSQQ8D) as a difficulty appears. [Socrates and his sources](Socrates-and-his-sources.lingua#r_1WAA32AYYPKYVETNZ5JGZ2SHFT) supports comparisons between authors.
+
+Prior experience counts: if you can identify a claim, its reasons, and an objection while citing the passage, start at the dialogue that interests you. These tools remain available whenever a later reading needs them.
+
+For closer work on wording and syntax, follow [the optional Ancient Greek reading practice](../languages/Read-original-texts.lingua#r_1Q07KPDNG2JTY7HRWQY5H6T5MJ). Choose a corresponding [Portuguese edition](../sources/Portuguese-editions.lingua#r_3DABDPGKRDSM682Q2NYDEVX4Z8) when that helps you read the argument more carefully.
+
+**Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Beyond the foundation:** reuse these tools in [the literature inquiry](../research/Scholarly-inquiry.lingua#r_2FEBDJ8R5JDHXX54TSATY2CRVZ), [Greek textual study](../research/Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF), and [the advanced seminars](../research/Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). Each deeper use adds its own evidence and preparation.
+} r_5DTAXMW53NH7ABW23PMFSSBQEF

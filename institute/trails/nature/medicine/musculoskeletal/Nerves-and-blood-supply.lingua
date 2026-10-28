@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Upper-limb-nerves.lingua"
+Import "Healing-and-adaptation.lingua"
+Import "Musculoskeletal-system.lingua"
+
+A movement system needs nerves and blood supply (@msk-supply: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-upper-limb-nerves, #medicine @msk-healing, #orthopedics @msk-healing) { r_0B7GSTVKPXTQPSTZVF7SPYGPK1
+**Read a general account, then a region:** complete the peripheral neural anatomy in [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapter 13, and the relevant vessel structure and exchange sections in chapter 20. Then read the upper-limb overview and brachial-plexus relationships in [Upper-limb nerves — NCBI Bookshelf](../sources/Upper-limb-nerves.lingua#r_6G2RDX948Y8KGMDFRV226X4RH6). Detailed named shoulder branches are assigned later after their muscles are familiar.
+
+A muscle's name, attachment, action, nerve supply, and blood supply answer different questions. Sensory pathways also provide information from skin and deeper tissues. Joint function depends on this living supply and control, not only on a list of muscle actions.
+
+A spinal root and a named peripheral nerve occupy different positions in the network. An abnormal sensation in a region cannot identify the precise site of a problem by itself. Weakness can reflect pain-limited effort, muscle or tendon injury, altered activation, or neurological disease, among other explanations.
+
+Arteries, veins, lymphatics, and nerves travel through regions where injury or compression can affect more than one structure. Descriptions of a neurovascular examination concern this combined assessment.
+
+**Try:** create a table for one muscle with separate columns for attachment, action, innervation, and arterial supply. Leave a cell blank until a source supports it. Explain why a muscle diagram and a nerve-distribution diagram cannot replace one another.
+
+**Continue:** [Healing, adaptation, and return to activity](Healing-and-adaptation.lingua#r_3XJC6HDDG7SKRW16PM3TX3B5X0).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_0B7GSTVKPXTQPSTZVF7SPYGPK1

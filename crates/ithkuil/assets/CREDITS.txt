@@ -1,0 +1,11 @@
+Ithkuil Basic
+
+Shankar Sivarajan
+Based on glyphs by Kevin McCurdy and Zachary Sakowitz. Numbers by Pan Kamil
+Language created by John Quijada.
+
+Source: https://github.com/shankarsivarajan/IthkuilBasic
+Revision: 0e94738ecfe5f3b89f5533b243b555d038500c65
+File: builds/IthkuilBasic.ttf
+SHA-256: a87b9193981f000ae48e5c5b52d3b67c8decf9a4b7f5b127f2fd01ff97ed5897
+License: SIL Open Font License 1.1, extracted from the unmodified font name table.

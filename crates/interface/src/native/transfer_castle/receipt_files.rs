@@ -127,9 +127,11 @@ pub(super) fn choose(world: &mut World, owner: Entity, export: bool) {
                         form
                     } else {
                         let receipt = receipt.unwrap();
-                        let request=if receipt["historical"]==true {
+                        let request = if receipt["historical"] == true {
                             json!({"kind":"export_version","record":receipt["record"],"version":receipt["version"]})
-                        } else {json!({"kind":"export","record":receipt["record"]})};
+                        } else {
+                            json!({"kind":"export","record":receipt["record"]})
+                        };
                         let mut form = receipts::action_form(
                             &person_uid,
                             "Review receipt file export",

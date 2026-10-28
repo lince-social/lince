@@ -181,7 +181,12 @@ pub async fn reflect_rule_edit(
     let mut input = boundary.input;
     input.consequences = serde_json::from_str(&rule.get::<String, _>("consequences_json"))
         .map_err(|error| invalid(&error.to_string()))?;
-    let target: String = input.consequences.iter().find_map(nucleus::karma::Consequence::transfer_target).map(str::to_owned).unwrap_or_else(|| rule.get("record_uid"));
+    let target: String = input
+        .consequences
+        .iter()
+        .find_map(nucleus::karma::Consequence::transfer_target)
+        .map(str::to_owned)
+        .unwrap_or_else(|| rule.get("record_uid"));
     if input.target != target
         && Some(input.target.as_str()) != rule.get::<Option<String>, _>("slug").as_deref()
     {
@@ -342,10 +347,16 @@ pub async fn refresh(pool: &SqlitePool, now: DateTime<Utc>) -> Result<bool, Stor
             {
                 let commands = sqlx::query("SELECT c.status, c.last_error FROM karma_transfer_command k JOIN transfer_remote_command c ON c.command_uid = k.command_uid WHERE k.rule_uid = ? AND json_extract(k.origin, '$.occurrence.event_id') = ? AND k.cancelled = 0")
                     .bind(&value.rule).bind(application.get::<String, _>("event_id")).fetch_all(pool).await?;
-                if let Some(rejected) = commands.iter().find(|command| command.get::<String, _>("status") == "rejected") {
+                if let Some(rejected) = commands
+                    .iter()
+                    .find(|command| command.get::<String, _>("status") == "rejected")
+                {
                     status = "failed".into();
                     reason = rejected.get("last_error");
-                } else if commands.iter().all(|command| command.get::<String, _>("status") == "accepted") {
+                } else if commands
+                    .iter()
+                    .all(|command| command.get::<String, _>("status") == "accepted")
+                {
                     status = "retired".into();
                 }
             }

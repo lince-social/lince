@@ -1,0 +1,13 @@
+Import "../Sources.lingua"
+
+Z-Anatomy — optional three-dimensional anatomy (@med-source-model: 0, is #reference, #part-of @medicine-sources) { r_2HGVZ0CZH2SS1GMB3M82G380EC
+Z-Anatomy contributors, including Gauthier Kervyn; model ancestry includes BodyParts3D by the Database Center for Life Science. Models of Human Anatomy. Multilingual anatomical model project.
+
+[Authorized source](https://github.com/Z-Anatomy/Models-of-human-anatomy/blob/master/Readme.md).
+
+An optional downloadable atlas for changing viewpoint and isolating structures. Use shoulder bones and muscles to check spatial relationships. A representative mesh is not measured motion, a simulation of tissue loading, or the anatomy of a particular patient. Lince does not require an embedded 3D viewer for these readings.
+
+**Access and reuse:** The upstream project declares CC BY-SA 4.0. Preserve the selected assets' own attribution, licence, and source history; check component-specific notices before redistributing. No models or external viewer code are bundled here.
+
+**Return:** [Medicine sources — books, anatomy, and clinical evidence](../Sources.lingua#r_2411E1397ZNK740CDA309B881D) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2HGVZ0CZH2SS1GMB3M82G380EC

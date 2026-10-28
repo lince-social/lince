@@ -1,0 +1,29 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Medical-Terminology-2e.lingua"
+Import "Circulation-and-metabolism.lingua"
+
+A map of body systems and medical specialties (@med-body-systems: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #medicine @med-circulation, #source @med-source-terminology) { r_3NS6TR2CZKMK44CCKD13MDPMHA
+**Read for the whole-body map:** the complete first chapter of [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), then the introduction and overview illustrations of each organ-system chapter. The later broad medicine reading completes the remaining system chapters; this step establishes what they connect. Use the table of contents of [Medical Terminology 2e — Open RN](../sources/Medical-Terminology-2e.lingua#r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q) to recognize how the same systems appear in clinical vocabulary.
+
+| System | Shared questions and Portuguese terms |
+| --- | --- |
+| Integumentary | pele: barriers, sensation, temperature |
+| Musculoskeletal | ossos, articulações, músculos: support, movement, protection |
+| Nervous | sistema nervoso: sensation, coordination, behavior |
+| Endocrine | sistema endócrino: hormones and regulation |
+| Cardiovascular | coração e vasos: transport and tissue perfusion |
+| Lymphatic and immune | sistema linfático e imune: fluid return, defense, inflammation |
+| Respiratory | sistema respiratório: ventilation and gas exchange |
+| Digestive | sistema digestório: digestion and absorption |
+| Urinary | sistema urinário: waste removal, fluid and electrolyte regulation |
+| Reproductive | sistema reprodutor: reproduction and associated hormonal functions |
+
+These are useful groupings with many connections. A joint problem can involve infection, immune disease, nerves, metabolism, or injury. Cardiology, neurology, endocrinology, rheumatology, orthopedics, and other specialties organize practice around overlapping questions. Primary care coordinates problems that cross those boundaries.
+
+**Try:** follow oxygen from the air to a contracting muscle, and then follow a signal from the spinal cord to that muscle. Name every participating system. Keep this map as a reference when later readings introduce a connection rather than memorizing specialties as isolated territories.
+
+**Continue:** [Supply living tissue — blood, oxygen, and metabolism](Circulation-and-metabolism.lingua#r_51SD84CANGMKYW7X2VNZ6HXTD4).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_3NS6TR2CZKMK44CCKD13MDPMHA

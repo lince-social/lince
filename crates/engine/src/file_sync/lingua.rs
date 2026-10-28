@@ -15,6 +15,7 @@ struct Document {
     source: String,
     identified: String,
     records: Vec<ProjectedRecord>,
+    extensions: Vec<anicca::ProjectedExtension>,
     automation: Automation,
     missing: u32,
 }
@@ -50,13 +51,34 @@ fn normalize(record: &mut ProjectedRecord) -> Result<(), EngineError> {
             *value = normalized_decimal(value)?;
         }
     }
-    record
-        .assertions
-        .sort_by_key(|value| format!("{}:{:?}", value.predicate, value.object_uid));
+    record.assertions.sort_by_key(|value| {
+        format!(
+            "{}:{:?}:{:?}",
+            value.predicate, value.object_uid, value.object_uri
+        )
+    });
     Ok(())
 }
 
 impl Engine {
+    async fn remember_lingua_source(
+        &self,
+        path: &Path,
+        document: &Document,
+    ) -> Result<(), EngineError> {
+        let uri = lince_resources::Reference::path(path)
+            .map_err(invalid)?
+            .target;
+        let hash = lince_resources::fingerprint(document.source.as_bytes());
+        let mut tx = store::write_tx(&self.store.pool).await?;
+        for record in &document.records {
+            store::source_locations::remember_on(&mut tx, &record.uid, &record.uid, &uri, &hash)
+                .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
     pub fn import_lingua_directory<'a>(
         &'a self,
         directory: &'a Path,
@@ -83,11 +105,6 @@ impl Engine {
         let original_count = original.declarations.len();
         for (index, declaration) in document.declarations.iter_mut().enumerate() {
             let ast::Declaration::Record(record) = declaration else {
-                if matches!(declaration, ast::Declaration::Extension(_)) {
-                    return Err(invalid(
-                        "Directory sync does not import Extension declarations",
-                    ));
-                }
                 continue;
             };
             let ast::Declaration::Record(original) = &original.declarations[index] else {
@@ -119,6 +136,9 @@ impl Engine {
             }
         }
         let mut projected = anicca::project(&document).map_err(invalid)?;
+        projected.extensions.sort_by(|left, right| {
+            (&left.target_slug, &left.namespace).cmp(&(&right.target_slug, &right.namespace))
+        });
         for record in &mut projected.records {
             normalize(record)?;
             crate::record_creation::Draft {
@@ -132,7 +152,7 @@ impl Engine {
                     .iter()
                     .map(|a| crate::record_creation::Assertion {
                         predicate: a.predicate.clone(),
-                        object: a.object_slug.clone(),
+                        object: a.object_uri.clone().or_else(|| a.object_slug.clone()),
                         quantity: a.quantity.clone(),
                         unit: a.unit.clone(),
                     })
@@ -151,6 +171,7 @@ impl Engine {
             source: source.into(),
             identified: anicca::format(&document),
             records: projected.records,
+            extensions: projected.extensions,
             missing: 0,
         })
     }
@@ -180,6 +201,7 @@ impl Engine {
                 None => None,
             };
             assertions.push(ProjectedAssertion {
+                object_uri: assertion.object_uri,
                 predicate: concepts
                     .get(&assertion.predicate_uid)
                     .cloned()
@@ -211,6 +233,38 @@ impl Engine {
         Ok(Some(record))
     }
 
+    async fn lingua_extensions(
+        &self,
+        records: &[ProjectedRecord],
+    ) -> Result<Vec<anicca::ProjectedExtension>, EngineError> {
+        let mut extensions = Vec::new();
+        for record in records {
+            let Some(slug) = &record.slug else {
+                continue;
+            };
+            let values: Vec<(String, String)> = store::sqlx::query_as(
+                "SELECT namespace,fds FROM record_extension WHERE record_uid=? ORDER BY namespace",
+            )
+            .bind(&record.uid)
+            .fetch_all(&self.store.pool)
+            .await?;
+            for (namespace, raw) in values {
+                if shared_extension(&namespace) {
+                    extensions.push(anicca::ProjectedExtension {
+                        target_slug: slug.clone(),
+                        target_uid: Some(record.uid.clone()),
+                        namespace,
+                        fields: serde_json::from_str(&raw)?,
+                    });
+                }
+            }
+        }
+        extensions.sort_by(|left, right| {
+            (&left.target_slug, &left.namespace).cmp(&(&right.target_slug, &right.namespace))
+        });
+        Ok(extensions)
+    }
+
     async fn apply_lingua_record(&self, record: &ProjectedRecord) -> Result<bool, EngineError> {
         if store::karma::frequencies::get_handle(&self.store.pool, &record.uid)
             .await?
@@ -224,7 +278,7 @@ impl Engine {
         }
         let created = previous.is_none();
         let (quantity, unit) = record.quantity.as_ref().unwrap();
-        let mut meanings=HashMap::new();
+        let mut meanings = HashMap::new();
         for name in record
             .assertions
             .iter()
@@ -232,13 +286,33 @@ impl Engine {
             .chain(record.assertions.iter().filter_map(|a| a.unit.as_ref()))
             .chain(unit.iter())
         {
-            let concept=match store::vocabulary::resolve_file_meaning(&self.store.pool,name,&record.uid).await? {
-                Some(concept)=>concept,
-                None=>self.act(Action::CreateConcept {lingua:store::linguas::LOCAL_UID.into(),name:name.clone(),parents:vec![]},None).await?.created.ok_or_else(||invalid("Unable to save the selected meaning"))?,
-            };
-            store::sqlx::query("INSERT OR IGNORE INTO concept(uid,canonical_name,created_at) VALUES(?,?,?)")
-                .bind(&concept).bind(format!("concept:{concept}")).bind(nucleus::execution::now().to_rfc3339()).execute(&self.store.pool).await?;
-            meanings.insert(name.clone(),concept);
+            let concept =
+                match store::vocabulary::resolve_file_meaning(&self.store.pool, name, &record.uid)
+                    .await?
+                {
+                    Some(concept) => concept,
+                    None => self
+                        .act(
+                            Action::CreateConcept {
+                                lingua: store::linguas::LOCAL_UID.into(),
+                                name: name.clone(),
+                                parents: vec![],
+                            },
+                            None,
+                        )
+                        .await?
+                        .created
+                        .ok_or_else(|| invalid("Unable to save the selected meaning"))?,
+                };
+            store::sqlx::query(
+                "INSERT OR IGNORE INTO concept(uid,canonical_name,created_at) VALUES(?,?,?)",
+            )
+            .bind(&concept)
+            .bind(format!("concept:{concept}"))
+            .bind(nucleus::execution::now().to_rfc3339())
+            .execute(&self.store.pool)
+            .await?;
+            meanings.insert(name.clone(), concept);
         }
         if created {
             self.act(
@@ -288,7 +362,7 @@ impl Engine {
             self.act(
                 Action::SetUnit {
                     target: record.uid.clone(),
-                    unit: unit.as_ref().and_then(|name|meanings.get(name).cloned()),
+                    unit: unit.as_ref().and_then(|name| meanings.get(name).cloned()),
                 },
                 None,
             )
@@ -329,8 +403,14 @@ impl Engine {
                 self.act(
                     Action::RetractRecord {
                         subject: record.uid.clone(),
-                        predicate: store::vocabulary::resolve_file_meaning(&self.store.pool,&old.predicate,&record.uid).await?.ok_or_else(||invalid("The previously selected meaning is unavailable"))?,
-                        object: old.object_uid.clone(),
+                        predicate: store::vocabulary::resolve_file_meaning(
+                            &self.store.pool,
+                            &old.predicate,
+                            &record.uid,
+                        )
+                        .await?
+                        .ok_or_else(|| invalid("The previously selected meaning is unavailable"))?,
+                        object: old.object_uri.clone().or_else(|| old.object_uid.clone()),
                     },
                     None,
                 )
@@ -345,9 +425,15 @@ impl Engine {
                     Action::AssertRecord {
                         subject: record.uid.clone(),
                         predicate: meanings[&assertion.predicate].clone(),
-                        object: assertion.object_uid.clone(),
+                        object: assertion
+                            .object_uri
+                            .clone()
+                            .or_else(|| assertion.object_uid.clone()),
                         quantity: assertion.quantity.clone(),
-                        unit: assertion.unit.as_ref().and_then(|name|meanings.get(name).cloned()),
+                        unit: assertion
+                            .unit
+                            .as_ref()
+                            .and_then(|name| meanings.get(name).cloned()),
                     },
                     None,
                 )
@@ -468,6 +554,23 @@ impl Engine {
                         "Duplicate Record uid or slug; the file was kept unchanged",
                     ));
                 }
+                for extension in &mut document.extensions {
+                    if !shared_extension(&extension.namespace){return Err(invalid("This metadata namespace is managed by its dedicated editor"));}
+                    extension.target_uid=Some(identities.get(&extension.target_slug).cloned().ok_or_else(||invalid("Unknown Extension target"))?);
+                    if !document.records.iter().any(|record|Some(&record.uid)==extension.target_uid.as_ref()){return Err(invalid("Declare metadata alongside its Record"));}
+                    if extension.namespace==lince_resources::RESOURCE_NAMESPACE {
+                        let base=lince_resources::address(&path.to_string_lossy()).map_err(invalid)?.to_string();
+                        let mut resource:lince_resources::Resource=serde_json::from_value(extension.fields.clone())?;
+                        resource.uri=lince_resources::resolve(&base,&resource.uri).map_err(invalid)?;
+                        for representation in &mut resource.representations{representation.uri=lince_resources::resolve(&base,&representation.uri).map_err(invalid)?;}
+                        resource.validate().map_err(invalid)?;
+                        extension.fields=serde_json::to_value(resource)?;
+                    }
+                }
+                if let Some(known)=state.files.get(path).filter(|known|known.source!=document.source){
+                    let current=self.lingua_extensions(&known.records).await?;
+                    if current!=known.extensions&&current!=document.extensions{return Err(invalid("The file and Record metadata both changed; resolve the conflict before syncing"));}
+                }
                 for frequency in &document.automation.frequencies {
                     if let Some(row) = store::records::get(&self.store.pool, &frequency.uid).await? {
                         if row.organ_uid.as_deref() != Some(organ) || row.kind != "frequency" {
@@ -486,7 +589,8 @@ impl Engine {
                     if let Some(source) = &rule.condition {
                         for read in nucleus::karma::Condition::parse(source).map_err(invalid)?.reads() {
                             if read.func != nucleus::expr::ASSERTION {
-                                for slug in read.slug.split('|') {
+                                for (position,slug) in read.slug.split('|').enumerate() {
+                                    if read.func==nucleus::expr::HAS_ASSERTION&&position==1 {continue;}
                                     if identities.get(slug).is_none_or(|uid| read.func == "freq" && !frequency_uids.contains(uid)) {
                                         return Err(invalid(format!("Unknown condition reference @{slug}")));
                                     }
@@ -508,6 +612,9 @@ impl Engine {
                 }
                 for record in &mut document.records {
                     for assertion in &mut record.assertions {
+                        if let Some(uri) = &mut assertion.object_uri {
+                            *uri = lince_resources::resolve(&lince_resources::Reference::path(path).map_err(invalid)?.target, uri).map_err(invalid)?;
+                        }
                         if let Some(slug) = &assertion.object_slug {
                             assertion.object_uid = Some(
                                 identities
@@ -617,6 +724,41 @@ impl Engine {
                     }
                     self.apply_lingua_rules(&document.automation, &mut report)
                         .await?;
+                    for extension in &document.extensions {
+                        self.act(
+                            Action::SetExtension {
+                                target: extension
+                                    .target_uid
+                                    .clone()
+                                    .ok_or_else(|| invalid("Missing metadata target"))?,
+                                namespace: extension.namespace.clone(),
+                                fds: extension.fields.clone(),
+                            },
+                            None,
+                        )
+                        .await?;
+                    }
+                    if let Some(known) = known {
+                        for extension in &known.extensions {
+                            if !document.extensions.iter().any(|current| {
+                                current.target_uid == extension.target_uid
+                                    && current.namespace == extension.namespace
+                            }) {
+                                self.act(
+                                    Action::SetExtension {
+                                        target: extension
+                                            .target_uid
+                                            .clone()
+                                            .ok_or_else(|| invalid("Missing metadata target"))?,
+                                        namespace: extension.namespace.clone(),
+                                        fds: serde_json::json!({}),
+                                    },
+                                    None,
+                                )
+                                .await?;
+                            }
+                        }
+                    }
                     if let Some(known) = known {
                         for old in &known.automation.rules {
                             if !declared.contains_key(&old.uid) {
@@ -670,10 +812,19 @@ impl Engine {
                         }
                     }
                 }
-                let changed = records != document.records || automation != document.automation;
+                let extensions = self.lingua_extensions(&records).await?;
+                let changed = records != document.records
+                    || automation != document.automation
+                    || extensions != document.extensions;
                 let typed = automation.uids().next().is_some();
                 if changed || (typed && disk_changed) {
-                    let text = render_document(&document.identified, &records, &automation)?;
+                    let text = render_document(
+                        &document.identified,
+                        &records,
+                        &automation,
+                        &extensions,
+                        path,
+                    )?;
                     if text != document.source {
                         write_document(path, Some(&document.source), &text)?;
                         report.written_to_disk.extend(
@@ -687,12 +838,14 @@ impl Engine {
                     document.identified = text;
                     document.records = records;
                     document.automation = automation;
+                    document.extensions = extensions;
                 }
                 Ok::<_, EngineError>(())
             }
             .await;
             match result {
                 Ok(()) => {
+                    self.remember_lingua_source(path, &document).await?;
                     state.files.insert(path.clone(), document);
                 }
                 Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
@@ -794,6 +947,7 @@ impl Engine {
                     source: String::new(),
                     identified: String::new(),
                     records: vec![record],
+                    extensions: Vec::new(),
                     automation: Automation::default(),
                     missing: 0,
                 };
@@ -809,10 +963,18 @@ impl Engine {
                         .iter()
                         .any(|f| f.uid == r.uid)
                 });
-                let text = render_document("", &document.records, &document.automation)?;
+                document.extensions = self.lingua_extensions(&document.records).await?;
+                let text = render_document(
+                    "",
+                    &document.records,
+                    &document.automation,
+                    &document.extensions,
+                    &path,
+                )?;
                 write_document(&path, None, &text)?;
                 document.source = text.clone();
                 document.identified = text;
+                self.remember_lingua_source(&path, &document).await?;
                 state.files.insert(path.clone(), document);
                 report.written_to_disk.push(uid);
                 Ok::<_, EngineError>(())
@@ -834,6 +996,8 @@ fn render_document(
     source: &str,
     records: &[ProjectedRecord],
     automation: &Automation,
+    extensions: &[anicca::ProjectedExtension],
+    path: &Path,
 ) -> Result<String, EngineError> {
     let mut document = anicca::parse(source).map_err(invalid)?;
     document.declarations.retain(|declaration| matches!(declaration, ast::Declaration::Record(record) if records.iter().any(|r| Some(r.uid.as_str()) == record.opening.uid())));
@@ -864,22 +1028,79 @@ fn render_document(
                 .declarations
                 .push(ast::Declaration::Record(template)),
         }
+        let mut assertions = record.assertions.clone();
+        let base = lince_resources::address(
+            &lince_resources::Reference::path(path)
+                .map_err(invalid)?
+                .target,
+        )
+        .map_err(invalid)?;
+        for assertion in &mut assertions {
+            if let Some(uri) = &mut assertion.object_uri
+                && let Ok(target) = lince_resources::address(uri)
+                && let Some(relative) = base.make_relative(&target)
+            {
+                *uri = relative;
+            }
+        }
         let updated = anicca::set_record_runtime(
             &anicca::format(&document),
             &record.uid,
             &record.head,
             &record.body,
             quantity,
-            &record.assertions,
+            &assertions,
         )
         .map_err(invalid)?;
         document = anicca::parse(&updated).map_err(invalid)?;
     }
     let mut text = anicca::format(&document);
+    for extension in extensions {
+        let mut fields = extension.fields.clone();
+        if extension.namespace == lince_resources::RESOURCE_NAMESPACE {
+            let base = lince_resources::address(&path.to_string_lossy()).map_err(invalid)?;
+            for property in ["uri"] {
+                if let Some(uri) = fields[property]
+                    .as_str()
+                    .and_then(|uri| lince_resources::address(uri).ok())
+                    && let Some(relative) = base.make_relative(&uri)
+                {
+                    fields[property] = serde_json::json!(relative);
+                }
+            }
+            if let Some(representations) = fields["representations"].as_array_mut() {
+                for representation in representations {
+                    if let Some(uri) = representation["uri"]
+                        .as_str()
+                        .and_then(|uri| lince_resources::address(uri).ok())
+                        && let Some(relative) = base.make_relative(&uri)
+                    {
+                        representation["uri"] = serde_json::json!(relative);
+                    }
+                }
+            }
+        }
+        text.push_str(
+            &anicca::extension::render(&extension.target_slug, &extension.namespace, &fields)
+                .map_err(invalid)?,
+        );
+    }
     text.push_str(&automation.render()?);
     let document = anicca::parse(&text).map_err(invalid)?;
     anicca::project(&document).map_err(invalid)?;
     Ok(anicca::format(&document))
+}
+
+fn shared_extension(namespace: &str) -> bool {
+    !namespace.starts_with("lince.")
+        || matches!(
+            namespace,
+            lince_resources::RESOURCE_NAMESPACE
+                | lince_resources::SOURCE_NAMESPACE
+                | "lince.practice"
+                | "lince.controls"
+                | "lince.vocabulary"
+        )
 }
 
 fn write_document(path: &Path, expected: Option<&str>, text: &str) -> Result<(), EngineError> {

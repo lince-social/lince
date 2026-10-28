@@ -64,6 +64,44 @@ pub trait Resolver {
 }
 
 pub const ASSERTION: &str = "assertion";
+pub const HAS_ASSERTION: &str = "has_assertion";
+
+pub fn assertion_token(args: &[Expr]) -> Result<TokenKey, NucleusError> {
+    if !(2..=3).contains(&args.len()) {
+        return Err(NucleusError::Parse(
+            "Use has_assertion(@record, #predicate, @object) or omit @object".into(),
+        ));
+    }
+    let mut references = Vec::new();
+    for (position, argument) in args.iter().enumerate() {
+        let reference = match argument {
+            Expr::Ref(reference) => reference,
+            Expr::Fn(name, inner) if position == 1 && name == ASSERTION => match inner.as_slice() {
+                [Expr::Ref(reference)] => reference,
+                _ => return Err(NucleusError::Parse("Choose an assertion predicate".into())),
+            },
+            _ => {
+                return Err(NucleusError::Parse(
+                    "Use Record references and an assertion predicate".into(),
+                ));
+            }
+        };
+        references.push(reference.as_str());
+    }
+    Ok(TokenKey {
+        func: HAS_ASSERTION.into(),
+        slug: references.join("|"),
+        dur_secs: None,
+    })
+}
+
+pub fn assertion_binding(position: usize) -> &'static str {
+    match position {
+        0 => "has_assertion.subject",
+        1 => "has_assertion.predicate",
+        _ => "has_assertion.object",
+    }
+}
 
 pub fn extension_reading(namespace: &str, property: &str) -> String {
     format!(
@@ -224,6 +262,12 @@ impl Expr {
                 dur_secs: None,
             }),
             Expr::Fn(name, args) => {
+                if name == HAS_ASSERTION {
+                    if let Ok(token) = assertion_token(args) {
+                        out.push(token);
+                    }
+                    return;
+                }
                 if name == "extension" {
                     if let Ok(token) = extension_token(args) {
                         out.push(token);
@@ -279,6 +323,15 @@ impl Expr {
             Expr::Ref(slug) => r.call("quantity", &[Value::Ref(slug.clone())])?,
             Expr::Fn(name, args) => {
                 let mut vals = Vec::with_capacity(args.len());
+                if name == HAS_ASSERTION {
+                    let token = assertion_token(args)?;
+                    let arguments = token
+                        .slug
+                        .split('|')
+                        .map(|reference| Value::Ref(reference.into()))
+                        .collect::<Vec<_>>();
+                    return r.call(name, &arguments);
+                }
                 for a in args {
                     vals.push(match a {
                         Expr::Ref(slug) => Value::Ref(slug.clone()),

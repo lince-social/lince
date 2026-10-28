@@ -1,7 +1,29 @@
 use super::*;
 use crate::layout::desktop::{Solution, SolvedItem, Workspace};
 
+#[derive(Component, Clone, Copy)]
+pub(super) struct Placement {
+    pub parent: Entity,
+    pub offset: bevy::math::DVec2,
+}
+
 pub(super) fn inherit(world: &mut World) {
+    let restored = world.query::<(Entity, &RestoredTransient, &ChildOf)>().iter(world)
+        .map(|(entity, parent, root)| (entity, parent.0, root.parent())).collect::<Vec<_>>();
+    for (entity, id, root) in restored {
+        let matches = world.get::<Children>(root).into_iter().flat_map(|children| children.iter())
+            .filter(|candidate| *candidate != entity && world.get::<LayoutBox>(*candidate).is_some_and(|layout| layout.id == id))
+            .take(2).collect::<Vec<_>>();
+        if matches.len() == 1 {
+            world.entity_mut(entity).remove::<RestoredTransient>().insert(TransientParent(matches[0]));
+        } else if matches.is_empty() && world.get::<Workspaces>(root).is_some_and(|spaces|
+            !spaces.entries.iter().chain(spaces.trash.iter().map(|entry| &entry.workspace)).any(|space|
+                space.desktop.items().iter().any(|item| item.id.0 == id)))
+        {
+            world.entity_mut(entity).remove::<RestoredTransient>();
+            crate::native::notifications::report(world, "Item owner", "The saved owner is no longer available. Its retained item was restored independently.");
+        }
+    }
     let transients: Vec<_> = world
         .query::<(Entity, &TransientParent)>()
         .iter(world)
@@ -38,9 +60,19 @@ pub(super) fn descendant(world: &World, mut entity: Entity, ancestor: Entity) ->
 
 pub(super) fn minimized(world: &World, mut entity: Entity, model: &Workspace) -> bool {
     for _ in 0..32 {
-        if world.get::<LayoutBox>(entity).is_some_and(|layout| model.minimized(PlacementId(layout.id))) { return true; }
-        let Some(parent) = world.get::<TransientParent>(entity) else { return false };
-        if parent.0 == entity { return true; }
+        if world.get::<RestoredTransient>(entity).is_some() { return true; }
+        if world
+            .get::<LayoutBox>(entity)
+            .is_some_and(|layout| model.hidden(PlacementId(layout.id)))
+        {
+            return true;
+        }
+        let Some(parent) = world.get::<TransientParent>(entity) else {
+            return false;
+        };
+        if parent.0 == entity {
+            return true;
+        }
         entity = parent.0;
     }
     true
@@ -53,11 +85,34 @@ pub(super) fn place(
     solution: &mut Solution,
     usable: Rectangle,
 ) {
-    solution.items.retain(|item| entities.get(&item.id).is_none_or(|entity| !minimized(world, *entity, model)));
+    place_with(world, entities, model, solution, usable, None);
+}
+
+pub(super) fn place_with(
+    world: &World,
+    entities: &BTreeMap<PlacementId, Entity>,
+    model: &mut Workspace,
+    solution: &mut Solution,
+    usable: Rectangle,
+    preview: Option<(Entity, Placement)>,
+) {
+    let bounded = model.mode() != WorkspaceLayout::Free
+        || model.fullscreen().is_some()
+        || model
+            .items()
+            .iter()
+            .any(|item| model.maximized(item.id) && !model.minimized(item.id));
+    solution.items.retain(|item| {
+        entities
+            .get(&item.id)
+            .is_none_or(|entity| !minimized(world, *entity, model))
+    });
     let transients: Vec<_> = entities
         .iter()
         .filter_map(|(id, entity)| {
-            if minimized(world, *entity, model) { return None; }
+            if minimized(world, *entity, model) {
+                return None;
+            }
             let parent = world.get::<TransientParent>(*entity)?.0;
             let parent_id = PlacementId(world.get::<LayoutBox>(parent)?.id);
             Some((*id, parent_id))
@@ -78,13 +133,33 @@ pub(super) fn place(
             let Some(item) = model.items().iter().find(|item| item.id == *id) else {
                 return false;
             };
-            let size = std::array::from_fn(|axis| item.free.size[axis].min(usable.size()[axis]));
-            let origin = std::array::from_fn(|axis| {
-                (bounds.origin()[axis] + (bounds.size()[axis] - size[axis]) * 0.5).clamp(
-                    usable.origin()[axis],
-                    (usable.origin()[axis] + usable.size()[axis] - size[axis])
-                        .max(usable.origin()[axis]),
+            let size = std::array::from_fn(|axis| {
+                item.free.size[axis].clamp(
+                    f64::from(item.rules.axes[axis].min),
+                    f64::from(item.rules.axes[axis].max),
                 )
+            });
+            let offset = entities
+                .get(id)
+                .and_then(|entity| {
+                    let parent = world.get::<TransientParent>(*entity)?.0;
+                    preview
+                        .filter(|(target, _)| target == entity)
+                        .map(|(_, placement)| placement)
+                        .or_else(|| world.get::<Placement>(*entity).copied())
+                        .filter(|placement| placement.parent == parent)
+                        .map(|placement| placement.offset)
+                })
+                .unwrap_or_default();
+            let origin = std::array::from_fn(|axis| {
+                let origin =
+                    bounds.origin()[axis] + (bounds.size()[axis] - size[axis]) * 0.5 + offset[axis];
+                if !bounded {
+                    return origin;
+                }
+                let start = usable.origin()[axis];
+                let end = start + usable.size()[axis] - size[axis];
+                origin.clamp(start.min(end), start.max(end))
             });
             let Some(rectangle) = Rectangle::new(origin, size) else {
                 return false;
@@ -110,3 +185,6 @@ pub(super) fn place(
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

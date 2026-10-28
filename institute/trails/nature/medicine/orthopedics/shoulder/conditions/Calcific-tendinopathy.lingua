@@ -1,0 +1,19 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../../../sources/Tendinopatia-MSD.lingua"
+Import "../Shoulder.lingua"
+Import "Biceps-and-labrum.lingua"
+
+Calcific tendinopathy — a finding and its clinical context (@shoulder-calcific: 0, is #chapter, #part-of @shoulder, #source @med-source-tendinopathy-guideline, #source @med-source-msd-tendon, #medicine @shoulder-biceps-labrum, #orthopedics @shoulder-biceps-labrum, #shoulder @shoulder-biceps-labrum) { r_2KW7TDWEPVWRJ8NE03W636FW51
+**Read a condition-specific selection:** [Rotator Cuff Tendinopathy — JOSPT, 2025](../../../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV), the population and definitions that include calcific disease, followed by its calcific-tendinopathy recommendations and attached evidence summaries. Compare the calcification and tendon-disorder passages in [Tendinopatia — Manual MSD](../../../sources/Tendinopatia-MSD.lingua#r_2MM3SQQ0YD4SGZECQFBYRZNQQF) for Portuguese vocabulary. Do not extend a condition-specific recommendation to all painful rotation.
+
+Calcific tendinopathy/tendinopatia calcária involves calcium-containing deposits within a tendon, commonly considered in the rotator cuff. 'Calcification/calcificação' describes a finding; it does not by itself establish how much it contributes to a person's symptoms or which intervention is appropriate.
+
+Clinical discussions distinguish this condition from a tendon tear, bone spur, arthritis, and pain without a visible deposit. The presence of an anatomical explanation does not automatically decide a treatment. Guideline recommendations depend on the population, symptom course, previous management, benefits, harms, and quality of evidence.
+
+**Try:** compare the imaging question 'is a deposit visible?' with the clinical question 'does a particular treatment improve function in this setting?'. Identify which recommendation concerns calcific disease specifically and which concerns cuff tendinopathy more generally. Record uncertainty rather than extending a recommendation to every shoulder complaint.
+
+**Continue:** [Biceps tendon and labral problems](Biceps-and-labrum.lingua#r_7RF8FD4PKGQ1DEBRZ7RZEH98AW).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2KW7TDWEPVWRJ8NE03W636FW51

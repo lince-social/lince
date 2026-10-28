@@ -1,0 +1,24 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../Shoulder.lingua"
+Import "Capsule-and-labrum.lingua"
+
+Four linked relationships in shoulder movement (@shoulder-articulations: 0, is #chapter, #part-of @shoulder, #source @med-source-osu, #source @med-source-joint, #medicine @shoulder-capsule, #orthopedics @shoulder-capsule, #shoulder @shoulder-capsule) { r_5ZVVVD4SZFS5W5AGCZDT1FA9RD
+**Read a focused return to chapter 9:** [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), the complete Shoulder Joint subsection within Anatomy of Selected Synovial Joints, and the associated illustrations. In [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), read the articular-surface and capsule descriptions. Connect the AC and SC relationships with the pectoral-girdle account rather than treating the glenohumeral joint as the whole region.
+
+| Relationship | Structures and role |
+| --- | --- |
+| Glenohumeral/glenoumeral | humeral head and glenoid; large rotational and elevation possibilities |
+| Acromioclavicular/acromioclavicular | acromion and clavicle; contributes to scapular positioning |
+| Sternoclavicular/esternoclavicular | clavicle and sternum, with an articular disc and supporting tissues; the pectoral girdle's skeletal connection to the axial skeleton |
+| Scapulothoracic/escapulotorácica | the scapula's functional movement over the thoracic wall through intervening tissues; not a true synovial joint |
+
+'Four joints' is common shorthand, but the scapulothoracic relationship has a different anatomical status. The clavicle and scapula also move when the arm is raised. Fixing the scapula changes the movement question.
+
+**Try:** follow the skeleton from the sternum to the humerus without skipping the clavicle. Use a drawing or model to explain why total arm elevation cannot be assigned wholly to the glenohumeral joint. Distinguish this coordinated region from the narrower phrase 'shoulder joint' when it means only glenohumeral articulation.
+
+**Continue:** [The capsule, synovium, cartilage, and labrum](Capsule-and-labrum.lingua#r_7CBF6AK860P70ZD4YES5EY36JS).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_5ZVVVD4SZFS5W5AGCZDT1FA9RD

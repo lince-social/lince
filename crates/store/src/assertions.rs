@@ -52,6 +52,8 @@ pub struct AssertionRow {
     pub predicate_uid: String,
     pub predicate_revision: i64,
     pub object_uid: Option<String>,
+    pub object_uri: Option<String>,
+    pub resolved_object_uid: Option<String>,
     pub role: String,
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<String>,
@@ -77,6 +79,18 @@ fn map(row: sqlx::sqlite::SqliteRow) -> Result<AssertionRow, StoreError> {
         predicate_uid: row.try_get("predicate_uid")?,
         predicate_revision: row.try_get("predicate_revision")?,
         object_uid: row.try_get("object_uid")?,
+        object_uri: row.try_get("object_uri")?,
+        resolved_object_uid: if row.try_get::<Option<String>, _>("object_uri")?.is_some() {
+            row.try_get("target_uid").or_else(|error| {
+                if matches!(error, sqlx::Error::ColumnNotFound(_)) {
+                    Ok(None)
+                } else {
+                    Err(error)
+                }
+            })?
+        } else {
+            None
+        },
         role: row.try_get("role")?,
         quantity,
         unit_uid: row.try_get("unit_uid")?,
@@ -276,22 +290,19 @@ async fn log_row_tx(
     tx: &mut Transaction<'_, Sqlite>,
     row: &AssertionRow,
 ) -> Result<(), StoreError> {
-    log_mutation_tx(
-        tx,
-        &row.uid,
-        OpKind::Set,
-        Some(assertion_op_value(
-            &row.subject_uid,
-            &row.predicate_uid,
-            row.object_uid.as_deref(),
-            &row.role,
-            row.quantity,
-            row.unit_uid.as_deref(),
-            row.asserted_by.as_deref(),
-            &row.created_at,
-        )),
-    )
-    .await
+    let mut value: serde_json::Value = serde_json::from_str(&assertion_op_value(
+        &row.subject_uid,
+        &row.predicate_uid,
+        row.object_uid.as_deref(),
+        &row.role,
+        row.quantity,
+        row.unit_uid.as_deref(),
+        row.asserted_by.as_deref(),
+        &row.created_at,
+    ))
+    .map_err(|error| mutation_error(&error.to_string()))?;
+    value["object_uri"] = serde_json::json!(row.object_uri);
+    log_mutation_tx(tx, &row.uid, OpKind::Set, Some(value.to_string())).await
 }
 
 async fn log_mutation_tx(
@@ -320,6 +331,37 @@ pub async fn insert_tx(
     tx: &mut Transaction<'_, Sqlite>,
     uid: &str,
     new: NewAssertion<'_>,
+) -> Result<AssertionRow, StoreError> {
+    insert_target_tx(tx, uid, new, None).await
+}
+
+pub async fn insert_uri_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    new: NewAssertion<'_>,
+    uri: &str,
+) -> Result<AssertionRow, StoreError> {
+    if new.object_uid.is_some()
+        || new.role != AssertionRole::Ordinary
+        || uri.is_empty()
+        || uri.len() > 8192
+        || uri.chars().any(char::is_control)
+        || !uri
+            .split_once(':')
+            .is_some_and(|(scheme, _)| matches!(scheme, "file" | "http" | "https"))
+    {
+        return Err(mutation_error(
+            "Choose an absolute file or HTTP(S) assertion endpoint",
+        ));
+    }
+    insert_target_tx(tx, uid, new, Some(uri)).await
+}
+
+async fn insert_target_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    new: NewAssertion<'_>,
+    object_uri: Option<&str>,
 ) -> Result<AssertionRow, StoreError> {
     require_uid(uid, "a")?;
     validate_new_tx(tx, &new).await?;
@@ -361,13 +403,14 @@ pub async fn insert_tx(
     }
     let existing: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM record_assertion WHERE uid = ?
-             OR (subject_uid = ? AND predicate_uid = ? AND object_uid IS ?
+             OR (subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND object_uri IS ?
                  AND retracted_at IS NULL))",
     )
     .bind(uid)
     .bind(new.subject_uid)
     .bind(new.predicate_uid)
     .bind(new.object_uid)
+    .bind(object_uri)
     .fetch_one(&mut **tx)
     .await?;
     if existing {
@@ -381,6 +424,8 @@ pub async fn insert_tx(
         predicate_uid: new.predicate_uid.into(),
         predicate_revision: 0,
         object_uid: new.object_uid.map(str::to_owned),
+        object_uri: object_uri.map(str::to_owned),
+        resolved_object_uid: None,
         role: new.role.as_str().into(),
         quantity: new.quantity,
         unit_uid: new.unit_uid.map(str::to_owned),
@@ -393,14 +438,15 @@ pub async fn insert_tx(
     let quantity = new.quantity.map(crate::exact::decimal_columns);
     sqlx::query(
         "INSERT INTO record_assertion
-           (uid, subject_uid, predicate_uid, object_uid, role,
+           (uid, subject_uid, predicate_uid, object_uid, object_uri, role,
             quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(uid)
     .bind(new.subject_uid)
     .bind(new.predicate_uid)
     .bind(new.object_uid)
+    .bind(object_uri)
     .bind(new.role.as_str())
     .bind(quantity.as_ref().map(|pair| pair.0.as_str()))
     .bind(quantity.as_ref().map(|pair| pair.1))
@@ -428,8 +474,8 @@ pub async fn retract_tx(
         if removed {
             return Ok(false);
         }
-        let observed: Vec<String> = sqlx::query_scalar("SELECT a.uid FROM record_assertion a WHERE a.subject_uid = ? AND a.predicate_uid = ? AND a.object_uid IS ? AND a.role = 'ordinary' AND NOT EXISTS (SELECT 1 FROM sync_op o WHERE o.tbl = 'record_assertion' AND o.uid = a.uid AND o.kind = 'tombstone')")
-            .bind(&row.subject_uid).bind(&row.predicate_uid).bind(&row.object_uid).fetch_all(&mut **tx).await?;
+        let observed: Vec<String> = sqlx::query_scalar("SELECT a.uid FROM record_assertion a WHERE a.subject_uid = ? AND a.predicate_uid = ? AND a.object_uid IS ? AND a.object_uri IS ? AND a.role = 'ordinary' AND NOT EXISTS (SELECT 1 FROM sync_op o WHERE o.tbl = 'record_assertion' AND o.uid = a.uid AND o.kind = 'tombstone')")
+            .bind(&row.subject_uid).bind(&row.predicate_uid).bind(&row.object_uid).bind(&row.object_uri).fetch_all(&mut **tx).await?;
         for member in &observed {
             sqlx::query(
                 "UPDATE record_assertion SET retracted_at = ?, retracted_by = ? WHERE uid = ?",
@@ -496,7 +542,7 @@ pub async fn promote_identity_tx(
     uid: &str,
 ) -> Result<AssertionRow, StoreError> {
     let mut row = mutation_row_tx(tx, uid).await?;
-    if row.retracted_at.is_some() || row.object_uid.is_some() {
+    if row.retracted_at.is_some() || row.object_uid.is_some() || row.object_uri.is_some() {
         return Err(mutation_error(
             "only an active unary Assertion can become identity",
         ));
@@ -583,7 +629,7 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
     }
     let existing = sqlx::query(
         "SELECT uid FROM record_assertion
-          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ?
+          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND object_uri IS NULL
             AND retracted_at IS NULL",
     )
     .bind(new.subject_uid)
@@ -637,7 +683,7 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
 }
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<AssertionRow>, StoreError> {
-    sqlx::query("SELECT * FROM record_assertion WHERE uid = ?")
+    sqlx::query("SELECT * FROM record_assertion_link WHERE uid = ?")
         .bind(uid)
         .fetch_optional(pool)
         .await?
@@ -647,7 +693,7 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<AssertionRow>, S
 
 pub async fn list_active(pool: &SqlitePool) -> Result<Vec<AssertionRow>, StoreError> {
     sqlx::query(
-        "SELECT * FROM record_assertion WHERE retracted_at IS NULL ORDER BY created_at, uid",
+        "SELECT * FROM record_assertion_link WHERE retracted_at IS NULL ORDER BY created_at, uid",
     )
     .fetch_all(pool)
     .await?
@@ -666,7 +712,7 @@ pub async fn incident_to(
             .collect::<Vec<_>>()
             .join(",");
         let sql = format!(
-            "SELECT * FROM record_assertion WHERE retracted_at IS NULL AND (subject_uid IN ({holes}) OR object_uid IN ({holes})) ORDER BY uid"
+            "SELECT * FROM record_assertion_link WHERE retracted_at IS NULL AND (subject_uid IN ({holes}) OR target_uid IN ({holes})) ORDER BY uid"
         );
         let mut query = sqlx::query(&sql);
         for uid in chunk.iter().chain(chunk.iter()) {
@@ -754,7 +800,7 @@ pub async fn set_identity_tx(
     };
     if let Some(row) = sqlx::query(
         "SELECT uid, role FROM record_assertion
-          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL AND object_uri IS NULL
             AND retracted_at IS NULL",
     )
     .bind(subject_uid)
@@ -876,11 +922,12 @@ fn map_binary(row: sqlx::sqlite::SqliteRow) -> Result<BinaryAssertionRow, StoreE
     })
 }
 
-const BINARY_SELECT: &str = "SELECT a.uid, a.subject_uid, a.object_uid, a.predicate_uid,
+const BINARY_SELECT: &str =
+    "SELECT a.uid, a.subject_uid, a.target_uid AS object_uid, a.predicate_uid,
             c.canonical_name AS predicate, a.quantity_mantissa,
             a.quantity_scale, a.unit_uid, a.created_at
-       FROM record_assertion a JOIN concept c ON c.uid = a.predicate_uid
-      WHERE a.object_uid IS NOT NULL AND a.retracted_at IS NULL";
+       FROM record_assertion_link a JOIN concept c ON c.uid = a.predicate_uid
+      WHERE a.target_uid IS NOT NULL AND a.retracted_at IS NULL";
 
 pub async fn binary_of_predicate(
     pool: &SqlitePool,
@@ -942,7 +989,7 @@ pub async fn used_binary_predicates(
     Ok(sqlx::query(
         "SELECT c.uid, c.canonical_name
            FROM concept c JOIN record_assertion a ON a.predicate_uid = c.uid
-          WHERE a.object_uid IS NOT NULL AND a.retracted_at IS NULL
+          WHERE a.target_uid IS NOT NULL AND a.retracted_at IS NULL
           GROUP BY c.uid, c.canonical_name ORDER BY c.canonical_name, c.uid",
     )
     .fetch_all(pool)
@@ -961,7 +1008,7 @@ pub async fn retract_tuple(
 ) -> Result<bool, StoreError> {
     let Some(row) = sqlx::query(
         "SELECT uid FROM record_assertion
-          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ?
+          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND object_uri IS NULL
             AND retracted_at IS NULL",
     )
     .bind(subject_uid)
@@ -986,7 +1033,7 @@ pub async fn transition_unary(
     for predicate_uid in retract_predicates {
         let displaced: Vec<String> = sqlx::query(
             "SELECT uid FROM record_assertion
-              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL AND object_uri IS NULL
                 AND role = 'ordinary' AND retracted_at IS NULL",
         )
         .bind(subject_uid)
@@ -998,7 +1045,7 @@ pub async fn transition_unary(
         .collect();
         sqlx::query(
             "UPDATE record_assertion SET retracted_at = ?, retracted_by = ?
-              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL AND object_uri IS NULL
                 AND role = 'ordinary' AND retracted_at IS NULL",
         )
         .bind(&now)
@@ -1015,7 +1062,7 @@ pub async fn transition_unary(
     for predicate_uid in assert_predicates {
         let existing = sqlx::query(
             "SELECT 1 FROM record_assertion
-              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL AND object_uri IS NULL
                 AND role = 'ordinary' AND retracted_at IS NULL",
         )
         .bind(subject_uid)
@@ -1083,7 +1130,7 @@ pub async fn refine_tx(
     let now = nucleus::execution::now().to_rfc3339();
     if let Some(row) = sqlx::query(
         "SELECT uid FROM record_assertion
-          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL AND object_uri IS NULL
             AND retracted_at IS NULL",
     )
     .bind(subject_uid)
@@ -1203,8 +1250,8 @@ pub async fn subjects_pointing_to(
                 (SELECT predicate_uid FROM record_assertion identity
                   WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
                     AND identity.retracted_at IS NULL) AS identity_predicate_uid
-           FROM record_assertion a JOIN record r ON r.uid = a.subject_uid
-          WHERE (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?)) AND a.object_uid = ?
+           FROM record_assertion_link a JOIN record r ON r.uid = a.subject_uid
+          WHERE (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?)) AND a.target_uid = ?
             AND a.retracted_at IS NULL AND r.deleted_at IS NULL
           ORDER BY a.created_at, a.uid",
     )
@@ -1242,9 +1289,9 @@ pub async fn messages_before(
            FROM record r
           WHERE r.kind = 'message' AND r.deleted_at IS NULL
             AND r.quantity_mantissa != '0' AND r.quantity_mantissa NOT LIKE '-%'
-            AND EXISTS (SELECT 1 FROM record_assertion a
+            AND EXISTS (SELECT 1 FROM record_assertion_link a
                 WHERE a.subject_uid = r.uid AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
-                  AND a.object_uid = ? AND a.retracted_at IS NULL)
+                  AND a.target_uid = ? AND a.retracted_at IS NULL)
             AND (? IS NULL OR (r.created_at, r.uid) < (?, ?))
           ORDER BY r.created_at DESC, r.uid DESC LIMIT ?",
     )
@@ -1272,7 +1319,7 @@ pub async fn objects_from_subject(
                 (SELECT predicate_uid FROM record_assertion identity
                   WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
                     AND identity.retracted_at IS NULL) AS identity_predicate_uid
-           FROM record_assertion a JOIN record r ON r.uid = a.object_uid
+           FROM record_assertion_link a JOIN record r ON r.uid = a.target_uid
           WHERE a.subject_uid = ? AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
             AND a.retracted_at IS NULL AND r.deleted_at IS NULL
           ORDER BY a.created_at, a.uid",
@@ -1319,9 +1366,9 @@ pub async fn object_uids_from_subject(
     predicate_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
     Ok(sqlx::query_scalar(
-        "SELECT DISTINCT object_uid FROM record_assertion
+        "SELECT DISTINCT target_uid AS object_uid FROM record_assertion_link
           WHERE subject_uid = ? AND (predicate_uid = ? OR predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
-            AND object_uid IS NOT NULL AND retracted_at IS NULL
+            AND target_uid IS NOT NULL AND retracted_at IS NULL
           ORDER BY created_at, uid",
     )
     .bind(subject_uid)
@@ -1342,10 +1389,10 @@ pub async fn for_subjects(
         .collect::<Vec<_>>()
         .join(",");
     let sql = format!(
-        "SELECT a.uid, a.subject_uid, a.object_uid, a.predicate_uid, a.role,
+        "SELECT a.uid, a.subject_uid, a.object_uid, a.object_uri, a.target_uid, a.predicate_uid, a.role,
                 c.canonical_name AS predicate, a.quantity_mantissa,
                 a.quantity_scale, a.unit_uid
-           FROM record_assertion a JOIN concept c ON c.uid = a.predicate_uid
+           FROM record_assertion_link a JOIN concept c ON c.uid = a.predicate_uid
           WHERE a.retracted_at IS NULL AND a.subject_uid IN ({holes})
           ORDER BY a.subject_uid, c.canonical_name, a.object_uid, a.uid"
     );
@@ -1370,6 +1417,12 @@ pub async fn for_subjects(
                 predicate_uid: row.get("predicate_uid"),
                 predicate: row.get("predicate"),
                 object_uid: row.get("object_uid"),
+                object_uri: row.get("object_uri"),
+                resolved_object_uid: if row.get::<Option<String>, _>("object_uri").is_some() {
+                    row.get("target_uid")
+                } else {
+                    None
+                },
                 quantity,
                 unit_uid: row.get("unit_uid"),
             })
@@ -1385,6 +1438,8 @@ pub struct ProjectedAssertion {
     pub predicate_uid: String,
     pub predicate: String,
     pub object_uid: Option<String>,
+    pub object_uri: Option<String>,
+    pub resolved_object_uid: Option<String>,
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<String>,
 }
@@ -1408,8 +1463,8 @@ pub async fn record_descendants(
         .collect::<Vec<_>>()
         .join(", ");
     let sql = format!(
-        "SELECT subject_uid FROM record_assertion
-          WHERE object_uid = ? AND predicate_uid IN ({placeholders})"
+        "SELECT subject_uid FROM record_assertion_link
+          WHERE target_uid = ? AND predicate_uid IN ({placeholders})"
     );
 
     let mut seen: HashSet<String> = HashSet::from([root_uid.to_string()]);

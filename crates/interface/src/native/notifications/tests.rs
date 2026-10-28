@@ -37,6 +37,30 @@ fn toasts(app: &mut App) -> Vec<Entity> {
         .collect()
 }
 
+#[test]
+fn passive_toasts_stay_below_the_modal_edit_panel_without_losing_history() {
+    use bevy::input_focus::InputFocus;
+    let log = cell::Diagnostics::default();
+    let (mut app, root) = fixture(log.clone());
+    EditAction::Open.apply(app.world_mut(), root);
+    app.update();
+    let focus = app.world().resource::<InputFocus>().get();
+    log.report("Window layout", "Applied for this session.");
+    app.update();
+    let toast = toasts(&mut app)[0];
+    let stack = app.world().get::<ChildOf>(toast).unwrap().parent();
+    let panel = app.world().get::<EditMode>(root).unwrap().panel;
+    assert!(
+        app.world().get::<GlobalZIndex>(stack).unwrap().0
+            < app.world().get::<GlobalZIndex>(panel).unwrap().0
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), focus);
+    EditAction::Close.apply(app.world_mut(), root);
+    app.update();
+    assert_eq!(toasts(&mut app), [toast]);
+    assert_eq!(log.snapshot().1.len(), 1);
+}
+
 #[cfg_attr(test, test)]
 fn workspace_load_error_is_a_startup_toast_and_keeps_saved_data() {
     let directory = tempfile::tempdir().unwrap();
@@ -104,9 +128,39 @@ fn recommendations_distinguish_local_connections_storage_and_desktop_problems() 
         "You can keep working. The skipped items remain in the saved original."
     );
     assert!(recommendation("interface::connection", "Connection closed").contains("this Cell"));
+    assert!(
+        recommendation("interface::connection", "Connection closed").contains("Configuration Sand")
+    );
     assert!(recommendation("cell", "No space left on device").contains("disk space"));
     assert!(recommendation("cell", "Permission denied").contains("your account"));
     assert!(recommendation("lince_sandbox::tray", "Unavailable").contains("keep using Lince"));
+}
+
+#[test]
+fn recommendations_for_a_cell_disconnect_are_reported_once_without_record_views() {
+    use crate::native::cell_bridge::{CONNECTION, CellMessage};
+    let mut world = World::new();
+    world.init_resource::<Messages<CellMessage>>();
+    let log = cell::Diagnostics::default();
+    world.insert_resource(Notifications::new(log.clone()));
+    let mut schedule = Schedule::default();
+    schedule.add_systems(cell_connection);
+    for occurrence in 1..=2 {
+        world.write_message(CellMessage(cell::ServerMessage::Error {
+            id: CONNECTION.into(),
+            message: "The connection to this Cell stopped. Your drafts are still here.".into(),
+            code: Some("connection_closed".into()),
+        }));
+        schedule.run(&mut world);
+        let notices = log.snapshot().1;
+        assert_eq!(notices.len(), 1);
+        assert_eq!(notices[0].occurrences, occurrence);
+        assert!(
+            recommendation(&notices[0].source, &notices[0].message).contains("Configuration Sand")
+        );
+        schedule.run(&mut world);
+        assert_eq!(log.snapshot().1[0].occurrences, occurrence);
+    }
 }
 
 #[test]

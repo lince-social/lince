@@ -1,0 +1,21 @@
+Import "Sources.lingua"
+
+A Selection from the Discourses of Epictetus with the Encheiridion (@greek-source-epictetus: 0, is #book, #part-of @greek-sources) { r_5VCYFDR3KPWTJ3T35X5MW4T4BD
+Epictetus; translated by George Long.
+
+[Retained EPUB](../books/epictetus-enchiridion.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/10661). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
+
+Used passages: The Encheiridion, or Manual, sections 1, 5, 17, 20, and 30, followed by the complete Manual and selected Discourses. The book's contents separates the biographical note, Discourses, and Manual. [Reading guide](../schools/Epictetus.lingua#r_35EWPVCFYNWZ0DYG5R5HM05TC2).
+
+**Return:** [Books and editions](Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_5VCYFDR3KPWTJ3T35X5MW4T4BD
+
+Extension @greek-source-epictetus "lince.resource" {
+ uri "../books/epictetus-enchiridion.epub"
+ title "A Selection from the Discourses of Epictetus with the Encheiridion"
+ hash "819ea26983e3710b31969750819cc1b4e72dfb0b82e0fc4b66fb4234f815ad91"
+ media_type "application/epub+zip"
+ aliases ["gutenberg:10661"]
+ attribution "Epictetus; translated by George Long. Project Gutenberg ebook 10661. Retained 2026-10-26."
+ license "Public domain in the USA; historical edition. Original publication and Project Gutenberg notices retained in the EPUB."
+}

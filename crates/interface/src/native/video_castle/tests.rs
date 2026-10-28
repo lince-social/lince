@@ -71,6 +71,7 @@ fn restored_settings_populate_source_and_seek_controls() {
             file: false,
             paused: true,
             position_ms: 42000,
+            ..default()
         },
     );
     let view = app
@@ -78,7 +79,10 @@ fn restored_settings_populate_source_and_seek_controls() {
         .query::<&View>()
         .single(app.world())
         .unwrap();
-    assert_eq!(panel::value(app.world(), view.source).unwrap(), "esp-camera");
+    assert_eq!(
+        panel::value(app.world(), view.source).unwrap(),
+        "esp-camera"
+    );
     assert_eq!(panel::value(app.world(), view.seek).unwrap(), "42");
     let owner = app
         .world()
@@ -146,6 +150,7 @@ fn video_reuses_texture_and_configuration_serializes_without_frames() {
         file: false,
         paused: false,
         position_ms: 0,
+        ..default()
     };
     app.world_mut().entity_mut(sand).insert(settings);
     let serialized = serde_json::to_value(app.world().get::<Settings>(sand).unwrap()).unwrap();

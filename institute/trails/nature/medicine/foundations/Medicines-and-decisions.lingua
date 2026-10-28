@@ -1,0 +1,20 @@
+Import "../Medicine.lingua"
+Import "../sources/Rotator-cuff-guideline-2025.lingua"
+Import "../sources/Shoulder-problems-AAOS.lingua"
+Import "Prevention-and-care.lingua"
+
+Medicines, procedures, benefits, and harms (@med-medicines: 0, is #chapter, #part-of @medicine, #source @med-source-aaos-overview, #source @med-source-cuff-guideline, #medicine @med-care) { r_58YGVDEPBKQN0P5BG517VNZSDK
+**Read for decision vocabulary:** the complete general treatment discussion in [Shoulder pain and common problems — AAOS](../sources/Shoulder-problems-AAOS.lingua#r_506TD94GKTCRNS0XP0W5Q7EWDV), separating activity changes, rehabilitation, medicines, and procedures. Later read the methods and evidence-strength explanations in [Management of Rotator Cuff Injuries — AAOS, 2025](../sources/Rotator-cuff-guideline-2025.lingua#r_5JCRVDCV75VA441X5FG5S226G3) before using an individual recommendation. This step introduces the questions needed to understand a decision rather than a personal prescription.
+
+A drug's generic name, formulation, route, dose, interval, duration, indication, contraindications, interactions, and adverse effects describe different things. Analgesic/analgésico describes a pain-relieving purpose; anti-inflammatory/anti-inflamatório describes an action. A medicine can have several actions, and benefit for a symptom does not prove its cause.
+
+Conservative or nonsurgical care/tratamento não cirúrgico includes active care and follow-up, not simply doing nothing. A procedure, injection, or operation has a purpose, possible alternatives, uncertainties, and burdens. Rehabilitation/reabilitação concerns function and participation as well as symptoms.
+
+Shared decisions/decisão compartilhada compare likely benefits and harms for a defined person, including their goals and circumstances. Absolute changes and the time period over which they occur are often easier to interpret than relative changes alone.
+
+**Try:** list questions you would ask about a proposed intervention: the problem it addresses, expected benefit, alternatives, harms, recovery demands, and what happens if it is deferred. Do not derive a medication dose from this reading.
+
+**Continue:** [Prevention, rehabilitation, and the organization of care](Prevention-and-care.lingua#r_2MCG1WJ8QC0JC9VEDQHR1XB81E).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_58YGVDEPBKQN0P5BG517VNZSDK

@@ -27,11 +27,14 @@ impl Engine {
                     let references: Vec<_> = token.slug.split('|').collect();
                     let state = self.cached_transfer_snapshot(references[0], actor).await?;
                     if nucleus::transfer::karma::is_agreement_reading(&token.func) {
-                        let person = store::records::resolve(&self.store.pool, references[1]).await?
+                        let person = store::records::resolve(&self.store.pool, references[1])
+                            .await?
                             .filter(|record| record.kind == "person")
                             .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
                         if !state.participants.contains_key(&person.uid) {
-                            return Err(invalid("This Person's agreement is unavailable or hidden"));
+                            return Err(invalid(
+                                "This Person's agreement is unavailable or hidden",
+                            ));
                         }
                     }
                     records.insert(state.transfer);
@@ -44,6 +47,18 @@ impl Engine {
                     records.extend(
                         store::ledger::records_with_concept(&self.store.pool, &concept).await?,
                     );
+                    continue;
+                }
+                if token.func == nucleus::expr::HAS_ASSERTION {
+                    let references = token.slug.split('|').collect::<Vec<_>>();
+                    store::concepts::resolve(&self.store.pool, references[1])
+                        .await?
+                        .ok_or_else(|| invalid("Condition concept is unavailable"))?;
+                    for (position, reference) in references.into_iter().enumerate() {
+                        if position != 1 {
+                            records.insert(self.resolve(reference).await?);
+                        }
+                    }
                     continue;
                 }
                 if token.func == "freq" {
@@ -69,7 +84,9 @@ impl Engine {
                 {
                     return Err(invalid("This reading has no authorized private preview"));
                 }
-                if token.func == "query_command" { self.require_permission(actor, "organ:update").await?; }
+                if token.func == "query_command" {
+                    self.require_permission(actor, "organ:update").await?;
+                }
                 for name in token.slug.split('|') {
                     let record = store::records::resolve(&self.store.pool, name)
                         .await?

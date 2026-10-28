@@ -35,13 +35,16 @@ let
     shift
     exec "$@"
   '';
-  custom = host { programs.lince-park = { enable = true; inherit directory; sessionWrapper = [ (toString manager) "literal $value" ]; }; };
-  selected = builtins.head custom.services.displayManager.sessionPackages;
+  custom = host { programs.lince-park = { enable = true; withUWSM = false; inherit directory; sessionWrapper = [ (toString manager) "literal $value" ]; }; };
+  selected = builtins.head (lib.filter (package: (package.providedSessions or []) == [ "lince" ]) custom.services.displayManager.sessionPackages);
+  managed = enabled.programs.uwsm.waylandCompositors.lince.binPath;
   refuses = directory: !(builtins.tryEval (builtins.deepSeq (host {
     programs.lince-park = { enable = true; inherit directory; };
   }).programs.lince-park.directory true)).success;
 in pkgs.runCommand "park-session-contracts" { } (
-  assert lib.elem fixture enabled.services.displayManager.sessionPackages;
+  assert enabled.programs.uwsm.enable;
+  assert enabled.programs.lince-park.withUWSM;
+  assert lib.hasSuffix "/bin/lince-park-session" managed;
   assert !(lib.elem fixture disabled.services.displayManager.sessionPackages);
   assert enabled.hardware.graphics.enable;
   assert enabled.services.displayManager.sddm.enable;
@@ -66,6 +69,8 @@ in pkgs.runCommand "park-session-contracts" { } (
     cmp arguments expected
     test ! -e unexpected
     grep -Fx "Exec=${selected}/bin/lince-park-session" ${selected}/share/wayland-sessions/lince.desktop
+    grep -F 'LINCE_PARK_UWSM=' ${managed}
+    grep -F '${lib.getExe enabled.programs.uwsm.package}' ${managed}
     mkdir -p "$out"
     cp arguments "$out/arguments"
   ''

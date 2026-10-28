@@ -1,0 +1,17 @@
+Import "../sources/Applied-Human-Anatomy.lingua"
+Import "Musculoskeletal-system.lingua"
+Import "../orthopedics/Orthopedics.lingua"
+
+Explain one movement across tissues and scales (@msk-review: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-applied, #medicine @orthopedics, #orthopedics @orthopedics) { r_2EABDT9ARYZTXZMQMA4C57Z4WY
+Choose a drawing or a comfortable everyday action to analyze without provoking symptoms. Explain how neural activation, muscle contraction, tendon force, bone geometry, joint surfaces, and supporting ligaments participate.
+
+Make two linked diagrams: a tissue-level section and a whole-limb mechanical sketch. Add blood supply and sensory feedback. State which relationships your diagrams simplify. Use the anatomical review questions in [Applied Human Anatomy — Nolan and McNamara](../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K) as a source of further questions; hands-on examination exercises in that book belong in an appropriate supervised setting.
+
+Compare tendon/tendão, ligament/ligamento, cartilage/cartilagem, capsule/cápsula, bursa/bolsa sinovial, and nerve/nervo. For each, explain a function and a limitation of the rope, hinge, or cushion analogy often used to describe it.
+
+**Ready to continue:** you can reconstruct the action using anatomical and physiological reasons, distinguish a mechanism from a diagnosis, and find a source for a disputed detail. [Orthopedics — understanding musculoskeletal problems](../orthopedics/Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) applies this shared understanding to regional clinical questions.
+
+**Continue:** [Orthopedics — understanding musculoskeletal problems](../orthopedics/Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2EABDT9ARYZTXZMQMA4C57Z4WY

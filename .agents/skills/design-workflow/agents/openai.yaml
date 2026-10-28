@@ -1,4 +1,0 @@
-interface:
-  display_name: "Design Workflow"
-  short_description: "Refine live Lince Castles and save native compositions"
-  default_prompt: "Use $design-workflow to refine this Castle through native Lince alternatives and live composition edits, then save the reviewed composition when requested."

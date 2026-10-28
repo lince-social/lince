@@ -1,0 +1,20 @@
+Import "Ancient-Greek-Philosophy.lingua"
+Import "plato/Plato.lingua"
+
+Ancient Greek philosophers (@philosophers: 0, #part-of @ancient-greek-philosophy, #contains @plato, #philosophy @plato, #ancient-greek-philosophy @plato) { r_00000000000000000000001003
+Find an author's works and how they are used in a question. The [Ancient Greek philosophy pathway](Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) supplies a reading sequence; this index is another entrance into the same material.
+
+- [Plato](plato/Plato.lingua#r_00000000000000000000001004): Socratic questioning, definitions, knowledge, justice, soul, love, and education.
+- [Xenophon](socratic/Xenophon.lingua#r_386T9BE05SXJZK8E0NX7TAYJK8): compare another author's presentation of Socrates.
+- [Early Greek thinkers](presocratics/Nature-and-being.lingua#r_61M87EN28QQ9AHXT80SPCB0CVH): arguments and reports concerning nature, change, and being.
+- [Aristotle](Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE): concepts, inference, nature, being, ethics, political association, and poetry.
+- [Epicurus](schools/Epicurus.lingua#r_6KHZKEFRKY1J18Z7TSRAJABZQP): desire, pleasure, nature, and death.
+- [Epictetus](schools/Epictetus.lingua#r_35EWPVCFYNWZ0DYG5R5HM05TC2): judgment, agency, and duties.
+- [Ancient sceptics](schools/Sceptics.lingua#r_6KEA1AHWJRDT3ZN8VJQTK06ZFK): disagreement, criteria, and suspension of judgment.
+- [Cynic traditions](schools/Cynics.lingua#r_0R2YCT14QC77FB489JPCD107SZ): conduct, convention, and self-sufficiency.
+- [Plotinus](schools/Plotinus.lingua#r_375WTA2HXW04F1FC4FVW20B9N9): beauty, intelligibility, and later Platonism.
+
+Use [the edition catalogue](sources/Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3) to distinguish a primary work, a later report, a translator's introduction, and modern historical reconstruction.
+
+**Home:** [Philosophy](../Philosophy.lingua#r_00000000000000000000001001). **Questions:** [Crossings between readings](questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF).
+} r_00000000000000000000001003

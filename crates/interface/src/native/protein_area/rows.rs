@@ -38,6 +38,63 @@ pub(super) struct PropertyContainer(pub(super) String);
 pub(super) struct PropertyLabel;
 
 #[derive(Component)]
+pub(super) struct Loading;
+
+fn spawn(
+    world: &mut World,
+    parent: Entity,
+    workspace: u64,
+    config: &Config,
+    binding: RecordBinding,
+) -> Entity {
+    let remote = config.source != Source::Local;
+    let practice = crate::native::practice_cells::owns_source(world, &config.source);
+    let entity = world
+        .spawn((
+            crate::native::castle::Castle,
+            Square,
+            InBox(parent),
+            ChildOf(parent),
+            WorkspaceMember(workspace),
+            crate::native::sand_store::SandCredits(crate::native::credits::ATTRIBUTIONS),
+            CanvasItem {
+                position: DVec2::ZERO,
+                size: Vec2::new(config.width, 160.0),
+            },
+            Node {
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(px(12)),
+                row_gap: px(8),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            crate::native::token_style::background(Token::Surface),
+            super::placement::Pending,
+            Visibility::Hidden,
+        ))
+        .observe(click)
+        .id();
+    if let Some(window) = config
+        .window_record
+        .as_ref()
+        .filter(|window| window.creating)
+    {
+        world.entity_mut(entity).insert(window.clone());
+    } else {
+        world.entity_mut(entity).insert(binding);
+    }
+    if remote {
+        world.entity_mut(entity).insert(RemoteRecord);
+    }
+    if practice {
+        world
+            .entity_mut(entity)
+            .insert(crate::native::practice_cells::PracticeRecord);
+    }
+    entity
+}
+
+#[derive(Component)]
 #[require(crate::native::sand::Unsaved(false))]
 pub(super) struct PropertyEditor {
     property: String,
@@ -131,6 +188,7 @@ pub(super) fn content(
     data: &Value,
     binding: Option<RecordBinding>,
 ) {
+    super::availability::populate(world, row, config, binding.as_ref());
     if config.record_cards && (config.command.is_some() || data["kind"] == "command") {
         if let Some(binding) = binding {
             crate::native::command_castle::populate(world, row, config, data, binding);
@@ -145,6 +203,11 @@ pub(super) fn content(
     }
     crate::native::record_presentation::restore(world, row, config.hide_filled);
     crate::native::shader_effects::record(world, row, config, data, binding.clone());
+    if config.record_cards
+        && let Some(binding) = &binding
+    {
+        crate::native::full_record::window::populate(world, row, binding);
+    }
     let sections = config
         .record_cards
         .then(|| super::record_layout::create(world, row));
@@ -160,7 +223,12 @@ pub(super) fn content(
         && matches!(binding.source, Source::Local)
     {
         crate::native::location::record_controls(world, actions, &binding.uid, None, None);
-        crate::native::trust_castle::record_controls(world, actions, binding, data["kind"].as_str().unwrap_or_default());
+        crate::native::trust_castle::record_controls(
+            world,
+            actions,
+            binding,
+            data["kind"].as_str().unwrap_or_default(),
+        );
     }
     if config.record_cards
         && let Some(binding) = binding.clone()
@@ -211,6 +279,11 @@ pub(super) fn content(
             "Extensions…",
             crate::native::record_extensions::Open(binding),
         );
+    }
+    if config.record_cards
+        && let Some(binding) = &binding
+    {
+        crate::native::source_view::attach(world, row, &binding.uid, binding.source.clone());
     }
     if config.delete_button {
         if let Some(binding) = binding {
@@ -604,6 +677,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
     let Some(mut state) = world.resource_mut::<Runtime>().areas.remove(&owner) else {
         return;
     };
+    super::availability::synchronize(world, owner, &state);
     if !state.dirty {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
@@ -613,6 +687,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
     };
+    state.single_record = super::availability::target(&config);
     let shared_config = std::sync::Arc::new(config.clone());
     let Some(parent) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
@@ -628,8 +703,40 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
     if state.data.len() > 200 {
         state.navigation = Some(ui::navigation(world, owner, state.page, state.data.len()));
     }
-    let rows = grouping::page(&state.data, &config, state.page);
+    let rows = if config.creating() {
+        Vec::new()
+    } else {
+        grouping::page(&state.data, &config, state.page)
+    };
     let cells = grouping::prepare(world, owner, &mut state, &rows, &config);
+    if let Some(uid) = state.single_record.clone()
+        && !state.row_entities.contains_key(&uid)
+        && !rows
+            .iter()
+            .any(|data| data["uid"].as_str() == Some(uid.as_str()))
+    {
+        let binding = RecordBinding {
+            area: owner,
+            uid: uid.clone(),
+            source: config.source.clone(),
+        };
+        let entity = spawn(world, parent, workspace, &config, binding.clone());
+        world.entity_mut(entity).insert((
+            Loading,
+            Row {
+                area: owner,
+                data: Value::Null,
+                config: shared_config.clone(),
+                index: 0,
+            },
+        ));
+        if config.viewport_height.is_some() || config.max_height.is_some() {
+            crate::native::scroll_sand::attach(world, entity);
+        }
+        super::availability::populate(world, entity, &config, Some(&binding));
+        crate::native::full_record::window::populate(world, entity, &binding);
+        state.row_entities.insert(uid, entity);
+    }
     let stale: Vec<_> = state
         .row_entities
         .iter()
@@ -637,6 +744,9 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         .map(|(uid, entity)| (uid.clone(), *entity))
         .collect();
     for (uid, entity) in stale {
+        if super::availability::retain(world, entity, &config) {
+            continue;
+        }
         let _ = world.despawn(entity);
         state.row_entities.remove(&uid);
     }
@@ -659,42 +769,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
             .copied()
             .filter(|entity| world.get_entity(*entity).is_ok())
             .unwrap_or_else(|| {
-                let entity = world
-                    .spawn((
-                        crate::native::castle::Castle,
-                        Square,
-                        InBox(parent),
-                        ChildOf(parent),
-                        WorkspaceMember(workspace),
-                        crate::native::sand_store::SandCredits(
-                            crate::native::credits::ATTRIBUTIONS,
-                        ),
-                        CanvasItem {
-                            position: DVec2::ZERO,
-                            size: Vec2::new(config.width, 160.0),
-                        },
-                        Node {
-                            flex_direction: FlexDirection::Column,
-                            padding: UiRect::all(px(12)),
-                            row_gap: px(8),
-                            overflow: Overflow::clip(),
-                            ..default()
-                        },
-                        crate::native::token_style::background(Token::Surface),
-                        binding.clone(),
-                        super::placement::Pending,
-                        Visibility::Hidden,
-                    ))
-                    .observe(click)
-                    .id();
-                if config.source != Source::Local {
-                    world.entity_mut(entity).insert(RemoteRecord);
-                }
-                if crate::native::practice_cells::owns_source(world, &config.source) {
-                    world
-                        .entity_mut(entity)
-                        .insert(crate::native::practice_cells::PracticeRecord);
-                }
+                let entity = spawn(world, parent, workspace, &config, binding.clone());
                 state.row_entities.insert(uid.clone(), entity);
                 entity
             });
@@ -709,12 +784,20 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         let same = world.get::<Row>(entity).is_some_and(|row| {
             row.data == data && row.config.as_ref() == &config && row.index == index
         });
+        if world.get::<RecordBinding>(entity).is_none() {
+            world
+                .entity_mut(entity)
+                .remove::<crate::native::full_record::window::WindowRecord>()
+                .insert(binding.clone());
+        }
         if !same {
             let template_changed = world
                 .get::<Row>(entity)
                 .is_none_or(|row| !row.config.same_template(&config))
+                || world.get::<Loading>(entity).is_some()
                 || state.template_dirty;
             if template_changed {
+                world.entity_mut(entity).remove::<Loading>();
                 super::presentation::rebuilding(world, entity);
                 if let Some(children) = world.get::<Children>(entity) {
                     let children: Vec<_> = children.iter().collect();
@@ -743,6 +826,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
     }
     state.dirty = false;
     state.template_dirty = false;
+    super::availability::synchronize(world, owner, &state);
     crate::native::relation_castle::reconcile(
         world,
         owner,
@@ -1233,13 +1317,7 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
         if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {
             item.size = size;
         }
-        if let Some(mut layout) = world.get_mut::<crate::native::layout::LayoutBox>(entity)
-            && layout.rules.axes[1].sizing == crate::native::layout::Sizing::Fit
-        {
-            let axis = &mut layout.rules.axes[1];
-            axis.min = size.y.max(1.0).min(axis.max);
-            axis.size = axis.size.clamp(axis.min, axis.max);
-        }
+        fit_height(world, entity, size.y);
         if let Some(point) = crate::native::topology::position(world, entity) {
             super::placement::finish(world, entity, point);
         }
@@ -1316,12 +1394,11 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
             return;
         }
     }
-    if let Some(mut layout) = world.get_mut::<crate::native::layout::LayoutBox>(entity) {
-        if layout.rules.axes[1].sizing == crate::native::layout::Sizing::Fit {
-            let axis = &mut layout.rules.axes[1];
-            axis.min = size.y.max(1.0).min(axis.max);
-            axis.size = axis.size.clamp(axis.min, axis.max);
-        }
+    if world
+        .get::<crate::native::layout::LayoutBox>(entity)
+        .is_some()
+    {
+        fit_height(world, entity, size.y);
         return;
     }
     let pinned = world
@@ -1359,6 +1436,34 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
     }
     if previous != Some(position) {
         world.entity_mut(entity).insert(LastLayout(position));
+    }
+}
+
+fn fit_height(world: &mut World, entity: Entity, height: f32) {
+    let managed = world
+        .get::<crate::native::layout::desktop::Managed>(entity)
+        .is_some();
+    let Some(mut layout) = world
+        .get::<crate::native::layout::LayoutBox>(entity)
+        .copied()
+    else {
+        return;
+    };
+    let previous = layout;
+    let axis = &mut layout.rules.axes[1];
+    if axis.sizing != crate::native::layout::Sizing::Fit {
+        return;
+    }
+    if managed {
+        axis.size = height.clamp(axis.min, axis.max);
+    } else {
+        axis.min = height.max(1.0).min(axis.max);
+        axis.size = axis.size.clamp(axis.min, axis.max);
+    }
+    if layout != previous {
+        *world
+            .get_mut::<crate::native::layout::LayoutBox>(entity)
+            .unwrap() = layout;
     }
 }
 

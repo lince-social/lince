@@ -1,0 +1,23 @@
+Import "Seminars.lingua"
+Import "../../sources/Hellenistic-Philosophers-Long-Sedley.lingua"
+Import "../../sources/Lives-and-Opinions-Yonge.lingua"
+Import "../../sources/Epictetus-Long.lingua"
+Import "../../aristotle/Logic-and-demonstration.lingua"
+Import "Action-and-political-life.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: Hellenistic criteria, inference, causation, and agency (@greek-seminar-hellenistic: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-long-sedley, #source @greek-source-diogenes, #source @greek-source-epictetus, #philosophy @greek-aristotle-logic, #ancient-greek-philosophy @greek-aristotle-logic, #philosophy @greek-seminar-ethics-politics, #ancient-greek-philosophy @greek-seminar-ethics-politics, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_7020B909F5EN8WYCK7HZ0F1ZBV
+**Preparation:** [the introductory schools](../../schools/Schools-of-life.lingua#r_58ENCWSNQARKCDXEP8FVWY9507), the distinction between a view and its transmitting source, Greek, and the literature method.
+
+**Primary corpus:** choose a coherent dispute using [Long and Sedley's source collection](../../sources/Hellenistic-Philosophers-Long-Sedley.lingua#r_0DRQW2CEH35TV91C49W4JH7Y0M). Read the Greek or Latin texts and critical notes in volume II alongside the translations and philosophical commentary in volume I. Follow the cited passages back to their surviving contexts: Diogenes Laertius VII or X, Epicurus' letters, Epictetus, Sextus Empiricus, or Cicero as the selected problem requires.
+
+**Choose a dispute:** the criterion of a cognitive impression and sceptical replies; propositions and valid inference; causal necessity and responsibility; the relation between pleasure and a complete life; or the use of a philosophical practice as evidence for a claim about value.
+
+Identify whether a source is a school's own text, a sympathetic report, an opponent's argument, or a later reconstruction. Different testimonies may depend on one another. A report in Latin requires the linguistic preparation appropriate to claims about its wording, with its connection to the Greek tradition defended.
+
+**Required work:** assemble an annotated set of witnesses, analyse the relevant original-language passages, reconstruct the strongest arguments on more than one side, and defend an interpretation in relation to current scholarship. A comparison of schools must identify a real shared question and explain where the accounts cease to be alternatives.
+
+**Crossings:** [Aristotelian inference](../../aristotle/Logic-and-demonstration.lingua#r_1SRR6TVQ8CC029F7QK6PKPM1X9); [action and responsibility](Action-and-political-life.lingua#r_433AESW7TGW0Y78QJSTW4MEXQJ); modern decision or scientific explanation when the argument supplies the additional evidence and preparation.
+
+**Review:** [Common seminar standard](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_7020B909F5EN8WYCK7HZ0F1ZBV

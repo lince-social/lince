@@ -229,7 +229,6 @@ impl Engine {
             matches!(
                 effect,
                 nucleus::karma::Consequence::InvokeCommand { .. } | nucleus::karma::Consequence::RunCommand { .. }
-                    | nucleus::karma::Consequence::RunAction { .. }
             )
         }) {
             self.require_permission(actor, "organ:update").await?;
@@ -238,6 +237,12 @@ impl Engine {
             self.karma_condition_records(condition.parsed().map_err(|error| invalid(error.to_string()))?, actor).await?;
         }
         for consequence in consequences.iter() {
+            if let nucleus::karma::Consequence::RunAction {action}=consequence {
+                let action: crate::actions::Action=serde_json::from_str(action)?;
+                if matches!(action,crate::actions::Action::AssertRecord{..}|crate::actions::Action::RetractAssertion{..}|crate::actions::Action::RetractRecord{..}|crate::actions::Action::SetQuantityExact{..}) {
+                    self.authorize_action(&action,actor).await?;
+                } else {self.require_permission(actor,"organ:update").await?;}
+            }
             if let nucleus::karma::Consequence::AdvanceAudience { plan, commitment } = consequence {
                 self.validate_audience_rule(plan, commitment, actor).await?;
             }
@@ -796,6 +801,12 @@ impl Engine {
                                 None => name.to_string(),
                             };
                             index.records.entry(uid).or_default().insert(rule.uid.clone());
+                        }
+                    } else if token.func==nucleus::expr::HAS_ASSERTION {
+                        for (position,name) in token.slug.split('|').enumerate() {
+                            if position!=1 && let Some(record)=store::records::resolve(&self.store.pool,name).await? {
+                                index.records.entry(record.uid).or_default().insert(rule.uid.clone());
+                            }
                         }
                     } else if token.func == nucleus::expr::ASSERTION {
                         index

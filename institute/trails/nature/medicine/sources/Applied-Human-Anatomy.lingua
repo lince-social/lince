@@ -1,0 +1,25 @@
+Import "../Medicine.lingua"
+Import "../Sources.lingua"
+
+Applied Human Anatomy — Nolan and McNamara (@med-source-applied: 0, is #book, #part-of @medicine-sources) { r_2JW0W235R6C2JBECH8N4WP5N3K
+Michael F. Nolan and John P. McNamara. Applied Human Anatomy. Virginia Tech Carilion School of Medicine with Virginia Tech Publishing, 2022. English. DOI: 10.21061/applied-human-anatomy. ISBN 978-1-957213-41-5, PDF.
+
+[Authorized source](https://vtechworks.lib.vt.edu/items/67ec9beb-db1c-45d5-83b5-a559f8021e51/full).
+
+A companion exercise manual with questions and an answer key, not a complete illustrated introduction. Chapter 2, Shoulder Girdle and Upper Limb, begins on printed page 14; the answer key is chapter 13. The PDF has 189 file pages; printed pagination differs. Work with the review questions first. Its hands-on group examinations and palpation tasks belong in suitable supervised learning rather than unsupervised investigation of a painful shoulder.
+
+**Assignments by scale:** for sustained regional study, read all of chapter 2, printed pages 14–37, and its answer-key section in chapter 13. For the clavicular joints and ligaments, return to review questions 1–4 on printed page 15. For regional arterial supply, use questions 8–12 on printed pages 15–16. For the axilla and relevant plexus branches, use questions 16–27 on printed pages 17–18. For scapular and upper-arm actions, read Movement items 1–6 on printed pages 31–32; items 10–11 on printed page 33 concern forearm pronation and supination. The latter help distinguish forearm motion from shoulder rotation. Use those prompts on drawings or as reading questions; performing the manual's resisted examination exercises calls for an appropriate supervised setting.
+
+**Access and reuse:** The [publisher PDF](https://vtechworks.lib.vt.edu/bitstreams/b89fd784-63f1-4c97-9188-0dd80ea7054c/download) is available for download. Copyright 2022 Nolan and McNamara; CC BY 4.0, with the book's notices for third-party components preserved. [Licence](https://creativecommons.org/licenses/by/4.0/). Credit the authors, title, publisher, year, DOI, and source when reusing; check separately identified components before adapting them.
+
+**Return:** [Medicine sources — books, anatomy, and clinical evidence](../Sources.lingua#r_2411E1397ZNK740CDA309B881D) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2JW0W235R6C2JBECH8N4WP5N3K
+
+Extension @med-source-applied "lince.resource" {
+ uri "https://vtechworks.lib.vt.edu/bitstreams/b89fd784-63f1-4c97-9188-0dd80ea7054c/download"
+ title "Applied Human Anatomy — Nolan and McNamara, 2022"
+ hash "cafb0832e2b6dc9b43cb8741628e12e8fc8971234482caf797407f9c6d2bd319"
+ media_type "application/pdf"
+ attribution "Michael F. Nolan and John P. McNamara. Applied Human Anatomy. Virginia Tech Carilion School of Medicine with Virginia Tech Publishing, 2022. DOI 10.21061/applied-human-anatomy."
+ license "https://creativecommons.org/licenses/by/4.0/"
+}

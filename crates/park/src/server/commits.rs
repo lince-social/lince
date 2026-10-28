@@ -16,6 +16,7 @@ struct Node {
     layout: SurfaceLayout,
     input: Option<Vec<(bool, Rectangle<i32, Logical>)>>,
     opaque: Option<Vec<(bool, Rectangle<i32, Logical>)>>,
+    color: lince_interface::host::color::Description,
 }
 
 impl Visual {
@@ -52,6 +53,7 @@ impl Visual {
                     layout: node.layout,
                     input: region(&node.input),
                     opaque: region(&node.opaque),
+                    color: node.color,
                 })
                 .collect(),
         }

@@ -91,7 +91,12 @@ impl Engine {
                     .await?
                     .ok_or_else(|| denied("Choose an Assertion predicate"))?,
                 object: match object {
-                    Some(object) => Some(self.resolve(&object).await?),
+                    Some(object) if lince_resources::reference::is_uri(&object) => Some(
+                        lince_resources::address(&object)
+                            .map_err(denied)?
+                            .to_string(),
+                    ),
+                    Some(object) => Some(self.assertion_object(&subject, &object).await?),
                     None => None,
                 },
             },
@@ -192,8 +197,14 @@ impl Engine {
                 predicate,
                 object,
             } => {
-                let ids: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid=? AND predicate_uid=? AND object_uid IS ? AND retracted_at IS NULL LIMIT 129")
-                    .bind(subject).bind(predicate).bind(object).fetch_all(&mut *tx).await?;
+                let uri = object
+                    .as_deref()
+                    .filter(|value| lince_resources::reference::is_uri(value));
+                let local = object
+                    .as_deref()
+                    .filter(|value| !lince_resources::reference::is_uri(value));
+                let ids: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid=? AND predicate_uid=? AND object_uid IS ? AND object_uri IS ? AND retracted_at IS NULL LIMIT 129")
+                    .bind(subject).bind(predicate).bind(local).bind(uri).fetch_all(&mut *tx).await?;
                 if ids.len() > 128 {
                     return Err(denied("Too many Assertions to retract"));
                 }
@@ -275,8 +286,23 @@ impl Engine {
                 .bind(target)
                 .execute(&mut *tx)
                 .await?;
-                if let Some(saved) = store::data_visibility::ensure_private_for_person_on(&mut tx, target, nucleus::visibility::Data::Place, actor).await? {
-                    store::sync_ops::log_local_tx(&mut tx, "data_visibility", target, "place", store::sync_ops::OpKind::Set, Some(serde_json::to_string(&saved)?)).await?;
+                if let Some(saved) = store::data_visibility::ensure_private_for_person_on(
+                    &mut tx,
+                    target,
+                    nucleus::visibility::Data::Place,
+                    actor,
+                )
+                .await?
+                {
+                    store::sync_ops::log_local_tx(
+                        &mut tx,
+                        "data_visibility",
+                        target,
+                        "place",
+                        store::sync_ops::OpKind::Set,
+                        Some(serde_json::to_string(&saved)?),
+                    )
+                    .await?;
                 }
                 store::sync_ops::log_local_tx(
                     &mut tx,

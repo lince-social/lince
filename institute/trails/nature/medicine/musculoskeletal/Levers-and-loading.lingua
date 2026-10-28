@@ -1,0 +1,25 @@
+Import "../Medicine.lingua"
+Import "../orthopedics/shoulder/function/Capsular-restraints.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Applied-Human-Anatomy.lingua"
+Import "Joint-and-soft-tissue-injury.lingua"
+Import "Musculoskeletal-system.lingua"
+Import "Nerves-and-blood-supply.lingua"
+
+Levers, force, stress, and loading (@msk-loading: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-applied, #medicine @msk-injury, #orthopedics @msk-injury) { r_11PBB06GFW5E3JY12EVAWF6YJN
+**Read a complete mechanical explanation:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), Interactions of Skeletal Muscles, Their Fascicle Arrangement, and Their Lever Systems in chapter 11. Complete the rest of chapter 11 in the broad regional-anatomy block; return here to the muscle-action and lever discussion when shoulder loading becomes specific.
+
+Force/força acts with direction and magnitude. A moment or torque depends on force and its perpendicular distance from an axis. A modest object held farther from the shoulder can require a larger moment than the same object held close. This is a mechanical explanation, not an individualized lifting limit.
+
+Stress/tensão mecânica relates force to area; strain/deformação describes relative change in shape or length. Stiffness/rigidez mecânica concerns the relationship between force and deformation in a specified context. Range of motion/amplitude de movimento describes joint movement and is not the same measurement.
+
+Tissue loading has magnitude, direction, rate, duration, and repetition. Capacity and exposure change over time. A useful account of an activity therefore considers more than the weight printed on a dumbbell.
+
+**Position is part of the load description:** the angle at a joint, the direction of force, the area carrying it, duration, and repetition influence the mechanical question. A passive movement and an actively resisted movement at the same apparent angle need not create identical forces. [What injury can mean — tissue continuity, loading, and repair](Joint-and-soft-tissue-injury.lingua#r_1K5DMQ5W1K2G12AMBV7X48YYHY) separates such loading descriptions from a claim of tissue damage; [Rotation and restraint — why position changes the capsule question](../orthopedics/shoulder/function/Capsular-restraints.lingua#r_2PW98DPTH66WTKFMPAX35775WE) later applies the distinction to rotation.
+
+**Try:** compare two drawings of an arm holding the same object at different distances. Mark the external moment arm and explain why the muscle force cannot be read directly from the object's mass.
+
+**Continue:** [What injury can mean — tissue continuity, loading, and repair](Joint-and-soft-tissue-injury.lingua#r_1K5DMQ5W1K2G12AMBV7X48YYHY).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_11PBB06GFW5E3JY12EVAWF6YJN

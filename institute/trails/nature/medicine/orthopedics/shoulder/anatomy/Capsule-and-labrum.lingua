@@ -1,0 +1,24 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Shoulder-labral-tears-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "Ligaments.lingua"
+
+The capsule, synovium, cartilage, and labrum (@shoulder-capsule: 0, is #chapter, #part-of @shoulder, #source @med-source-joint, #source @med-source-osu, #medicine @shoulder-ligaments, #orthopedics @shoulder-ligaments, #shoulder @shoulder-ligaments, #source @med-source-labrum) { r_7CBF6AK860P70ZD4YES5EY36JS
+**Read selected anatomical passages:** [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), joint capsule, glenoid labrum, synovial relationships, and biceps attachment. In [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), revisit the general capsule and lining in Synovial Joints and compare them with the Shoulder Joint subsection. For a first labral application, read Anatomy of the Shoulder and Types of Labral Tears in [Shoulder joint labral tear — AAOS](../../../sources/Shoulder-labral-tears-AAOS.lingua#r_66H3KEN7TXRY1BTNEX5F68DASF); the clinical sections come later.
+
+The glenoid is a relatively shallow socket. The glenoid labrum/lábio glenoidal or labrum glenoidal forms a fibrocartilaginous rim associated with the capsule and other attachments. It is different from the articular cartilage covering the joint surfaces.
+
+The fibrous capsule/cápsula fibrosa encloses the articulation and allows considerable movement. Capsular regions and associated ligaments contribute differently as position changes. Synovial lining/membrana sinovial and joint fluid/líquido sinovial form part of the joint's living environment.
+
+The inferior capsule includes a folded region that accommodates movement. The superior labrum has a relationship with the long head of the biceps tendon. These relationships help explain why discussions of instability, stiffness, and labral findings refer to different parts of the same region.
+
+**Keep the two cartilage questions separate:** a labral lesion concerns a rim or attachment; articular cartilage damage concerns a joint-surface covering. The capsule and its ligamentous regions provide another part of the restraint system. A phrase such as 'joint damage' should therefore be unpacked into the exact structure, location, observed change, and evidence connecting it with symptoms. [Shoulder joint labral tear — AAOS](../../../sources/Shoulder-labral-tears-AAOS.lingua#r_66H3KEN7TXRY1BTNEX5F68DASF) supplies the first regional examples.
+
+**Try:** draw the labrum at the rim and cartilage on the articulating surfaces. Trace the capsule around the joint. Explain why 'a tear in the shoulder cartilage' leaves several anatomical questions unanswered, and why a structural finding still requires clinical interpretation.
+
+**Continue:** [Shoulder ligaments — which structures do they connect?](Ligaments.lingua#r_5GPKY72JMMZR8K7KPQB707S44E).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7CBF6AK860P70ZD4YES5EY36JS

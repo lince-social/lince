@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
@@ -66,20 +67,20 @@ impl Plugin for TodoPlugin {
 
 pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity {
     world.init_resource::<Subscriptions>();
-    let body = panel::frame(world, sand, "Todo focus");
-    let query = panel::field(
-        world,
-        body,
-        "Saved Protein name, slug or uid (blank uses the focus queue)",
-        "",
-    );
+    let body = panel::frame(world, sand, Tr::TodoFocus.text());
+    let query = panel::field(world, body, Tr::SavedProteinQuery.text(), "");
     let controls = panel::row(world, body);
-    panel::button(world, controls, sand, "Use Protein", Command::Query);
-    panel::button(world, controls, sand, "Refresh", Command::Refresh);
-    let ids_button = panel::button(world, controls, sand, "Show ids: off", Command::Ids);
-    panel::button(world, controls, sand, "Undo completion", Command::Undo);
-    let status =
-        crate::native::edit_mode::label(world, body, "Connecting to the focus queue…", 12.0);
+    panel::button(world, controls, sand, Tr::UseProtein.text(), Command::Query);
+    panel::button(world, controls, sand, Tr::Refresh.text(), Command::Refresh);
+    let ids_button = panel::button(world, controls, sand, Tr::ShowIdsOff.text(), Command::Ids);
+    panel::button(
+        world,
+        controls,
+        sand,
+        Tr::UndoCompletion.text(),
+        Command::Undo,
+    );
+    let status = crate::native::edit_mode::label(world, body, Tr::ConnectingQueue.text(), 12.0);
     let list = panel::column(world, body);
     world
         .entity_mut(list)
@@ -97,22 +98,22 @@ pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity
         world,
         navigation,
         sand,
-        "Previous",
+        Tr::Previous.text(),
         Command::Move(-(PAGE as isize)),
     );
     panel::button(
         world,
         navigation,
         sand,
-        "Next",
+        Tr::Next.text(),
         Command::Move(PAGE as isize),
     );
-    let input = panel::field(world, body, "New task", "");
+    let input = panel::field(world, body, Tr::NewTask.text(), "");
     world
         .entity_mut(input)
         .insert(NewTask(sand))
         .observe(add_key);
-    panel::button(world, body, sand, "Add task", Command::Add);
+    panel::button(world, body, sand, Tr::AddTask.text(), Command::Add);
     world.entity_mut(sand).insert(TodoSand {
         protein: String::new(),
         query,
@@ -424,9 +425,9 @@ fn submit(
 fn ids_label(world: &mut World, owner: Entity) {
     let view = world.get::<TodoSand>(owner).unwrap();
     let text = if view.show_ids {
-        "Show ids: on"
+        Tr::ShowIdsOn.text()
     } else {
-        "Show ids: off"
+        Tr::ShowIdsOff.text()
     };
     if let Some(label) = world
         .get::<Children>(view.ids_button)
@@ -508,7 +509,9 @@ fn render(world: &mut World, owner: Entity) {
 }
 
 fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
-    if crate::native::laboratory::blocked(world, owner) { return; }
+    if crate::native::laboratory::blocked(world, owner) {
+        return;
+    }
     let view = world.get::<TodoSand>(owner).unwrap();
     let status = view.status;
     match message {

@@ -1,0 +1,23 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Republic-Jowett.lingua"
+Import "../aristotle/Living-well-and-character.lingua"
+Import "../questions/Questions-and-crossings.lingua"
+Import "Theaetetus.lingua"
+
+Republic: justice, education, and knowing (@greek-republic: 0, is #chapter, #part-of @greek-plato-aristotle, #source @greek-source-republic, #philosophy @greek-aristotle-good, #ancient-greek-philosophy @greek-aristotle-good, #philosophy @greek-question-crossings, #ancient-greek-philosophy @greek-question-crossings, #philosophy @greek-theaetetus, #ancient-greek-philosophy @greek-theaetetus) { r_05G1N50PP71GRGDNAPG38CQ8J5
+**Read:** [Republic, translated by Benjamin Jowett](../sources/Republic-Jowett.lingua#r_2K96NK6GTRV5ZT0DD1DWJA9BZF). Choose one of two connected reading paths, and use the intervening books to examine how the whole construction develops.
+
+**Justice path:** read Books I–II, especially the accounts of justice, the challenge concerning injustice, and the ring of Gyges; continue into Book IV's account of city and soul. [Crito](../socratic/Crito.lingua#r_54N10WGKCSCKW6XM202PCG7ZDH) and [Gorgias](../socratic/Gorgias.lingua#r_5G884J0SFXCP4YRBFF5C5YSYD2) supply useful comparisons. Ask whether explaining order in a city establishes what makes an individual just, and whether justice is defended for its results, its own character, or both.
+
+**Knowledge and education path:** read the concluding comparisons of Book VI, the sun and divided line, then Book VII's cave and discussion of education. [Meno](../socratic/Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN) supplies the question of learning; introduce the required geometrical divisions through a labelled sketch. Track what is compared: objects, ways of understanding, education, and political responsibility.
+
+**Practice:** for justice, reconstruct the challenge posed by the ring and one response. For education, draw the cave's transitions and explain what each is supposed to represent. State which part is an analogy and which conclusion still requires an argument.
+
+Examine who works, rules, learns, and is assigned a role in the proposed city. Relate the material arrangements to the account of justice instead of treating the political construction as a neutral background.
+
+**Check:** defend one interpretation against a credible alternative using the book and speaker, the actual passage, and its role in the larger dialogue. Explain a limitation of transferring the city–soul comparison or the cave to a present institution.
+
+**Continue:** [Aristotle on the good life](../aristotle/Living-well-and-character.lingua#r_21YB00AWNRYQ0X2SQ8H0RFRW65) or [the political and educational crossings](../questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF). **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Political comparison:** [Politics on membership, authority, and the common advantage](../aristotle/Political-community.lingua#r_0NZK4NKSQVX9NMTAWRT2XNBATD). **Knowledge comparison:** [Theaetetus](Theaetetus.lingua#r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N).
+} r_05G1N50PP71GRGDNAPG38CQ8J5

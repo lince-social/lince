@@ -1,0 +1,21 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "../../../sources/Shoulder-arthritis-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "Nerve-and-referred-pain.lingua"
+
+Arthritis — joint disease with several mechanisms (@shoulder-arthritis: 0, is #chapter, #part-of @shoulder, #source @med-source-arthritis, #source @med-source-ms-ufrgs, #medicine @shoulder-referred, #orthopedics @shoulder-referred, #shoulder @shoulder-referred) { r_025RTWPYVQNG09X806FBAZZETF
+**Read the disease distinctions:** [Arthritis of the shoulder — AAOS](../../../sources/Shoulder-arthritis-AAOS.lingua#r_7B3XNZ2YPTDVPMN3M6DH7R8S2M), the location and type of arthritis, symptoms, and assessment; [Ortopedia adulto — Ministério da Saúde and UFRGS](../../../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78), the osteoarthritis and crystal-arthritis protocols. Return to articular cartilage and the whole-joint account before interpreting a phrase such as joint wear.
+
+Osteoarthritis/osteoartrite or artrose affects the joint as a living system, including cartilage and other structures. It should not be reduced to a measurement of how much the person has used the joint. Post-traumatic disease and cuff tear arthropathy have additional anatomical contexts.
+
+Immune-mediated inflammatory arthritis, infection, and crystal-related arthritis involve other mechanisms. 'Arthritis/artrite' does not specify a single cause. AC joint disease and glenohumeral disease also concern different locations.
+
+Symptoms, examination, and images help interpret whether a finding explains a current problem. Persistent pain and restricted movement can overlap with other disorders. A treatment discussion needs the particular condition, goals, alternatives, benefits, and burdens.
+
+**Try:** make a comparison with columns for joint, proposed mechanism, relevant findings, and uncertainty. Contrast glenohumeral osteoarthritis, AC osteoarthritis, and an inflammatory arthritis without assigning a personal diagnosis from their descriptions.
+
+**Continue:** [Nerve disorders and pain referred to the shoulder](Nerve-and-referred-pain.lingua#r_7BFZ7QKTEBQWTCQD9A60VXWDH5).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_025RTWPYVQNG09X806FBAZZETF

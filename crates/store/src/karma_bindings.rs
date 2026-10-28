@@ -47,8 +47,12 @@ async fn bind(
             .map_err(|error| invalid(error.to_string()))?
             .reads()
         {
-            let reading = nucleus::expr::binding_reading(&token.func);
             for (position, authored) in token.slug.split('|').enumerate() {
+                let reading = if token.func == nucleus::expr::HAS_ASSERTION {
+                    nucleus::expr::assertion_binding(position)
+                } else {
+                    nucleus::expr::binding_reading(&token.func)
+                };
                 if bindings
                     .iter()
                     .any(|binding| binding.reading == reading && binding.authored == authored)
@@ -59,11 +63,16 @@ async fn bind(
                     .iter()
                     .find(|binding| binding.reading == reading && binding.authored == authored);
                 let kind = match token.func.as_str() {
+                    nucleus::expr::HAS_ASSERTION if position == 1 => ReferenceKind::Concept,
                     nucleus::expr::ASSERTION | "demand" => ReferenceKind::Concept,
                     "freq" => ReferenceKind::Frequency,
                     "promise_state" | "confidence" => ReferenceKind::Promise,
-                    name if nucleus::transfer::karma::is_reading(name) && position == 0 => ReferenceKind::Transfer,
-                    name if nucleus::transfer::karma::is_agreement_reading(name) => ReferenceKind::Person,
+                    name if nucleus::transfer::karma::is_reading(name) && position == 0 => {
+                        ReferenceKind::Transfer
+                    }
+                    name if nucleus::transfer::karma::is_agreement_reading(name) => {
+                        ReferenceKind::Person
+                    }
                     _ => ReferenceKind::Record,
                 };
                 let name = bound.map_or(authored, |binding| binding.target.as_str());
@@ -108,7 +117,12 @@ async fn bind(
             }
         }
     }
-    bindings.extend(previous.iter().filter(|binding| binding.reading.starts_with("consequence.")).cloned());
+    bindings.extend(
+        previous
+            .iter()
+            .filter(|binding| binding.reading.starts_with("consequence."))
+            .cloned(),
+    );
     Ok(bindings)
 }
 

@@ -299,6 +299,17 @@ pub(crate) struct SavedShader {
     drafts: Vec<shader_effects::SavedEditor>,
 }
 
+impl crate::native::sand_placement::scratch::Saved for SavedShader {
+    fn normalize_scratch(&mut self, homes: &crate::native::sand_placement::scratch::Homes) {
+        let previous = self.frame.workspace;
+        crate::native::sand_placement::scratch::Saved::normalize_scratch(&mut self.frame, homes);
+        crate::native::sand_placement::scratch::normalize_all(&mut self.drafts, homes);
+        if self.frame.workspace != previous {
+            for draft in &mut self.drafts { if draft.workspace == previous { draft.workspace = self.frame.workspace; } }
+        }
+    }
+}
+
 impl SavedShader {
     pub(crate) fn workspace(&self) -> u64 {
         self.frame.workspace

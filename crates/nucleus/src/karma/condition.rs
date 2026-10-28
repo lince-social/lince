@@ -272,6 +272,10 @@ impl Condition {
         let expr = Expr::parse(source).map_err(|error| ConditionError::Parse(error.to_string()))?;
         fn validate(expr: &Expr) -> Result<(), ConditionError> {
             match expr {
+                Expr::Fn(name, args) if name == crate::expr::HAS_ASSERTION => {
+                    crate::expr::assertion_token(args)
+                        .map_err(|error| ConditionError::Parse(error.to_string()))?;
+                }
                 Expr::Fn(name, args) if name == "extension" => {
                     crate::expr::extension_token(args)
                         .map_err(|error| ConditionError::Parse(error.to_string()))?;
@@ -355,6 +359,17 @@ impl Condition {
             match expr {
                 Expr::Ref(name) => *name = resolve(reading, name)?,
                 Expr::Fn(name, arguments) => {
+                    if name == crate::expr::HAS_ASSERTION {
+                        for (position, argument) in arguments.iter_mut().enumerate() {
+                            let reading = crate::expr::assertion_binding(position);
+                            if let Expr::Fn(_, inner) = argument {
+                                visit(&mut inner[0], reading, resolve)?;
+                            } else {
+                                visit(argument, reading, resolve)?;
+                            }
+                        }
+                        return Ok(());
+                    }
                     if name == "extension" {
                         let token = crate::expr::extension_token(arguments)
                             .map_err(|error| ConditionError::Parse(error.to_string()))?;
@@ -455,6 +470,11 @@ fn call(
     args: &[Expr],
     resolver: &mut dyn ExactResolver,
 ) -> Result<DecimalValue, ConditionError> {
+    if name == crate::expr::HAS_ASSERTION {
+        let token = crate::expr::assertion_token(args)
+            .map_err(|error| ConditionError::Parse(error.to_string()))?;
+        return resolver.lookup(&token.func, &token.slug, None);
+    }
     if name == "extension" {
         let token = crate::expr::extension_token(args)
             .map_err(|error| ConditionError::Parse(error.to_string()))?;

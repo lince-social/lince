@@ -13,6 +13,80 @@ fn world() -> (World, Entity) {
 }
 
 #[test]
+fn inline_scrolling_crosses_sections_and_releases_the_outer_page_at_the_end() {
+    let (mut world, root) = world();
+    let controls = world.spawn(Node::default()).id();
+    let owner = embedded(
+        &mut world,
+        root,
+        controls,
+        lince_resources::Resource {
+            uri: "https://example.invalid/book.pdf".into(),
+            media_type: "application/pdf".into(),
+            ..default()
+        },
+    );
+    let viewport = world.get::<View>(owner).unwrap().viewport;
+    {
+        let mut view = world.get_mut::<View>(owner).unwrap();
+        view.info = Some(Info {
+            title: "Book".into(),
+            sections: vec!["One".into(), "Two".into()],
+            is_pdf: true,
+        });
+        view.layout = Some(Layout {
+            width: 400,
+            height: 800,
+        });
+        view.viewport_size = Vec2::new(400.0, 200.0);
+    }
+    assert!(scroll_inline(&mut world, owner, Vec2::new(0.0, 300.0)));
+    assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 300.0);
+    assert!(scroll_inline(&mut world, owner, Vec2::new(0.0, 300.0)));
+    assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 600.0);
+    assert!(scroll_inline(&mut world, owner, Vec2::new(0.0, 20.0)));
+    assert_eq!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .position()
+            .section,
+        1
+    );
+    assert_eq!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .position()
+            .fraction,
+        0.0
+    );
+    world.get_mut::<View>(owner).unwrap().layout = Some(Layout {
+        width: 400,
+        height: 800,
+    });
+    assert!(!scroll_inline(&mut world, owner, Vec2::new(0.0, 20.0)));
+    world.get_mut::<ScrollPosition>(viewport).unwrap().0.y = 0.0;
+    assert!(scroll_inline(&mut world, owner, Vec2::new(0.0, -20.0)));
+    assert_eq!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .position()
+            .section,
+        0
+    );
+    assert_eq!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .position()
+            .fraction,
+        1.0
+    );
+}
+
+#[test]
 fn restores_two_books_positions_modes_zoom_and_placement() {
     let (mut world, root) = world();
     let mut document = DocumentViewer::with_path("/books/one.pdf");
@@ -90,4 +164,50 @@ fn invalid_saved_positions_do_not_enter_workspace() {
     state.zoom = 1.0;
     state.path = "bad\0path".into();
     assert!(!state.valid());
+}
+
+#[test]
+fn manual_online_sources_and_retention_results_follow_the_current_document() {
+    let (mut world, root) = world();
+    world.init_resource::<worker::Worker>();
+    let owner = spawn(&mut world, root, 1, DVec2::ZERO, DocumentViewer::default());
+    let uri = "https://example.invalid/book.epub";
+    ui::open(&mut world, owner, uri.into());
+    let state = world.get::<DocumentViewer>(owner).unwrap();
+    assert_eq!(state.path, uri);
+    assert_eq!(state.resource.as_ref().unwrap().uri, uri);
+    world
+        .resource::<worker::Worker>()
+        .reply_sender
+        .send(worker::Reply::Retained {
+            owner,
+            path: "/old.pdf".into(),
+            result: Ok("/retained".into()),
+        })
+        .unwrap();
+    runtime::update(&mut world);
+    assert!(world.get::<View>(owner).unwrap().retention.is_none());
+    world
+        .resource::<worker::Worker>()
+        .reply_sender
+        .send(worker::Reply::Retained {
+            owner,
+            path: uri.into(),
+            result: Ok("/retained".into()),
+        })
+        .unwrap();
+    runtime::update(&mut world);
+    assert_eq!(
+        world.get::<View>(owner).unwrap().retention.as_deref(),
+        Some("Available offline")
+    );
+    ui::open(&mut world, owner, "/new.pdf".into());
+    assert!(world.get::<View>(owner).unwrap().retention.is_none());
+    assert!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .resource
+            .is_none()
+    );
 }

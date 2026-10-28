@@ -1,0 +1,21 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../Shoulder.lingua"
+Import "../conditions/Shoulder-pain.lingua"
+
+Reconstruct a functioning shoulder (@shoulder-anatomy-review: 0, is #chapter, #part-of @shoulder, #source @med-source-applied, #source @med-source-joint, #medicine @shoulder-pain, #orthopedics @shoulder-pain, #shoulder @shoulder-pain) { r_553DGK77PSSKH55Q7ME3XP92XH
+Use the anatomy review in [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), chapter 2, after completing the shoulder illustrations and explanations. Answer on paper before consulting the answer key; treat hands-on examination tasks as material for supervised study rather than painful self-testing.
+
+From unlabeled anterior and posterior views, identify the three main bones, major landmarks, glenohumeral articulation, AC and SC joints, labrum, capsule, principal supporting ligaments, cuff tendons, long biceps tendon, and subacromial-subdeltoid bursal region. Add the principal arm-moving and scapular muscles, their actions, and the named nerves already introduced.
+
+Explain one overhead reach and one rotational action using the scapula, clavicle, humerus, and muscle coordination. Draw a tissue section showing which structures are inside the capsule, at its boundary, or outside it. Check uncertain relationships against [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4) rather than guessing from a familiar diagram.
+
+For rotation, distinguish humeral internal/external rotation from forearm pronation/supination and describe the upper-arm starting position. Explain why movement range changes with the reference position and measurement conditions. Use chapter 2 Movement items 10–11 in [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K) to check the forearm distinction on paper.
+
+**Ready for the problem readings:** you can locate a structure, describe its function and neighbors, and explain the limits of the diagram. This establishes a foundation for understanding clinical language, not the ability to diagnose or safely perform an examination.
+
+**Continue:** [Shoulder pain — begin with the question, not a diagnosis](../conditions/Shoulder-pain.lingua#r_6NFPQQ7Z2DAF090E4JVN6MQ0FR).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_553DGK77PSSKH55Q7ME3XP92XH

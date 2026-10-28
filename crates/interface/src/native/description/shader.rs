@@ -25,6 +25,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+pub(crate) mod extent;
+mod scheduling;
+mod snapshot;
 pub(crate) mod spatial;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -94,6 +97,15 @@ pub(crate) struct Preview {
 }
 
 pub(super) fn install(app: &mut App) {
+    if !app.is_plugin_added::<crate::native::topology::surface_budget::BudgetPlugin>() {
+        app.add_plugins(crate::native::topology::surface_budget::BudgetPlugin);
+    }
+    app.add_systems(
+        PostUpdate,
+        extent::measure
+            .after(bevy::ui::UiSystems::PostLayout)
+            .after(bevy::transform::TransformSystems::Propagate),
+    );
     spatial::install(app);
     if app.world().contains_resource::<AssetServer>() {
         app.add_plugins(UiMaterialPlugin::<ShaderMaterial>::default());
@@ -130,18 +142,8 @@ pub(super) fn spawn(world: &mut World, parent: Entity, source: &str, old: Option
         world.entity_mut(old).insert(ChildOf(parent));
         return;
     }
-    let owner = world
-        .spawn((
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                flex_shrink: 0.0,
-                row_gap: px(4),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
+    let frame = crate::native::embedded_media::frame(world, parent, "Shader preview");
+    let owner = frame.owner;
     let surface = world
         .spawn((
             Node {
@@ -151,10 +153,10 @@ pub(super) fn spawn(world: &mut World, parent: Entity, source: &str, old: Option
                 ..default()
             },
             RelativeCursorPosition::default(),
-            ChildOf(owner),
+            ChildOf(frame.content),
         ))
         .id();
-    let label = crate::native::edit_mode::label(world, owner, "Compiling WGSL…", 12.0);
+    let label = crate::native::edit_mode::label(world, frame.controls, "Compiling WGSL…", 12.0);
     world.entity_mut(owner).insert(Preview {
         source: source.into(),
         pending: Some(Instant::now()),
@@ -333,7 +335,6 @@ fn update(world: &mut World) {
     if active && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
         wake.ring();
     }
-    update_effects(world);
 }
 
 #[derive(Resource, Clone, Default)]
@@ -344,6 +345,7 @@ struct PipelineRequests(Vec<Handle<Shader>>);
 
 #[derive(Resource, Default)]
 struct EffectAssets {
+    frame: u64,
     shaders: HashMap<String, Handle<Shader>>,
     available: Vec<Handle<Shader>>,
     owned: HashMap<
@@ -439,9 +441,19 @@ pub(crate) struct EffectPreview {
     pending: Option<Instant>,
     pub(crate) priority: bool,
     painted: u8,
+    last_served: u64,
     last_quantity: Option<String>,
     last_numeric: nucleus::shader_effect::bindings::NumericValues,
+    snapshot: snapshot::Snapshot,
     budget_blocked: bool,
+}
+
+impl EffectPreview {
+    fn complete_frame(&mut self, program: String, inputs: ShaderInputs) {
+        self.painted = self.painted.saturating_add(1);
+        self.snapshot.painted(program, inputs);
+        self.snapshot.synchronize(self.frozen, self.painted);
+    }
 }
 
 pub(crate) fn effect(
@@ -481,13 +493,13 @@ pub(crate) fn effect_with_priority(
     {
         let mut image = Image::new_uninit(
             Extent3d {
-                width: 256,
-                height: 256,
+                width: 1,
+                height: 1,
                 depth_or_array_layers: 1,
             },
             TextureDimension::D2,
             TextureFormat::Rgba8UnormSrgb,
-            RenderAssetUsages::RENDER_WORLD,
+            RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
         );
         image.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
             | TextureUsages::COPY_DST
@@ -504,17 +516,23 @@ pub(crate) fn effect_with_priority(
                 },
                 Msaa::Off,
                 RenderTarget::Image(image.clone().into()),
+                crate::native::capture::render::TargetSource(owner),
+                crate::native::topology::surface_budget::residency::Target {
+                    image: image.id(),
+                    release: false,
+                },
                 RenderLayers::layer(30),
             ))
             .id();
         let render_surface = world
             .spawn((
                 Node {
-                    width: px(256),
-                    height: px(256),
+                    width: px(1),
+                    height: px(1),
                     ..default()
                 },
                 UiTargetCamera(camera),
+                crate::native::capture::render::TargetSource(owner),
                 bevy::picking::Pickable::IGNORE,
             ))
             .id();
@@ -551,8 +569,10 @@ pub(crate) fn effect_with_priority(
         pending: None,
         priority,
         painted: 0,
+        last_served: 0,
         last_quantity: None,
         last_numeric: default(),
+        snapshot: default(),
         budget_blocked,
     });
     if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
@@ -573,7 +593,7 @@ pub(crate) fn lighting_inputs(
     if state.disabled {
         return None;
     }
-    let quantity = if state.frozen && state.painted >= 3 {
+    let quantity = if state.snapshot.frozen() || state.frozen && state.painted >= 3 {
         &state.last_quantity
     } else {
         &state.quantity
@@ -583,6 +603,13 @@ pub(crate) fn lighting_inputs(
 
 pub(crate) fn output(world: &World, entity: Entity) -> Entity {
     world.get::<Preview>(entity).unwrap().surface
+}
+
+pub(crate) fn background_output(world: &mut World, entity: Entity) -> Entity {
+    let preview = world.get::<Preview>(entity).unwrap();
+    let (surface, label) = (preview.surface, preview.label);
+    world.get_mut::<Node>(label).unwrap().display = Display::None;
+    surface
 }
 
 pub(crate) fn effect_image(world: &World, entity: Entity) -> Option<Handle<Image>> {
@@ -597,25 +624,18 @@ pub(crate) fn effect_image(world: &World, entity: Entity) -> Option<Handle<Image
         .map(|owned| owned.2.clone())
 }
 
-fn update_effects(world: &mut World) {
+pub(crate) fn update_effects(world: &mut World) {
     world.init_resource::<EffectAssets>();
+    let frame = {
+        let mut assets = world.resource_mut::<EffectAssets>();
+        assets.frame = assets.frame.saturating_add(1);
+        assets.frame
+    };
     let mut entities: Vec<_> = world
         .query_filtered::<Entity, With<EffectPreview>>()
         .iter(world)
         .collect();
-    entities.sort_by_key(|entity| {
-        let preview = world.get::<EffectPreview>(*entity).unwrap();
-        (
-            preview.painted >= 3
-                && preview.last_quantity == preview.quantity
-                && preview.last_numeric == preview.numeric
-                && preview.observed.as_ref() == Some(&preview.effect)
-                && preview.pending.is_none()
-                && preview.candidates.is_empty(),
-            !preview.priority,
-            entity.to_bits(),
-        )
-    });
+    scheduling::order(world, &mut entities, frame);
     let alive: HashSet<_> = entities.iter().copied().collect();
     spatial::prune(world, &alive);
     let dead: Vec<_> = world
@@ -646,6 +666,12 @@ fn update_effects(world: &mut World) {
             let preview = world.get::<Preview>(entity).unwrap();
             (preview.surface, preview.label, preview.started)
         };
+        {
+            let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
+            let freeze = preview.frozen && preview.working.is_some();
+            let painted = preview.painted;
+            preview.snapshot.synchronize(freeze, painted);
+        }
         let (definition, changed, disabled, camera, render_surface) = {
             let preview = world.get::<EffectPreview>(entity).unwrap();
             let changed = preview.observed.as_ref() != Some(&preview.effect);
@@ -666,8 +692,9 @@ fn update_effects(world: &mut World) {
         }
         let frozen = {
             let preview = world.get::<EffectPreview>(entity).unwrap();
-            preview.frozen && preview.working.is_some() && preview.painted >= 3
+            preview.snapshot.frozen()
         };
+        let repainting = frozen && world.get::<EffectPreview>(entity).unwrap().painted < 3;
         if !frozen {
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
             if preview.last_quantity != preview.quantity || preview.last_numeric != preview.numeric
@@ -696,10 +723,21 @@ fn update_effects(world: &mut World) {
         {
             wake.after(Duration::from_millis(30));
         }
-        let showing = !disabled && visible(world, surface);
-        let render = showing && !frozen && rendered < 8;
+        let showing = !disabled
+            && visible(world, surface)
+            && world
+                .get::<extent::Raster>(entity)
+                .is_none_or(|raster| raster.visible);
+        let eligible = scheduling::eligible(world.get::<EffectPreview>(entity).unwrap(), changed);
+        let render = showing && eligible && (!frozen || repainting) && rendered < scheduling::SLOTS;
         if render {
             rendered += 1;
+            world.get_mut::<EffectPreview>(entity).unwrap().last_served = frame;
+        }
+        if let Some(mut target) =
+            world.get_mut::<crate::native::topology::surface_budget::residency::Target>(camera)
+        {
+            target.release = !showing || frozen && !repainting || !eligible;
         }
         if let Some(mut camera) = world.get_mut::<Camera>(camera) {
             camera.is_active = render;
@@ -722,18 +760,19 @@ fn update_effects(world: &mut World) {
             }
         }
         if frozen && showing {
+            let message = extent::label(world, entity, "Snapshot frozen".into());
             if world.get::<EffectPreview>(entity).unwrap().error.is_empty()
                 && let Some(mut text) = world.get_mut::<Text>(label)
             {
-                if text.0 != "Snapshot frozen" {
-                    text.0 = "Snapshot frozen".into();
+                if text.0 != message {
+                    text.0 = message;
                 }
             }
         }
-        if !showing || frozen {
+        if !showing || frozen && !repainting {
             continue;
         }
-        if changed {
+        if changed && !frozen {
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
             preview.observed = definition.clone();
             preview.pending = Some(Instant::now());
@@ -741,11 +780,12 @@ fn update_effects(world: &mut World) {
             preview.painted = 0;
             preview.candidates.clear();
         }
-        if world
-            .get::<EffectPreview>(entity)
-            .unwrap()
-            .pending
-            .is_some_and(|instant| instant.elapsed() >= Duration::from_millis(200))
+        if !frozen
+            && world
+                .get::<EffectPreview>(entity)
+                .unwrap()
+                .pending
+                .is_some_and(|instant| instant.elapsed() >= Duration::from_millis(200))
         {
             let definition = definition.as_ref().unwrap();
             let result = definition.validate();
@@ -825,7 +865,10 @@ fn update_effects(world: &mut World) {
             .unwrap()
             .candidates
             .clone();
-        if !candidates.is_empty() && world.get::<EffectPreview>(entity).unwrap().error.is_empty() {
+        if !frozen
+            && !candidates.is_empty()
+            && world.get::<EffectPreview>(entity).unwrap().error.is_empty()
+        {
             let statuses = world
                 .get_resource::<PipelineStatus>()
                 .map(|status| status.0.lock().unwrap().clone())
@@ -880,6 +923,8 @@ fn update_effects(world: &mut World) {
         let preview = world.get::<EffectPreview>(entity).unwrap();
         let message = if !preview.error.is_empty() {
             format!("WGSL: {}", preview.error)
+        } else if frozen {
+            "Snapshot frozen".into()
         } else if !preview.ready {
             "Preparing WGSL…".into()
         } else if preview.quantity.is_none() {
@@ -891,6 +936,7 @@ fn update_effects(world: &mut World) {
         } else {
             String::new()
         };
+        let message = extent::label(world, entity, message);
         if let Some(mut text) = world.get_mut::<Text>(label) {
             if text.0 != message {
                 text.0 = message;
@@ -908,22 +954,29 @@ fn update_effects(world: &mut World) {
         } else {
             default()
         };
-        let selected = working.selected_with_inputs(preview.quantity.as_deref(), &numeric);
+        let selected = preview
+            .snapshot
+            .program()
+            .unwrap_or_else(|| working.selected_with_inputs(preview.quantity.as_deref(), &numeric));
         let Some(shader) = preview.programs.get(selected).cloned() else {
             continue;
         };
         let quantity = nucleus::shader_effect::gpu_quantity(preview.quantity.as_deref());
         let mapped = working.inputs.resolve(preview.quantity.as_deref());
-        let motion = preview.motion
+        let motion = !frozen
+            && preview.motion
             && crate::native::shader_effects::motion_allowed(world)
             && render
-            && animated < 8;
+            && animated < scheduling::SLOTS;
         if motion {
             animated += 1;
         }
         let strength = preview.strength;
         let node = world.get::<ComputedNode>(surface).unwrap();
-        let size = node.size() * node.inverse_scale_factor();
+        let size = world.get::<extent::Raster>(entity).map_or_else(
+            || node.size() * node.inverse_scale_factor(),
+            |raster| raster.pixels.as_vec2(),
+        );
         let cursor = world.get::<RelativeCursorPosition>(surface);
         let inside = cursor.is_some_and(RelativeCursorPosition::cursor_over);
         let pointer = cursor
@@ -935,46 +988,49 @@ fn update_effects(world: &mut World) {
                 .get_resource::<ButtonInput<MouseButton>>()
                 .is_some_and(|buttons| buttons.pressed(MouseButton::Left));
         let (values, present) = numeric.gpu();
-        let inputs = ShaderInputs {
-            numeric0: Vec4::from_array(values[..4].try_into().unwrap()),
-            numeric1: Vec4::from_array(values[4..].try_into().unwrap()),
-            present0: UVec4::from_array(present[..4].try_into().unwrap()),
-            present1: UVec4::from_array(present[4..].try_into().unwrap()),
-            size,
-            time: if motion {
-                started.elapsed().as_secs_f32()
-            } else {
-                0.0
-            },
-            delta: if motion {
-                world.get_resource::<Time>().map_or(0.0, Time::delta_secs)
-            } else {
-                0.0
-            },
-            quantity: quantity.unwrap_or(0.0),
-            quantity_present: u32::from(quantity.is_some()),
-            task_state: mapped.task as u32,
-            progress: mapped.progress.unwrap_or(0.0),
-            progress_present: u32::from(mapped.progress.is_some()),
-            effect_strength: strength.clamp(0.0, 1.0),
-            motion_allowed: u32::from(motion),
-            mouse: if motion {
-                Vec4::new(
-                    pointer.x,
-                    pointer.y,
-                    u8::from(pressed) as f32,
-                    u8::from(inside) as f32,
-                )
-            } else {
-                Vec4::ZERO
-            },
-            ..default()
-        };
+        let inputs = preview
+            .snapshot
+            .inputs(size)
+            .unwrap_or_else(|| ShaderInputs {
+                numeric0: Vec4::from_array(values[..4].try_into().unwrap()),
+                numeric1: Vec4::from_array(values[4..].try_into().unwrap()),
+                present0: UVec4::from_array(present[..4].try_into().unwrap()),
+                present1: UVec4::from_array(present[4..].try_into().unwrap()),
+                size,
+                time: if motion {
+                    started.elapsed().as_secs_f32()
+                } else {
+                    0.0
+                },
+                delta: if motion {
+                    world.get_resource::<Time>().map_or(0.0, Time::delta_secs)
+                } else {
+                    0.0
+                },
+                quantity: quantity.unwrap_or(0.0),
+                quantity_present: u32::from(quantity.is_some()),
+                task_state: mapped.task as u32,
+                progress: mapped.progress.unwrap_or(0.0),
+                progress_present: u32::from(mapped.progress.is_some()),
+                effect_strength: strength.clamp(0.0, 1.0),
+                motion_allowed: u32::from(motion),
+                mouse: if motion {
+                    Vec4::new(
+                        pointer.x,
+                        pointer.y,
+                        u8::from(pressed) as f32,
+                        u8::from(inside) as f32,
+                    )
+                } else {
+                    Vec4::ZERO
+                },
+                ..default()
+            });
+        let program = selected.to_owned();
         if !matches!(working.mode, nucleus::shader_effect::spatial::Mode::Surface) {
-            let program = selected.to_owned();
             spatial::draw(world, entity, &program, inputs);
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
-            preview.painted = preview.painted.saturating_add(1);
+            preview.complete_frame(program, inputs);
             continue;
         }
         let material = world.get::<Preview>(entity).unwrap().material.clone();
@@ -1009,7 +1065,7 @@ fn update_effects(world: &mut World) {
         }
         if render {
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
-            preview.painted = preview.painted.saturating_add(1);
+            preview.complete_frame(program, inputs);
         }
     }
     let mut used: HashSet<_> = world
@@ -1105,14 +1161,28 @@ mod tests {
         event: On<bevy::render::gpu_readback::ReadbackComplete>,
         mut pixels: ResMut<Pixels>,
         mut edges: ResMut<EdgePixels>,
+        readbacks: Query<&bevy::render::gpu_readback::Readback>,
+        images: Res<Assets<Image>>,
     ) {
-        let offset = (128 * 256 + 128) * 4;
+        let Ok(bevy::render::gpu_readback::Readback::Texture(handle)) = readbacks.get(event.entity)
+        else {
+            return;
+        };
+        let Some(image) = images.get(handle) else {
+            return;
+        };
+        let size = image.size().as_usizevec2();
+        let stride = (size.x * 4).div_ceil(256) * 256;
+        if event.data.len() != stride * size.y {
+            return;
+        }
+        let offset = size.y / 2 * stride + size.x / 2 * 4;
         if event.data.len() >= offset + 4 {
             pixels
                 .0
                 .push(event.data[offset..offset + 4].try_into().unwrap());
         }
-        let edge = (128 * 256 + 144) * 4;
+        let edge = size.y / 2 * stride + (size.x * 9 / 16).min(size.x - 1) * 4;
         if event.data.len() >= edge + 4 {
             edges.0.push(event.data[edge..edge + 4].try_into().unwrap());
         }
@@ -1210,9 +1280,13 @@ mod tests {
                 }
                 assert!(
                     Instant::now() < deadline,
-                    "Shader pixels did not arrive: {:?}; WGSL error: {}",
+                    "Shader pixels did not arrive: {:?}; WGSL error: {}; raster: {:?}; node: {:?}",
                     app.world().resource::<Pixels>().0.last(),
-                    app.world().get::<EffectPreview>(preview).unwrap().error
+                    app.world().get::<EffectPreview>(preview).unwrap().error,
+                    app.world().get::<extent::Raster>(preview),
+                    app.world()
+                        .get::<ComputedNode>(output(app.world(), preview))
+                        .map(ComputedNode::size)
                 );
                 std::thread::sleep(Duration::from_millis(10));
             }
@@ -1226,8 +1300,10 @@ mod tests {
         }
         {
             let mut data = app.world_mut().get_mut::<EffectPreview>(preview).unwrap();
+            assert!(data.painted >= 3);
             data.frozen = true;
             data.quantity = Some("0".into());
+            data.painted = 0;
         }
         app.world_mut().resource_mut::<Pixels>().0.clear();
         for _ in 0..10 {
@@ -1544,6 +1620,7 @@ mod tests {
                 let mut data = app.world_mut().get_mut::<EffectPreview>(preview).unwrap();
                 data.frozen = true;
                 data.quantity = Some("1".into());
+                data.painted = 0;
             }
             app.world_mut().despawn(readback);
             app.world_mut().resource_mut::<Pixels>().0.clear();
@@ -1688,8 +1765,10 @@ mod tests {
             app.world_mut().despawn(readback);
             {
                 let mut data = app.world_mut().get_mut::<EffectPreview>(preview).unwrap();
+                assert!(data.painted >= 3);
                 data.frozen = true;
                 data.quantity = Some("0".into());
+                data.painted = 0;
             }
             app.world_mut()
                 .resource_mut::<GeneratedVertices>()
@@ -2851,7 +2930,11 @@ mod tests {
             update_effects(&mut world);
         }
         let camera = world.get::<EffectPreview>(ordinary).unwrap().camera;
-        assert!(!world.get::<Camera>(camera).unwrap().is_active);
+        let served = world.get::<EffectPreview>(ordinary).unwrap().last_served;
+        for _ in 0..16 {
+            update_effects(&mut world);
+        }
+        assert!(world.get::<EffectPreview>(ordinary).unwrap().last_served > served);
         {
             let mut data = world.get_mut::<EffectPreview>(ordinary).unwrap();
             data.numeric =
@@ -2871,15 +2954,95 @@ mod tests {
     }
 
     #[test]
+    fn focused_sources_keep_their_camera_under_editor_contention() {
+        let mut world = effect_world(true);
+        let parent = world.spawn(Node::default()).id();
+        let focused = effect(&mut world, parent, Effect::default(), Some("0".into()));
+        prepare(&mut world, focused);
+        world.entity_mut(focused).insert(extent::Raster {
+            pixels: UVec2::splat(120),
+            requested: UVec2::splat(120),
+            visible: true,
+            device_limited: false,
+            budget_limited: false,
+            priority: 5,
+        });
+        for _ in 0..8 {
+            let editor = effect_with_priority(
+                &mut world,
+                parent,
+                Effect::default(),
+                Some("0".into()),
+                true,
+            );
+            prepare(&mut world, editor);
+        }
+        for _ in 0..32 {
+            update_effects(&mut world);
+            let camera = world.get::<EffectPreview>(focused).unwrap().camera;
+            assert!(world.get::<Camera>(camera).unwrap().is_active);
+            assert!(
+                world
+                    .query::<&Camera>()
+                    .iter(&world)
+                    .filter(|camera| camera.is_active)
+                    .count()
+                    <= scheduling::SLOTS
+            );
+        }
+    }
+
+    #[test]
+    fn failed_candidates_without_working_programs_do_not_consume_camera_slots() {
+        let mut world = effect_world(true);
+        let parent = world.spawn(Node::default()).id();
+        let mut invalid = Effect::default();
+        *invalid.programs.values_mut().next().unwrap() = "fn shade(".into();
+        let mut failed = Vec::new();
+        for _ in 0..9 {
+            let source = effect(&mut world, parent, invalid.clone(), Some("0".into()));
+            prepare(&mut world, source);
+            assert!(!world.get::<EffectPreview>(source).unwrap().error.is_empty());
+            failed.push(source);
+        }
+        let valid = effect(&mut world, parent, Effect::default(), Some("0".into()));
+        prepare(&mut world, valid);
+        update_effects(&mut world);
+        assert!(world.get::<EffectPreview>(valid).unwrap().ready);
+        assert!(
+            world
+                .get::<Camera>(world.get::<EffectPreview>(valid).unwrap().camera)
+                .unwrap()
+                .is_active
+        );
+        for source in failed {
+            assert!(
+                !world
+                    .get::<Camera>(world.get::<EffectPreview>(source).unwrap().camera)
+                    .unwrap()
+                    .is_active
+            );
+        }
+    }
+
+    #[test]
     fn frozen_snapshots_stop_cameras_and_inputs_but_can_be_disabled_and_resumed() {
         let mut world = effect_world(true);
         let parent = world.spawn(Node::default()).id();
         let preview = effect(&mut world, parent, Effect::default(), Some("-1".into()));
         world.get_mut::<EffectPreview>(preview).unwrap().frozen = true;
         prepare(&mut world, preview);
-        for _ in 0..4 {
+        for _ in 0..2 {
             update_effects(&mut world);
         }
+        assert!(
+            world
+                .get::<EffectPreview>(preview)
+                .unwrap()
+                .snapshot
+                .frozen()
+        );
+        update_effects(&mut world);
         let camera = world.get::<EffectPreview>(preview).unwrap().camera;
         assert!(world.get::<EffectPreview>(preview).unwrap().painted >= 3);
         assert!(!world.get::<Camera>(camera).unwrap().is_active);
@@ -2904,6 +3067,40 @@ mod tests {
                 .inputs,
             frozen_inputs
         );
+        assert!(!world.get::<Camera>(camera).unwrap().is_active);
+        let frozen_shader = world
+            .resource::<Assets<ShaderMaterial>>()
+            .get(&material)
+            .unwrap()
+            .shader
+            .clone();
+        let size = Vec2::new(480.0, 240.0);
+        let surface = output(&world, preview);
+        world.get_mut::<ComputedNode>(surface).unwrap().size = size;
+        world.get_mut::<EffectPreview>(preview).unwrap().painted = 0;
+        let mut resized_inputs = frozen_inputs;
+        resized_inputs.mouse.x *= size.x / resized_inputs.size.x;
+        resized_inputs.mouse.y *= size.y / resized_inputs.size.y;
+        resized_inputs.size = size;
+        for _ in 0..3 {
+            update_effects(&mut world);
+            assert!(world.get::<Camera>(camera).unwrap().is_active);
+            let material = world
+                .resource::<Assets<ShaderMaterial>>()
+                .get(&material)
+                .unwrap();
+            assert_eq!(material.inputs, resized_inputs);
+            assert_eq!(material.shader, frozen_shader);
+            assert_eq!(
+                world
+                    .get::<EffectPreview>(preview)
+                    .unwrap()
+                    .last_quantity
+                    .as_deref(),
+                Some("-1")
+            );
+        }
+        update_effects(&mut world);
         assert!(!world.get::<Camera>(camera).unwrap().is_active);
         world.get_mut::<EffectPreview>(preview).unwrap().disabled = true;
         update_effects(&mut world);

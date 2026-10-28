@@ -1,0 +1,22 @@
+Import "Socratic-inquiry.lingua"
+Import "../sources/Meno-Jowett.lingua"
+Import "Gorgias.lingua"
+Import "Protagoras.lingua"
+
+Meno: can we learn what we do not yet know? (@greek-meno: 0, is #chapter, #part-of @greek-socratic-inquiry, #source @greek-meno-text, #philosophy @greek-gorgias, #ancient-greek-philosophy @greek-gorgias, #philosophy @greek-protagoras, #ancient-greek-philosophy @greek-protagoras) { r_6NC59NWAQ6A7YZYBJ3CG12SCTN
+**Read:** [Meno, translated by Benjamin Jowett](../sources/Meno-Jowett.lingua#r_0JPD7WWT4EKNFXS3ETCQ0YJ3XP). First read the opening question about teaching virtue, the attempts at definition, and the difficulty about seeking an unknown answer. Continue through the geometrical questioning and its interpretation. Finish with the dialogue's distinction between knowledge and correct opinion. Useful Stephanus divisions are 70a–80d, 80d–86c, and 97a–100b; read the intervening argument for the whole inquiry.
+
+**Preparation:** [an example versus a definition](Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD). The geometric episode needs a square, its side, and its area. Draw a square divided into four equal squares; label areas before evaluating the proposed doubled square. Learn that small amount of geometry alongside the passage.
+
+Meno's difficulty asks how a seeker who lacks the answer could identify it when found. Examine whether the difficulty assumes that knowing an answer and knowing nothing are the only possibilities. Socrates' questioning offers a case to analyse; the interpretation as recollection is a further claim whose support also needs examination.
+
+The person being questioned in the geometrical episode is an enslaved boy. Keep that dramatic relationship visible while examining who asks, who answers, and how much guidance each question supplies.
+
+**Practice:** distinguish an incorrect answer, recognition of difficulty, a reasoned discovery, and the explanation given for that discovery. Which transitions does the scene show, and which larger conclusions about learning would need more evidence? Later, use the dialogue's correct-opinion comparison to explain why a successful answer may still lack an account of its basis.
+
+**Check:** present the inquiry difficulty and a response to it. Explain what the geometrical demonstration establishes within the passage and what it does not by itself prove about every kind of knowledge.
+
+**Next:** [Gorgias](Gorgias.lingua#r_5G884J0SFXCP4YRBFF5C5YSYD2). **Further depth:** [Phaedo on soul and recollection](../plato/Phaedo.lingua#r_6JFZZP5W43FY7FFQENQNH96AFQ); [Republic on education and knowledge](../plato/Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5). **Return:** [First reading path](Socratic-inquiry.lingua#r_24EDXVJN0ACP2G204JK3KCHW79) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Optional continuation:** [Protagoras on teaching virtue](Protagoras.lingua#r_6QKC211R791MTAMXSZM0VBS5XN).
+} r_6NC59NWAQ6A7YZYBJ3CG12SCTN

@@ -583,7 +583,7 @@ pub fn render(world: &mut World, parent: Entity) {
     world
         .get_mut::<bevy::text::EditableText>(package)
         .unwrap()
-        .max_characters = Some(store::knowledge::BUNDLE_LIMIT);
+        .max_characters = None;
     control(world, parent, "Install offline archive", Intent::Install);
     control(world, parent, "Import portable knowledge", Intent::Import);
     label(world, parent, "Vocabulary wording", 20.0);

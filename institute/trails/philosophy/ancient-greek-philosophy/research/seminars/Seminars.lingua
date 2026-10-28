@@ -1,0 +1,30 @@
+Import "../Research.lingua"
+Import "Fragments-and-witnesses.lingua"
+Import "Plato-being-and-knowledge.lingua"
+Import "Plato-desire-and-education.lingua"
+Import "Aristotle-substance.lingua"
+Import "Nature-life-and-mind.lingua"
+Import "Action-and-political-life.lingua"
+Import "Hellenistic-disputes.lingua"
+Import "Later-Platonism.lingua"
+
+Advanced Greek philosophy: connected seminar families (@greek-seminars: 0, is #chapter, #part-of @greek-scholarly-path, #contains @greek-seminar-fragments, #contains @greek-seminar-plato-being, #contains @greek-seminar-plato-ethics, #contains @greek-seminar-aristotle-being, #contains @greek-seminar-nature-mind, #contains @greek-seminar-ethics-politics, #contains @greek-seminar-hellenistic, #contains @greek-seminar-late-platonism, #philosophy @greek-seminar-aristotle-being, #ancient-greek-philosophy @greek-seminar-aristotle-being, #philosophy @greek-seminar-ethics-politics, #ancient-greek-philosophy @greek-seminar-ethics-politics, #philosophy @greek-seminar-fragments, #ancient-greek-philosophy @greek-seminar-fragments, #philosophy @greek-seminar-hellenistic, #ancient-greek-philosophy @greek-seminar-hellenistic, #philosophy @greek-seminar-late-platonism, #ancient-greek-philosophy @greek-seminar-late-platonism, #philosophy @greek-seminar-nature-mind, #ancient-greek-philosophy @greek-seminar-nature-mind, #philosophy @greek-seminar-plato-being, #ancient-greek-philosophy @greek-seminar-plato-being, #philosophy @greek-seminar-plato-ethics, #ancient-greek-philosophy @greek-seminar-plato-ethics) { r_5FTSQDJTR924S9Z0G9EDBQFR1Y
+Choose a problem family and define a bounded investigation within it. Use the [common seminar requirements](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q), the [Greek dossier](../Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF), and the [literature inquiry](../Scholarly-inquiry.lingua#r_2FEBDJ8R5JDHXX54TSATY2CRVZ). The first passages of the survey are preparation; seminar work follows complete relevant argument sequences and sustained scholarship.
+
+| Family | Central investigation | Shared preparation and crossings |
+| --- | --- | --- |
+| [Earlier Greek evidence](Fragments-and-witnesses.lingua#r_2G2SQREBR27M8SP2KD6KGQKHP5) | What can fragments and reports establish? | Historical criticism, Greek, nature, argument |
+| [Plato: being, knowledge, and dialectic](Plato-being-and-knowledge.lingua#r_34WRXN1SRY8SZVRKRV7X3X9QWA) | Non-being, predication, falsehood, and knowing | Parmenides, Theaetetus, logic, language |
+| [Plato: desire, soul, and education](Plato-desire-and-education.lingua#r_3JBRV526ZZD7AK2YJJZESWWGFR) | The relations between desire, virtue, and political order | Symposium, Republic, interpretation, education |
+| [Aristotle: substance and explanation](Aristotle-substance.lingua#r_3B9A85Q4MC2K5NN4W1X1BQYEE5) | Predication, form, matter, actuality, and unity | Categories, Metaphysics, demonstration |
+| [Nature, life, and mind](Nature-life-and-mind.lingua#r_2PYDKJQM81F9YKYZFJPEDNY150) | What an explanation of living activity requires | Physics, soul, biology, knowledge |
+| [Action, virtue, and community](Action-and-political-life.lingua#r_433AESW7TGW0Y78QJSTW4MEXQJ) | Character, habituation, deliberation, and institutions | Ethics, politics, education, social inquiry |
+| [Hellenistic disputes](Hellenistic-disputes.lingua#r_7020B909F5EN8WYCK7HZ0F1ZBV) | Criteria, inference, causation, agency, and living well | Stoic, Epicurean, sceptical and Cynic sources |
+| [Later Platonism and reception](Later-Platonism.lingua#r_1CGS6HJE7MYDP4WEZG2GYYR769) | Unity, intellect, soul, and the transmission of arguments | Plato, Aristotle, Plotinus, historical interpretation |
+
+Two different families support the full completion requirement; an independent project then deepens a chosen question. The whole family catalogue remains available for further work. Comparable prior research can supply preparation when its scope and evidence match.
+
+A study can combine parts of several routes. For example, an investigation of moral education can use Plato's account of desire, Aristotle's habituation, Greek lexical analysis, and a carefully bounded educational comparison. The integration needs its own question and argument; borrowed Records remain recognisable and reusable.
+
+**Return:** [Research progression](../Research.lingua#r_434NMA510XG7R81DAAG64PZX09) · [Ancient Greek philosophy](../../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_5FTSQDJTR924S9Z0G9EDBQFR1Y

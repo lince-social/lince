@@ -656,11 +656,25 @@ pub(super) fn measurement_caption(measurement: &Measurement) -> String {
 }
 
 fn artifact_controls(world: &mut World, owner: Entity, row: &Value) {
-    if world.get::<View>(owner).is_none_or(|view| view.remote.job.is_none()) { return; }
+    if world
+        .get::<View>(owner)
+        .is_none_or(|view| view.remote.job.is_none())
+    {
+        return;
+    }
     for original in row["originals"].as_array().into_iter().flatten().take(32) {
         if original["provenance"] == "artifact" {
-            if let Some(hash) = original["hash"].as_str().and_then(|hash| nucleus::karma::CanonicalHash::parse(hash.to_owned()).ok()) {
-                panel::button(world, owner, owner, "Inspect collected original proof", Command::Remote(super::remote_controls::UiCommand::Inspect(hash)));
+            if let Some(hash) = original["hash"]
+                .as_str()
+                .and_then(|hash| nucleus::karma::CanonicalHash::parse(hash.to_owned()).ok())
+            {
+                panel::button(
+                    world,
+                    owner,
+                    owner,
+                    "Inspect collected original proof",
+                    Command::Remote(super::remote_controls::UiCommand::Inspect(hash)),
+                );
             }
         }
     }

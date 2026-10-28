@@ -10,7 +10,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{checked, Result};
+use crate::{Result, checked};
 
 #[derive(Debug)]
 struct Options {
@@ -625,11 +625,13 @@ mod tests {
     #[test]
     fn rejects_startup_panics_and_timeouts_even_when_process_is_alive() {
         assert!(startup_result("Status: timeout\nComplete", "").is_err());
-        assert!(startup_result(
-            "Status: ok",
-            "RustStdoutStderr: thread 'main' panicked at schedule.rs"
-        )
-        .is_err());
+        assert!(
+            startup_result(
+                "Status: ok",
+                "RustStdoutStderr: thread 'main' panicked at schedule.rs"
+            )
+            .is_err()
+        );
         assert!(startup_result("Status: ok", "libc: Fatal signal 6").is_err());
         assert!(startup_result("Error: Activity class does not exist", "").is_err());
         assert!(startup_result("Status: ok\nComplete", "INFO Started").is_ok());

@@ -1,0 +1,38 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Avaliacao-do-ombro-MSD.lingua"
+Import "../../../sources/Internal-impingement-overhead-athletes.lingua"
+Import "../../../sources/Shoulder-instability-AAOS.lingua"
+Import "../../../sources/Shoulder-labral-tears-AAOS.lingua"
+Import "../../Assessment-and-referral.lingua"
+Import "../Shoulder.lingua"
+Import "../function/Capsular-restraints.lingua"
+Import "../function/Rotation-and-position.lingua"
+Import "Arthritis.lingua"
+Import "Biceps-and-labrum.lingua"
+Import "Cuff-pain-and-tears.lingua"
+Import "Infection-and-systemic-illness.lingua"
+Import "Instability.lingua"
+Import "Nerve-and-referred-pain.lingua"
+Import "Stiff-shoulder.lingua"
+
+Pain near the end of rotation — understand the possibilities (@shoulder-rotation-pain: 0, is #chapter, #part-of @shoulder, #source @med-source-msd-shoulder, #source @med-source-labrum, #source @med-source-instability, #source @med-source-internal-impingement, #medicine @shoulder-cuff-problems, #orthopedics @shoulder-cuff-problems, #shoulder @shoulder-cuff-problems) { r_34B2Q55P8Q42JP4DWNE7VQTMT6
+**Read in this order:** [Shoulder rotation — describe the moving bone and starting position](../function/Rotation-and-position.lingua#r_7TRW6394Z3JA9CPYPE6SQNPZTT) and [Rotation and restraint — why position changes the capsule question](../function/Capsular-restraints.lingua#r_2PW98DPTH66WTKFMPAX35775WE) for the motion; [Avaliação do ombro — Manual MSD](../../../sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X), Exame do ombro and Distúrbios do ombro, for clinical context; then the exact condition readings linked below. Use their sources to investigate a question rather than accepting one explanation from a movement alone.
+
+'It hurts when I rotate too far' identifies a situation worth describing. It does not by itself establish a damaged joint surface, torn labrum, ligament injury, or a particular tendon disorder. Record which arm position and direction were involved, onset and trauma, where pain was felt, and whether ordinary function changed. Distinguish pain, mechanical restriction, apprehension or a sense of slipping, and weakness; people can experience more than one.
+
+| Additional context | A useful next reading | What remains unresolved |
+| --- | --- | --- |
+| pain during active or resisted rotation, with or without an image finding | [Rotator cuff pain, tendinopathy, and tears](Cuff-pain-and-tears.lingua#r_16SYXGMD8KFKTSXAC8G1HHH4EW) | which structure matters, and whether a tear is present or relevant |
+| progressive stiffness and restricted clinical active and passive movement | [A stiff shoulder — capsulitis and other explanations](Stiff-shoulder.lingua#r_4JWG5NRDXS1ZHGKN05W8J3TAH2) and [Arthritis — joint disease with several mechanisms](Arthritis.lingua#r_025RTWPYVQNG09X806FBAZZETF) | cause, extent, and the appropriate assessment |
+| prior displacement, traumatic event, or a feeling of slipping in a position | [Instability, subluxation, and dislocation](Instability.lingua#r_4ANS5B79S566BS78A7E9H5X8R6) | direction, affected structures, and clinical relevance |
+| deep pain, catching, or a labral finding | [Biceps tendon and labral problems](Biceps-and-labrum.lingua#r_7RF8FD4PKGQ1DEBRZ7RZEH98AW) | whether the finding explains symptoms; those symptoms are nonspecific |
+| altered sensation, neck-related complaints, or broader symptoms | [Nerve disorders and pain referred to the shoulder](Nerve-and-referred-pain.lingua#r_7BFZ7QKTEBQWTCQD9A60VXWDH5) and [Infection, systemic illness, and important alternatives](Infection-and-systemic-illness.lingua#r_6MTTQSKBBTMPNTD9DYFNVD32SH) | the source of the complaint and its urgency |
+
+**A specific later comparison:** [Internal impingement in overhead athletes — Corpus and colleagues](../../../sources/Internal-impingement-overhead-athletes.lingua#r_39ZZD5X2XJRC9834DBHREBSS9X), Introduction and Pathophysiology and Biomechanics, concerns internal impingement in overhead athletes, including the abducted externally rotated position. 'Internal' names an anatomical relationship, not internal rotation. This population-specific mechanism is not a default diagnosis for everyone with pain near a rotational limit. Its selected reading belongs after the general cuff, capsule, and labrum anatomy.
+
+**Try:** rewrite a fictional rotational-pain account in clear English and Portuguese: posição do braço, rotação interna/externa, dor, rigidez, fraqueza, instabilidade, início, trauma. List two or more plausible explanations and the clinical information still needed. The next condition readings develop those explanations. Use [Assessment, urgency, and referral](../../Assessment-and-referral.lingua#r_5HK59QJYXS19KZVPQHDCAACD1H) for care and urgency; repeated painful self-tests add no reliable diagnosis here.
+
+**Continue:** [Rotator cuff pain, tendinopathy, and tears](Cuff-pain-and-tears.lingua#r_16SYXGMD8KFKTSXAC8G1HHH4EW).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_34B2Q55P8Q42JP4DWNE7VQTMT6

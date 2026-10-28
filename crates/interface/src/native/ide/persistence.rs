@@ -12,6 +12,8 @@ pub(crate) struct SavedIde {
     positions: BTreeMap<PathBuf, tabs::SavedPosition>,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedIde);
+
 impl SavedIde {
     pub(crate) fn valid(&self) -> bool {
         self.castle.valid()

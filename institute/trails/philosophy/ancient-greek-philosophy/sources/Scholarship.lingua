@@ -1,0 +1,40 @@
+Import "Sources.lingua"
+Import "Presocratics-Kirk-Raven-Schofield.lingua"
+Import "Sophist-Cordero.lingua"
+Import "Plato-critical-editions.lingua"
+Import "Metaphysics-Jaeger.lingua"
+Import "Theaetetus-Levett-Burnyeat.lingua"
+Import "Ethics-Broadie.lingua"
+Import "Hellenistic-Philosophers-Long-Sedley.lingua"
+Import "Plotinus-Gerson.lingua"
+Import "Plotinus-Henry-Schwyzer.lingua"
+Import "On-the-Soul-Smith.lingua"
+Import "Enneads-MacKenna-Page.lingua"
+Import "Desire-Merker.lingua"
+Import "Greek-Grammar-Smyth.lingua"
+Import "Primary-Ousia-Loux.lingua"
+Import "Academic-benchmarks.lingua"
+Import "Sophist-Jowett.lingua"
+Import "../research/seminars/Seminars.lingua"
+Import "../research/Research.lingua"
+
+Critical texts, scholarship, and academic benchmarks (@greek-scholarly-sources: 0, is #chapter, #part-of @greek-sources, #contains @greek-source-krs, #contains @greek-source-cordero, #contains @greek-source-plato-critical, #contains @greek-source-aristotle-critical, #contains @greek-source-theaetetus-modern, #contains @greek-source-broadie, #contains @greek-source-long-sedley, #contains @greek-source-plotinus-modern, #contains @greek-source-plotinus-critical, #contains @greek-source-de-anima, #contains @greek-source-enneads, #contains @greek-source-merker, #contains @greek-source-smyth, #contains @greek-source-loux, #contains @greek-academic-benchmarks, #contains @greek-source-sophist) { r_1S04GF22D5C3FNCB78GN1XQ7KT
+The first books make an entrance available. Research requires a defensible Greek text, its editorial evidence, sustained scholarship, and the current debate relevant to a precise question.
+
+| Role | References |
+| --- | --- |
+| Greek text and apparatus | [Plato](Plato-critical-editions.lingua#r_28N1ADM4R3DAG5K2898WPKRXCK); [Aristotle's Metaphysics](Metaphysics-Jaeger.lingua#r_2MJF84NGSE83J9KWD3B8KBNPZ1); [Plotinus](Plotinus-Henry-Schwyzer.lingua#r_3EYTA95ETXPPZFHSN5RJ5Q5EM4) |
+| Grammar and textual preparation | [Smyth, 1920](Greek-Grammar-Smyth.lingua#r_1HWQDW2XAJNQAXTWS9P0QT57DG); [Peek's first course](Ancient-Greek-Peek.lingua#r_1D87YRHMAM7FHZH3VCDY9JTHGX); [the Greek dossier](../research/Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF) |
+| Earlier Greek evidence | [Kirk, Raven, and Schofield](Presocratics-Kirk-Raven-Schofield.lingua#r_13P4W9K1D0PTV3VCEPQEXQNVSM), compared with the existing collections and the transmitting passages |
+| Plato and interpretive disputes | [Sophist](Sophist-Jowett.lingua#r_4B67CBBBRAQS5SCS5M5K8RGXXR); [Cordero](Sophist-Cordero.lingua#r_5MPQY66DGXV4RRE8GCWCCKJ952); [Levett/Burnyeat/Williams](Theaetetus-Levett-Burnyeat.lingua#r_615423T7F74G6W17SFHWMSMDV9); [Merker](Desire-Merker.lingua#r_4VJ745X9FCY3MY2FB5G9KKA0GC) |
+| Aristotle and sustained interpretation | [Loux on substance](Primary-Ousia-Loux.lingua#r_1T3SW7QAK4FKG98YMZ6J83F28J); [Broadie on ethics](Ethics-Broadie.lingua#r_5W2X8XTJ2MP72E74E1CR3EGPC9); [On the Soul](On-the-Soul-Smith.lingua#r_3RK7WZ5X419B2RJGCK5E7K15TE) |
+| Hellenistic sources and notes | [Long and Sedley, both volumes](Hellenistic-Philosophers-Long-Sedley.lingua#r_0DRQW2CEH35TV91C49W4JH7Y0M) |
+| Later Platonism | [The Six Enneads](Enneads-MacKenna-Page.lingua#r_1Q1GRWKVQMEPBGQH3V7WR9RQP8); [Gerson](Plotinus-Gerson.lingua#r_170Z1XNEHXR1V514CP6AEC0NXB); the corresponding Greek critical text |
+| Evidence for depth and scope | [University courses, programme descriptors, and research outputs](Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) |
+
+These are starting references for problem-specific research. A classic commentary remains a position to examine; the [literature dossier](../research/Scholarly-inquiry.lingua#r_2FEBDJ8R5JDHXX54TSATY2CRVZ) must locate relevant later contributions and serious alternatives. Comparable scholarship can replace a suggested work when the replacement's role and depth are justified.
+
+The Sophist EPUB is retained locally. Other entries here are external texts, historical digitisations, journal references, or publisher/library editions unless their source Record declares a retained artifact. Obtain the selected edition through its stated access and preserve its attribution and reuse terms. A preview or catalogue establishes metadata, not a claim to have read the book.
+
+**Continue:** [Seminar families](../research/seminars/Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y) · [Research progression](../research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09). **Return:** [All books and editions](Sources.lingua#r_6R0NA5RTH31HV871Y0RMF96WX3).
+} r_1S04GF22D5C3FNCB78GN1XQ7KT

@@ -1,0 +1,77 @@
+Aquaculture and wild aquatic foods (@farming-aquatic-foods: 0, is #chapter, #contains @farming-aquaculture-cycle, #contains @oreochromis-niloticus, #contains @salmo-salar, #contains @penaeus-vannamei, #contains @prochilodus-lineatus, #contains @pseudoplatystoma-corruscans, #contains @farming-fish-identity, #contains @sardina-pilchardus, #farming-practice @farming-aquaculture-cycle, #farming-practice @farming-fish-identity, #farming-practice @oreochromis-niloticus, #farming-practice @penaeus-vannamei, #farming-practice @prochilodus-lineatus, #farming-practice @pseudoplatystoma-corruscans, #farming-practice @salmo-salar, #farming-practice @sardina-pilchardus) { r_0YEX298P6W6YXAHDZK8WEYWG7H
+Several fish in Nutrients.lingua come from wild fisheries. A market name does not prove a species or make a fish a practical farm animal. Aquaculture examples below identify a possible production species explicitly; they do not relabel unspecified food samples.
+} r_0YEX298P6W6YXAHDZK8WEYWG7H
+
+Shared aquaculture lifecycle (@farming-aquaculture-cycle: 0, #part-of @farming-aquatic-foods, #source @farm-source-aquaculture) { r_5SDEDY1HV37R18H68BMPW787WX
+1. Confirm the actual species, local permissions, water source, climate, escape prevention, receiving-water capacity, market, and processing route. Do not release non-native farm animals into natural waters.
+2. Design ponds, tanks, or cages around biomass, oxygen demand, water treatment, and emergency power/aeration. A tank volume alone does not define a safe stocking density.
+3. Buy traceable healthy eggs, fry, juveniles, or postlarvae from an appropriate hatchery. Match temperature and water chemistry during transfer; avoid mixing unassessed stocks.
+4. Track temperature, dissolved oxygen, pH, ammonia/nitrite where relevant, feed, mortality, growth, and water quality. Check oxygen during high-risk periods such as before dawn in productive ponds. Feed a suitable ration and remove avoidable waste.
+5. Grade only when needed, minimize handling stress, and adjust biomass and feeding to measured growth and water capacity. Veterinary oversight determines disease treatments and withdrawal periods.
+6. Harvest at the intended size through a species-appropriate humane method, keep equipment clean, chill promptly, and separate product from dirty pond or processing water.
+7. Account for escapes, effluent, sludge, mortalities, feed conversion, and energy. Clean or fallow between groups as the system requires. Breeding and larval production are separate specialist stages unless explicitly included.
+
+Practice: model the oxygen and feed demand at final biomass before stocking anything. [Embrapa family aquaculture manual](https://www.infoteca.cnptia.embrapa.br/infoteca/handle/doc/1167143).
+} r_5SDEDY1HV37R18H68BMPW787WX
+
+Nile tilapia — Oreochromis niloticus (@oreochromis-niloticus: 0, is #species, #part-of @farming-aquatic-foods, #source @farm-source-tilapia) { r_7RH7J4VDPFASGW3T692QJ17V0P
+Warm-water freshwater aquaculture example; the generic tilapia food entry does not confirm this species or strain. Use legally appropriate healthy juveniles and a system suited to roughly 25–30°C growth conditions. Stock only to a designed biomass and oxygen capacity, not a universal fish-per-litre rule. Uncontrolled breeding can cause crowding; use an appropriate verified hatchery strategy rather than improvising hormone treatment.
+
+Lifecycle: broodstock, eggs, mouthbrooded fry, nursery, grow-out, harvest. Buying juveniles avoids specialist hatchery work. Feed for size and water conditions, sample growth, and monitor oxygen and nitrogenous waste. Market size often takes several months, depending strongly on starting size, temperature, feed, and system. Harvest humanely, chill promptly, treat effluent, and prevent escape. [FAO Nile tilapia profile](https://www.fao.org/fishery/docs/DOCUMENT/aquaculture/CulturedSpecies/file/en/en_niletilapia.htm).
+} r_7RH7J4VDPFASGW3T692QJ17V0P
+
+Atlantic salmon — Salmo salar (@salmo-salar: 0, is #species, #part-of @farming-aquatic-foods, #source @farm-source-salmon, #related-food @nutrition-br-fdc-171998) { r_35GQXWVW87QD89F9KVM8SM6059
+The USDA wild Atlantic salmon entry explicitly identifies this species; farmed fish do not inherit its exact nutrient values. This is specialized cold-water production, unsuitable for an ordinary warm garden pond.
+
+Lifecycle: freshwater eggs, alevins using yolk, fry, parr, smolts, grow-out, and mature adults. Smolt transfer and saltwater systems need carefully managed acclimation; some production uses controlled recirculating systems. Maintain high oxygen, appropriate temperature, complete feed, health monitoring, and escape control. Egg-to-market production usually takes years across stages, not a quick warm-water crop. Use specialist hatchery and veterinary protocols, humane harvest, rapid chilling, effluent management, and planned fallowing or cleaning. [FAO Atlantic salmon profile](https://www.fao.org/fishery/docs/DOCUMENT/aquaculture/CulturedSpecies/file/en/en_atlanticsalmon.htm).
+} r_35GQXWVW87QD89F9KVM8SM6059
+
+Whiteleg shrimp — Penaeus vannamei (@penaeus-vannamei: 0, is #species, #part-of @farming-aquatic-foods, #source @farm-source-shrimp) { r_468E0P5T03HWMSZ7TJK53YP1GB
+Also published as Litopenaeus vannamei. This aquaculture example is not a species identification for the TACO Rio Grande shrimp entries, which may represent wild marine shrimp.
+
+Lifecycle: broodstock, eggs, nauplii, zoea, mysis, postlarvae, nursery, and grow-out. Buy appropriately screened postlarvae from a reliable hatchery. Match salinity, temperature, and mineral balance to the designed system; fresh-looking water is not enough. Warm-water grow-out commonly takes several months. Track dissolved oxygen, pH, alkalinity, ammonia, feed trays, growth, moulting, and mortality. Avoid uncontrolled water exchange and untreated discharges. Harvest humanely, chill promptly, and manage sludge and crop breaks. Dense culture requires professional design and reliable aeration. [FAO profile](https://www.fao.org/fishery/docs/DOCUMENT/aquaculture/CulturedSpecies/file/en/en_whitelegshrimp.htm).
+} r_468E0P5T03HWMSZ7TJK53YP1GB
+
+Curimbatá — Prochilodus lineatus (@prochilodus-lineatus: 0, is #species, #part-of @farming-aquatic-foods, #source @farm-source-native-fish) { r_27JNN3SPM2ANDEJ2ZAVPWDR7VA
+One curimbatá/corimba identity; Prochilodus species vary by basin and food names do not settle identity. A migratory spawning fish: pond grow-out and hatchery reproduction are different stages. Obtain legally appropriate identified juveniles from a competent hatchery rather than trying to reproduce a river flood cycle in a garden tank.
+
+Use a locally designed warm-water pond system, manage natural food and any supplemental feeding appropriately, and monitor oxygen, biomass, growth, and water quality through the shared cycle. Harvest timing depends on starting size, temperature, and target market; do not transfer tilapia's schedule. Use humane harvest, prompt chilling, and escape prevention. Retain broodstock only within a supported hatchery programme.
+} r_27JNN3SPM2ANDEJ2ZAVPWDR7VA
+
+Pintado — Pseudoplatystoma corruscans (@pseudoplatystoma-corruscans: 0, is #species, #part-of @farming-aquatic-foods, #source @farm-source-native-fish, #source @farm-source-surubim) { r_2VVZS4NVRVG4DN3AXDNM2CWRA5
+One pintado identity; commercial surubim hybrids and related species are not interchangeable. Use verified hatchery juveniles with declared species or hybrid parentage. Carnivorous juveniles need suitable prepared feed and size management; inappropriate mixed sizes and feeding can cause losses.
+
+Lifecycle: specialized broodstock and larval stages, nursery, grow-out, harvest. Plan ponds or tanks around final biomass, oxygen, feed cost, and effluent, with veterinary support. Sample growth and size distribution and control handling stress. Harvest at the intended size using a trained humane process, chill promptly, and keep batches traceable. No fixed household stocking density or harvest date is supplied because these depend on the actual strain and system.
+} r_2VVZS4NVRVG4DN3AXDNM2CWRA5
+
+Atlantic sardine — Sardina pilchardus (@sardina-pilchardus: 0, is #species, #part-of @farming-aquatic-foods, #related-food @nutrition-br-fdc-175139, #source @farm-source-fisheries, #source @farm-source-sardine) { r_4AJES2KPQTXTB6HVJDEY8VNKJ6
+The USDA Atlantic sardine canned-food entry identifies this source more closely than generic Brazilian sardinha. A wild pelagic schooling fish with drifting eggs, plankton-feeding larvae and adults, seasonal movement, and a capture-fishery harvest rather than an ordinary small-farm grow-out cycle.
+
+Use traceable legal landings, prompt chilling, hygienic processing, and validated canning. Canned fish with edible bone has a different nutrient profile from raw fillet or another sardine species. Assess stock-specific season and management through local fisheries authorities; no generic calendar or claim of unlimited sustainable supply follows from this Record.
+} r_4AJES2KPQTXTB6HVJDEY8VNKJ6
+
+Market names needing species identification (@farming-fish-identity: 0, #part-of @farming-aquatic-foods, #source @farm-source-fisheries, #related-food @nutrition-br-taco-273, #related-food @nutrition-br-taco-274, #related-food @nutrition-br-taco-275, #related-food @nutrition-br-taco-276, #related-food @nutrition-br-taco-277, #related-food @nutrition-br-taco-278, #related-food @nutrition-br-taco-279, #related-food @nutrition-br-taco-280, #related-food @nutrition-br-taco-282, #related-food @nutrition-br-taco-283, #related-food @nutrition-br-taco-284, #related-food @nutrition-br-taco-285, #related-food @nutrition-br-taco-287, #related-food @nutrition-br-taco-288, #related-food @nutrition-br-taco-289, #related-food @nutrition-br-taco-290, #related-food @nutrition-br-taco-291, #related-food @nutrition-br-taco-292, #related-food @nutrition-br-taco-293, #related-food @nutrition-br-taco-294, #related-food @nutrition-br-taco-295, #related-food @nutrition-br-taco-296, #related-food @nutrition-br-taco-298, #related-food @nutrition-br-taco-301, #related-food @nutrition-br-taco-302, #related-food @nutrition-br-taco-304, #related-food @nutrition-br-taco-307, #related-food @nutrition-br-taco-309, #related-food @nutrition-br-taco-310, #related-food @nutrition-br-taco-311, #related-food @nutrition-br-taco-312, #related-food @nutrition-br-taco-313, #related-food @nutrition-br-taco-314, #related-food @nutrition-br-taco-315, #related-food @nutrition-br-taco-316, #related-food @nutrition-br-taco-317, #related-food @nutrition-br-taco-318, #related-food @nutrition-br-taco-319, #related-food @nutrition-br-taco-321, #related-food @nutrition-br-taco-322, #related-food @nutrition-br-fdc-175177) { r_6S6P749VM0QP2X6XZDQ6QGTKM7
+| Nutrition name | Identity and production decision |
+| --- | --- |
+| Abadejo | Several market identities exist; obtain scientific name and origin. Usually a marine capture product, not a garden fish. |
+| Atum | Several tuna species. Pelagic capture fisheries and specialized industrial systems do not supply a simple small-farm lifecycle. |
+| Bacalhau | Salted product category commonly involving Gadus species and others. Obtain species and processing identity. |
+| Cação | Shark market category; obtain the species and legal provenance. Do not invent a shark-farming lesson. |
+| Camarão Rio Grande | Confirm marine shrimp species and wild/farmed origin. Do not silently substitute `@penaeus-vannamei`. |
+| Caranguejo | Several crab species with distinct marine/estuarine larval stages and harvest management. Identify before any husbandry plan. |
+| Corimba, corimbatá | Prochilodus species depend on basin. @prochilodus-lineatus is one example. |
+| Corvina de água doce | Often Plagioscion species; verify. Feeding, basin, and reproduction differ from marine corvinas. |
+| Corvina do mar, corvina grande | Several marine sciaenids. Require species and fishery origin. |
+| Dourada de água doce | A migratory river catfish name, often Brachyplatystoma rousseauxii; verify rather than substituting dourado. |
+| Lambari | Several small characids. Some have aquaculture systems, but stocking and reproduction require the actual species. |
+| Merluza | Merluccius and other market identities; generally marine capture. Identify before describing the lifecycle. |
+| Pescada, pescadinha | Several marine or freshwater species. The same feeding and breeding advice cannot apply to all. |
+| Pintado | Verify @pseudoplatystoma-corruscans, another species, or a declared hybrid. |
+| Porquinho | Several fish market names; not the livestock pig. Confirm scientific identity and origin. |
+| Salmão | Confirm Atlantic or Pacific species and wild/farmed origin; only explicit Atlantic entries map directly to `@salmo-salar`. |
+| Sardinha | Several species, including Brazilian Sardinella and Atlantic `@sardina-pilchardus`. Keep source measurements distinct. |
+| Tucunaré | Cichla species, basin-dependent. Predatory life history and reproduction do not match tilapia. |
+| Tilápia | Several Oreochromis species and hybrids. @oreochromis-niloticus is the production example, not a proven identity for every fillet. |
+
+Practice: ask a supplier for scientific name, wild/farmed origin, production site or fishery, harvest date, and cold-chain record. Keep uncertain food names linked here until evidence identifies them; do not infer species from a photograph of a cooked portion.
+} r_6S6P749VM0QP2X6XZDQ6QGTKM7

@@ -366,7 +366,9 @@ pub async fn set_conversion_exact(
     denominator: i128,
 ) -> Result<(), StoreError> {
     if a_uid == b_uid {
-        return Err(sqlx::Error::Protocol("Choose distinct units for a conversion".into()));
+        return Err(sqlx::Error::Protocol(
+            "Choose distinct units for a conversion".into(),
+        ));
     }
     if numerator <= 0 || denominator <= 0 {
         return Err(sqlx::Error::Protocol(format!(

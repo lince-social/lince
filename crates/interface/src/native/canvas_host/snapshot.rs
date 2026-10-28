@@ -56,13 +56,7 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         };
     }
     if let Some(area) = world.get::<crate::native::area::InfluenceArea>(entity) {
-        if area
-            .protein
-            .as_ref()
-            .is_none_or(|config| !config.record_cards)
-        {
-            return super::area::component(area);
-        }
+        return super::area::component(area);
     }
     if let Some(sand) = world.get::<StoredSand>(entity) {
         if matches!(world.get::<Content>(entity), Some(Content(ContentKind::Native { kind, .. })) if kind == "layout")
@@ -174,45 +168,8 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         };
     }
     use nucleus::component::ComponentState as Builtin;
-    let state = if let Some(area) = world.get::<crate::native::area::InfluenceArea>(entity) {
-        if let Some(config) = &area.protein {
-            if let Some(uid) = config.draft.query["where"]
-                .as_array()
-                .and_then(|filters| filters.iter().find_map(|filter| filter["uid_eq"].as_str()))
-                .filter(|uid| nucleus::valid_uid(uid, "r"))
-            {
-                Some(Builtin::Record {
-                    record: uid.into(),
-                    mode: nucleus::component::RecordMode::Full,
-                    start_call: None,
-                })
-            } else {
-                None
-            }
-        } else {
-            Some(Builtin::Area {
-                immunity: match area.immunity {
-                    crate::native::area_effects::Immunity::None => {
-                        nucleus::component::Immunity::None
-                    }
-                    crate::native::area_effects::Immunity::External => {
-                        nucleus::component::Immunity::External
-                    }
-                    crate::native::area_effects::Immunity::Internal => {
-                        nucleus::component::Immunity::Internal
-                    }
-                    crate::native::area_effects::Immunity::All => nucleus::component::Immunity::All,
-                    crate::native::area_effects::Immunity::Containment => {
-                        nucleus::component::Immunity::Containment
-                    }
-                    crate::native::area_effects::Immunity::Isolation => {
-                        nucleus::component::Immunity::Isolation
-                    }
-                },
-                strength: area.strength as i32,
-            })
-        }
-    } else if let Some(castle) = world.get::<crate::native::karma_castle::KarmaCastle>(entity) {
+    let state = if let Some(castle) = world.get::<crate::native::karma_castle::KarmaCastle>(entity)
+    {
         Some(Builtin::Karma {
             search: castle.search.clone(),
         })
@@ -342,7 +299,7 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                             })
                         })
                         && world
-                            .get::<crate::native::external_drop::Preview>(*entity)
+                            .get::<crate::native::canvas_item::Ephemeral>(*entity)
                             .is_none()
                 })
                 .collect()
@@ -368,8 +325,7 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
         .map(|selection| selection.0.as_slice())
         .unwrap_or_default();
     let camera = world.get::<CanvasView>(root).copied().unwrap_or_default();
-    let scope = crate::native::laboratory::scope(world)
-        .filter(|(owner, _, _, _)| *owner == root);
+    let scope = crate::native::laboratory::scope(world).filter(|(owner, _, _, _)| *owner == root);
     let workspaces = spaces
         .entries
         .iter()
@@ -465,7 +421,11 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
             .as_ref()
             .map_or(0, |state| state.snapshot.revision),
         active_workspace: scope.map_or(spaces.active, |(_, _, temporary, previous)| {
-            if spaces.active == temporary { previous } else { spaces.active }
+            if spaces.active == temporary {
+                previous
+            } else {
+                spaces.active
+            }
         }),
         workspaces,
         placements,

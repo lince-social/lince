@@ -1,0 +1,21 @@
+Import "../../../sources/AO-Surgery-Reference.lingua"
+Import "../../../sources/Shoulder-trauma-AAOS.lingua"
+Import "../../../Medicine.lingua"
+Import "../Shoulder.lingua"
+Import "Arthritis.lingua"
+
+Fractures around the shoulder (@shoulder-fractures: 0, is #chapter, #part-of @shoulder, #source @med-source-trauma, #source @med-source-ao, #medicine @shoulder-arthritis, #orthopedics @shoulder-arthritis, #shoulder @shoulder-arthritis) { r_2FNF825ZBCS9EYDWA7QHDF43PW
+**Read:** [Shoulder fractures and dislocations — AAOS](../../../sources/Shoulder-trauma-AAOS.lingua#r_3PWVRKWPX21FH3M69BKW675ZHM). For later professional depth, consult the corresponding region in [AO Surgery Reference — professional fracture study](../../../sources/AO-Surgery-Reference.lingua#r_7JMB37SYAHK0879T2SJTQT11Z7).
+
+Clavicle, proximal humerus, and scapula fractures affect different structures and relationships. Fracture descriptions may concern site, displacement, angulation, joint involvement, number of fragments, and the surrounding tissues. A fracture-dislocation combines questions about bone continuity and joint alignment.
+
+The mechanism of injury, examination, neurovascular status, imaging, and the person's circumstances inform management. An anatomical classification organizes communication; it does not automatically decide an operation or recovery schedule.
+
+Bone healing involves living tissue, supply, and mechanical conditions. A painful shoulder after significant trauma should not be classified by trying movements until one diagnosis seems to fit. The care and urgency links are available from [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+
+**Try:** label three fictional fracture sites on a drawing and identify which articular surfaces, attachments, nerves, or vessels are nearby. Distinguish these anatomical concerns from conclusions about treatment that would require assessment and evidence.
+
+**Continue:** [Arthritis — joint disease with several mechanisms](Arthritis.lingua#r_025RTWPYVQNG09X806FBAZZETF).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_2FNF825ZBCS9EYDWA7QHDF43PW

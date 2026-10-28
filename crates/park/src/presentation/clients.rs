@@ -18,13 +18,22 @@ mod tree;
 struct Mapping {
     u: Vec4,
     v: Vec4,
+    color_red: Vec4,
+    color_green: Vec4,
+    color_blue: Vec4,
+    color_curve: Vec4,
 }
 
 impl Default for Mapping {
     fn default() -> Self {
+        let [color_red, color_green, color_blue, color_curve] = lince_interface::host::color::Description::default().uniforms().map(Vec4::from_array);
         Self {
             u: Vec4::new(0.0, 1.0, 0.0, 0.0),
             v: Vec4::new(0.0, 0.0, 1.0, 0.0),
+            color_red,
+            color_green,
+            color_blue,
+            color_curve,
         }
     }
 }
@@ -204,6 +213,7 @@ impl Presentation {
                     surface,
                     content_size: [1, 1],
                 },
+                native::layout::desktop::ApplicationOpeningPending,
                 native::area::RecordProperties(serde_json::json!({"head":title,"app_id":app_id})),
                 MaterialNode(material.clone()),
                 ChildOf(root),
@@ -245,6 +255,7 @@ impl Presentation {
                 },
             ));
         }
+        self.opening_window(root, entity, identity, title, app_id)?;
         Ok(identity)
     }
 
@@ -309,6 +320,7 @@ impl Presentation {
             records.capture(self.app.world(), &window, *identity);
         }
         let world = self.app.world_mut();
+        native::layout::desktop::lifecycle::before_unmap(world, window.entity);
         for node in window.nodes.into_values() {
             tree::remove(world, node);
         }

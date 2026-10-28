@@ -107,11 +107,15 @@ fn output_holes_clip_shared_content_independently_without_changing_ownership() {
     hole(&mut world, root, 2, AreaShape::Square, DVec2::ZERO, 100.0);
     let entity = sand(&mut world, root, 1, DVec2::ZERO, 200.0);
     let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
-    let output = |id, workspace| OutputViewport {
+    let output = |id, workspace| OutputViewport { rotation: Default::default(),
         id: OutputId(id),
         bounds,
         usable: Some(bounds),
         physical_size: [800, 600],
+        raster: crate::host::raster::RasterMapping {
+            origin: (bounds).origin(),
+            scale: [1.0; 2],
+        },
         workspace,
     };
     world.insert_resource(

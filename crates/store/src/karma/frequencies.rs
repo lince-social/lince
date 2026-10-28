@@ -204,7 +204,9 @@ where
         return Ok(commit);
     }
 
-    let frequency_uid = uid.map(str::to_owned).unwrap_or_else(|| nucleus::new_uid("r"));
+    let frequency_uid = uid
+        .map(str::to_owned)
+        .unwrap_or_else(|| nucleus::new_uid("r"));
     let origin_organ_uid: Option<String> = sqlx::query_scalar(
         "SELECT uid FROM record WHERE slug = ? AND kind = ? AND deleted_at IS NULL LIMIT 1",
     )
@@ -268,15 +270,7 @@ where
             .execute(&mut **tx)
             .await?;
         evidence.handle_revision = 2;
-        activate_saved_tx(
-            tx,
-            &input.frequency,
-            &mut evidence,
-            admission,
-            true,
-            now,
-        )
-        .await?;
+        activate_saved_tx(tx, &input.frequency, &mut evidence, admission, true, now).await?;
     }
     let fact = append_evidence_fact(
         tx,

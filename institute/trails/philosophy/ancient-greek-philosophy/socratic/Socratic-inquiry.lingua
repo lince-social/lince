@@ -1,0 +1,23 @@
+Import "../Ancient-Greek-Philosophy.lingua"
+Import "Apology.lingua"
+Import "Euthyphro.lingua"
+Import "Crito.lingua"
+Import "Meno.lingua"
+Import "Gorgias.lingua"
+Import "Xenophon.lingua"
+Import "Argument-review.lingua"
+Import "Protagoras.lingua"
+
+Socratic inquiry: the first reading path (@greek-socratic-inquiry: 0, is #chapter, #part-of @ancient-greek-philosophy, #contains @greek-apology, #contains @greek-euthyphro, #contains @greek-crito, #contains @greek-meno, #contains @greek-gorgias, #contains @greek-xenophon, #contains @greek-first-review, #contains @greek-protagoras, #philosophy @greek-apology, #ancient-greek-philosophy @greek-apology, #philosophy @greek-crito, #ancient-greek-philosophy @greek-crito, #philosophy @greek-euthyphro, #ancient-greek-philosophy @greek-euthyphro, #philosophy @greek-first-review, #ancient-greek-philosophy @greek-first-review, #philosophy @greek-gorgias, #ancient-greek-philosophy @greek-gorgias, #philosophy @greek-meno, #ancient-greek-philosophy @greek-meno, #philosophy @greek-protagoras, #ancient-greek-philosophy @greek-protagoras, #philosophy @greek-xenophon, #ancient-greek-philosophy @greek-xenophon) { r_24EDXVJN0ACP2G204JK3KCHW79
+Read [Apology](Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4), [Euthyphro](Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD), [Crito](Crito.lingua#r_54N10WGKCSCKW6XM202PCG7ZDH), [Meno](Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN), and [Gorgias](Gorgias.lingua#r_5G884J0SFXCP4YRBFF5C5YSYD2), then compare [Xenophon](Xenophon.lingua#r_386T9BE05SXJZK8E0NX7TAYJK8). Each guide can also be an entrance for a particular question. The return links make it possible to join midway and recover the preparation used.
+
+Begin with [a claim, its reasons, and an objection](../foundations/Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN). Introduce the [historical setting](../foundations/Historical-context.lingua#r_06MYG1RZCSZDTVZP581FTCNRSG) and [translation vocabulary](../foundations/Terms-and-translation.lingua#r_1VGPFMXZ4HHAREA3BAHTSSQQ8D) alongside the first reading. Read primary passages before the editions' introductions; return to the introductions as interpretations to examine.
+
+The first selection in a guide is an encounter with the problem. Reading the whole dialogue supplies its dramatic development and its changes of argument. Keep the selections in that context rather than treating a memorable sentence as a doctrine.
+
+For the question of teaching and civic education, compare [Meno](Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN) with [Protagoras](Protagoras.lingua#r_6QKC211R791MTAMXSZM0VBS5XN). This is an additional path through the Sophists and their presentation in Plato.
+
+Finish with [the argument review](Argument-review.lingua#r_3879MMB9TCFTCMJ2SPYG32ZDS0), then choose a continuation from [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+
+**Stage reached:** the first review establishes introductory work. Full completion continues through [the research progression](../research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09); using one dialogue in another route requires the preparation for that use.
+} r_24EDXVJN0ACP2G204JK3KCHW79

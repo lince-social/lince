@@ -248,6 +248,61 @@ pub fn mount(
     owner
 }
 
+#[derive(Component)]
+struct TransportChrome(Vec<(Entity, Display)>);
+
+pub(crate) fn transport_view(
+    world: &mut World,
+    owner: Entity,
+    records: Vec<String>,
+    person: String,
+    tools: bool,
+) {
+    let changed = world
+        .get::<MapSand>(owner)
+        .is_some_and(|sand| sand.person != person || sand.records != records);
+    if changed {
+        feed::reset(world, owner);
+        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+        sand.person = person;
+        sand.records = records;
+        sand.auto_center = true;
+    }
+    let viewport = world.get::<MapSand>(owner).unwrap().viewport;
+    if world.get::<TransportChrome>(owner).is_none() {
+        world.get_mut::<MapSand>(owner).unwrap().show_public = false;
+        let children: Vec<_> = world.get::<Children>(owner).unwrap().iter().collect();
+        let chrome = children
+            .into_iter()
+            .filter(|entity| *entity != viewport)
+            .filter_map(|entity| world.get::<Node>(entity).map(|node| (entity, node.display)))
+            .collect();
+        world.entity_mut(owner).insert(TransportChrome(chrome));
+    }
+    let mut chrome = world.get::<TransportChrome>(owner).unwrap().0.clone();
+    chrome.retain(|(entity, _)| world.get::<Node>(*entity).is_some());
+    let children: Vec<_> = world.get::<Children>(owner).unwrap().iter().collect();
+    for entity in children {
+        if entity != viewport
+            && !chrome.iter().any(|(known, _)| *known == entity)
+            && let Some(node) = world.get::<Node>(entity)
+        {
+            chrome.push((entity, node.display));
+        }
+    }
+    world.get_mut::<TransportChrome>(owner).unwrap().0 = chrome.clone();
+    for (entity, display) in chrome {
+        if let Some(mut node) = world.get_mut::<Node>(entity) {
+            node.display = if tools { display } else { Display::None };
+        }
+    }
+    let mut node = world.get_mut::<Node>(viewport).unwrap();
+    node.height = if tools { px(360) } else { percent(100) };
+    node.min_height = px(0);
+    node.flex_grow = 1.0;
+    node.flex_shrink = 1.0;
+}
+
 pub fn observe(
     world: &mut World,
     parent: Entity,

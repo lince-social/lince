@@ -1,0 +1,27 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/FIMPACT-ten-year.lingua"
+Import "../../../sources/Rotator-cuff-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "../anatomy/Bones-and-landmarks.lingua"
+Import "A-rotational-pain-question.lingua"
+Import "Advanced-anatomy.lingua"
+
+Explain shoulder function and evaluate a clinical claim (@shoulder-review: 0, is #chapter, #part-of @shoulder, #source @med-source-applied, #source @med-source-cuff-guideline, #source @med-source-fimpact, #medicine @shoulder-advanced-anatomy, #orthopedics @shoulder-advanced-anatomy, #shoulder @shoulder-advanced-anatomy, #medicine @shoulder-bones, #orthopedics @shoulder-bones, #shoulder @shoulder-bones) { r_0KVS4CSNH1J97G8XKXEW5183JW
+Bring together the anatomy, function, problem categories, and evidence without using your own pain as a diagnostic exercise.
+
+1. Reconstruct the region in anterior, posterior, and section views: bones, the three true joints, scapulothoracic movement, labrum, capsule, ligaments, tendon courses, bursae, muscles, nerves, and main vessels.
+2. Explain an overhead reach and a rotation through anatomy, muscle coordination, and loading. Name the simplifications in your explanation.
+3. Compare fictional cuff pain, stiffness, instability, arthritis, and a nerve-related presentation. State what is compatible, what remains unknown, and what would require assessment.
+4. Interpret an annotated imaging example, distinguishing finding, diagnosis, and treatment implication.
+5. Read one guideline recommendation and one trial, identifying population, outcome, uncertainty, and applicability. Explain a tempting overgeneralization and correct it.
+6. Produce a short English/Portuguese glossary and a source-supported account a lay reader could follow.
+
+This review completes the introductory-to-intermediate shoulder reading, not professional clinical training. It should require real study and revisiting sources. The following readings deepen anatomical detail and research skills rather than attaching a credential or treatment authority.
+
+**Return to the initial rotational question:** write a clear fictional account of the movement and compare a cuff explanation, a stiffness or instability explanation, and a labral interpretation. Use [Work through a rotational-pain question with focused readings](A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S) to select exact passages. Explain why pain at an end position does not by itself identify structural damage, and what evidence would be needed to strengthen or reject each account.
+
+**Continue:** [Deepen the anatomy — variants, sections, and source comparison](Advanced-anatomy.lingua#r_30CZWWJV2EFKG5SD0DAGSED7E7) · [Shoulder bones and landmarks — ossos e acidentes anatômicos](../anatomy/Bones-and-landmarks.lingua#r_7G6SQ2VAXNX6WZ2Z9RRR883VQA).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_0KVS4CSNH1J97G8XKXEW5183JW

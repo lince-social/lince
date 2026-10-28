@@ -6,13 +6,20 @@ use serde_json::{Value, json};
 use crate::{Predicate, Protein, ProteinError, Source};
 
 pub fn is_window(predicate: &Predicate) -> bool {
-    matches!(predicate, Predicate::ProjectionWindow(_) | Predicate::RollingWindow(_))
+    matches!(
+        predicate,
+        Predicate::ProjectionWindow(_) | Predicate::RollingWindow(_)
+    )
 }
 
 pub fn context(query: &Protein, actor: Option<&str>) -> Result<Context, ProteinError> {
     let mut windows = query.filter.iter().filter_map(|predicate| match predicate {
         Predicate::ProjectionWindow(window) => Some(Ok(window.clone())),
-        Predicate::RollingWindow(window) => Some(window.resolve(nucleus::execution::now().timestamp_millis()).map_err(invalid)),
+        Predicate::RollingWindow(window) => Some(
+            window
+                .resolve(nucleus::execution::now().timestamp_millis())
+                .map_err(invalid),
+        ),
         _ => None,
     });
     let window = windows
@@ -54,7 +61,10 @@ pub(super) async fn execute(
     for row in &mut rows {
         for property in ["start_date", "due_date"] {
             if let Some(value) = row[property].as_str() {
-                row[property] = json!(nucleus::schedule::timezone_date(value, &context.window.timezone).map(|date| date.to_string()));
+                row[property] = json!(
+                    nucleus::schedule::timezone_date(value, &context.window.timezone)
+                        .map(|date| date.to_string())
+                );
             }
         }
     }

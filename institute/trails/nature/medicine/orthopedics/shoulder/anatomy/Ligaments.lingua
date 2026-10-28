@@ -1,0 +1,28 @@
+Import "../../../Medicine.lingua"
+Import "../../../musculoskeletal/Tendons-and-ligaments.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Glenohumeral-joint.lingua"
+Import "../../../sources/Shoulder-anatomy.lingua"
+Import "../Shoulder.lingua"
+Import "Tendons-and-bursae.lingua"
+
+Shoulder ligaments — which structures do they connect? (@shoulder-ligaments: 0, is #chapter, #part-of @shoulder, #source @med-source-joint, #source @med-source-shoulder-anatomy, #medicine @shoulder-tendons-bursae, #orthopedics @shoulder-tendons-bursae, #shoulder @shoulder-tendons-bursae, #source @med-source-applied, #source @med-source-osu) { r_5GPKY72JMMZR8K7KPQB707S44E
+**Read selected structure-and-function passages:** [Glenohumeral joint — NCBI Bookshelf](../../../sources/Glenohumeral-joint.lingua#r_6ERFNFKGVD0WNVNSP9Z16GSJJ4), glenohumeral, coracohumeral, and coracoacromial ligaments, plus the associated diagrams. Use the pectoral-girdle accounts in [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N) and [Shoulder anatomy — NCBI Bookshelf](../../../sources/Shoulder-anatomy.lingua#r_0AXZG4YT3Y8GYC5XDH0S52HWZ4) for AC, coracoclavicular, and SC relationships. Then attempt [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), chapter 2 review questions 1–4 on printed page 15.
+
+| Structures | Connection to trace |
+| --- | --- |
+| Superior, middle, and inferior glenohumeral ligaments | capsular supporting regions associated with the glenoid-to-humerus relationship |
+| Coracohumeral ligament | coracoid region to proximal humerus; associated with the superior capsule and rotator interval |
+| Coracoacromial ligament | coracoid to acromion, forming part of an arch above the humeral head |
+| Acromioclavicular and coracoclavicular ligaments | support the AC relationship; the coracoclavicular complex includes conoid and trapezoid parts |
+| Sternoclavicular, interclavicular, and costoclavicular ligaments | support the medial clavicle's relationships with the sternum, opposite side, and first-rib region |
+
+Names are clues to attachments. The coracoacromial ligament does not attach to the humerus. The inferior glenohumeral ligament is described as a complex whose parts and tension depend on position.
+
+**Try:** annotate endpoints on a skeleton before drawing any ligament. Then distinguish supporting the clavicle from restraining glenohumeral translation. Follow a source illustration rather than inferring a ligament's complete course from its name.
+
+**Continue:** [Tendons and bursae around the shoulder](Tendons-and-bursae.lingua#r_7DKM33EF1Z12EGVQRS5VREJQV3).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_5GPKY72JMMZR8K7KPQB707S44E

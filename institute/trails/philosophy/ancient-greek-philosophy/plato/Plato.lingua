@@ -1,0 +1,21 @@
+Import "../Philosophers.lingua"
+Import "../sources/Socratic-dialogues-Cary.lingua"
+Import "../socratic/Socratic-inquiry.lingua"
+Import "Phaedo.lingua"
+Import "Republic.lingua"
+Import "Symposium.lingua"
+Import "Theaetetus.lingua"
+
+Plato (@plato: 0, #part-of @philosophers, #source @socratic-dialogues, #philosophy @greek-socratic-inquiry, #ancient-greek-philosophy @greek-socratic-inquiry, #philosophy @greek-phaedo, #ancient-greek-philosophy @greek-phaedo, #philosophy @greek-republic, #ancient-greek-philosophy @greek-republic, #philosophy @greek-symposium, #ancient-greek-philosophy @greek-symposium, #philosophy @greek-theaetetus, #ancient-greek-philosophy @greek-theaetetus) { r_00000000000000000000001004
+Plato's dialogues develop philosophical questions through speakers, settings, arguments, objections, and changes of direction. Many present Socrates. A character's argument, the dialogue's presentation, and a claim about the historical Socrates require different kinds of support.
+
+Begin through [the guided Socratic reading path](../socratic/Socratic-inquiry.lingua#r_24EDXVJN0ACP2G204JK3KCHW79): Apology, Euthyphro, Crito, Meno, Gorgias, then a comparison with Xenophon. Each guide states the reading selection, preparation, questions, and a check on understanding.
+
+The [Cary edition of Apology, Crito, and Phaedo](../sources/Socratic-dialogues-Cary.lingua#r_00000000000000000000001005) supplies three retained primary texts. The [Jowett volume](../sources/Dialogues-Jowett.lingua#r_1AD7N0E0ZYZ07XSMQWSK5PA5X8) adds Euthyphro, Meno, and Gorgias and allows a comparison of translations.
+
+Follow [Phaedo](Phaedo.lingua#r_6JFZZP5W43FY7FFQENQNH96AFQ) for soul and the examination of an argument; [Republic](Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5) for justice, knowledge, and education; [Symposium](Symposium.lingua#r_5NMHFGWX7QGRJ65XQDFFEG9K8B) for love, beauty, and the form of a dialogue. These are continuations chosen by question, with their own preparation.
+
+**Context:** [Socrates and his sources](../foundations/Socrates-and-his-sources.lingua#r_1WAA32AYYPKYVETNZ5JGZ2SHFT). **Return:** [Author index](../Philosophers.lingua#r_00000000000000000000001003) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) · [Philosophy](../../Philosophy.lingua#r_00000000000000000000001001).
+
+**Further questions:** [Protagoras](../socratic/Protagoras.lingua#r_6QKC211R791MTAMXSZM0VBS5XN) examines teaching and virtue; [Theaetetus](Theaetetus.lingua#r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N) develops the inquiry into knowledge. [Portuguese editions](../sources/Portuguese-editions.lingua#r_3DABDPGKRDSM682Q2NYDEVX4Z8) supply parallel readings where available.
+} r_00000000000000000000001004

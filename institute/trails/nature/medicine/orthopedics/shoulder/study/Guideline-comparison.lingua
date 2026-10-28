@@ -1,0 +1,20 @@
+Import "../../../sources/Chronic-shoulder-imaging-ACR.lingua"
+Import "../../../sources/Rotator-cuff-guideline-2025.lingua"
+Import "../../../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "Research-and-revision.lingua"
+
+Compare guidelines without erasing their populations (@shoulder-guidelines: 0, is #chapter, #part-of @shoulder, #source @med-source-tendinopathy-guideline, #source @med-source-cuff-guideline, #source @med-source-acr, #source @med-source-ms-ufrgs, #medicine @shoulder-research, #orthopedics @shoulder-research, #shoulder @shoulder-research) { r_23K2GC12JHG2A99BBFJXWYJE0R
+**Read in full for their stated scope:** [Rotator Cuff Tendinopathy — JOSPT, 2025](../../../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV) and [Management of Rotator Cuff Injuries — AAOS, 2025](../../../sources/Rotator-cuff-guideline-2025.lingua#r_5JCRVDCV75VA441X5FG5S226G3). Add [Chronic shoulder pain — ACR imaging criteria](../../../sources/Chronic-shoulder-imaging-ACR.lingua#r_550R5D2ZQEXYS08A98J9M848PG) for imaging and [Ortopedia adulto — Ministério da Saúde and UFRGS](../../../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78), Protocolo 8, for referral context.
+
+The JOSPT guideline addresses adults with suspected cuff tendinopathy and specified related findings; full-thickness tears fall outside its stated target. The AAOS guideline concerns adult rotator cuff injuries and includes a different range of management questions. The Brazilian referral protocol and ACR imaging criteria have still other purposes. Different recommendations may reflect different questions, populations, dates, or evidence judgments.
+
+**Sustained task:** make a comparison of scope, population, evidence search, important outcomes, evidence strength, consensus, benefits, harms, and applicability. Select one recommendation and trace its support into the cited studies. Identify which support is freely readable and which remains accessible only through another legitimate route.
+
+Report a disagreement precisely: quote only a short necessary phrase, summarize in your own words, and retain the population and conditions. State what new evidence would require revision. This is critical reading, not a vote for whichever source sounds most certain.
+
+**Continue:** [Investigate a shoulder question and revise the explanation](Research-and-revision.lingua#r_77W5XER9DJRPDS7MK0W82N42MT).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_23K2GC12JHG2A99BBFJXWYJE0R

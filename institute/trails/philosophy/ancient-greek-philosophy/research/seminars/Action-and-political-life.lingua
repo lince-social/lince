@@ -1,0 +1,26 @@
+Import "Seminars.lingua"
+Import "../../sources/Nicomachean-Ethics.lingua"
+Import "../../sources/Politics.lingua"
+Import "../../sources/Ethics-Broadie.lingua"
+Import "../../sources/Academic-benchmarks.lingua"
+Import "Hellenistic-disputes.lingua"
+Import "Plato-desire-and-education.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: action, habituation, practical wisdom, and political life (@greek-seminar-ethics-politics: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-aristotle, #source @greek-source-politics, #source @greek-source-broadie, #source @greek-academic-benchmarks, #philosophy @greek-seminar-hellenistic, #ancient-greek-philosophy @greek-seminar-hellenistic, #philosophy @greek-seminar-plato-ethics, #ancient-greek-philosophy @greek-seminar-plato-ethics, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_433AESW7TGW0Y78QJSTW4MEXQJ
+**Preparation:** [character and living well](../../aristotle/Living-well-and-character.lingua#r_21YB00AWNRYQ0X2SQ8H0RFRW65), [practical wisdom](../../aristotle/Practical-wisdom-and-friendship.lingua#r_6RZXS4EJH55PRPW61MB33DTCNM), [political association](../../aristotle/Political-community.lingua#r_0NZK4NKSQVX9NMTAWRT2XNBATD), and Greek textual study.
+
+**Primary corpus:** read the Nicomachean Ethics as a whole, tracing the connections among the end of life, virtue, voluntary action and choice, justice, practical wisdom, weakness of will, friendship, and contemplation. Read the complete connected Politics books relevant to the chosen question, especially III or VII–VIII when the argument concerns citizenship or education.
+
+Use [Broadie's sustained interpretation](../../sources/Ethics-Broadie.lingua#r_5W2X8XTJ2MP72E74E1CR3EGPC9) and the literature dossier. The [UFRGS doctoral examples](../../sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) show how a bounded question about education, habit, or legislation can demand a substantial investigation.
+
+**Choose a dispute:** how habituation can produce a rationally informed disposition; what pleasure and an educator contribute; whether knowing the good suffices for acting well; or how practical and contemplative activity relate in the final account of happiness.
+
+Define hexis, ethos, prohairesis, and phronesis through the relevant Greek and argument. Distinguish a mechanism of acquiring a disposition from a justification of the disposition's value. For a claim concerning institutions, explain the inference between an ethical end and a political arrangement.
+
+**Required work:** reconstruct the argument across the treatise, compare the strongest competing explanations, analyse the decisive Greek passages, and defend a contribution. A proposed educational or social application needs its own evidence and an explanation of what the ancient comparison can establish.
+
+**Crossings:** [Plato on desire](Plato-desire-and-education.lingua#r_3JBRV526ZZD7AK2YJJZESWWGFR); [agency and responsibility](Hellenistic-disputes.lingua#r_7020B909F5EN8WYCK7HZ0F1ZBV); a bounded investigation in education or political economy.
+
+**Review:** [Common seminar standard](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_433AESW7TGW0Y78QJSTW4MEXQJ

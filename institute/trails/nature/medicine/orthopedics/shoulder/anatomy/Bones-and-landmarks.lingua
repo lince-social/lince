@@ -1,0 +1,30 @@
+Import "../../../Medicine.lingua"
+Import "../../../foundations/Reading-from-zero.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Shoulder-anatomy.lingua"
+Import "../../../sources/Skeleton-3D.lingua"
+Import "../Shoulder.lingua"
+Import "Articulations.lingua"
+
+Shoulder bones and landmarks — ossos e acidentes anatômicos (@shoulder-bones: 0, is #chapter, #part-of @shoulder, #source @med-source-osu, #source @med-source-shoulder-anatomy, #source @med-source-applied, #source @med-source-skeleton-3d, #medicine @shoulder-articulations, #orthopedics @shoulder-articulations, #shoulder @shoulder-articulations) { r_7G6SQ2VAXNX6WZ2Z9RRR883VQA
+**Read a regional account:** [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), The Pectoral Girdle and Bones of the Upper Limb in chapter 8, with illustrations and review questions. This revisits the complete skeletal block in [Begin medicine from zero — a substantial reading progression](../../../foundations/Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50). Use the structural overview in [Shoulder anatomy — NCBI Bookshelf](../../../sources/Shoulder-anatomy.lingua#r_0AXZG4YT3Y8GYC5XDH0S52HWZ4) for the shoulder region; in [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), chapter 2 questions 1–4 connect the clavicular joints and ligaments.
+
+The principal bones are the clavicle/clavícula, scapula/escápula, and humerus/úmero. The sternum/esterno and thoracic cage/caixa torácica provide neighboring connections and the surface against which the scapula moves.
+
+![[Explore the skeleton in three dimensions|../../../sources/Skeleton-3D.lingua#r_60TPBJFQKSVPGQ4TR2TN52GFD0]]
+
+| Bone | Landmarks to locate in several views |
+| --- | --- |
+| Clavicle | sternal and acromial ends; its connection to the sternum and acromion |
+| Scapula | spine/espinha, acromion/acrômio, coracoid process/processo coracoide, glenoid cavity/cavidade glenoidal, supraspinous and infraspinous fossae, subscapular fossa, borders and angles |
+| Proximal humerus | head/cabeça, anatomical and surgical necks, greater and lesser tubercles/tubérculos maior e menor, intertubercular groove/sulco intertubercular |
+
+A landmark can locate an attachment, guide orientation, or help describe an injury. 'Greater tubercle' identifies a region of bone; it does not name a muscle.
+
+**Try:** label each bone and landmark on anterior and posterior drawings without rotating their names with the viewer. Explain why the scapula's glenoid is visible differently from the front, back, and side. Consult chapter 2 review questions in [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K) after studying the illustrations.
+
+**Continue:** [Four linked relationships in shoulder movement](Articulations.lingua#r_5ZVVVD4SZFS5W5AGCZDT1FA9RD).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7G6SQ2VAXNX6WZ2Z9RRR883VQA

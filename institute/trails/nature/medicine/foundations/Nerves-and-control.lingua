@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../musculoskeletal/Nerves-and-blood-supply.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Medical-Terminology-2e.lingua"
+Import "Inflammation-infection-and-repair.lingua"
+
+Nerves — sensation, muscle activation, and control (@med-nerves: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #medicine @med-inflammation, #source @med-source-terminology) { r_08WV4S2F8WMCT7SZX2FHY82YP7
+**Read sustained foundations:** [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), chapters 12–14 on nervous tissue, neural anatomy, and somatic sensory-motor organization, with their diagrams and review questions. Start with chapter 12 here, continue chapter 13 through [A movement system needs nerves and blood supply](../musculoskeletal/Nerves-and-blood-supply.lingua#r_0B7GSTVKPXTQPSTZVF7SPYGPK1), and apply chapter 14 as the movement readings deepen. Use [Medical Terminology 2e — Open RN](../sources/Medical-Terminology-2e.lingua#r_6R6B3VDJ3NYF8QKGJYBZTSTT3Q), chapter 16, for a language review rather than a substitute for these explanations.
+
+A neuron/neurônio communicates through electrical and chemical processes. A peripheral nerve/nervo periférico contains many axons and supporting tissues. Sensory pathways carry information toward the central nervous system; motor pathways influence effectors such as skeletal muscle. These descriptions concern direction and function, not two visibly separate wires on every diagram.
+
+Motor commands, sensory feedback, reflexes, attention, and learned coordination contribute to movement. Proprioception/propriocepção includes information about body position and movement. A joint's behavior therefore depends on neural control as well as its surfaces and ligaments.
+
+A dermatome/dermátomo describes a skin territory associated with a spinal root; a named peripheral nerve supplies a different anatomical distribution. They overlap imperfectly. Sensory symptoms, weakness, and reflex findings need interpretation together.
+
+**Try:** trace a voluntary movement from a central command through a peripheral motor axon to muscle contraction, and then trace returning sensory information. Distinguish reduced force due to pain, a muscle injury, and a nerve problem as different possibilities requiring evidence.
+
+**Continue:** [Inflammation, infection, and repair are different processes](Inflammation-infection-and-repair.lingua#r_4CWKE5QM0EFHK2N3AP2Y6WZMX5).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_08WV4S2F8WMCT7SZX2FHY82YP7

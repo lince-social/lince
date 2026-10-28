@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../musculoskeletal/Musculoskeletal-system.lingua"
+Import "../sources/DeCS.lingua"
+
+Bring the shared medical foundation together (@med-foundations-review: 0, is #chapter, #part-of @medicine, #source @med-source-decs, #medicine @musculoskeletal-system) { r_6TDM16JC1FAVSWBVCCD5BJVEZE
+Return to unfamiliar ideas through the earlier readings; a dictionary definition is useful only when you can apply its distinction.
+
+Work through a fictional report of a painful, swollen joint. Describe location and time course without assigning a cause. Separate pain, observable swelling, tissue injury, inflammation, infection, and an imaging finding. Draw a cell-to-organ-to-system map that could help investigate the complaint. Explain why symptoms, examination, and tests need interpretation together.
+
+Translate the key language into Portuguese: articulação, cartilagem, tendão, ligamento, músculo, nervo, derrame, amplitude de movimento, diagnóstico diferencial, prognóstico, and encaminhamento. Check a term in [DeCS — Descritores em Ciências da Saúde](../sources/DeCS.lingua#r_32JDHQDTBG260AEJ12TP8WRY1G) and explain why a search descriptor is not itself a diagnosis.
+
+For an imagined proposed treatment, state the desired outcome, alternative, meaningful benefit, harms, uncertainty, and follow-up. Distinguish reading competence from ability to perform an examination or procedure.
+
+**Show the reading behind the vocabulary:** explain a membrane transport example, an ATP-dependent cellular process, one feedback loop, and the distinction between a tissue and an organ. Connect each to the complete foundational chapters already read. Keep the unanswered question visible when a word definition does not yet supply a mechanism.
+
+**Ready to continue:** you can explain these distinctions in ordinary language and point to the relevant source when uncertain. No score, credential, or personal medical disclosure is required. The next reading develops the structures shared by orthopedic regions.
+
+**Continue:** [The musculoskeletal system — support and movement](../musculoskeletal/Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_6TDM16JC1FAVSWBVCCD5BJVEZE

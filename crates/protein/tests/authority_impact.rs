@@ -36,6 +36,7 @@ fn assertion(number: u128, subject: u128, predicate: u128, object: Option<u128>)
         subject_uid: r(subject),
         predicate_uid: c(predicate),
         object_uid: object.map(r),
+        object_uri: None,
         role: AssertionRole::Ordinary,
         quantity: None,
         unit_uid: None,
@@ -57,6 +58,7 @@ fn graph() -> GraphSnapshot {
             })
             .collect(),
         assertions: Vec::new(),
+        resolved_links: Default::default(),
         places: BTreeSet::new(),
     }
 }

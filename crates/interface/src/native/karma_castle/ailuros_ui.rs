@@ -395,7 +395,13 @@ fn render(world: &mut World, owner: Entity) {
             "Edit access",
             Control::Edit(row.uid.clone()),
         );
-        crate::native::castle_feed::button(world, line, owner, "Use for firmware setup", setup::Control::Select(row.uid.clone()));
+        crate::native::castle_feed::button(
+            world,
+            line,
+            owner,
+            "Use for firmware setup",
+            setup::Control::Select(row.uid.clone()),
+        );
         crate::native::castle_feed::button(
             world,
             line,
@@ -454,7 +460,9 @@ fn render(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
-    if setup::receive(world, message) { return true; }
+    if setup::receive(world, message) {
+        return true;
+    }
     let id = match message {
         ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
         _ => return false,
@@ -514,7 +522,9 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
     true
 }
 
-pub(super) fn maintain(world: &mut World) { setup::maintain(world); }
+pub(super) fn maintain(world: &mut World) {
+    setup::maintain(world);
+}
 
 #[cfg(test)]
 mod tests;

@@ -219,7 +219,10 @@ pub(super) async fn execute(
                 })
                 .collect();
             for entry in schedule {
-                if !entry.time.overlaps(context.window.from_ms, context.window.until_ms) {
+                if !entry
+                    .time
+                    .overlaps(context.window.from_ms, context.window.until_ms)
+                {
                     continue;
                 }
                 if refreshing

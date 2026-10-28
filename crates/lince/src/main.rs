@@ -203,9 +203,8 @@ fn main() -> Result<(), Error> {
     };
 
     let staged_setup = read_staged_setup()?;
-    let language = staged_setup
-        .as_ref()
-        .and_then(|setup| setup.language.clone());
+    let language = startup_language(&args)?
+        .or_else(|| staged_setup.as_ref().and_then(|setup| setup.language.clone()));
     let staged_password = initial_admin_password(&args)?.or_else(|| {
         staged_setup
             .as_ref()
@@ -466,6 +465,7 @@ fn print_help() {
     println!("  -h, --help            Show this help message");
     println!("  lingua FILE          Run a Lingua script; check, fmt, and eval are also available");
     println!("      --directory <path> Override the Lince data directory");
+    println!("      --language <en|pt-BR|art-x-ithkuil> Choose the interface language at startup");
     println!("      --park           Run the native Wayland desktop (Linux, park feature)");
     println!(
         "      --park-nested    Run the same Cell-backed compositor inside the current desktop"
@@ -541,6 +541,17 @@ fn print_help() {
 
 fn has_arg(args: &[String], expected: &str) -> bool {
     args.iter().any(|arg| arg == expected)
+}
+
+fn startup_language(args: &[String]) -> Result<Option<String>, Error> {
+    if !has_arg(args, "--language") {
+        return Ok(None);
+    }
+    let tag = arg_value(args, "--language")
+        .ok_or_else(|| Error::other("Pass en, pt-BR or art-x-ithkuil after --language"))?;
+    let language = lince_interface::i18n::Language::from_tag(&tag)
+        .ok_or_else(|| Error::other("Choose en, pt-BR or art-x-ithkuil for --language"))?;
+    Ok(Some(language.tag().into()))
 }
 
 fn arg_value(args: &[String], expected: &str) -> Option<String> {

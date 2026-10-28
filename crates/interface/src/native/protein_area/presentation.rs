@@ -619,7 +619,7 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect();
     for row in rows {
-        if !supported(world, row) {
+        if super::availability::hidden(world, row) || !supported(world, row) {
             continue;
         }
         if world

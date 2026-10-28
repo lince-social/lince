@@ -94,8 +94,12 @@ pub async fn readable(store: &store::Store, person: &str) -> Result<HashSet<Stri
                 order: vec![],
                 limit: None,
             };
-            result.extend(crate::matching_records_for(store, &query, Some(&ceiling), Some(person))
-                .await?.into_iter().map(|record| record.uid));
+            result.extend(
+                crate::matching_records_for(store, &query, Some(&ceiling), Some(person))
+                    .await?
+                    .into_iter()
+                    .map(|record| record.uid),
+            );
         } else {
             result.extend(store::visibility::role_targets(&store.pool, person, role).await?);
         }

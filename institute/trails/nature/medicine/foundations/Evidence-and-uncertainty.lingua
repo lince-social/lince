@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../orthopedics/shoulder/study/Treatment-evidence.lingua"
+Import "../sources/Rotator-cuff-guideline-2025.lingua"
+Import "../sources/Tendinopathy-guideline-2025.lingua"
+Import "Foundations-review.lingua"
+
+Read medical evidence and recognize its limits (@med-evidence: 0, is #chapter, #part-of @medicine, #source @med-source-cuff-guideline, #source @med-source-tendinopathy-guideline, #medicine @med-foundations-review) { r_23DWDDM1D9GY3JG0GCSS2G5B4W
+**Read the methods before recommendations:** the guideline-development and evidence-strength explanations in [Management of Rotator Cuff Injuries — AAOS, 2025](../sources/Rotator-cuff-guideline-2025.lingua#r_5JCRVDCV75VA441X5FG5S226G3) and [Rotator Cuff Tendinopathy — JOSPT, 2025](../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV). First identify what each guideline is about; the later shoulder study reads their condition-specific material in depth. Keep unfamiliar clinical terms as questions to return to rather than silently guessing their meaning.
+
+An anatomical study describes structure; a laboratory experiment investigates a mechanism; an observational study examines associations; a randomized trial compares interventions under specified conditions. A systematic review uses explicit methods to find and assess studies. A clinical guideline combines evidence and judgments into recommendations for a defined setting and population.
+
+No label guarantees quality. Ask about selection, comparison groups, measurement, missing data, bias, uncertainty, conflicts of interest, and applicability. Statistical significance and an improvement meaningful to a patient are different questions. An effect observed after treatment is not automatically an effect caused by treatment.
+
+Clinical recommendations also change. Record the source version and distinguish evidence-supported findings from consensus or unresolved questions. A freely readable paper and an openly reusable paper can have different rights.
+
+**Try:** turn a shoulder claim into a question specifying people, intervention or exposure, comparison, outcome, and time. Identify what study could answer it. Use the later [Test a plausible treatment against evidence](../orthopedics/shoulder/study/Treatment-evidence.lingua#r_0Y6CMCRFXDGN20QGXNDKS55VXD) to examine a real trial.
+
+**Continue:** [Bring the shared medical foundation together](Foundations-review.lingua#r_6TDM16JC1FAVSWBVCCD5BJVEZE).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_23DWDDM1D9GY3JG0GCSS2G5B4W

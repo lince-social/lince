@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "Musculoskeletal-system.lingua"
+Import "Synovial-joints.lingua"
+
+Tendons, ligaments, fascia, and attachments (@msk-tendons: 0, is #chapter, #part-of @musculoskeletal-system, #source @med-source-osu, #source @med-source-histology, #medicine @msk-joints, #orthopedics @msk-joints) { r_39EW7RT1P3JRQAG00BP4MXKDF2
+**Read the relevant connective-tissue sections completely:** in [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), connective tissue structure, fibers, and dense connective tissues in chapter 4; in [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS), the corresponding cells, matrix, collagen, and dense-tissue passages. Later return specifically to tendon, ligament, and attachment descriptions rather than rereading all tissue families.
+
+In the musculoskeletal system, a tendon/tendão transmits muscle force to an attachment, usually on bone. A ligament/ligamento commonly links bones and helps guide or restrain their relative movement. Fascia/fáscia describes connective-tissue sheets and related structures. The names distinguish roles and anatomy within a connected tissue system.
+
+Collagen fibers are organized rather than perfectly uniform. Material behavior depends on direction, loading rate, repeated loading, and time. An enthesis/êntese is an attachment region whose organization transitions between tissues. Different tendon and ligament regions have different environments.
+
+Sprain/entorse concerns ligament injury; strain/distensão commonly concerns muscle or tendon injury. Tendinopathy/tendinopatia is a clinical umbrella for a tendon disorder, not proof of one microscopic process. A rupture can be partial or complete, and continuity alone does not describe function.
+
+**Try:** draw the force route from a contracting muscle through a tendon into bone, then draw a ligament controlling the joint's motion. Explain how pain, structural alteration, and reduced strength could be related without treating them as synonyms.
+
+**Continue:** [Joints — cartilage, capsule, synovium, and bursae](Synovial-joints.lingua#r_4GZFM70631CM2Z5838PJ2X7BJE).
+
+**Return:** [The musculoskeletal system — support and movement](Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_39EW7RT1P3JRQAG00BP4MXKDF2

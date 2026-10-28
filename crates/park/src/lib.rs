@@ -31,8 +31,23 @@ pub(crate) mod desktop;
 #[cfg(all(target_os = "linux", feature = "nested"))]
 mod commands;
 
+#[cfg(all(target_os = "linux", feature = "nested"))]
+mod external_commands;
+
+#[cfg(all(target_os = "linux", feature = "nested"))]
+mod magnification;
+
+#[cfg(all(target_os = "linux", feature = "nested", any(feature = "session", test)))]
+mod input_settings;
+
 #[cfg(all(target_os = "linux", feature = "session"))]
 pub mod session;
 
 #[cfg(all(target_os = "linux", feature = "server"))]
 pub mod server;
+
+#[cfg(all(target_os = "linux", feature = "server"))]
+pub mod control_protocol;
+
+#[cfg(all(target_os = "linux", any(feature = "server-tests", feature = "nested")))]
+pub mod control_client;

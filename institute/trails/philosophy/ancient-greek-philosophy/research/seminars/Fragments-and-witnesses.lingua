@@ -1,0 +1,23 @@
+Import "Seminars.lingua"
+Import "../../sources/Presocratics-Kirk-Raven-Schofield.lingua"
+Import "../../sources/Presocratics-Fairbanks.lingua"
+Import "../../sources/Presocratics-Nova-Cultural.lingua"
+Import "Nature-life-and-mind.lingua"
+Import "Plato-being-and-knowledge.lingua"
+Import "../Sustained-study.lingua"
+
+Seminar: fragments, witnesses, and reconstructed early Greek thought (@greek-seminar-fragments: 0, is #chapter, #part-of @greek-seminars, #source @greek-source-krs, #source @greek-source-fairbanks, #source @greek-source-nova-cultural, #philosophy @greek-seminar-nature-mind, #ancient-greek-philosophy @greek-seminar-nature-mind, #philosophy @greek-seminar-plato-being, #ancient-greek-philosophy @greek-seminar-plato-being, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study) { r_2G2SQREBR27M8SP2KD6KGQKHP5
+**Preparation:** [the earlier Greek readings](../../presocratics/Nature-and-being.lingua#r_61M87EN28QQ9AHXT80SPCB0CVH), source criticism, and working [Greek textual analysis](../Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF).
+
+**Primary corpus:** select a connected problem in Heraclitus, Parmenides, Empedocles, or Anaxagoras. Assemble the surviving fragments and the relevant ancient testimonies, with their transmitting contexts. Use [Fairbanks](../../sources/Presocratics-Fairbanks.lingua#r_0CETPRSWH0WZT8335D8692RNJY) and [Nova Cultural](../../sources/Presocratics-Nova-Cultural.lingua#r_6ZA1ENV6PB59E6EGC7MCBS1782) for first comparisons, then [Kirk, Raven, and Schofield](../../sources/Presocratics-Kirk-Raven-Schofield.lingua#r_13P4W9K1D0PTV3VCEPQEXQNVSM) and an appropriate identified critical edition for the scholarly investigation.
+
+Study the whole surviving argumentative sequence relevant to the question. In Parmenides, interpret the proem and the relation between the way of truth and the cosmological material; in Heraclitus, establish why selected fragments should be read together; in a pluralist, connect the surviving claims about constituents and change.
+
+**Investigate:** how much of a reconstructed system belongs to the evidence, the ancient reporter's framing, and the modern editor's ordering? A quotation may be verbatim yet selected to serve a later argument. Fragment numbering helps locate evidence but does not establish authenticity, chronology, or independence of witnesses.
+
+**Required work:** make a concordance of passages across two collections, identify each ancient source, analyse a disputed Greek passage, and compare two defensible reconstructions. Record any unavailable or lost context. Defend why the chosen evidence can answer your question and how uncertainty affects the conclusion.
+
+**Seminar claim:** a sustained account that resists turning a few memorable sayings into an unexamined doctrine. Submit it to the [seminar review](../Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q).
+
+**Crossings:** [Plato's use of being and non-being](Plato-being-and-knowledge.lingua#r_34WRXN1SRY8SZVRKRV7X3X9QWA); [accounts of nature and explanation](Nature-life-and-mind.lingua#r_2PYDKJQM81F9YKYZFJPEDNY150). **Return:** [Seminar families](Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y).
+} r_2G2SQREBR27M8SP2KD6KGQKHP5

@@ -1,0 +1,139 @@
+Farming foundations (@farming-foundations: 0, is #chapter, #contains @farming-botany, #contains @farming-growth, #contains @farming-reproduction, #contains @farming-site, #contains @farming-soil, #contains @farming-calendar, #contains @farming-propagation, #contains @farming-water, #contains @farming-nutrition-plants, #contains @farming-pests, #contains @farming-harvest, #contains @farming-seed, #contains @farming-practice, #farming-practice @farming-botany, #farming-practice @farming-calendar, #farming-practice @farming-growth, #farming-practice @farming-harvest, #farming-practice @farming-nutrition-plants, #farming-practice @farming-pests, #farming-practice @farming-practice, #farming-practice @farming-propagation, #farming-practice @farming-reproduction, #farming-practice @farming-seed, #farming-practice @farming-site, #farming-practice @farming-soil, #farming-practice @farming-water) { r_1B0889C6NVH20P61QDGAHT7HD5
+Follow the Records in this order. Outcome: explain what a crop needs, choose a suitable planting window, raise it to harvest, and decide what to repeat.
+} r_1B0889C6NVH20P61QDGAHT7HD5
+
+Plant parts and plant names (@farming-botany: 0, #part-of @farming-foundations, #source @farm-source-botany) { r_2PE8DSC6E7GSYAQZ8EMD2TAFYZ
+Roots anchor plants and absorb water and dissolved minerals. Stems support leaves and connect transport tissues. Xylem carries water; phloem distributes sugars. Leaves exchange gases through stomata and capture light. Flowers produce gametes; fertilized ovules become seeds and ovaries usually become fruit.
+
+Harvested organs differ: @daucus-carota stores food in its root; @solanum-tuberosum in stem tubers; @allium-cepa in bulbs; @brassica-oleracea supplies leaves, buds, or flower heads. Protect the organ you intend to eat.
+
+A species is a biological identity; a cultivar is a selected form. Family relationships help plan rotation: tomato, potato, pepper, and eggplant are all Solanaceae. Changing between them does not break a family-specific pest cycle.
+
+Practice: expose a seedling root, identify its first seed leaves and true leaves, and label the edible organ of five foods. [Botany reference](https://content.ces.ncsu.edu/extension-gardener-handbook/3-botany).
+} r_2PE8DSC6E7GSYAQZ8EMD2TAFYZ
+
+How growth works (@farming-growth: 0, #part-of @farming-foundations, #source @farm-source-growth) { r_7RDJQ6MBPDMX9WD0GSVANCJ4D0
+Photosynthesis uses light, water, and carbon dioxide to make sugars. Respiration releases energy from sugars in living tissues, day and night. Roots need oxygen: continuously saturated soil can suffocate them. Fertilizer cannot replace light.
+
+Transpiration moves water through the plant and cools leaves. Heat, wind, and dry air increase demand. Wilting can mean dry soil, damaged roots, or waterlogging; inspect the root zone before watering.
+
+Annuals complete a seed-to-seed cycle within one growing season. Biennials often need a cold period before flowering. Perennials survive several years; the harvested shoot may still die after fruiting, as in banana. Temperature, day length, and sometimes winter chilling control flowering. Bolting is early flower-stem production, often reducing leafy-crop quality.
+
+Practice: compare the same species in sun and partial shade while keeping soil and watering comparable. [Plant growth and development](https://extension.oregonstate.edu/catalog/em-9901-plant-growth-development).
+} r_7RDJQ6MBPDMX9WD0GSVANCJ4D0
+
+Flowers, pollination, and fruit set (@farming-reproduction: 0, #part-of @farming-foundations, #source @farm-source-propagation) { r_2KNEKAYVNHBCQABHMM7FQKPXGE
+Pollination moves pollen to a receptive flower; fertilization follows when compatible gametes unite. Some crops self-pollinate; others need insects, wind, or a compatible second cultivar. A bee visit does not guarantee fertilization.
+
+@zea-mays needs pollen from tassels to reach silks: plant a block, not one long isolated row. Most @cucurbita-pepo have separate male and female flowers; the female has a small ovary below it. Remove insect covers when bee-dependent crops flower, or pollinate deliberately. Some parthenocarpic cucumber cultivars set fruit without fertilization.
+
+Seedlings vary genetically. Cuttings, division, grafting, and tissue culture preserve a selected plant's identity but can carry disease. A graft joins a chosen fruiting shoot to a rootstock; keep the graft union above soil.
+
+Practice: mark five flowers, record visits and fruit set, and compare with five hand-pollinated flowers. [Propagation](https://content.ces.ncsu.edu/extension-gardener-handbook/13-propagation).
+} r_2KNEKAYVNHBCQABHMM7FQKPXGE
+
+Choose a workable site (@farming-site: 0, #part-of @farming-foundations, #source @farm-source-horta) { r_4ETHJYG2RG6ACZA6CXB2C53WEE
+Map sun, slope, shade, wind, water access, drainage, paths, animal housing, and flood routes. Most fruiting vegetables need at least six hours of direct sun. Keep beds reachable from paths; avoid walking on growing soil.
+
+Start with an area you can weed, irrigate, and harvest every day when necessary. Put tall crops where their shade will not suppress shorter ones. Separate clean harvest handling from manure, animals, and dirty tools. Protect watercourses and retain useful native vegetation.
+
+In containers, provide drainage holes and suitable growing medium; a gravel layer does not repair poor drainage. Select a container and support that can hold the mature plant and wet medium. Small containers dry rapidly.
+
+Practice: draw one bed, its water source, access, and compost position. Record hours of direct sun. [Embrapa's practical garden manual](https://www.infoteca.cnptia.embrapa.br/handle/doc/1120149).
+} r_4ETHJYG2RG6ACZA6CXB2C53WEE
+
+Read and prepare soil (@farming-soil: 0, #part-of @farming-foundations, #source @farm-source-soil) { r_6TPPP89QVTDQVQZSGQ25XBJMRX
+Texture is the balance of sand, silt, and clay; structure is how particles form aggregates. Organic matter supports aggregation and water storage. Adding a little sand to clay rarely fixes it.
+
+Sample each distinct growing area using the laboratory's depth and collection instructions. Test pH and nutrients before liming or fertilizing. Request contaminant testing where site history suggests polluted fill, mining, old paint, or industrial use; fertility tests do not establish food-growing safety.
+
+Work soil when moist and crumbly, never waterlogged. Keep permanent paths, loosen a compacted layer only when needed, cover exposed ground, and add mature compost according to soil results. Raised beds help poorly drained sites only when water has somewhere to go.
+
+Most vegetables suit mildly acidic soil; species and regional recommendations decide the target. Lime needs depend on buffering and test results, not pH alone.
+
+Practice: submit a representative soil sample and compare infiltration in a path and bed. [Soils and plant nutrients](https://content.ces.ncsu.edu/extension-gardener-handbook/1-soils-and-plant-nutrients).
+} r_6TPPP89QVTDQVQZSGQ25XBJMRX
+
+Build a local planting calendar (@farming-calendar: 0, #part-of @farming-foundations, #source @farm-source-planning, #source @farm-source-florida-garden) { r_2CG1BQ9FA9R8X4ENQW38SMYEVT
+For each cultivar, record sowing or transplant date, suitable soil temperature, frost tolerance, days to first harvest, harvest duration, and the next crop. Add nursery time when the label counts maturity from transplanting.
+
+Cool-season crops include @lactuca-sativa, @pisum-sativum, and `@spinacia-oleracea`. Warm-season crops include @phaseolus-vulgaris, @solanum-lycopersicum, and `@cucumis-sativus`. Heat-tolerant cultivars alter the window; frost-free weather alone does not make midsummer suitable for lettuce.
+
+In frost regions, fit the entire cycle between the relevant frost limits. In tropical wet/dry climates, balance available water against waterlogging, disease, and dry conditions needed for grain harvest. Match onion day length and fruit-tree chilling requirements to the site.
+
+Sow small batches of quick crops every two or three weeks while conditions remain suitable. Rotate plant families and include cover crops. In a tiny garden, rotation helps but cannot isolate every pest.
+
+Practice: schedule three successive crops and reserve time to clear, assess, and replant. [Planning tables](https://extension.umn.edu/vegetable-growing-guides-farmers/crop-and-field-planning-tools-vegetable-farmers); [warm-climate guidance](https://ask.ifas.ufl.edu/publication/VH021).
+} r_2CG1BQ9FA9R8X4ENQW38SMYEVT
+
+Sow, transplant, and establish (@farming-propagation: 0, #part-of @farming-foundations, #source @farm-source-horta, #source @farm-source-propagation) { r_19VYYDWBQ7A3V28CJB73F3CMSP
+Choose adapted, healthy seed or planting material; label species, cultivar, source, and date. Germinate a sample of older seed on moist paper to estimate viability. Follow species instructions for depth: tiny seeds need shallow sowing, and some need light.
+
+Use clean containers and a draining seed-starting medium. Keep moist, not saturated; provide strong light after emergence. Thin seedlings rather than leaving several to compete. Direct-sow sensitive taproots and large-seeded quick crops when advised.
+
+Harden nursery seedlings gradually to outdoor sun, wind, and temperature over roughly a week. Transplant into moist soil during mild weather, preserving the root ball. Usually retain nursery depth; tomato is an exception. Water in and protect briefly from severe sun or wind.
+
+Practice: count seeds sown, seedlings emerged, and plants established. Compare actual spacing with the species Record. [Nursery-to-harvest manual](https://www.infoteca.cnptia.embrapa.br/handle/doc/1120149).
+} r_19VYYDWBQ7A3V28CJB73F3CMSP
+
+Water the root zone (@farming-water: 0, #part-of @farming-foundations, #source @farm-source-water, #source @farm-source-irrigation) { r_48SW34FJ4TRTDC66WZM27KPJ97
+Check moisture below the surface and within the active root depth. Seedbeds need frequent gentle watering; established plants usually benefit from deeper wetting with time for air to return. Soil, rainfall, rooting depth, wind, and container size determine frequency.
+
+Use drip irrigation or a watering can directed at soil. Check blocked emitters and wetting depth. Mulch established beds, leaving stems and trunks clear. Keep water steady during establishment, flowering, and edible-organ expansion; alternate drought and flooding can split fruit and roots.
+
+One millimetre over one square metre is one litre. A 4 m² bed receiving 10 mm needs 40 L before accounting for effective rain and delivery losses. Measure delivery with containers rather than guessing minutes.
+
+Practice: irrigate, dig a small inspection hole, and check whether water reached the roots. [Vegetable watering](https://yardandgarden.extension.iastate.edu/how-to/watering-home-vegetable-garden); [irrigation planning](https://ask.ifas.ufl.edu/publication/EP617).
+} r_48SW34FJ4TRTDC66WZM27KPJ97
+
+Feed plants according to need (@farming-nutrition-plants: 0, #part-of @farming-foundations, #source @farm-source-soil, #source @farm-source-soil-management) { r_2VQC33FXYMRK27QYJXP8T0675E
+Nitrogen supports proteins and leafy growth; phosphorus supports energy transfer; potassium supports water regulation and many enzymes. Calcium, magnesium, sulfur, and micronutrients also matter. More fertilizer is not automatically more harvest.
+
+Use soil tests, crop recommendations, and the nutrient content of amendments. Count compost and manure in the budget. Split mobile nitrogen applications when recommended; avoid applying before heavy rain. Excess nitrogen can favour leaves over fruit and increase losses to water.
+
+Legumes fix atmospheric nitrogen only with compatible root bacteria and suitable conditions. They do not supply unlimited nitrogen to neighbouring crops; harvested seed removes nutrients. @farming-compost returns suitable residues but cannot close every nutrient loss.
+
+Yellow leaves may reflect drought, root disease, pH, or deficiency. Diagnose before treating. Practice: calculate amendment quantity for the actual bed area from a laboratory recommendation. [Soil management](https://extension.psu.edu/managing-soils).
+} r_2VQC33FXYMRK27QYJXP8T0675E
+
+Prevent, observe, diagnose, act (@farming-pests: 0, #part-of @farming-foundations, #source @farm-source-ipm) { r_5997C8G806FAPEMW5WW3H40TZM
+Inspect leaf undersides, growing tips, roots, and fruit regularly. Record the organism, affected area, crop stage, and whether damage is increasing. Separate infectious disease, insects, weeds, and stress from heat, water, or nutrition.
+
+Start with healthy material, suitable spacing, clean tools, drainage, family rotation, mulching, and removal of seriously diseased plants. Use barriers and hand removal when practical. Protect predators and pollinators; flowers and habitat can support them, but companion planting is not a guaranteed pesticide substitute.
+
+Identify a pest before selecting a control. Use only locally registered products for the crop, following the label, protective equipment, re-entry time, and harvest interval. Homemade concentrates can damage plants and beneficial organisms. Never infer a treatment dose from this Trail.
+
+Practice: photograph one problem, compare healthy plants, identify likely causes, then record the result of one justified intervention. [Integrated pest management](https://content.ces.ncsu.edu/extension-gardener-handbook/8-integrated-pest-management-ipm).
+} r_5997C8G806FAPEMW5WW3H40TZM
+
+Harvest and preserve quality (@farming-harvest: 0, #part-of @farming-foundations, #source @farm-source-harvest, #source @farm-source-postharvest) { r_5K8KZKDMZXJ2FTKH7WYMS220NR
+Check maturity signs in the species Record; eating maturity often precedes seed maturity. Harvest in mild conditions with clean tools and containers. Shade produce promptly, remove diseased items, and avoid bruising. Use potable water for washing; do not wash produce in dirty shared water.
+
+Cool leafy vegetables quickly. Cure suitable onions, garlic, pumpkins, and roots before storage; keep storage potatoes dark. Some tropical produce suffers chilling injury, so a refrigerator is not a universal store. Keep dry grain dry, protected from insects and rodents; measure moisture rather than assuming a crisp surface means safe storage.
+
+Separate ripening ethylene-producing fruit from sensitive greens. Eat or process fragile produce first. Use tested preservation instructions for canning and acidification; low-acid vegetables, meat, and palm hearts require specific safe processes.
+
+Practice: weigh usable yield and rejects separately, record the cause of losses, and compare two appropriate storage methods. [Harvest signs](https://yardandgarden.extension.iastate.edu/how-to/vegetable-harvest-guide); [small-scale postharvest manuals](https://postharvest.ucdavis.edu/publication-category/small-scale-postharvest-technology).
+} r_5K8KZKDMZXJ2FTKH7WYMS220NR
+
+Save seed and renew the crop (@farming-seed: 0, #part-of @farming-foundations, #source @farm-source-seed) { r_5243PQQYEBFJ4TWP61DSQ5C4WF
+Save seed from healthy, correctly identified, open-pollinated plants. F1 offspring usually segregate and may not retain the purchased cultivar. Maintain enough parent plants and isolation for the species; one attractive plant may not preserve population diversity.
+
+Let selected plants reach seed maturity. Dry-seeded crops need mature, dry seed; wet-seeded crops need species-specific extraction and drying. Label species, cultivar, year, and site. Store cool and dry; test germination before relying on the lot.
+
+@cucurbita-pepo cultivars can cross with each other; the fruit you eat usually retains the mother's traits, while the seed can differ. Biennial @daucus-carota generally needs a second season and can cross with wild carrot. Vegetatively propagated crops need healthy replacement stock, not merely the biggest leftover tuber.
+
+Practice: save and germination-test one suitable seed lot, then plan a non-related following crop. [Seed-saving guidance](https://extension.umn.edu/planting-and-growing-guides/saving-vegetable-seeds).
+} r_5243PQQYEBFJ4TWP61DSQ5C4WF
+
+One complete production cycle (@farming-practice: 0, #part-of @farming-foundations) { r_5HK63SASEKQMA6C5QWGDPVXHQW
+1. Choose one locally suitable crop: @raphanus-sativus for a quick cool-season root, @phaseolus-vulgaris for a warm-season pulse, or @abelmoschus-esculentus for sustained heat.
+2. Record site, cultivar, soil result, area, expected window, seed source, and budget.
+3. Prepare the bed and water supply; sow, count emergence, thin, and label.
+4. Record weather, irrigation, growth stage, pests, labour, and interventions weekly.
+5. Harvest by maturity signs; record edible mass, losses, and storage life.
+6. Save seed when suitable, remove diseased residues, compost suitable material, cover soil, and schedule the next crop.
+7. Compare actual results with the prediction. Change one major factor next cycle.
+
+Useful measures: emergence percent; surviving plants; kg edible harvest per m²; litres of irrigation per kg; hours and cost per kg. Include failed plants and unusable harvest. Local observations improve the next cycle more than copying a distant calendar.
+} r_5HK63SASEKQMA6C5QWGDPVXHQW

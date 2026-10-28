@@ -5,6 +5,8 @@ use crate::native::{
 use bevy::{math::DVec2, prelude::*};
 use serde_json::json;
 
+pub mod window;
+
 #[derive(Component)]
 pub(crate) struct RecordCard;
 
@@ -40,6 +42,28 @@ pub fn open(world: &mut World, root: Entity, reference: &str, source: Source) ->
     let position = world
         .get::<crate::native::canvas::CanvasView>(root)
         .map_or(DVec2::ZERO, |view| view.center);
+    open_in(world, root, workspace, position, reference, source)
+}
+
+pub fn open_in(
+    world: &mut World,
+    root: Entity,
+    workspace: u64,
+    position: DVec2,
+    reference: &str,
+    source: Source,
+) -> Option<Entity> {
+    if reference.trim().is_empty()
+        || !position.is_finite()
+        || position.abs().max_element() > 1_000_000_000.0
+        || !world
+            .get::<crate::native::workspace::Workspaces>(root)?
+            .entries
+            .iter()
+            .any(|entry| entry.id == workspace)
+    {
+        return None;
+    }
     let mut area = crate::native::area::InfluenceArea::new(
         crate::native::area::AreaShape::Polygon(vec![
             [-0.5, -0.5],
@@ -523,6 +547,17 @@ mod tests {
         })
         .await
         .unwrap();
+        let selection = app
+            .world()
+            .resource::<crate::native::app::CellHandle>()
+            .0
+            .fiote
+            .as_ref()
+            .unwrap()
+            .intake_selection()
+            .await
+            .unwrap()
+            .unwrap();
         let mut identities = Vec::new();
         for entity in entities {
             let world = app.world();
@@ -547,14 +582,8 @@ mod tests {
             let rows = protein::execute(&engine.store, &query).await.unwrap();
             assert_eq!(rows.len(), 1);
             assert!(rows[0]["slug"].is_null());
-            assert_eq!(
-                rows[0]["head"],
-                if area.name == "Fiote Castle" {
-                    "Development Fiote"
-                } else {
-                    ""
-                }
-            );
+            assert_eq!(uid, selection.record);
+            assert_eq!(rows[0]["head"], selection.title);
             if area.name == "Fiote Castle" {
                 assert!(config.record_cards && config.fiote);
                 assert!(config.bindings.len() > 3);

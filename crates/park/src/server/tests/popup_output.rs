@@ -3,6 +3,142 @@ use lince_interface::host::{
     ContentMapping, GeometrySnapshot, ItemGeometry, ItemId, Rectangle as CanvasRectangle,
 };
 
+fn mapped_popup(
+    harness: &mut Harness,
+    window: &Window,
+    serial: Option<u32>,
+) -> (
+    wl_surface::WlSurface,
+    xdg_surface::XdgSurface,
+    xdg_popup::XdgPopup,
+) {
+    let qh = harness.queue.handle();
+    let shell = harness.client.shell.as_ref().unwrap();
+    let positioner = shell.create_positioner(&qh, ());
+    positioner.set_size(128, 64);
+    positioner.set_anchor_rect(16, 16, 1, 1);
+    let surface = harness
+        .client
+        .compositor
+        .as_ref()
+        .unwrap()
+        .create_surface(&qh, ());
+    let xdg = shell.get_xdg_surface(&surface, &qh, ());
+    let popup = xdg.get_popup(Some(&window.xdg), &positioner, &qh, ());
+    if let Some(serial) = serial {
+        popup.grab(harness.client.seat.as_ref().unwrap(), serial);
+    }
+    surface.commit();
+    harness.sync();
+    (surface, xdg, popup)
+}
+
+#[test]
+fn destroying_only_the_popup_role_invalidates_window_snapshots_and_preserves_parent_content() {
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let _parent_buffer = harness.attach(&window, [320, 240]);
+    let (surface, _xdg, popup) = mapped_popup(&mut harness, &window, None);
+    let buffer = harness.buffer([128, 64]);
+    surface.attach(Some(&buffer), 0, 0);
+    surface.commit();
+    harness.sync();
+    let before = harness.server.windows()[0].clone();
+    assert_eq!(before.popups.len(), 1);
+    let revision = harness.server.window_revision();
+    popup.destroy();
+    harness.sync();
+    assert!(surface.is_alive());
+    let after = harness.server.windows()[0].clone();
+    assert!(after.mapped);
+    assert!(after.popups.is_empty());
+    assert!(Arc::ptr_eq(
+        &before.nodes[0].content,
+        &after.nodes[0].content
+    ));
+    assert_eq!(before.popups.len(), 1);
+    assert!(harness.server.window_revision() > revision);
+}
+
+#[test]
+fn the_first_parent_motion_after_a_popup_grab_ends_reaches_the_client_at_its_new_position() {
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let _parent_buffer = harness.attach(&window, [320, 240]);
+    let parent = harness.server.windows()[0].clone();
+    harness.server.focus(
+        Some(parent.id),
+        smithay::utils::SERIAL_COUNTER.next_serial(),
+    );
+    harness
+        .server
+        .pointer_motion(Some((parent.surface.clone(), [45.0, 55.0])), 1)
+        .unwrap();
+    harness.server.keyboard(30, true, 2, |_| false).unwrap();
+    harness.sync();
+    let serial = harness.client.key_serial;
+    harness.server.keyboard(30, false, 3, |_| false).unwrap();
+    let (_surface, _xdg, popup) = mapped_popup(&mut harness, &window, Some(serial));
+    assert!(harness.server.popup_grab_active());
+    popup.destroy();
+    harness.sync();
+    assert!(!harness.server.popup_grab_active());
+    harness.client.pointer_positions.clear();
+    harness
+        .server
+        .pointer_motion(Some((parent.surface.clone(), [151.0, 173.0])), 4)
+        .unwrap();
+    harness.sync();
+    assert_eq!(
+        harness
+            .server
+            .state
+            .seat
+            .get_pointer()
+            .unwrap()
+            .current_focus(),
+        Some(parent.surface)
+    );
+    assert_eq!(
+        harness.client.pointer_positions.last(),
+        Some(&[151.0, 173.0])
+    );
+}
+
+#[cfg(feature = "nested")]
+#[test]
+fn a_replacement_management_grab_survives_pointer_motion_after_the_popup_grab_ended() {
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let _parent_buffer = harness.attach(&window, [320, 240]);
+    let parent = harness.server.windows()[0].clone();
+    harness.server.focus(
+        Some(parent.id),
+        smithay::utils::SERIAL_COUNTER.next_serial(),
+    );
+    harness.server.keyboard(30, true, 1, |_| false).unwrap();
+    harness.sync();
+    let serial = harness.client.key_serial;
+    harness.server.keyboard(30, false, 2, |_| false).unwrap();
+    let (_surface, _xdg, popup) = mapped_popup(&mut harness, &window, Some(serial));
+    popup.destroy();
+    harness.sync();
+    assert!(!harness.server.popup_grab_active());
+    harness
+        .server
+        .pointer_motion(Some((parent.surface.clone(), [45.0, 55.0])), 3)
+        .unwrap();
+    assert!(harness.server.begin_manipulation(272));
+    harness.server.manipulation_button(272, true, 4);
+    harness
+        .server
+        .pointer_motion(Some((parent.surface, [151.0, 173.0])), 5)
+        .unwrap();
+    assert!(harness.server.manipulation_grabbed());
+    harness.server.manipulation_button(272, false, 6);
+    assert!(!harness.server.manipulation_grabbed());
+}
+
 #[test]
 fn starting_a_repaint_advances_callbacks_without_releasing_client_buffers() {
     let mut harness = Harness::new();
@@ -213,7 +349,7 @@ fn changing_client_buffers_rebinds_materials_without_changing_window_geometry() 
         }
         for _ in 0..6 {
             let frame = canvas.probe_frame().unwrap();
-            let pixels = crate::presentation::probe_pixels(frame.dmabuf()).unwrap();
+            let pixels = crate::presentation::probe_pixels(frame.dmabuf().unwrap()).unwrap();
             let colored = pixels
                 .chunks_exact(4)
                 .filter(|pixel| {

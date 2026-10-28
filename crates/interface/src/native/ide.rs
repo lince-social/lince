@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 mod actions;
 mod autosave;
 mod closing;
@@ -201,20 +202,20 @@ pub fn spawn(
     );
     let controls = crate::native::sand_panel::row(world, owner);
     for (caption, control) in [
-        ("Save", actions::Control::Save),
-        ("Open…", actions::Control::Open),
-        ("Save as…", actions::Control::SaveAs),
-        ("Undo", actions::Control::Undo(false)),
-        ("Redo", actions::Control::Undo(true)),
-        ("Refresh", actions::Control::Refresh),
-        ("Close tab", actions::Control::Close),
-        ("Discard…", actions::Control::Discard),
-        ("Recover drafts", actions::Control::Recover),
-        ("Find", actions::Control::SearchPanel),
-        ("Settings", actions::Control::Settings),
-        ("Language tools", actions::Control::Tools),
-        ("Complete", actions::Control::Complete),
-        ("Format", actions::Control::Format),
+        (Tr::Save.text(), actions::Control::Save),
+        (Tr::OpenPrompt.text(), actions::Control::Open),
+        (Tr::SaveAs.text(), actions::Control::SaveAs),
+        (Tr::Undo.text(), actions::Control::Undo(false)),
+        (Tr::Redo.text(), actions::Control::Undo(true)),
+        (Tr::Refresh.text(), actions::Control::Refresh),
+        (Tr::CloseTab.text(), actions::Control::Close),
+        (Tr::Discard.text(), actions::Control::Discard),
+        (Tr::RecoverDrafts.text(), actions::Control::Recover),
+        (Tr::Find.text(), actions::Control::SearchPanel),
+        (Tr::Settings.text(), actions::Control::Settings),
+        (Tr::LanguageTools.text(), actions::Control::Tools),
+        (Tr::CompleteCode.text(), actions::Control::Complete),
+        (Tr::Format.text(), actions::Control::Format),
     ] {
         crate::native::sand_panel::button(world, controls, owner, caption, control);
     }
@@ -275,7 +276,7 @@ pub fn spawn(
         world,
         navigation,
         owner,
-        "Previous",
+        Tr::Previous.text(),
         actions::Control::FindPrevious,
     );
     let replace =

@@ -1,0 +1,23 @@
+Import "../sources/AO-Surgery-Reference.lingua"
+Import "../sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "../Medicine.lingua"
+Import "../musculoskeletal/Musculoskeletal-system.lingua"
+Import "Assessment-and-referral.lingua"
+Import "Problems-and-specialties.lingua"
+Import "shoulder/Shoulder.lingua"
+
+Orthopedics — understanding musculoskeletal problems (@orthopedics: 0, is #chapter, #part-of @medicine, #source @med-source-ms-ufrgs, #source @med-source-ao, #medicine @ortho-problems, #orthopedics @ortho-problems, #medicine @musculoskeletal-system, #orthopedics @musculoskeletal-system) { r_7KBB8KD9NXBCQYGN98RTKAC4SJ
+Orthopedics/ortopedia concerns disorders and injuries of the musculoskeletal system and their management. Its questions overlap with rheumatology/reumatologia, rehabilitation/reabilitação, physiotherapy/fisioterapia, sports medicine/medicina do esporte, neurology/neurologia, and primary care/atenção primária.
+
+Begin with [The musculoskeletal system — support and movement](../musculoskeletal/Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) if the tissues and mechanics are unfamiliar. Otherwise continue through [Organize problems without assuming one explanation](Problems-and-specialties.lingua#r_47AQ7SN7GCR0YA0F5HEZ2342YE) and [Assessment, urgency, and referral](Assessment-and-referral.lingua#r_5HK59QJYXS19KZVPQHDCAACD1H) into [The shoulder — structure, movement, and possible problems](shoulder/Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG). This initial regional study concerns the shoulder; other regions can reuse the same foundations as they are developed.
+
+Learn first what a region does, then what may disturb its function, what evidence could distinguish explanations, and how treatment options are evaluated. A symptom label, a scan finding, a tissue mechanism, and a person's need for care are connected questions with different answers.
+
+[Ortopedia adulto — Ministério da Saúde and UFRGS](../sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78) explains referral in Brazilian adult orthopedics. [AO Surgery Reference — professional fracture study](../sources/AO-Surgery-Reference.lingua#r_7JMB37SYAHK0879T2SJTQT11Z7) offers a later professional reference for fracture management; it is not a beginning reading or an instruction to perform a procedure.
+
+Use ordinary `#orthopedics` links to select this regional and musculoskeletal reading. `#medicine` also connects the broader foundation; `#shoulder` identifies the more focused study. Sources and comparisons have their own references.
+
+**Continue:** [Organize problems without assuming one explanation](Problems-and-specialties.lingua#r_47AQ7SN7GCR0YA0F5HEZ2342YE) · [The musculoskeletal system — support and movement](../musculoskeletal/Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7KBB8KD9NXBCQYGN98RTKAC4SJ

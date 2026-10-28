@@ -1,0 +1,39 @@
+Import "Sources.lingua"
+Import "foundations/Foundations-review.lingua"
+Import "foundations/Medical-language.lingua"
+Import "foundations/Reading-from-zero.lingua"
+Import "musculoskeletal/Musculoskeletal-system.lingua"
+Import "orthopedics/Orthopedics.lingua"
+Import "orthopedics/shoulder/Shoulder.lingua"
+Import "orthopedics/shoulder/conditions/Pain-near-end-of-rotation.lingua"
+Import "orthopedics/shoulder/study/A-rotational-pain-question.lingua"
+Import "sources/Ortopedia-adulto-MS-UFRGS.lingua"
+Import "sources/Shoulder-pain-NHS.lingua"
+
+Medicine — understanding the body and its care (@medicine: 0, is #chapter, #source @med-source-nhs, #source @med-source-ms-ufrgs, #medicine @med-reading-from-zero, #medicine @musculoskeletal-system, #medicine @orthopedics, #medicine @shoulder) { r_6DTDCDP6JQ2AV7S78QPGKM2V65
+Begin with shared medical language, follow how tissues and body systems work, and use that understanding to study movement, injury, and the shoulder. No previous biology course is assumed. English explanations include Portuguese terms used in Brazilian books and consultations.
+
+**Start:** [Begin medicine from zero — a substantial reading progression](foundations/Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50), then [Medical language — English and português brasileiro](foundations/Medical-language.lingua#r_0009F6GFVE924WDKJ5J1F996TT). The shared foundation continues through cells, regulation, organ systems, inflammation, pain, clinical investigation, evidence, and decisions about care. [Bring the shared medical foundation together](foundations/Foundations-review.lingua#r_6TDM16JC1FAVSWBVCCD5BJVEZE) brings those ideas together.
+
+**Then narrow the focus:** [The musculoskeletal system — support and movement](musculoskeletal/Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) develops bone, cartilage, joints, muscles, nerves, loading, and repair. [Orthopedics — understanding musculoskeletal problems](orthopedics/Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) connects those foundations with assessment and the different professions involved in care. [The shoulder — structure, movement, and possible problems](orthopedics/shoulder/Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) develops the shoulder's structures, coordinated movement, common problems, and deeper study.
+
+You can enter at the shoulder and follow its links back to an unfamiliar idea. These connections describe useful reading order; they do not impose enrolment or completion gates. This entrance develops common medical foundations, with the shoulder as its first sustained regional study.
+
+**While studying a painful shoulder:** seek assessment if pain is worsening, persistent, or limiting sleep and ordinary activities. Significant injury with deformity or inability to move, a hot swollen joint with fever, new marked weakness or loss of sensation, and shoulder or arm pain with chest pain or breathlessness need urgent medical assessment. In Brazil, SAMU's emergency number is 192. Reading should not delay care. The [Shoulder pain — public health guidance](sources/Shoulder-pain-NHS.lingua#r_20XNX6E0TB4XRQ4PC3FJNV5SMK) explains warning symptoms; [Ortopedia adulto — Ministério da Saúde and UFRGS](sources/Ortopedia-adulto-MS-UFRGS.lingua#r_4WDS8TAENAXW3ZGQPZPDBZKA78) provides Brazilian referral context.
+
+[Medicine sources — books, anatomy, and clinical evidence](Sources.lingua#r_2411E1397ZNK740CDA309B881D) identifies books, clinical references, language, editions, and access. The Medical Terminology textbook and Applied Human Anatomy exercise manual have CC BY PDF download links. Sources reference authorized editions; free access is distinguished from permission to redistribute. Use diagrams and models for study, and keep the clinical question separate from what an illustration appears to show.
+
+Questions about evidence, uncertainty, consent, and wellbeing also connect with [Philosophy](../../philosophy/Philosophy.lingua#r_00000000000000000000001001).
+
+**A focused question to work toward:** [Pain near the end of rotation — understand the possibilities](orthopedics/shoulder/conditions/Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) explains how to describe pain near the end of internal or external rotation, distinguish possible mechanisms, and choose the relevant deeper reading. [Work through a rotational-pain question with focused readings](orthopedics/shoulder/study/A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S) then connects a precise question to selected anatomy, labrum, imaging, and research passages. The introductory book chapters build the vocabulary needed to understand those passages.
+
+**Continue:** [Begin medicine from zero — a substantial reading progression](foundations/Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50) · [The musculoskeletal system — support and movement](musculoskeletal/Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Orthopedics — understanding musculoskeletal problems](orthopedics/Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) · [The shoulder — structure, movement, and possible problems](orthopedics/shoulder/Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG).
+} r_6DTDCDP6JQ2AV7S78QPGKM2V65
+
+Extension @medicine "lince.vocabulary" {
+ definitions {
+  medicine "A suggested continuation in shared medical understanding and its developed regional readings. Sources, care references, and comparisons keep their own links."
+  orthopedics "A suggested continuation through musculoskeletal foundations and orthopedic understanding. This assertion does not prescribe care or certify clinical competence."
+  shoulder "A suggested continuation in shoulder anatomy, function, possible problems, and evidence. Other links do not automatically join this selection."
+ }
+}

@@ -1,0 +1,20 @@
+Import "../../../Medicine.lingua"
+Import "../../../foundations/Evidence-and-uncertainty.lingua"
+Import "../../../sources/FIMPACT-ten-year.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "Shoulder-review.lingua"
+
+Test a plausible treatment against evidence (@shoulder-treatment-evidence: 0, is #chapter, #part-of @shoulder, #source @med-source-fimpact, #source @med-source-tendinopathy-guideline, #medicine @shoulder-review, #orthopedics @shoulder-review, #shoulder @shoulder-review) { r_0Y6CMCRFXDGN20QGXNDKS55VXD
+**Read a complete primary study in stages:** [FIMPACT — ten-year placebo-surgery comparison](../../../sources/FIMPACT-ten-year.lingua#r_467SRCDKYQD418N93SZG3635D8), first the structured abstract, then Methods and Results, and finally Discussion and limitations. Identify the enrolled population, comparisons, outcomes, and follow-up before reading a conclusion. Reuse [Read medical evidence and recognize its limits](../../../foundations/Evidence-and-uncertainty.lingua#r_23DWDDM1D9GY3JG0GCSS2G5B4W) for trial vocabulary.
+
+The FIMPACT ten-year follow-up compared arthroscopic subacromial decompression with placebo surgery and exercise therapy in its defined subacromial-pain population. It reported no additional benefit of decompression over those comparisons. This challenges an apparently straightforward explanation that removing a presumed mechanical obstacle must improve this pain problem.
+
+The result concerns that procedure, population, and comparison. It cannot be extended to every shoulder operation, acute traumatic injury, fracture treatment, instability repair, or every cuff tear. Anatomical plausibility and a patient's improvement after an intervention are insufficient on their own to establish its specific benefit.
+
+**Study task:** reconstruct the trial question, explain what the placebo-surgery comparison contributes, inspect follow-up and uncertainty, and write a bounded conclusion. Compare it with the treatment discussion in the relevant guideline, noting publication timing and differences in scope. List what would make the evidence applicable or inapplicable to a new clinical question.
+
+**Continue:** [Explain shoulder function and evaluate a clinical claim](Shoulder-review.lingua#r_0KVS4CSNH1J97G8XKXEW5183JW).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_0Y6CMCRFXDGN20QGXNDKS55VXD

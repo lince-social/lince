@@ -1,4 +1,4 @@
-Basic Eletronics (@basic-eletronics: 0, is #trail) {
+Basic Eletronics (@basic-eletronics: 0, is #chapter) {
 A beginner's trail from electric circuits to connected embedded systems. Electronics studies how circuits control electrical energy and represent, process, and communicate information. The filename preserves the requested name; the field is normally spelled electronics.
 
 Read the chapters in their numbered order. Each chapter explains a piece of the next one. You need arithmetic, a willingness to measure, and no previous electronics experience. By the end, you should be able to explain a circuit, calculate basic component values, distinguish a chip from a board, choose compatible modules, and describe how an ESP device measures something and sends it over Wi-Fi.

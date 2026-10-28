@@ -16,6 +16,7 @@ trash/
 *.glb
 !crates/interface/fixtures/showoff.glb
 !institute/assets/characters/fiote/fiote.glb
+!institute/fixtures/workspace/stage01/dataset/*.glb
 *.glTF
 *.gltf
 !crates/interface/fixtures/open_scene.gltf

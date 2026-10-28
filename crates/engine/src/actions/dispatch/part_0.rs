@@ -46,7 +46,20 @@ impl Engine {
                     body,
                     quantity,
                 } => {
-                    outcome = self.create_record_draft_kind(crate::record_creation::Draft { head, body, slug, quantity: store::exact::from_f64(quantity).to_string(), ..Default::default() }, kind, actor, now).await?;
+                    outcome = self
+                        .create_record_draft_kind(
+                            crate::record_creation::Draft {
+                                head,
+                                body,
+                                slug,
+                                quantity: store::exact::from_f64(quantity).to_string(),
+                                ..Default::default()
+                            },
+                            kind,
+                            actor,
+                            now,
+                        )
+                        .await?;
                 }
                 Action::PreviewAreaTransition {
                     target,
@@ -238,7 +251,14 @@ impl Engine {
 
                     let signer = self.signer.lock().await.clone();
                     let mut tx = store::write_tx(&self.store.pool).await?;
-                    let checkpoint = self.record_checkpoint_on(&mut tx, actor.as_deref(), vec![subject_uid.clone()], protein::authority::Operation::Update).await?;
+                    let checkpoint = self
+                        .record_checkpoint_on(
+                            &mut tx,
+                            actor.as_deref(),
+                            vec![subject_uid.clone()],
+                            protein::authority::Operation::Update,
+                        )
+                        .await?;
                     store::assertions::transition_unary(
                         &mut tx,
                         &subject_uid,
@@ -271,7 +291,9 @@ impl Engine {
                     } else {
                         None
                     };
-                    if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
+                    if let Some(checkpoint) = checkpoint {
+                        checkpoint.finish(&mut tx, Default::default()).await?;
+                    }
                     tx.commit().await?;
                     if let Some(fact) = fact {
                         outcome.facts = self.observe_committed_fact(fact, now).await?;
@@ -596,7 +618,9 @@ impl Engine {
                             uid
                         }
                     };
-                    let condition = self.canonical_condition_for(condition,actor.as_deref()).await?;
+                    let condition = self
+                        .canonical_condition_for(condition, actor.as_deref())
+                        .await?;
                     let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
                     if let Some(condition) = &mut declared_condition {
                         condition.bindings = store::karma_bindings::resolve(
@@ -674,7 +698,9 @@ impl Engine {
                             "Use the Rule editor to select another Transfer target".into(),
                         ));
                     }
-                    let condition = self.canonical_condition_for(condition,actor.as_deref()).await?;
+                    let condition = self
+                        .canonical_condition_for(condition, actor.as_deref())
+                        .await?;
                     let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
                     if let Some(condition) = &mut declared_condition {
                         condition.bindings = store::karma_bindings::resolve(
@@ -761,8 +787,15 @@ impl Engine {
                     paused,
                 } => {
                     if !paused {
-                        let rule = store::recurrence::get(&self.store.pool, &recurrence).await?.ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
-                        Box::pin(self.validate_automatic_rule(&rule.consequences, rule.condition.as_ref(), actor.as_deref())).await?;
+                        let rule = store::recurrence::get(&self.store.pool, &recurrence)
+                            .await?
+                            .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
+                        Box::pin(self.validate_automatic_rule(
+                            &rule.consequences,
+                            rule.condition.as_ref(),
+                            actor.as_deref(),
+                        ))
+                        .await?;
                         self.authorize_karma_rule(&rule, actor.as_deref()).await?;
                     }
                     store::recurrence::set_state(
@@ -1102,18 +1135,44 @@ impl Engine {
                             payload: None,
                         });
                     }
-                    outcome.facts = self.append_record_changes_as(facts, actor.as_deref(), now).await?;
+                    outcome.facts = self
+                        .append_record_changes_as(facts, actor.as_deref(), now)
+                        .await?;
                 }
                 Action::AddQuantityExact { target, delta } => {
                     let uid = self.resolve(&target).await?;
                     self.reject_direct_transfer_record_mutation(&uid).await?;
                     if delta.mantissa() != 0 {
-                        outcome.facts = self.append_record_changes_as(vec![NewFact { uid:None, record_uid:uid, delta, at:None, actor_uid:actor.clone(), cause:Cause::user_edit(), payload:None }], actor.as_deref(), now).await?;
+                        outcome.facts = self
+                            .append_record_changes_as(
+                                vec![NewFact {
+                                    uid: None,
+                                    record_uid: uid,
+                                    delta,
+                                    at: None,
+                                    actor_uid: actor.clone(),
+                                    cause: Cause::user_edit(),
+                                    payload: None,
+                                }],
+                                actor.as_deref(),
+                                now,
+                            )
+                            .await?;
                     }
                 }
                 Action::AddQuantity { target, delta } => {
-                    if !delta.is_finite() { return Err(EngineError::Consequence("Quantity must be finite".into())); }
-                    return Box::pin(self.act(Action::AddQuantityExact { target, delta:store::exact::from_f64(delta) }, actor)).await.map(ControlFlow::Break);
+                    if !delta.is_finite() {
+                        return Err(EngineError::Consequence("Quantity must be finite".into()));
+                    }
+                    return Box::pin(self.act(
+                        Action::AddQuantityExact {
+                            target,
+                            delta: store::exact::from_f64(delta),
+                        },
+                        actor,
+                    ))
+                    .await
+                    .map(ControlFlow::Break);
                 }
                 Action::Activate { target } => {
                     return Box::pin(self.act(Action::SetQuantity { target, value: 1.0 }, actor))
@@ -1141,7 +1200,14 @@ impl Engine {
                             })?;
                         return Ok(ControlFlow::Break(outcome));
                     }
-                    outcome.facts = self.change_record_scalar_as(&uid, crate::record_policy::ScalarChange::Delete, actor.as_deref(), now).await?;
+                    outcome.facts = self
+                        .change_record_scalar_as(
+                            &uid,
+                            crate::record_policy::ScalarChange::Delete,
+                            actor.as_deref(),
+                            now,
+                        )
+                        .await?;
                 }
                 Action::EditRecordText { target, head, body } => {
                     let uid = self.resolve(&target).await?;
@@ -1171,7 +1237,14 @@ impl Engine {
                 Action::SetUnit { target, unit } => {
                     let uid = self.resolve(&target).await?;
                     let unit_uid = self.resolve_concept_opt(unit).await?;
-                    outcome.facts = self.change_record_scalar_as(&uid, crate::record_policy::ScalarChange::Unit(unit_uid.as_deref()), actor.as_deref(), now).await?;
+                    outcome.facts = self
+                        .change_record_scalar_as(
+                            &uid,
+                            crate::record_policy::ScalarChange::Unit(unit_uid.as_deref()),
+                            actor.as_deref(),
+                            now,
+                        )
+                        .await?;
                 }
                 _ => {
                     return Err(EngineError::Consequence(

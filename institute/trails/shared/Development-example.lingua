@@ -1,5 +1,5 @@
 Import "../philosophy/Philosophy.lingua"
-Import "../philosophy/Socratic-dialogues.lingua"
+Import "../philosophy/ancient-greek-philosophy/sources/Socratic-dialogues-Cary.lingua"
 
 Philosophy development example (@development-example: 0, #requires @philosophy-level-one, #contains @reading-state) { r_00000000000000000000004001
 This optional, local self-assessment interprets 100 as the theoretical maximum development of this field. Each level can have a percentage of mastery. Completing the first reading gives 100 percent mastery of level 1; clearing it recomputes both assertions to zero. This example is a declaration by the learner, not an Organ-issued qualification.

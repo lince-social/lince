@@ -13,17 +13,9 @@ struct Worker {
 }
 
 pub(super) fn spawn(world: &mut World, parent: Entity, source: &str) {
-    let owner = world
-        .spawn((
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                flex_shrink: 0.0,
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
+    let frame = crate::native::embedded_media::frame(world, parent, "Diagram");
+    let owner = frame.owner;
+    crate::native::edit_mode::label(world, frame.controls, source, 12.0);
     let label = crate::native::edit_mode::label(world, owner, "Rendering diagram…", 14.0);
     world.entity_mut(owner).insert(Diagram {
         source: source.into(),
@@ -123,7 +115,12 @@ pub(super) fn update(world: &mut World) {
                         height: Val::Auto,
                         ..default()
                     },
-                    ChildOf(owner),
+                    ChildOf(
+                        world
+                            .get::<crate::native::embedded_media::Media>(owner)
+                            .unwrap()
+                            .content,
+                    ),
                 ));
             } else if let Some(mut text) = world.get_mut::<Text>(label) {
                 text.0 = format!(

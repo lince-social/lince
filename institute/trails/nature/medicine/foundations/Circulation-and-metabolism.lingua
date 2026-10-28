@@ -1,0 +1,19 @@
+Import "../Medicine.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "Nerves-and-control.lingua"
+
+Supply living tissue — blood, oxygen, and metabolism (@med-circulation: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #medicine @med-nerves) { r_51SD84CANGMKYW7X2VNZ6HXTD4
+**Read in two passes:** in [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), first read the complete chapter 18 on blood and the introductory circulation sections of chapters 19–20. Then study the chapter 20 account of vessel structure, exchange, and regulation alongside [Nerves — sensation, muscle activation, and control](Nerves-and-control.lingua#r_08WV4S2F8WMCT7SZX2FHY82YP7). For the broad integrative reading, complete chapters 18–22 and chapter 24; for this question, revisit gas exchange and ATP/metabolism when the explanation needs them.
+
+Arteries/artérias carry blood away from the heart; veins/veias return it. These names describe direction, not a rule that all arterial blood is oxygen-rich. Exchange occurs through microcirculation, including capillaries/capilares. Lymphatic vessels help return tissue fluid.
+
+Perfusion/perfusão is blood delivery through tissue. Oxygen and nutrients support metabolism/metabolismo, including production of ATP used by cells. Blood flow, oxygen delivery, and a cell's ability to use available energy are related but distinct. Injury can also disrupt vessels, cause bleeding, and change local fluid distribution.
+
+This matters in orthopedics because bone, muscle, tendons, and nerves are living tissues with different supply and repair characteristics. Healing cannot be understood from a diagram of fiber direction alone.
+
+**Try:** make a supply-and-return diagram for a patch of shoulder muscle. Separate blood inside a vessel, fluid between cells, and fluid within a joint cavity. Explain why those compartments should not all be called 'water in the shoulder'.
+
+**Continue:** [Nerves — sensation, muscle activation, and control](Nerves-and-control.lingua#r_08WV4S2F8WMCT7SZX2FHY82YP7).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_51SD84CANGMKYW7X2VNZ6HXTD4

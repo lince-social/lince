@@ -305,7 +305,7 @@ pub(crate) fn refresh(world: &mut World) {
                 Without<InfluenceArea>,
                 Without<crate::native::topology::terrain::Effect>,
                 Without<Pinned>,
-                Without<crate::native::external_drop::Preview>,
+                Without<crate::native::canvas_item::Ephemeral>,
                 Without<crate::native::time_castle::AttachedCard>,
             )>()
             .iter(world)
@@ -779,7 +779,7 @@ pub(crate) fn update(world: &mut World) {
             Has<Pinned>,
         ), (
             Without<InfluenceArea>,
-            Without<crate::native::external_drop::Preview>,
+            Without<crate::native::canvas_item::Ephemeral>,
         )>()
         .iter(world)
         .map(|(entity, item, parent, member, record, binding, pinned)| {

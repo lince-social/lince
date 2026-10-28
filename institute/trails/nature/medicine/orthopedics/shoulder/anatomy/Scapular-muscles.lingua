@@ -1,0 +1,22 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Anatomy-and-Physiology.lingua"
+Import "../../../sources/Applied-Human-Anatomy.lingua"
+Import "../../../sources/Shoulder-muscles.lingua"
+Import "../Shoulder.lingua"
+Import "Nerves-and-vessels.lingua"
+
+The scapula's muscles and the moving base of the arm (@shoulder-scapular-muscles: 0, is #chapter, #part-of @shoulder, #source @med-source-osu, #source @med-source-shoulder-muscles, #medicine @shoulder-neurovascular, #orthopedics @shoulder-neurovascular, #shoulder @shoulder-neurovascular, #source @med-source-applied) { r_636ZTXMHVB85FX3DGRYHA3QYAB
+**Revisit the relevant part of the regional section:** [Anatomy & Physiology — Oregon State University](../../../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N), the muscles that position the pectoral girdle within chapter 11. Draw their attachments and compare the action table with [Shoulder muscles — NCBI Bookshelf](../../../sources/Shoulder-muscles.lingua#r_76PY1TN1ZHB847YGG80ZCB5S50). In [Applied Human Anatomy — Nolan and McNamara](../../../sources/Applied-Human-Anatomy.lingua#r_2JW0W235R6C2JBECH8N4WP5N3K), read chapter 2 Movement items 1–2 on printed page 31 as muscle-and-nerve questions.
+
+Trapezius/trapézio and serratus anterior/serrátil anterior help coordinate scapular positioning and upward rotation. Different trapezius portions have different contributions; coordinated action cannot be reduced to one muscle lifting the scapula.
+
+Rhomboids/romboides and levator scapulae/levantador da escápula connect the scapula with the vertebral region. Pectoralis minor/peitoral menor connects ribs and coracoid, influencing scapular position. Subclavius/subclávio lies beneath the clavicle. The chest wall is a moving reference rather than a rigid drawing board.
+
+Scapular movements include elevation/elevação, depression/depressão, protraction/protração, retraction/retração, and upward and downward rotation/rotação superior e inferior. Three-dimensional descriptions also include tilt and internal or external rotation.
+
+**Try:** draw where each named muscle attaches to the scapula or clavicle. Predict a direction of pull, then check the action in the source. Explain why visible asymmetry alone does not prove that one named muscle is weak or that it causes a person's pain.
+
+**Continue:** [Shoulder nerves, vessels, and neighboring regions](Nerves-and-vessels.lingua#r_3RAGE6CVYFEN9H9HBMPYD128JG).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_636ZTXMHVB85FX3DGRYHA3QYAB

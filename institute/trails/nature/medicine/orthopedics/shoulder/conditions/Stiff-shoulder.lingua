@@ -1,0 +1,23 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Avaliacao-do-ombro-MSD.lingua"
+Import "../../../sources/Frozen-shoulder-AAOS.lingua"
+Import "../Shoulder.lingua"
+Import "Instability.lingua"
+
+A stiff shoulder — capsulitis and other explanations (@shoulder-stiffness: 0, is #chapter, #part-of @shoulder, #source @med-source-frozen, #source @med-source-msd-shoulder, #medicine @shoulder-instability, #orthopedics @shoulder-instability, #shoulder @shoulder-instability) { r_4JWG5NRDXS1ZHGKN05W8J3TAH2
+**Read a small, coherent clinical account:** [Frozen shoulder — AAOS](../../../sources/Frozen-shoulder-AAOS.lingua#r_0S11NBE3K6SNW505KKMQC4M12Q), the description of capsular change, symptoms, and clinical assessment, then the range-of-motion discussion in [Avaliação do ombro — Manual MSD](../../../sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X). Pay particular attention to active versus passive movement; preserve the wider differential diagnosis instead of treating one restricted direction as conclusive.
+
+Adhesive capsulitis/capsulite adesiva or ombro congelado involves pain and restricted shoulder movement associated with capsular changes. It is not simply a loose phrase for every shoulder that is difficult to move.
+
+Restrictions of active and passive movement, their pattern, clinical history, and other findings help distinguish possible explanations. Joint arthritis, injury, pain-limited movement, and postoperative restrictions can create different stiffness questions. Diabetes and some other conditions are relevant associations rather than proof of the diagnosis.
+
+Time course varies. A sequence of named phases can organize a description but should not be treated as an exact recovery calendar. Treatment discussions weigh the person's stage, symptoms, function, and uncertainty.
+
+**Rotation is informative only in context:** clinicians assess the pattern of restriction and compare active and passive motion with the rest of the findings. Progressive restriction, pain near one position, and a feeling of instability are different histories. A loss of external rotation can be part of a stiffness assessment; it is not a stand-alone diagnosis or a reason to force the joint to match a published angle.
+
+**Try:** compare two fictional descriptions: limited active movement with much better passive movement, and restriction of both. Explain what each adds to reasoning and why neither is enough to prescribe a stretching program or establish a diagnosis. Keep movement observations distinct from forceful attempts to increase range.
+
+**Continue:** [Instability, subluxation, and dislocation](Instability.lingua#r_4ANS5B79S566BS78A7E9H5X8R6).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_4JWG5NRDXS1ZHGKN05W8J3TAH2

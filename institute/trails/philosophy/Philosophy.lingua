@@ -1,2 +1,31 @@
-Philosophy (@philosophy: 0, is #trail, #contains "./What-is-Philosophy.lingua#r_00000000000000000000001002", #reading-scheme "../shared/Development-example.lingua#r_00000000000000000000004001", #reading-scheme "../shared/Checklist-example.lingua#r_00000000000000000000005001", #reading-scheme "../shared/Assessment-example.lingua#r_00000000000000000000006001") { r_00000000000000000000001001
+Import "karmic-philosophy/Karmic-philosophy.lingua"
+Import "ancient-greek-philosophy/Philosophers.lingua"
+Import "ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua"
+
+Philosophy (@philosophy: 0, is #chapter, #contains @karmic-philosophy, #philosophy @karmic-philosophy, #contains @philosophers, #contains @ancient-greek-philosophy, #reading-scheme "../shared/Development-example.lingua#r_00000000000000000000004001", #reading-scheme "../shared/Checklist-example.lingua#r_00000000000000000000005001", #reading-scheme "../shared/Assessment-example.lingua#r_00000000000000000000006001", #philosophy @ancient-greek-philosophy, #ancient-greek-philosophy @ancient-greek-philosophy, #philosophy @philosophers, #ancient-greek-philosophy @philosophers) { r_00000000000000000000001001
+Philosophy examines questions whose answers depend on making concepts, assumptions, and reasons explicit. What can we know? What is real? How should we act? What makes an explanation, interpretation, or social arrangement defensible?
+
+Begin with a concrete question or passage, reconstruct the proposed answer, and examine an objection. Disagreement can expose an unstated assumption or improve the question. Identifying a difficulty is progress when you can explain what creates it and what a satisfactory response would need to do.
+
+**Read actively:** name the question; state the claim and reasons; identify an assumption; give a serious objection; consider a response. Use [the shared reading method](ancient-greek-philosophy/foundations/Read-an-argument.lingua#r_4GMQCKPBF9BCSKDK0KPN013EBN) with any text. [The first review](ancient-greek-philosophy/socratic/Argument-review.lingua#r_3879MMB9TCFTCMJ2SPYG32ZDS0) shows what a supported interpretation and a reasoned response should make visible.
+
+**First reading path:** [Ancient Greek philosophy](ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3), starting with [Apology](ancient-greek-philosophy/socratic/Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4). Its opening tools introduce the historical setting, the difference between a speaker and an author, and the terms used in the argument. No prior course or formal logic is required.
+
+**Other reading paths:** [Buddhism and Yoga](karmic-philosophy/Karmic-philosophy.lingua#r_7FERM3385WX5JGT9X04PNCE85Y) offers separate entrances through the Buddhist discourse collections and Iyengar’s Light on Yoga.
+
+**Explore by problem:** [Questions and crossings](ancient-greek-philosophy/questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF) connects knowledge, reality, ethics, political judgment, beauty, and interpretation. Preparation belongs at the step using it, and a useful method can be shared between these inquiries.
+
+**Explore by author:** [Ancient Greek philosophers](ancient-greek-philosophy/Philosophers.lingua#r_00000000000000000000001003) connects authors with their works and guided readings.
+
+The optional development, checklist, and assessment examples are personal reading schemes. Their recorded completion or levels describe a chosen scheme; the basis for a philosophical conclusion remains its argument and evidence.
+
+**Language choices:** [Portuguese editions](ancient-greek-philosophy/sources/Portuguese-editions.lingua#r_3DABDPGKRDSM682Q2NYDEVX4Z8) accompany the corresponding Greek readings. [Ancient Greek](ancient-greek-philosophy/languages/Read-original-texts.lingua#r_1Q07KPDNG2JTY7HRWQY5H6T5MJ) can begin alongside the introduction; working command of the research passages is required by the later [scholarly progression](ancient-greek-philosophy/research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09). Its [completion standard](ancient-greek-philosophy/research/Research-completion.lingua#r_41G7P2Y9HYXMVAF53MV2QYT1CD) extends beyond the introductory survey.
+Follow the reading links or configure a Protein to select both endpoints of `#philosophy` or `#ancient-greek-philosophy` connections. Save a query in your workspace when useful. Source references and other connections remain available.
 } r_00000000000000000000001001
+
+Extension @philosophy "lince.vocabulary" {
+    definitions {
+        philosophy "A suggested continuation in philosophical reading, investigation, or practice. Other references retain their own predicates."
+        ancient-greek-philosophy "A suggested continuation in reading, inquiry, or practice concerning ancient Greek philosophy. Source and other references retain their own predicates."
+    }
+}

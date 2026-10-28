@@ -203,6 +203,10 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         );
         return Ok(());
     }
+    run_into(arguments, None).map(|_| ())
+}
+
+pub(super) fn run_into(arguments: &[OsString], destination: Option<&Path>) -> Result<PathBuf> {
     let (executable, pid, seconds, unit) = configuration(arguments)?;
     let process = PathBuf::from(format!("/proc/{}", pid.as_raw_nonzero()));
     let expected = identity(&process)?;
@@ -217,9 +221,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     if identity(&process)? != expected {
         return Err("The observed process changed during identity inspection".into());
     }
-    let base = env::current_dir()
-        .map_err(error)?
-        .join("target/park-validation");
+    let base = destination.map(Path::to_path_buf).unwrap_or(env::current_dir().map_err(error)?.join("target/park-validation"));
     fs::create_dir_all(&base).map_err(error)?;
     let metadata = fs::symlink_metadata(&base).map_err(error)?;
     if !metadata.is_dir() || metadata.uid() != rustix::process::geteuid().as_raw() {
@@ -315,7 +317,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     report["resource_summary"] = resource_summary(&samples).into();
     write_json(&directory.join("session.json"), &report)?;
     println!("{}", directory.join("session.json").display());
-    Ok(())
+    Ok(directory)
 }
 
 #[cfg(test)]

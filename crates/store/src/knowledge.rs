@@ -287,7 +287,6 @@ pub async fn check_review_capacity_on(
         || total >= 128
         || personal_bytes + bytes as i64 > CACHE_LIMIT as i64
         || total_bytes + bytes as i64 > 8 * CACHE_LIMIT as i64
-        || bytes > BUNDLE_LIMIT
     {
         return Err(invalid(
             "Pending knowledge reviews exceed their count or storage limit; save or clear temporary reviews first",

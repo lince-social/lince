@@ -51,7 +51,7 @@ fn start(world: &mut World, root: Entity, slug: &str, mode: Mode) {
 fn every_page_starts_directly_and_escape_keeps_progress_distinct() {
     let (mut app, root) = fixture();
     for mode in [Mode::Free, Mode::Assisted] {
-        for page in lince_interface::handbook::PAGES {
+        for page in lince_interface::handbook::pages() {
             start(app.world_mut(), root, page.slug, mode);
             assert!(app.world().get::<Practice>(root).is_some(), "{}", page.slug);
             Command::Skip.apply(app.world_mut(), root);
@@ -175,7 +175,7 @@ async fn foundational_pages_confirm_native_effects_and_explain_direct_starts() {
             crate::native::ontology::OntologyPlugin,
         ));
         app.add_systems(PostUpdate, crate::native::area_effects::update);
-        for page in lince_interface::handbook::PAGES
+        for page in lince_interface::handbook::pages()
             .iter()
             .take(24)
             .filter(|page| page.slug != "area-record-actions")

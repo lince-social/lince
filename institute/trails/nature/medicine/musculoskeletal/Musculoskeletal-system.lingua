@@ -1,0 +1,30 @@
+Import "../foundations/Anatomical-directions.lingua"
+Import "../foundations/Nerves-and-control.lingua"
+Import "../sources/Histologia-Montanari.lingua"
+Import "../sources/Anatomy-and-Physiology.lingua"
+Import "../foundations/Cells-and-tissues.lingua"
+Import "../Medicine.lingua"
+Import "Living-bone.lingua"
+Import "Cartilage.lingua"
+Import "Healing-and-adaptation.lingua"
+Import "Synovial-joints.lingua"
+Import "Levers-and-loading.lingua"
+Import "Muscle-and-contraction.lingua"
+Import "Movement-review.lingua"
+Import "Nerves-and-blood-supply.lingua"
+Import "Tendons-and-ligaments.lingua"
+Import "../orthopedics/Orthopedics.lingua"
+
+The musculoskeletal system — support and movement (@musculoskeletal-system: 0, is #chapter, #part-of @medicine, #source @med-source-osu, #source @med-source-histology, #medicine @msk-bone, #orthopedics @msk-bone) { r_3RYY6F9HPGWK0ADQCFYVD8Y9NN
+The musculoskeletal system/sistema musculoesquelético or sistema locomotor combines living tissues into structures that support posture, transmit force, move the body, and protect other organs. Its study connects anatomy, mechanics, nervous control, circulation, and repair.
+
+**Read in sequence:** [Bone — living tissue with mechanical functions](Living-bone.lingua#r_4DKXDP3A991W1WBQ4Y1E38S6HW), [Cartilage — surfaces, support, and specialized tissue](Cartilage.lingua#r_1212QHQGQ75Z2D2QSZZC58F56Q), [Tendons, ligaments, fascia, and attachments](Tendons-and-ligaments.lingua#r_39EW7RT1P3JRQAG00BP4MXKDF2), [Joints — cartilage, capsule, synovium, and bursae](Synovial-joints.lingua#r_4GZFM70631CM2Z5838PJ2X7BJE), [Muscle — from sarcomeres to useful force](Muscle-and-contraction.lingua#r_1YRYRC0SFMQW85VT1WTSN1N89D), [Levers, force, stress, and loading](Levers-and-loading.lingua#r_11PBB06GFW5E3JY12EVAWF6YJN), [A movement system needs nerves and blood supply](Nerves-and-blood-supply.lingua#r_0B7GSTVKPXTQPSTZVF7SPYGPK1), and [Healing, adaptation, and return to activity](Healing-and-adaptation.lingua#r_3XJC6HDDG7SKRW16PM3TX3B5X0), then [Explain one movement across tissues and scales](Movement-review.lingua#r_2EABDT9ARYZTXZMQMA4C57Z4WY). These Records are shared foundations for studying any region. [Orthopedics — understanding musculoskeletal problems](../orthopedics/Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) carries the sequence toward the shoulder.
+
+Use [Describe a body — position, direction, and movement](../foundations/Anatomical-directions.lingua#r_5HMQ29K367TFS69H6C35MZYHVQ) when a direction is unfamiliar, [Cells, tissues, organs, and extracellular material](../foundations/Cells-and-tissues.lingua#r_55X7R8B6AC36G6R6XXPGBF0EQ9) for tissue organization, and [Nerves — sensation, muscle activation, and control](../foundations/Nerves-and-control.lingua#r_08WV4S2F8WMCT7SZX2FHY82YP7) for nervous control. Consult [Histologia — Tatiana Montanari](../sources/Histologia-Montanari.lingua#r_19MSRBKWFADMAH4P4TT7HG81KS) for Portuguese microscopic anatomy and [Anatomy & Physiology — Oregon State University](../sources/Anatomy-and-Physiology.lingua#r_1WEZWZ5YY6797K4EXVYTBJS25N) for a broad explanation. No complete course in all organ systems is required before beginning this reading.
+
+**Keep one question throughout:** which structure or process explains the function being described, and what evidence supports that explanation? Drawings are models of relationships; real anatomy includes variation and coordinated activity.
+
+**Continue:** [Bone — living tissue with mechanical functions](Living-bone.lingua#r_4DKXDP3A991W1WBQ4Y1E38S6HW).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_3RYY6F9HPGWK0ADQCFYVD8Y9NN

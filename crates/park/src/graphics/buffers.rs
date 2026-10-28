@@ -10,9 +10,68 @@ struct Content {
     device: wgpu::Device,
     texture: wgpu::Texture,
     opaque: bool,
+    capture: std::sync::Mutex<Option<std::result::Result<Arc<RetainedCapture>, String>>>,
+}
+
+pub(crate) struct RetainedCapture {
+    pub(crate) image: ExportedImage,
+    _budget: CaptureBudget,
+}
+
+struct CaptureBudget {
+    used: Arc<std::sync::atomic::AtomicU64>,
+    bytes: u64,
+}
+
+impl Drop for CaptureBudget {
+    fn drop(&mut self) {
+        self.used.fetch_sub(self.bytes, std::sync::atomic::Ordering::AcqRel);
+    }
+}
+
+pub(crate) fn retained_capture(buffer: &ClientBuffer) -> std::result::Result<Option<Arc<RetainedCapture>>, String> {
+    let Some(content) = buffer.cached::<Content>() else { return Ok(None); };
+    let result = content.capture.lock().unwrap_or_else(|error| error.into_inner()).clone();
+    result.transpose()
+}
+
+pub(crate) fn retire_capture(buffer: &ClientBuffer) {
+    if let Some(content) = buffer.cached::<Content>() {
+        let capture = content.capture.lock().unwrap_or_else(|error| error.into_inner()).take();
+        drop(capture);
+    }
 }
 
 impl VulkanRenderer {
+    #[cfg(all(test, feature = "nested", feature = "server-tests"))]
+    pub(crate) fn capture_test_bytes(&self) -> u64 {
+        self.capture_bytes.load(std::sync::atomic::Ordering::Acquire)
+    }
+
+    pub(crate) fn retain_capture(&self, buffer: &ClientBuffer) -> bool {
+        let Some(content) = buffer.cached::<Content>() else { return false; };
+        let captured = content.capture.lock().unwrap_or_else(|error| error.into_inner()).clone();
+        if let Some(captured) = captured {
+            return captured.map_or(true, |capture| capture.image.ready().unwrap_or(true));
+        }
+        let bytes_per_pixel = if content.texture.format() == wgpu::TextureFormat::Rgba16Float { 8 } else { 4 };
+        let bytes = u64::from(content.texture.width()) * u64::from(content.texture.height()) * bytes_per_pixel;
+        if self.capture_bytes.fetch_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire,
+            |used| used.checked_add(bytes).filter(|total| *total <= 256 * 1024 * 1024)).is_err() { return false; }
+        let budget = CaptureBudget { used: self.capture_bytes.clone(), bytes };
+        let image = if content.device != self.device {
+            Err("The retained capture belongs to another render device".to_owned())
+        } else {
+            self.export_copy(&content.texture).map(|image| {
+                let capture = Arc::new(RetainedCapture { image, _budget: budget });
+                self.retain(capture.clone());
+                capture
+            }).map_err(|error| error.to_string())
+        };
+        *content.capture.lock().unwrap_or_else(|error| error.into_inner()) = Some(image);
+        false
+    }
+
     pub(crate) fn imports_ready(&self) -> bool {
         self.waits.borrow().values().any(crate::graphics::wait::Watch::ready)
     }
@@ -47,9 +106,14 @@ impl VulkanRenderer {
             ));
         }
         if let Ok(dmabuf) = get_dmabuf(buffer.buffer()) {
-            if dmabuf.format().code != Fourcc::Argb8888
+            let bytes_per_pixel = if dmabuf.format().code == Fourcc::Abgr16161616f { 8_u64 } else { 4 };
+            let size = dmabuf.size();
+            let bytes = u64::try_from(size.w).ok().zip(u64::try_from(size.h).ok())
+                .and_then(|(width, height)| width.checked_mul(height)).and_then(|pixels| pixels.checked_mul(bytes_per_pixel));
+            if !matches!(dmabuf.format().code, Fourcc::Argb8888 | Fourcc::Abgr8888 | Fourcc::Abgr2101010 | Fourcc::Abgr16161616f)
                 || dmabuf.format().modifier != Modifier::Linear
                 || dmabuf.num_planes() != 1
+                || bytes.is_none_or(|bytes| bytes > 256 * 1024 * 1024)
             {
                 return Err(ProbeFailure::at(
                     "client_import",
@@ -86,6 +150,7 @@ impl VulkanRenderer {
                 device: self.device.clone(),
                 texture: texture.clone(),
                 opaque: false,
+                capture: Default::default(),
             });
             return Ok(Some((texture, false)));
         }
@@ -183,6 +248,7 @@ impl VulkanRenderer {
             device: self.device.clone(),
             texture: texture.clone(),
             opaque,
+            capture: Default::default(),
         });
         Ok(Some((texture, opaque)))
     }

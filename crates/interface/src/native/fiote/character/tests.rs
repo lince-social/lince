@@ -372,7 +372,7 @@ fn hidden_scene_pauses_its_player_and_static_mode_removes_its_entities() {
     let graph = world.resource_mut::<Assets<AnimationGraph>>().add(graph);
     world.resource_mut::<Character>().scenes.push(Scene {
         palette: Palette::default(),
-        layer: LAYER,
+        layer: crate::native::render_layers::FIOTE.get(0).unwrap(),
         running: false,
         rendered: None,
         materials: Vec::new(),
@@ -384,6 +384,9 @@ fn hidden_scene_pauses_its_player_and_static_mode_removes_its_entities() {
         clips: HashMap::from([("sit_idle", (index, 4.0))]),
         players: vec![entity],
         behavior: Behavior::default(),
+        restored: Vec::new(),
+        paused: HashMap::new(),
+        visible: true,
     });
     animate(&mut world, false);
     assert!(world.get::<AnimationPlayer>(entity).unwrap().all_paused());

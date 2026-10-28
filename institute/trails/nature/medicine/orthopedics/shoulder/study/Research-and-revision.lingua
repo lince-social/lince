@@ -1,0 +1,20 @@
+Import "../../../foundations/Foundations-review.lingua"
+Import "../../../sources/DeCS.lingua"
+Import "../../../sources/Literature-discovery.lingua"
+Import "../Shoulder.lingua"
+Import "Guideline-comparison.lingua"
+Import "Shoulder-review.lingua"
+
+Investigate a shoulder question and revise the explanation (@shoulder-research: 0, is #chapter, #part-of @shoulder, #source @med-source-literature, #source @med-source-decs, #medicine @shoulder-guidelines, #orthopedics @shoulder-guidelines, #shoulder @shoulder-guidelines) { r_77W5XER9DJRPDS7MK0W82N42MT
+Choose a bounded question about shoulder anatomy, function, a diagnostic claim, or treatment evidence. Keep the shared medical distinctions from [Bring the shared medical foundation together](../../../foundations/Foundations-review.lingua#r_6TDM16JC1FAVSWBVCCD5BJVEZE) and the clinical limits from [Explain shoulder function and evaluate a clinical claim](Shoulder-review.lingua#r_0KVS4CSNH1J97G8XKXEW5183JW).
+
+Use [Find and assess medical literature — English and Portuguese](../../../sources/Literature-discovery.lingua#r_1DPBVZC8XSXFB29AYMFDR8FC8S) and bilingual descriptors from [DeCS — Descritores em Ciências da Saúde](../../../sources/DeCS.lingua#r_32JDHQDTBG260AEJ12TP8WRY1G) to document a search. Separate anatomical evidence, observational associations, diagnostic-accuracy studies, intervention trials, and reviews. Check methods, sample, comparator, outcomes, uncertainty, and conflicts. Absence from a free repository does not mean that a paper does not exist.
+
+Build a source-supported account with diagrams or tables where useful. State what is established, what is plausible, what is disputed, and what the sources cannot answer. Clinical conclusions must stay within the populations and interventions studied. Invite criticism of the account, check every material objection against the evidence, and revise it with dated source versions.
+
+**A demanding finish:** the work explains a real bounded question, accurately represents counterevidence, traces an important claim to its supporting studies, and survives correction. New learning can continue from any connected Record. It does not confer competence to examine, diagnose, prescribe, or perform procedures.
+
+**Continue:** [Compare guidelines without erasing their populations](Guideline-comparison.lingua#r_23K2GC12JHG2A99BBFJXWYJE0R).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_77W5XER9DJRPDS7MK0W82N42MT

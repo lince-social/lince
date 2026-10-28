@@ -3,9 +3,25 @@ use crate::host::{Direction, Rectangle, WorkspaceLayout};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod gestures;
+mod overview;
+mod placement;
+mod rows;
+pub use rows::{CompactGroup, COMPACT_HEADER_HEIGHT};
+pub use gestures::{DropSlot, Gesture};
+pub use overview::{HoverClock, OverviewSettings, edge_scroll};
+mod transfers;
+mod viewport;
+mod widths;
+mod windowed_fullscreen;
+mod scratch;
+pub use scratch::Scratch;
+pub use transfers::TransferKind;
+pub use widths::FreeWidth;
+
 const MAX_ITEMS: usize = 4096;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct PlacementId(pub [u8; 16]);
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -37,6 +53,7 @@ pub struct Item {
     pub kind: ItemKind,
     pub rules: Rules,
     pub free: Geometry,
+    pub free_width: Option<FreeWidth>,
     pub floating: bool,
 }
 
@@ -51,6 +68,7 @@ pub enum ItemKind {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Width {
+    Fraction(u16, u16),
     Third,
     Half,
     TwoThirds,
@@ -61,6 +79,9 @@ pub enum Width {
 impl Width {
     fn resolve(self, available: f64) -> f64 {
         match self {
+            Self::Fraction(numerator, denominator) => {
+                available * f64::from(numerator) / f64::from(denominator)
+            }
             Self::Third => available / 3.0,
             Self::Half => available / 2.0,
             Self::TwoThirds => available * 2.0 / 3.0,
@@ -71,7 +92,11 @@ impl Width {
     }
 
     fn valid(self) -> bool {
-        !matches!(self, Self::Pixels(size) if !size.is_finite() || !(1.0..=f64::from(LIMIT)).contains(&size))
+        match self {
+            Self::Fraction(numerator, denominator) => numerator > 0 && numerator <= denominator,
+            Self::Pixels(size) => size.is_finite() && (1.0..=f64::from(LIMIT)).contains(&size),
+            _ => true,
+        }
     }
 
     fn next(self) -> Self {
@@ -79,7 +104,7 @@ impl Width {
             Self::Third => Self::Half,
             Self::Half => Self::TwoThirds,
             Self::TwoThirds => Self::Full,
-            Self::Full | Self::Pixels(_) => Self::Third,
+            Self::Full | Self::Pixels(_) | Self::Fraction(_, _) => Self::Third,
         }
     }
 }
@@ -122,9 +147,14 @@ pub struct Workspace {
     gap: f64,
     items: Vec<Item>,
     columns: Vec<Column>,
+    rows: rows::Rows,
     focused: Option<PlacementId>,
     scroll: [f64; 2],
     fullscreen: Option<PlacementId>,
+    #[serde(skip)]
+    windowed_fullscreen: BTreeSet<PlacementId>,
+    #[serde(default, with = "scratch::entries")]
+    scratch: BTreeMap<PlacementId, Scratch>,
 }
 
 impl Default for Workspace {
@@ -168,9 +198,12 @@ impl Workspace {
             gap: 8.0,
             items: Vec::new(),
             columns: Vec::new(),
+            rows: rows::Rows::default(),
             focused: None,
             scroll: [0.0; 2],
             fullscreen: None,
+            windowed_fullscreen: BTreeSet::new(),
+            scratch: BTreeMap::new(),
         }
     }
 
@@ -179,8 +212,19 @@ impl Workspace {
     }
 
     pub fn set_mode(&mut self, mode: WorkspaceLayout) {
+        if self.mode == WorkspaceLayout::Tiled {
+            self.rows.scroll = self.scroll;
+        }
         self.mode = mode;
-        self.scroll = [0.0; 2];
+        if mode == WorkspaceLayout::Tiled && let Some(id) = self.fullscreen { self.rows.select_compact(id); }
+        if mode == WorkspaceLayout::Tiled && let Some(id) = self.focused
+            && let Some(group) = self.compact_group(id)
+        { self.focused = Some(group.active); }
+        self.scroll = if mode == WorkspaceLayout::Tiled {
+            self.rows.scroll
+        } else {
+            [0.0; 2]
+        };
     }
 
     pub fn focused(&self) -> Option<PlacementId> {
@@ -197,28 +241,58 @@ impl Workspace {
 
     pub fn maximized(&self, id: PlacementId) -> bool {
         if self.mode == WorkspaceLayout::ScrollingColumns && self.column(id).is_some() {
-            self.column(id).is_some_and(|column| self.columns[column].maximized)
+            self.column(id)
+                .is_some_and(|column| self.columns[column].maximized)
         } else {
             self.maximized.contains(&id)
         }
     }
 
-    pub fn minimized(&self, id: PlacementId) -> bool { self.minimized.contains(&id) }
+    pub fn minimized(&self, id: PlacementId) -> bool {
+        self.minimized.contains(&id)
+    }
 
-    pub fn clear_focus(&mut self) { self.focused = None; }
+    pub fn clear_focus(&mut self) {
+        self.focused = None;
+    }
+
+    pub fn preserve_selection(&mut self, previous: &Self) {
+        self.focused = previous.focused.filter(|id| self.items.iter().any(|item| item.id == *id) && !self.hidden(*id));
+        self.scroll = previous.scroll;
+        self.rows.last_focus = previous.rows.last_focus.filter(|id| self.rows.contains(*id) && !self.hidden(*id));
+        self.fullscreen = previous.fullscreen.filter(|id| self.items.iter().any(|item| item.id == *id) && !self.hidden(*id));
+    }
 
     pub fn set_minimized(&mut self, id: PlacementId, minimized: bool) -> bool {
-        if !self.items.iter().any(|item| item.id == id) { return false; }
+        if !self.items.iter().any(|item| item.id == id) {
+            return false;
+        }
         if minimized {
             self.minimized.insert(id);
-            if self.fullscreen == Some(id) { self.minimized_fullscreen.insert(id); self.fullscreen = None; }
+            if let Some(group) = self.compact_group(id).filter(|group| group.active == id)
+                && let Some(next) = group.members.iter().copied().find(|member| !self.minimized.contains(member))
+            {
+                self.rows.select_compact(next);
+                if self.focused == Some(id) { self.focused = Some(next); }
+            }
+            if self.fullscreen == Some(id) {
+                self.minimized_fullscreen.insert(id);
+                self.fullscreen = None;
+            }
             if self.focused == Some(id) {
-                self.focused = self.columns.iter().flat_map(|column| &column.items).copied()
-                    .chain(self.items.iter().map(|item| item.id)).find(|candidate| !self.minimized.contains(candidate));
+                self.focused = self
+                    .columns
+                    .iter()
+                    .flat_map(|column| &column.items)
+                    .copied()
+                    .chain(self.items.iter().map(|item| item.id))
+                    .find(|candidate| !self.hidden(*candidate));
             }
         } else {
             self.minimized.remove(&id);
-            if self.minimized_fullscreen.remove(&id) && self.fullscreen.is_none() { self.fullscreen = Some(id); }
+            if self.minimized_fullscreen.remove(&id) && self.fullscreen.is_none() && !self.scratch_hidden(id) {
+                self.fullscreen = Some(id);
+            }
         }
         true
     }
@@ -227,25 +301,43 @@ impl Workspace {
         if !self.items.iter().any(|item| item.id == id) {
             return false;
         }
-        if request.fullscreen == Some(true) || request.maximized == Some(true) { self.set_minimized(id, false); }
-        if request.fullscreen == Some(false) { self.minimized_fullscreen.remove(&id); }
+        let hidden = self.compact_hidden(id) || self.scratch_hidden(id);
+        if (!hidden && request.fullscreen == Some(true)) || request.maximized == Some(true) {
+            self.set_minimized(id, false);
+        }
+        if request.fullscreen == Some(false) {
+            self.minimized_fullscreen.remove(&id);
+            self.windowed_fullscreen.remove(&id);
+        }
         if let Some(enabled) = request.fullscreen {
-            if enabled {
+            if enabled && !hidden && !self.windowed_fullscreen.contains(&id) {
                 self.fullscreen = Some(id);
             } else if self.fullscreen == Some(id) {
                 self.fullscreen = None;
             }
         }
         if let Some(enabled) = request.maximized {
-            if enabled { self.maximized.insert(id); } else { self.maximized.remove(&id); }
-            if let Some(column) = self.column(id) {
+            if enabled {
+                self.maximized.insert(id);
+            } else {
+                self.maximized.remove(&id);
+            }
+            if self.mode == WorkspaceLayout::ScrollingColumns
+                && let Some(column) = self.column(id)
+            {
                 self.columns[column].maximized = enabled;
                 for member in &self.columns[column].items {
-                    if enabled { self.maximized.insert(*member); } else { self.maximized.remove(member); }
+                    if enabled {
+                        self.maximized.insert(*member);
+                    } else {
+                        self.maximized.remove(member);
+                    }
                 }
             }
         }
-        if let Some(minimized) = request.minimized { self.set_minimized(id, minimized); }
+        if let Some(minimized) = request.minimized {
+            self.set_minimized(id, minimized);
+        }
         true
     }
 
@@ -259,6 +351,10 @@ impl Workspace {
         }
         self.gap = gap;
         Ok(())
+    }
+
+    pub fn gap(&self) -> f64 {
+        self.gap
     }
 
     pub fn valid(&self) -> bool {
@@ -280,6 +376,7 @@ impl Workspace {
                 || !all.insert(item.id)
                 || !item.rules.valid()
                 || item.free.rectangle().is_none()
+                || item.free_width.is_some_and(|width| !width.valid())
             {
                 return false;
             }
@@ -297,11 +394,17 @@ impl Workspace {
             }
         }
         tiled == arranged
+            && self.rows.valid(&self.items)
             && self.maximized.iter().all(|id| all.contains(id))
             && self.minimized.iter().all(|id| all.contains(id))
-            && self.minimized_fullscreen.iter().all(|id| self.minimized.contains(id))
-            && self.focused.is_none_or(|id| !self.minimized.contains(&id))
-            && self.fullscreen.is_none_or(|id| !self.minimized.contains(&id))
+            && self
+                .minimized_fullscreen
+                .iter()
+                .all(|id| self.minimized.contains(id))
+            && self.focused.is_none_or(|id| !self.minimized.contains(&id) && !self.scratch_hidden(id))
+            && self
+                .fullscreen
+                .is_none_or(|id| !self.minimized.contains(&id))
             && self.influences.iter().all(|(id, influence)| {
                 all.contains(id)
                     && influence.scale.is_finite()
@@ -309,10 +412,18 @@ impl Workspace {
             })
             && self.focused.is_none_or(|id| all.contains(&id))
             && self.fullscreen.is_none_or(|id| all.contains(&id))
+            && self.fullscreen.is_none_or(|id| !self.compact_hidden(id) && !self.scratch_hidden(id))
+            && self.scratch.iter().all(|(id, scratch)| all.contains(id) && scratch.valid(*id) && self.compact_group(*id).is_none())
+            && self.windowed_fullscreen.iter().all(|id| self.fullscreen != Some(*id)
+                && self.items.iter().any(|item| item.id == *id && item.kind == ItemKind::Application))
     }
 
     pub fn insert(&mut self, item: Item) -> Result<(), LayoutError> {
-        if item.id.0 == [0; 16] || !item.rules.valid() || item.free.rectangle().is_none() {
+        if item.id.0 == [0; 16]
+            || !item.rules.valid()
+            || item.free.rectangle().is_none()
+            || item.free_width.is_some_and(|width| !width.valid())
+        {
             return Err(LayoutError::InvalidItem);
         }
         if self.items.iter().any(|previous| previous.id == item.id) {
@@ -322,6 +433,7 @@ impl Workspace {
             return Err(LayoutError::TooManyItems);
         }
         if !item.floating {
+            self.rows.insert(item.id, self.focused);
             let position = self
                 .focused
                 .and_then(|id| self.column(id))
@@ -334,8 +446,17 @@ impl Workspace {
         Ok(())
     }
 
+    pub fn insert_inactive(&mut self, item: Item) -> Result<(), LayoutError> {
+        let focused = self.focused;
+        self.insert(item)?;
+        self.focused = focused;
+        Ok(())
+    }
+
     pub fn remove(&mut self, id: PlacementId) -> Option<Item> {
         let index = self.items.iter().position(|item| item.id == id)?;
+        let hidden = self.hidden_items();
+        let row_neighbor = self.rows.forget(id, &hidden);
         let column = self.column(id).unwrap_or(0);
         let row = self
             .columns
@@ -347,14 +468,28 @@ impl Workspace {
         self.minimized.remove(&id);
         self.minimized_fullscreen.remove(&id);
         self.maximized.remove(&id);
+        self.windowed_fullscreen.remove(&id);
+        self.scratch.remove(&id);
         self.influences.remove(&id);
         if self.fullscreen == Some(id) {
             self.fullscreen = None;
         }
         if self.focused == Some(id) {
-            self.focused = self.columns.iter().skip(column.min(self.columns.len().saturating_sub(1)))
-                .flat_map(|column| &column.items).skip(row).copied()
-                .chain(self.items.iter().rev().map(|item| item.id)).find(|id| !self.minimized.contains(id));
+            self.focused = if self.mode == WorkspaceLayout::Tiled {
+                row_neighbor.filter(|id| !self.hidden(*id))
+            } else {
+                None
+            };
+            self.focused = self.focused.or_else(|| {
+                self.columns
+                    .iter()
+                    .skip(column.min(self.columns.len().saturating_sub(1)))
+                    .flat_map(|column| &column.items)
+                    .skip(row)
+                    .copied()
+                    .chain(self.items.iter().rev().map(|item| item.id))
+                    .find(|id| !self.hidden(*id))
+            });
         }
         Some(removed)
     }
@@ -363,7 +498,17 @@ impl Workspace {
         if !rules.valid() {
             return Err(LayoutError::InvalidItem);
         }
-        self.item_mut(id)?.rules = rules;
+        let current = self.item_mut(id)?;
+        if current.rules == rules {
+            return Ok(());
+        }
+        current.rules = rules;
+        if self.mode == WorkspaceLayout::Free {
+            let item = self.item_mut(id)?;
+            let (geometry, width) = (item.free, item.free_width);
+            self.rows
+                .authored_free(id, geometry, width, rows::SizeIntent::capture(rules));
+        }
         Ok(())
     }
 
@@ -388,16 +533,33 @@ impl Workspace {
         if geometry.rectangle().is_none() {
             return Err(LayoutError::InvalidItem);
         }
-        self.item_mut(id)?.free = geometry;
+        let item = self.item_mut(id)?;
+        if (item.free.size[0] - geometry.size[0]).abs() > geometry.size[0].max(1.0) * 0.000_001 {
+            item.free_width = None;
+        }
+        item.free = geometry;
+        let free_width = item.free_width;
+        let sizing = rows::SizeIntent::capture(item.rules);
+        if self.mode == WorkspaceLayout::Free {
+            self.rows.authored_free(id, geometry, free_width, sizing);
+        }
         Ok(())
     }
 
     pub fn focus(&mut self, id: PlacementId, usable: Rectangle) -> Result<(), LayoutError> {
+        if self.scratch_hidden(id) { return Err(LayoutError::InvalidState); }
         self.item_mut(id)?;
+        if self.mode == WorkspaceLayout::Tiled { self.rows.select_compact(id); }
         self.set_minimized(id, false);
         self.focused = Some(id);
+        if self.rows.contains(id) {
+            self.rows.last_focus = Some(id);
+        }
         if self.fullscreen.is_some() {
             self.fullscreen = Some(id);
+            return Ok(());
+        }
+        if self.mode == WorkspaceLayout::Free {
             return Ok(());
         }
         let solution = self.solve(usable, usable)?;
@@ -434,12 +596,20 @@ impl Workspace {
         let solution = self.solve(usable, usable);
         self.fullscreen = fullscreen;
         let solution = solution?;
+        if self.mode == WorkspaceLayout::Tiled
+            && self.focused.is_some_and(|id| self.rows.contains(id))
+        {
+            return self.focus_row_direction(direction, usable, &solution);
+        }
         let Some(current) = solution
             .items
             .iter()
             .find(|item| Some(item.id) == self.focused)
         else {
-            if let Some(id) = solution.items.first().map(|item| item.id) { self.focus(id, usable)?; return Ok(true); }
+            if let Some(id) = solution.items.first().map(|item| item.id) {
+                self.focus(id, usable)?;
+                return Ok(true);
+            }
             return Ok(false);
         };
         let axis = match direction {
@@ -480,7 +650,10 @@ impl Workspace {
         }
     }
 
-    pub fn move_focused(&mut self, direction: Direction) -> bool {
+    pub fn move_focused(&mut self, direction: Direction, usable: Rectangle) -> bool {
+        if self.mode == WorkspaceLayout::Tiled {
+            return self.move_row_item(direction, usable);
+        }
         let Some(id) = self.focused else {
             return false;
         };
@@ -496,7 +669,8 @@ impl Workspace {
             self.mode,
             WorkspaceLayout::Row | WorkspaceLayout::Column | WorkspaceLayout::Grid
         ) {
-            let minimized = &self.minimized;
+            let hidden = self.hidden_items();
+            let minimized = &hidden;
             let positions: Vec<_> = self
                 .columns
                 .iter()
@@ -537,9 +711,12 @@ impl Workspace {
         match direction {
             Direction::Up | Direction::Down => {
                 let target = if direction == Direction::Up {
-                    (0..row).rev().find(|row| !self.minimized.contains(&self.columns[column].items[*row]))
+                    (0..row)
+                        .rev()
+                        .find(|row| !self.hidden(self.columns[column].items[*row]))
                 } else {
-                    (row + 1..self.columns[column].items.len()).find(|row| !self.minimized.contains(&self.columns[column].items[*row]))
+                    (row + 1..self.columns[column].items.len())
+                        .find(|row| !self.hidden(self.columns[column].items[*row]))
                 };
                 let Some(target) = target else {
                     return false;
@@ -547,7 +724,13 @@ impl Workspace {
                 self.columns[column].items.swap(row, target);
             }
             Direction::Left | Direction::Right => {
-                if self.columns[column].items.iter().filter(|id| !self.minimized.contains(id)).count() > 1 {
+                if self.columns[column]
+                    .items
+                    .iter()
+                    .filter(|id| !self.hidden(**id))
+                    .count()
+                    > 1
+                {
                     let width = self.columns[column].width;
                     self.columns[column].items.remove(row);
                     let target = column + usize::from(direction == Direction::Right);
@@ -586,6 +769,7 @@ impl Workspace {
         id: PlacementId,
         current: Rectangle,
     ) -> Result<(), LayoutError> {
+        if self.compact_group(id).is_some() { return Err(LayoutError::InvalidState); }
         let geometry = Geometry {
             origin: current.origin(),
             size: current.size(),
@@ -594,7 +778,15 @@ impl Workspace {
             return Err(LayoutError::InvalidItem);
         }
         let floating = self.item_mut(id)?.floating;
+        let free = self.item_mut(id)?.free;
+        let free_width = self.item_mut(id)?.free_width;
+        let sizing = rows::SizeIntent::capture(self.item_mut(id)?.rules);
+        let (next_free, next_free_width, next_sizing);
         if floating {
+            (next_free, next_free_width, next_sizing) = self
+                .rows
+                .restore(id, self.focused, free, free_width, sizing)
+                .unwrap_or((geometry, None, sizing));
             let position = self
                 .focused
                 .and_then(|id| self.column(id))
@@ -603,11 +795,17 @@ impl Workspace {
             column.maximized = self.maximized.contains(&id);
             self.columns.insert(position, column);
         } else {
+            (next_free, next_free_width, next_sizing) = self
+                .rows
+                .detach(id, free, free_width, sizing)
+                .unwrap_or((geometry, None, sizing));
             self.remove_from_columns(id);
         }
         let item = self.item_mut(id)?;
         item.floating = !floating;
-        item.free = geometry;
+        item.free = next_free;
+        item.free_width = next_free_width;
+        rows::SizeIntent::restore(next_sizing, &mut item.rules);
         Ok(())
     }
 
@@ -648,14 +846,21 @@ impl Workspace {
     }
 
     pub fn toggle_maximized(&mut self) -> bool {
-        let Some(id) = self.focused else { return false; };
-        self.request_state(id, crate::host::WindowRequest {
-            maximized: Some(!self.maximized(id)),
-            ..Default::default()
-        })
+        let Some(id) = self.focused else {
+            return false;
+        };
+        self.windowed_fullscreen.remove(&id);
+        self.request_state(
+            id,
+            crate::host::WindowRequest {
+                maximized: Some(!self.maximized(id)),
+                ..Default::default()
+            },
+        )
     }
 
     pub fn toggle_fullscreen(&mut self) {
+        if let Some(id) = self.focused { self.windowed_fullscreen.remove(&id); }
         self.fullscreen = if self.fullscreen == self.focused {
             None
         } else {
@@ -667,23 +872,50 @@ impl Workspace {
         if !self.valid() {
             return Err(LayoutError::InvalidState);
         }
+        self.resolve_free_widths(usable);
         self.apply_influence_order();
+        let hidden = self.hidden_items();
         let gap = self.gap.min(usable.size()[0].min(usable.size()[1]) / 4.0);
         let inner = [usable.size()[0] - gap * 2.0, usable.size()[1] - gap * 2.0];
         if self.mode == WorkspaceLayout::ScrollingColumns {
             self.split_overflow(inner[1], gap);
         }
-        let columns: Vec<_> = self.columns.iter().filter_map(|column| {
-            let mut column = column.clone();
-            column.items.retain(|id| !self.minimized.contains(id));
-            (!column.items.is_empty()).then_some(column)
-        }).collect();
-        let entries: BTreeMap<_, _> = self.items.iter().filter(|item| !self.minimized.contains(&item.id)).map(|item| (item.id, item)).collect();
+        let columns: Vec<_> = self
+            .columns
+            .iter()
+            .filter_map(|column| {
+                let mut column = column.clone();
+                column.items.retain(|id| !hidden.contains(id));
+                (!column.items.is_empty()).then_some(column)
+            })
+            .collect();
+        let entries: BTreeMap<_, _> = self
+            .items
+            .iter()
+            .filter(|item| !hidden.contains(&item.id))
+            .map(|item| (item.id, item))
+            .collect();
         let mut solved = Vec::with_capacity(self.items.len());
         let mut extent = inner;
         match self.mode {
+            WorkspaceLayout::Tiled => {
+                let (items, size) = self.rows.solve(
+                    usable,
+                    inner,
+                    gap,
+                    &entries,
+                    &hidden,
+                    &self.influences,
+                );
+                solved = items;
+                extent = size;
+            }
             WorkspaceLayout::Free => {
-                for item in self.items.iter().filter(|item| !item.floating && !self.minimized.contains(&item.id)) {
+                for item in self
+                    .items
+                    .iter()
+                    .filter(|item| !item.floating && !hidden.contains(&item.id))
+                {
                     solved.push(SolvedItem {
                         id: item.id,
                         rectangle: free_rectangle(item),
@@ -812,7 +1044,11 @@ impl Workspace {
                 .unwrap();
             }
         }
-        for item in self.items.iter().filter(|item| item.floating && !self.minimized.contains(&item.id)) {
+        for item in self
+            .items
+            .iter()
+            .filter(|item| item.floating && !hidden.contains(&item.id))
+        {
             solved.push(SolvedItem {
                 id: item.id,
                 rectangle: free_rectangle(item),
@@ -820,10 +1056,19 @@ impl Workspace {
             });
         }
         for item in &mut solved {
-            if self.maximized(item.id) && (self.mode != WorkspaceLayout::ScrollingColumns || item.floating) {
+            if self.maximized(item.id)
+                && (self.mode != WorkspaceLayout::ScrollingColumns || item.floating)
+            {
                 let rules = entries[&item.id].rules;
-                let size = std::array::from_fn(|axis| inner[axis].clamp(f64::from(rules.axes[axis].min), f64::from(rules.axes[axis].max)));
-                item.rectangle = Rectangle::new(usable.origin().map(|value| value + gap), size).unwrap();
+                let header = if self.mode == WorkspaceLayout::Tiled && self.compact_group(item.id).is_some() { COMPACT_HEADER_HEIGHT } else { 0.0 };
+                let size = std::array::from_fn(|axis| {
+                    (inner[axis] - if axis == 1 { header } else { 0.0 }).max(1.0).clamp(
+                        f64::from(rules.axes[axis].min),
+                        f64::from(rules.axes[axis].max),
+                    )
+                });
+                item.rectangle =
+                    Rectangle::new([usable.origin()[0] + gap, usable.origin()[1] + gap + header], size).unwrap();
                 item.floating = false;
             }
         }
@@ -860,7 +1105,12 @@ impl Workspace {
     }
 
     fn adjacent_column(&self, column: usize, direction: Direction) -> Option<usize> {
-        let visible = |column: &usize| self.columns[*column].items.iter().any(|id| !self.minimized.contains(id));
+        let visible = |column: &usize| {
+            self.columns[*column]
+                .items
+                .iter()
+                .any(|id| !self.hidden(*id))
+        };
         match direction {
             Direction::Left => (0..column).rev().find(visible),
             Direction::Right => (column + 1..self.columns.len()).find(visible),
@@ -887,7 +1137,9 @@ impl Workspace {
             let mut used = 0.0;
             let mut visible = 0;
             let split = column.items.iter().enumerate().find_map(|(row, id)| {
-                if self.minimized.contains(id) { return None; }
+                if self.hidden(*id) {
+                    return None;
+                }
                 used += minimums[id] + if visible == 0 { 0.0 } else { gap };
                 visible += 1;
                 (visible > 1 && used > height).then_some(row)
@@ -909,6 +1161,7 @@ impl Workspace {
     }
 
     fn apply_influence_order(&mut self) {
+        self.rows.order(&self.influences);
         let rank = |id: &PlacementId| {
             self.influences
                 .get(id)

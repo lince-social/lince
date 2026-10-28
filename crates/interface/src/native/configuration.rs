@@ -1,3 +1,4 @@
+use crate::i18n::{Language, Token as Tr};
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage, configuration::Configuration};
@@ -7,6 +8,7 @@ use std::collections::VecDeque;
 pub struct ConfigurationSand {
     pages: [Entity; 4],
     status: Entity,
+    language_status: Entity,
     identity: [Entity; 2],
     toggles: [Entity; 4],
     discovery: [bool; 4],
@@ -65,6 +67,7 @@ struct Pending {
     id: Option<String>,
     actions: VecDeque<engine::actions::Action>,
     completed: usize,
+    language: Option<Language>,
 }
 
 pub struct ConfigurationPlugin;
@@ -78,29 +81,37 @@ impl Plugin for ConfigurationPlugin {
     }
 }
 
-const DISCOVERY: [(&str, &str); 4] = [
-    ("local", "Find and advertise Cells on this LAN"),
-    ("internet", "Internet reachability"),
-    (
-        "direct",
-        "Allow direct internet connections (reveals this machine’s address)",
-    ),
-    ("accept_unknown", "Accept unknown conversations"),
+const DISCOVERY: [(&str, Tr); 4] = [
+    ("local", Tr::AdvertiseLan),
+    ("internet", Tr::InternetReachability),
+    ("direct", Tr::DirectConnections),
+    ("accept_unknown", Tr::UnknownConversations),
 ];
 
 pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
-    let body = panel::frame(world, sand, "Configuration");
+    let body = panel::frame(world, sand, Tr::Configuration.text());
     let tabs = panel::row(world, body);
-    for (index, name) in ["Cell", "Discovery", "Storage", "Contacts"]
-        .iter()
-        .enumerate()
+    for (index, name) in [
+        Tr::Cell.text(),
+        Tr::Discovery.text(),
+        Tr::Storage.text(),
+        Tr::Contacts.text(),
+    ]
+    .iter()
+    .enumerate()
     {
         panel::button(world, tabs, sand, name, Command::Page(index));
     }
-    panel::button(world, tabs, sand, "Refresh", Command::Refresh);
+    let refresh = panel::button(world, tabs, sand, Tr::Refresh.text(), Command::Refresh);
+    world
+        .entity_mut(refresh)
+        .insert(crate::native::icons::Tooltip(
+            "Reload settings and reconnect this Cell if its connection stopped.".into(),
+        ));
     crate::native::map_castle::settings_button(world, tabs, body);
     crate::native::fiote::character::settings_button(world, tabs, body);
-    let status = crate::native::edit_mode::label(world, body, "Loading configuration…", 12.0);
+    let status =
+        crate::native::edit_mode::label(world, body, Tr::LoadingConfiguration.text(), 12.0);
     let pages = std::array::from_fn(|index| {
         let page = panel::column(world, body);
         let mut node = world.get_mut::<Node>(page).unwrap();
@@ -115,132 +126,102 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         crate::native::scroll_sand::attach(world, page);
         page
     });
-    crate::native::edit_mode::label(
-        world,
-        pages[0],
-        "How this Organ identifies itself locally",
-        14.0,
-    );
+    crate::native::edit_mode::label(world, pages[0], Tr::LocalIdentity.text(), 14.0);
     let identity = [
-        panel::field(world, pages[0], "Name", ""),
-        panel::field(world, pages[0], "Descriptive address", ""),
+        panel::field(world, pages[0], Tr::Name.text(), ""),
+        panel::field(world, pages[0], Tr::DescriptiveAddress.text(), ""),
     ];
     panel::button(
         world,
         pages[0],
         sand,
-        "Save identity",
+        Tr::SaveIdentity.text(),
         Command::SaveIdentity,
     );
-    crate::native::edit_mode::label(
-        world,
-        pages[1],
-        "Where this Cell can be found. These settings do not create trust.",
-        14.0,
-    );
-    panel::button(
-        world,
-        pages[1],
-        sand,
-        "Find devices on this Wi-Fi",
-        Command::FindLan,
-    );
-    crate::native::edit_mode::label(
-        world,
-        pages[1],
-        "Visible for 15 minutes. Uses LAN only.",
-        13.0,
-    );
+    crate::native::edit_mode::label(world, pages[0], Tr::InterfaceLanguage.text(), 16.0);
+    let language_status = crate::native::edit_mode::label(world, pages[0], "", 13.0);
+    crate::native::edit_mode::label(world, pages[0], Tr::ChooseLanguage.text(), 13.0);
+    let languages = panel::row(world, pages[0]);
+    for language in Language::ALL {
+        panel::button(
+            world,
+            languages,
+            sand,
+            language.name(),
+            Command::Language(language),
+        );
+    }
+    crate::native::edit_mode::label(world, pages[0], Tr::RestartRequired.text(), 13.0);
+    crate::native::edit_mode::label(world, pages[0], Tr::IthkuilFallback.text(), 13.0);
+    crate::native::edit_mode::label(world, pages[1], Tr::DiscoveryHelp.text(), 14.0);
+    panel::button(world, pages[1], sand, Tr::FindLan.text(), Command::FindLan);
+    crate::native::edit_mode::label(world, pages[1], Tr::LanDuration.text(), 13.0);
     let toggles = std::array::from_fn(|index| {
         panel::button(
             world,
             pages[1],
             sand,
-            DISCOVERY[index].1,
+            DISCOVERY[index].1.text(),
             Command::Toggle(index),
         )
     });
-    let discovery_minutes = panel::field(
-        world,
-        pages[1],
-        "LAN presence in minutes (0 means no time limit)",
-        "0",
-    );
-    let relays = panel::field(
-        world,
-        pages[1],
-        "HTTPS connection relay URLs, separated by commas (blank uses Iroh preset)",
-        "",
-    );
+    let discovery_minutes = panel::field(world, pages[1], Tr::LanMinutes.text(), "0");
+    let relays = panel::field(world, pages[1], Tr::RelayUrls.text(), "");
     panel::button(
         world,
         pages[1],
         sand,
-        "Save discovery and restart connections",
+        Tr::SaveDiscovery.text(),
         Command::SaveDiscovery,
     );
-    crate::native::edit_mode::label(
-        world,
-        pages[1],
-        "Changing reach or relay selection restarts live connections. Connection relays help devices communicate while online; selected Lince mailboxes retain encrypted messages while a person is offline. Local-only reach uses no connection relay.",
-        13.0,
-    );
-    let peer_port = panel::field(
-        world,
-        pages[1],
-        "Peer UDP port (0 chooses automatically)",
-        "6175",
-    );
+    crate::native::edit_mode::label(world, pages[1], Tr::DiscoveryRestartHelp.text(), 13.0);
+    let peer_port = panel::field(world, pages[1], Tr::PeerPort.text(), "6175");
     panel::button(
         world,
         pages[1],
         sand,
-        "Save peer port",
+        Tr::SavePeerPort.text(),
         Command::SavePeerPort,
     );
     let peer_network =
-        crate::native::edit_mode::label(world, pages[1], "Loading peer addresses…", 13.0);
-    let budget = panel::field(
-        world,
-        pages[2],
-        "Disk budget in MiB (0 means unlimited)",
-        "0",
-    );
+        crate::native::edit_mode::label(world, pages[1], Tr::LoadingPeers.text(), 13.0);
+    let budget = panel::field(world, pages[2], Tr::DiskBudget.text(), "0");
     panel::button(
         world,
         pages[2],
         sand,
-        "Save disk budget",
+        Tr::SaveDiskBudget.text(),
         Command::SaveBudget,
     );
-    let usage = crate::native::edit_mode::label(world, pages[2], "Loading disk usage…", 13.0);
+    let usage = crate::native::edit_mode::label(world, pages[2], Tr::LoadingDisk.text(), 13.0);
     crate::native::owner_backup::populate(world, pages[2]);
     let sync = panel::column(world, pages[2]);
     world.get_mut::<Node>(sync).unwrap().height = px(540);
     crate::native::sync_castle::populate(world, root, sync);
     let contacts = panel::column(world, pages[3]);
-    crate::native::edit_mode::label(
-        world,
-        pages[3],
-        "Select a contact above to edit its properties",
-        13.0,
-    );
+    crate::native::edit_mode::label(world, pages[3], Tr::SelectContactHelp.text(), 13.0);
     let trust_label =
-        crate::native::edit_mode::label(world, pages[3], "Trust: no contact selected", 14.0);
+        crate::native::edit_mode::label(world, pages[3], Tr::NoContactSelected.text(), 14.0);
     let trust = panel::row(world, pages[3]);
-    for value in ["unknown", "known", "blocked"] {
-        panel::button(world, trust, sand, value, Command::Trust(value));
+    for (value, caption) in [
+        ("unknown", Tr::Unknown),
+        ("known", Tr::Known),
+        ("blocked", Tr::Blocked),
+    ] {
+        panel::button(world, trust, sand, caption.text(), Command::Trust(value));
     }
-    let proximity = panel::field(
+    let proximity = panel::field(world, pages[3], Tr::Proximity.text(), "0");
+    panel::button(
         world,
         pages[3],
-        "Proximity (non-negative whole number)",
-        "0",
+        sand,
+        Tr::SaveContact.text(),
+        Command::SaveContact,
     );
-    panel::button(world, pages[3], sand, "Save contact", Command::SaveContact);
     world.entity_mut(sand).insert(ConfigurationSand {
         pages,
         status,
+        language_status,
         identity,
         toggles,
         discovery: [false, true, false, false],
@@ -270,6 +251,7 @@ enum Command {
     Refresh,
     Toggle(usize),
     SaveIdentity,
+    Language(Language),
     SaveDiscovery,
     FindLan,
     SavePeerPort,
@@ -287,7 +269,7 @@ impl Action for Command {
         let status = view.status;
         if view.pending.is_some() || view.budget_job.is_some() || view.load.is_some() {
             if !matches!(self, Self::Page(_)) {
-                panel::status(world, status, "Wait for the current request to finish");
+                panel::status(world, status, Tr::WaitForRequest.text());
                 return;
             }
         }
@@ -303,7 +285,7 @@ impl Action for Command {
                 }
                 Ok(())
             }
-            Self::Refresh => load(world, owner),
+            Self::Refresh => refresh(world, owner),
             Self::Toggle(index) => {
                 world.get_mut::<ConfigurationSand>(owner).unwrap().discovery[*index] ^= true;
                 toggles(world, owner);
@@ -312,7 +294,11 @@ impl Action for Command {
             Self::Trust(trust) => {
                 let label = view.trust_label;
                 world.get_mut::<ConfigurationSand>(owner).unwrap().trust = (*trust).into();
-                panel::status(world, label, format!("Trust: {trust}"));
+                panel::status(
+                    world,
+                    label,
+                    format!("{}: {}", Tr::Trust.text(), trust_label(trust)),
+                );
                 Ok(())
             }
             Self::Contact(uid) => {
@@ -321,17 +307,22 @@ impl Action for Command {
             }
             Self::SaveBudget => save_budget(world, owner),
             Self::SaveIdentity
+            | Self::Language(_)
             | Self::SaveDiscovery
             | Self::FindLan
             | Self::SavePeerPort
             | Self::SaveContact => actions(world, owner, self).and_then(|actions| {
                 if crate::native::laboratory::blocked(world, owner) {
-                    return Err("Changes are unavailable in the Laboratory".into());
+                    return Err(Tr::LaboratoryUnavailable.text().into());
                 }
                 world.get_mut::<ConfigurationSand>(owner).unwrap().pending = Some(Pending {
                     id: None,
                     actions: actions.into(),
                     completed: 0,
+                    language: match self {
+                        Self::Language(language) => Some(*language),
+                        _ => None,
+                    },
                 });
                 advance(world, owner)
             }),
@@ -350,12 +341,17 @@ fn actions(
     use engine::actions::Action;
     let view = world
         .get::<ConfigurationSand>(owner)
-        .ok_or("Configuration is closed")?;
+        .ok_or(Tr::ConfigurationClosed.text())?;
     let snapshot = view
         .snapshot
         .as_ref()
-        .ok_or("Load the configuration first")?;
+        .ok_or(Tr::LoadConfigurationFirst.text())?;
     match command {
+        Command::Language(language) => Ok(vec![Action::Vocabulary {
+            request: nucleus::vocabulary::Command::SetLanguage {
+                language: language.tag().into(),
+            },
+        }]),
         Command::SaveIdentity => {
             let name = panel::value(world, view.identity[0])?.trim().to_owned();
             let address = panel::value(world, view.identity[1])?.trim().to_owned();
@@ -482,11 +478,27 @@ fn advance(world: &mut World, owner: Entity) -> Result<(), String> {
     }
     let Some(action) = pending.actions.front().cloned() else {
         let status = view.status;
+        let language = pending.language;
+        if let Some(language) = language {
+            if let Some(snapshot) = world
+                .get_mut::<ConfigurationSand>(owner)
+                .unwrap()
+                .snapshot
+                .as_mut()
+            {
+                snapshot.language = language.tag().into();
+            }
+            language_status(world, owner, language.tag());
+        }
         world.get_mut::<ConfigurationSand>(owner).unwrap().pending = None;
         panel::status(
             world,
             status,
-            "Saved. Refresh to read the current settings.",
+            if language.is_some() {
+                Tr::LanguageSaved.text()
+            } else {
+                Tr::SavedRefresh.text()
+            },
         );
         return Ok(());
     };
@@ -504,18 +516,28 @@ fn advance(world: &mut World, owner: Entity) -> Result<(), String> {
     let pending = view.pending.as_mut().unwrap();
     pending.id = Some(id);
     pending.actions.pop_front();
-    panel::status(world, status, "Saving…");
+    panel::status(world, status, Tr::Saving.text());
     Ok(())
+}
+
+fn refresh(world: &mut World, owner: Entity) -> Result<(), String> {
+    if crate::native::laboratory::blocked(world, owner) {
+        return Err(Tr::ConfigurationUnavailable.text().into());
+    }
+    if crate::native::practice_cells::source(world, owner).is_none() {
+        crate::native::cell_bridge::reconnect(world)?;
+    }
+    load(world, owner)
 }
 
 fn load(world: &mut World, owner: Entity) -> Result<(), String> {
     if crate::native::laboratory::blocked(world, owner) {
-        return Err("Configuration is unavailable in the Laboratory".into());
+        return Err(Tr::ConfigurationUnavailable.text().into());
     }
     let runtime =
-        crate::native::practice_cells::runtime(world, owner).ok_or("The Cell is unavailable")?;
+        crate::native::practice_cells::runtime(world, owner).ok_or(Tr::CellUnavailable.text())?;
     let handle =
-        tokio::runtime::Handle::try_current().map_err(|_| "The local runtime is unavailable")?;
+        tokio::runtime::Handle::try_current().map_err(|_| Tr::RuntimeUnavailable.text())?;
     let wake = world
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
@@ -544,14 +566,14 @@ fn budget_bytes(text: &str) -> Result<i64, String> {
 
 fn save_budget(world: &mut World, owner: Entity) -> Result<(), String> {
     if crate::native::laboratory::blocked(world, owner) {
-        return Err("Changes are unavailable in the Laboratory".into());
+        return Err(Tr::LaboratoryUnavailable.text().into());
     }
     let view = world.get::<ConfigurationSand>(owner).unwrap();
     let bytes = budget_bytes(&panel::value(world, view.budget)?)?;
     let runtime =
-        crate::native::practice_cells::runtime(world, owner).ok_or("The Cell is unavailable")?;
+        crate::native::practice_cells::runtime(world, owner).ok_or(Tr::CellUnavailable.text())?;
     let handle =
-        tokio::runtime::Handle::try_current().map_err(|_| "The local runtime is unavailable")?;
+        tokio::runtime::Handle::try_current().map_err(|_| Tr::RuntimeUnavailable.text())?;
     let wake = world
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
@@ -570,7 +592,7 @@ fn save_budget(world: &mut World, owner: Entity) -> Result<(), String> {
     let mut view = world.get_mut::<ConfigurationSand>(owner).unwrap();
     view.budget_job = Some(rx);
     let status = view.status;
-    panel::status(world, status, "Saving disk budget…");
+    panel::status(world, status, Tr::SavingDisk.text());
     Ok(())
 }
 
@@ -589,8 +611,12 @@ fn toggles(world: &mut World, owner: Entity) {
                 label,
                 format!(
                     "{}: {}",
-                    DISCOVERY[index].1,
-                    if values[index] { "on" } else { "off" }
+                    DISCOVERY[index].1.text(),
+                    if values[index] {
+                        Tr::On.text()
+                    } else {
+                        Tr::Off.text()
+                    }
                 ),
             );
         }
@@ -621,7 +647,12 @@ fn select_contact(world: &mut World, owner: Entity, uid: &str) {
     panel::status(
         world,
         label,
-        format!("{} · Trust: {}", contact.name, contact.trust),
+        format!(
+            "{} · {}: {}",
+            contact.name,
+            Tr::Trust.text(),
+            trust_label(&contact.trust)
+        ),
     );
 }
 
@@ -646,7 +677,7 @@ fn usage(world: &mut World, owner: Entity, storage: &cell::configuration::Storag
             storage.database_bytes as f64 / 1048576.0,
             storage.quarantine_bytes as f64 / 1048576.0,
             if storage.budget_bytes == 0 {
-                "unlimited".into()
+                Tr::Unlimited.text().into()
             } else {
                 format!(
                     "{:.1} MiB",
@@ -658,6 +689,7 @@ fn usage(world: &mut World, owner: Entity, storage: &cell::configuration::Storag
 }
 
 fn loaded(world: &mut World, owner: Entity, snapshot: Configuration) {
+    language_status(world, owner, &snapshot.language);
     let view = world.get::<ConfigurationSand>(owner).unwrap();
     let (identity, contacts, selected, status) = (
         view.identity,
@@ -719,7 +751,7 @@ fn loaded(world: &mut World, owner: Entity, snapshot: Configuration) {
         );
     }
     if snapshot.contacts.is_empty() {
-        crate::native::edit_mode::label(world, contacts, "No contacts yet", 14.0);
+        crate::native::edit_mode::label(world, contacts, Tr::NoContacts.text(), 14.0);
     }
     let selected = selected
         .filter(|uid| snapshot.contacts.iter().any(|contact| &contact.uid == uid))
@@ -729,7 +761,35 @@ fn loaded(world: &mut World, owner: Entity, snapshot: Configuration) {
     if let Some(uid) = selected {
         select_contact(world, owner, &uid);
     }
-    panel::status(world, status, "Loaded. Changes are saved when submitted.");
+    panel::status(world, status, Tr::LoadedSettings.text());
+}
+
+fn language_status(world: &mut World, owner: Entity, next: &str) {
+    let label = world
+        .get::<ConfigurationSand>(owner)
+        .unwrap()
+        .language_status;
+    let next = Language::from_tag(next).unwrap_or_default();
+    panel::status(
+        world,
+        label,
+        format!(
+            "{}: {}\n{}: {}",
+            Tr::ActiveLanguage.text(),
+            crate::i18n::catalog().language.name(),
+            Tr::NextStartupLanguage.text(),
+            next.name()
+        ),
+    );
+}
+
+fn trust_label(value: &str) -> &str {
+    match value {
+        "unknown" => Tr::Unknown.text(),
+        "known" => Tr::Known.text(),
+        "blocked" => Tr::Blocked.text(),
+        value => value,
+    }
 }
 
 fn update(
@@ -835,6 +895,172 @@ mod tests {
     use super::*;
     use crate::native::sand_panel::tests::{app, connect, settle};
 
+    #[tokio::test]
+    async fn refresh_recovers_the_local_connection_without_replacing_a_healthy_channel_or_drafts() {
+        use crate::native::cell_bridge::CellBridge;
+
+        let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+        let mut app = app();
+        connect(&mut app, engine.clone());
+        app.add_plugins(ConfigurationPlugin);
+        let owner = app.world_mut().spawn(Node::default()).id();
+        populate(app.world_mut(), owner, owner);
+        let draft = app
+            .world_mut()
+            .spawn(EditableText::new("Retain this unsubmitted note"))
+            .id();
+        settle(&mut app, |world| {
+            world
+                .get::<ConfigurationSand>(owner)
+                .unwrap()
+                .snapshot
+                .is_some()
+        })
+        .await;
+        let original = app.world().non_send::<CellBridge>().outgoing.clone();
+        Command::Refresh.apply(app.world_mut(), owner);
+        settle(&mut app, |world| {
+            world
+                .get::<ConfigurationSand>(owner)
+                .unwrap()
+                .load
+                .is_none()
+        })
+        .await;
+        assert!(original.same_channel(&app.world().non_send::<CellBridge>().outgoing));
+        app.world_mut()
+            .non_send_mut::<CellBridge>()
+            .incoming
+            .close();
+        original
+            .send(crate::native::cell_bridge::records_subscription())
+            .await
+            .unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(5), original.closed())
+            .await
+            .unwrap();
+        app.update();
+        app.world_mut()
+            .entity_mut(owner)
+            .insert(crate::native::practice_cells::PracticeSource(
+                "isolated-example".into(),
+            ));
+        Command::Refresh.apply(app.world_mut(), owner);
+        assert!(original.same_channel(&app.world().non_send::<CellBridge>().outgoing));
+        assert!(app.world().non_send::<CellBridge>().outgoing.is_closed());
+        app.world_mut()
+            .entity_mut(owner)
+            .remove::<crate::native::practice_cells::PracticeSource>();
+        Command::Refresh.apply(app.world_mut(), owner);
+        settle(&mut app, |world| {
+            world
+                .get::<ConfigurationSand>(owner)
+                .unwrap()
+                .load
+                .is_none()
+        })
+        .await;
+        let replacement = app.world().non_send::<CellBridge>().outgoing.clone();
+        assert!(!original.same_channel(&replacement));
+        assert!(!replacement.is_closed());
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(draft)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Retain this unsubmitted note"
+        );
+        let mut replies = app.world_mut().non_send_mut::<CellBridge>();
+        replacement
+            .send(crate::native::cell_bridge::records_subscription())
+            .await
+            .unwrap();
+        let response =
+            tokio::time::timeout(std::time::Duration::from_secs(5), replies.incoming.recv())
+                .await
+                .unwrap()
+                .unwrap();
+        assert!(matches!(response, ServerMessage::Snapshot { .. }));
+        drop(replies);
+        app.world_mut()
+            .non_send_mut::<CellBridge>()
+            .incoming
+            .close();
+        replacement
+            .send(crate::native::cell_bridge::records_subscription())
+            .await
+            .unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(5), replacement.closed())
+            .await
+            .unwrap();
+        let mut cursor =
+            bevy::ecs::message::MessageCursor::<crate::native::cell_bridge::CellMessage>::default();
+        cursor
+            .read(
+                app.world()
+                    .resource::<Messages<crate::native::cell_bridge::CellMessage>>(),
+            )
+            .for_each(drop);
+        Command::Refresh.apply(app.world_mut(), owner);
+        assert!(!replacement.same_channel(&app.world().non_send::<CellBridge>().outgoing));
+        assert_eq!(cursor.read(app.world().resource::<Messages<crate::native::cell_bridge::CellMessage>>()).filter(|message| matches!(&message.0, ServerMessage::Error { id, .. } if id == crate::native::cell_bridge::CONNECTION)).count(), 1);
+    }
+
+    #[tokio::test]
+    async fn language_choices_save_for_startup_without_switching_the_active_catalog() {
+        let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+        let mut app = app();
+        connect(&mut app, engine.clone());
+        app.add_plugins(ConfigurationPlugin);
+        let owner = app.world_mut().spawn(Node::default()).id();
+        populate(app.world_mut(), owner, owner);
+        settle(&mut app, |world| {
+            world
+                .get::<ConfigurationSand>(owner)
+                .unwrap()
+                .snapshot
+                .is_some()
+        })
+        .await;
+        let active = crate::i18n::catalog();
+        for language in Language::ALL {
+            assert!(
+                app.world_mut()
+                    .query::<&bevy::a11y::AccessibilityNode>()
+                    .iter(app.world())
+                    .any(|node| node.label() == Some(language.name()))
+            );
+            Command::Language(language).apply(app.world_mut(), owner);
+            settle(&mut app, |world| {
+                world
+                    .get::<ConfigurationSand>(owner)
+                    .unwrap()
+                    .pending
+                    .is_none()
+            })
+            .await;
+            let saved = store::config::get(&engine.store.pool)
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(Language::from_tag(&saved.language), Some(language));
+            assert!(std::ptr::eq(active, crate::i18n::catalog()));
+            let view = app.world().get::<ConfigurationSand>(owner).unwrap();
+            assert_eq!(
+                app.world().get::<Text>(view.status).unwrap().0,
+                Tr::LanguageSaved.text()
+            );
+            assert!(
+                app.world()
+                    .get::<Text>(view.language_status)
+                    .unwrap()
+                    .0
+                    .contains(language.name())
+            );
+        }
+    }
+
     #[test]
     fn storage_budget_rejects_negative_fractional_and_overflow_values() {
         assert_eq!(budget_bytes("0").unwrap(), 0);
@@ -854,6 +1080,7 @@ mod tests {
             owner,
             Configuration {
                 organ_uid: "organ".into(),
+                language: "en".into(),
                 name: "Owner".into(),
                 address: String::new(),
                 discovery: serde_json::json!({"internet":true,"local":false,"direct":false,"other_setting":"retain","relays":["https://relay.example/"]}),

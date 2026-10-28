@@ -1,0 +1,31 @@
+Import "../Ancient-Greek-Philosophy.lingua"
+Import "Foundation-readiness.lingua"
+Import "Philological-study.lingua"
+Import "Scholarly-inquiry.lingua"
+Import "Sustained-study.lingua"
+Import "Independent-research.lingua"
+Import "Criticism-and-revision.lingua"
+Import "Research-completion.lingua"
+Import "seminars/Seminars.lingua"
+
+From the first survey to scholarly research (@greek-scholarly-path: 0, is #chapter, #part-of @ancient-greek-philosophy, #contains @greek-scholarly-foundation, #contains @greek-philological-study, #contains @greek-scholarly-literature, #contains @greek-seminar-study, #contains @greek-independent-research, #contains @greek-research-defense, #contains @greek-trail-completion, #contains @greek-seminars, #philosophy @greek-independent-research, #ancient-greek-philosophy @greek-independent-research, #philosophy @greek-philological-study, #ancient-greek-philosophy @greek-philological-study, #philosophy @greek-research-defense, #ancient-greek-philosophy @greek-research-defense, #philosophy @greek-scholarly-foundation, #ancient-greek-philosophy @greek-scholarly-foundation, #philosophy @greek-scholarly-literature, #ancient-greek-philosophy @greek-scholarly-literature, #philosophy @greek-seminar-study, #ancient-greek-philosophy @greek-seminar-study, #philosophy @greek-seminars, #ancient-greek-philosophy @greek-seminars, #philosophy @greek-trail-completion, #ancient-greek-philosophy @greek-trail-completion) { r_434NMA510XG7R81DAAG64PZX09
+The first dialogues and survey are an entrance. Full completion of this Greek philosophy study requires sustained textual and scholarly work, advanced seminars, and a defended independent investigation.
+
+| Stage | Work and preparation | Evidence |
+| --- | --- | --- |
+| Foundation | [Demonstrate the survey's abilities](Foundation-readiness.lingua#r_2P555101Z0VGGZ14M12HRWKSYY) | Located passages, defensible reconstructions, historical orientation, and a first comparison |
+| Textual study | [Read and compare the Greek](Philological-study.lingua#r_353E4E4WH3BWFHHJNZMPKBPEXF) | A translation and commentary dossier supported by grammar, a critical edition, and the transmitting context |
+| Scholarly inquiry | [Reconstruct a debate](Scholarly-inquiry.lingua#r_2FEBDJ8R5JDHXX54TSATY2CRVZ) | A documented literature search, competing interpretations, and an explicit research question |
+| Advanced seminars | [Choose demanding problem families](seminars/Seminars.lingua#r_5FTSQDJTR924S9Z0G9EDBQFR1Y) using [the common seminar standard](Sustained-study.lingua#r_7WN2AF9HW3X3BNQSTF5CKFJ22Q) | Two sustained studies of different problems, with a substantive crossing between texts or traditions |
+| Independent research | [Develop and defend a contribution](Independent-research.lingua#r_08YBJ1G76KSJ3QTG42FKCCAV5K) | A complete research dossier, a substantial argument, and an account of its contribution to the identified debate |
+| Examination and revision | [Submit the argument to informed criticism](Criticism-and-revision.lingua#r_5P20QNYEBQPBVGHWV428JXWW8Z) | Questions, responses, external review, and a documented revision |
+| Completion | [Check the full evidence claim](Research-completion.lingua#r_41G7P2Y9HYXMVAF53MV2QYT1CD) | The foundation, textual, seminar, research, and review requirements together |
+
+Preparation is recognised through demonstrated ability. A learner already able to read Greek or evaluate a scholarly argument can supply that evidence and continue at the appropriate depth. Use existing readings and notes wherever they help with the chosen question.
+
+These stages form a connected set of routes. A seminar may send you to a grammatical construction, a primary passage, a historical context, or another seminar, then return to the problem. Explain which connection the argument actually needs. The [question map](../questions/Questions-and-crossings.lingua#r_1KWY32YG72JSYZZEYW3GH6W0XF) supplies further entrances.
+
+The [academic comparison](../sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) explains the evidence informing these demands. The completion standard is authored for Lince; university degrees follow the institutions' own requirements.
+
+**Home:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3). **Sources:** [Scholarly editions and debates](../sources/Scholarship.lingua#r_1S04GF22D5C3FNCB78GN1XQ7KT).
+} r_434NMA510XG7R81DAAG64PZX09

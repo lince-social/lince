@@ -86,9 +86,10 @@ fn pan(
         Query<(&crate::native::sand_text::SandText, &ChildOf, &Node)>,
         Query<&crate::native::drawing::DrawingSurface>,
         Query<&crate::native::layout::desktop::Managed>,
+        Query<(), With<crate::native::embedded_media::Media>>,
     ),
 ) {
-    let (text_areas, drawings, managed) = surfaces;
+    let (text_areas, drawings, managed, media) = surfaces;
     for event in windows.read() {
         if matches!(event, WindowEvent::WindowFocused(event) if !event.focused)
             || matches!(event, WindowEvent::CursorLeft(_))
@@ -124,6 +125,9 @@ fn pan(
                 let mut candidate = hit;
                 let mut sand = None;
                 loop {
+                    if media.contains(candidate) {
+                        break;
+                    }
                     if button == PointerButton::Primary && !control && drawings.contains(candidate)
                     {
                         break;

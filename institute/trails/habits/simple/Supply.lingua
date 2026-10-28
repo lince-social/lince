@@ -1,20 +1,20 @@
-Supply (@supply: 0, is #trail, #contains @liters, #contains @wanted-drinking-water-supply, #contains @drinking-water, #contains @buy-drinking-water) {
+Supply (@supply: 0, is #chapter, #contains @liters, #contains @wanted-drinking-water-supply, #contains @drinking-water, #contains @buy-drinking-water, #keeping-supplied @buy-drinking-water, #keeping-supplied @drinking-water, #keeping-supplied @liters, #keeping-supplied @wanted-drinking-water-supply) {
 Keep something supplied to a chosen level. Measure what remains, compare it with the wanted supply, and buy the missing amount. This example keeps a target of at least 6 liters of drinking water.
 
-After importing this trail, activate its Karma rules. Update Drinking Water whenever water is consumed or brought home. The rules react to changes in the stock or wanted supply and recompute Buy Drinking Water. Recording a purchase Need does not change the measured stock.
+After importing this example, activate its Karma rules. Update Drinking Water whenever water is consumed or brought home. The rules react to changes in the stock or wanted supply and recompute Buy Drinking Water. Recording a purchase Need does not change the measured stock.
 
 The example starts empty. Replace the starting stock with the amount actually available. To reuse this pattern, choose another supply, its unit, its wanted quantity, and its replenishment Need.
 }
 
-Liters (@liters: 0, is #unit, #part-of @supply) {
+Liters (@liters: 0, is #unit, #part-of @supply, #keeping-supplied @wanted-drinking-water-supply) {
 One liter measures liquid volume. Stock, wanted supply, and the purchase Need all use this unit. Fractional quantities are allowed: 1.5 means one and a half liters.
 }
 
-Wanted Drinking Water Supply (@wanted-drinking-water-supply: 6 @liters, #part-of @supply, #for @drinking-water) {
+Wanted Drinking Water Supply (@wanted-drinking-water-supply: 6 @liters, #part-of @supply, #for @drinking-water, #keeping-supplied @drinking-water) {
 The amount of drinking water to keep on hand. Start with 6 liters; increase this quantity when a larger reserve is wanted.
 }
 
-Drinking Water (@drinking-water: 0 @liters, #part-of @supply) {
+Drinking Water (@drinking-water: 0 @liters, #part-of @supply, #keeping-supplied @buy-drinking-water) {
 The measured drinking water currently available. Reduce this quantity as water is used and increase it when water is brought home. Keep it in liters so the comparison uses the same unit as the wanted supply.
 }
 
@@ -48,5 +48,11 @@ Karma drinking-water-supply {
             consequences """[{"kind":"set-quantity"}]"""
             note "Clear the purchase Need when the stock reaches or exceeds the wanted supply."
         }
+    }
+}
+
+Extension @supply "lince.vocabulary" {
+    definitions {
+        keeping-supplied "A connection through the quantities and actions used to keep a chosen supply available."
     }
 }

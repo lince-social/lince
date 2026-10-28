@@ -1,0 +1,20 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Theaetetus-Jowett.lingua"
+Import "../aristotle/Logic-and-demonstration.lingua"
+Import "../languages/Read-original-texts.lingua"
+Import "../schools/Sceptics.lingua"
+Import "Symposium.lingua"
+
+Theaetetus: perception, true judgment, and an account (@greek-theaetetus: 0, is #chapter, #part-of @greek-plato-aristotle, #source @greek-source-theaetetus, #philosophy @greek-aristotle-logic, #ancient-greek-philosophy @greek-aristotle-logic, #philosophy @greek-reading-originals, #ancient-greek-philosophy @greek-reading-originals, #philosophy @greek-sceptics, #ancient-greek-philosophy @greek-sceptics, #philosophy @greek-symposium, #ancient-greek-philosophy @greek-symposium) { r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N
+**Read:** [Theaetetus](../sources/Theaetetus-Jowett.lingua#r_4WKXEWKMJYVH6KAD0MDMQ31N2P), translated by Benjamin Jowett. Begin with Socrates' account of intellectual midwifery. Follow the three proposed accounts of knowledge: perception; true judgment; true judgment with an account. Useful divisions are approximately 151d–186e, 187b–201c, and 201c–210d; use the opening and intervening exchanges to interpret the proposals.
+
+**Preparation:** [Meno on inquiry, knowledge, and correct opinion](../socratic/Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN). Recover the distinction between an example and a definition from [Euthyphro](../socratic/Euthyphro.lingua#r_2B4XJJ3N8YSZ35JXZCV51QTRBD) as needed. Greek and a prior logic course are not required.
+
+Ask what each proposal is intended to explain and which difficulty motivates the next one. Distinguish the claim that perception varies with a perceiver from the stronger conclusion that every judgment is equally true. Examine the arguments that connect or separate those claims.
+
+**Practice:** choose a case of a correct answer obtained through testimony, perception, or reasoning. Explain what an account of that answer would add and whether your example satisfies the dialogue's proposed definition.
+
+**Check:** reconstruct one proposed account, its strongest objection, and a possible revision. Explain what the unresolved ending contributes to the inquiry instead of substituting a final formula the dialogue has not established.
+
+**Crossings:** [Aristotle on demonstration](../aristotle/Logic-and-demonstration.lingua#r_1SRR6TVQ8CC029F7QK6PKPM1X9), [sceptical challenges](../schools/Sceptics.lingua#r_6KEA1AHWJRDT3ZN8VJQTK06ZFK), and [reading terms in Ancient Greek](../languages/Read-original-texts.lingua#r_1Q07KPDNG2JTY7HRWQY5H6T5MJ). **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_3T0C5M7DVRZDE4ENZ3Z0V0AV2N

@@ -41,14 +41,56 @@ pub(crate) fn social_delivery_label(stage: &str) -> String {
     social::delivery_label(stage, &Value::Null)
 }
 
-pub(crate) fn transport_discovery(world: &mut World, owner: Entity, parent: Entity, transfer: &str, activity: nucleus::transfer::transport::Activity) {
-    form(world, owner, parent, "Prepare public transport announcement", json!({"action":"social","request":{"command":"prepare-from-record","source":transfer}}), vec![], None);
-    form(world, owner, parent, "Find transport announcements", json!({"action":"social","request":{"command":"search","query":{"text":"","transport":{"activity":activity}},"services":[]}}), vec![
-        Field("/request/query/direction", "Need or offer", forms::choices(&["need", "contribution"]), json!("need")),
-        Field("/request/query/text", "Words to find", Kind::Text, json!("")),
-        Field("/request/query/area", "Declared city or region", Kind::Text, json!("")),
-        Field("/request/services", "Optional directory endpoints", Kind::TextList, json!([])),
-    ], None);
+pub(crate) fn transport_discovery(
+    world: &mut World,
+    owner: Entity,
+    parent: Entity,
+    transfer: &str,
+    activity: nucleus::transfer::transport::Activity,
+) {
+    form(
+        world,
+        owner,
+        parent,
+        "Prepare public transport announcement",
+        json!({"action":"social","request":{"command":"prepare-from-record","source":transfer}}),
+        vec![],
+        None,
+    );
+    form(
+        world,
+        owner,
+        parent,
+        "Find transport announcements",
+        json!({"action":"social","request":{"command":"search","query":{"text":"","transport":{"activity":activity}},"services":[]}}),
+        vec![
+            Field(
+                "/request/query/direction",
+                "Need or offer",
+                forms::choices(&["need", "contribution"]),
+                json!("need"),
+            ),
+            Field(
+                "/request/query/text",
+                "Words to find",
+                Kind::Text,
+                json!(""),
+            ),
+            Field(
+                "/request/query/area",
+                "Declared city or region",
+                Kind::Text,
+                json!(""),
+            ),
+            Field(
+                "/request/services",
+                "Optional directory endpoints",
+                Kind::TextList,
+                json!([]),
+            ),
+        ],
+        None,
+    );
 }
 
 pub(crate) fn social_delivery_controls(

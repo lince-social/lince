@@ -1,0 +1,21 @@
+Import "../Medicine.lingua"
+Import "../sources/Avaliacao-do-ombro-MSD.lingua"
+Import "../sources/Laboratory-results.lingua"
+Import "../sources/Shoulder-problems-AAOS.lingua"
+Import "Tests-and-probability.lingua"
+
+History, signs, symptoms, and clinical questions (@med-history: 0, is #chapter, #part-of @medicine, #source @med-source-labs, #source @med-source-aaos-overview, #source @med-source-msd-shoulder, #medicine @med-tests) { r_7HPNE5X66CBS1BE9941J5DN17Y
+**Read one brief reference and a clinical example:** the complete explanation in [Understanding laboratory results — MedlinePlus](../sources/Laboratory-results.lingua#r_25V23BVCGB9VZ631XN4GZS05SA), followed by Medical History and Doctor’s Examination in [Shoulder pain and common problems — AAOS](../sources/Shoulder-problems-AAOS.lingua#r_506TD94GKTCRNS0XP0W5Q7EWDV). Read [Avaliação do ombro — Manual MSD](../sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X) later with the shoulder anatomy; at this stage identify which questions are history, which are examination, and which are inferences.
+
+Anamnese/history gathers the person's account and relevant background. Exame físico/physical examination adds observed and measured findings. A symptom can be precise and important without being directly visible. A sign can be measurable without explaining its cause.
+
+Etiology/etiologia asks about causes; pathophysiology/fisiopatologia about disturbed function. A differential diagnosis/diagnóstico diferencial organizes plausible explanations and the findings that support or challenge each. A hypothesis changes as new evidence arrives.
+
+For a shoulder complaint, useful observations include when it began, trauma, activity changes, location, stiffness, weakness, altered sensation, fever, prior episodes, existing conditions, medications, and effects on sleep and work. A concise account helps a professional interpret the problem; it is not a substitute for examination.
+
+**Try:** write a neutral timeline of a fictional complaint. Separate 'I cannot reach the shelf' from explanations such as pain, restricted movement, or reduced strength. List what remains unknown instead of filling those gaps with a confident diagnosis.
+
+**Continue:** [Tests — uncertainty, reference ranges, and probability](Tests-and-probability.lingua#r_160H6D6EXD4HH4D9DA4J5CT9N7).
+
+**Return:** [Medicine — understanding the body and its care](../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_7HPNE5X66CBS1BE9941J5DN17Y

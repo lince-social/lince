@@ -10,6 +10,8 @@ pub(crate) struct SavedFrequencyCastle {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedFrequencyCastle);
+
 impl SavedFrequencyCastle {
     pub(crate) fn valid(&self) -> bool {
         self.castle.draft.as_ref().is_none_or(Draft::valid)

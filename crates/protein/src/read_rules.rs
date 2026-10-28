@@ -84,7 +84,9 @@ pub async fn effective_predicate(
         return Ok(None);
     };
     let mut filters = Vec::new();
-    if let Some(policy) = crate::role_authority::policy_for(store, person, None).await? { filters.push(policy.read); }
+    if let Some(policy) = crate::role_authority::policy_for(store, person, None).await? {
+        filters.push(policy.read);
+    }
     if let Some(raw) = access.read_filter {
         filters.push(
             serde_json::from_str(&raw).map_err(|_| {

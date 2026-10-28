@@ -26,6 +26,16 @@
         else
           null;
 
+      pdfiumPackage = pkgs: pkgs.callPackage ./institute/packaging/pdfium.nix { };
+
+      displayInfoPackage = pkgs: pkgs.libdisplay-info.overrideAttrs {
+        version = "0.4.0";
+        src = pkgs.fetchurl {
+          url = "https://gitlab.freedesktop.org/emersion/libdisplay-info/-/releases/0.4.0/downloads/libdisplay-info-0.4.0.tar.xz";
+          hash = "sha256-Q7GAuqFD4gNWVHWdhOKy9e531f6BfEI4OMf+WcDWhFk=";
+        };
+      };
+
       linuxBuildInputs =
         pkgs:
         with pkgs;
@@ -40,6 +50,7 @@
           libpulseaudio
           libGL
           libdrm
+          (displayInfoPackage pkgs)
           libgbm
           libinput
           seatd
@@ -65,10 +76,11 @@
           stdenv.cc.cc.lib
           openssl
           sqlite
+          (pdfiumPackage pkgs)
         ])
         ++ linuxBuildInputs pkgs;
 
-      runtimeTools = pkgs: [ pkgs.bash pkgs.dbus pkgs.coreutils ];
+      runtimeTools = pkgs: [ pkgs.bash pkgs.dbus pkgs.coreutils pkgs.ffmpeg ];
 
       captureGraphicsEnvironment = pkgs:
         pkgs.lib.concatMapStringsSep "\n" (name: ''
@@ -116,7 +128,7 @@
           nativeBuildInputs = with pkgs; [
             autoPatchelfHook
             makeWrapper
-            python3
+            jq
           ];
           buildInputs = libraries;
           dontBuild = true;
@@ -132,6 +144,7 @@
             substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
               --replace-fail "Exec=lince-park-session" "Exec=$out/bin/lince-park-session"
             cp -r share/licenses/lince-smithay-capture "$out/share/licenses/"
+            cp -r share/licenses/smithay "$out/share/licenses/"
             install -Dm644 ${./institute/packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
             install -Dm644 ${./institute/packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
             install -Dm644 ${./institute/packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
@@ -152,7 +165,7 @@
           installCheckPhase = ''
             runHook preInstallCheck
             timeout 10 "$out/bin/lince" --build-info > actual-build-info.json
-            ${pkgs.python3}/bin/python3 ${./institute/packaging/linux/check-build-info.py} \
+            ${pkgs.bash}/bin/bash ${./institute/packaging/linux/check-build-info.sh} \
               actual-build-info.json "$out/share/lince/build-info.json"
             grep -Fx "Exec=$out/bin/lince-park-session" "$out/share/wayland-sessions/lince.desktop"
             runHook postInstallCheck
@@ -966,6 +979,7 @@
                   [
                     pkgs.clang
                     pkgs.libclang
+                    pkgs.jq
                     pkgs.python3
                   ]
                   ++ lib.remove pkgs.pkg-config interfaceLinuxNativeBuildInputs
@@ -985,6 +999,7 @@
               '' + lib.optionalString withPark (''
                 install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
                 install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"
+                install -Dm644 crates/vendor/smithay/LICENSE.txt "$out/share/licenses/smithay/LICENSE.txt"
               '' + installParkSession);
 
               passthru = lib.optionalAttrs withPark { providedSessions = [ "lince" ]; };
@@ -1010,10 +1025,10 @@
 
               postInstallCheck = lib.optionalString withPark ''
                 timeout 10 "$out/bin/lince" --build-info > build-info.json
-                ${pkgs.python3}/bin/python3 ${./institute/packaging/linux/check-build-info.py} build-info.json
+                ${pkgs.bash}/bin/bash ${./institute/packaging/linux/check-build-info.sh} build-info.json
                 install -Dm644 ${./LICENSE} "$out/share/licenses/lince/LICENSE"
                 install -Dm644 build-info.json "$out/share/lince/build-info.json"
-                ${pkgs.python3}/bin/python3 -c 'import json; print(json.load(open("build-info.json"))["revision"])' > "$out/share/lince/revision"
+                ${pkgs.jq}/bin/jq -r .revision build-info.json > "$out/share/lince/revision"
               '';
               doInstallCheck = withPark;
 
@@ -1028,6 +1043,12 @@
                 platforms = supportedSystems;
               };
             };
+
+          contentPackage = pkgs.runCommand "lince-content-${version}" { } ''
+            mkdir -p "$out/content"
+            cp -r ${./institute/trails}/. "$out/content/"
+            cp ${./LICENSE} "$out/LICENSE"
+          '';
 
           binaryPackage = assert binaryRelease == null || (
             binaryRelease.features == { ui = true; instinct = true; park = true; }
@@ -1063,6 +1084,7 @@
         in
         {
           packages = {
+            lince-content = contentPackage;
             default = lince-ui;
             inherit lince lince-ui;
             lince-source = mkLince { pname = "lince"; ui = false; };
@@ -1230,7 +1252,7 @@
               {
                 park-launch = import ./institute/packaging/linux/launch-checks.nix { inherit pkgs graphicsWrapperArgs; };
                 park-session = import ./institute/packaging/linux/park-checks.nix { inherit self nixpkgs pkgs system; };
-                park-source-install = pkgs.runCommand "park-source-install-contract" { } ''
+                park-source-install = pkgs.runCommand "park-source-install-contract" { nativeBuildInputs = [ pkgs.jq ]; } ''
                   mkdir -p "$out/bin"
                   cat > "$out/bin/lince" <<'EXECUTABLE'
                   #!${pkgs.runtimeShell}
@@ -1357,12 +1379,14 @@
                 sqlite
                 clang
                 libclang
+                python3
               ])
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
             shellHook = captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
+              export LINCE_CONTENT="''${LINCE_CONTENT:-$PWD/institute/trails}"
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH="${
@@ -1436,6 +1460,7 @@
           };
 
           devShells.interface = pkgs.mkShell {
+            LINCE_PDFIUM_LIBRARY = "${pdfiumPackage pkgs}/lib/${if pkgs.stdenv.hostPlatform.isDarwin then "libpdfium.dylib" else "libpdfium.so"}";
             LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             packages =
               (
@@ -1443,10 +1468,13 @@
                 [
                   openssl
                   pkg-config
-                  python3
+                  jq
                   sqlite
                   clang
                   libclang
+                  python3
+                  ffmpeg
+                  (pdfiumPackage pkgs)
                 ]
                 ++ lib.optionals stdenv.hostPlatform.isLinux [
                   at-spi2-core
@@ -1459,8 +1487,10 @@
 
             shellHook = captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
+              export LINCE_CONTENT="''${LINCE_CONTENT:-$PWD/institute/trails}"
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+              export LINCE_PARK_ATSPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
               export __EGL_VENDOR_LIBRARY_DIRS="''${__EGL_VENDOR_LIBRARY_DIRS:-${pkgs.mesa}/share/glvnd/egl_vendor.d}"
               export GBM_BACKENDS_PATH="''${GBM_BACKENDS_PATH:-${pkgs.mesa}/lib/gbm}"
               export LD_LIBRARY_PATH="${
@@ -1469,6 +1499,7 @@
                   ++ (with pkgs; [
                     openssl
                     sqlite
+                    (pdfiumPackage pkgs)
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"

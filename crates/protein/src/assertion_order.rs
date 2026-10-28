@@ -29,6 +29,7 @@ pub(crate) async fn values(
             for assertion in &assertions {
                 if assertion.predicate_uid == predicate
                     && assertion.object_uid.is_none()
+                    && assertion.object_uri.is_none()
                     && assertion.role == "ordinary"
                     && assertion.unit_uid.is_none()
                     && let Some(value) = assertion.quantity

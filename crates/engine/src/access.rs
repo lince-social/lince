@@ -810,6 +810,7 @@ fn graph(
                 subject_uid: assertion.subject_uid.clone(),
                 predicate_uid: assertion.predicate_uid.clone(),
                 object_uid: assertion.object_uid.clone(),
+                object_uri: assertion.object_uri.clone(),
                 role: match assertion.role {
                     access_snapshot::AssertionRole::Ordinary => authority::AssertionRole::Ordinary,
                     access_snapshot::AssertionRole::Identity => authority::AssertionRole::Identity,
@@ -819,6 +820,7 @@ fn graph(
             })
             .collect(),
         places: metadata.places.clone(),
+        resolved_links: metadata.resolved_links.clone(),
     })
 }
 

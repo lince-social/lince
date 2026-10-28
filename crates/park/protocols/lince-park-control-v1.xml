@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="lince_park_control_v1">
+  <interface name="lince_park_control_v1" version="1">
+    <description summary="connection-scoped Park desktop commands">
+      Access uses the connection capabilities assigned by the session owner.
+      Invocation JSON contains a registered command and a captured public context.
+      Clients acknowledge delivered event serials using the supplied opaque token.
+      Requests and snapshots are bounded; reconnecting does not replay commands.
+    </description>
+    <request name="destroy" type="destructor"/>
+    <request name="snapshot">
+      <arg name="id" type="uint"/>
+      <arg name="revision" type="string"/>
+      <arg name="cursor" type="uint"/>
+    </request>
+    <request name="invoke">
+      <arg name="id" type="uint"/>
+      <arg name="body" type="string"/>
+    </request>
+    <request name="subscribe">
+      <arg name="enabled" type="uint"/>
+    </request>
+    <request name="acknowledge">
+      <arg name="serial" type="string"/>
+      <arg name="token" type="string"/>
+    </request>
+    <event name="reply">
+      <arg name="id" type="uint"/>
+      <arg name="body" type="fd" summary="sealed regular file containing bounded UTF-8 JSON from offset zero"/>
+      <arg name="serial" type="string"/>
+      <arg name="token" type="string"/>
+    </event>
+    <event name="changed">
+      <arg name="revision" type="string"/>
+      <arg name="scope" type="uint"/>
+      <arg name="serial" type="string"/>
+      <arg name="token" type="string"/>
+    </event>
+  </interface>
+</protocol>

@@ -7,11 +7,34 @@ use std::{
 };
 
 #[test]
+fn opening_overview_retires_a_hover_preview_but_preserves_a_normal_pending_file_choice() {
+    let (mut app, root, window, _directory) = fixture();
+    let source = source::Source::parse("https://example.com/file.txt");
+    begin(app.world_mut(), root, Some(window), source.clone(), DVec2::ZERO, 0.0, true);
+    let old = app.world().resource::<Sessions>().entries[&root].cancelled.clone();
+    crate::host::DesktopAction::ToggleOverview.apply(app.world_mut(), root);
+    assert!(crate::native::layout::desktop::overview::active(app.world()));
+    assert!(old.load(Ordering::Acquire));
+    assert!(app.world().resource::<Sessions>().entries.is_empty());
+    crate::host::DesktopAction::ToggleOverview.apply(app.world_mut(), root);
+    begin(app.world_mut(), root, Some(window), source, DVec2::ZERO, 0.0, false);
+    let current = app.world().resource::<Sessions>().entries[&root].id;
+    crate::host::DesktopAction::ToggleOverview.apply(app.world_mut(), root);
+    assert_eq!(app.world().resource::<Sessions>().entries[&root].id, current);
+    assert!(!app.world().resource::<Sessions>().entries[&root].cancelled.load(Ordering::Acquire));
+}
+
+#[test]
 fn native_uri_handoff_uses_the_existing_choice_without_implicit_downloads() {
     let (mut app, root, window, _directory) = fixture();
     let target = capture_native_target(app.world_mut(), window).unwrap();
-    for uri in ["javascript:alert(1)", "data:text/plain,hello", "file://remote.example/tmp/file.txt",
-        "file:///tmp/file.txt?ignored=true", "https://name:password@example.com/file.txt"] {
+    for uri in [
+        "javascript:alert(1)",
+        "data:text/plain,hello",
+        "file://remote.example/tmp/file.txt",
+        "file:///tmp/file.txt?ignored=true",
+        "https://name:password@example.com/file.txt",
+    ] {
         assert!(receive_native_uri(app.world_mut(), &target, uri).is_err());
         assert!(app.world().resource::<Sessions>().entries.is_empty());
     }
@@ -31,20 +54,51 @@ fn native_uri_handoff_uses_the_existing_choice_without_implicit_downloads() {
 fn native_plain_text_creates_only_a_local_editable_sand_at_the_recorded_target() {
     let (mut app, root, window, _directory) = fixture();
     let target = capture_native_target(app.world_mut(), window).unwrap();
-    let before: std::collections::HashSet<_> = app.world_mut().query::<(Entity, &crate::native::sand_store::StoredSand)>()
-        .iter(app.world()).map(|(entity, _)| entity).collect();
+    let before: std::collections::HashSet<_> = app
+        .world_mut()
+        .query::<(Entity, &crate::native::sand_store::StoredSand)>()
+        .iter(app.world())
+        .map(|(entity, _)| entity)
+        .collect();
     receive_native_text(app.world_mut(), &target, "Olá 世界\nDropped text").unwrap();
-    let sands: Vec<_> = app.world_mut().query::<(Entity, &crate::native::sand_store::StoredSand, &crate::native::workspace::WorkspaceMember)>()
-        .iter(app.world()).map(|(entity, sand, member)| (entity, sand.kind, member.0)).collect();
+    let sands: Vec<_> = app
+        .world_mut()
+        .query::<(
+            Entity,
+            &crate::native::sand_store::StoredSand,
+            &crate::native::workspace::WorkspaceMember,
+        )>()
+        .iter(app.world())
+        .map(|(entity, sand, member)| (entity, sand.kind, member.0))
+        .collect();
     assert_eq!(sands.len(), before.len() + 1);
-    let sand = sands.iter().find(|(entity, kind, _)| !before.contains(entity)
-        && *kind == crate::native::sand_store::SandKind::EditableText).unwrap();
+    let sand = sands
+        .iter()
+        .find(|(entity, kind, _)| {
+            !before.contains(entity) && *kind == crate::native::sand_store::SandKind::EditableText
+        })
+        .unwrap();
     assert_eq!(sand.2, 1);
-    assert_eq!(app.world().get::<crate::native::canvas::CanvasItem>(sand.0).unwrap().position, target.position);
-    assert!(crate::native::sand_text::snapshot(app.world(), sand.0).iter()
-        .any(|saved| saved.text == "Olá 世界\nDropped text"));
+    assert_eq!(
+        app.world()
+            .get::<crate::native::canvas::CanvasItem>(sand.0)
+            .unwrap()
+            .position,
+        target.position
+    );
+    assert!(
+        crate::native::sand_text::snapshot(app.world(), sand.0)
+            .iter()
+            .any(|saved| saved.text == "Olá 世界\nDropped text")
+    );
     assert!(app.world().resource::<Sessions>().entries.is_empty());
-    assert_eq!(app.world_mut().query::<&crate::native::protein_area::RecordBinding>().iter(app.world()).count(), 0);
+    assert_eq!(
+        app.world_mut()
+            .query::<&crate::native::protein_area::RecordBinding>()
+            .iter(app.world())
+            .count(),
+        0
+    );
     assert!(receive_native_text(app.world_mut(), &target, "").is_err());
     crate::native::workspace::create(app.world_mut(), root);
     assert!(receive_native_text(app.world_mut(), &target, "wrong workspace").is_err());
@@ -56,19 +110,53 @@ fn native_drop_rejects_temporary_workspaces_and_keeps_ordinary_choices_on_other_
     let target = capture_native_target(app.world_mut(), window).unwrap();
     receive_native_uri(app.world_mut(), &target, "https://example.com/file.txt").unwrap();
     crate::native::workspace::create(app.world_mut(), root);
-    let temporary = app.world().get::<crate::native::workspace::Workspaces>(root).unwrap().active;
+    let temporary = app
+        .world()
+        .get::<crate::native::workspace::Workspaces>(root)
+        .unwrap()
+        .active;
     let bounds = crate::host::Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
     let second = crate::host::Rectangle::new([800.0, 0.0], [800.0, 600.0]).unwrap();
-    let mut views = crate::native::output_views::OutputViews::new(vec![
-        crate::host::OutputViewport { id: crate::host::OutputId(1), workspace: 1, bounds, usable: Some(bounds), physical_size: [800, 600] },
-        crate::host::OutputViewport { id: crate::host::OutputId(2), workspace: temporary,
-            bounds: second, usable: Some(second), physical_size: [800, 600] },
-    ], crate::host::OutputId(2)).unwrap();
+    let mut views = crate::native::output_views::OutputViews::new(
+        vec![
+            crate::host::OutputViewport { rotation: Default::default(),
+                id: crate::host::OutputId(1),
+                raster: crate::host::raster::RasterMapping {
+                    origin: (bounds).origin(),
+                    scale: [1.0; 2],
+                },
+                workspace: 1,
+                bounds,
+                usable: Some(bounds),
+                physical_size: [800, 600],
+            },
+            crate::host::OutputViewport { rotation: Default::default(),
+                id: crate::host::OutputId(2),
+                raster: crate::host::raster::RasterMapping {
+                    origin: (second).origin(),
+                    scale: [1.0; 2],
+                },
+                workspace: temporary,
+                bounds: second,
+                usable: Some(second),
+                physical_size: [800, 600],
+            },
+        ],
+        crate::host::OutputId(2),
+    )
+    .unwrap();
     views.canvas = Some(root);
     app.insert_resource(views);
-    app.insert_resource(crate::native::laboratory::Laboratory::scoped_for_test(root, temporary, 1));
+    app.insert_resource(crate::native::laboratory::Laboratory::scoped_for_test(
+        root, temporary, 1,
+    ));
     app.update();
-    assert!(app.world().resource::<Sessions>().entries.contains_key(&root));
+    assert!(
+        app.world()
+            .resource::<Sessions>()
+            .entries
+            .contains_key(&root)
+    );
     assert!(capture_native_target(app.world_mut(), window).is_none());
     assert!(workspace_available(app.world(), root, 1));
     assert!(!workspace_available(app.world(), root, temporary));
@@ -320,6 +408,11 @@ fn release_requires_a_choice_then_keeps_the_real_image_and_its_file() {
     std::fs::remove_file(path).unwrap();
     ui::Control::Show.apply(app.world_mut(), root);
     assert!(app.world().get::<Preview>(preview).is_none());
+    assert!(
+        app.world()
+            .get::<crate::native::canvas_item::Ephemeral>(preview)
+            .is_none()
+    );
     assert!(crate::native::canvas_selection::eligible(
         app.world(),
         root,

@@ -18,7 +18,6 @@ use std::{io, net::SocketAddr, sync::Arc};
 use axum::{
     Router,
     extract::DefaultBodyLimit,
-    response::Html,
     routing::{get, post},
 };
 use cell::CellRuntime;
@@ -94,16 +93,6 @@ impl Facade {
             .await
             .map_err(|(_, message)| io::Error::other(message))?;
         let router = Router::new()
-            .route("/", get(page))
-            .route("/records/{uid}", get(page))
-            .route(
-                "/licenses/datastar",
-                get(|| async { include_str!("vendor/LICENSE.txt") }),
-            )
-            .route(
-                "/credits",
-                get(|| async { include_str!("vendor/CREDITS.txt") }),
-            )
             .route("/session", get(auth::session))
             .route("/login", post(auth::login))
             .route("/logout", post(auth::logout))
@@ -149,10 +138,6 @@ impl Drop for Facade {
         let _ = self.stop.send(true);
         self.task.abort();
     }
-}
-
-async fn page() -> Html<String> {
-    Html(include_str!("facade.html").to_owned())
 }
 
 async fn security_headers(

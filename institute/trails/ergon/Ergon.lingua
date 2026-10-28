@@ -1,7 +1,13 @@
-Ergon (@ergon: 0, is #trail) { r_00000000000000000000002001
+Ergon (@ergon: 0, is #chapter, #making-and-maintenance "../health/Farming.lingua#r_13YG8DNJGT3QRX08G4BAMD92F3", #making-and-maintenance "../health/Meal-preparation.lingua#r_21WM7WVKWGZFKZB2WTXWF97MBP") { r_00000000000000000000002001
 Build useful knowledge through reading, observation, practice, and shared work.
 
 Find original materials through the [Open Textbook Library](https://open.umn.edu/opentextbooks), [LibreTexts](https://libretexts.org/), [Appropedia](https://www.appropedia.org/), and [Project Gutenberg](https://www.gutenberg.org/).
 
 Choose a particular work, record its direct download link and attribution, and connect selected passages or practical activities through ordinary Records. These links are starting points for authors.
 } r_00000000000000000000002001
+
+Extension @ergon "lince.vocabulary" {
+    definitions {
+        making-and-maintenance "A continuation into knowledge and practical examples for producing and maintaining useful things."
+    }
+}

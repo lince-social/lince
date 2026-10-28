@@ -1,5 +1,3 @@
-include!(concat!(env!("OUT_DIR"), "/bundle.rs"));
-
 use std::collections::{BTreeMap, HashMap};
 
 pub const VOCABULARY: [&str; 11] = [
@@ -166,36 +164,20 @@ impl BundledRecord {
 }
 
 pub fn records() -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
-    let mut records = records_from(BUNDLE)?;
-    let mut selected: std::collections::BTreeSet<_> = records
+    let publication =
+        lince_practice::content::publication().map_err(|message| anicca::Diagnostic {
+            path: None,
+            message,
+        })?;
+    let Some(publication) = publication else {
+        return Ok(Vec::new());
+    };
+    let sources: Vec<_> = publication
+        .documents
         .iter()
-        .filter(|record| {
-            record
-                .slug
-                .as_deref()
-                .is_some_and(|slug| MANIFEST.contains(&slug))
-        })
-        .map(|record| record.projection.uid.clone())
+        .map(|document| (document.uri.as_str(), document.text.as_str()))
         .collect();
-    loop {
-        let before = selected.len();
-        for record in &records {
-            if selected.contains(&record.projection.uid) {
-                selected.extend(
-                    record
-                        .projection
-                        .assertions
-                        .iter()
-                        .filter_map(|line| line.object.as_ref().map(|object| object.uid.clone())),
-                );
-            }
-        }
-        if selected.len() == before {
-            break;
-        }
-    }
-    records.retain(|record| selected.contains(&record.projection.uid));
-    Ok(records)
+    records_from(&sources)
 }
 
 fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
@@ -512,9 +494,7 @@ A child.
     }
 
     #[test]
-    #[cfg(not(feature = "instinct"))]
-    fn disabled_instinct_has_no_embedded_records() {
-        assert!(BUNDLE.is_empty());
-        assert!(records().unwrap().is_empty());
+    fn an_empty_external_selection_has_no_authored_records() {
+        assert!(records_from(&[]).unwrap().is_empty());
     }
 }

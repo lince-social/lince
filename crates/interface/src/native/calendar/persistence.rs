@@ -11,6 +11,8 @@ pub(crate) struct SavedCalendar {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedCalendar);
+
 impl SavedCalendar {
     pub(crate) fn valid(&self) -> bool {
         self.calendar.valid()

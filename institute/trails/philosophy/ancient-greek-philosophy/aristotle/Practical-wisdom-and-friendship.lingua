@@ -1,0 +1,21 @@
+Import "../Plato-and-Aristotle.lingua"
+Import "../sources/Nicomachean-Ethics.lingua"
+Import "Political-community.lingua"
+Import "../questions/Comparative-investigation.lingua"
+Import "../schools/Schools-of-life.lingua"
+
+Aristotle: practical wisdom, choice, and friendship (@greek-aristotle-judgment: 0, is #chapter, #part-of @greek-plato-aristotle, #source @greek-source-aristotle, #philosophy @greek-aristotle-politics, #ancient-greek-philosophy @greek-aristotle-politics, #philosophy @greek-comparative-inquiry, #ancient-greek-philosophy @greek-comparative-inquiry, #philosophy @greek-schools-life, #ancient-greek-philosophy @greek-schools-life) { r_6RZXS4EJH55PRPW61MB33DTCNM
+**Read:** [Nicomachean Ethics](../sources/Nicomachean-Ethics.lingua#r_62ZRER59RNE2H3T9Y081AA4835), Book VI, chapters 1–5 and 12–13, then Books VIII, chapters 1–4, and IX, chapters 4 and 9. Read the complete relevant books for the development of the distinctions.
+
+**Needed alongside:** the good life and virtue in [Books I–II](Living-well-and-character.lingua#r_21YB00AWNRYQ0X2SQ8H0RFRW65). If the distinction between voluntary action, choice, and deliberation is unclear, read Book III, chapters 1–5 before relying on it.
+
+Distinguish knowing a general account, making something successfully, and judging what to do in particular circumstances. Explain why practical wisdom is linked to character rather than being only a power to calculate efficient means toward any end.
+
+Friendship introduces another test of a good life. Compare relationships based on utility, pleasure, and character. Ask whether caring for another person's good can be explained entirely as a means to one's own benefit.
+
+**Practice:** take a decision involving a colleague, a friend, or shared work. State the goal, relevant particulars, obligations, and uncertainties. Explain what a rule, a technical skill, and practical judgment each contribute. Then consider a change of circumstances that alters the judgment.
+
+**Check:** reconstruct one distinction and defend its application to the case. Compare it with [Crito on reasons for action](../socratic/Crito.lingua#r_54N10WGKCSCKW6XM202PCG7ZDH) or [Epictetus on agency](../schools/Epictetus.lingua#r_35EWPVCFYNWZ0DYG5R5HM05TC2), naming an agreement and a real disagreement.
+
+**Continue:** [Schools of life](../schools/Schools-of-life.lingua#r_58ENCWSNQARKCDXEP8FVWY9507) or [a comparative investigation](../questions/Comparative-investigation.lingua#r_20BK69Q76HJXAGZ5J1T097X29G). **Return:** [Plato and Aristotle](../Plato-and-Aristotle.lingua#r_6Z4HA576BYZD1JVJ66TJE0QQJE) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_6RZXS4EJH55PRPW61MB33DTCNM

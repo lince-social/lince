@@ -1,4 +1,4 @@
-Ride Sharing (@simple-ride-sharing: 0, is #trail, #contains @ride-seats, #contains @ride-credits, #contains @ride-driver, #contains @ride-passenger, #contains @ride-pickup, #contains @ride-destination, #contains @ride-departure, #contains @ride-offered-seats, #contains @ride-reserved-seats, #contains @ride-available-seats, #contains @ride-wanted-seats, #contains @ride-completed-seats, #contains @ride-need, #contains @ride-exchange, #contains @ride-prepare, #contains @ride-agree, #contains @ride-travel, #contains @ride-finish, #contains @ride-examples) {
+Ride Sharing (@simple-ride-sharing: 0, is #chapter, #contains @ride-seats, #contains @ride-credits, #contains @ride-driver, #contains @ride-passenger, #contains @ride-pickup, #contains @ride-destination, #contains @ride-departure, #contains @ride-offered-seats, #contains @ride-reserved-seats, #contains @ride-available-seats, #contains @ride-wanted-seats, #contains @ride-completed-seats, #contains @ride-need, #contains @ride-exchange, #contains @ride-prepare, #contains @ride-agree, #contains @ride-travel, #contains @ride-finish, #contains @ride-examples, #sharing-a-ride @ride-agree, #sharing-a-ride @ride-available-seats, #sharing-a-ride @ride-completed-seats, #sharing-a-ride @ride-credits, #sharing-a-ride @ride-departure, #sharing-a-ride @ride-destination, #sharing-a-ride @ride-driver, #sharing-a-ride @ride-examples, #sharing-a-ride @ride-exchange, #sharing-a-ride @ride-finish, #sharing-a-ride @ride-need, #sharing-a-ride @ride-offered-seats, #sharing-a-ride @ride-passenger, #sharing-a-ride @ride-pickup, #sharing-a-ride @ride-prepare, #sharing-a-ride @ride-reserved-seats, #sharing-a-ride @ride-seats, #sharing-a-ride @ride-travel, #sharing-a-ride @ride-wanted-seats) {
 Share a journey between two saved places. The example offers two seats and requests one, in exchange for ten example credits. Edit the participants, route, departure and exchange before using it.
 
 These ordinary Records contain reusable Transfer terms, ordered steps and example cases. The role and transfer-template assertions organize data; importing them does not create a signed Transfer, reserve a seat or enable location sharing. Create and link the actual Ride Transfer after reviewing the terms. Keep agreement and journey evidence there.
@@ -6,75 +6,75 @@ These ordinary Records contain reusable Transfer terms, ordered steps and exampl
 Follow Prepare, Agree, Travel and Finish. Optionally activate Karma to recompute the local seat balance and outstanding Need. These calculations do not enforce Transport capacity; the actual Transport Transfer does. A map, route provider and live location are optional.
 }
 
-Seats (@ride-seats: 0, #part-of @simple-ride-sharing, is #unit) {
+Seats (@ride-seats: 0, #part-of @simple-ride-sharing, is #unit, #sharing-a-ride @ride-credits) {
 One passenger place on the selected journey.
 }
 
-Example ride credits (@ride-credits: 0, #part-of @simple-ride-sharing, is #unit) {
+Example ride credits (@ride-credits: 0, #part-of @simple-ride-sharing, is #unit, #sharing-a-ride @ride-driver) {
 Fictional exchange unit. Replace with an agreed currency or another contribution; this does not integrate a payment provider.
 }
 
-Driver (@ride-driver: 0, #part-of @simple-ride-sharing, is #role) {
+Driver (@ride-driver: 0, #part-of @simple-ride-sharing, is #role, #sharing-a-ride @ride-passenger) {
 Choose the actual Person offering the journey. This role placeholder grants no identity or signing authority.
 }
 
-Passenger (@ride-passenger: 0, #part-of @simple-ride-sharing, is #role) {
+Passenger (@ride-passenger: 0, #part-of @simple-ride-sharing, is #role, #sharing-a-ride @ride-pickup) {
 Choose the actual Person requesting one seat. Each participant reviews and agrees using their own authority.
 }
 
-Pickup (@ride-pickup: 0, #part-of @simple-ride-sharing, is #place) {
+Pickup (@ride-pickup: 0, #part-of @simple-ride-sharing, is #place, #sharing-a-ride @ride-destination) {
 Example: the public library entrance. Choose a saved location Record and agree the entrance. Review address disclosure.
 }
 
-Destination (@ride-destination: 0, #part-of @simple-ride-sharing, is #place) {
+Destination (@ride-destination: 0, #part-of @simple-ride-sharing, is #place, #sharing-a-ride @ride-departure) {
 Example: the community cinema entrance. Choose a saved location Record.
 }
 
-Departure (@ride-departure: 0, #part-of @simple-ride-sharing) {
+Departure (@ride-departure: 0, #part-of @simple-ride-sharing, #sharing-a-ride @ride-offered-seats) {
 Choose an actual date, local departure time, timezone and acceptable pickup window. No date is preselected.
 }
 
-Offered seats (@ride-offered-seats: 2 @ride-seats, #part-of @simple-ride-sharing, #from @ride-driver) {
+Offered seats (@ride-offered-seats: 2 @ride-seats, #part-of @simple-ride-sharing, #from @ride-driver, #sharing-a-ride @ride-reserved-seats) {
 Two passenger seats for this route and departure. Use this as the Transport offer capacity.
 }
 
-Reserved seats (@ride-reserved-seats: 0 @ride-seats, #part-of @simple-ride-sharing, #for @ride-offered-seats) {
+Reserved seats (@ride-reserved-seats: 0 @ride-seats, #part-of @simple-ride-sharing, #for @ride-offered-seats, #sharing-a-ride @ride-available-seats) {
 Record reservations supported by actual Transport Transfers. A proposal alone is not a reservation. Change this local count only after real reservation or release.
 }
 
-Available seats (@ride-available-seats: 2 @ride-seats, #part-of @simple-ride-sharing, #for @ride-offered-seats) {
+Available seats (@ride-available-seats: 2 @ride-seats, #part-of @simple-ride-sharing, #for @ride-offered-seats, #sharing-a-ride @ride-wanted-seats) {
 Karma sets offered minus reserved. Negative exposes inconsistent counts. Actual acceptance must use Transport capacity checks.
 }
 
-Wanted seats (@ride-wanted-seats: 1 @ride-seats, #part-of @simple-ride-sharing, #for @ride-passenger) {
+Wanted seats (@ride-wanted-seats: 1 @ride-seats, #part-of @simple-ride-sharing, #for @ride-passenger, #sharing-a-ride @ride-completed-seats) {
 The passenger requests one seat on this journey.
 }
 
-Completed rides (@ride-completed-seats: 0 @ride-seats, #part-of @simple-ride-sharing, #for @ride-passenger) {
+Completed rides (@ride-completed-seats: 0 @ride-seats, #part-of @simple-ride-sharing, #for @ride-passenger, #sharing-a-ride @ride-need) {
 Record passenger seats actually carried to the agreed destination. Agreement or boarding alone is not completion.
 }
 
-Ride Need (@ride-need: -1 @ride-seats, #part-of @simple-ride-sharing, #from @ride-pickup, #to @ride-destination) {
+Ride Need (@ride-need: -1 @ride-seats, #part-of @simple-ride-sharing, #from @ride-pickup, #to @ride-destination, #sharing-a-ride @ride-exchange) {
 Karma maintains the negative unmet seat quantity. Creating or agreeing a Transfer does not itself meet this Need.
 }
 
-Ride exchange (@ride-exchange: 10 @ride-credits, #part-of @simple-ride-sharing, is #transfer-template, #for @ride-need, #giver @ride-driver, #receiver @ride-passenger, #gives: 1 @ride-seats, #return-contribution: 10 @ride-credits, #from @ride-pickup, #to @ride-destination, #during @ride-departure) {
+Ride exchange (@ride-exchange: 10 @ride-credits, #part-of @simple-ride-sharing, is #transfer-template, #for @ride-need, #giver @ride-driver, #receiver @ride-passenger, #gives: 1 @ride-seats, #return-contribution: 10 @ride-credits, #from @ride-pickup, #to @ride-destination, #during @ride-departure, #sharing-a-ride @ride-prepare) {
 Transfer terms: driver gives passenger one seat from Pickup to Destination during Departure; passenger gives driver ten example credits. Use Ride terms, offer capacity two and passenger count one. Review both contributions, units, reservation policy, audience and agreement before publishing. Payment and ride completion have separate evidence.
 }
 
-Prepare (@ride-prepare: -1, #part-of @simple-ride-sharing, #next @ride-agree) {
+Prepare (@ride-prepare: -1, #part-of @simple-ride-sharing, #next @ride-agree, #sharing-a-ride @ride-agree) {
 1. Bind actual Persons, saved endpoints and departure window. Check seats and return contribution. Create a Ride draft with these terms. Set this step to zero after reviewing it.
 }
 
-Agree (@ride-agree: -1, #part-of @simple-ride-sharing, #next @ride-travel) {
+Agree (@ride-agree: -1, #part-of @simple-ride-sharing, #next @ride-travel, #sharing-a-ride @ride-travel) {
 2. Invite or discover the counterparty, review the current revision, obtain required agreement and reserve one seat through Transport. Then record that reservation in Reserved seats.
 }
 
-Travel (@ride-travel: -1, #part-of @simple-ride-sharing, #next @ride-finish) {
+Travel (@ride-travel: -1, #part-of @simple-ride-sharing, #next @ride-finish, #sharing-a-ride @ride-finish) {
 3. Each participant records their own arrival, boarding, departure and destination through Transport. Cancellation of attendance follows the actual journey and capacity-release rules.
 }
 
-Finish (@ride-finish: -1, #part-of @simple-ride-sharing) {
+Finish (@ride-finish: -1, #part-of @simple-ride-sharing, #sharing-a-ride @ride-examples) {
 4. Review completion, record delivery and receipt, and settle fulfilled contributions once. Set Completed rides to one only after fulfillment. For this one-departure example retain the consumed seat allocation; create a new offer for a future departure. A failed ride leaves the Need outstanding.
 }
 
@@ -118,3 +118,8 @@ Karma simple-ride-sharing {
     }
 }
 
+Extension @simple-ride-sharing "lince.vocabulary" {
+    definitions {
+        sharing-a-ride "A connection through the terms, preparation, agreement, journey, and completion of shared transport."
+    }
+}

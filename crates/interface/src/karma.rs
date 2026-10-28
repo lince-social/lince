@@ -36,12 +36,30 @@ pub fn bound_reading(rule: &Rule, source: &str) -> String {
                 rule.bindings.iter().find(|binding| {
                     binding.authored == slug
                         && reads.iter().any(|read| {
-                            nucleus::expr::binding_reading(&read.func) == binding.reading
-                                && read.slug.split('|').any(|name| name == slug)
+                            read.slug.split('|').enumerate().any(|(position, name)| {
+                                name == slug
+                                    && if read.func == nucleus::expr::HAS_ASSERTION {
+                                        nucleus::expr::assertion_binding(position)
+                                            == binding.reading
+                                    } else {
+                                        nucleus::expr::binding_reading(&read.func)
+                                            == binding.reading
+                                    }
+                            })
                         })
                 })
             })
-            .map_or(text, |binding| format!("@{}", binding.target.as_str()))
+            .map_or(text, |binding| {
+                format!(
+                    "{}{}",
+                    if binding.reading == "has_assertion.predicate" {
+                        "#"
+                    } else {
+                        "@"
+                    },
+                    binding.target.as_str()
+                )
+            })
         })
         .collect()
 }

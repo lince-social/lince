@@ -9,6 +9,9 @@ use iroh::{EndpointAddr, SecretKey};
 use transport::live::LiveHost;
 use transport::protocol::{ClientMessage, ServerMessage};
 
+#[path = "live_workflow/reused_action.rs"]
+mod reused_action;
+
 async fn cell(base_url: &str) -> (Arc<Engine>, String) {
     let e = Engine::open_memory().await.expect("engine opens");
     let organ = store::organs::ensure_local(&e.store.pool, base_url)

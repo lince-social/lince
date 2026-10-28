@@ -1,0 +1,24 @@
+Import "../../../Medicine.lingua"
+Import "../../../sources/Asymptomatic-labrum-MRI-study.lingua"
+Import "../../../sources/Avaliacao-do-ombro-MSD.lingua"
+Import "../../../sources/Chronic-shoulder-imaging-ACR.lingua"
+Import "../../../sources/Tendinopathy-guideline-2025.lingua"
+Import "../Shoulder.lingua"
+Import "A-rotational-pain-question.lingua"
+Import "Rehabilitation-principles.lingua"
+
+Understand a shoulder examination and an imaging report (@shoulder-examination: 0, is #chapter, #part-of @shoulder, #source @med-source-msd-shoulder, #source @med-source-tendinopathy-guideline, #source @med-source-acr, #medicine @shoulder-rotation-case, #orthopedics @shoulder-rotation-case, #shoulder @shoulder-rotation-case, #source @med-source-asymptomatic-labrum) { r_0ESRQBT85AGDQH7Q71TAFFEAQS
+**Read professional assessment in defined parts:** [Avaliação do ombro — Manual MSD](../../../sources/Avaliacao-do-ombro-MSD.lingua#r_51H0EB6JRBDW2X2HNEBY52FG6X), Exame do ombro; [Rotator Cuff Tendinopathy — JOSPT, 2025](../../../sources/Tendinopathy-guideline-2025.lingua#r_74MJTFK7YKMV06M2GFT8YZ5DFV), its initial assessment, differential-diagnosis, and investigation recommendations with evidence summaries; [Chronic shoulder pain — ACR imaging criteria](../../../sources/Chronic-shoulder-imaging-ACR.lingua#r_550R5D2ZQEXYS08A98J9M848PG), the variant appropriate to the actual clinical question. Read the maneuvers to understand their purpose, not to perform forceful self-tests.
+
+A shoulder examination may assess posture and visible changes, tenderness, active and passive movement, strength, neurological findings, and selected maneuvers. No single named maneuver should be treated as an infallible tissue detector. Test accuracy and interpretation depend on the clinical setting and combination of findings.
+
+Imaging asks a defined question. Radiographs, ultrasound, MRI, and other examinations have different strengths and limitations. A report's terms for location, continuity, thickness, retraction, muscle change, fluid, or degeneration need their anatomical referents and clinical context.
+
+**Read a report in layers:** identify the modality and anatomical location; explain the reported finding; state what clinical question it may address; then separate the diagnosis and any proposed treatment. For a labral question, compare the appropriate ACR scenario with [Labral MRI findings without symptoms — Schwartzberg and colleagues](../../../sources/Asymptomatic-labrum-MRI-study.lingua#r_7E5C296ZF4P7MWT3H5B0NXV6H1). The next reading, [Work through a rotational-pain question with focused readings](A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S), gives exact source sections for working through this sequence.
+
+**Study task:** annotate a publicly available labeled example rather than a personal scan. Translate its findings into ordinary language, list what is directly described, and identify what it does not establish about pain or treatment. Compare two ACR scenarios to explain why the recommended next examination changes. Do not convert the tables into a universal rule that every painful shoulder needs a scan.
+
+**Continue:** [Work through a rotational-pain question with focused readings](A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S).
+
+**Return:** [The shoulder — structure, movement, and possible problems](../Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG) · [Medicine — understanding the body and its care](../../../Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65).
+} r_0ESRQBT85AGDQH7Q71TAFFEAQS

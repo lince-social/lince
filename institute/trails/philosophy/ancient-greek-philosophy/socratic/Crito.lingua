@@ -1,0 +1,28 @@
+Import "Socratic-inquiry.lingua"
+Import "../sources/Crito-Cary.lingua"
+Import "../sources/Apology-Cary.lingua"
+Import "Meno.lingua"
+
+Crito: law, conscience, and a difficult decision (@greek-crito: 0, is #chapter, #part-of @greek-socratic-inquiry, #source @crito, #source @apology, #philosophy @greek-meno, #ancient-greek-philosophy @greek-meno) { r_54N10WGKCSCKW6XM202PCG7ZDH
+**Read:** [Crito, translated by Henry Cary](../sources/Crito-Cary.lingua#r_00000000000000000000001007), complete. Attend first to the transition from Crito's appeals to reputation, friendship, and family to Socrates' standard for deciding. Then follow the argument against doing injustice and the personified Laws' speech. The central discussion is approximately 46b–54d in Stephanus references.
+
+**Portuguese alternative:** [Apologia de Sócrates / Críton, translated by Carlos Alberto Nunes](../sources/Apology-Crito-Nunes.lingua#r_5653D0KAK9093C4VMSTEZJ3MBW). Use the corresponding dialogue and the same guide questions; note the edition and translator when comparing an exchange.
+
+**Preparation:** identify the conclusion and distinguish reasons from appeals to an audience. [Apology](Apology.lingua#r_0DWAPFJNVYT6WNTRT46ZVK82X4) supplies the trial and the earlier insistence on continuing philosophy; its relevant argument can be read alongside this one.
+
+**Worked reconstruction:**
+
+1. One ought never to act unjustly, including in response to injustice.
+2. Escaping in these circumstances would be unjust.
+3. Therefore Socrates ought not to escape in these circumstances.
+
+The second premise carries much of the dispute. The Laws' claims about upbringing, agreement, persuasion, and the city's continued existence offer different ways to defend it. Identify who speaks each claim and whether the conclusion needs all of them.
+
+**Practice:** reconstruct one defence of the second premise. Offer a case involving an unjust law or a coerced agreement, and explain exactly which premise or inference it challenges. The counterexample must engage the proposed justification rather than merely announce an opposite conclusion.
+
+Compare the refusal to abandon philosophy in Apology with accepting the outcome here. Consider a possible distinction between obeying every command and refusing this particular escape. Defend an interpretation with both passages; do not resolve the tension by ignoring one.
+
+**Check:** distinguish personal benefit, public approval, legal authority, and a reasoned obligation. Explain whether the argument establishes a general duty to obey, a narrower conclusion, or neither as currently defended.
+
+**Next:** [Meno](Meno.lingua#r_6NC59NWAQ6A7YZYBJ3CG12SCTN). **Crossing:** [Justice in Republic](../plato/Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5). **Return:** [First reading path](Socratic-inquiry.lingua#r_24EDXVJN0ACP2G204JK3KCHW79) · [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3).
+} r_54N10WGKCSCKW6XM202PCG7ZDH

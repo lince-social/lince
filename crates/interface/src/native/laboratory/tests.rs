@@ -154,8 +154,12 @@ fn laboratory_uses_a_temporary_output_workspace_without_suspending_other_views()
     let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
     let mut views = OutputViews::new(
         (1..=2)
-            .map(|id| OutputViewport {
+            .map(|id| OutputViewport { rotation: Default::default(),
                 id: OutputId(id),
+                raster: crate::host::raster::RasterMapping {
+                    origin: (bounds).origin(),
+                    scale: [1.0; 2],
+                },
                 workspace: id,
                 bounds,
                 usable: Some(bounds),
